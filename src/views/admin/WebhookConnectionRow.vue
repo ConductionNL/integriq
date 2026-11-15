@@ -73,7 +73,7 @@
 <script>
 import axios from '@nextcloud/axios'
 import { showError, showSuccess, showWarning } from '@nextcloud/dialogs'
-import { generateOcsUrl, generateUrl } from '@nextcloud/router'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcNoteCard,
@@ -82,6 +82,7 @@ import {
 	NcSelectUsers,
 	NcTextField,
 } from '@nextcloud/vue'
+import accountPicker from '../../mixins/accountPicker.js'
 
 /**
  * One signed public webhook's connection: its account and its signature
@@ -100,6 +101,8 @@ export default {
 		NcSelectUsers,
 		NcTextField,
 	},
+
+	mixins: [accountPicker],
 
 	props: {
 		connection: {
@@ -126,9 +129,6 @@ export default {
 					}
 				: null,
 
-			accountOptions: [],
-			searchingAccounts: false,
-			accountError: '',
 			schemeOptions: [
 				{
 					label: this.t('integriq', 'Timestamped HMAC (t=…,v1=…)'),
@@ -187,43 +187,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Look up accounts for the picker through Nextcloud's autocomplete.
-		 *
-		 * @param {string} search The typed text.
-		 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
-		 */
-		async searchAccounts(search) {
-			if (!search || search.length < 2) {
-				return
-			}
-
-			this.searchingAccounts = true
-			try {
-				const { data } = await axios.get(
-					generateOcsUrl('core/autocomplete/get'),
-					{
-						params: {
-							search,
-							itemType: '',
-							itemId: '',
-							shareTypes: [0],
-							limit: 10,
-						},
-					},
-				)
-				this.accountOptions = (data.ocs.data || []).map((entry) => ({
-					id: entry.id,
-					user: entry.id,
-					displayName: entry.label || entry.id,
-				}))
-			} catch {
-				this.accountError = this.t('integriq', 'Searching accounts failed.')
-			} finally {
-				this.searchingAccounts = false
-			}
-		},
-
 		/** @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account */
 		async save() {
 			this.saving = true
@@ -234,40 +197,70 @@ export default {
 						'/apps/integriq/api/admin/webhook-connections/{type}',
 						{ type: this.connection.authorizationType },
 					),
-					{
-						userId: this.account ? this.account.id : '',
-						scheme: this.scheme,
-						secret: this.secret,
-						header: this.header,
-					},
+					this.payload(),
 				)
-				this.secret = ''
-				showSuccess(
-					this.t('integriq', '{label} connection saved.', {
-						label: this.connection.label,
-					}),
-				)
-				for (const warning of data.warnings || []) {
-					showWarning(warning)
-				}
-				this.$emit('saved', data.connection)
+				this.onSaved(data)
 			} catch (e) {
-				const body = (e.response && e.response.data) || {}
-				this.accountError = (body.fieldErrors || {}).userId || ''
-				showError(
-					Array.isArray(body.errors)
-						? body.errors.join(' ')
-						: this.t(
-								'integriq',
-								'Failed to save the {label} connection.',
-								{
-									label: this.connection.label,
-								},
-							),
-				)
+				this.onFailed(e)
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * The connection as the settings endpoint takes it.
+		 *
+		 * @return {object} The account, scheme, secret and header.
+		 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
+		 */
+		payload() {
+			return {
+				userId: this.account ? this.account.id : '',
+				scheme: this.scheme,
+				secret: this.secret,
+				header: this.header,
+			}
+		},
+
+		/**
+		 * Forget the typed secret, confirm, show the server's warnings and
+		 * hand the saved connection up.
+		 *
+		 * @param {object} data The settings endpoint's answer.
+		 * @return {void}
+		 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
+		 */
+		onSaved(data) {
+			this.secret = ''
+			showSuccess(
+				this.t('integriq', '{label} connection saved.', {
+					label: this.connection.label,
+				}),
+			)
+			for (const warning of data.warnings || []) {
+				showWarning(warning)
+			}
+			this.$emit('saved', data.connection)
+		},
+
+		/**
+		 * Show why the save failed: the server's errors, else a generic line;
+		 * an account error goes next to the account field.
+		 *
+		 * @param {object} e The axios error.
+		 * @return {void}
+		 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
+		 */
+		onFailed(e) {
+			const body = (e.response && e.response.data) || {}
+			this.accountError = (body.fieldErrors || {}).userId || ''
+			showError(
+				Array.isArray(body.errors)
+					? body.errors.join(' ')
+					: this.t('integriq', 'Failed to save the {label} connection.', {
+							label: this.connection.label,
+						}),
+			)
 		},
 	},
 }

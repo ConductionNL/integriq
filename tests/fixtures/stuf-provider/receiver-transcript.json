@@ -1,0 +1,713 @@
+[
+    {
+        "scenario": 0,
+        "status": 200,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <ZKN:zakLa01 xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <StUF:stuurgegevens xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:berichtcode>La01</StUF:berichtcode>\n        <StUF:zender>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>Dossiq</StUF:applicatie>\n        </StUF:zender>\n        <StUF:ontvanger>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>ZSH</StUF:applicatie>\n        </StUF:ontvanger>\n        <StUF:referentienummer>X</StUF:referentienummer>\n        <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n        <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n      </StUF:stuurgegevens>\n      <StUF:parameters xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:aantalVoorkomens>1</StUF:aantalVoorkomens>\n      </StUF:parameters>\n      <ZKN:antwoord xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-2026-7</ZKN:identificatie>\n          <ZKN:omschrijving>Kapvergunning</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n      </ZKN:antwoord>\n    </ZKN:zakLa01>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 200
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 1,
+        "status": 200,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <ZKN:zakLa01 xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <StUF:stuurgegevens xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:berichtcode>La01</StUF:berichtcode>\n        <StUF:zender>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>Dossiq</StUF:applicatie>\n        </StUF:zender>\n        <StUF:ontvanger>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>ZSH</StUF:applicatie>\n        </StUF:ontvanger>\n        <StUF:referentienummer>X</StUF:referentienummer>\n        <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n        <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n      </StUF:stuurgegevens>\n      <StUF:parameters xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:aantalVoorkomens>0</StUF:aantalVoorkomens>\n      </StUF:parameters>\n      <ZKN:antwoord/>\n    </ZKN:zakLa01>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 200
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 2,
+        "status": 200,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <ZKN:zakLa01 xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <StUF:stuurgegevens xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:berichtcode>La01</StUF:berichtcode>\n        <StUF:zender>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>Dossiq</StUF:applicatie>\n        </StUF:zender>\n        <StUF:ontvanger>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>ZSH</StUF:applicatie>\n        </StUF:ontvanger>\n        <StUF:referentienummer>X</StUF:referentienummer>\n        <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n        <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n      </StUF:stuurgegevens>\n      <StUF:parameters xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:aantalVoorkomens>100</StUF:aantalVoorkomens>\n      </StUF:parameters>\n      <ZKN:antwoord xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-1</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-2</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-3</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-4</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-5</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-6</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-7</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-8</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-9</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-10</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-11</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-12</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-13</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-14</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-15</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-16</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-17</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-18</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-19</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-20</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-21</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-22</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-23</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-24</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-25</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-26</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-27</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-28</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-29</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-30</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-31</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-32</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-33</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-34</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-35</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-36</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-37</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-38</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-39</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-40</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-41</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-42</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-43</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-44</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-45</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-46</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-47</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-48</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-49</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-50</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-51</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-52</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-53</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-54</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-55</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-56</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-57</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-58</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-59</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-60</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-61</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-62</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-63</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-64</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-65</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-66</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-67</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-68</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-69</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-70</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-71</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-72</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-73</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-74</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-75</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-76</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-77</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-78</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-79</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-80</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-81</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-82</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-83</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-84</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-85</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-86</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-87</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-88</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-89</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-90</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-91</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-92</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-93</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-94</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-95</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-96</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-97</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-98</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-99</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-100</ZKN:identificatie>\n          <ZKN:omschrijving>Zaak</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n      </ZKN:antwoord>\n    </ZKN:zakLa01>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "StUF provider answer {ref} holds {count} cases, rendering the first {max}",
+                {
+                    "ref": "REQ-1",
+                    "count": 150,
+                    "max": 100
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 200
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 3,
+        "status": 500,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Server</faultcode>\n      <faultstring>Het bericht is niet beantwoord</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF055</StUF:code>\n            <StUF:plek>server</StUF:plek>\n            <StUF:omschrijving>Het bericht is niet beantwoord</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {ref} was not answered by any app",
+                {
+                    "ref": "REQ-1"
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "",
+                    "status": 500
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 4,
+        "status": 500,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Server</faultcode>\n      <faultstring>Het bericht is niet beantwoord</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF055</StUF:code>\n            <StUF:plek>server</StUF:plek>\n            <StUF:omschrijving>Het bericht is niet beantwoord</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "error",
+                "StUF provider listener failed for {type}: {error}",
+                {
+                    "type": "zakLv01",
+                    "error": "database down"
+                }
+            ],
+            [
+                "warning",
+                "StUF provider request {ref} was not answered by any app",
+                {
+                    "ref": "REQ-1"
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "",
+                    "status": 500
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 5,
+        "status": 400,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Zaaktype is not mapped</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF058</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Zaaktype is not mapped</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {ref} refused by {app} ({kind}): {reason}",
+                {
+                    "ref": "REQ-1",
+                    "app": "dossiq",
+                    "kind": "refused",
+                    "reason": "Zaaktype is not mapped"
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 400
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 6,
+        "status": 403,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Nee: forbidden</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF058</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Nee: forbidden</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {ref} refused by {app} ({kind}): {reason}",
+                {
+                    "ref": "REQ-1",
+                    "app": "dossiq",
+                    "kind": "forbidden",
+                    "reason": "Nee: forbidden"
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 403
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 7,
+        "status": 404,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Nee: not-found</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF058</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Nee: not-found</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {ref} refused by {app} ({kind}): {reason}",
+                {
+                    "ref": "REQ-1",
+                    "app": "dossiq",
+                    "kind": "not-found",
+                    "reason": "Nee: not-found"
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 404
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 8,
+        "status": 409,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Nee: conflict</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF058</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Nee: conflict</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {ref} refused by {app} ({kind}): {reason}",
+                {
+                    "ref": "REQ-1",
+                    "app": "dossiq",
+                    "kind": "conflict",
+                    "reason": "Nee: conflict"
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 409
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 9,
+        "status": 400,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>SQLSTATE[23000]: Integrity constraint violation object 7f3a</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF058</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>SQLSTATE[23000]: Integrity constraint violation object 7f3a</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {ref} refused by {app} ({kind}): {reason}",
+                {
+                    "ref": "REQ-1",
+                    "app": "dossiq",
+                    "kind": "refused",
+                    "reason": "SQLSTATE[23000]: Integrity constraint violation object 7f3a"
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 400
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 10,
+        "status": 200,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <ZKN:zakLa01 xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <StUF:stuurgegevens xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:berichtcode>La01</StUF:berichtcode>\n        <StUF:zender>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>Dossiq</StUF:applicatie>\n        </StUF:zender>\n        <StUF:ontvanger>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>ZSH</StUF:applicatie>\n        </StUF:ontvanger>\n        <StUF:referentienummer>X</StUF:referentienummer>\n        <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n        <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n      </StUF:stuurgegevens>\n      <StUF:parameters xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:aantalVoorkomens>0</StUF:aantalVoorkomens>\n      </StUF:parameters>\n      <ZKN:antwoord/>\n    </ZKN:zakLa01>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "intruder",
+                    "status": 200
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 11,
+        "status": 400,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Een zaakvraag zonder selectiecriterium wordt niet beantwoord</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF058</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Een zaakvraag zonder selectiecriterium wordt niet beantwoord</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider {type} refused before it was asked: {reason}",
+                {
+                    "type": "zakLv01",
+                    "reason": "Een zaakvraag zonder selectiecriterium wordt niet beantwoord"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 12,
+        "status": 200,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <BG:npsLa01 xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <StUF:stuurgegevens xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:berichtcode>La01</StUF:berichtcode>\n        <StUF:zender>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>Dossiq</StUF:applicatie>\n        </StUF:zender>\n        <StUF:ontvanger>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>ZSH</StUF:applicatie>\n        </StUF:ontvanger>\n        <StUF:referentienummer>X</StUF:referentienummer>\n        <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n        <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n      </StUF:stuurgegevens>\n      <StUF:parameters xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:aantalVoorkomens>1</StUF:aantalVoorkomens>\n      </StUF:parameters>\n      <BG:antwoord xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <BG:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"NPS\">\n          <BG:inp.bsn>999993653</BG:inp.bsn>\n          <BG:geslachtsnaam>Jansen</BG:geslachtsnaam>\n          <BG:voorvoegselGeslachtsnaam StUF:noValue=\"geenWaarde\"/>\n          <BG:voornamen StUF:noValue=\"geenWaarde\"/>\n          <BG:geboortedatum StUF:noValue=\"geenWaarde\"/>\n          <BG:geslachtsaanduiding StUF:noValue=\"geenWaarde\"/>\n        </BG:object>\n      </BG:antwoord>\n    </BG:npsLa01>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "npsLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 200
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 13,
+        "status": 500,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Server</faultcode>\n      <faultstring>Het bericht is niet beantwoord</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF055</StUF:code>\n            <StUF:plek>server</StUF:plek>\n            <StUF:omschrijving>Het bericht is niet beantwoord</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {ref} was not answered by any app",
+                {
+                    "ref": "REQ-1"
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "npsLv01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "",
+                    "status": 500
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 14,
+        "status": 200,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <StUF:Bv03Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <StUF:stuurgegevens>\n        <StUF:berichtcode>Bv03</StUF:berichtcode>\n        <StUF:zender>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>Dossiq</StUF:applicatie>\n        </StUF:zender>\n        <StUF:ontvanger>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>ZSH</StUF:applicatie>\n        </StUF:ontvanger>\n        <StUF:referentienummer>X</StUF:referentienummer>\n        <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n        <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n      </StUF:stuurgegevens>\n    </StUF:Bv03Bericht>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLk01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 200
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 15,
+        "status": 400,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Zaaktype is not mapped</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo03Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo03</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF058</StUF:code>\n            <StUF:omschrijving>Zaaktype is not mapped</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo03Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {ref} refused by {app} ({kind}): {reason}",
+                {
+                    "ref": "REQ-1",
+                    "app": "dossiq",
+                    "kind": "refused",
+                    "reason": "Zaaktype is not mapped"
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLk01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 400
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 16,
+        "status": 500,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Het bericht is niet beantwoord</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo03Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo03</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF055</StUF:code>\n            <StUF:omschrijving>Het bericht is niet beantwoord</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo03Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {ref} was not answered by any app",
+                {
+                    "ref": "REQ-1"
+                }
+            ],
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLk01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "",
+                    "status": 500
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 17,
+        "status": 200,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <StUF:Bv03Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <StUF:stuurgegevens>\n        <StUF:berichtcode>Bv03</StUF:berichtcode>\n        <StUF:zender>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>Dossiq</StUF:applicatie>\n        </StUF:zender>\n        <StUF:ontvanger>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>ZSH</StUF:applicatie>\n        </StUF:ontvanger>\n        <StUF:referentienummer>X</StUF:referentienummer>\n        <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n        <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n      </StUF:stuurgegevens>\n    </StUF:Bv03Bericht>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "edcLk01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 200
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 18,
+        "status": 200,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <StUF:Bv03Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <StUF:stuurgegevens>\n        <StUF:berichtcode>Bv03</StUF:berichtcode>\n        <StUF:zender>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>Dossiq</StUF:applicatie>\n        </StUF:zender>\n        <StUF:ontvanger>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>ZSH</StUF:applicatie>\n        </StUF:ontvanger>\n        <StUF:referentienummer>X</StUF:referentienummer>\n        <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n        <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n      </StUF:stuurgegevens>\n    </StUF:Bv03Bericht>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLk01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 200
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 19,
+        "status": 200,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <StUF:Bv03Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <StUF:stuurgegevens>\n        <StUF:berichtcode>Bv03</StUF:berichtcode>\n        <StUF:zender>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>Dossiq</StUF:applicatie>\n        </StUF:zender>\n        <StUF:ontvanger>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>ZSH</StUF:applicatie>\n        </StUF:ontvanger>\n        <StUF:referentienummer>X</StUF:referentienummer>\n        <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n        <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n      </StUF:stuurgegevens>\n    </StUF:Bv03Bericht>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "edcLk01",
+                    "ref": "REQ-1",
+                    "origin": "route",
+                    "app": "dossiq",
+                    "status": 200
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 20,
+        "status": 403,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Schrijven kan alleen op het StUF-adres van integriq</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo03Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo03</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF058</StUF:code>\n            <StUF:omschrijving>Schrijven kan alleen op het StUF-adres van integriq</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo03Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider {type} refused before it was asked: {reason}",
+                {
+                    "type": "zakLk01",
+                    "reason": "Schrijven kan alleen op het StUF-adres van integriq"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 21,
+        "status": 200,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <ZKN:zakLa01 xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <StUF:stuurgegevens xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:berichtcode>La01</StUF:berichtcode>\n        <StUF:zender>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>Dossiq</StUF:applicatie>\n        </StUF:zender>\n        <StUF:ontvanger>\n          <StUF:organisatie>0363</StUF:organisatie>\n          <StUF:applicatie>ZSH</StUF:applicatie>\n        </StUF:ontvanger>\n        <StUF:referentienummer>X</StUF:referentienummer>\n        <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n        <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n      </StUF:stuurgegevens>\n      <StUF:parameters xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:aantalVoorkomens>1</StUF:aantalVoorkomens>\n      </StUF:parameters>\n      <ZKN:antwoord xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <ZKN:object xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" StUF:entiteittype=\"ZAK\">\n          <ZKN:identificatie>ZAAK-2026-7</ZKN:identificatie>\n          <ZKN:omschrijving>Kapvergunning</ZKN:omschrijving>\n          <ZKN:zaaktype>KAP</ZKN:zaaktype>\n        </ZKN:object>\n      </ZKN:antwoord>\n    </ZKN:zakLa01>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 1,
+        "log": [
+            [
+                "warning",
+                "[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}",
+                {
+                    "id": "zsh",
+                    "type": "zakLv01",
+                    "ref": "REQ-1",
+                    "origin": "forwarded",
+                    "app": "dossiq",
+                    "status": 200
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 22,
+        "status": 401,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Authenticatie mislukt</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie>OpenConnector</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF063</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Authenticatie mislukt</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider request refused for source {id}: not authenticated",
+                {
+                    "id": "zsh"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 23,
+        "status": 401,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Authenticatie mislukt</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie>OpenConnector</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF063</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Authenticatie mislukt</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider request refused for source {id}: not authenticated",
+                {
+                    "id": "zsh"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 24,
+        "status": 401,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Authenticatie mislukt</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie>OpenConnector</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF063</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Authenticatie mislukt</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider request refused for source {id}: not authenticated",
+                {
+                    "id": "closed"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 25,
+        "status": 401,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Authenticatie mislukt</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie>OpenConnector</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF063</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Authenticatie mislukt</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider request refused for source {id}: not authenticated",
+                {
+                    "id": "tokenless"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 26,
+        "status": 401,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Authenticatie mislukt</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie>OpenConnector</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF063</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Authenticatie mislukt</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider request refused for source {id}: not authenticated",
+                {
+                    "id": "missing"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 27,
+        "status": 401,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Authenticatie mislukt</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie>OpenConnector</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF063</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Authenticatie mislukt</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider request refused for source {id}: not authenticated",
+                {
+                    "id": "rest"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 28,
+        "status": 401,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Authenticatie mislukt</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie>OpenConnector</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF063</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Authenticatie mislukt</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider request refused for source {id}: not authenticated",
+                {
+                    "id": "blankpass"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 29,
+        "status": 400,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Berichttype wordt niet ondersteund</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF001</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Berichttype wordt niet ondersteund</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {type} not taken on route {service}",
+                {
+                    "type": "npsLv01",
+                    "service": "cases"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 30,
+        "status": 400,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Berichttype wordt niet ondersteund</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>ZSH</StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer>REQ-1</StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF001</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Berichttype wordt niet ondersteund</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {type} not taken on route {service}",
+                {
+                    "type": "zakLv01",
+                    "service": "persons"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 31,
+        "status": 400,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Berichttype wordt niet ondersteund</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie>0363</StUF:organisatie>\n              <StUF:applicatie>Dossiq</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie></StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n            <StUF:crossRefnummer></StUF:crossRefnummer>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF001</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Berichttype wordt niet ondersteund</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": [
+            [
+                "warning",
+                "StUF provider request {type} not taken on route {service}",
+                {
+                    "type": "adrLv01",
+                    "service": "cases"
+                }
+            ]
+        ]
+    },
+    {
+        "scenario": 32,
+        "status": 400,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Ongeldig bericht</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie>OpenConnector</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie></StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF001</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Ongeldig bericht</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": []
+    },
+    {
+        "scenario": 33,
+        "status": 400,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Ongeldig bericht</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie>OpenConnector</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie></StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF001</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Ongeldig bericht</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": []
+    },
+    {
+        "scenario": 34,
+        "status": 413,
+        "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:BG=\"http://www.egem.nl/StUF/sector/bg/0310\" xmlns:ZKN=\"http://www.egem.nl/StUF/sector/zkn/0310\">\n  <SOAP-ENV:Body xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n    <SOAP-ENV:Fault xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n      <faultcode>SOAP-ENV:Client</faultcode>\n      <faultstring>Bericht te groot</faultstring>\n      <detail xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n        <StUF:Fo02Bericht xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\">\n          <StUF:stuurgegevens>\n            <StUF:berichtcode>Fo02</StUF:berichtcode>\n            <StUF:zender>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie>OpenConnector</StUF:applicatie>\n            </StUF:zender>\n            <StUF:ontvanger>\n              <StUF:organisatie></StUF:organisatie>\n              <StUF:applicatie></StUF:applicatie>\n            </StUF:ontvanger>\n            <StUF:referentienummer>X</StUF:referentienummer>\n            <StUF:tijdstipBericht>X</StUF:tijdstipBericht>\n          </StUF:stuurgegevens>\n          <StUF:body>\n            <StUF:code>StUF001</StUF:code>\n            <StUF:plek>client</StUF:plek>\n            <StUF:omschrijving>Bericht te groot</StUF:omschrijving>\n          </StUF:body>\n        </StUF:Fo02Bericht>\n      </detail>\n    </SOAP-ENV:Fault>\n  </SOAP-ENV:Body>\n</SOAP-ENV:Envelope>\n",
+        "events": 0,
+        "log": []
+    }
+]

@@ -3,6 +3,9 @@
 /**
  * Renames this app's OpenRegister register SLUGS in place, before the import.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * WHY A REPAIR STEP AT ALL. OpenRegister's ImportHandler resolves a register by
  * SLUG and by nothing else — `registerMapper->find(id: strtolower($data['slug']))`
  * — and the `DoesNotExistException` branch is not an error path, it is the
@@ -47,16 +50,13 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://conduction.nl
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -192,7 +192,7 @@ class MigrateRegisterSlug implements IRepairStep {
 
 		foreach (self::APPCONFIG_KEYS as $key) {
 			try {
-				$current = $this->appConfig->getValueString(Application::APP_ID, $key, '');
+				$current = $this->appConfig->getValueString(AppIdentity::APP_ID, $key, '');
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					'MigrateRegisterSlug: could not read app config; leaving it alone.',
@@ -207,7 +207,7 @@ class MigrateRegisterSlug implements IRepairStep {
 			}
 
 			try {
-				$this->appConfig->setValueString(Application::APP_ID, $key, $new);
+				$this->appConfig->setValueString(AppIdentity::APP_ID, $key, $new);
 				$rekeyed++;
 			} catch (\Throwable $e) {
 				$this->logger->warning(

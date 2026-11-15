@@ -19,6 +19,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#requirement-submissions-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-008
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

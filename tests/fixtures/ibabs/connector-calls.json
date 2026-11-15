@@ -1,0 +1,1081 @@
+{
+    "test-no-org": {
+        "trace": [],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Organisation ID not configured"
+            }
+        }
+    },
+    "test-config-json": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Connection successful"
+            }
+        }
+    },
+    "test-config-scalar": {
+        "trace": [],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Organisation ID not configured"
+            }
+        }
+    },
+    "test-401": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Invalid API key (HTTP 401)"
+            }
+        }
+    },
+    "test-500": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "API returned status 500"
+            }
+        }
+    },
+    "test-throws": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "warning",
+                "message": "iBabs connection test failed",
+                "context": {
+                    "exception": "network down"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Connection failed: network down"
+            }
+        }
+    },
+    "push-no-org": {
+        "trace": [],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Organisation ID not configured",
+                "vergaderstukId": null
+            }
+        }
+    },
+    "push-id": {
+        "trace": [
+            {
+                "log": "info",
+                "message": "iBabs: Pushing voorstel",
+                "context": {
+                    "onderwerp": "Begroting",
+                    "organisatieId": "org-1"
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/documents",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "onderwerp": "Begroting",
+                        "portefeuillehouder": "Wethouder",
+                        "zaaktype": "raadsvoorstel",
+                        "vertrouwelijk": true
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Voorstel pushed successfully",
+                "vergaderstukId": "doc-1"
+            }
+        }
+    },
+    "push-document-id": {
+        "trace": [
+            {
+                "log": "info",
+                "message": "iBabs: Pushing voorstel",
+                "context": {
+                    "onderwerp": "",
+                    "organisatieId": "org-1"
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/documents",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "onderwerp": "",
+                        "portefeuillehouder": "",
+                        "zaaktype": "",
+                        "vertrouwelijk": false
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Voorstel pushed successfully",
+                "vergaderstukId": "doc-2"
+            }
+        }
+    },
+    "push-no-ids": {
+        "trace": [
+            {
+                "log": "info",
+                "message": "iBabs: Pushing voorstel",
+                "context": {
+                    "onderwerp": "",
+                    "organisatieId": "org-1"
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/documents",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "onderwerp": "",
+                        "portefeuillehouder": "",
+                        "zaaktype": "",
+                        "vertrouwelijk": false
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Voorstel pushed successfully",
+                "vergaderstukId": null
+            }
+        }
+    },
+    "push-string-body": {
+        "trace": [
+            {
+                "log": "info",
+                "message": "iBabs: Pushing voorstel",
+                "context": {
+                    "onderwerp": "",
+                    "organisatieId": "org-1"
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/documents",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "onderwerp": "",
+                        "portefeuillehouder": "",
+                        "zaaktype": "",
+                        "vertrouwelijk": false
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Voorstel pushed successfully",
+                "vergaderstukId": null
+            }
+        }
+    },
+    "push-status-0": {
+        "trace": [
+            {
+                "log": "info",
+                "message": "iBabs: Pushing voorstel",
+                "context": {
+                    "onderwerp": "Begroting",
+                    "organisatieId": "org-1"
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/documents",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "onderwerp": "Begroting",
+                        "portefeuillehouder": "Wethouder",
+                        "zaaktype": "raadsvoorstel",
+                        "vertrouwelijk": true
+                    }
+                }
+            },
+            {
+                "log": "error",
+                "message": "iBabs: voorstel push failed",
+                "context": {
+                    "status": 0,
+                    "onderwerp": "Begroting"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "API call failed — no response",
+                "vergaderstukId": null
+            }
+        }
+    },
+    "push-199": {
+        "trace": [
+            {
+                "log": "info",
+                "message": "iBabs: Pushing voorstel",
+                "context": {
+                    "onderwerp": "",
+                    "organisatieId": "org-1"
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/documents",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "onderwerp": "",
+                        "portefeuillehouder": "",
+                        "zaaktype": "",
+                        "vertrouwelijk": false
+                    }
+                }
+            },
+            {
+                "log": "error",
+                "message": "iBabs: voorstel push failed",
+                "context": {
+                    "status": 199,
+                    "onderwerp": ""
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Upload failed with status 199",
+                "vergaderstukId": null
+            }
+        }
+    },
+    "push-300": {
+        "trace": [
+            {
+                "log": "info",
+                "message": "iBabs: Pushing voorstel",
+                "context": {
+                    "onderwerp": "",
+                    "organisatieId": "org-1"
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/documents",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "onderwerp": "",
+                        "portefeuillehouder": "",
+                        "zaaktype": "",
+                        "vertrouwelijk": false
+                    }
+                }
+            },
+            {
+                "log": "error",
+                "message": "iBabs: voorstel push failed",
+                "context": {
+                    "status": 300,
+                    "onderwerp": ""
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Upload failed with status 300",
+                "vergaderstukId": null
+            }
+        }
+    },
+    "push-401": {
+        "trace": [
+            {
+                "log": "info",
+                "message": "iBabs: Pushing voorstel",
+                "context": {
+                    "onderwerp": "",
+                    "organisatieId": "org-1"
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/documents",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "onderwerp": "",
+                        "portefeuillehouder": "",
+                        "zaaktype": "",
+                        "vertrouwelijk": false
+                    }
+                }
+            },
+            {
+                "log": "error",
+                "message": "iBabs: voorstel push failed",
+                "context": {
+                    "status": 401,
+                    "onderwerp": ""
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Invalid API key",
+                "vergaderstukId": null
+            }
+        }
+    },
+    "push-413": {
+        "trace": [
+            {
+                "log": "info",
+                "message": "iBabs: Pushing voorstel",
+                "context": {
+                    "onderwerp": "",
+                    "organisatieId": "org-1"
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/documents",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "onderwerp": "",
+                        "portefeuillehouder": "",
+                        "zaaktype": "",
+                        "vertrouwelijk": false
+                    }
+                }
+            },
+            {
+                "log": "error",
+                "message": "iBabs: voorstel push failed",
+                "context": {
+                    "status": 413,
+                    "onderwerp": ""
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Document too large — consider compressing before upload",
+                "vergaderstukId": null
+            }
+        }
+    },
+    "push-throws": {
+        "trace": [
+            {
+                "log": "info",
+                "message": "iBabs: Pushing voorstel",
+                "context": {
+                    "onderwerp": "",
+                    "organisatieId": "org-1"
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/documents",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "onderwerp": "",
+                        "portefeuillehouder": "",
+                        "zaaktype": "",
+                        "vertrouwelijk": false
+                    }
+                }
+            },
+            {
+                "log": "error",
+                "message": "iBabs: voorstel push exception",
+                "context": {
+                    "exception": "network down"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Push failed: network down",
+                "vergaderstukId": null
+            }
+        }
+    },
+    "agenda-no-org": {
+        "trace": [],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Organisation ID not configured",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-given-meeting": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/agendapunten",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "vergaderingId": "m-1",
+                        "vergaderstukId": "doc-1"
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Agendapunt created",
+                "agendapuntId": "ap-1"
+            }
+        }
+    },
+    "agenda-agendapunt-id": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/agendapunten",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "vergaderingId": "m-1",
+                        "vergaderstukId": "doc-1"
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Agendapunt created",
+                "agendapuntId": "ap-2"
+            }
+        }
+    },
+    "agenda-string-body": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/agendapunten",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "vergaderingId": "m-1",
+                        "vergaderstukId": "doc-1"
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Agendapunt created",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-next-meeting": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-future/agendapunten",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "vergaderingId": "m-future",
+                        "vergaderstukId": "doc-1"
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Agendapunt created",
+                "agendapuntId": "ap-3"
+            }
+        }
+    },
+    "agenda-next-meeting-items": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-x/agendapunten",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "vergaderingId": "m-x",
+                        "vergaderstukId": "doc-1"
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Agendapunt created",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-next-meeting-no-id": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "warning",
+                "message": "iBabs: no upcoming vergadering found for agendapunt",
+                "context": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "No upcoming vergadering available — sync set to pending",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-all-past": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "warning",
+                "message": "iBabs: no upcoming vergadering found for agendapunt",
+                "context": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "No upcoming vergadering available — sync set to pending",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-no-meetings": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "warning",
+                "message": "iBabs: no upcoming vergadering found for agendapunt",
+                "context": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "No upcoming vergadering available — sync set to pending",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-items-not-list": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "warning",
+                "message": "iBabs: no upcoming vergadering found for agendapunt",
+                "context": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "No upcoming vergadering available — sync set to pending",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-meetings-string": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "warning",
+                "message": "iBabs: no upcoming vergadering found for agendapunt",
+                "context": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "No upcoming vergadering available — sync set to pending",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-meetings-500": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "warning",
+                "message": "iBabs: no upcoming vergadering found for agendapunt",
+                "context": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "No upcoming vergadering available — sync set to pending",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-meetings-throw": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "error",
+                "message": "iBabs: agendapunt creation exception",
+                "context": {
+                    "exception": "network down"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Agendapunt creation failed: network down",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-post-199": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/agendapunten",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "vergaderingId": "m-1",
+                        "vergaderstukId": "doc-1"
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Agendapunt creation failed with status 199",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-post-300": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/agendapunten",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "vergaderingId": "m-1",
+                        "vergaderstukId": "doc-1"
+                    }
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Agendapunt creation failed with status 300",
+                "agendapuntId": null
+            }
+        }
+    },
+    "agenda-post-throw": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/agendapunten",
+                "method": "POST",
+                "config": {
+                    "json": {
+                        "vergaderingId": "m-1",
+                        "vergaderstukId": "doc-1"
+                    }
+                }
+            },
+            {
+                "log": "error",
+                "message": "iBabs: agendapunt creation exception",
+                "context": {
+                    "exception": "network down"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Agendapunt creation failed: network down",
+                "agendapuntId": null
+            }
+        }
+    },
+    "poll-no-org": {
+        "trace": [
+            {
+                "log": "warning",
+                "message": "iBabs: pollBesluiten called without organisatieId",
+                "context": []
+            }
+        ],
+        "outcome": {
+            "return": []
+        }
+    },
+    "poll-none": {
+        "trace": [],
+        "outcome": {
+            "return": []
+        }
+    },
+    "poll-mixed": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/besluiten",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-2/besluiten",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-3/besluiten",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-4/besluiten",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-5/besluiten",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "info",
+                "message": "iBabs: no besluit yet for vergadering",
+                "context": {
+                    "vergaderingId": "m-5",
+                    "status": 404
+                }
+            },
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-6/besluiten",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-7/besluiten",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "error",
+                "message": "iBabs: besluit polling failed",
+                "context": {
+                    "vergaderingId": "m-7",
+                    "exception": "network down"
+                }
+            }
+        ],
+        "outcome": {
+            "return": [
+                {
+                    "caseId": "c-1",
+                    "vergaderingId": "m-1",
+                    "ibabsStatus": "aangenomen",
+                    "zaakStatus": "Besluit: aangenomen",
+                    "besluitdatum": "2026-10-01"
+                },
+                {
+                    "caseId": "c-2",
+                    "vergaderingId": "m-2",
+                    "ibabsStatus": "verworpen",
+                    "zaakStatus": "Besluit: verworpen",
+                    "besluitdatum": "2026-09-01"
+                },
+                {
+                    "caseId": "c-3",
+                    "vergaderingId": "m-3",
+                    "ibabsStatus": "iets anders",
+                    "zaakStatus": "Besluit: onbekend",
+                    "besluitdatum": null
+                }
+            ]
+        }
+    },
+    "list-no-org": {
+        "trace": [],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Organisation ID not configured",
+                "filePath": null
+            }
+        }
+    },
+    "list-404": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/besluitenlijst",
+                "method": "GET",
+                "config": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Besluitenlijst not yet published",
+                "filePath": null
+            }
+        }
+    },
+    "list-500": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/besluitenlijst",
+                "method": "GET",
+                "config": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Failed to retrieve besluitenlijst (HTTP 500)",
+                "filePath": null
+            }
+        }
+    },
+    "list-empty": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/besluitenlijst",
+                "method": "GET",
+                "config": []
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Empty besluitenlijst response",
+                "filePath": null
+            }
+        }
+    },
+    "list-string": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/besluitenlijst",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "userFolder": "alice"
+            },
+            {
+                "newFolder": "/RIS-besluiten/2026/2026-10-01"
+            },
+            {
+                "newFile": "/RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf",
+                "content": "%PDF-1.7"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Besluitenlijst stored at /RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf",
+                "filePath": "/RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf"
+            }
+        }
+    },
+    "list-json": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/besluitenlijst",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "userFolder": "bob"
+            },
+            {
+                "newFile": "/RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf",
+                "content": "{\"besluiten\":[1,2]}"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Besluitenlijst stored at /RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf",
+                "filePath": "/RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf"
+            }
+        }
+    },
+    "list-existing-file": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/besluitenlijst",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "userFolder": "alice"
+            },
+            {
+                "get": "/RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf"
+            },
+            {
+                "putContent": "/RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf",
+                "content": "new"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Besluitenlijst stored at /RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf",
+                "filePath": "/RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf"
+            }
+        }
+    },
+    "list-existing-not-file": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/besluitenlijst",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "userFolder": "alice"
+            },
+            {
+                "get": "/RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": true,
+                "message": "Besluitenlijst stored at /RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf",
+                "filePath": "/RIS-besluiten/2026/2026-10-01/besluitenlijst.pdf"
+            }
+        }
+    },
+    "list-throws": {
+        "trace": [
+            {
+                "call": "/api/v1/organisations/org-1/vergaderingen/m-1/besluitenlijst",
+                "method": "GET",
+                "config": []
+            },
+            {
+                "log": "error",
+                "message": "iBabs: besluitenlijst retrieval failed",
+                "context": {
+                    "vergaderingId": "m-1",
+                    "exception": "network down"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "success": false,
+                "message": "Retrieval failed: network down",
+                "filePath": null
+            }
+        }
+    },
+    "map-status": {
+        "trace": [],
+        "outcome": {
+            "return": "Besluit: aangehouden"
+        }
+    }
+}

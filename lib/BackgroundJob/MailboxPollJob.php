@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\Mail\MailboxSourceHandler;
+use OCA\Integriq\Service\Mail\MailboxSourceHandlerInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -53,12 +53,12 @@ class MailboxPollJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory         $time    Time factory for job scheduling.
-	 * @param MailboxSourceHandler $handler Polls one or all mailbox sources.
+	 * @param MailboxSourceHandlerInterface $handler Polls one or all mailbox sources.
 	 * @param LoggerInterface      $logger  Logs the sweep outcome.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly MailboxSourceHandler $handler,
+		private readonly MailboxSourceHandlerInterface $handler,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

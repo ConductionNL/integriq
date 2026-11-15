@@ -27,16 +27,11 @@ namespace OCA\Integriq\Service\DigitalPost;
  *
  * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-a-send-is-a-typed-command-with-a-tracked-message-req-dpa-002
  */
-final class DigitalPostResult {
+final class DigitalPostResult implements DigitalPostResultInterface {
 	/**
 	 * Waiting to be sent.
 	 */
 	public const STATUS_QUEUED = 'queued';
-
-	/**
-	 * Handed to the provider.
-	 */
-	public const STATUS_SENT = 'sent';
 
 	/**
 	 * The provider says it arrived.

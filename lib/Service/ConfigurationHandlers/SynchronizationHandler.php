@@ -17,6 +17,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service\ConfigurationHandlers;
@@ -43,6 +46,14 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SynchronizationHandler implements ConfigurationHandlerInterface {
+
+	/**
+	 * The id lists of a synchronization and the mapping type their ids translate by.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ID_LIST_TYPES = ['actions' => 'rule', 'followUps' => 'synchronization', 'conditions' => 'rule'];
+
 	/**
 	 * Constructor.
 	 *
@@ -81,124 +92,53 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 
 		unset($syncArray['id'], $syncArray['uuid']);
 
-		// Ensure slug is set.
+		$syncArray = $this->withSlug(syncArray: $syncArray, entity: $entity);
+
+		// Redact secret-shaped values from the nested configuration array (secret-hygiene).
+		// Redact every field, not one block: the schema may hold secrets outside `configuration`.
+		$syncArray = $this->sensitiveFieldRegistry->redactConfiguration(data: $syncArray);
+
+		$lookup    = $this->directionOf(mappings: $mappings, direction: 'idToSlug');
+		$syncArray = $this->translateEndpoints(data: $syncArray, lookup: $lookup);
+
+		$syncArray = $this->exportMappingIds(syncArray: $syncArray, idToSlug: $lookup['mapping']);
+
+		return $this->exportIdLists(syncArray: $syncArray, lookup: $lookup);
+	}//end export()
+
+	/**
+	 * Ensure the slug is set: an object entity without one takes its uuid.
+	 *
+	 * @param array  $syncArray The serialised synchronization.
+	 * @param Entity $entity    The synchronization entity.
+	 *
+	 * @return array
+	 */
+	private function withSlug(array $syncArray, Entity $entity): array {
 		if (empty($syncArray['slug']) === true && $entity instanceof ObjectEntity) {
 			$syncArray['slug'] = $entity->getUuid();
 		}
 
-		// Redact secret-shaped values from the nested configuration array (secret-hygiene).
-		if (isset($syncArray['configuration']) === true && is_array($syncArray['configuration']) === true) {
-			$syncArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $syncArray['configuration']);
-		}
+		return $syncArray;
+	}//end withSlug()
 
-		// Handle sourceId based on sourceType.
-		if (isset($syncArray['sourceId']) === true && isset($syncArray['sourceType']) === true) {
-			switch ($syncArray['sourceType']) {
-				case 'api':
-				case 'database':
-					// For api/database sources, use source mapping.
-					if (isset($mappings['source']['idToSlug'][$syncArray['sourceId']]) === true) {
-						$syncArray['sourceId'] = $mappings['source']['idToSlug'][$syncArray['sourceId']];
-					}
-					break;
-
-				case 'register/schema':
-					// For register/schema sources, split the ID and map both parts.
-					if (str_contains($syncArray['sourceId'], '/') === true) {
-						[$registerId, $schemaId] = explode('/', $syncArray['sourceId']);
-
-						// Map register ID to slug (fallback to original ID if no mapping found).
-						$registerSlug = $mappings['register']['idToSlug'][$registerId] ?? $registerId;
-
-						// Map schema ID to slug (fallback to original ID if no mapping found).
-						$schemaSlug = $mappings['schema']['idToSlug'][$schemaId] ?? $schemaId;
-
-						// Combine the slugs.
-						$syncArray['sourceId'] = $registerSlug . '/' . $schemaSlug;
-					}
-					break;
-			}//end switch
-		}//end if
-
-		// Handle targetId based on targetType.
-		if (isset($syncArray['targetId']) === true && isset($syncArray['targetType']) === true) {
-			switch ($syncArray['targetType']) {
-				case 'api':
-				case 'database':
-					// For api/database targets, use source mapping.
-					if (isset($mappings['source']['idToSlug'][$syncArray['targetId']]) === true) {
-						$syncArray['targetId'] = $mappings['source']['idToSlug'][$syncArray['targetId']];
-					}
-					break;
-
-				case 'register/schema':
-					// For register/schema targets, split the ID and map both parts.
-					if (str_contains($syncArray['targetId'], '/') === true) {
-						[$registerId, $schemaId] = explode('/', $syncArray['targetId']);
-
-						// Map register ID to slug (fallback to original ID if no mapping found).
-						$registerSlug = $mappings['register']['idToSlug'][$registerId] ?? $registerId;
-
-						// Map schema ID to slug (fallback to original ID if no mapping found).
-						$schemaSlug = $mappings['schema']['idToSlug'][$schemaId] ?? $schemaId;
-
-						// Combine the slugs.
-						$syncArray['targetId'] = $registerSlug . '/' . $schemaSlug;
-					}
-					break;
-			}//end switch
-		}//end if
-
-		// Handle mapping IDs.
-		if (isset($syncArray['sourceTargetMapping']) === true
-			&& isset($mappings['mapping']['idToSlug'][(int)$syncArray['sourceTargetMapping']]) === true
-		) {
-			$syncArray['sourceTargetMapping'] = $mappings['mapping']['idToSlug'][(int)$syncArray['sourceTargetMapping']];
-		}
-
-		if (isset($syncArray['targetSourceMapping']) === true
-			&& isset($mappings['mapping']['idToSlug'][(int)$syncArray['targetSourceMapping']]) === true
-		) {
-			$syncArray['targetSourceMapping'] = $mappings['mapping']['idToSlug'][(int)$syncArray['targetSourceMapping']];
-		}
-
-		// Handle arrays of IDs that need to be converted to slugs.
-		$idArrays = ['actions', 'followUps', 'conditions'];
-		foreach ($idArrays as $arrayKey) {
+	/**
+	 * The rule and synchronization id lists exported as their slugs.
+	 *
+	 * @param array               $syncArray The synchronization configuration.
+	 * @param array<string,mixed> $lookup    The id-to-slug lookup, per type.
+	 *
+	 * @return array
+	 */
+	private function exportIdLists(array $syncArray, array $lookup): array {
+		foreach (self::ID_LIST_TYPES as $arrayKey => $type) {
 			if (isset($syncArray[$arrayKey]) === true && is_array($syncArray[$arrayKey]) === true) {
-				$syncArray[$arrayKey] = array_map(
-					function ($id) use ($mappings, $arrayKey) {
-						// Check for valid id, must be numeric or uuid.
-						if (is_scalar($id) === false
-							|| (is_numeric($id) === false && Uuid::isValid($id) === false)
-						) {
-							return $id;
-						}
-
-						// For actions, use rule mapping.
-						if ($arrayKey === 'actions' && isset($mappings['rule']['idToSlug'][$id]) === true) {
-							return $mappings['rule']['idToSlug'][$id];
-						}
-
-						// For followUps, use synchronization mapping.
-						if ($arrayKey === 'followUps' && isset($mappings['synchronization']['idToSlug'][$id]) === true) {
-							return $mappings['synchronization']['idToSlug'][$id];
-						}
-
-						// For conditions, use rule mapping.
-						if ($arrayKey === 'conditions' && isset($mappings['rule']['idToSlug'][$id]) === true) {
-							return $mappings['rule']['idToSlug'][$id];
-						}
-
-						return $id;
-					},
-					$syncArray[$arrayKey]
-				);
-			}//end if
-		}//end foreach
+				$syncArray[$arrayKey] = $this->exportIdList(ids: $syncArray[$arrayKey], idToSlug: $lookup[$type]);
+			}
+		}
 
 		return $syncArray;
-	}//end export()
+	}//end exportIdLists()
 
 	/**
 	 * Import a synchronization configuration into a synchronization entity.
@@ -212,127 +152,172 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	public function import(array $data, array $mappings): Entity {
-		// Convert source slugs back to IDs.
-		if (isset($data['sourceId']) === true && isset($data['sourceType']) === true) {
-			switch ($data['sourceType']) {
-				case 'api':
-				case 'database':
-					// For api/database sources, use source mapping.
-					if (isset($mappings['source']['slugToId'][$data['sourceId']]) === true) {
-						$data['sourceId'] = $mappings['source']['slugToId'][$data['sourceId']];
-					}
-					break;
+		$data = $this->sensitiveFieldRegistry->withoutRedactedValues(data: $data);
 
-				case 'register/schema':
-					// For register/schema sources, split the ID and map both parts.
-					if (str_contains($data['sourceId'], '/') === true) {
-						[$registerSlug, $schemaSlug] = explode('/', $data['sourceId']);
+		$lookup = $this->directionOf(mappings: $mappings, direction: 'slugToId');
+		$data   = $this->translateEndpoints(data: $data, lookup: $lookup);
 
-						// Map register slug to ID (fallback to original slug if no mapping found).
-						$registerId = $mappings['register']['slugToId'][$registerSlug] ?? $registerSlug;
+		$data = $this->importMappingSlugs(data: $data, slugToId: $lookup['mapping']);
 
-						// Map schema slug to ID (fallback to original slug if no mapping found).
-						$schemaId = $mappings['schema']['slugToId'][$schemaSlug] ?? $schemaSlug;
-
-						// Combine the IDs.
-						$data['sourceId'] = $registerId . '/' . $schemaId;
-					}
-					break;
-			}//end switch
-		}//end if
-
-		// Convert target slugs back to IDs.
-		if (isset($data['targetId']) === true && isset($data['targetType']) === true) {
-			switch ($data['targetType']) {
-				case 'api':
-				case 'database':
-					// For api/database targets, use source mapping.
-					if (isset($mappings['source']['slugToId'][$data['targetId']]) === true) {
-						$data['targetId'] = $mappings['source']['slugToId'][$data['targetId']];
-					}
-					break;
-
-				case 'register/schema':
-					// For register/schema targets, split the ID and map both parts.
-					if (str_contains($data['targetId'], '/') === true) {
-						[$registerSlug, $schemaSlug] = explode('/', $data['targetId']);
-
-						// Map register slug to ID (fallback to original slug if no mapping found).
-						$registerId = $mappings['register']['slugToId'][$registerSlug] ?? $registerSlug;
-
-						// Map schema slug to ID (fallback to original slug if no mapping found).
-						$schemaId = $mappings['schema']['slugToId'][$schemaSlug] ?? $schemaSlug;
-
-						// Combine the IDs.
-						$data['targetId'] = $registerId . '/' . $schemaId;
-					}
-					break;
-			}//end switch
-		}//end if
-
-		// Convert mapping slugs back to IDs.
-		if (isset($data['sourceTargetMapping']) === true
-			&& isset($mappings['mapping']['slugToId'][$data['sourceTargetMapping']]) === true
-		) {
-			$data['sourceTargetMapping'] = $mappings['mapping']['slugToId'][$data['sourceTargetMapping']];
-		}
-
-		if (isset($data['targetSourceMapping']) === true
-			&& isset($mappings['mapping']['slugToId'][$data['targetSourceMapping']]) === true
-		) {
-			$data['targetSourceMapping'] = $mappings['mapping']['slugToId'][$data['targetSourceMapping']];
-		}
-
-		// Convert arrays of slugs back to IDs (mirrors $idArrays in export()).
-		$idArrays = ['actions', 'followUps', 'conditions'];
-		foreach ($idArrays as $arrayKey) {
+		foreach (self::ID_LIST_TYPES as $arrayKey => $type) {
 			if (isset($data[$arrayKey]) === true && is_array($data[$arrayKey]) === true) {
-				$data[$arrayKey] = array_map(
-					function ($slug) use ($mappings, $arrayKey) {
-						// Skip non-scalar entries (nested arrays, objects) — can't be slugs.
-						if (is_scalar($slug) === false) {
-							return $slug;
-						}
-
-						// For actions, use rule mapping.
-						if ($arrayKey === 'actions' && isset($mappings['rule']['slugToId'][$slug]) === true) {
-							return $mappings['rule']['slugToId'][$slug];
-						}
-
-						// For followUps, use synchronization mapping.
-						if ($arrayKey === 'followUps'
-							&& isset($mappings['synchronization']['slugToId'][$slug]) === true
-						) {
-							return $mappings['synchronization']['slugToId'][$slug];
-						}
-
-						// For conditions, use rule mapping.
-						if ($arrayKey === 'conditions' && isset($mappings['rule']['slugToId'][$slug]) === true) {
-							return $mappings['rule']['slugToId'][$slug];
-						}
-
-						return $slug;
-					},
-					$data[$arrayKey]
-				);
-			}//end if
-		}//end foreach
+				$data[$arrayKey] = $this->importSlugList(slugs: $data[$arrayKey], slugToId: $lookup[$type]);
+			}
+		}
 
 		// Check if synchronization with this slug already exists.
 		$slug = $data['slug'] ?? null;
-		if ($slug !== null && isset($mappings['synchronization']['slugToId'][$slug]) === true) {
+		if ($slug !== null && isset($lookup['synchronization'][$slug]) === true) {
 			// Update existing synchronization.
 			return $this->orObjectService->saveObject(
 				object: $data,
 				register: 'integriq',
 				schema: 'synchronization',
-				uuid: $mappings['synchronization']['slugToId'][$slug]
+				uuid: $lookup['synchronization'][$slug]
 			);
 		}
 
 		// Create new synchronization.
 		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'synchronization');
 	}//end import()
+
+	/**
+	 * One direction of the global mappings, per type: `idToSlug` for export, `slugToId` for import.
+	 *
+	 * @param array<string,mixed> $mappings  The global mappings for ID/slug conversion.
+	 * @param string              $direction 'idToSlug' or 'slugToId'.
+	 *
+	 * @return array<string,mixed> The lookup per type; a type without mappings looks up nothing.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function directionOf(array $mappings, string $direction): array {
+		$lookup = [];
+		foreach (['source', 'register', 'schema', 'mapping', 'rule', 'synchronization'] as $type) {
+			$lookup[$type] = ($mappings[$type][$direction] ?? []);
+		}
+
+		return $lookup;
+	}//end directionOf()
+
+	/**
+	 * Translate the source and target references by their type.
+	 *
+	 * An api or database endpoint is a source; a register/schema endpoint is a
+	 * `register/schema` pair whose parts translate on their own, each falling
+	 * back to itself.
+	 *
+	 * @param array               $data   The synchronization configuration.
+	 * @param array<string,mixed> $lookup One direction of the mappings, per type.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function translateEndpoints(array $data, array $lookup): array {
+		$translator = EndpointReferenceTranslator::withLookup(lookup: $lookup);
+		foreach (['sourceId' => 'sourceType', 'targetId' => 'targetType'] as $idField => $typeField) {
+			if (isset($data[$idField]) === true && isset($data[$typeField]) === true) {
+				$data[$idField] = $translator->translate(type: $data[$typeField], reference: $data[$idField]);
+			}
+		}
+
+		return $data;
+	}//end translateEndpoints()
+
+	/**
+	 * The source-target and target-source mapping ids exported as their slugs, read as integers.
+	 *
+	 * @param array $syncArray The synchronization configuration.
+	 * @param mixed $idToSlug  The mapping id-to-slug lookup.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function exportMappingIds(array $syncArray, mixed $idToSlug): array {
+		foreach (['sourceTargetMapping', 'targetSourceMapping'] as $field) {
+			if (isset($syncArray[$field]) === true && isset($idToSlug[(int)$syncArray[$field]]) === true) {
+				$syncArray[$field] = $idToSlug[(int)$syncArray[$field]];
+			}
+		}
+
+		return $syncArray;
+	}//end exportMappingIds()
+
+	/**
+	 * The source-target and target-source mapping slugs imported as their ids.
+	 *
+	 * @param array $data     The synchronization configuration.
+	 * @param mixed $slugToId The mapping slug-to-id lookup.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function importMappingSlugs(array $data, mixed $slugToId): array {
+		foreach (['sourceTargetMapping', 'targetSourceMapping'] as $field) {
+			if (isset($data[$field]) === true && isset($slugToId[$data[$field]]) === true) {
+				$data[$field] = $slugToId[$data[$field]];
+			}
+		}
+
+		return $data;
+	}//end importMappingSlugs()
+
+	/**
+	 * Exported ids of a list: a numeric or UUID id becomes its slug when it has one.
+	 *
+	 * @param array $ids      The ids.
+	 * @param mixed $idToSlug The id-to-slug lookup of the list's type.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function exportIdList(array $ids, mixed $idToSlug): array {
+		return array_map(
+			function ($id) use ($idToSlug) {
+				// Check for valid id, must be numeric or uuid.
+				if (is_scalar($id) === false
+					|| (is_numeric($id) === false && Uuid::isValid($id) === false)
+				) {
+					return $id;
+				}
+
+				if (isset($idToSlug[$id]) === true) {
+					return $idToSlug[$id];
+				}
+
+				return $id;
+			},
+			$ids
+		);
+	}//end exportIdList()
+
+	/**
+	 * Imported ids of a list: a scalar slug becomes its id when it has one.
+	 *
+	 * @param array $slugs    The slugs.
+	 * @param mixed $slugToId The slug-to-id lookup of the list's type.
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function importSlugList(array $slugs, mixed $slugToId): array {
+		return array_map(
+			function ($slug) use ($slugToId) {
+				// Skip non-scalar entries (nested arrays, objects) — can't be slugs.
+				if (is_scalar($slug) === true && isset($slugToId[$slug]) === true) {
+					return $slugToId[$slug];
+				}
+
+				return $slug;
+			},
+			$slugs
+		);
+	}//end importSlugList()
 
 	/**
 	 * Get the entity type this handler is responsible for.

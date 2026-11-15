@@ -1,0 +1,155 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`form-dialog slot contract for the bespoke editor modals > ConsumerEditorModal > declares the recorded slot scope props 1`] = `
+{
+  "close": {
+    "default": null,
+    "type": "Function",
+  },
+  "confirm": {
+    "default": null,
+    "type": "Function",
+  },
+  "item": {
+    "default": null,
+    "type": "Object",
+  },
+  "schema": {
+    "default": null,
+    "type": "Object",
+  },
+  "show": {
+    "default": false,
+    "type": "Boolean",
+  },
+}
+`;
+
+exports[`form-dialog slot contract for the bespoke editor modals > MappingEditorModal > declares the recorded slot scope props 1`] = `
+{
+  "close": {
+    "default": null,
+    "type": "Function",
+  },
+  "confirm": {
+    "default": null,
+    "type": "Function",
+  },
+  "item": {
+    "default": null,
+    "type": "Object",
+  },
+  "schema": {
+    "default": null,
+    "type": "Object",
+  },
+  "show": {
+    "default": false,
+    "type": "Boolean",
+  },
+}
+`;
+
+exports[`form-dialog slot contract for the bespoke editor modals > RuleEditorModal > declares the recorded slot scope props 1`] = `
+{
+  "close": {
+    "default": null,
+    "type": "Function",
+  },
+  "confirm": {
+    "default": null,
+    "type": "Function",
+  },
+  "item": {
+    "default": null,
+    "type": "Object",
+  },
+  "schema": {
+    "default": null,
+    "type": "Object",
+  },
+  "show": {
+    "default": false,
+    "type": "Boolean",
+  },
+}
+`;
+
+exports[`form-dialog slot contract for the bespoke editor modals > SynchronizationEditorModal > declares the recorded slot scope props 1`] = `
+{
+  "close": {
+    "default": null,
+    "type": "Function",
+  },
+  "confirm": {
+    "default": null,
+    "type": "Function",
+  },
+  "item": {
+    "default": null,
+    "type": "Object",
+  },
+  "schema": {
+    "default": null,
+    "type": "Object",
+  },
+  "show": {
+    "default": false,
+    "type": "Boolean",
+  },
+}
+`;
+
+exports[`name, open and cancel behaviour of the mapping and synchronization editors > src/modals/v2/MappingEditorModal.vue answers as recorded 1`] = `
+{
+  "closes": [
+    "idle",
+  ],
+  "isCreate": [
+    true,
+    false,
+  ],
+  "nameError": [
+    "",
+    "[Name is required]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "",
+    "",
+    "",
+    "",
+  ],
+  "nameLabel": "[Name] *",
+  "seeded": 1,
+  "showImmediate": true,
+}
+`;
+
+exports[`name, open and cancel behaviour of the mapping and synchronization editors > src/modals/v2/SynchronizationEditorModal.vue answers as recorded 1`] = `
+{
+  "closes": [
+    "idle",
+  ],
+  "isCreate": [
+    true,
+    false,
+  ],
+  "nameError": [
+    "",
+    "[Name is required]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "",
+    "",
+    "",
+    "",
+  ],
+  "nameLabel": "[Name] *",
+  "seeded": 1,
+  "showImmediate": true,
+}
+`;

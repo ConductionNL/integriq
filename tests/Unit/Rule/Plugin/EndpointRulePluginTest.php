@@ -16,6 +16,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -124,13 +127,12 @@ class EndpointRulePluginTest extends TestCase {
 	private function ruleService(?EndpointRulePluginRegistry $registry): RuleService {
 		return new RuleService(
 			$this->createMock(ObjectService::class),
-			$this->catalogueService,
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(CallService::class),
 			ObjectServiceMockBuilder::make($this),
+			($registry ?? new EndpointRulePluginRegistry(plugins: [new ConnectRelationsPlugin(catalogueService: $this->catalogueService)])),
 			null,
-			$registry,
 		);
 	}//end ruleService()
 

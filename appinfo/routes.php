@@ -1,11 +1,17 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
 // Resource block intentionally omitted: chain-C deleted every
 // index/show/create/update/destroy from the per-schema controllers. CRUD now
 // lives at OR's `/api/objects/integriq/{schema}/*`. Re-adding a
 // `resources` entry here without restoring the controller methods produces
 // auto-routes that 500 on hit — `composer check:routes` enforces this.
-return [
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 	'routes' => [
 		// SPA shell entry (root) — UiController serves the Vue app for all section paths.
 		// The Dashboard data routes (/api/dashboard/{callstats,jobstats,syncstats}) were
@@ -20,6 +26,8 @@ return [
 		['name' => 'setup#saveConfig', 'url' => '/api/setup/config',           'verb' => 'POST'],
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+		// The OpenAPI document, public (spec api-contract).
+		['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
 
 		// DSO / Omgevingsloket STAM koppelvlak.
 		//
@@ -68,6 +76,7 @@ return [
 		// saved message and polling a mailbox both write `message` objects that
 		// other apps act on, so both sit behind the ADR-023 action matrix
 		// (`mail.import`, `mail.poll`), admin-only until an operator broadens it.
+		['name' => 'mailIntake#importOptions', 'url' => '/api/mail-intake/import/options', 'verb' => 'GET'],
 		['name' => 'mailIntake#import', 'url' => '/api/mail-intake/import', 'verb' => 'POST'],
 		['name' => 'mailIntake#poll', 'url' => '/api/mail-intake/sources/{id}/poll', 'verb' => 'POST'],
 
@@ -79,6 +88,10 @@ return [
 		// rule decides what opens a case and a reply leaves the building.
 		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
 		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
+		// CloudEvents from outside systems (openspec/changes/cloudevents-receiver).
+		// One receiver URL per source, public and gated by that source's webhook
+		// signature or credential over the raw bytes before the body is read.
+		['name' => 'cloudEventReceiver#receive', 'url' => '/api/cloudevents/sources/{source}', 'verb' => 'POST', 'requirements' => ['source' => '[A-Za-z0-9\\-]+']],
 		// Inbound call events from a phone system. #[PublicPage]: a PBX posts
 		// here with no Nextcloud session, authenticated by the source's own
 		// binding, and every refusal is the same undifferentiated 401.
@@ -87,6 +100,11 @@ return [
 		// provider picker is built from the registry rather than from a list
 		// written beside it and left to go stale.
 		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
+		// Test a draft rule against a sample and route held messages again
+		// (openspec/changes/messaging-intake-routing-rules D2, D3), behind `intake.rules`.
+		['name' => 'intakeChannels#testRule', 'url' => '/api/intake/routing-rules/test', 'verb' => 'POST'],
+		['name' => 'intakeChannels#routeAgainMany', 'url' => '/api/intake/messages/route', 'verb' => 'POST'],
+		['name' => 'intakeChannels#routeAgain', 'url' => '/api/intake/messages/{id}/route', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
@@ -130,8 +148,6 @@ return [
 		// Replaying and hand-firing share one action (`call-log.replay`),
 		// because they are the same act to the receiver. The verdict leg is
 		// public and signature-gated like every other inbound endpoint here.
-		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
-		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 		['name' => 'callLog#show', 'url' => '/api/calls/{id}', 'verb' => 'GET'],
 		['name' => 'callLog#preview', 'url' => '/api/calls/{id}/preview', 'verb' => 'GET'],
 		['name' => 'callLog#replay', 'url' => '/api/calls/{id}/replay', 'verb' => 'POST'],
@@ -139,6 +155,13 @@ return [
 		['name' => 'callLog#fire', 'url' => '/api/calls/fire', 'verb' => 'POST'],
 		['name' => 'verdict#inbound', 'url' => '/api/verdicts/inbound', 'verb' => 'POST'],
 		['name' => 'verdict#index', 'url' => '/api/verdicts', 'verb' => 'GET'],
+
+		// A source's 24-hour performance and certificate expiry. Administrators only.
+		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
+		// The registration targets an app may use, by slug, title and kind only (form-submission-registration-targets).
+		['name' => 'registrationTarget#index', 'url' => '/api/registration-targets', 'verb' => 'GET'],
+		// Where a record was synchronized from, answered after a read check under OpenRegister's rights.
+		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 
 		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
 		// disables the Nextcloud account and never deletes it, so DELETE on a
@@ -162,6 +185,9 @@ return [
 		// authoritative status from the provider.
 		['name' => 'payments#create', 'url' => '/api/payments', 'verb' => 'POST'],
 		['name' => 'payments#webhook', 'url' => '/api/payments/webhook', 'verb' => 'POST'],
+		// The point-of-sale terminals of a payment source (REQ-LPP-009), for an
+		// administrator registering a device; gated by the payments.create action.
+		['name' => 'payments#terminals', 'url' => '/api/payments/sources/{slug}/terminals', 'verb' => 'GET'],
 
 		// NotifyNL SMS channel connector (openspec/changes/notifynl-sms-channel).
 		// send/status are authenticated NC-session calls (production binding for
@@ -413,6 +439,9 @@ return [
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
 		['name' => 'runSummary#show', 'url' => '/api/sources/{id}/run-summary', 'verb' => 'GET'],
+		// connectors-endpoint-workspace-adapters: the sessions or devices the workspace
+		// manager behind a source reports, each with the Nextcloud user it maps to. Admin only.
+		['name' => 'endpointWorkspace#index', 'url' => '/api/sources/{id}/workspace-entries', 'verb' => 'GET'],
 		// sources#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
@@ -432,6 +461,7 @@ return [
 		['name' => 'datasource#resolve', 'url' => '/api/datasource/{sourceId}/resolve', 'verb' => 'POST'],
 
 		// Job endpoints
+		['name' => 'jobs#schedulePreview', 'url' => '/api/jobs/schedule-preview', 'verb' => 'POST'],
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#logs', 'url' => '/api/jobs/logs', 'verb' => 'GET'],
@@ -464,6 +494,9 @@ return [
 
 		// Mapping endpoints
 		['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
+		// Regression suites (automation-integration-regression-tests): run every
+		// test case of a mapping or synchronization and record one run.
+		['name' => 'regressionSuite#run', 'url' => '/api/regression-suites/{subjectType}/{subjectId}/run', 'verb' => 'POST'],
 		['name' => 'mappings#saveObject', 'url' => '/api/mappings/objects', 'verb' => 'POST'],
 		['name' => 'mappings#getObjects', 'url' => '/api/mappings/objects', 'verb' => 'GET'],
 
@@ -542,6 +575,8 @@ return [
 		['name' => 'executionTraces#index', 'url' => '/api/execution-traces', 'verb' => 'GET'],
 		['name' => 'executionTraces#show', 'url' => '/api/execution-traces/{id}', 'verb' => 'GET'],
 		['name' => 'executionTraces#replay', 'url' => '/api/execution-traces/{id}/replay', 'verb' => 'POST'],
+		// Save one step of a trace as a regression test case (automation-integration-regression-tests).
+		['name' => 'regressionSuite#record', 'url' => '/api/execution-traces/{id}/test-case', 'verb' => 'POST'],
 
 		// Logs sub-endpoints on SynchronizationsController
 		['name' => 'synchronizations#logsStatistics', 'url' => '/api/synchronizations/logs/statistics', 'verb' => 'GET'],
@@ -585,8 +620,14 @@ return [
 		// the HITL approvals routes above.
 		['name' => 'productSubscriptions#subscribe', 'url' => '/api/products/{productId}/subscriptions', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#analytics', 'url' => '/api/products/{productId}/analytics', 'verb' => 'GET'],
+		// forms-service-fetch-for-apps (REQ-SF-003): the service fetches an app may call, for a form designer.
+		['name' => 'serviceFetch#index', 'url' => '/api/service-fetches', 'verb' => 'GET'],
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
+		['name' => 'productChannels#pull', 'url' => '/api/products/{productSlug}/channels/{channel}/events', 'verb' => 'GET'],
+		['name' => 'productChannels#subscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions', 'verb' => 'POST'],
+		['name' => 'productChannels#unsubscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions/{id}', 'verb' => 'DELETE'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/integriq/catalog_item (ADR-022);
@@ -594,6 +635,12 @@ return [
 		// See openspec/changes/archive/2026-07-14-connector-catalog-ui/contract.md
 		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
 		['name' => 'catalog#instantiate', 'url' => '/api/catalog/items/{id}/instantiate', 'verb' => 'POST'],
+
+		// connectors-sharepoint-publication-intake REQ-SPPI-001: the Graph lookups behind
+		// the SharePoint to publication setup dialog (sites, libraries, folders).
+		['name' => 'sharePointSetup#lookup', 'url' => '/api/sharepoint/lookup', 'verb' => 'GET'],
+		// The setup's save: one source, mapping, rule and synchronization from the sharepoint-publications set.
+		['name' => 'sharePointSetup#intake', 'url' => '/api/sharepoint/publication-intake', 'verb' => 'POST'],
 
 		// registry-backed-field-source: openregister resolves a property that
 		// declares `x-openregister-property-source` through these routes, and the
@@ -639,6 +686,13 @@ return [
 		// generic /api/objects/integriq/app_connection (ADR-022).
 		['name' => 'connections#link', 'url' => '/api/connections/{id}/link', 'verb' => 'POST'],
 
+		// Data residency (connections-declare-data-residency): every outbound
+		// destination with where it sits, EU-only mode, and an administrator's
+		// residency on a source. Admin only, checked in each method.
+		['name' => 'egressDestination#index', 'url' => '/api/egress/destinations', 'verb' => 'GET'],
+		['name' => 'egressDestination#setEuOnly', 'url' => '/api/egress/eu-only', 'verb' => 'PUT'],
+		['name' => 'egressDestination#setSourceResidency', 'url' => '/api/sources/{id}/residency', 'verb' => 'PUT'],
+
 		// Configuration import/export UI endpoints (connector-catalog-ui) — a
 		// thin, routed wrapper over the existing, already-tested
 		// ConfigurationService::exportConfiguration()/importConfiguration().
@@ -671,11 +725,14 @@ return [
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
 
 		// Settings endpoints
-		// Settings routes shrunk in chain-C OR-cutover:
 		// - GET /api/settings/stats — replaced by manifest dashboard widgets resolving against OR's aggregate endpoint
-		// - GET /api/settings + PUT /api/settings — replaced by OR's /api/settings/* surface
-		// Only the connector-specific rebase action remains. Postgres portability tracked at #822.
-		// rebase is admin-only (AuthorizedAdminSetting).
+		// - GET /api/settings + PUT /api/settings — integriq's log retention (platform-admin-defaults).
+		//   OpenRegister's /api/settings/retention reads and writes OpenRegister's own retention,
+		//   not the `integriq` / `retention` key, so it cannot stand in for these.
+		// - POST /api/settings/rebase — queues RetentionRebaseJob over the log objects.
+		// All three are admin-only (AuthorizedAdminSetting).
+		['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
+		['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
 
 		// ADR-023 action-authorization matrix (admin-only via #[AuthorizedAdminSetting])
@@ -792,4 +849,4 @@ return [
 		// catch-all is the one that actually serves `/` at runtime.
 		['name' => 'ui#dashboard', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '(?!api(/|$)).*'], 'defaults' => ['path' => '']],
 	],
-];
+]);

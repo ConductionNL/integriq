@@ -28,7 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
-use OCA\Integriq\Exception\FlowNodeException;
 use OCP\IL10N;
 
 /**

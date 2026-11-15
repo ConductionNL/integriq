@@ -3,6 +3,9 @@
 /**
  * OCC command: integriq:contracts:dedupe.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Removes the duplicate `SynchronizationContract` rows left behind by the
  * identity defect fixed in #1306/#1307/#1309/#1311. Until that fix,
  * `synchronizeContract()` minted a FRESH uuid on every rerun — a contract
@@ -34,9 +37,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
@@ -46,7 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Command;
 
-use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -70,11 +70,11 @@ class DedupeContracts extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationContractService $contracts The contract lifecycle service.
+	 * @param SynchronizationContractServiceInterface $contracts The contract lifecycle service.
 	 * @param OrObjectService $objects The OpenRegister object service.
 	 */
 	public function __construct(
-		private readonly SynchronizationContractService $contracts,
+		private readonly SynchronizationContractServiceInterface $contracts,
 		private readonly OrObjectService $objects,
 	) {
 		parent::__construct();

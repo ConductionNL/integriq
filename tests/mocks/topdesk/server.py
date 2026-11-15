@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+# SPDX-License-Identifier: EUPL-1.2
+
 """A mock of the TOPdesk Asset Management API for integriq's live tests.
 
 Replays the shapes of TOPdesk's Assets API, specification 1.91.3

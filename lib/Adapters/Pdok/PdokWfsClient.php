@@ -6,7 +6,7 @@
  * Defines the polymorphic surface — `getCapabilities()`, `describeFeatureType()`,
  * `getFeature()`, `flavour()` — for the PDOK WFS dataset family.
  *
- * DI in {@see \OCA\Integriq\AppInfo\Application::register()} resolves this
+ * DI in {@see \OCA\Integriq\Adapters\AdaptersRegistrar} resolves this
  * abstract to a concrete flavour, gated on `pdok.feature_flag`.
  *
  * @category Adapter

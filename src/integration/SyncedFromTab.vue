@@ -133,14 +133,22 @@ export default {
 		 * What this leaf reports to a carding host or a "linked" card.
 		 *
 		 * @return {object} The report.
-		 * @spec openspec/changes/leaves-library-card/specs/leaves-library-card/spec.md#requirement-the-sync-leaf-reports-to-the-library-card-and-the-linked-card
+		 * @spec openspec/specs/leaves-library-card/spec.md#requirement-the-sync-leaf-reports-to-the-library-card-and-the-linked-card
 		 */
 		leafReport() {
 			return {
 				count: this.rows.length,
-				emptyLabel: t('integriq', 'This object was not created by a synchronization.'),
+				emptyLabel: t(
+					'integriq',
+					'This object was not created by a synchronization.',
+				),
+
 				noun: t('integriq', 'synchronizations'),
-				rows: this.rows.map((row) => ({ label: row.title || t('integriq', 'Synchronization'), href: row.url || '', icon: 'SyncOutline' })),
+				rows: this.rows.map((row) => ({
+					label: row.title || t('integriq', 'Synchronization'),
+					href: row.url || '',
+					icon: 'SyncOutline',
+				})),
 			}
 		},
 

@@ -19,13 +19,16 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\CatalogRegistryServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -65,7 +68,7 @@ class CatalogController extends Controller {
 	 * @param IAppConfig $appConfig App config, used to flip flag-gated items.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 *
 	 * @return void
 	 */
@@ -77,7 +80,7 @@ class CatalogController extends Controller {
 		private readonly IAppConfig $appConfig,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

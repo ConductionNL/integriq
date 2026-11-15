@@ -6,9 +6,9 @@
   Replay / Discard actions.
 
   Lives in its own file under src/modals/ per the modal-isolation hydra gate.
-  It is page-local (driven by the parent EventDeliveriesPage `open`/`message`
+  It is page-local (driven by the parent EventDeliveriesPage open and message
   props rather than the shared modalBus) because the detail is only ever
-  opened from the deliveries list and carries that row's resolved payload.
+  opened from the deliveries list and carries the resolved payload of that row.
 
   Shows: the CloudEvent payload (pretty-printed), the full attempt timeline
   (REQ-DLR-002), and the replay/discard audit stamps when present. The
@@ -143,16 +143,16 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcModal } from '@nextcloud/vue'
+import deadLetterDetail from '../../mixins/deadLetterDetail.js'
 
 export default {
 	name: 'EventDeliveryDetailModal',
 
 	components: { NcModal, NcButton },
+
+	mixins: [deadLetterDetail],
 
 	props: {
 		open: {
@@ -168,22 +168,15 @@ export default {
 
 	emits: ['close', 'changed'],
 
-	data() {
-		return {
-			confirming: null,
-			busy: false,
-		}
-	},
-
 	computed: {
 		/**
-		 * The attempt audit trail for the timeline (REQ-DLR-002).
+		 * The dead-letter row the shared detail behaviour reads.
 		 *
-		 * @return {Array}
+		 * @return {object|null}
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
-		attempts() {
-			return Array.isArray(this.message?.attempts) ? this.message.attempts : []
+		record() {
+			return this.message
 		},
 
 		/**
@@ -218,61 +211,33 @@ export default {
 		badgeClass() {
 			return `deliveryDetail__badge--${this.message?.status || 'unknown'}`
 		},
-
-		/**
-		 * Pretty-printed CloudEvent payload for the viewer.
-		 *
-		 * @return {string}
-		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
-		 */
-		prettyPayload() {
-			try {
-				return JSON.stringify(this.message?.payload ?? {}, null, 2)
-			} catch (e) {
-				return String(this.message?.payload ?? '')
-			}
-		},
 	},
 
 	methods: {
 		t,
 		/**
-		 * Commit the confirmed per-message verb (replay/discard).
+		 * The app-relative URL of a verb on one event delivery.
 		 *
+		 * @param {string|number} id the message uuid or id
+		 * @param {string} verb 'replay' or 'discard'
+		 * @return {string} the URL
 		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
 		 */
-		async commit() {
-			const verb = this.confirming
-			const id = this.message?.uuid || this.message?.id
-			if (!verb || !id) {
-				return
-			}
-			this.busy = true
-			try {
-				await axios.post(
-					generateUrl(
-						`/apps/integriq/api/events/dead-letter/${id}/${verb}`,
-					),
-				)
-				showSuccess(
-					verb === 'replay'
-						? t('integriq', 'Message replayed')
-						: t('integriq', 'Message discarded'),
-				)
-				this.$emit('changed')
-				this.$emit('close')
-			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				showError(
-					(verb === 'replay'
-						? t('integriq', 'Replay failed')
-						: t('integriq', 'Discard failed'))
-						+ (detail ? `: ${detail}` : ''),
-				)
-			} finally {
-				this.busy = false
-				this.confirming = null
-			}
+		verbPath(id, verb) {
+			return `/apps/integriq/api/events/dead-letter/${id}/${verb}`
+		},
+
+		/**
+		 * The toast after a verb went through.
+		 *
+		 * @param {string} verb 'replay' or 'discard'
+		 * @return {string} the translated text
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
+		doneText(verb) {
+			return verb === 'replay'
+				? t('integriq', 'Message replayed')
+				: t('integriq', 'Message discarded')
 		},
 	},
 }

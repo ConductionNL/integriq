@@ -119,4 +119,43 @@ class ExchangeErrorCodeCatalogueTest extends TestCase {
 		$this->assertSame('fax', $targets->label('fax'));
 
 	}//end testTheTargetCatalogue()
+
+	/**
+	 * When the stored catalogue cannot be read, the failure is logged and the shipped labels are used.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableStoreFallsBackToTheShippedCatalogue(): void {
+		$objects = $this->createMock(ORObjectService::class);
+		$objects->method('findAll')->willThrowException(new \RuntimeException('register offline'));
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->atLeastOnce())
+			->method('warning')
+			->with($this->stringStartsWith('[ExchangeErrorCodeCatalogue] could not read catalogue learniq-exchange-error-codes-bron-rod: register offline'));
+
+		$entry = (new ExchangeErrorCodeCatalogue($objects, $logger))->resolve('bron-rod', 'BRON-102');
+
+		$this->assertSame('Ontbrekende geboortedatum', $entry['label']);
+
+	}//end testAnUnreadableStoreFallsBackToTheShippedCatalogue()
+
+	/**
+	 * A target with no catalogue of its own still gets the runner's labels, and the code itself otherwise.
+	 *
+	 * @return void
+	 */
+	public function testATargetWithoutACatalogueUsesTheRunnersOrTheCode(): void {
+		$catalogue = $this->catalogue();
+
+		$this->assertSame(
+			'De eigenaar-app is niet geïnstalleerd of staat uit',
+			$catalogue->resolve('no-such-target', 'gate-app-absent')['label']
+		);
+		$this->assertSame(
+			['label' => 'X-1', 'labelEn' => 'X-1', 'category' => '', 'severity' => 'blocking'],
+			$catalogue->resolve('no-such-target', 'X-1')
+		);
+
+	}//end testATargetWithoutACatalogueUsesTheRunnersOrTheCode()
+
 }//end class

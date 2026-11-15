@@ -3,6 +3,9 @@
 /**
  * Integriq Source Call config guard.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The save-time rules that are specific to `openconnector.source-call`: which
  * HTTP method it may name, which statuses it may accept, what shape its
  * request parts may take, which output keys it may claim, and which `onError`
@@ -36,9 +39,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -50,7 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
-use OCA\Integriq\Service\ResponseDecoder;
+use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCP\IL10N;
 use UnexpectedValueException;
 
@@ -267,11 +267,11 @@ final class SourceCallConfigGuard {
 		}
 
 		$mode = strtolower(trim((string)$config['decode']));
-		if (in_array($mode, ResponseDecoder::MODES, true) === false) {
+		if (in_array($mode, ResponseDecoderInterface::MODES, true) === false) {
 			throw new UnexpectedValueException(
 				$l10n->t(
 					'The "decode" field must be one of %1$s.',
-					[implode(', ', ResponseDecoder::MODES)]
+					[implode(', ', ResponseDecoderInterface::MODES)]
 				)
 			);
 		}

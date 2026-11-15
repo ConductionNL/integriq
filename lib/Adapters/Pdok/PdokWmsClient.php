@@ -8,7 +8,7 @@
  * pre-recorded GetCapabilities document + a deterministic 1x1 PNG; the HTTP
  * flavour issues real outbound requests to `service.pdok.nl/...`.
  *
- * DI in {@see \OCA\Integriq\AppInfo\Application::register()} resolves this
+ * DI in {@see \OCA\Integriq\Adapters\AdaptersRegistrar} resolves this
  * abstract to the appropriate concrete flavour, gated on `pdok.feature_flag`.
  *
  * @category Adapter

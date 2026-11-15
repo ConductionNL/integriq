@@ -1,0 +1,94 @@
+[
+    {
+        "target": [
+            "roster-xedule",
+            2,
+            "job-42"
+        ]
+    },
+    {
+        "log": [
+            "info",
+            "roster-delivery.delivered",
+            {
+                "source": "roster-xedule",
+                "correlation": "job-42",
+                "fetched": 2,
+                "created": 1,
+                "updated": 1,
+                "unchanged": null,
+                "rejected": 1
+            }
+        ]
+    },
+    {
+        "result": {
+            "contractVersion": 1,
+            "status": "delivered",
+            "systemId": "roster-xedule",
+            "target": "planninq",
+            "flavour": "mock",
+            "active": false,
+            "fetched": 2,
+            "planninq": {
+                "created": 1,
+                "updated": 1,
+                "rejected": [
+                    {
+                        "id": "x"
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "target": [
+            "roster-xedule",
+            2,
+            "job-42"
+        ]
+    },
+    {
+        "log": [
+            "info",
+            "roster-delivery.delivered",
+            {
+                "source": "roster-xedule",
+                "correlation": "job-42",
+                "fetched": 2,
+                "created": null,
+                "updated": null,
+                "unchanged": null,
+                "rejected": 0
+            }
+        ]
+    },
+    {
+        "result": {
+            "contractVersion": 1,
+            "status": "delivered",
+            "systemId": "roster-xedule",
+            "target": "planninq",
+            "flavour": "mock",
+            "active": false,
+            "fetched": 2,
+            "planninq": {
+                "status": "odd"
+            }
+        }
+    },
+    {
+        "refused": [
+            "unknown-source",
+            "'no-such-source' is not a rostering source.",
+            null
+        ]
+    },
+    {
+        "refused": [
+            "fetch-failed",
+            "The rostering system could not be read: timeout",
+            "RuntimeException"
+        ]
+    }
+]

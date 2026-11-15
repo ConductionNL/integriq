@@ -59,6 +59,18 @@ class TrustLevelMapper {
 	public const TRUST_HIGH = 'high';
 
 	/**
+	 * The lowest trust level a login may have (decision 94, D4).
+	 *
+	 * A constant, not a setting: a tenant that wants DigiD Basis or Midden
+	 * needs a new decision, not a checkbox.
+	 *
+	 * @var string
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public const FLOOR = self::TRUST_SUBSTANTIAL;
+
+	/**
 	 * The DigiD provider id.
 	 *
 	 * @var string
@@ -144,8 +156,7 @@ class TrustLevelMapper {
 			);
 		}
 
-		$levelKey = strtolower(trim($level));
-		$levelKey = strtolower(trim((string)($aliases[$level] ?? $aliases[$levelKey] ?? $levelKey)));
+		$levelKey = $this->canonicalLevel(level: $level, aliases: $aliases);
 
 		$trust = (self::TABLE[$providerKey][$levelKey] ?? null);
 		if ($trust === null) {
@@ -161,6 +172,113 @@ class TrustLevelMapper {
 		return $trust;
 
 	}//end map()
+
+	/**
+	 * The names a person recognises for the levels below the floor and for
+	 * the floor itself, keyed by provider and canonical level.
+	 *
+	 * These are the schemes' own names, the same in every language.
+	 *
+	 * @var array<string,array<string,string>>
+	 */
+	private const LABELS = [
+		self::PROVIDER_DIGID => [
+			'basis' => 'DigiD Basis',
+			'midden' => 'DigiD Midden',
+			'substantieel' => 'DigiD Substantieel',
+			'hoog' => 'DigiD Hoog',
+		],
+		self::PROVIDER_EHERKENNING => [
+			'eh2' => 'EH2',
+			'eh2+' => 'EH2+',
+			'eh3' => 'EH3',
+			'eh4' => 'EH4',
+			'urn:etoegang:core:assurance-class:loa2' => 'EH2',
+			'urn:etoegang:core:assurance-class:loa2plus' => 'EH2+',
+			'urn:etoegang:core:assurance-class:loa3' => 'EH3',
+			'urn:etoegang:core:assurance-class:loa4' => 'EH4',
+		],
+		self::PROVIDER_EIDAS => [
+			'low' => 'eIDAS low',
+			'substantial' => 'eIDAS substantial',
+			'high' => 'eIDAS high',
+			'http://eidas.europa.eu/loa/low' => 'eIDAS low',
+			'http://eidas.europa.eu/loa/substantial' => 'eIDAS substantial',
+			'http://eidas.europa.eu/loa/high' => 'eIDAS high',
+		],
+	];
+
+	/**
+	 * The level the floor stands for, per provider, by its canonical name.
+	 *
+	 * @var array<string,string>
+	 */
+	private const FLOOR_LEVELS = [
+		self::PROVIDER_DIGID => 'substantieel',
+		self::PROVIDER_EHERKENNING => 'eh3',
+		self::PROVIDER_EIDAS => 'substantial',
+	];
+
+	/**
+	 * The canonical name of an assurance level: lowercased, trimmed, and
+	 * with the tenant's alias applied.
+	 *
+	 * @param string               $level   The assurance level the assertion carried.
+	 * @param array<string,string> $aliases Tenant-configured aliases, `<raw level> => <canonical level>`.
+	 *
+	 * @return string The canonical level name.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public function canonicalLevel(string $level, array $aliases = []): string {
+		$levelKey = strtolower(trim($level));
+		return strtolower(trim((string)($aliases[$level] ?? $aliases[$levelKey] ?? $levelKey)));
+
+	}//end canonicalLevel()
+
+	/**
+	 * Whether a trust level is at or above the floor.
+	 *
+	 * @param string $trust The mapped trust level.
+	 *
+	 * @return boolean True when the level may log in at all.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public function meetsFloor(string $trust): bool {
+		return $this->satisfies(have: $trust, need: self::FLOOR);
+
+	}//end meetsFloor()
+
+	/**
+	 * The name a person recognises for one provider's level.
+	 *
+	 * @param string $provider The provider id.
+	 * @param string $level    The canonical level name.
+	 *
+	 * @return string The scheme's own name, or the level as given when unknown.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public function levelLabel(string $provider, string $level): string {
+		return (self::LABELS[strtolower(trim($provider))][strtolower(trim($level))] ?? $level);
+
+	}//end levelLabel()
+
+	/**
+	 * The name a person recognises for the floor of one provider.
+	 *
+	 * @param string $provider The provider id.
+	 *
+	 * @return string The floor's name in that scheme, e.g. `DigiD Substantieel` or `EH3`.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public function floorLabel(string $provider): string {
+		$providerKey = strtolower(trim($provider));
+		return $this->levelLabel(provider: $providerKey, level: (self::FLOOR_LEVELS[$providerKey] ?? self::FLOOR));
+
+	}//end floorLabel()
 
 	/**
 	 * Whether one trust level is at least another.

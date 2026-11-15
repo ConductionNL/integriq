@@ -22,9 +22,8 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Service\Ownership\DisappearancePolicy;
-use OCA\Integriq\Service\Ownership\OwnershipState;
-use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
-use OCA\Integriq\Service\Ownership\RecordOwnershipService;
+use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
+use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -48,16 +47,16 @@ class OwnershipController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request The request.
-	 * @param RecordOwnershipService $ownership The ownership read.
-	 * @param LocalDeleteGuard $deleteGuard The delete guard.
+	 * @param RecordOwnershipServiceInterface $ownership The ownership read.
+	 * @param LocalDeleteGuardInterface $deleteGuard The delete guard.
 	 * @param OrObjectService $objectService OpenRegister's object-service facade.
 	 * @param IUserSession $userSession The current session.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RecordOwnershipService $ownership,
-		private readonly LocalDeleteGuard $deleteGuard,
+		private readonly RecordOwnershipServiceInterface $ownership,
+		private readonly LocalDeleteGuardInterface $deleteGuard,
 		private readonly OrObjectService $objectService,
 		private readonly IUserSession $userSession,
 	) {
@@ -98,7 +97,7 @@ class OwnershipController extends Controller {
 	#[NoCSRFRequired]
 	public function show(string $id, string $register = 'integriq', string $schema = ''): JSONResponse {
 		if ($this->readObject(id: $id, register: $register, schema: $schema) === []) {
-			return new JSONResponse(OwnershipState::local()->toArray());
+			return new JSONResponse($this->ownership->localState()->toArray());
 		}
 
 		return new JSONResponse($this->ownership->forObject($id)->toArray());
@@ -154,7 +153,7 @@ class OwnershipController extends Controller {
 				// Written onto the object before it goes, so the statement
 				// survives in the audit trail rather than only in a log line.
 				$this->objectService->saveObject(
-					object: ([LocalDeleteGuard::OVERRIDE_KEY => $override] + $this->readObject(id: $id, register: $register, schema: $schema)),
+					object: ([LocalDeleteGuardInterface::OVERRIDE_KEY => $override] + $this->readObject(id: $id, register: $register, schema: $schema)),
 					register: $register,
 					schema: $schema,
 					uuid: $id

@@ -176,4 +176,59 @@ class GroupMappingResolverTest extends TestCase {
 		$this->assertSame(['behandelaars'], $this->resolver->ensureTargets(configuration: $configuration, dryRun: true));
 
 	}//end testPreviewCreatesNoGroup()
+
+	/**
+	 * Rules that are not a list, or entries that are not rules, are ignored;
+	 * an empty target group is never managed.
+	 *
+	 * @return void
+	 */
+	public function testMalformedRulesAreIgnored(): void {
+		$entry = new DirectoryEntry(userId: 'anja', directoryGroups: ['OU=Vergunningen']);
+
+		$this->assertSame([], $this->resolver->managedGroups(configuration: ['mapping' => ['rules' => 'OU=Vergunningen']]));
+		$this->assertSame([], $this->resolver->resolve(entry: $entry, configuration: ['mapping' => ['rules' => 'OU=Vergunningen']]));
+
+		$configuration = [
+			'mapping' => [
+				'rules' => [
+					'not-a-rule',
+					['directoryGroup' => 'OU=Vergunningen', 'group' => ''],
+					['directoryGroup' => 'OU=Vergunningen', 'group' => 'vergunningen'],
+				],
+			],
+		];
+		$this->assertSame(['vergunningen'], $this->resolver->managedGroups(configuration: $configuration));
+		$this->assertSame(['vergunningen'], $this->resolver->resolve(entry: $entry, configuration: $configuration));
+
+	}//end testMalformedRulesAreIgnored()
+
+	/**
+	 * A rule naming neither a directory group nor an attribute matches nobody.
+	 *
+	 * @return void
+	 */
+	public function testARuleWithoutACriterionMatchesNobody(): void {
+		$entry = new DirectoryEntry(userId: 'anja', directoryGroups: ['OU=Vergunningen'], attributes: ['department' => 'Toezicht']);
+
+		$this->assertSame([], $this->resolver->resolve(entry: $entry, configuration: ['mapping' => ['rules' => [['group' => 'iedereen'], ['attribute' => '', 'group' => 'leeg']]]]));
+
+	}//end testARuleWithoutACriterionMatchesNobody()
+
+	/**
+	 * An attribute rule without a value matches any non-empty value; a value
+	 * is compared as text and never matches a non-scalar.
+	 *
+	 * @return void
+	 */
+	public function testAttributeRuleWithoutAValueMatchesPresence(): void {
+		$configuration = ['mapping' => ['rules' => [['attribute' => 'employeeNumber', 'group' => 'medewerkers'], ['attribute' => 'grade', 'equals' => 7, 'group' => 'schaal7']]]];
+
+		$this->assertSame(['medewerkers'], $this->resolver->resolve(entry: new DirectoryEntry(userId: 'a', attributes: ['employeeNumber' => '0042']), configuration: $configuration));
+		$this->assertSame([], $this->resolver->resolve(entry: new DirectoryEntry(userId: 'b', attributes: ['employeeNumber' => '']), configuration: $configuration));
+		$this->assertSame([], $this->resolver->resolve(entry: new DirectoryEntry(userId: 'c'), configuration: $configuration));
+		$this->assertSame(['schaal7'], $this->resolver->resolve(entry: new DirectoryEntry(userId: 'd', attributes: ['grade' => '7']), configuration: $configuration));
+		$this->assertSame([], $this->resolver->resolve(entry: new DirectoryEntry(userId: 'e', attributes: ['grade' => ['7']]), configuration: $configuration));
+
+	}//end testAttributeRuleWithoutAValueMatchesPresence()
 }//end class

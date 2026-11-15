@@ -38,7 +38,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Adapters\Slo;
 
 use JsonException;
-use OCA\Integriq\Exception\SloCurriculumException;
 
 /**
  * Reads JSONTag (and plain JSON, which is valid JSONTag) into linked arrays.

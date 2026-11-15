@@ -24,6 +24,7 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IRequest;
+use TypeError;
 
 /**
  * Carries the inputs of one EndpointService::processRules() run, so each rule
@@ -102,4 +103,38 @@ class EndpointRuleDispatch {
 	 * @var ObjectEntity
 	 */
 	public ObjectEntity $rule;
+
+	/**
+	 * The object id, for a rule that only runs on a single object.
+	 *
+	 * @return string
+	 *
+	 * @throws TypeError When the run has no object id.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	public function requiredObjectId(): string {
+		if ($this->objectId === null) {
+			throw new TypeError('This rule type needs an object id');
+		}
+
+		return $this->objectId;
+	}//end requiredObjectId()
+
+	/**
+	 * The flow token, for a rule that reads or hands on the request state.
+	 *
+	 * @return FlowToken
+	 *
+	 * @throws TypeError When the run has no flow token.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	public function requiredFlowToken(): FlowToken {
+		if ($this->flowToken === null) {
+			throw new TypeError('This rule type needs a flow token');
+		}
+
+		return $this->flowToken;
+	}//end requiredFlowToken()
 }//end class

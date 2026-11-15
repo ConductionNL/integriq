@@ -153,6 +153,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import ApprovalChangeSet from '../../components/Approvals/ApprovalChangeSet.vue'
+import { failureSuffix, supersededBy } from './approvalErrors.js'
 
 let uidCounter = 0
 
@@ -221,6 +222,23 @@ export default {
 		},
 
 		/**
+		 * Say that the source changed after the preview, and open the request
+		 * that carries the new change set.
+		 *
+		 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-accepting-writes-the-previewed-change-set-or-asks-again-req-inav-004
+		 * @param {string} id The replacing approval_request id.
+		 */
+		openReplacement(id) {
+			showWarning(
+				t(
+					'integriq',
+					'The source changed after this preview. Nothing was written. A new request shows the new changes.',
+				),
+			)
+			this.openRequest(id)
+		},
+
+		/**
 		 * Fetch this request's detail from the two-layer-authorized endpoint.
 		 *
 		 * @spec openspec/specs/approval-workflow/spec.md
@@ -258,21 +276,12 @@ export default {
 			} catch (err) {
 				// The source changed after the preview (REQ-INAV-004): nothing
 				// was written and a new request carries the new change set.
-				const replacedBy = err?.response?.data?._approval?.supersededBy
-				if (err?.response?.status === 409 && replacedBy) {
-					showWarning(
-						t(
-							'integriq',
-							'The source changed after this preview. Nothing was written. A new request shows the new changes.',
-						),
-					)
-					this.openRequest(replacedBy)
+				const replacedBy = supersededBy(err)
+				if (replacedBy) {
+					this.openReplacement(replacedBy)
 					return
 				}
-				const detail = err?.response?.data?.error || err?.message || ''
-				showError(
-					t('integriq', 'Approve failed') + (detail ? `: ${detail}` : ''),
-				)
+				showError(t('integriq', 'Approve failed') + failureSuffix(err))
 			} finally {
 				this.busy = false
 			}
@@ -298,10 +307,7 @@ export default {
 				showSuccess(t('integriq', 'Rejected'))
 				await this.load()
 			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				showError(
-					t('integriq', 'Reject failed') + (detail ? `: ${detail}` : ''),
-				)
+				showError(t('integriq', 'Reject failed') + failureSuffix(err))
 			} finally {
 				this.busy = false
 			}

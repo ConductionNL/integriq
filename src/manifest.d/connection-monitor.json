@@ -11,6 +11,7 @@
         "description": "Calls to this connection over the last 24 hours, administrators only",
         "allowEdit": false,
         "showActionsMenu": false,
+        "showRefresh": false,
         "showWidgetActions": false,
         "headerActions": [
           { "id": "refresh", "label": "Refresh", "icon": "Refresh", "type": "refresh" }

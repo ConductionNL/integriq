@@ -38,7 +38,7 @@ use Throwable;
  *
  * @spec openspec/specs/mail-intake/spec.md#requirement-unassigned-attachments-go-to-the-document-intake-inbox-req-mail-004
  */
-class IntakeDocumentDispatcher {
+class IntakeDocumentDispatcher implements IntakeDocumentDispatcherInterface {
 
 	/**
 	 * The filinq event class this dispatcher looks for.
