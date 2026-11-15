@@ -1,0 +1,193 @@
+{
+	"_comment": "ADR-037 register fragment (portal-idp-broker-config Task 2, design D2/D4). One idpRegistration per organisation and provider: which protocol the broker or identity provider speaks, where its metadata or issuer lives, our EntityID or client id, how its attributes and assurance spellings map, the pseudonymisation mode, and the OpenRegister credential ids of its secrets. No secret value is stored here: credentials holds credential ids only, read through IdpSecretSeam at the moment of use. Admin-only on every verb. Uniqueness of organisation + provider is enforced by IdpRegistrationService::save().",
+	"components": {
+		"registers": {
+			"integriq": {
+				"schemas": [
+					"idpRegistration"
+				]
+			}
+		},
+		"schemas": {
+			"idpRegistration": {
+				"slug": "idpRegistration",
+				"title": "Identity provider registration",
+				"icon": "ShieldAccountOutline",
+				"version": "1.0.0",
+				"summary": "How one organisation logs residents and businesses in through one identity provider",
+				"description": "The configuration of one organisation's login through DigiD, eHerkenning or eIDAS, over a SAML or OIDC broker or identity provider. Holds credential references, never a secret.",
+				"type": "object",
+				"required": [
+					"organisation",
+					"provider",
+					"kind"
+				],
+				"authorization": {
+					"create": [
+						"admin"
+					],
+					"read": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"properties": {
+					"organisation": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Organisation",
+						"description": "The OpenRegister organisation the logins are for. Unique together with the provider."
+					},
+					"provider": {
+						"type": "string",
+						"enum": [
+							"digid",
+							"eherkenning",
+							"eidas"
+						],
+						"title": "Provider",
+						"description": "The identity scheme: DigiD, eHerkenning or eIDAS."
+					},
+					"kind": {
+						"type": "string",
+						"enum": [
+							"saml-sp",
+							"oidc-rp"
+						],
+						"title": "Protocol",
+						"description": "How the broker or identity provider is spoken to: as a SAML Service Provider or as an OIDC Relying Party."
+					},
+					"enabled": {
+						"type": "boolean",
+						"default": false,
+						"title": "Enabled",
+						"description": "Whether logins through this registration may start. Off until an administrator switches it on."
+					},
+					"label": {
+						"type": "string",
+						"title": "Label",
+						"description": "The name shown on the settings screen."
+					},
+					"idpMetadataUrl": {
+						"type": "string",
+						"format": "uri",
+						"title": "Identity provider metadata URL",
+						"description": "SAML only: the metadata of the identity provider or broker."
+					},
+					"issuer": {
+						"type": "string",
+						"format": "uri",
+						"title": "Issuer",
+						"description": "OIDC only: discovery is read from {issuer}/.well-known/openid-configuration."
+					},
+					"spEntityId": {
+						"type": "string",
+						"title": "Our EntityID",
+						"description": "SAML only. Empty means our metadata URL for this organisation and provider; editable because some schemes assign an EntityID."
+					},
+					"clientId": {
+						"type": "string",
+						"title": "Client id",
+						"description": "OIDC only: the client id the broker registered for us."
+					},
+					"clientAuth": {
+						"type": "string",
+						"enum": [
+							"private_key_jwt",
+							"client_secret_basic"
+						],
+						"title": "Client authentication",
+						"description": "OIDC only: how we authenticate to the token endpoint."
+					},
+					"subjectMapping": {
+						"type": "object",
+						"title": "Subject mapping",
+						"description": "The attribute (SAML) or claim (OIDC) name per subject field.",
+						"properties": {
+							"bsn": {
+								"type": "string",
+								"title": "BSN"
+							},
+							"pseudonym": {
+								"type": "string",
+								"title": "Pseudonym"
+							},
+							"kvk": {
+								"type": "string",
+								"title": "KvK number"
+							},
+							"rsin": {
+								"type": "string",
+								"title": "RSIN"
+							},
+							"branch": {
+								"type": "string",
+								"title": "Branch number"
+							},
+							"eidasPersonIdentifier": {
+								"type": "string",
+								"title": "eIDAS person identifier"
+							}
+						}
+					},
+					"assuranceMapping": {
+						"type": "object",
+						"title": "Assurance mapping",
+						"description": "The spelling the identity provider sends for a level, mapped to a provider level the trust table knows (substantieel, hoog, eh3, eh4, substantial, high, and the refused lower ones).",
+						"additionalProperties": {
+							"type": "string"
+						}
+					},
+					"pseudonymisation": {
+						"type": "string",
+						"enum": [
+							"polymorphic",
+							"hmac"
+						],
+						"default": "hmac",
+						"title": "Pseudonymisation",
+						"description": "polymorphic: the broker delivers an encrypted polymorphic pseudonym and the BSN never reaches integriq; hmac: the BSN is turned into a salted HMAC in memory and discarded."
+					},
+					"credentials": {
+						"type": "object",
+						"title": "Credentials",
+						"description": "OpenRegister credential ids, never secret values; the bytes live in Keepiq.",
+						"properties": {
+							"signing": {
+								"type": "string",
+								"title": "Signing credential",
+								"description": "Our private key and certificate: signs the AuthnRequest or the private_key_jwt client assertion."
+							},
+							"decryption": {
+								"type": "string",
+								"title": "Decryption credential",
+								"description": "Decrypts an encrypted SAML assertion."
+							},
+							"clientSecret": {
+								"type": "string",
+								"title": "Client secret credential",
+								"description": "The OIDC client secret, for client_secret_basic."
+							},
+							"pseudonymKeys": {
+								"type": "string",
+								"title": "Pseudonym keys credential",
+								"description": "Decrypts a polymorphic pseudonym to our per-service pseudonym."
+							},
+							"salt": {
+								"type": "string",
+								"title": "Salt credential",
+								"description": "The per-organisation HMAC salt."
+							}
+						},
+						"additionalProperties": false
+					}
+				}
+			}
+		}
+	}
+}
