@@ -345,6 +345,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: background retry of failed StUF messages, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -423,6 +424,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: resolves the active StUF source for a background sync, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -574,6 +576,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: matches an inbound StUF message from a remote system, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -634,6 +637,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 			schema: self::SCHEMA_MESSAGE,
 			uuid: $uuid,
 			_rbac: false,
+			// Unscoped: system write of a StUF message log row, no user session.
 			_multitenancy: false
 		);
 
@@ -675,6 +679,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 			schema: self::SCHEMA_MESSAGE,
 			uuid: $message->getUuid(),
 			_rbac: false,
+			// Unscoped: background retry of one failed StUF message, no user session.
 			_multitenancy: false
 		);
 

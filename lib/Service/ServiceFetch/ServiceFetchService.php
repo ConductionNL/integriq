@@ -277,6 +277,7 @@ class ServiceFetchService {
 		}
 
 		try {
+			// Unscoped: system write marking the call log of a service fetch.
 			$stored = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: 'call_log', _rbac: false, _multitenancy: false);
 			$row = $stored->getObject();
 			$row['context'] = ['app' => (string)$request['app'], 'fetch' => (string)($fetch['slug'] ?? '')];
@@ -288,6 +289,7 @@ class ServiceFetchService {
 				schema: 'call_log',
 				uuid: $uuid,
 				_rbac: false,
+				// Unscoped: system write marking the call log of a service fetch.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {

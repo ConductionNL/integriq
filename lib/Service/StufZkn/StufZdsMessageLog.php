@@ -113,6 +113,7 @@ class StufZdsMessageLog {
 					register: self::REGISTER,
 					schema: self::SCHEMA_SOURCE,
 					_rbac: false,
+					// Unscoped: the source of a StUF exchange, read by the outbound client and the inbound receivers without a user session.
 					_multitenancy: false,
 					_render: false
 				);
@@ -333,6 +334,7 @@ class StufZdsMessageLog {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: matches a confirmation from a remote StUF system to its outbound message, no user session.
 			_multitenancy: false
 		);
 	}//end outboundMatches()
@@ -353,6 +355,7 @@ class StufZdsMessageLog {
 				register: self::REGISTER,
 				schema: self::SCHEMA_MESSAGE,
 				_rbac: false,
+				// Unscoped: a StUF message read for the receivers and the outbound client, no user session.
 				_multitenancy: false,
 				_render: false
 			);
@@ -389,6 +392,7 @@ class StufZdsMessageLog {
 			schema: self::SCHEMA_MESSAGE,
 			uuid: $uuid,
 			_rbac: false,
+			// Unscoped: system write of a StUF message log row, no user session.
 			_multitenancy: false
 		);
 		$row['id'] = (string)($saved->getUuid() ?? $uuid ?? '');
