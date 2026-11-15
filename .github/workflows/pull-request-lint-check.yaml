@@ -7,6 +7,9 @@ on:
       - main
       - beta
 
+permissions:
+  contents: read
+
 jobs:
   lint-check:
     runs-on: ubuntu-latest
@@ -23,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
 
       # This job had NO setup-node at all, so it inherited the runner default —
       # currently Node 22, which bundles npm 10. npm 10 cannot install from the
@@ -32,7 +35,7 @@ jobs:
       #
       # Nothing in this file named a Node version, so nothing looked wrong.
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '24'
 

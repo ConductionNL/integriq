@@ -1,0 +1,857 @@
+{
+    "fo-kerndoelen": {
+        "stats": {
+            "nodes": 19,
+            "leaves": 10,
+            "skippedDeprecated": 0,
+            "skippedUnreleased": 0,
+            "skippedDuplicates": 0,
+            "filteredByNiveau": 0,
+            "prunedBranches": 0,
+            "expansions": 0,
+            "malformed": 0
+        },
+        "nodes": [
+            {
+                "sloUuid": "4f91718e-a8ae-4f1a-96dc-a265ebbfa450",
+                "sloType": "FoDomein",
+                "parentSloUuid": null,
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "07e7b68a-56ba-4c53-bdf3-5aba7922c85a",
+                "sloType": "FoKernzin",
+                "parentSloUuid": "4f91718e-a8ae-4f1a-96dc-a265ebbfa450",
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "e0fd4624-f41d-4729-8331-454589418bba",
+                "sloType": "FoDoelzin",
+                "parentSloUuid": "07e7b68a-56ba-4c53-bdf3-5aba7922c85a",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "802f08ce-8287-48dc-895e-41ba8c8c1f4b",
+                "sloType": "FoKernzin",
+                "parentSloUuid": "4f91718e-a8ae-4f1a-96dc-a265ebbfa450",
+                "order": 1,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "261981f8-61ee-44e9-bd82-61369f7a11e8",
+                "sloType": "FoDoelzin",
+                "parentSloUuid": "802f08ce-8287-48dc-895e-41ba8c8c1f4b",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "b4577929-bda5-4ef1-a356-a636a9a3ec65",
+                "sloType": "FoDomein",
+                "parentSloUuid": null,
+                "order": 1,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "5e00e713-24af-4ea1-9c0b-cea9d1c5020d",
+                "sloType": "FoKernzin",
+                "parentSloUuid": "b4577929-bda5-4ef1-a356-a636a9a3ec65",
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "63e4b2a2-7596-4670-84eb-587b0845132f",
+                "sloType": "FoDoelzin",
+                "parentSloUuid": "5e00e713-24af-4ea1-9c0b-cea9d1c5020d",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "ff3f317e-6219-4190-823e-88a8db909a91",
+                "sloType": "FoDoelzin",
+                "parentSloUuid": "5e00e713-24af-4ea1-9c0b-cea9d1c5020d",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "873237dd-55e4-4fda-bc4f-b467a39137ee",
+                "sloType": "FoKernzin",
+                "parentSloUuid": "b4577929-bda5-4ef1-a356-a636a9a3ec65",
+                "order": 1,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "ecd7cac1-b278-4cdb-a288-9c1d144c3242",
+                "sloType": "FoDoelzin",
+                "parentSloUuid": "873237dd-55e4-4fda-bc4f-b467a39137ee",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "5bcb1242-bbbd-45f3-a2b5-ff93b666e870",
+                "sloType": "FoDoelzin",
+                "parentSloUuid": "873237dd-55e4-4fda-bc4f-b467a39137ee",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "59013119-6fb0-4788-8e7e-b2fc1e53a3ab",
+                "sloType": "FoDomein",
+                "parentSloUuid": null,
+                "order": 2,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "7b6ade70-3f9c-438c-8007-55bb1701afb8",
+                "sloType": "FoKernzin",
+                "parentSloUuid": "59013119-6fb0-4788-8e7e-b2fc1e53a3ab",
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "d873cdbb-e443-4742-9e87-b09d05f6a4b8",
+                "sloType": "FoDoelzin",
+                "parentSloUuid": "7b6ade70-3f9c-438c-8007-55bb1701afb8",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "1533644c-7f21-4fc2-bdb2-53a93147983d",
+                "sloType": "FoDoelzin",
+                "parentSloUuid": "7b6ade70-3f9c-438c-8007-55bb1701afb8",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "47714545-9a67-4c44-aff8-03706aa966f8",
+                "sloType": "FoKernzin",
+                "parentSloUuid": "59013119-6fb0-4788-8e7e-b2fc1e53a3ab",
+                "order": 1,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "b4589d82-005e-4b81-8c5c-a685e1e24eca",
+                "sloType": "FoDoelzin",
+                "parentSloUuid": "47714545-9a67-4c44-aff8-03706aa966f8",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "8791d789-490d-4beb-be93-19b430807c8e",
+                "sloType": "FoDoelzin",
+                "parentSloUuid": "47714545-9a67-4c44-aff8-03706aa966f8",
+                "order": 1,
+                "isLeaf": true
+            }
+        ],
+        "sha1": "5d91ed35f2a8987bbbc4a689f68e8495c13db37a"
+    },
+    "kerndoelen-2006-po": {
+        "stats": {
+            "nodes": 78,
+            "leaves": 58,
+            "skippedDeprecated": 0,
+            "skippedUnreleased": 0,
+            "skippedDuplicates": 111,
+            "filteredByNiveau": 347,
+            "prunedBranches": 35,
+            "expansions": 0,
+            "malformed": 0
+        },
+        "nodes": [
+            {
+                "sloUuid": "4f66e180-be7e-448e-891b-698a71a3e9bc",
+                "sloType": "KerndoelVakleergebied",
+                "parentSloUuid": null,
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "4fb0176d-c4b4-4455-9cce-d43b6c1a9ac8",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "4f66e180-be7e-448e-891b-698a71a3e9bc",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "89dafb2b-df9c-4f05-af37-1468f91983d1",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "4f66e180-be7e-448e-891b-698a71a3e9bc",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "59065228-97c2-487c-9db3-a6d4242fc633",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "4f66e180-be7e-448e-891b-698a71a3e9bc",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "f2bacf1a-e6f9-4556-a1b9-54960a50df4b",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "4f66e180-be7e-448e-891b-698a71a3e9bc",
+                "order": 3,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "a77a3196-fae2-47ee-9a0d-54d5b42158e1",
+                "sloType": "KerndoelVakleergebied",
+                "parentSloUuid": null,
+                "order": 1,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "8b4cb0d1-0a99-42fc-8ad9-2e13a2bd482f",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "a77a3196-fae2-47ee-9a0d-54d5b42158e1",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "4b63c87d-59d4-4c7b-a609-8097ef7c5591",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "a77a3196-fae2-47ee-9a0d-54d5b42158e1",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "d0b6c2f0-834b-4465-87e2-96f685bf9251",
+                "sloType": "KerndoelVakleergebied",
+                "parentSloUuid": null,
+                "order": 2,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "2de22d5b-8896-4338-a202-519119b58c56",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "d0b6c2f0-834b-4465-87e2-96f685bf9251",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "1095e038-a147-4b0a-bbfa-a202789744da",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "d0b6c2f0-834b-4465-87e2-96f685bf9251",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "c3d8c8c0-0f94-4dec-8ce6-f52fab27158f",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "d0b6c2f0-834b-4465-87e2-96f685bf9251",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "ae2a7b51-65e1-4186-b4ec-8355dba8cb80",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "d0b6c2f0-834b-4465-87e2-96f685bf9251",
+                "order": 3,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "3d12e0ca-bca7-4b78-a8ed-f4699570fb12",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "d0b6c2f0-834b-4465-87e2-96f685bf9251",
+                "order": 4,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "518b5749-dbe3-4e31-a139-f520752566e4",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "d0b6c2f0-834b-4465-87e2-96f685bf9251",
+                "order": 5,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "e652ff27-3b26-4820-8d7b-32e9d38836e1",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "d0b6c2f0-834b-4465-87e2-96f685bf9251",
+                "order": 6,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "c0770de9-6234-48e6-879d-bb4af7eff0a7",
+                "sloType": "KerndoelVakleergebied",
+                "parentSloUuid": null,
+                "order": 3,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "f7032363-a75d-4e9e-abc8-6fba2eb976d0",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "c0770de9-6234-48e6-879d-bb4af7eff0a7",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "7ec34151-af9f-46b3-ba7f-841672f00705",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "c0770de9-6234-48e6-879d-bb4af7eff0a7",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "1fa773c2-2e84-41e0-9a45-ab5f6d4af705",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "c0770de9-6234-48e6-879d-bb4af7eff0a7",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "c2071a4a-288d-4bfd-97b8-0cd9d68ff5c2",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "c0770de9-6234-48e6-879d-bb4af7eff0a7",
+                "order": 3,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "eb1f3fde-c7c4-4140-aa81-679488fd6d61",
+                "sloType": "KerndoelVakleergebied",
+                "parentSloUuid": null,
+                "order": 4,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "5fa0ce5f-d8e9-431a-83f8-c804fcfa6260",
+                "sloType": "KerndoelDomein",
+                "parentSloUuid": "eb1f3fde-c7c4-4140-aa81-679488fd6d61",
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "a256864b-e6e0-4341-a09a-313bab72ec07",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "5fa0ce5f-d8e9-431a-83f8-c804fcfa6260",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "f1c6d8e5-5f18-4ef8-8845-1923c71e5edc",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "5fa0ce5f-d8e9-431a-83f8-c804fcfa6260",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "dc54e70a-b969-48b6-963d-d257fc20f89f",
+                "sloType": "KerndoelDomein",
+                "parentSloUuid": "eb1f3fde-c7c4-4140-aa81-679488fd6d61",
+                "order": 1,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "721cb364-8e27-42ed-95b8-31296c4dd425",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "dc54e70a-b969-48b6-963d-d257fc20f89f",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "3f8fa2b2-544f-46f9-ae7c-363112c1256a",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "dc54e70a-b969-48b6-963d-d257fc20f89f",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "27b77b33-f0f8-4079-b245-62a0d7c37025",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "dc54e70a-b969-48b6-963d-d257fc20f89f",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "bae14315-61e3-4b3a-8b80-936a3d6c754e",
+                "sloType": "KerndoelDomein",
+                "parentSloUuid": "eb1f3fde-c7c4-4140-aa81-679488fd6d61",
+                "order": 2,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "49f4b7e6-68b2-4dbe-82e7-3eaa450176bb",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "bae14315-61e3-4b3a-8b80-936a3d6c754e",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "dc52b358-54f9-464e-80c6-83562b35588d",
+                "sloType": "KerndoelVakleergebied",
+                "parentSloUuid": null,
+                "order": 5,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "8acd5003-003c-4705-be24-1eb03ca73699",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "dc52b358-54f9-464e-80c6-83562b35588d",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "e2a2a741-5b36-4aff-8acc-9523fba6af5e",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "dc52b358-54f9-464e-80c6-83562b35588d",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "c6af9dc7-efee-4cb3-83b2-bf5c54512238",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "dc52b358-54f9-464e-80c6-83562b35588d",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "f8699dd7-abab-4d87-9ea6-acfeaf7d5d6a",
+                "sloType": "KerndoelVakleergebied",
+                "parentSloUuid": null,
+                "order": 6,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "c4e8c51c-144b-4a76-bff5-09337c03ab63",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "f8699dd7-abab-4d87-9ea6-acfeaf7d5d6a",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "d619232e-394a-4c8c-b607-e94c36bfd48f",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "f8699dd7-abab-4d87-9ea6-acfeaf7d5d6a",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "7555bcba-47e9-41d2-b04a-5a3623062146",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "f8699dd7-abab-4d87-9ea6-acfeaf7d5d6a",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "d474c122-303b-4e7e-9d29-85ee2c4cdaad",
+                "sloType": "KerndoelVakleergebied",
+                "parentSloUuid": null,
+                "order": 7,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "fcdae226-0095-4eec-8584-96919df2b2d1",
+                "sloType": "KerndoelDomein",
+                "parentSloUuid": "d474c122-303b-4e7e-9d29-85ee2c4cdaad",
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "a776f9a3-32d3-48cb-bd83-5549c2c8ff49",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "fcdae226-0095-4eec-8584-96919df2b2d1",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "7b7a5317-c622-423c-b337-b4c656d8d372",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "fcdae226-0095-4eec-8584-96919df2b2d1",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "8990498f-49bb-4e40-8121-0a74b18c7ae7",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "fcdae226-0095-4eec-8584-96919df2b2d1",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "4e5ab73d-86bf-4825-bc59-4deb5d76503f",
+                "sloType": "KerndoelDomein",
+                "parentSloUuid": "d474c122-303b-4e7e-9d29-85ee2c4cdaad",
+                "order": 1,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "8cd7169b-ec2b-4b1a-bc35-e2d2ac49e902",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "4e5ab73d-86bf-4825-bc59-4deb5d76503f",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "e5f45cd7-ff7b-4876-a014-9aead5348100",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "4e5ab73d-86bf-4825-bc59-4deb5d76503f",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "cf478309-4d3b-4e81-9077-764c0793496d",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "4e5ab73d-86bf-4825-bc59-4deb5d76503f",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "34d6bd9c-565c-45fe-9b21-d6497cd3f0d1",
+                "sloType": "KerndoelDomein",
+                "parentSloUuid": "d474c122-303b-4e7e-9d29-85ee2c4cdaad",
+                "order": 2,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "396bce44-46c7-4af6-880e-1fc3ace5128a",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "34d6bd9c-565c-45fe-9b21-d6497cd3f0d1",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "fd1fd0be-25ed-47af-8ed1-15c8f6b2d8e8",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "34d6bd9c-565c-45fe-9b21-d6497cd3f0d1",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "998d290b-5882-43e9-bf38-b41992ff2ce7",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "34d6bd9c-565c-45fe-9b21-d6497cd3f0d1",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "a81b68fb-b89b-4654-a27a-e46c2cf7dd98",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "34d6bd9c-565c-45fe-9b21-d6497cd3f0d1",
+                "order": 3,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "7c484813-ec13-451f-97b0-ff9b7fbab690",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "34d6bd9c-565c-45fe-9b21-d6497cd3f0d1",
+                "order": 4,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "7893825b-806a-4850-9870-8cb5f94cf5a6",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "34d6bd9c-565c-45fe-9b21-d6497cd3f0d1",
+                "order": 5,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "3b11db01-d97d-4370-ad85-3a0f7f082339",
+                "sloType": "KerndoelVakleergebied",
+                "parentSloUuid": null,
+                "order": 8,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "b916ca8c-da6e-44df-a93a-f37e3228507d",
+                "sloType": "KerndoelDomein",
+                "parentSloUuid": "3b11db01-d97d-4370-ad85-3a0f7f082339",
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "82c7db22-1b7f-4890-8720-dd2aa8373b56",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "b916ca8c-da6e-44df-a93a-f37e3228507d",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "45dbe23d-61b7-4332-872d-a5280d7a17b0",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "b916ca8c-da6e-44df-a93a-f37e3228507d",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "28a9525c-da1f-4b7f-b67f-38a3b96b369f",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "b916ca8c-da6e-44df-a93a-f37e3228507d",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "45885286-dc4b-4648-b4b3-16f14ebf262f",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "b916ca8c-da6e-44df-a93a-f37e3228507d",
+                "order": 3,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "156d3f88-03e0-458f-87f1-c624219ec99f",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "b916ca8c-da6e-44df-a93a-f37e3228507d",
+                "order": 4,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "7f6e0edc-e38f-43bb-a7f8-82d0cab137ad",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "b916ca8c-da6e-44df-a93a-f37e3228507d",
+                "order": 5,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "96552012-d8f9-44e8-bce2-609d5ac42849",
+                "sloType": "KerndoelVakleergebied",
+                "parentSloUuid": null,
+                "order": 9,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "3cc8018e-edf7-46e9-8599-964485fbd80d",
+                "sloType": "KerndoelDomein",
+                "parentSloUuid": "96552012-d8f9-44e8-bce2-609d5ac42849",
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "ca8a7c55-b038-4eb7-ab26-e87fa58bced0",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "3cc8018e-edf7-46e9-8599-964485fbd80d",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "7efa59c6-b263-42c3-9199-bf818c6a1b4b",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "3cc8018e-edf7-46e9-8599-964485fbd80d",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "b24b831e-ba83-4118-91d3-00ec1bc13650",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "3cc8018e-edf7-46e9-8599-964485fbd80d",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "62c736fb-84a4-4a1b-9ad1-57fde81e6a1c",
+                "sloType": "KerndoelDomein",
+                "parentSloUuid": "96552012-d8f9-44e8-bce2-609d5ac42849",
+                "order": 1,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "1ed1e736-c541-4b47-9061-34117d70c859",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "62c736fb-84a4-4a1b-9ad1-57fde81e6a1c",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "c2bfba34-1ca1-4560-9131-67cd068f9713",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "62c736fb-84a4-4a1b-9ad1-57fde81e6a1c",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "ff515534-6ed1-45cb-9767-ee4a70119b19",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "62c736fb-84a4-4a1b-9ad1-57fde81e6a1c",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "1ef4dfbf-1810-4fc5-94ef-d455fdcf3661",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "62c736fb-84a4-4a1b-9ad1-57fde81e6a1c",
+                "order": 3,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "93556d3a-c7d0-4a49-a692-6fddf17f9aa5",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "62c736fb-84a4-4a1b-9ad1-57fde81e6a1c",
+                "order": 4,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "a40c6b0a-cb46-4fc3-b42d-23a4457ab21e",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "62c736fb-84a4-4a1b-9ad1-57fde81e6a1c",
+                "order": 5,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "4ce80c28-7ca0-4718-b301-6c5fd61e57d5",
+                "sloType": "KerndoelDomein",
+                "parentSloUuid": "96552012-d8f9-44e8-bce2-609d5ac42849",
+                "order": 2,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "9ed074c3-29f2-475b-bbe3-aaca1b78077b",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "4ce80c28-7ca0-4718-b301-6c5fd61e57d5",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "d4b16fc2-8c8a-46ae-956c-d5cdfc6ff03d",
+                "sloType": "Kerndoel",
+                "parentSloUuid": "4ce80c28-7ca0-4718-b301-6c5fd61e57d5",
+                "order": 1,
+                "isLeaf": true
+            }
+        ],
+        "sha1": "a73ea913a21f0e32483349bfa3a416d1cac092fc"
+    },
+    "examenprogramma": {
+        "stats": {
+            "nodes": 9,
+            "leaves": 4,
+            "skippedDeprecated": 0,
+            "skippedUnreleased": 0,
+            "skippedDuplicates": 0,
+            "filteredByNiveau": 0,
+            "prunedBranches": 0,
+            "expansions": 0,
+            "malformed": 0
+        },
+        "nodes": [
+            {
+                "sloUuid": "86e2cc4f-c418-4e16-88d9-d69cc65f2785",
+                "sloType": "ExamenprogrammaDomein",
+                "parentSloUuid": null,
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "6d014cae-bc48-4680-841c-942ccc49714a",
+                "sloType": "ExamenprogrammaEindterm",
+                "parentSloUuid": "86e2cc4f-c418-4e16-88d9-d69cc65f2785",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "325ee593-67f6-4910-b495-98e310ca5af8",
+                "sloType": "ExamenprogrammaDomein",
+                "parentSloUuid": null,
+                "order": 1,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "7618a33a-e6b0-4d27-86a7-53043341c0ff",
+                "sloType": "ExamenprogrammaSubdomein",
+                "parentSloUuid": "325ee593-67f6-4910-b495-98e310ca5af8",
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "e9036ef8-7b94-40f8-b3bb-701313605d25",
+                "sloType": "ExamenprogrammaEindterm",
+                "parentSloUuid": "7618a33a-e6b0-4d27-86a7-53043341c0ff",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "4cf89229-ac15-4f27-8710-aca0fd925480",
+                "sloType": "ExamenprogrammaSubdomein",
+                "parentSloUuid": "325ee593-67f6-4910-b495-98e310ca5af8",
+                "order": 1,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "016ae77b-05af-4a12-bb1a-7f777be1daba",
+                "sloType": "ExamenprogrammaEindterm",
+                "parentSloUuid": "4cf89229-ac15-4f27-8710-aca0fd925480",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "edc20e03-72b8-4670-b991-b27e3a39818e",
+                "sloType": "ExamenprogrammaDomein",
+                "parentSloUuid": null,
+                "order": 2,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "9aec6a32-4424-4691-b6ab-f1593d35eb6a",
+                "sloType": "ExamenprogrammaEindterm",
+                "parentSloUuid": "edc20e03-72b8-4670-b991-b27e3a39818e",
+                "order": 0,
+                "isLeaf": true
+            }
+        ],
+        "sha1": "7f7954b50295fd474c4b0327a1bb309a5e4bda1d"
+    },
+    "leerdoelenkaarten": {
+        "stats": {
+            "nodes": 7,
+            "leaves": 4,
+            "skippedDeprecated": 0,
+            "skippedUnreleased": 0,
+            "skippedDuplicates": 0,
+            "filteredByNiveau": 0,
+            "prunedBranches": 0,
+            "expansions": 0,
+            "malformed": 0
+        },
+        "nodes": [
+            {
+                "sloUuid": "fefb80a8-cec3-4210-88e2-ee6cbe6775ca",
+                "sloType": "LdkVakkern",
+                "parentSloUuid": null,
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "3cca5838-7630-4817-978e-f94405152fd1",
+                "sloType": "LdkVaksubkern",
+                "parentSloUuid": "fefb80a8-cec3-4210-88e2-ee6cbe6775ca",
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "b7db4da0-ff63-489f-954f-0fd5d39908a3",
+                "sloType": "LdkVakinhoud",
+                "parentSloUuid": "3cca5838-7630-4817-978e-f94405152fd1",
+                "order": 0,
+                "isLeaf": false
+            },
+            {
+                "sloUuid": "8a180d90-3588-411c-b078-a9b4c343bc49",
+                "sloType": "Doelniveau",
+                "parentSloUuid": "b7db4da0-ff63-489f-954f-0fd5d39908a3",
+                "order": 0,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "894eeeb9-e683-4f03-ba18-95e701bc25e4",
+                "sloType": "Doelniveau",
+                "parentSloUuid": "b7db4da0-ff63-489f-954f-0fd5d39908a3",
+                "order": 1,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "e51957f1-a77d-4cc6-9d33-16d93f336380",
+                "sloType": "Doelniveau",
+                "parentSloUuid": "b7db4da0-ff63-489f-954f-0fd5d39908a3",
+                "order": 2,
+                "isLeaf": true
+            },
+            {
+                "sloUuid": "dbeada34-a587-4466-aa1c-c0675ab98884",
+                "sloType": "Doelniveau",
+                "parentSloUuid": "b7db4da0-ff63-489f-954f-0fd5d39908a3",
+                "order": 3,
+                "isLeaf": true
+            }
+        ],
+        "sha1": "5b3a448d1f16c33214a070a96cd91e4cd9f4750f"
+    }
+}

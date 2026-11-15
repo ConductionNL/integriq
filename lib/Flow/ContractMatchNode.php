@@ -3,6 +3,9 @@
 /**
  * Integriq Contract Match flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.contract` — the "[Contract the page]" step of the decomposed
  * synchronization flow: ONE bulk contract lookup for the whole page, a hash
  * compare per item, and a stamped decision (`create` / `update` / `skip` /
@@ -40,9 +43,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -56,6 +56,7 @@ namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -190,14 +191,7 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 				'type' => 'text',
 				'help' => $this->l10n->t('Item key the decision block is written under. Defaults to "contract".'),
 			],
-			[
-				'key' => 'onError',
-				'label' => $this->l10n->t('On error'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'What a failed item does to the run: stop, continue or dead_letter.'
-				),
-			],
+			FlowNodeSupport::onErrorField(l10n: $this->l10n),
 		];
 	}//end configForm()
 
@@ -230,9 +224,7 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	/**
 	 * Stamp every item with its contract decision.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata (carries the run owner).
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items, one per input item, in input order.
 	 *
@@ -240,7 +232,11 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+
 		if ($items === []) {
 			return [];
 		}

@@ -15,6 +15,9 @@
  *
  * @spec exclude Class-move plumbing; it keeps stored class names resolvable
  *       and adds no domain behaviour.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

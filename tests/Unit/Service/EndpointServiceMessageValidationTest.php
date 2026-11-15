@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Http\ProblemResponse;
 use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
@@ -387,4 +388,54 @@ class EndpointServiceMessageValidationTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame(['statusCode' => 200, 'headers' => ['Content-Type' => ['application/json']], 'body' => '{"ok":true}'], $response->getData());
 	}//end testAProxiedAnswerCarriesNoUpstreamSecrets()
+	/**
+	 * A refused request is a problem document: a type URI, the request id, invalid-params, and the old members.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 */
+	public function testARefusedRequestIsAProblemDocument(): void {
+		$service = $this->service(rawBody: '{"naam":"Jansen"}');
+		$request = $this->request();
+		$request->method('getId')->willReturn('req-42');
+
+		$response = $service->handleRequest(
+			$this->endpoint(['mode' => 'refuse', 'request' => ['messageSchema' => self::SCHEMA_UUID]]),
+			$request,
+			'/personen'
+		);
+
+		$this->assertInstanceOf(ProblemResponse::class, $response);
+		$data = $response->getData();
+		$this->assertSame('https://integriq.nl/problems/validation-failed', $data['type']);
+		$this->assertSame(400, $data['status']);
+		$this->assertSame('req-42', $data['instance']);
+		$this->assertContains('/bsn', array_column($data['invalid-params'], 'name'));
+		$this->assertContains('/bsn', array_column($data['errors'], 'path'));
+	}//end testARefusedRequestIsAProblemDocument()
+
+	/**
+	 * An error the source itself answered is passed through as the source gave it, not as a problem document.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 */
+	public function testAProxiedSourceErrorIsPassedThrough(): void {
+		$service = $this->service(rawBody: '{"bsn":"999990019"}', withGate: false);
+		$this->callService->expects($this->once())->method('call')->willReturn(
+			ObjectServiceMockBuilder::objectEntity(
+				$this,
+				['statusCode' => 404, 'direction' => 'outbound', 'response' => ['statusCode' => 404, 'body' => '{"melding":"Persoon niet gevonden"}']],
+				'call-log-404'
+			)
+		);
+
+		$response = $service->handleRequest($this->endpoint([]), $this->request(), '/personen');
+
+		$this->assertNotInstanceOf(ProblemResponse::class, $response);
+		$this->assertSame(404, $response->getStatus());
+		$this->assertNotSame('application/problem+json', $this->header($response, 'Content-Type'));
+	}//end testAProxiedSourceErrorIsPassedThrough()
 }//end class

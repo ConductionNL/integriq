@@ -44,6 +44,9 @@ use OCA\Integriq\Service\OpenFormulieren\MappingResolutionException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileTransfer;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
@@ -438,9 +441,8 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 
 				$content = (string)$response->getBody();
 				$file = $this->fileService->addFile(
-					objectEntity: $submission,
-					fileName: $filename,
-					content: $content
+					target: new FileTarget(object: $submission),
+					upload: new FileUpload(fileName: $filename, content: $content, share: false)
 				);
 
 				$results[] = [
@@ -524,10 +526,8 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 			}
 
 			try {
-				$this->fileService->copyFile(
-					sourceObject: $submission,
-					fileId: (int)$attachment['fileId'],
-					targetObject: $targetObject
+				$this->fileService->copyAttachedFile(
+					transfer: new FileTransfer(source: $submission, fileId: (int)$attachment['fileId'], target: $targetObject)
 				);
 				$attachments[$index]['copiedToCase'] = true;
 			} catch (Throwable $exception) {

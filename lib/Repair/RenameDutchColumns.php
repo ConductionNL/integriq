@@ -3,6 +3,9 @@
 /**
  * Integriq RenameDutchColumns Repair Step
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Moves stored data from the Dutch columns to the English ones the shillinq
  * register now declares. Covers every vocabulary cluster migrated so far, not
  * only amounts — the class was renamed from RenameDutchAmountColumns when the
@@ -41,9 +44,6 @@
  *     reversible and a re-run is a no-op;
  *   - two sources targeting one destination in a table are REFUSED, not merged;
  *   - nothing is deleted.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
  * @package  OCA\Integriq\Repair
@@ -275,10 +275,29 @@ class RenameDutchColumns implements IRepairStep {
 			return null;
 		}
 
+		$properties = $this->schemaProperties(table: $table, schemaId: $match[1]);
+		if ($properties === null) {
+			return null;
+		}
+
+		return array_map(static fn ($name): string => self::columnName(property: (string)$name), array_keys($properties));
+
+	}//end declaredColumns()
+
+	/**
+	 * The properties a shard table's schema declares, or null when the schema
+	 * cannot be read (logged) or holds no object.
+	 *
+	 * @param string $table    The shard table, for the log.
+	 * @param string $schemaId The schema id the table name ends in.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function schemaProperties(string $table, string $schemaId): ?array {
 		try {
 			$raw = $this->db->executeQuery(
 				'SELECT properties FROM `*PREFIX*openregister_schemas` WHERE id = ?',
-				[$match[1]]
+				[$schemaId]
 			)->fetchOne();
 		} catch (Exception $e) {
 			$this->logger->warning(
@@ -288,19 +307,24 @@ class RenameDutchColumns implements IRepairStep {
 			return null;
 		}
 
-		$properties = json_decode((string)$raw, true);
-		if (is_array($properties) === false) {
+		return self::decodedObject(json: (string)$raw);
+	}//end schemaProperties()
+
+	/**
+	 * A JSON object decoded to an array, or null when the JSON holds no object.
+	 *
+	 * @param string $json The JSON.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private static function decodedObject(string $json): ?array {
+		$decoded = json_decode($json, true);
+		if (is_array($decoded) === false) {
 			return null;
 		}
 
-		$names = [];
-		foreach (array_keys($properties) as $name) {
-			$names[] = self::columnName(property: (string)$name);
-		}
-
-		return $names;
-
-	}//end declaredColumns()
+		return $decoded;
+	}//end decodedObject()
 
 	/**
 	 * The column name MagicMapper gives a property: camelCase to snake_case.
@@ -359,23 +383,48 @@ class RenameDutchColumns implements IRepairStep {
 			return [];
 		}
 
-		$markers = [];
-		foreach ($ids as $id) {
-			$markers[] = 'openregister_table_' . ((int)$id) . '_';
-		}
+		return $this->tablesOfRegisters(names: $names, ids: $ids);
+	}//end shardTables()
+
+	/**
+	 * The listed tables that are a shard of one of the registers, once each.
+	 *
+	 * @param array<int, string> $names The listed table names.
+	 * @param array<int, mixed>  $ids   The register ids.
+	 *
+	 * @return array<int, string>
+	 */
+	private function tablesOfRegisters(array $names, array $ids): array {
+		$markers = array_map(static fn ($id): string => 'openregister_table_' . ((int)$id) . '_', $ids);
 
 		$tables = [];
 		foreach ($names as $name) {
-			foreach ($markers as $marker) {
-				$offset = strpos($name, $marker);
-				if ($offset !== false && ctype_digit(substr($name, ($offset + strlen($marker)))) === true) {
-					$tables[] = $name;
-				}
+			if (self::isShardOf(name: $name, markers: $markers) === true) {
+				$tables[] = $name;
 			}
 		}
 
 		return array_values(array_unique($tables));
-	}
+	}//end tablesOfRegisters()
+
+	/**
+	 * Whether a table name is a register marker followed by a schema id only.
+	 *
+	 * @param string             $name    The table name.
+	 * @param array<int, string> $markers The `openregister_table_{register}_` markers.
+	 *
+	 * @return bool
+	 */
+	private static function isShardOf(string $name, array $markers): bool {
+		foreach ($markers as $marker) {
+			$offset = strpos($name, $marker);
+			if ($offset !== false && ctype_digit(substr($name, ($offset + strlen($marker)))) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isShardOf()
 
 	/**
 	 * Ids of every register whose slug starts with the prefix.

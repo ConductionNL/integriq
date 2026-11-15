@@ -1,0 +1,175 @@
+[
+    {
+        "setValueInt": [
+            "integriq",
+            "_alert_last_okenxpired",
+            1800000000
+        ]
+    },
+    {
+        "setApp": "integriq"
+    },
+    {
+        "setUser": "broken"
+    },
+    {
+        "log": [
+            "warning",
+            "[DsoConnectionAlerts] could not notify an administrator",
+            {
+                "reason": "Token-Expired!",
+                "exception": "no inbox"
+            }
+        ]
+    },
+    {
+        "setApp": "integriq"
+    },
+    {
+        "setUser": "admin"
+    },
+    {
+        "setDateTime": 1800000000
+    },
+    {
+        "setObject": [
+            "_connection",
+            "Token-Expired!"
+        ]
+    },
+    {
+        "setSubject": [
+            "dso_connection_alert",
+            {
+                "reason": "Token-Expired!",
+                "channel": ""
+            }
+        ]
+    },
+    {
+        "notify": true
+    },
+    {
+        "setApp": "integriq"
+    },
+    {
+        "setUser": "ops"
+    },
+    {
+        "setDateTime": 1800000000
+    },
+    {
+        "setObject": [
+            "_connection",
+            "Token-Expired!"
+        ]
+    },
+    {
+        "setSubject": [
+            "dso_connection_alert",
+            {
+                "reason": "Token-Expired!",
+                "channel": ""
+            }
+        ]
+    },
+    {
+        "notify": true
+    },
+    {
+        "return": true
+    },
+    {
+        "return": false
+    },
+    {
+        "setValueInt": [
+            "integriq",
+            "_alert_last_okenxpired",
+            1800003610
+        ]
+    },
+    {
+        "setApp": "integriq"
+    },
+    {
+        "setUser": "broken"
+    },
+    {
+        "log": [
+            "warning",
+            "[DsoConnectionAlerts] could not notify an administrator",
+            {
+                "reason": "Token-Expired!",
+                "exception": "no inbox"
+            }
+        ]
+    },
+    {
+        "setApp": "integriq"
+    },
+    {
+        "setUser": "admin"
+    },
+    {
+        "setDateTime": 1800003610
+    },
+    {
+        "setObject": [
+            "_connection",
+            "Token-Expired!"
+        ]
+    },
+    {
+        "setSubject": [
+            "dso_connection_alert",
+            {
+                "reason": "Token-Expired!",
+                "channel": ""
+            }
+        ]
+    },
+    {
+        "notify": true
+    },
+    {
+        "setApp": "integriq"
+    },
+    {
+        "setUser": "ops"
+    },
+    {
+        "setDateTime": 1800003610
+    },
+    {
+        "setObject": [
+            "_connection",
+            "Token-Expired!"
+        ]
+    },
+    {
+        "setSubject": [
+            "dso_connection_alert",
+            {
+                "reason": "Token-Expired!",
+                "channel": ""
+            }
+        ]
+    },
+    {
+        "notify": true
+    },
+    {
+        "return": true
+    },
+    {
+        "setValueInt": [
+            "integriq",
+            "openformulieren_alert_last_down",
+            1800003610
+        ]
+    },
+    {
+        "return": false
+    }
+]

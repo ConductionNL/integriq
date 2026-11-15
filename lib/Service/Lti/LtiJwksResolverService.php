@@ -17,6 +17,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/lti-platform/spec.md#requirement-external-jwks-resolution-with-kid-lookup-per-registration-caching-and-rate-limited-refetch-req-lti-003
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -24,13 +27,12 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Lti;
 
 use Jose\Component\Core\JWK;
-use Jose\Component\Core\JWKSet;
 use OCA\Integriq\Service\CallService;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\ICache;
+use OCA\Integriq\Service\Jwks\JwksLookup;
+use OCA\Integriq\Service\Jwks\JwksResolver;
+use OCA\Integriq\Service\Jwks\JwksResolverProfile;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Fetch-and-cache JWKS resolution for LTI launch/service-token signature
@@ -42,6 +44,10 @@ use Throwable;
  * registration (design.md D4: "that would leak into the Bronnen list for
  * something that isn't a wired connection").
  *
+ * The resolution itself lives in {@see JwksResolver}, shared with the gateway
+ * consumer path; this class keeps the LTI cache namespace (`integriq.lti.jwks`),
+ * cache keys, log lines and ad-hoc source identity unchanged.
+ *
  * @spec openspec/specs/lti-platform/spec.md#requirement-external-jwks-resolution-with-kid-lookup-per-registration-caching-and-rate-limited-refetch-req-lti-003
  */
 class LtiJwksResolverService {
@@ -51,65 +57,56 @@ class LtiJwksResolverService {
 	 *
 	 * @var integer
 	 */
-	public const DEFAULT_TTL_SECONDS = 3600;
+	public const DEFAULT_TTL_SECONDS = JwksResolver::DEFAULT_TTL_SECONDS;
 
 	/**
 	 * Minimum interval between refetches for the same registration when a
-	 * presented `kid` is not found in the cached set (60s — design.md D4).
+	 * presented `kid` is not in the cached set.
 	 *
 	 * @var integer
 	 */
-	public const REFETCH_GUARD_SECONDS = 60;
+	public const REFETCH_GUARD_SECONDS = JwksResolver::REFETCH_GUARD_SECONDS;
 
 	/**
-	 * Distributed cache used for resolved JWKS documents + the refetch guard.
+	 * The distributed cache namespace of LTI key sets.
 	 *
-	 * @var ICache
+	 * @var string
 	 */
-	private readonly ICache $cache;
+	public const CACHE_NAMESPACE = 'integriq.lti.jwks';
+
+	/**
+	 * The shared resolver, bound to the LTI cache namespace and log label.
+	 *
+	 * @var JwksResolver
+	 */
+	private readonly JwksResolver $resolver;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ICacheFactory $cacheFactory Cache factory (same distributed-cache mechanism as jti replay).
-	 * @param CallService $callService Outbound HTTP call engine (timeout/CallLog observability).
-	 * @param LoggerInterface $logger Logger for resolution failures.
+	 * @param ICacheFactory   $cacheFactory Cache factory for the distributed JWKS cache.
+	 * @param CallService     $callService  Outbound HTTP call machinery.
+	 * @param LoggerInterface $logger       Logger.
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/tasks.md#task-1
 	 */
 	public function __construct(
 		ICacheFactory $cacheFactory,
-		private readonly CallService $callService,
-		private readonly LoggerInterface $logger,
+		CallService $callService,
+		LoggerInterface $logger,
 	) {
-		$this->cache = $cacheFactory->createDistributed('integriq.lti.jwks');
+		$this->resolver = new JwksResolver(
+			cache: $cacheFactory->createDistributed(self::CACHE_NAMESPACE),
+			callService: $callService,
+			logger: $logger,
+			profile: new JwksResolverProfile(
+				logLabel: 'LtiJwksResolverService',
+				sourceUuidPrefix: 'lti-jwks-adhoc-',
+				sourceName: 'LTI JWKS resolver (ad-hoc, not persisted)'
+			)
+		);
 
 	}//end __construct()
-
-	/**
-	 * Cache key for a registration's resolved JWKS document.
-	 *
-	 * Namespaced by registration id — not by the raw `jwks_uri` string — so
-	 * two registrations sharing a `jwks_uri` cannot cross-poison each
-	 * other's cache entry (design.md D4).
-	 *
-	 * @param string $registrationType `lti_platform` or `lti_tool`.
-	 * @param string $registrationUuid The registration's UUID.
-	 *
-	 * @return string
-	 */
-	private function cacheKey(string $registrationType, string $registrationUuid): string {
-		return 'jwks:' . $registrationType . ':' . $registrationUuid;
-	}//end cacheKey()
-
-	/**
-	 * Cache key for the per-registration refetch guard.
-	 *
-	 * @param string $registrationUuid The registration's UUID.
-	 *
-	 * @return string
-	 */
-	private function refetchGuardKey(string $registrationUuid): string {
-		return 'jwks:refetch:' . $registrationUuid;
-	}//end refetchGuardKey()
 
 	/**
 	 * Resolve a `kid` for a registration's `jwks_uri`, using the cache and
@@ -124,151 +121,11 @@ class LtiJwksResolverService {
 	 *                  (unknown after refetch, or the refetch guard is active).
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md#requirement-external-jwks-resolution-with-kid-lookup-per-registration-caching-and-rate-limited-refetch-req-lti-003
+	 * @spec openspec/changes/access-oauth-and-token-validation/tasks.md#task-1
 	 */
 	public function resolveKey(string $registrationType, string $registrationUuid, string $jwksUri, string $kid): ?JWK {
-		$cacheKey = $this->cacheKey(registrationType: $registrationType, registrationUuid: $registrationUuid);
-
-		$cached = $this->cache->get($cacheKey);
-		if (is_string($cached) === true) {
-			$jwkSet = $this->deserializeJwkSet(cached: $cached);
-			if ($jwkSet !== null && $jwkSet->has($kid) === true) {
-				return $jwkSet->get($kid);
-			}
-		}
-
-		// Cache miss OR the cached set does not contain this kid — refetch,
-		// but never more than once per REFETCH_GUARD_SECONDS per registration.
-		$guardKey = $this->refetchGuardKey(registrationUuid: $registrationUuid);
-		if ($this->cache->get($guardKey) !== null) {
-			// Guard active: fail closed. Never fall back to accepting an
-			// unverified token (design.md D4 — SSRF-amplification defence).
-			$this->logger->info(
-				'LtiJwksResolverService: refetch guard active, rejecting unresolved kid',
-				['registrationType' => $registrationType, 'registrationUuid' => $registrationUuid, 'kid' => $kid]
-			);
-			return null;
-		}
-
-		$this->cache->set($guardKey, true, self::REFETCH_GUARD_SECONDS);
-
-		$fetched = $this->fetchJwks(jwksUri: $jwksUri, registrationUuid: $registrationUuid);
-		if ($fetched === null) {
-			return null;
-		}
-
-		$this->cache->set($cacheKey, json_encode($fetched), self::DEFAULT_TTL_SECONDS);
-
-		$jwkSet = $this->deserializeJwkSet(cached: json_encode($fetched));
-		if ($jwkSet !== null && $jwkSet->has($kid) === true) {
-			return $jwkSet->get($kid);
-		}
-
-		return null;
-	}//end resolveKey()
-
-	/**
-	 * Deserialize a cached JWKS JSON string into a `JWKSet`.
-	 *
-	 * @param string $cached The cached JSON payload.
-	 *
-	 * @return JWKSet|null Null on malformed cache content (fail closed, never throw into a launch).
-	 */
-	private function deserializeJwkSet(string $cached): ?JWKSet {
-		try {
-			return JWKSet::createFromJson($cached);
-		} catch (Throwable $exception) {
-			$this->logger->warning('LtiJwksResolverService: malformed cached JWKS, treating as miss', ['error' => $exception->getMessage()]);
-			return null;
-		}
-
-	}//end deserializeJwkSet()
-
-	/**
-	 * Fetch a `jwks_uri` via the existing outbound call machinery.
-	 *
-	 * Uses an ephemeral, non-persisted `ObjectEntity` `Source` so the fetch
-	 * inherits `CallService`'s timeout/retry/CallLog observability without
-	 * creating a real `Source` row (design.md D4).
-	 *
-	 * @param string $jwksUri The JWKS URI to fetch.
-	 * @param string $registrationUuid The registration id (for CallLog traceability only).
-	 *
-	 * @return array|null The decoded `{"keys": [...]}` JWKS document, or null on any failure.
-	 */
-	private function fetchJwks(string $jwksUri, string $registrationUuid): ?array {
-		$parts = parse_url($jwksUri);
-		if ($parts === false || isset($parts['scheme'], $parts['host']) === false) {
-			$this->logger->warning('LtiJwksResolverService: invalid jwks_uri', ['registrationUuid' => $registrationUuid]);
-			return null;
-		}
-
-		$location = $parts['scheme'] . '://' . $parts['host'];
-		if (isset($parts['port']) === true) {
-			$location .= ':' . $parts['port'];
-		}
-
-		$endpoint = ($parts['path'] ?? '');
-		if (isset($parts['query']) === true) {
-			$endpoint .= '?' . $parts['query'];
-		}
-
-		$source = new ObjectEntity();
-		$source->setUuid('lti-jwks-adhoc-' . $registrationUuid);
-		$source->setObject(
-			[
-				'name' => 'LTI JWKS resolver (ad-hoc, not persisted)',
-				'isEnabled' => true,
-				'location' => $location,
-			]
+		return $this->resolver->resolveKey(
+			lookup: new JwksLookup(ownerType: $registrationType, ownerUuid: $registrationUuid, jwksUri: $jwksUri, kid: $kid)
 		);
-
-		try {
-			// The source is ad hoc and never persisted, so its uuid is not a uuid.
-			// A persisted call log would name it in `call_log.source` (format: uuid)
-			// and the register refuses that row, which failed every JWKS fetch after
-			// the key set had already arrived. The fetch is therefore not logged as
-			// a call log: persistLog false returns the response in memory and
-			// writes nothing, neither the call log nor the source's rate-limit state.
-			$callLog = $this->callService->call(
-				source: $source,
-				endpoint: $endpoint,
-				method: 'GET',
-				read: true,
-				persistLog: false
-			);
-		} catch (Throwable $exception) {
-			$this->logger->warning(
-				'LtiJwksResolverService: outbound JWKS fetch failed',
-				['registrationUuid' => $registrationUuid, 'error' => $exception->getMessage()]
-			);
-			return null;
-		}
-
-		$logData = $callLog->getObject();
-		$statusCode = ($logData['response']['statusCode'] ?? $logData['statusCode'] ?? 0);
-		if ($statusCode !== 200) {
-			$this->logger->info(
-				'LtiJwksResolverService: JWKS fetch returned non-200',
-				['registrationUuid' => $registrationUuid, 'statusCode' => $statusCode]
-			);
-			return null;
-		}
-
-		$body = ($logData['response']['body'] ?? null);
-		if (is_string($body) === false || $body === '') {
-			return null;
-		}
-
-		if (($logData['response']['encoding'] ?? 'UTF-8') === 'base64') {
-			$body = base64_decode($body);
-		}
-
-		$decoded = json_decode($body, true);
-		if (is_array($decoded) === false || isset($decoded['keys']) === false || is_array($decoded['keys']) === false) {
-			$this->logger->info('LtiJwksResolverService: JWKS response is not a valid JWKS document', ['registrationUuid' => $registrationUuid]);
-			return null;
-		}
-
-		return $decoded;
-	}//end fetchJwks()
+	}//end resolveKey()
 }//end class

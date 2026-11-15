@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Outbound\Call;
 
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use Throwable;
 
 /**
@@ -89,71 +90,103 @@ class PreCheckService {
 	 * @return array{decision:string,reason:string,raw:array<string,mixed>} What it said.
 	 */
 	public function ask(array $configuration, array $payload): array {
-		if (($configuration['mock'] ?? false) === true) {
-			$fixture = ($configuration['fixture'] ?? []);
+		$run = new PreCheckRun(configuration: $configuration, payload: $payload);
+		$answer = $this->answerFor(run: $run);
+		$this->record(run: $run, answer: $answer);
+
+		return $answer;
+
+	}//end ask()
+
+	/**
+	 * The answer of the fixture in mock mode, of no system when none is named, else of the system asked.
+	 *
+	 * @param PreCheckRun $run The pre-check.
+	 *
+	 * @return array{decision:string,reason:string,raw:array<string,mixed>} What it said.
+	 */
+	private function answerFor(PreCheckRun $run): array {
+		if (($run->configuration['mock'] ?? false) === true) {
+			$fixture = ($run->configuration['fixture'] ?? []);
 			if (is_array($fixture) === false) {
 				$fixture = [];
 			}
 
-			$answer = $this->interpret(body: $fixture);
-			$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: 200);
-			return $answer;
+			$run->statusCode = 200;
+			return $this->interpret(body: $fixture);
 		}
 
-		$url = trim((string)($configuration['url'] ?? ''));
+		$url = trim((string)($run->configuration['url'] ?? ''));
 		if ($url === '') {
-			$answer = [
+			return [
 				'decision' => self::NO_ANSWER,
 				'reason' => 'The pre-check names no system to ask.',
 				'raw' => [],
 			];
-			$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: 0);
-			return $answer;
 		}
 
-		$timeout = (int)($configuration['timeoutSeconds'] ?? self::DEFAULT_TIMEOUT_SECONDS);
+		return $this->askRemote(run: $run, url: $url);
 
-		$extraHeaders = ($configuration['headers'] ?? null);
-		if (is_array($extraHeaders) === false) {
-			$extraHeaders = [];
-		}
+	}//end answerFor()
 
+	/**
+	 * Ask the outside system and read its answer; no answer when it cannot be reached.
+	 *
+	 * @param PreCheckRun $run The pre-check.
+	 * @param string      $url The system to ask.
+	 *
+	 * @return array{decision:string,reason:string,raw:array<string,mixed>} What it said.
+	 */
+	private function askRemote(PreCheckRun $run, string $url): array {
 		try {
-			$response = $this->clientService->newClient()->post(
-				$url,
-				[
-					'headers' => array_merge(
-						['Accept' => 'application/json'],
-						$extraHeaders
-					),
-					'json' => $payload,
-					'timeout' => $timeout,
-				]
-			);
+			$response = $this->post(run: $run, url: $url);
 			$decoded = json_decode((string)$response->getBody(), true);
-			$statusCode = (int)$response->getStatusCode();
+			$run->statusCode = (int)$response->getStatusCode();
 		} catch (Throwable $exception) {
 			// A timeout, a refused connection and a torn-down TLS session all
 			// land here, and none of them is permission.
-			$answer = [
+			return [
 				'decision' => self::NO_ANSWER,
-				'reason' => 'No answer within ' . $timeout . ' seconds: ' . $exception->getMessage(),
+				'reason' => 'No answer within ' . $run->timeout() . ' seconds: ' . $exception->getMessage(),
 				'raw' => [],
 			];
-			$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: 0);
-			return $answer;
 		}
 
 		if (is_array($decoded) === false) {
 			$decoded = [];
 		}
 
-		$answer = $this->interpret(body: $decoded);
-		$this->record(configuration: $configuration, payload: $payload, answer: $answer, statusCode: $statusCode);
+		return $this->interpret(body: $decoded);
 
-		return $answer;
+	}//end askRemote()
 
-	}//end ask()
+	/**
+	 * POST the payload as JSON with the configured headers and timeout.
+	 *
+	 * @param PreCheckRun $run The pre-check.
+	 * @param string      $url The system to ask.
+	 *
+	 * @return IResponse
+	 */
+	private function post(PreCheckRun $run, string $url): IResponse {
+		$extraHeaders = ($run->configuration['headers'] ?? null);
+		if (is_array($extraHeaders) === false) {
+			$extraHeaders = [];
+		}
+
+		return $this->clientService->newClient()->post(
+			$url,
+			[
+				'headers' => array_merge(
+					['Accept' => 'application/json'],
+					$extraHeaders
+				),
+				'json' => $run->payload,
+				'timeout' => $run->timeout(),
+			]
+		);
+
+	}//end post()
 
 	/**
 	 * Read an answer out of what the outside system sent.
@@ -192,14 +225,12 @@ class PreCheckService {
 	/**
 	 * Record the attempt, whatever came of it.
 	 *
-	 * @param array<string,mixed> $configuration The pre-check configuration.
-	 * @param array<string,mixed> $payload What was asked.
+	 * @param PreCheckRun         $run    The pre-check, with the HTTP status (zero when there was none).
 	 * @param array<string,mixed> $answer What came back.
-	 * @param int $statusCode The HTTP status, zero when there was none.
 	 *
 	 * @return void
 	 */
-	private function record(array $configuration, array $payload, array $answer, int $statusCode): void {
+	private function record(PreCheckRun $run, array $answer): void {
 		$statusMessage = $answer['decision'];
 		if ($answer['reason'] !== '') {
 			$statusMessage .= ': ' . $answer['reason'];
@@ -207,10 +238,10 @@ class PreCheckService {
 
 		$this->recorder->record(
 			[
-				'target' => (string)($configuration['url'] ?? 'pre-check'),
-				'request' => ['method' => 'POST', 'url' => (string)($configuration['url'] ?? ''), 'body' => $payload],
+				'target' => (string)($run->configuration['url'] ?? 'pre-check'),
+				'request' => ['method' => 'POST', 'url' => (string)($run->configuration['url'] ?? ''), 'body' => $run->payload],
 				'response' => $answer['raw'],
-				'statusCode' => $statusCode,
+				'statusCode' => $run->statusCode,
 				'statusMessage' => $statusMessage,
 				'kind' => CallRecorder::KIND_TRIGGERED,
 			]

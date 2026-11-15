@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -56,6 +59,8 @@ interface IdpLoginServiceInterface {
 	 *
 	 * @return string The consumer's return address with `code` and `relayState`, or with `error` and `relayState`.
 	 *
+	 * @throws \OCA\Integriq\Exception\IdpAssuranceBelowFloorException When the assertion is below the assurance floor;
+	 *                                         it carries the address the refusal page leads back to.
 	 * @throws IdpAssertionException When the response answers no stored state (an IdP-initiated flow included).
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002

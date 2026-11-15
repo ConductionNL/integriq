@@ -92,21 +92,13 @@ class WebhookConnection implements WebhookConnectionInterface {
 		$consumer = $this->requireConsumer(profile: $profile);
 		$data = $consumer->getObject();
 
-		$trust = ($data['authorizationConfiguration'] ?? []);
-		if (is_array($trust) === false) {
-			$trust = [];
-		}
+		$trust = self::trustOf(data: $data);
 
 		$headerValue = (string)$headerOf((string)($trust['header'] ?? $profile->defaultHeader));
-
 		$verified = $this->signatureService->verify(
 			rawBody: $rawBody,
 			headerValue: $headerValue,
-			config: [
-				'scheme' => (string)($trust['scheme'] ?? $profile->defaultScheme),
-				'secret' => (string)($trust['secret'] ?? ''),
-				'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS),
-			]
+			config: self::signatureConfig(trust: $trust, profile: $profile)
 		);
 		if ($verified === false) {
 			throw new DsoSignatureException(message: $profile->label . ' webhook signature validation failed');
@@ -118,6 +110,42 @@ class WebhookConnection implements WebhookConnectionInterface {
 		return new DsoIdentity(account: $account, consumerUuid: (string)$consumer->getUuid());
 
 	}//end authenticate()
+
+	/**
+	 * The consumer's signature trust settings; anything that is not an array reads as none.
+	 *
+	 * @param array<string, mixed> $data The consumer data.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#requirement-a-signed-webhook-acts-as-its-consumers-account-req-cm-020
+	 */
+	private static function trustOf(array $data): array {
+		$trust = ($data['authorizationConfiguration'] ?? []);
+		if (is_array($trust) === false) {
+			return [];
+		}
+
+		return $trust;
+	}//end trustOf()
+
+	/**
+	 * The signature check to make: the consumer's scheme, secret and tolerance, else the profile's defaults.
+	 *
+	 * @param array<string, mixed> $trust   The consumer's trust settings.
+	 * @param WebhookProfile       $profile The intake profile.
+	 *
+	 * @return array{scheme: string, secret: string, toleranceSeconds: int}
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#requirement-a-signed-webhook-acts-as-its-consumers-account-req-cm-020
+	 */
+	private static function signatureConfig(array $trust, WebhookProfile $profile): array {
+		return [
+			'scheme' => (string)($trust['scheme'] ?? $profile->defaultScheme),
+			'secret' => (string)($trust['secret'] ?? ''),
+			'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS),
+		];
+	}//end signatureConfig()
 
 	/**
 	 * The consumers of the webhook on this instance, read raw.

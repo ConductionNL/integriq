@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
+/**
  * Integriq Metrics Controller — AppHost adapter with OpenRegister guard.
  *
  * Thin app-namespace metrics endpoint (URL `/api/metrics`, route name

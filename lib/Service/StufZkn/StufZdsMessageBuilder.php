@@ -111,55 +111,90 @@ class StufZdsMessageBuilder {
 			throw new StufZknTranslationException(message: 'No zaaktype for this case: the calling app maps its case type to a zaaktype omschrijving.');
 		}
 
-		$documents = [];
-		if ((bool)($opts['includeDocuments'] ?? false) === true) {
-			$documents = $this->encodeDocuments(
-				documents: (array)($case['documenten'] ?? []),
-				limitBytes: (int)($opts['payloadLimitBytes'] ?? self::PAYLOAD_LIMIT_BYTES)
-			);
-		}
-
+		$documentXml     = $this->documentsXml(case: $case, opts: $opts);
 		$referenceNumber = $this->generateReferentienummer();
+		$head            = new ZdsMessageHead(messageCode: 'Lk01', entityType: 'ZAK', role: 'creeerZaak', referenceNumber: $referenceNumber);
+		$object          = $this->identificationXml(caseIdentification: $caseIdentification)
+			. $this->caseFieldsXml(case: $case, zaaktypeOmschrijving: $zaaktypeOmschrijving) . $documentXml;
 
-		$identification = '';
-		if ($caseIdentification !== null && $caseIdentification !== '') {
-			$identification = $this->element(name: 'zkn:identificatie', value: $caseIdentification);
+		$body = '<zkn:zakLk01>' . $this->stuurgegevens(head: $head, routing: $routing)
+			. '<zkn:parameters><stuf:mutatiesoort>T</stuf:mutatiesoort><stuf:indicatorOvername>V</stuf:indicatorOvername></zkn:parameters>'
+			. '<zkn:object stuf:entiteittype="ZAK" stuf:verwerkingssoort="T">' . $object . '</zkn:object></zkn:zakLk01>';
+
+		return ['referentienummer' => $referenceNumber, 'xml' => $this->envelope(bodyXml: $body, routing: $routing)];
+	}//end caseCreation()
+
+	/**
+	 * The zkn:identificatie of a pre-allocated zaak identificatie, or '' when there is none.
+	 *
+	 * @param string|null $caseIdentification The pre-allocated identificatie, or null.
+	 *
+	 * @return string The XML.
+	 */
+	private function identificationXml(?string $caseIdentification): string {
+		if ($caseIdentification === null || $caseIdentification === '') {
+			return '';
 		}
 
-		$parties = '';
+		return $this->element(name: 'zkn:identificatie', value: $caseIdentification);
+	}//end identificationXml()
+
+	/**
+	 * The case's omschrijving, startdatum, zaaktype and betrokkenen.
+	 *
+	 * @param array  $case                 The case: omschrijving, startdatum, betrokkenen[] (bsn, role).
+	 * @param string $zaaktypeOmschrijving The zaaktype omschrijving.
+	 *
+	 * @return string The XML.
+	 */
+	private function caseFieldsXml(array $case, string $zaaktypeOmschrijving): string {
+		$xml = $this->element(name: 'zkn:omschrijving', value: (string)($case['omschrijving'] ?? ''))
+			. $this->element(name: 'zkn:startdatum', value: (string)($case['startdatum'] ?? ''))
+			. '<zkn:isVan stuf:entiteittype="ZAKZKT"><zkn:gerelateerde stuf:entiteittype="ZKT">'
+			. $this->element(name: 'zkn:omschrijving', value: $zaaktypeOmschrijving)
+			. '</zkn:gerelateerde></zkn:isVan>';
+
 		foreach ((array)($case['betrokkenen'] ?? []) as $party) {
-			$role     = $this->escape(value: (string)($party['role'] ?? 'heeftAlsInitiator'));
-			$parties .= '<zkn:' . $role . '><zkn:gerelateerde><zkn:natuurlijkPersoon stuf:entiteittype="NPS">'
+			$role = $this->escape(value: (string)($party['role'] ?? 'heeftAlsInitiator'));
+			$xml .= '<zkn:' . $role . '><zkn:gerelateerde><zkn:natuurlijkPersoon stuf:entiteittype="NPS">'
 				. $this->element(name: 'bg:inp.bsn', value: (string)($party['bsn'] ?? ''))
 				. '</zkn:natuurlijkPersoon></zkn:gerelateerde></zkn:' . $role . '>';
 		}
 
-		$documentXml = '';
+		return $xml;
+	}//end caseFieldsXml()
+
+	/**
+	 * The case's documents as zkn:heeftRelevant, when the options include them.
+	 *
+	 * @param array $case The case: documenten[] (name, mime, bytes).
+	 * @param array $opts includeDocuments (bool), payloadLimitBytes (int).
+	 *
+	 * @return string The XML, '' when documents are not included.
+	 *
+	 * @throws StufZknTranslationException When the documents exceed the ceiling.
+	 */
+	private function documentsXml(array $case, array $opts): string {
+		if ((bool)($opts['includeDocuments'] ?? false) === false) {
+			return '';
+		}
+
+		$documents = $this->encodeDocuments(
+			documents: (array)($case['documenten'] ?? []),
+			limitBytes: (int)($opts['payloadLimitBytes'] ?? self::PAYLOAD_LIMIT_BYTES)
+		);
+
+		$xml = '';
 		foreach ($documents as $document) {
-			$documentXml .= '<zkn:heeftRelevant><zkn:gerelateerde stuf:entiteittype="EDC">'
+			$xml .= '<zkn:heeftRelevant><zkn:gerelateerde stuf:entiteittype="EDC">'
 				. $this->element(name: 'stuf:bestandsnaam', value: $document['name'])
 				. $this->element(name: 'stuf:formaat', value: $document['mime'])
 				. '<stuf:bestandsinhoud>' . $document['base64'] . '</stuf:bestandsinhoud>'
 				. '</zkn:gerelateerde></zkn:heeftRelevant>';
 		}
 
-		$body = '<zkn:zakLk01>'
-			. $this->stuurgegevens(messageCode: 'Lk01', routing: $routing, entityType: 'ZAK', role: 'creeerZaak', referenceNumber: $referenceNumber)
-			. '<zkn:parameters><stuf:mutatiesoort>T</stuf:mutatiesoort><stuf:indicatorOvername>V</stuf:indicatorOvername></zkn:parameters>'
-			. '<zkn:object stuf:entiteittype="ZAK" stuf:verwerkingssoort="T">'
-			. $identification
-			. $this->element(name: 'zkn:omschrijving', value: (string)($case['omschrijving'] ?? ''))
-			. $this->element(name: 'zkn:startdatum', value: (string)($case['startdatum'] ?? ''))
-			. '<zkn:isVan stuf:entiteittype="ZAKZKT"><zkn:gerelateerde stuf:entiteittype="ZKT">'
-			. $this->element(name: 'zkn:omschrijving', value: $zaaktypeOmschrijving)
-			. '</zkn:gerelateerde></zkn:isVan>'
-			. $parties
-			. $documentXml
-			. '</zkn:object>'
-			. '</zkn:zakLk01>';
-
-		return ['referentienummer' => $referenceNumber, 'xml' => $this->envelope(bodyXml: $body, routing: $routing)];
-	}//end caseCreation()
+		return $xml;
+	}//end documentsXml()
 
 	/**
 	 * Build a zakLk02 actualiseerZaak: a sparse update of the fields a case system accepts.
@@ -182,8 +217,9 @@ class StufZdsMessageBuilder {
 			}
 		}
 
+		$head = new ZdsMessageHead(messageCode: 'Lk02', entityType: 'ZAK', role: 'actualiseerZaak', referenceNumber: $referenceNumber);
 		$body = '<zkn:zakLk02>'
-			. $this->stuurgegevens(messageCode: 'Lk02', routing: $routing, entityType: 'ZAK', role: 'actualiseerZaak', referenceNumber: $referenceNumber)
+			. $this->stuurgegevens(head: $head, routing: $routing)
 			. '<zkn:object stuf:entiteittype="ZAK" stuf:verwerkingssoort="W">'
 			. $this->element(name: 'zkn:identificatie', value: $caseIdentification)
 			. $fields
@@ -212,8 +248,9 @@ class StufZdsMessageBuilder {
 			$scope .= '<zkn:' . $this->escape(value: (string)$element) . ' />';
 		}
 
+		$head = new ZdsMessageHead(messageCode: 'Lv01', entityType: 'ZAK', role: 'geefZaakdetails', referenceNumber: $referenceNumber);
 		$body = '<zkn:zakLv01>'
-			. $this->stuurgegevens(messageCode: 'Lv01', routing: $routing, entityType: 'ZAK', role: 'geefZaakdetails', referenceNumber: $referenceNumber)
+			. $this->stuurgegevens(head: $head, routing: $routing)
 			. '<zkn:gelijk stuf:entiteittype="ZAK">' . $this->element(name: 'zkn:identificatie', value: $caseIdentification) . '</zkn:gelijk>'
 			. '<zkn:scope><zkn:object stuf:entiteittype="ZAK">' . $scope . '</zkn:object></zkn:scope>'
 			. '</zkn:zakLv01>';
@@ -235,11 +272,8 @@ class StufZdsMessageBuilder {
 
 		$body = '<zkn:genereerZaakIdentificatie_Di02>'
 			. $this->stuurgegevens(
-				messageCode: 'Di02',
-				routing: $routing,
-				entityType: '',
-				role: 'genereerZaakIdentificatie',
-				referenceNumber: $referenceNumber
+				head: new ZdsMessageHead(messageCode: 'Di02', entityType: '', role: 'genereerZaakIdentificatie', referenceNumber: $referenceNumber),
+				routing: $routing
 			)
 			. '</zkn:genereerZaakIdentificatie_Di02>';
 
@@ -274,9 +308,10 @@ class StufZdsMessageBuilder {
 			$values .= $this->element(name: 'zkn:' . (string)$field, value: (string)$value);
 		}
 
+		$head = new ZdsMessageHead(messageCode: 'Du01', entityType: 'ZAK', role: $name, referenceNumber: $referenceNumber);
 		$tag  = 'zkn:' . $this->escape(value: $name) . '_Du01';
 		$body = '<' . $tag . '>'
-			. $this->stuurgegevens(messageCode: 'Du01', routing: $routing, entityType: 'ZAK', role: $name, referenceNumber: $referenceNumber)
+			. $this->stuurgegevens(head: $head, routing: $routing)
 			. '<zkn:parameters>' . $values . '</zkn:parameters>'
 			. '</' . $tag . '>';
 
@@ -381,26 +416,39 @@ class StufZdsMessageBuilder {
 	/**
 	 * The stuurgegevens block.
 	 *
-	 * @param string $messageCode     The berichtcode (Lk01, Lk02, Lv01, Di02, Du01).
-	 * @param array  $routing         Zender and ontvanger.
-	 * @param string $entityType      The entiteittype, '' for none.
-	 * @param string $role            The functie.
-	 * @param string $referenceNumber The referentienummer.
+	 * @param ZdsMessageHead $head    The berichtcode, entiteittype, functie and referentienummer.
+	 * @param array          $routing Zender and ontvanger.
 	 *
 	 * @return string The XML.
 	 */
-	private function stuurgegevens(string $messageCode, array $routing, string $entityType, string $role, string $referenceNumber): string {
-		$zender    = (array)($routing['zender'] ?? []);
-		$ontvanger = (array)($routing['ontvanger'] ?? []);
-
+	private function stuurgegevens(ZdsMessageHead $head, array $routing): string {
 		$entity = '';
-		if ($entityType !== '') {
-			$entity = $this->element(name: 'stuf:entiteittype', value: $entityType);
+		if ($head->entityType !== '') {
+			$entity = $this->element(name: 'stuf:entiteittype', value: $head->entityType);
 		}
 
 		return '<zkn:stuurgegevens>'
-			. $this->element(name: 'stuf:berichtcode', value: $messageCode)
-			. '<stuf:zender>'
+			. $this->element(name: 'stuf:berichtcode', value: $head->messageCode)
+			. $this->routingXml(routing: $routing)
+			. $this->element(name: 'stuf:referentienummer', value: $head->referenceNumber)
+			. $this->element(name: 'stuf:tijdstipBericht', value: $this->currentTimestamp())
+			. $entity
+			. $this->element(name: 'stuf:functie', value: $head->role)
+			. '</zkn:stuurgegevens>';
+	}//end stuurgegevens()
+
+	/**
+	 * The zender and ontvanger of the stuurgegevens.
+	 *
+	 * @param array $routing Zender and ontvanger.
+	 *
+	 * @return string The XML.
+	 */
+	private function routingXml(array $routing): string {
+		$zender    = (array)($routing['zender'] ?? []);
+		$ontvanger = (array)($routing['ontvanger'] ?? []);
+
+		return '<stuf:zender>'
 			. $this->element(name: 'stuf:organisatie', value: (string)($zender['organisatie'] ?? ''))
 			. $this->element(name: 'stuf:applicatie', value: (string)($zender['applicatie'] ?? ''))
 			. '</stuf:zender>'
@@ -408,13 +456,8 @@ class StufZdsMessageBuilder {
 			. $this->element(name: 'stuf:organisatie', value: (string)($ontvanger['organisatie'] ?? ''))
 			. $this->element(name: 'stuf:applicatie', value: (string)($ontvanger['applicatie'] ?? ''))
 			. $this->element(name: 'stuf:gebruiker', value: (string)($ontvanger['gebruiker'] ?? ''))
-			. '</stuf:ontvanger>'
-			. $this->element(name: 'stuf:referentienummer', value: $referenceNumber)
-			. $this->element(name: 'stuf:tijdstipBericht', value: $this->currentTimestamp())
-			. $entity
-			. $this->element(name: 'stuf:functie', value: $role)
-			. '</zkn:stuurgegevens>';
-	}//end stuurgegevens()
+			. '</stuf:ontvanger>';
+	}//end routingXml()
 
 	/**
 	 * Wrap a body in a SOAP envelope, with a WS-Security header when the routing names a user.

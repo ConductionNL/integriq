@@ -28,6 +28,8 @@ use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -124,33 +126,27 @@ class SynchronizationSaveFetchedFileTest extends TestCase {
 			 * Records a save.
 			 *
 			 * @param mixed $objectEntity The object.
-			 * @param string $fileName The name.
-			 * @param mixed $content The content.
-			 * @param bool $share Share flag.
-			 * @param array|null $tags Tags.
+			 * @param FileUpload $upload The file name, content, share flag and tags.
 			 *
 			 * @return mixed
 			 */
-			public function saveFile($objectEntity, $fileName, $content, $share = false, $tags = []) {
+			public function saveFile($objectEntity, FileUpload $upload) {
+				[$fileName, $content, $share, $tags] = [$upload->fileName, $upload->content, $upload->share, $upload->tags];
 				return $this->test->record('file.saveFile', [$objectEntity->getUuid(), $fileName, $content, $share, $tags]);
 			}
 
 			/**
 			 * Records an add.
 			 *
-			 * @param mixed $objectEntity The object id.
-			 * @param string $fileName The name.
-			 * @param mixed $content The content.
-			 * @param bool $share Share flag.
-			 * @param array|null $tags Tags.
-			 * @param mixed $_schema Schema.
-			 * @param mixed $_register Register.
-			 * @param mixed $registerId Register id.
+			 * @param FileTarget $target The object id and register.
+			 * @param FileUpload $upload The file name, content, share flag and tags.
 			 *
 			 * @return mixed
 			 */
-			public function addFile($objectEntity, $fileName, $content, $share = false, $tags = [], $_schema = null, $_register = null, $registerId = null) {
-				return $this->test->record('file.addFile', [$objectEntity, $fileName, $content, $share, $tags, $_schema, $_register, $registerId]);
+			public function addFile(FileTarget $target, FileUpload $upload) {
+				[$objectEntity, $registerId] = [$target->object, $target->registerId];
+				[$fileName, $content, $share, $tags] = [$upload->fileName, $upload->content, $upload->share, $upload->tags];
+				return $this->test->record('file.addFile', [$objectEntity, $fileName, $content, $share, $tags, $registerId]);
 			}
 
 			/**

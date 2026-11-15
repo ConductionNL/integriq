@@ -1,0 +1,31 @@
+{
+  "$comment": "ADR-037 register fragment (platform-bookkeeping-catalogue-items D1). A dormant bookkeeping source template the catalogue lists under its bookkeeping category (CatalogRegistryService::SLUG_CATEGORY_OVERRIDES). No key material: the credential is a broker reference the administrator creates when instantiating it; the live binding fails closed without it. The sandbox record of the same connector in integriq_seed_data.json is for demos only.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "psd2-bank-aggregator"
+        },
+        "name": "PSD2 bank aggregator",
+        "description": "Read bank accounts and their transactions through a PSD2 account information aggregator (a GoCardless Bank Account Data style API): connect, consent, discover the accounts and sync their transactions. Set configuration.baseUrl to the aggregator's API address and create the credential named below (the aggregator's client credentials) in the credential broker, then enable.",
+        "type": "psd2",
+        "location": "",
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0",
+        "configuration": {
+          "provider": "rest",
+          "baseUrl": "",
+          "expiryWarningDays": 14,
+          "authentication": {
+            "credentialRef": {
+              "credentialName": "psd2-bank-aggregator-client-credentials"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

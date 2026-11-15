@@ -307,4 +307,36 @@ class ExchangeAcknowledgementListenerTest extends TestCase {
 		}
 
 	}//end testTheListenerIsRegisteredForEveryAdaptersAcknowledgement()
+
+	/**
+	 * A failure while reporting is logged with the job, never thrown.
+	 *
+	 * @return void
+	 */
+	public function testAFailureWhileReportingIsLoggedNotThrown(): void {
+		$jobs = $this->createMock(\OCA\Integriq\Service\Exchange\ExchangeJobServiceInterface::class);
+		$jobs->method('findJob')->willThrowException(new \RuntimeException('register down'));
+		$logged = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('error')->willReturnCallback(
+			function (string $message, array $context) use (&$logged): void {
+				$logged[] = [$message, $context];
+			}
+		);
+		$listener = new ExchangeAcknowledgementListener(
+			jobs: $jobs,
+			rejections: $this->createMock(\OCA\Integriq\Service\Exchange\ExchangeRejectionServiceInterface::class),
+			targets: new ExchangeTargetCatalogue(),
+			dispatcher: $this->createMock(IEventDispatcher::class),
+			logger: $logger
+		);
+
+		$listener->handle(new OsoAcknowledgementReceivedEvent('job-x:r-1:extra', 'OSO-1', null, false));
+
+		$this->assertSame(
+			[['[integriq] an acknowledgement for exchange job {job} could not be recorded: {error}', ['job' => 'job-x', 'error' => 'register down']]],
+			$logged
+		);
+
+	}//end testAFailureWhileReportingIsLoggedNotThrown()
 }//end class
