@@ -48,6 +48,7 @@ stubModal('../../src/dialogs/CatalogItemDetailDialog.vue', 'CatalogItemDetailDia
 stubModal('../../src/dialogs/ImportPreviewDialog.vue', 'ImportPreviewDialog', [])
 stubModal('../../src/dialogs/ExportConfigurationDialog.vue', 'ExportConfigurationDialog', [])
 stubModal('../../src/modals/PromotePreviewModal.vue', 'PromotePreviewModal', [])
+stubModal('../../src/dialogs/SharePointPublicationSetupDialog.vue', 'SharePointPublicationSetupDialog', [])
 stubModal('../../src/dialogs/RegistryLookupDialog.vue', 'RegistryLookupDialog', [])
 stubModal('../../src/dialogs/GatewayCatalogueDialog.vue', 'GatewayCatalogueDialog', [])
 stubModal('../../src/dialogs/LinkSourceDialog.vue', 'LinkSourceDialog', ['app'])
@@ -94,6 +95,7 @@ const cases = [
 	[bus.EVENT_OPEN_CONFIGURATION_IMPORT, 'ImportPreviewDialog', {}, {}],
 	[bus.EVENT_OPEN_CONFIGURATION_EXPORT, 'ExportConfigurationDialog', {}, {}],
 	[bus.EVENT_OPEN_PROMOTION, 'PromotePreviewModal', {}, {}],
+	[bus.EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, 'SharePointPublicationSetupDialog', {}, {}],
 	[bus.EVENT_OPEN_REGISTRY_LOOKUP, 'RegistryLookupDialog', {}, {}],
 	[bus.EVENT_OPEN_GATEWAY_CATALOGUE, 'GatewayCatalogueDialog', {}, {}],
 	[bus.EVENT_OPEN_LINK_SOURCE, 'LinkSourceDialog', { app: 'dossiq' }, { app: '' }],

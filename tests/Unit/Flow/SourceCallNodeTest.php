@@ -909,6 +909,156 @@ class SourceCallNodeTest extends TestCase {
 	}//end testEveryCallOutcomeMatchesTheGoldenFile()
 
 	/**
+	 * A templated source sends each item through the source its own record names.
+	 *
+	 * @return void
+	 */
+	public function testTemplatedSourceSendsEachItemThroughItsOwnSource(): void {
+		$this->givenOwner();
+		$sources = $this->givenBoardSources();
+
+		$looked = [];
+		$this->objectService->method('find')->willReturnCallback(
+			static function (...$arguments) use ($sources, &$looked): ?ObjectEntity {
+				$looked[] = $arguments[0];
+
+				return ($sources[$arguments[0]] ?? null);
+			}
+		);
+
+		$sent = [];
+		$this->callService->expects($this->exactly(3))->method('callAsync')->willReturnCallback(
+			function (...$arguments) use (&$sent): FulfilledPromise {
+				$sent[] = $arguments[0]->getUuid();
+
+				return $this->promisedLog(statusCode: 201, body: '{"id":"posted"}', statusMessage: 'Created');
+			}
+		);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[
+				['json' => ['channel' => 'werk-nl']],
+				['json' => ['channel' => 'linkedin']],
+				['json' => ['channel' => 'werk-nl']],
+			],
+			array_merge($this->config(), ['source' => 'jobboard-{{ json.channel }}']),
+			$this->context()
+		));
+
+		$this->assertSame(['werk-nl-uuid', 'linkedin-uuid', 'werk-nl-uuid'], $sent);
+		$this->assertSame(['jobboard-werk-nl', 'jobboard-linkedin'], $looked);
+		$this->assertSame('jobboard-werk-nl', $out[0]['json']['echo']['source']);
+		$this->assertSame('jobboard-linkedin', $out[1]['json']['echo']['source']);
+		$this->assertSame('linkedin-uuid', $out[1]['json']['echo']['sourceId']);
+
+	}//end testTemplatedSourceSendsEachItemThroughItsOwnSource()
+
+	/**
+	 * Under `continue`, an item whose board has no source fails alone and the others are sent.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvedTemplatedSourceFailsOnlyItsItemUnderContinue(): void {
+		$this->givenOwner();
+		$sources = $this->givenBoardSources();
+		$this->objectService->method('find')->willReturnCallback(
+			static function (...$arguments) use ($sources): ?ObjectEntity {
+				return ($sources[$arguments[0]] ?? null);
+			}
+		);
+
+		$this->callService->expects($this->exactly(2))->method('callAsync')->willReturn(
+			$this->promisedLog(statusCode: 201, body: '{"id":"posted"}', statusMessage: 'Created')
+		);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[
+				['json' => ['channel' => 'werk-nl']],
+				['json' => ['channel' => 'indeed']],
+				['json' => ['channel' => 'linkedin']],
+			],
+			array_merge($this->config(), ['source' => 'jobboard-{{ json.channel }}', 'onError' => 'continue']),
+			$this->context()
+		));
+
+		$this->assertCount(3, $out);
+		$this->assertSame(201, $out[0]['json']['echo']['status']);
+		$this->assertSame(201, $out[2]['json']['echo']['status']);
+		$this->assertArrayNotHasKey('echo', $out[1]['json']);
+
+		$failed = $out[1]['json'][FlowNodeSupport::ERROR_KEY];
+		$this->assertSame('source', $failed['kind']);
+		$this->assertSame('jobboard-indeed', $failed['source']);
+		$this->assertStringContainsString('No source configured: "jobboard-indeed"', $failed['message']);
+		$this->assertSame(1, $out[1]['pairedItem']['item']);
+
+	}//end testUnresolvedTemplatedSourceFailsOnlyItsItemUnderContinue()
+
+	/**
+	 * Under the default policy, an unresolved per-item source refuses the step before any request.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvedTemplatedSourceUnderStopMakesNoRequest(): void {
+		$this->givenOwner();
+		$sources = $this->givenBoardSources();
+		$this->objectService->method('find')->willReturnCallback(
+			static function (...$arguments) use ($sources): ?ObjectEntity {
+				return ($sources[$arguments[0]] ?? null);
+			}
+		);
+		$this->callService->expects($this->never())->method('callAsync');
+
+		$this->expectException(FlowNodeException::class);
+		$this->expectExceptionMessage('No source configured: "jobboard-indeed". This item makes no request.');
+
+		$this->node->execute(new FlowNodeCall(
+			[['json' => ['channel' => 'werk-nl']], ['json' => ['channel' => 'indeed']]],
+			array_merge($this->config(), ['source' => 'jobboard-{{ json.channel }}']),
+			$this->context()
+		));
+
+	}//end testUnresolvedTemplatedSourceUnderStopMakesNoRequest()
+
+	/**
+	 * A templated source that renders empty for an item names no source and makes no lookup.
+	 *
+	 * @return void
+	 */
+	public function testTemplatedSourceRenderingEmptyFailsWithoutALookup(): void {
+		$this->givenOwner();
+		$this->objectService->expects($this->never())->method('find');
+		$this->callService->expects($this->never())->method('callAsync');
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[['json' => []]],
+			array_merge($this->config(), ['source' => '{{ json.channel }}', 'onError' => 'continue']),
+			$this->context()
+		));
+
+		$this->assertSame('', $out[0]['json'][FlowNodeSupport::ERROR_KEY]['source']);
+		$this->assertSame('No source configured: "". This item makes no request.', $out[0]['json'][FlowNodeSupport::ERROR_KEY]['message']);
+
+	}//end testTemplatedSourceRenderingEmptyFailsWithoutALookup()
+
+	/**
+	 * Two job board sources keyed by their reference.
+	 *
+	 * @return array<string, ObjectEntity> The sources.
+	 */
+	private function givenBoardSources(): array {
+		$sources = [];
+		foreach (['werk-nl', 'linkedin'] as $board) {
+			$source = new ObjectEntity();
+			$source->setUuid($board . '-uuid');
+			$source->setObject(['location' => 'https://' . $board . '.example.org', 'isEnabled' => true]);
+			$sources['jobboard-' . $board] = $source;
+		}
+
+		return $sources;
+	}//end givenBoardSources()
+
+	/**
 	 * The step's default configuration used by most tests.
 	 *
 	 * @return array<string, mixed> The configuration.

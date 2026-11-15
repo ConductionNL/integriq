@@ -241,6 +241,7 @@ class CertificateExpiryAlertService {
 	 * @return array<int,object>
 	 */
 	private function read(string $schema, array $filters): array {
+		// Unscoped: the connection health job checks every source's certificate, as the system.
 		$result = $this->objectService->findAll(
 			config: [
 				'filters' => array_merge(['register' => ConnectionAlertService::REGISTER, 'schema' => $schema], $filters),

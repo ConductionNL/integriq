@@ -343,4 +343,19 @@ class ExchangeRejectionServiceTest extends TestCase {
 		$this->assertSame('learniq', $open['ownerApp']);
 
 	}//end testTheStoredRowsInFull()
+	/**
+	 * Offending fields that are not a list are stored as none when a rejection reopens.
+	 *
+	 * @return void
+	 */
+	public function testReopenWithFieldsThatAreNotAListStoresNone(): void {
+		$id = $this->failedRejection();
+		$this->service->resubmit($id, 'coordinator');
+
+		$this->service->reopen($id, ['errorCode' => 'BRON-101', 'offendingFields' => 'bsn']);
+
+		$this->assertSame('failed', $this->store[$id]['status']);
+		$this->assertSame([], $this->store[$id]['offendingFields']);
+
+	}//end testReopenWithFieldsThatAreNotAListStoresNone()
 }//end class
