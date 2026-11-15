@@ -1,5 +1,0 @@
-{
-    "$comment": "ADR-037 manifest fragment (environments-and-promotion). REVISED under the ADR-079/080 navigation rework: the Environments INDEX page and its top-level menu entry are withdrawn. An `environment` carries no connection or credential material of its own — it is name/slug/role plus a `sourceRef` pointing at the `source` (type: api) that holds location + credentialRef — so it is an attribute OF a source, not a peer of it. It now renders as the `src-environments` widget on SourceDetail (see src/manifest.json), and the 'Promote configuration' header action moves onto the Sources index page in src/manifest.json (a fragment cannot carry it: buildManifest reads only pages/menu/pageTemplates/pageInstances/sets from a fragment, so any other key is silently ignored). /environments redirects to /sources.",
-    "pages": [],
-    "menu": []
-}
