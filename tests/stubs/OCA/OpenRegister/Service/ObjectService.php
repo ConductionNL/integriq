@@ -130,14 +130,14 @@ class ObjectService {
 	 * Render an entity (signature as OpenRegister #9077).
 	 *
 	 * @param ObjectEntity $entity The entity to render.
-	 * @param \OCA\OpenRegister\Service\Object\RenderSelection|null $selection The extend, filter, fields and unset lists.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\RenderSelection|null $selection The extend, filter, fields and unset lists.
 	 * @param bool $_rbac Apply RBAC filters when true.
 	 * @param bool $_multitenancy Apply multitenancy filters when true.
 	 * @return array
 	 */
 	public function renderEntity(
 		ObjectEntity $entity,
-		?\OCA\OpenRegister\Service\Object\RenderSelection $selection = null,
+		?\OCA\OpenRegister\Kernel\Contracts\RenderSelection $selection = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {

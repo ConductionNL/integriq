@@ -28,7 +28,7 @@ use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
-use OCA\OpenRegister\Service\Object\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;

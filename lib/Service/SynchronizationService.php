@@ -77,7 +77,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
-use OCA\OpenRegister\Service\Object\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;

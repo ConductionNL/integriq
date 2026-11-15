@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Stub for OCA\OpenRegister\Service\Object\RenderSelection.
+ * Stub for OCA\OpenRegister\Kernel\Contracts\RenderSelection.
  *
  * Same constructor as the OpenRegister value object, so a test builds and
  * reads it the way production does when the peer app is not installed.
@@ -13,7 +13,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The extend, filter, fields and unset lists of one render.

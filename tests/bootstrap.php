@@ -237,8 +237,8 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Object\\RenderSelection') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/RenderSelection.php';
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\RenderSelection') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/RenderSelection.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
