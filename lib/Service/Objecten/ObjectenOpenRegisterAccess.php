@@ -80,7 +80,16 @@ class ObjectenOpenRegisterAccess {
 	 *
 	 * @var string
 	 */
-	public const TOKEN_SCHEMA = 'objecten_token';
+	public const CREDENTIAL_SCHEMA = 'objecten_token';
+
+	/**
+	 * The former name of CREDENTIAL_SCHEMA.
+	 *
+	 * @var string
+	 *
+	 * @deprecated Use CREDENTIAL_SCHEMA.
+	 */
+	public const TOKEN_SCHEMA = self::CREDENTIAL_SCHEMA;
 
 	/**
 	 * OpenRegister's object service.

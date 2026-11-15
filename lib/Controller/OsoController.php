@@ -45,7 +45,6 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Push (register an OSO export) + signed inbound import receiver + signed export retour receiver.
@@ -198,26 +197,9 @@ class OsoController extends Controller {
 	 * @spec openspec/changes/oso-inbound-on-the-consumer-model/specs/oso-adapter/spec.md#requirement-the-import-and-the-retour-act-as-the-oso-connections-account-req-020
 	 */
 	private function handleSignedInbound(callable $handler): JSONResponse {
-		$rawBody = $this->getRawContent();
+		$receipt = new SignedWebhookReceipt(gate: $this->gate, request: $this->request, profile: WebhookProfilesInterface::OSO);
 
-		$identity = $this->gate->identify(profile: WebhookProfilesInterface::OSO, rawBody: $rawBody, request: $this->request);
-		if ($identity instanceof JSONResponse) {
-			return $identity;
-		}
-
-		try {
-			$this->gate->deliver(
-				identity: $identity,
-				operation: function () use ($handler, $rawBody): void {
-					$handler($rawBody);
-				}
-			);
-		} catch (Throwable $exception) {
-			// The account's write was refused: answer 503 so OSO delivers again.
-			return $this->gate->notStored(profile: WebhookProfilesInterface::OSO, reason: $exception->getMessage());
-		}//end try
-
-		return new JSONResponse(['received' => true]);
+		return $receipt->receive(rawBody: $this->getRawContent(), handler: $handler);
 	}//end handleSignedInbound()
 
 	/**

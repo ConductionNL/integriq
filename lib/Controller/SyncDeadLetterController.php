@@ -173,8 +173,7 @@ class SyncDeadLetterController extends Controller {
 				id: $id,
 				register: 'integriq',
 				schema: 'sync_item_dead_letter',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Entry not found')], 404);
@@ -189,8 +188,7 @@ class SyncDeadLetterController extends Controller {
 					id: (string)$synchronizationId,
 					register: 'integriq',
 					schema: 'synchronization',
-					_rbac: false,
-					_multitenancy: false
+					_rbac: false
 				);
 				$syncData = $synchronization->getObject();
 				$synchronizationCtx = [

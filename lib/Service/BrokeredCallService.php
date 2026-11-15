@@ -558,6 +558,16 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 		// 409 config error here — not an unhandled throw at dispatch time.
 		$this->resolveBroker();
 
+		// Per-user OAuth (sources-per-user-oauth D2): a per-user reference resolves to the
+		// signed-in user's own personal credential at the provider, and the
+		// broker is called as that user. There is no shared fallback.
+		if (($ref['perUserProvider'] ?? null) !== null) {
+			return [
+				'credentialId' => $this->resolvePerUserCredentialId(provider: (string)$ref['perUserProvider']),
+				'actingUserId' => null,
+			];
+		}
+
 		$credentialId = $this->resolveCredentialId(ref: $ref);
 		$credential = $this->loadCredential(credentialId: $credentialId, ref: $ref);
 
@@ -788,6 +798,10 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 			);
 		}
 
+		if (array_key_exists('perUser', $ref) === true) {
+			return self::validatePerUserRef(ref: $ref);
+		}
+
 		$unknownKeys = array_diff(array_keys($ref), ['credentialId', 'credentialName']);
 		if (empty($unknownKeys) === false) {
 			throw new BrokeredCallConfigurationException(
@@ -798,6 +812,131 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 
 		return $this->extractSingleRefValue(ref: $ref);
 	}//end validateCredentialRef()
+
+	/**
+	 * Validate a per-user reference: `{"provider": "<slug>", "perUser": true}` and nothing else.
+	 *
+	 * @param array $ref The credentialRef object.
+	 *
+	 * @return array{credentialId: null, credentialName: null, perUserProvider: string} The validated reference.
+	 *
+	 * @throws BrokeredCallConfigurationException When the shape is anything else.
+	 *
+	 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+	 */
+	private static function validatePerUserRef(array $ref): array {
+		$provider = ($ref['provider'] ?? null);
+		$shapeIsValid = array_diff(array_keys($ref), ['provider', 'perUser']) === []
+			&& $ref['perUser'] === true
+			&& is_string($provider) === true
+			&& trim($provider) !== '';
+		if ($shapeIsValid === false) {
+			throw new BrokeredCallConfigurationException(
+				message: 'A per-user credentialRef must be exactly {"provider": "<provider slug>", "perUser": true}.'
+			);
+		}
+
+		return ['credentialId' => null, 'credentialName' => null, 'perUserProvider' => trim($provider)];
+	}//end validatePerUserRef()
+
+	/**
+	 * The signed-in user's own personal credential at a provider.
+	 *
+	 * Refuses a call without a signed-in user, because there is no account to
+	 * use, and refuses rather than guesses when the user has more than one.
+	 * Only the user's own, enabled, personal credentials count: never another
+	 * user's and never an organisation credential.
+	 *
+	 * @param string $provider The provider slug.
+	 *
+	 * @return string The credential UUID.
+	 *
+	 * @throws PerUserAccountNotConnectedException When the user has no such credential.
+	 * @throws BrokeredCallConfigurationException  Without a signed-in user, or with more than one credential.
+	 *
+	 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+	 */
+	private function resolvePerUserCredentialId(string $provider): string {
+		$uid = (string)($this->userSession->getUser()?->getUID() ?? '');
+		if ($uid === '') {
+			throw new BrokeredCallConfigurationException(
+				message: 'This source calls with each user\'s own account at "' . $provider . '", and this call runs '
+					. 'without a signed-in user (a background job or synchronization), so there is no account to use. '
+					. 'Call it from a user session.'
+			);
+		}
+
+		$owned = array_values(
+			array_filter(
+				$this->perUserCandidates(provider: $provider),
+				static fn ($row): bool => self::isUsablePersonalCredential(row: $row, uid: $uid)
+			)
+		);
+		if ($owned === []) {
+			throw new PerUserAccountNotConnectedException(provider: $provider);
+		}
+
+		if (count($owned) > 1) {
+			throw new BrokeredCallConfigurationException(
+				message: 'You have ' . count($owned) . ' connected accounts at "' . $provider . '"; disconnect the ones '
+					. 'this source should not use.'
+			);
+		}
+
+		return (string)$owned[0]->getUuid();
+	}//end resolvePerUserCredentialId()
+
+	/**
+	 * The broker's credentials at a provider, before the owner filter.
+	 *
+	 * @param string $provider The provider slug.
+	 *
+	 * @return array<int, mixed> The rows.
+	 *
+	 * @throws BrokeredCallConfigurationException When the lookup fails.
+	 */
+	private function perUserCandidates(string $provider): array {
+		try {
+			$matches = $this->objectService->findAll(
+				config: [
+					'filters' => [
+						'register' => self::CREDENTIAL_REGISTER,
+						'schema' => self::CREDENTIAL_SCHEMA,
+						'provider' => $provider,
+					],
+				]
+			);
+		} catch (Throwable $exception) {
+			throw new BrokeredCallConfigurationException(
+				message: 'The connected accounts at "' . $provider . '" could not be read: ' . $exception->getMessage()
+			);
+		}
+
+		$rows = ($matches['results'] ?? $matches);
+		if (is_array($rows) === false) {
+			return [];
+		}
+
+		return $rows;
+	}//end perUserCandidates()
+
+	/**
+	 * Whether a credential row is the user's own, personal, enabled credential.
+	 *
+	 * @param mixed  $row The row.
+	 * @param string $uid The signed-in user.
+	 *
+	 * @return bool
+	 */
+	private static function isUsablePersonalCredential(mixed $row, string $uid): bool {
+		if ($row instanceof ObjectEntity === false || $row->getOwner() !== $uid) {
+			return false;
+		}
+
+		$data = $row->getObject();
+
+		return (string)($data['scope'] ?? 'personal') === 'personal' && (string)($data['status'] ?? '') !== 'disabled';
+	}//end isUsablePersonalCredential()
 
 	/**
 	 * Enforces the exactly-one-of contract and non-empty value on a shape-valid ref.

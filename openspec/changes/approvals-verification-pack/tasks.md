@@ -9,8 +9,8 @@
   - GIVEN an endpoint with a `before`-phase `approval` rule followed by a later rule WHEN the endpoint is called THEN the response is `202` with a polling URL and an `approval_request` persists the FlowToken snapshot
   - GIVEN that request is approved WHEN `ApprovalsController::approve()` runs THEN `processRules()` resumes at the rule after the approval rule and the chain completes
   - GIVEN that request is rejected THEN the rule's configured `onReject` outcome is applied
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ## 2. Newman
 
@@ -20,7 +20,7 @@
 - **acceptance_criteria**:
   - GIVEN the collection runs against a live instance THEN list, detail, approve and reject succeed for an approver-group member
   - GIVEN a non-member calls approve THEN `403`; GIVEN a missing id THEN `404`; GIVEN a double approve THEN `409`
-- [ ] Implement
+- [x] Implement
 - [ ] Test
 
 ## 3. Playwright
@@ -57,8 +57,9 @@
 - **files**: `l10n/`
 - **acceptance_criteria**:
   - GIVEN the Approvals UI strings THEN `nl_NL` catalog entries exist (or the external localization pipeline demonstrably carries them; record which)
-- [ ] Implement
-- [ ] Test
+  - Recorded: the catalog carries them. Every `t()` string of the Approvals pages, the change-set panel and `ApprovalForm.vue` has an `nl` entry in `l10n/nl.json` (and the generated `nl.js`); the three outcome labels `ApprovalForm.vue` translates dynamically were the gap and are added.
+- [x] Implement
+- [x] Test
 
 ## Verification
 - [ ] All tasks checked off

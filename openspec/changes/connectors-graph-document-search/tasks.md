@@ -34,7 +34,7 @@ Kind: code. Size M. Half for dossiq `woo-requests-gather-documents-from-sources`
 - **files**: `docs/features/`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN the docs WHEN an administrator sets up the search THEN the Graph permissions for files and for mail and chat are listed
-- [ ] Implement
+- [x] Implement (`docs/features/document-search.md`)
 - [ ] Test (docs build)
 
 ## Verification

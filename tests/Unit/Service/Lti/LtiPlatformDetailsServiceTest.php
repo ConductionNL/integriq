@@ -258,7 +258,7 @@ class LtiPlatformDetailsServiceTest extends TestCase {
 			static function (string $routeName, array $arguments = []): string {
 				$routes = require __DIR__ . '/../../../../appinfo/routes.php';
 				foreach ($routes['routes'] as $route) {
-					if ('integriq.' . str_replace('#', '.', $route['name']) === $routeName) {
+					if ('integriq.' . str_replace('#', '.', $route['name']) . ($route['postfix'] ?? '') === $routeName) {
 						$url = $route['url'];
 						foreach ($arguments as $key => $value) {
 							$url = str_replace('{' . $key . '}', (string)$value, $url);

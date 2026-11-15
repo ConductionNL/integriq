@@ -562,6 +562,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function resolveActiveSourceAsEngine(): ObjectEntity {
+		// Unscoped: the DSO ingest engine resolves its active source as the system.
 		$matches = $this->objectService->findAll(config: $this->activeSourceQuery(), _rbac: false, _multitenancy: false);
 		$results = ($matches['results'] ?? $matches);
 
@@ -579,6 +580,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 			register: self::REGISTER,
 			schema: self::SCHEMA_SOURCE,
 			_rbac: false,
+			// Unscoped: the DSO ingest engine resolves its active source as the system.
 			_multitenancy: false,
 			_render: false
 		);

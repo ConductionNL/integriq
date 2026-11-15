@@ -141,6 +141,7 @@ class StaleRunSweepJob extends TimedJob {
 	 */
 	private function runningRuns(): ?iterable {
 		try {
+			// System path: the cron sweep closes abandoned runs of every organisation.
 			// The findAll() method takes ONE `$config` array — register and
 			// schema are filters inside it, not named arguments. Passing them
 			// as named arguments is a fatal TypeError, not a soft failure.
@@ -225,6 +226,7 @@ class StaleRunSweepJob extends TimedJob {
 			. 'the last ones observed rather than a final tally.';
 
 		try {
+			// System path: the cron sweep closes abandoned runs of every organisation.
 			$this->objectService->saveObject(
 				object: $object,
 				register: SynchronizationRunProgressServiceInterface::REGISTER,

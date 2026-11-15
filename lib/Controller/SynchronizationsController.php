@@ -205,8 +205,7 @@ class SynchronizationsController extends Controller {
 				id: $id,
 				register: 'integriq',
 				schema: 'synchronization',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
@@ -303,8 +302,7 @@ class SynchronizationsController extends Controller {
 				id: $id,
 				register: 'integriq',
 				schema: 'synchronization',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
@@ -399,8 +397,7 @@ class SynchronizationsController extends Controller {
 				id: $id,
 				register: 'integriq',
 				schema: 'synchronization',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
@@ -671,8 +668,7 @@ class SynchronizationsController extends Controller {
 				id: (string)$id,
 				register: 'integriq',
 				schema: 'synchronization_log',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Log not found')], 404);

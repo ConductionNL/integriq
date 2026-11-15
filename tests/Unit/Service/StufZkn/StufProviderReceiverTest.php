@@ -55,6 +55,8 @@ use RuntimeException;
  * @covers \OCA\Integriq\Service\StufZkn\StufProviderReceiver
  * @covers \OCA\Integriq\Service\StufZkn\StufProviderRequestReader
  * @covers \OCA\Integriq\Service\StufZkn\StufProviderOperationMapper
+ * @covers \OCA\Integriq\Service\StufZkn\ProviderRequest
+ * @covers \OCA\Integriq\Service\StufZkn\ProviderRequestRun
  * @covers \OCA\Integriq\Controller\StufProviderController
  * @covers \OCA\Integriq\Event\StufProviderQueryEvent
  * @covers \OCA\Integriq\Event\StufCaseQueryEvent
@@ -580,6 +582,49 @@ class StufProviderReceiverTest extends TestCase {
 	}//end testACreateMessageMapsToAGenericCaseOperation()
 
 	/**
+	 * An organisation known only by its branch is the initiator by its vestigingsnummer; an impossible date is left out.
+	 *
+	 * @return void
+	 */
+	public function testABranchInitiatorIsMappedAndAnImpossibleDateLeftOut(): void {
+		$xml = str_replace('<ZKN:startdatum>20261012</ZKN:startdatum>', '<ZKN:startdatum>20261332</ZKN:startdatum>', self::creeerZaak());
+		$xml = preg_replace(
+			'#<ZKN:natuurlijkPersoon .*</ZKN:natuurlijkPersoon>#',
+			'<ZKN:vestiging StUF:entiteittype="VES" StUF:verwerkingssoort="I"><BG:vestigingsNummer>000012345678</BG:vestigingsNummer>'
+				. '<BG:handelsnaam>Boomverzorging BV</BG:handelsnaam></ZKN:vestiging>',
+			$xml
+		);
+
+		$answer = $this->receiver()->receive(rawXml: $xml, sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$operation = $this->events[0]->getOperation();
+		$this->assertSame(['type' => 'company', 'sourceId' => '000012345678', 'name' => 'Boomverzorging BV'], $operation['initiator']);
+		$this->assertArrayNotHasKey('startDate', $operation, 'A date that does not exist is not passed on');
+		$this->assertSame('2026-10-12', $operation['registrationDate']);
+	}//end testABranchInitiatorIsMappedAndAnImpossibleDateLeftOut()
+
+	/**
+	 * An initiator that carries neither a BSN nor an organisation number is left out rather than guessed.
+	 *
+	 * @return void
+	 */
+	public function testAnInitiatorWithoutANumberIsLeftOut(): void {
+		$xml = preg_replace(
+			'#<ZKN:natuurlijkPersoon .*</ZKN:natuurlijkPersoon>#',
+			'<ZKN:nietNatuurlijkPersoon StUF:entiteittype="NNP" StUF:verwerkingssoort="I"><BG:statutaireNaam>Naamloos</BG:statutaireNaam></ZKN:nietNatuurlijkPersoon>',
+			self::creeerZaak()
+		);
+
+		$answer = $this->receiver()->receive(rawXml: $xml, sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$operation = $this->events[0]->getOperation();
+		$this->assertSame('create', $operation['action']);
+		$this->assertArrayNotHasKey('initiator', $operation);
+	}//end testAnInitiatorWithoutANumberIsLeftOut()
+
+	/**
 	 * An updateZaak (zakLk01, W) sends the old object and then the new one: the new one counts.
 	 *
 	 * @return void
@@ -842,6 +887,22 @@ class StufProviderReceiverTest extends TestCase {
 
 		$this->assertSame([], $this->events);
 	}//end testAWriteThisAdapterDoesNotCarryOutIsRefusedWithoutAsking()
+
+	/**
+	 * A kennisgeving that names no mutatiesoort, neither as parameter nor as verwerkingssoort, is refused without asking.
+	 *
+	 * @return void
+	 */
+	public function testAKennisgevingWithoutAMutatiesoortIsRefusedWithoutAsking(): void {
+		$xml = str_replace(' StUF:verwerkingssoort="W"', '', self::zakLk01());
+
+		$answer = $this->receiver()->receive(rawXml: $xml, sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(400, $answer['statusCode']);
+		$this->assertStringContainsString('Fo03Bericht', $answer['body']);
+		$this->assertStringContainsString('StUF058', $answer['body']);
+		$this->assertSame([], $this->events, 'The owning app is not asked');
+	}//end testAKennisgevingWithoutAMutatiesoortIsRefusedWithoutAsking()
 
 	/**
 	 * A write without the source's UsernameToken, or on a source that did not opt in, never reaches the owning app.

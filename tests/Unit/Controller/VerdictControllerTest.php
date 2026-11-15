@@ -56,6 +56,16 @@ class VerdictControllerTest extends TestCase {
 	private $gate;
 
 	/**
+	 * @var IUserSession|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $userSession;
+
+	/**
+	 * @var IL10N|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $l;
+
+	/**
 	 * Mocks for the request, the verdict service and the gate.
 	 *
 	 * @return void
@@ -65,6 +75,9 @@ class VerdictControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->verdicts = $this->createMock(VerdictServiceInterface::class);
 		$this->gate = $this->createMock(WebhookGateInterface::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->l = $this->createMock(IL10N::class);
+		$this->l->method('t')->willReturnCallback(static fn (string $text) => $text);
 
 	}//end setUp()
 
@@ -77,10 +90,10 @@ class VerdictControllerTest extends TestCase {
 		return new VerdictController(
 			'integriq',
 			$this->request,
-			$this->createMock(IUserSession::class),
+			$this->userSession,
 			$this->verdicts,
 			$this->gate,
-			$this->createMock(IL10N::class)
+			$this->l
 		);
 
 	}//end controller()
@@ -176,4 +189,110 @@ class VerdictControllerTest extends TestCase {
 		$this->assertSame($refusal, $this->controller()->inbound());
 
 	}//end testARefusedIdentificationIsAnsweredAsIs()
+
+	/**
+	 * The signature is checked over an empty body when the raw input cannot be read.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableBodyIsIdentifiedAsEmpty(): void {
+		$refusal = new JSONResponse(['error' => 'bad signature'], Http::STATUS_UNAUTHORIZED);
+		$this->gate->expects($this->once())->method('identify')
+			->with('intake-channel-verdicts', '', $this->request)
+			->willReturn($refusal);
+
+		// Replace the php:// wrapper so php://input fails to open and
+		// file_get_contents() answers false, as it does for an unreadable body.
+		stream_wrapper_unregister('php');
+		stream_wrapper_register('php', UnreadableInputStream::class);
+		set_error_handler(static fn (): bool => true, E_WARNING);
+		try {
+			$response = $this->controller()->inbound();
+		} finally {
+			restore_error_handler();
+			stream_wrapper_restore('php');
+		}
+
+		$this->assertSame($refusal, $response);
+
+	}//end testAnUnreadableBodyIsIdentifiedAsEmpty()
+
+	/**
+	 * Reading verdicts back without a session answers 401 and reads nothing.
+	 *
+	 * @return void
+	 */
+	public function testIndexWithoutAUserAnswers401(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->verdicts->expects($this->never())->method('forObject');
+
+		$response = $this->controller()->index();
+
+		$this->assertSame([Http::STATUS_UNAUTHORIZED, ['error' => 'Not authenticated']], [$response->getStatus(), $response->getData()]);
+
+	}//end testIndexWithoutAUserAnswers401()
+
+	/**
+	 * Reading verdicts back without naming an object answers 400 and reads nothing.
+	 *
+	 * @return void
+	 */
+	public function testIndexWithoutAnObjectRefAnswers400(): void {
+		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
+		$this->request->method('getParam')->with('objectRef', '')->willReturn('   ');
+		$this->verdicts->expects($this->never())->method('forObject');
+
+		$response = $this->controller()->index();
+
+		$this->assertSame(
+			[Http::STATUS_BAD_REQUEST, ['error' => 'Name the object whose verdicts you want.']],
+			[$response->getStatus(), $response->getData()]
+		);
+
+	}//end testIndexWithoutAnObjectRefAnswers400()
+
+	/**
+	 * Reading verdicts back answers the service's verdicts for the named object.
+	 *
+	 * @return void
+	 */
+	public function testIndexAnswersTheVerdictsOfTheObject(): void {
+		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
+		$this->request->method('getParam')->with('objectRef', '')->willReturn('o-1');
+		$verdicts = [['id' => 'v-2', 'state' => 'rejected'], ['id' => 'v-1', 'state' => 'approved']];
+		$this->verdicts->expects($this->once())->method('forObject')->with('o-1')->willReturn($verdicts);
+
+		$response = $this->controller()->index();
+
+		$this->assertSame([Http::STATUS_OK, ['verdicts' => $verdicts]], [$response->getStatus(), $response->getData()]);
+
+	}//end testIndexAnswersTheVerdictsOfTheObject()
+}//end class
+
+/**
+ * A php:// stream wrapper that refuses to open, so php://input reads as false.
+ */
+class UnreadableInputStream {
+
+	/**
+	 * The stream context PHP assigns to every wrapper instance.
+	 *
+	 * @var resource|null
+	 */
+	public $context;
+
+	/**
+	 * Refuse to open any php:// stream.
+	 *
+	 * @param string $path The path.
+	 * @param string $mode The mode.
+	 * @param int $options The options.
+	 * @param string|null $openedPath The opened path.
+	 *
+	 * @return bool Always false.
+	 */
+	public function stream_open(string $path, string $mode, int $options, ?string &$openedPath): bool {
+		return false;
+
+	}//end stream_open()
 }//end class

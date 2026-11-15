@@ -189,4 +189,133 @@ class MaterializeCatalogItemsTest extends TestCase {
 		$this->assertSame('https://api.apis.guru/v2/specs/salesforce.local/1.0/openapi.json', $stored['verifiedAgainst']);
 		$this->assertSame([], RegisterSchemaValidator::errors('catalog_item', $stored));
 	}//end testAStaleCardIsRemovedAndTheTierIsStored()
+	/**
+	 * An output double that records every info and warning line.
+	 *
+	 * @param array<int,string> $lines Filled with "info: ..." / "warning: ..." lines.
+	 *
+	 * @return IOutput
+	 */
+	private function recordingOutput(array &$lines): IOutput {
+		$output = $this->createMock(IOutput::class);
+		$output->method('info')->willReturnCallback(
+			static function (string $message) use (&$lines): void {
+				$lines[] = 'info: ' . $message;
+			}
+		);
+		$output->method('warning')->willReturnCallback(
+			static function (string $message) use (&$lines): void {
+				$lines[] = 'warning: ' . $message;
+			}
+		);
+		return $output;
+	}//end recordingOutput()
+
+	/**
+	 * Services the container cannot resolve stop the step with a warning,
+	 * before anything is read or written.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvableServicesStopTheStep(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('no such service'));
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->expects($this->once())->method('error')
+			->with('Integriq: MaterializeCatalogItems service resolution failed', ['exception' => 'no such service']);
+		$lines = [];
+
+		(new MaterializeCatalogItems($container, $logger))->run($this->recordingOutput($lines));
+
+		$this->assertSame(['warning: Integriq: could not resolve catalog services: no such service'], $lines);
+	}//end testUnresolvableServicesStopTheStep()
+
+	/**
+	 * A registry that cannot collect stops the step before any write.
+	 *
+	 * @return void
+	 */
+	public function testAFailedCollectStopsTheStep(): void {
+		$registry = $this->createMock(CatalogRegistryServiceInterface::class);
+		$registry->method('collect')->willThrowException(new \RuntimeException('registry broken'));
+		$orObjectService = ObjectServiceMockBuilder::make($this);
+		$orObjectService->expects($this->never())->method('findAll');
+		$orObjectService->expects($this->never())->method('saveObject');
+		$lines = [];
+
+		$this->makeStep($registry, $orObjectService)->run($this->recordingOutput($lines));
+
+		$this->assertSame(['warning: Integriq: CatalogRegistryService::collect() failed: registry broken'], $lines);
+	}//end testAFailedCollectStopsTheStep()
+
+	/**
+	 * An entry without a slug is skipped, a refused upsert is reported and
+	 * not counted, and the others are still written; the count says so.
+	 *
+	 * @return void
+	 */
+	public function testSkippedAndRefusedEntriesAreNotCounted(): void {
+		$entries = [
+			['name' => 'No slug'],
+			['slug' => 'adapter:refused', 'name' => 'Refused'],
+			['slug' => 'adapter:pdok', 'name' => 'PDOK'],
+		];
+		$orObjectService = ObjectServiceMockBuilder::make($this);
+		$orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+		$saved = [];
+		$orObjectService->expects($this->exactly(2))->method('saveObject')->willReturnCallback(
+			function ($object) use (&$saved) {
+				$saved[] = $object['slug'];
+				if ($object['slug'] === 'adapter:refused') {
+					throw new \RuntimeException('schema refused it');
+				}
+
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'new');
+			}
+		);
+		$lines = [];
+
+		$this->makeStep($this->makeRegistryService($entries), $orObjectService)->run($this->recordingOutput($lines));
+
+		$this->assertSame(['adapter:refused', 'adapter:pdok'], $saved);
+		$this->assertSame(
+			[
+				'warning: Integriq: failed to upsert catalog_item "adapter:refused": schema refused it',
+				'info: Integriq: materialized 1 of 3 catalog_item entries.',
+			],
+			$lines
+		);
+	}//end testSkippedAndRefusedEntriesAreNotCounted()
+
+	/**
+	 * A stale card that cannot be deleted is logged and does not fail the step;
+	 * a stored result that is not an object entity is ignored by the index.
+	 *
+	 * @return void
+	 */
+	public function testAStaleCardThatCannotBeDeletedIsLogged(): void {
+		$stale = ObjectServiceMockBuilder::objectEntity($this, ['slug' => 'adapter:gone'], 'stale-uuid');
+		$orObjectService = ObjectServiceMockBuilder::make($this);
+		$orObjectService->method('findAll')->willReturn([$stale, ['slug' => 'adapter:pdok', 'id' => 'not-an-entity']]);
+		$orObjectService->method('saveObject')->willReturnCallback(
+			function ($object, $register = null, $schema = null, $uuid = null) {
+				$this->assertNull($uuid, 'a plain array row is not indexed, so pdok is created');
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'new');
+			}
+		);
+		$orObjectService->expects($this->once())->method('deleteObject')->willThrowException(new \RuntimeException('locked'));
+		$container = $this->createMock(ContainerInterface::class);
+		$registry = $this->makeRegistryService([['slug' => 'adapter:pdok', 'name' => 'PDOK']]);
+		$container->method('get')->willReturnCallback(
+			static fn (string $id) => $id === CatalogRegistryServiceInterface::class ? $registry : $orObjectService
+		);
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')
+			->with('Integriq: could not remove stale catalog_item', ['slug' => 'adapter:gone', 'exception' => 'locked']);
+		$lines = [];
+
+		(new MaterializeCatalogItems($container, $logger))->run($this->recordingOutput($lines));
+
+		$this->assertSame(['info: Integriq: materialized 1 of 1 catalog_item entries.'], $lines);
+	}//end testAStaleCardThatCannotBeDeletedIsLogged()
 }//end class

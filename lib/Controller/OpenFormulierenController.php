@@ -115,9 +115,7 @@ class OpenFormulierenController extends Controller {
 	#[PublicPage]
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function inbound(): JSONResponse {
-		$rawBody = $this->getRawContent();
-
-		$identity = $this->identify(rawBody: $rawBody);
+		$identity = $this->identify(rawBody: $this->getRawContent());
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -126,41 +124,29 @@ class OpenFormulierenController extends Controller {
 		// a JSON body into params), NOT a second json_decode($rawBody): signature
 		// verification already ran over the exact raw bytes above.
 		$body = $this->request->getParams();
-
-		$formSlug = (string)($body['form']['slug'] ?? '');
-		if ($formSlug === '') {
+		if ((string)($body['form']['slug'] ?? '') === '') {
 			return new JSONResponse(
 				['error' => 'missing_form_slug', 'message' => $this->l->t('The "form.slug" field is required')],
 				Http::STATUS_BAD_REQUEST
 			);
 		}
 
-		$formUuid = ($body['form']['uuid'] ?? null);
-		$formUuidValue = null;
-		if ($formUuid !== null) {
-			$formUuidValue = (string)$formUuid;
-		}
+		return $this->storeSubmission(identity: $identity, body: $body);
+	}//end inbound()
 
-		$authContext = ($body['auth'] ?? null);
-		if (is_array($authContext) === false) {
-			$authContext = null;
-		}
-
+	/**
+	 * Store the submission as the connection's account and answer the stored
+	 * record, or 503 when it was not stored.
+	 *
+	 * @param DsoIdentity          $identity The authenticated connection.
+	 * @param array<string, mixed> $body     The submission payload.
+	 *
+	 * @return JSONResponse The record with its id, or the 503 answer.
+	 */
+	private function storeSubmission(DsoIdentity $identity, array $body): JSONResponse {
 		$submissionMeta = (array)($body['submission'] ?? []);
-
 		try {
-			$submission = $this->connection->runAs(
-				$identity->account,
-				fn (): mixed => $this->intakeService->ingest(
-					formSlug: $formSlug,
-					formUuid: $formUuidValue,
-					submissionMeta: $submissionMeta,
-					values: (array)($body['values'] ?? []),
-					attachmentRefs: (array)($body['attachments'] ?? []),
-					authContext: $authContext,
-					identity: $identity
-				)
-			);
+			$submission = $this->ingestAs(identity: $identity, body: $body);
 		} catch (Throwable $exception) {
 			return $this->notStored(submissionMeta: $submissionMeta, reason: $exception->getMessage());
 		}
@@ -170,7 +156,63 @@ class OpenFormulierenController extends Controller {
 		}
 
 		return new JSONResponse($submission->getObject() + ['id' => $submission->getUuid()]);
-	}//end inbound()
+	}//end storeSubmission()
+
+	/**
+	 * Ingest the submission inside OpenRegister's `runAs()` for the
+	 * connection's account.
+	 *
+	 * @param DsoIdentity          $identity The authenticated connection.
+	 * @param array<string, mixed> $body     The submission payload.
+	 *
+	 * @return mixed What the intake service stored.
+	 */
+	private function ingestAs(DsoIdentity $identity, array $body): mixed {
+		return $this->connection->runAs(
+			$identity->account,
+			fn (): mixed => $this->intakeService->ingest(
+				formSlug: (string)($body['form']['slug'] ?? ''),
+				formUuid: $this->formUuidOf(body: $body),
+				submissionMeta: (array)($body['submission'] ?? []),
+				values: (array)($body['values'] ?? []),
+				attachmentRefs: (array)($body['attachments'] ?? []),
+				authContext: $this->authContextOf(body: $body),
+				identity: $identity
+			)
+		);
+	}//end ingestAs()
+
+	/**
+	 * The form uuid as a string, or null when the payload has none.
+	 *
+	 * @param array<string, mixed> $body The submission payload.
+	 *
+	 * @return string|null
+	 */
+	private function formUuidOf(array $body): ?string {
+		$formUuid = ($body['form']['uuid'] ?? null);
+		if ($formUuid === null) {
+			return null;
+		}
+
+		return (string)$formUuid;
+	}//end formUuidOf()
+
+	/**
+	 * The payload's `auth` block, or null when it is not an object.
+	 *
+	 * @param array<string, mixed> $body The submission payload.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function authContextOf(array $body): ?array {
+		$authContext = ($body['auth'] ?? null);
+		if (is_array($authContext) === false) {
+			return null;
+		}
+
+		return $authContext;
+	}//end authContextOf()
 
 	/**
 	 * Authenticate the submission against the Open Formulieren connection.
@@ -251,18 +293,9 @@ class OpenFormulierenController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function status(string $id = ''): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$this->actionAuth->requireAction(user: $user, action: 'open-formulieren.status');
-
-		if ($id === '') {
-			return new JSONResponse(
-				['error' => 'missing_id', 'message' => $this->l->t('The submission id is required')],
-				Http::STATUS_BAD_REQUEST
-			);
+		$refusal = $this->callerRefusal(action: 'open-formulieren.status', id: $id);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -291,13 +324,36 @@ class OpenFormulierenController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function handoff(string $id = ''): JSONResponse {
+		$refusal = $this->callerRefusal(action: 'open-formulieren.handoff', id: $id);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		try {
+			$result = $this->intakeService->handoff(submissionUuid: $id);
+			return new JSONResponse($result);
+		} catch (Throwable $exception) {
+			return $this->handoffFailure(exception: $exception);
+		}
+
+	}//end handoff()
+
+	/**
+	 * The refusal of a caller's request: 401 without a session user, the
+	 * action check (which throws when refused), then 400 without an id.
+	 *
+	 * @param string $action The action-matrix action the request needs.
+	 * @param string $id     The submission uuid.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the request may proceed.
+	 */
+	private function callerRefusal(string $action, string $id): ?JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
 		}
 
-		$this->actionAuth->requireAction(user: $user, action: 'open-formulieren.handoff');
-
+		$this->actionAuth->requireAction(user: $user, action: $action);
 		if ($id === '') {
 			return new JSONResponse(
 				['error' => 'missing_id', 'message' => $this->l->t('The submission id is required')],
@@ -305,41 +361,81 @@ class OpenFormulierenController extends Controller {
 			);
 		}
 
-		try {
-			$result = $this->intakeService->handoff(submissionUuid: $id);
-			return new JSONResponse($result);
-		} catch (OpenFormulierenException $exception) {
-			return new JSONResponse(
-				['error' => 'submission_not_ready', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_REQUEST
-			);
-		} catch (HandoffException $exception) {
-			$status = Http::STATUS_CONFLICT;
-			if ($exception->getErrorCode() === HandoffException::NOT_DECLARED) {
-				$status = Http::STATUS_NOT_FOUND;
-			}
+		return null;
+	}//end callerRefusal()
 
-			return new JSONResponse(
-				['error' => $exception->getErrorCode(), 'message' => $exception->getMessage()],
-				$status
-			);
-		} catch (NotAuthorizedException $exception) {
-			return new JSONResponse(
-				['error' => 'handoff_not_authorized', 'message' => $exception->getMessage()],
-				Http::STATUS_FORBIDDEN
-			);
-		} catch (Throwable $exception) {
-			$this->logger->error(
-				'[OpenFormulierenController] handoff failed unexpectedly: ' . $exception->getMessage(),
-				['exception' => $exception]
-			);
-			return new JSONResponse(
-				['error' => 'handoff_failed', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_GATEWAY
-			);
-		}//end try
+	/**
+	 * The answer to a failed handoff: its error code and the exception's message.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return JSONResponse
+	 */
+	private function handoffFailure(Throwable $exception): JSONResponse {
+		[$error, $status] = $this->handoffError(exception: $exception);
 
-	}//end handoff()
+		return new JSONResponse(
+			['error' => $error, 'message' => $exception->getMessage()],
+			$status
+		);
+	}//end handoffFailure()
+
+	/**
+	 * The error code and status a failed handoff answers with: a submission
+	 * not ready 400, a handoff the engine refused 404 or 409, an RBAC refusal
+	 * 403, and anything else 502 (logged).
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return array{0: string, 1: int} The error code and the HTTP status.
+	 */
+	private function handoffError(Throwable $exception): array {
+		if ($exception instanceof OpenFormulierenException) {
+			return ['submission_not_ready', Http::STATUS_BAD_REQUEST];
+		}
+
+		if ($exception instanceof HandoffException) {
+			return [$exception->getErrorCode(), $this->handoffStatus(exception: $exception)];
+		}
+
+		if ($exception instanceof NotAuthorizedException) {
+			return ['handoff_not_authorized', Http::STATUS_FORBIDDEN];
+		}
+
+		return $this->unexpectedHandoffError(exception: $exception);
+	}//end handoffError()
+
+	/**
+	 * The status of a handoff the engine refused: 404 when the handoff is not
+	 * declared, 409 otherwise.
+	 *
+	 * @param HandoffException $exception The refusal.
+	 *
+	 * @return int
+	 */
+	private function handoffStatus(HandoffException $exception): int {
+		if ($exception->getErrorCode() === HandoffException::NOT_DECLARED) {
+			return Http::STATUS_NOT_FOUND;
+		}
+
+		return Http::STATUS_CONFLICT;
+	}//end handoffStatus()
+
+	/**
+	 * Log an unexpected handoff failure and answer it as a bad gateway.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return array{0: string, 1: int} The error code and the HTTP status.
+	 */
+	private function unexpectedHandoffError(Throwable $exception): array {
+		$this->logger->error(
+			'[OpenFormulierenController] handoff failed unexpectedly: ' . $exception->getMessage(),
+			['exception' => $exception]
+		);
+
+		return ['handoff_failed', Http::STATUS_BAD_GATEWAY];
+	}//end unexpectedHandoffError()
 
 	/**
 	 * Read the raw request body bytes for signature verification.

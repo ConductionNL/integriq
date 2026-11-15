@@ -93,6 +93,7 @@ class LogCleanUpTask extends TimedJob {
 	 */
 	private function cleanupSchema(string $schema, array $only = []): void {
 		$now = (new DateTime())->format('Y-m-d H:i:s');
+		// System path: the cron clean-up expires the logs of every organisation.
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
@@ -116,6 +117,7 @@ class LogCleanUpTask extends TimedJob {
 			}
 
 			try {
+				// System path: the cron clean-up expires the logs of every organisation.
 				$this->orObjectService->deleteObject(uuid: $object->getUuid(), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Continue with remaining objects even if one deletion fails.
@@ -142,6 +144,7 @@ class LogCleanUpTask extends TimedJob {
 	 */
 	public function stripExpiredBodies(): int {
 		$now = new DateTime();
+		// System path: the cron clean-up expires the logs of every organisation.
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
@@ -168,6 +171,7 @@ class LogCleanUpTask extends TimedJob {
 			$record['bodyExpiredAt'] = $now->format('c');
 
 			try {
+				// System path: the cron clean-up expires the logs of every organisation.
 				$this->orObjectService->saveObject(
 					object: $record,
 					register: 'integriq',

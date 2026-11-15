@@ -43,6 +43,7 @@ use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Event\ActionDelivery;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -92,6 +93,15 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
  * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
  */
 class EventService implements EventServiceInterface {
+	use OrganisationBoundary;
+
+	/**
+	 * CloudEvents extension attribute naming the organisation that owns the object an event is about.
+	 *
+	 * @var string
+	 */
+	public const ORGANISATION_ATTRIBUTE = 'sourceorganisation';
+
 	/**
 	 * Base backoff interval in seconds for the first retry.
 	 *
@@ -193,6 +203,9 @@ class EventService implements EventServiceInterface {
 	 *                                                        a personal recipient (opt-out-before-send). Null
 	 *                                                        (unit tests that predate it) answers such a
 	 *                                                        delivery closed unless its category is exempt.
+	 * @param ProductDeliveryGate|null $productGate Stops a product channel's push delivery once its product
+	 *                                              subscription is not active, and defers one over quota
+	 *                                              (events-async-api-products). Null gates nothing.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
@@ -219,6 +232,7 @@ class EventService implements EventServiceInterface {
 		private readonly ?BrokerCredentialResolver $brokerCredentials = null,
 		private readonly ?EventFanOutSchedulerInterface $fanOutScheduler = null,
 		private readonly ?OutboundSendGateInterface $sendGate = null,
+		private readonly ?ProductDeliveryGate $productGate = null,
 	) {
 		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
@@ -415,6 +429,7 @@ class EventService implements EventServiceInterface {
 					register: 'integriq',
 					schema: 'event',
 					_rbac: false,
+					// Unscoped: the event queue worker runs without a user session.
 					_multitenancy: false
 				);
 			} catch (Exception $e) {
@@ -474,10 +489,17 @@ class EventService implements EventServiceInterface {
 	 * @return boolean
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	private function doesEventMatchSubscription(ObjectEntity $event, ObjectEntity $subscription): bool {
 		$eventData = $event->getObject();
 		$subscriptionData = $subscription->getObject();
+
+		// The fan-out reads every organisation's subscriptions, so an object event is kept to its own organisation here.
+		$eventOrganisation = (string)($eventData[self::ORGANISATION_ATTRIBUTE] ?? '');
+		if ($this->sameOrganisation(first: $eventOrganisation, second: $this->organisationOf(object: $subscription)) === false) {
+			return false;
+		}
 
 		// Check event type matches.
 		$types = ($subscriptionData['types'] ?? []);
@@ -503,6 +525,24 @@ class EventService implements EventServiceInterface {
 
 		return true;
 	}//end doesEventMatchSubscription()
+
+	/**
+	 * The CloudEvents extension attribute naming the organisation of the object an event is about.
+	 *
+	 * @param ObjectEntity $object The created, updated or deleted object.
+	 *
+	 * @return array<string, string> The attribute, or [] when the object has no organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	private function organisationAttribute(ObjectEntity $object): array {
+		$organisation = $this->organisationOf(object: $object);
+		if ($organisation === '') {
+			return [];
+		}
+
+		return [self::ORGANISATION_ATTRIBUTE => $organisation];
+	}//end organisationAttribute()
 
 	/**
 	 * Evaluate filter conditions against an event data array.
@@ -664,6 +704,10 @@ class EventService implements EventServiceInterface {
 		// repeats the refusal.
 			$refusal = $this->refuseUnsafeSink(message: $message, subscriptionData: $delivery->subscriptionData);
 			if ($refusal !== null) {
+				return false;
+			}
+
+			if ($this->holdForProduct(message: $message, subscriptionData: $delivery->subscriptionData) === true) {
 				return false;
 			}
 
@@ -966,6 +1010,65 @@ class EventService implements EventServiceInterface {
 		];
 
 	}//end resolveRetryPolicy()
+
+	/**
+	 * Hold a product channel's push delivery the product subscription does not allow now.
+	 *
+	 * A revoked product subscription abandons the delivery at once. A spent
+	 * tier budget defers it to the end of the window without spending a retry,
+	 * so the event is delivered later rather than dropped.
+	 *
+	 * @param ObjectEntity $message          The message under delivery.
+	 * @param array        $subscriptionData The owning push subscription.
+	 *
+	 * @return bool True when the delivery was held.
+	 *
+	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 */
+	private function holdForProduct(ObjectEntity $message, array $subscriptionData): bool {
+		$held = $this->productGate?->hold(subscriptionData: $subscriptionData);
+		if ($held === null) {
+			return false;
+		}
+
+		if ($held['abandon'] === true) {
+			$this->recordFailure(message: $message, error: $held['reason'], statusCode: null, retryAfter: null, retryPolicy: ['maxRetries' => 0]);
+			return true;
+		}
+
+		$this->deferForQuota(message: $message, held: $held);
+
+		return true;
+	}//end holdForProduct()
+
+	/**
+	 * Defer a delivery to the end of its product's quota window.
+	 *
+	 * Deferred, not failed: the retry count is left alone, so waiting for the
+	 * quota window never spends the subscription's retry budget.
+	 *
+	 * @param ObjectEntity                                $message The message under delivery.
+	 * @param array{reason: string, retryAfter: int|null} $held    The hold: why, and how many seconds to wait.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 */
+	private function deferForQuota(ObjectEntity $message, array $held): void {
+		$messageData = $message->getObject();
+		$messageData['status'] = 'failed';
+		$messageData['error'] = $held['reason'];
+		$messageData['retryAfter'] = (int)$held['retryAfter'];
+		$messageData['nextAttempt'] = (new DateTime())->modify('+' . (int)$held['retryAfter'] . ' seconds')->format('c');
+		$this->objectService->saveObject(
+			object: $messageData,
+			register: 'integriq',
+			schema: 'event_message',
+			uuid: $message->getUuid(),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end deferForQuota()
 
 	/**
 	 * Abandon a push delivery whose sink the egress guard refuses.
@@ -1364,6 +1467,7 @@ class EventService implements EventServiceInterface {
 			register: 'integriq',
 			schema: 'event_subscription',
 			_rbac: false,
+			// Unscoped: event dispatch resolves the subscription of a queued message as the system.
 			_multitenancy: false,
 			_render: false
 		);
@@ -2579,6 +2683,7 @@ class EventService implements EventServiceInterface {
 				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
+				// Unscoped: event dispatch reads the retry policy of a queued message as the system.
 				_multitenancy: false,
 				_render: false
 			);
@@ -3204,6 +3309,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function handleObjectCreated(ObjectEntity $object): array {
 		$objectData = $object->getObject();
@@ -3223,7 +3329,7 @@ class EventService implements EventServiceInterface {
 				// even when the schema ids cannot identify it (a renamed register, or
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
-			],
+			] + $this->organisationAttribute(object: $object),
 			register: 'integriq',
 			schema: 'event',
 			// System context: the `event` schema lets only administrators create
@@ -3249,6 +3355,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function handleObjectUpdated(ObjectEntity $oldObject, ObjectEntity $newObject): array {
 		$oldData = $oldObject->getObject();
@@ -3273,7 +3380,7 @@ class EventService implements EventServiceInterface {
 				// even when the schema ids cannot identify it (a renamed register, or
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
-			],
+			] + $this->organisationAttribute(object: $newObject),
 			register: 'integriq',
 			schema: 'event',
 			// System context: the `event` schema lets only administrators create
@@ -3298,6 +3405,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function handleObjectDeleted(ObjectEntity $object): array {
 		$objectData = $object->getObject();
@@ -3317,7 +3425,7 @@ class EventService implements EventServiceInterface {
 				// even when the schema ids cannot identify it (a renamed register, or
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
-			],
+			] + $this->organisationAttribute(object: $object),
 			register: 'integriq',
 			schema: 'event',
 			// System context: the `event` schema lets only administrators create

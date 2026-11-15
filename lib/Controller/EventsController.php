@@ -124,7 +124,7 @@ class EventsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'event.messages');
 
 		try {
-			$event = $this->orObjectService->find(id: (string)$id, register: 'integriq', schema: 'event', _rbac: false, _multitenancy: false);
+			$event = $this->orObjectService->find(id: (string)$id, register: 'integriq', schema: 'event', _rbac: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Event not found')], 404);
 		}
@@ -206,7 +206,6 @@ class EventsController extends Controller {
 					register: 'integriq',
 					schema: 'event_subscription',
 					_rbac: false,
-					_multitenancy: false,
 					_render: false
 				);
 				$response += $this->signingPolicy->reveal(stored: (array)$stored?->getObject());
@@ -303,8 +302,7 @@ class EventsController extends Controller {
 				id: (string)$subscriptionId,
 				register: 'integriq',
 				schema: 'event_subscription',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
@@ -391,8 +389,7 @@ class EventsController extends Controller {
 				id: (string)$subscriptionId,
 				register: 'integriq',
 				schema: 'event_subscription',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
@@ -444,8 +441,7 @@ class EventsController extends Controller {
 				id: (string)$subscriptionId,
 				register: 'integriq',
 				schema: 'event_subscription',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
@@ -484,8 +480,7 @@ class EventsController extends Controller {
 				id: $subscriptionId,
 				register: 'integriq',
 				schema: 'event_subscription',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
@@ -538,8 +533,7 @@ class EventsController extends Controller {
 				id: $subscriptionId,
 				register: 'integriq',
 				schema: 'event_subscription',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
@@ -800,8 +794,7 @@ class EventsController extends Controller {
 				id: $subscriptionId,
 				register: 'integriq',
 				schema: 'event_subscription',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return 'webhook';
@@ -844,7 +837,7 @@ class EventsController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function deadLetterShow(string $id): JSONResponse {
 		try {
-			$message = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'event_message', _rbac: false, _multitenancy: false);
+			$message = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'event_message', _rbac: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
 		}
@@ -858,8 +851,7 @@ class EventsController extends Controller {
 					id: (string)$subscriptionId,
 					register: 'integriq',
 					schema: 'event_subscription',
-					_rbac: false,
-					_multitenancy: false
+					_rbac: false
 				);
 				$subData = $subscription->getObject();
 				$subscriptionCtx = [

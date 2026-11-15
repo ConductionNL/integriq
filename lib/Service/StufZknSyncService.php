@@ -56,6 +56,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\StufZknProviderException;
 use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\StufZkn\InboundMessageTranslator;
 use OCA\Integriq\Service\StufZkn\LogStufZknProvider;
@@ -344,6 +345,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: background retry of failed StUF messages, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -385,27 +387,16 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new StufZknProviderException(
 				message: 'No active StUF-ZKN source is configured (register "openconnector", schema "source", '
 					. 'type "stuf-zkn", isEnabled=true). Configure one before using the StUF-ZKN bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**
@@ -433,6 +424,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: resolves the active StUF source for a background sync, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -584,6 +576,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: matches an inbound StUF message from a remote system, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -644,6 +637,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 			schema: self::SCHEMA_MESSAGE,
 			uuid: $uuid,
 			_rbac: false,
+			// Unscoped: system write of a StUF message log row, no user session.
 			_multitenancy: false
 		);
 
@@ -685,6 +679,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 			schema: self::SCHEMA_MESSAGE,
 			uuid: $message->getUuid(),
 			_rbac: false,
+			// Unscoped: background retry of one failed StUF message, no user session.
 			_multitenancy: false
 		);
 

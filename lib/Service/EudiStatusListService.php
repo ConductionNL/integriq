@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Helper\RandomUuid;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -97,6 +98,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: the status list is found for the organisation passed in, during issuance without a session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -130,11 +132,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 	 * @return string
 	 */
 	private static function generateUuid(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+		return RandomUuid::version4();
 	}//end generateUuid()
 
 	/**
@@ -194,6 +192,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 			register: 'integriq',
 			schema: 'eudi_status_list',
 			_rbac: false,
+			// Unscoped: revocation by an authenticated consumer flips a bit in the status list, no user session.
 			_multitenancy: false
 		);
 		$data = $entity->getObject();
@@ -222,6 +221,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 			register: 'integriq',
 			schema: 'eudi_status_list',
 			_rbac: false,
+			// Unscoped: revocation by an authenticated consumer flips a bit in the status list, no user session.
 			_multitenancy: false
 		);
 		$this->signAndCache(entity: $refreshedEntity);
@@ -366,6 +366,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 				register: 'integriq',
 				schema: 'eudi_status_list',
 				_rbac: false,
+				// Unscoped: the published status list is public by design (wallets and verifiers fetch it).
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -397,6 +398,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: background refresh of status lists near expiry, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);

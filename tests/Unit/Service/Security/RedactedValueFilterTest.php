@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Security;
 
+use OCA\Integriq\Service\Security\RedactedValueFilter;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -76,4 +77,17 @@ class RedactedValueFilterTest extends TestCase {
 	public function testAListIsReindexed(): void {
 		$this->assertSame(['a', ['b']], (new SensitiveFieldRegistry())->withoutRedactedValues(data: [self::MASK, 'a', [self::MASK, 'b']]));
 	}//end testAListIsReindexed()
+
+	/**
+	 * Only the exact placeholder string counts as the placeholder.
+	 *
+	 * @return void
+	 */
+	public function testOnlyTheExactPlaceholderIsThePlaceholder(): void {
+		$this->assertTrue(RedactedValueFilter::isPlaceholder(value: SensitiveFieldRegistry::PLACEHOLDER));
+		$this->assertFalse(RedactedValueFilter::isPlaceholder(value: [SensitiveFieldRegistry::PLACEHOLDER]));
+		$this->assertFalse(RedactedValueFilter::isPlaceholder(value: ' ' . SensitiveFieldRegistry::PLACEHOLDER));
+		$this->assertFalse(RedactedValueFilter::isPlaceholder(value: null));
+		$this->assertFalse(RedactedValueFilter::isPlaceholder(value: ''));
+	}//end testOnlyTheExactPlaceholderIsThePlaceholder()
 }//end class

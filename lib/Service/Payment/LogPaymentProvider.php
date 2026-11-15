@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Payment;
 
+use OCA\Integriq\Exception\PaymentMethodUnsupportedException;
+
 /**
  * Sandbox payment provider: canned checkout URL, synthetic payment ids, seeded status.
  *
@@ -61,6 +63,11 @@ class LogPaymentProvider implements PaymentProviderInterface {
 	 * @spec openspec/specs/live-payment-providers/spec.md#scenario-the-log-provider-creates-a-payment-without-a-network-call-or-secret
 	 */
 	public function createPayment(array $sourceConfiguration, array $payload): array {
+		if (($payload['method'] ?? null) === 'pointofsale') {
+			// The sandbox has no terminals: the caller falls back to the checkout.
+			throw new PaymentMethodUnsupportedException(message: 'The log payment provider has no point-of-sale method.');
+		}
+
 		self::$counter++;
 		$providerPaymentId = 'MOCK-PAY-' . self::$counter;
 
@@ -102,4 +109,36 @@ class LogPaymentProvider implements PaymentProviderInterface {
 		];
 
 	}//end fetchPaymentStatus()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * The sandbox pays nothing out, so it reports no settlements.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object (unused).
+	 * @param string $since ISO 8601 lower bound (unused).
+	 *
+	 * @return list<array<string, mixed>> Always empty.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-every-provider-settlement-is-reported-once-with-its-transactions-req-lpp-008
+	 */
+	public function fetchSettlements(array $sourceConfiguration, string $since): array {
+		return [];
+
+	}//end fetchSettlements()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * The sandbox has no point-of-sale terminals.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object (unused).
+	 *
+	 * @return list<array<string, string>> Always empty.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function listTerminals(array $sourceConfiguration): array {
+		return [];
+
+	}//end listTerminals()
 }//end class

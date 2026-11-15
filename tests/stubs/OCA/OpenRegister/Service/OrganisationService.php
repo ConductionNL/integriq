@@ -45,4 +45,35 @@ class OrganisationService {
 	public function getActiveOrganisation(?array $preloadedOrgs = null): ?object {
 		return null;
 	}
+
+	/**
+	 * The caller's organisation statistics (real signature).
+	 *
+	 * @return array
+	 */
+	public function getUserOrganisationStats(): array {
+		return [];
+	}
+
+	/**
+	 * Set the caller's active organisation (real signature).
+	 *
+	 * @param string $organisationUuid The organisation uuid.
+	 *
+	 * @return bool
+	 */
+	public function setActiveOrganisation(string $organisationUuid): bool {
+		return true;
+	}
+
+	/**
+	 * The caller's organisations (real signature).
+	 *
+	 * @param bool $_useCache Whether to use the cache.
+	 *
+	 * @return array
+	 */
+	public function getUserOrganisations(bool $_useCache = true): array {
+		return [];
+	}
 }

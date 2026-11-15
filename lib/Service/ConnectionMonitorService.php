@@ -359,8 +359,7 @@ class ConnectionMonitorService implements ConnectionMonitorServiceInterface {
 				id: $sourceRef,
 				register: self::REGISTER,
 				schema: 'source',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 			if ($found instanceof ObjectEntity) {
 				return $found;
@@ -395,8 +394,7 @@ class ConnectionMonitorService implements ConnectionMonitorServiceInterface {
 				'offset' => ($page * self::PAGE_SIZE),
 				'sort' => ['created' => 'DESC'],
 			],
-			_rbac: false,
-			_multitenancy: false
+			_rbac: false
 		);
 
 		return array_values(array_filter(($result['results'] ?? $result), static fn ($item): bool => $item instanceof ObjectEntity));

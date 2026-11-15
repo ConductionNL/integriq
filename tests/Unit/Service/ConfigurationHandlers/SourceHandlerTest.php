@@ -116,7 +116,7 @@ class SourceHandlerTest extends TestCase {
 	 * environments-and-promotion REQ-010 regression — a Source's
 	 * `configuration.authentication.credentialRef` placeholder passes
 	 * through export byte-for-byte unchanged: neither `credentialId` nor
-	 * `credentialName` matches `SensitiveFieldRegistry::SECRET_NAME_PATTERN`/
+	 * `credentialName` matches `SensitiveFieldRegistry::SENSITIVE_NAME_PATTERN`/
 	 * `EXACT_MATCH_NAMES`, so `redactArray()` never touches it. Pins this
 	 * previously-undocumented behaviour, which `environments-and-promotion`'s
 	 * promotion-specific `credentialRefsNeedingRebind` classification relies on.

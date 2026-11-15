@@ -69,6 +69,9 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\Integriq\Service\StufZkn\StufZdsOutbound
  * @covers \OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver
  * @covers \OCA\Integriq\Service\StufZkn\StufZknClient
+ * @covers \OCA\Integriq\Service\StufZkn\ZdsAttempt
+ * @covers \OCA\Integriq\Service\StufZkn\ZdsConclusion
+ * @covers \OCA\Integriq\Service\StufZkn\ZdsRequest
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsMessageBuilder
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsResponseReader
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsCircuitBreaker
@@ -140,6 +143,20 @@ class StufZdsCaseClientTest extends TestCase {
 	private bool $failBreaker = false;
 
 	/**
+	 * Whether the conclusion listener throws.
+	 *
+	 * @var bool
+	 */
+	private bool $failListener = false;
+
+	/**
+	 * The warnings the logger received.
+	 *
+	 * @var array<int,array{0:string,1:array}>
+	 */
+	private array $warnings = [];
+
+	/**
 	 * The outbound side of the last built client (it owns retry()).
 	 *
 	 * @var StufZdsOutbound
@@ -161,6 +178,8 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->failSaveOfStatus = null;
 		$this->failSchedule     = false;
 		$this->failBreaker      = false;
+		$this->failListener     = false;
+		$this->warnings         = [];
 		$this->sources   = [
 			'zsh' => [
 				'type' => 'stuf-zkn',
@@ -197,6 +216,11 @@ class StufZdsCaseClientTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message, array $context=[]): void {
+				$this->warnings[] = [$message, $context];
+			}
+		);
 
 		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
 		$objects->method('find')->willReturnCallback(
@@ -251,6 +275,10 @@ class StufZdsCaseClientTest extends TestCase {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(
 			function (object $event): void {
+				if ($this->failListener === true) {
+					throw new \RuntimeException('Listener exploded');
+				}
+
 				$this->events[] = $event;
 			}
 		);
@@ -351,6 +379,26 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertSame('case-1', $this->events[0]->getCorrelationId());
 		$this->assertTrue($this->events[0]->getResult()['success']);
 	}//end testConfirmedCreeerZaakIsSentAndConcluded()
+
+	/**
+	 * A conclusion listener that throws is logged; the caller still gets the confirmed result.
+	 *
+	 * @return void
+	 */
+	public function testAFailingConclusionListenerIsLoggedAndTheResultStillReturned(): void {
+		$this->failListener = true;
+
+		$result = $this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', ['omschrijving' => 'Melding'], 'Melding openbare ruimte', ['sourceApp' => 'dossiq', 'correlationId' => 'case-1']);
+
+		$this->assertTrue($result['success']);
+		$this->assertSame('0363-Z-1', $result['caseIdentification']);
+		$this->assertSame('sent', $this->rows[$result['messageId']]['status'], 'The row is concluded before the listener runs');
+		$this->assertSame([], $this->events);
+		$this->assertContains(
+			['StUF-ZDS conclusion listener failed: {error}', ['error' => 'Listener exploded']],
+			$this->warnings
+		);
+	}//end testAFailingConclusionListenerIsLoggedAndTheResultStillReturned()
 
 	/**
 	 * A 503 is retried: row retrying with the envelope, a retry scheduled after 5 s, nothing announced yet.
@@ -945,4 +993,76 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertStringContainsString('encryptedPassword', $result['fout']['omschrijving']);
 		$this->assertSame('failed', $this->rows[$first['messageId']]['status']);
 	}//end testARetryWithoutUsableCredentialsIsRefusedBeforeSending()
+	/**
+	 * Open the source's circuit with four refused creeerZaak calls.
+	 *
+	 * @param StufZdsCaseClient $client The client, answering four Fo03 refusals.
+	 *
+	 * @return void
+	 */
+	private function openTheCircuit(StufZdsCaseClient $client): void {
+		for ($i = 0; $i < 4; $i++) {
+			$client->creeerZaak('zsh', [], 'Melding');
+		}
+	}//end openTheCircuit()
+
+	public function testAnOpenCircuitHoldsEveryOtherOperationBeforeAnythingIsSent(): void {
+		$client = $this->client(array_fill(0, 4, self::fout(400, 'StUF055')));
+		$this->openTheCircuit(client: $client);
+		$rowsBefore = count($this->rows);
+
+		$results = [
+			'actualiseerZaak' => $client->actualiseerZaak('zsh', 'Z-1', ['omschrijving' => 'Nieuw']),
+			'vrijBericht' => $client->vrijBericht('zsh', 'meldBesluit', ['besluit' => 'B-1']),
+			'geefZaakdetails' => $client->geefZaakdetails('zsh', 'Z-1'),
+			'genereerZaakIdentificatie' => $client->genereerZaakIdentificatie('zsh'),
+		];
+
+		foreach ($results as $operation => $result) {
+			$this->assertFalse($result['success'], $operation);
+			$this->assertSame('CIRCUIT_OPEN', $result['fout']['code'], $operation);
+			$this->assertSame('', $result['messageId'], $operation);
+		}
+
+		$this->assertArrayHasKey('case', $results['geefZaakdetails']);
+		$this->assertNull($results['geefZaakdetails']['case']);
+		$this->assertCount(4, $this->history, 'nothing more is sent once the circuit is open');
+		$this->assertCount($rowsBefore, $this->rows, 'no message row is opened for a held call');
+	}//end testAnOpenCircuitHoldsEveryOtherOperationBeforeAnythingIsSent()
+
+	public function testActualiseerZaakWithoutAnIdentificatieIsRefusedBeforeTheSourceIsRead(): void {
+		unset($this->sources['zsh']);
+
+		try {
+			$this->client([])->actualiseerZaak('zsh', '  ', ['omschrijving' => 'Nieuw']);
+			$this->fail('An empty zaak identificatie must be refused');
+		} catch (StufZknTranslationException $exception) {
+			$this->assertStringContainsString('zaak identificatie', $exception->getMessage());
+			$this->assertSame([], $this->history);
+		}
+	}//end testActualiseerZaakWithoutAnIdentificatieIsRefusedBeforeTheSourceIsRead()
+
+	public function testVoorafReturnsTheFailedAllocationAndCreatesNoZaak(): void {
+		$this->sources['zsh']['configuration']['caseIdentificationStrategy'] = 'vooraf';
+
+		$result = $this->client([self::fout(400, 'StUF058')])->creeerZaak('zsh', [], 'Melding');
+
+		$this->assertFalse($result['success']);
+		$this->assertSame('StUF058', $result['fout']['code']);
+		$this->assertCount(1, $this->history, 'only the identificatie was asked for');
+		$this->assertSame('https://zsh.example.nl/VrijeBerichten', (string)$this->history[0]['request']->getUri());
+	}//end testVoorafReturnsTheFailedAllocationAndCreatesNoZaak()
+
+	public function testASourceWithoutAnOrganisatieIsRefusedBeforeAnyRowIsOpened(): void {
+		$this->sources['zsh']['configuration']['ontvangerOrganisatie'] = '';
+
+		try {
+			$this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', [], 'Melding');
+			$this->fail('A source without an ontvangerOrganisatie must be refused');
+		} catch (StufZknProviderException $exception) {
+			$this->assertStringContainsString('ontvangerOrganisatie', $exception->getMessage());
+			$this->assertSame([], $this->rows);
+			$this->assertSame([], $this->history);
+		}
+	}//end testASourceWithoutAnOrganisatieIsRefusedBeforeAnyRowIsOpened()
 }//end class

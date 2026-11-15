@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\CaseSystem;
 
+use OCA\Integriq\Service\Helper\RandomUuid;
+
 /**
  * Mock mode (design D4): two cases with documents from
  * lib/Settings/case-system-mock.json. What add-document and create-case
@@ -243,10 +245,6 @@ class CaseSystemMock {
 	 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-a-seeded-zgw-zaken-template-links-a-connection-at-once-req-cso-003
 	 */
 	private static function uuid(): string {
-		$bytes = random_bytes(16);
-		$bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-		$bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+		return RandomUuid::version4();
 	}//end uuid()
 }//end class

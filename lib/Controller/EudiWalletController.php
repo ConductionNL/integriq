@@ -187,17 +187,7 @@ class EudiWalletController extends Controller {
 	 * @return string|null The token value, or null when absent/malformed.
 	 */
 	private function extractBearerToken(): ?string {
-		$header = $this->request->getHeader('Authorization');
-		if (str_starts_with($header, 'Bearer ') === false) {
-			return null;
-		}
-
-		$token = trim(substr($header, strlen('Bearer ')));
-		if ($token === '') {
-			return null;
-		}
-
-		return $token;
+		return BearerToken::fromRequest(request: $this->request);
 	}//end extractBearerToken()
 
 	/**
