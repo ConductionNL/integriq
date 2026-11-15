@@ -17,6 +17,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Data gathering](data-gathering.md) | Scheduled feeds filled into a register: the connector contract, the ten shipped connectors, and gathering versus leaf providers | Implemented |
 | [Flow nodes](flow-nodes.md) | Contributed step types for OpenRegister's flow engine | Implemented |
 | [Service desk connectors](service-desk-connectors.md) | TOPdesk, ServiceNow and GLPI sources with two-way presets that say who owns each field | Implemented |
+| [Job board connectors](job-board-connectors.md) | LinkedIn and Indeed for humaniq's multiposting: per-item board references, dormant templates and the Indeed vacancy feed | Partial |
 | [Events & Webhooks](events.md) | CloudEvents emission, subscription, and consumer processing | Implemented |
 | [Peppol e-invoicing](peppol.md) | Send and receive UBL documents over Peppol for sibling apps, through a configured Access Point | Implemented |
 | [Nextcloud event triggers](nextcloud-event-triggers.md) | Files, Calendar, Tables and Forms events start a webhook, synchronization, job or flow, with retries and per-family self-service | Implemented |

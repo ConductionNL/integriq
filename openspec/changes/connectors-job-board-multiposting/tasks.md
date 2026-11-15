@@ -29,15 +29,17 @@ Kind: code. Size M. Half for humaniq `hiring-multiposting` (row humaniq `hir-mul
 - **files**: endpoint configuration in the seed data, `lib/Service/EndpointService.php` (only if the XML rendering needs a hook)
 - **acceptance_criteria**:
   - GIVEN two published vacancies of which one lists `indeed` WHEN the Indeed feed is requested THEN it lists that one only, without applicant data
-- [ ] Implement
+- [x] Implement
 - [ ] Test (Newman)
+  > 2026-11-15, built: the endpoint `jobboard-indeed-feed` (`GET jobfeeds/indeed.xml`, anonymous with a 60-a-minute throttle, over `humaniq/Vacancy` with the fixed filters `status: gepubliceerd` and `channels: indeed`) in `jobboard-indeed-source.json`, with the rules `jobboard-indeed-feed-item` (the `jobboard-indeed` mapping over each vacancy, so no applicant data leaves) and `jobboard-indeed-feed-envelope` (the `jobboard-indeed-feed` mapping: Indeed's `<source>` root with the publisher and one `<job>` per vacancy), the same declarative shape as the ORI public endpoints. The XML hook is in `EndpointsController::inRequestedFormat()`, not `EndpointService`: a path ending in `.xml` answers as XML without an XML `Accept` header, because a crawler sends none. PHPUnit: `JobBoardSetsTest::testThePublishedVacancyIsRenderedAsTheRecordedIndeedFeed` (the seeded vacancy rendered as `tests/fixtures/jobboards/indeed-feed.xml`), `::testTheFeedEndpointListsPublishedIndeedVacanciesOnly`, `EndpointsControllerHandlePathTest::testAnXmlPathIsAnsweredAsXml`. Left: the Newman run against a live instance. humaniq's Vacancy has no `channels` field yet (humaniq `hiring-multiposting` adds it); until then the `channels` filter finds nothing.
 
 ### Task 4: Docs and strings
 - **spec_ref**: `openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-werknl-linkedin-and-indeed-are-job-board-templates-req-jbc-002`
 - **files**: `docs/features/`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN the docs WHEN an administrator connects a board THEN the partner programme and the feed URL registration are named
-- [ ] Implement
+- [x] Implement
+  > 2026-11-15, built: `docs/features/job-board-connectors.md` (per-item board references, connecting LinkedIn through its partner programme, the Indeed feed URL and its registration, werk.nl not shipped and why), linked from `docs/features/README.md`. No new user-facing strings: the change adds no screen. Left: the docs build.
 - [ ] Test (docs build)
 
 ## Verification
