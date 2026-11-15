@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (connectors-job-board-multiposting). The mapping from humaniq's Vacancy to one job of Indeed's XML job feed. Indeed pulls vacancies from a feed instead of taking a push; the feed endpoint that renders these jobs is a later task of this change, as is the Indeed template's answer to a source call.",
+  "$comment": "ADR-037 register fragment (connectors-job-board-multiposting). Indeed pulls vacancies from a feed instead of taking a push: the mapping from humaniq's Vacancy to one job of Indeed's XML job feed, and the anonymous feed endpoint jobfeeds/indeed.xml that lists the published vacancies offered to Indeed as that feed (design D3). The Indeed template's answer to a source call is not part of this fragment.",
   "components": {
     "objects": [
       {
@@ -29,6 +29,98 @@
         "cast": {},
         "passThrough": false,
         "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "jobboard-indeed-feed"
+        },
+        "name": "Indeed vacancy feed shape",
+        "description": "Wraps the vacancies mapped to Indeed jobs in the root of Indeed's XML job feed: <source> with the publisher and one <job> per vacancy. Before use, fill `publisher` with the employer name and `publisherurl` with its careers site.",
+        "mapping": {
+          "@root": "source",
+          "publisher": "",
+          "publisherurl": "",
+          "job": "results"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "jobboard-indeed-feed-item"
+        },
+        "name": "Indeed feed job",
+        "description": "Runs the jobboard-indeed mapping over each vacancy of the feed, so only the fields of an Indeed job leave the register.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 10,
+        "configuration": {
+          "mapping": "jobboard-indeed"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "jobboard-indeed-feed-envelope"
+        },
+        "name": "Indeed feed shape",
+        "description": "On the list answer, replaces the paging envelope with the root of Indeed's XML job feed.",
+        "action": "GET",
+        "timing": "after",
+        "type": "mapping",
+        "order": 20,
+        "conditions": {
+          "!": [
+            {
+              "missing": [
+                "body.results"
+              ]
+            }
+          ]
+        },
+        "configuration": {
+          "mapping": "jobboard-indeed-feed",
+          "mapResults": false
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "jobboard-indeed-feed"
+        },
+        "name": "Indeed vacancy feed",
+        "slug": "jobboard-indeed-feed",
+        "description": "Indeed's XML job feed of humaniq's published vacancies whose channels include indeed, anonymously: a public list of public vacancies (ADR-091 decision 5), throttled, without applicant data. Register the URL /index.php/apps/integriq/api/endpoint/jobfeeds/indeed.xml with Indeed; the .xml path answers as XML without an Accept header. The Indeed partner terms apply before going live.",
+        "endpoint": "jobfeeds/indeed.xml",
+        "endpointArray": [
+          "jobfeeds",
+          "indeed.xml"
+        ],
+        "endpointRegex": "#^jobfeeds/indeed\\.xml$#",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "humaniq/Vacancy",
+        "rules": [
+          "jobboard-indeed-feed-item",
+          "jobboard-indeed-feed-envelope"
+        ],
+        "fixedFilters": {
+          "status": "gepubliceerd",
+          "channels": "indeed"
+        },
+        "anonymousRateLimit": {
+          "requestsPerWindow": 60,
+          "windowSeconds": 60
+        }
       }
     ]
   }
