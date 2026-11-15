@@ -430,6 +430,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Each organisation's SP / RP, published for its identity provider (portal-idp-broker-config D3).
 		['name' => 'idpMetadata#metadata', 'url' => '/api/idp/metadata/{organisation}/{provider}', 'verb' => 'GET'],
 		['name' => 'idpMetadata#jwks', 'url' => '/api/idp/jwks/{organisation}/{provider}', 'verb' => 'GET'],
+		// Beheer > Authenticatie: the registrations with their readiness, and the Test action (admin only).
+		['name' => 'idpRegistration#index', 'url' => '/api/idp/registrations', 'verb' => 'GET'],
+		['name' => 'idpRegistration#test', 'url' => '/api/idp/registrations/{id}/test', 'verb' => 'POST'],
 		// The browser half of the same login. The start checks the consumer and
 		// its registered return address before anything leaves integriq; the
 		// callback sends the browser back only to the address kept in the

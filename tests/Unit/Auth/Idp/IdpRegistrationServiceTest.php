@@ -356,6 +356,31 @@ class IdpRegistrationServiceTest extends TestCase {
 
 
 	/**
+	 * The settings screen reads every registration, of every organisation, from the integriq register's schema,
+	 * with RBAC on and multitenancy off; an object that is not an entity is skipped.
+	 *
+	 * @return void
+	 */
+	public function testAllReadsEveryRegistrationForTheScreen(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->expects($this->once())->method('findAll')
+			->with(['filters' => ['register' => 'integriq', 'schema' => 'idpRegistration'], 'limit' => 500], true, false)
+			->willReturn([$this->object('reg-1', self::oidc()), 'not an object', $this->object('reg-2', self::oidc(['organisation' => 'gemeente-y']))]);
+		$service = new IdpRegistrationService(
+			objectService: $objects,
+			secretSeam: $this->createMock(IdpSecretSeam::class),
+			brokerConfig: $this->createMock(IdpBrokerConfigInterface::class),
+			appManager: $this->createMock(IAppManager::class)
+		);
+
+		$all = $service->all();
+
+		$this->assertSame(['reg-1', 'reg-2'], array_map(static fn (IdpRegistration $registration): string => $registration->id, $all));
+		$this->assertSame('gemeente-y', $all[1]->organisation());
+	}//end testAllReadsEveryRegistrationForTheScreen()
+
+
+	/**
 	 * The registry binds a live adapter only for a ready registration of a kind it can build.
 	 *
 	 * @return void

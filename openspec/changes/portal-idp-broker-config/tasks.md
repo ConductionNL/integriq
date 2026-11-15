@@ -118,6 +118,7 @@ the flag is `1`.
   - GIVEN the router WHEN read THEN the section is not a route (admin-router gate), and the modal-isolation and nc-input-labels gates pass
 - [ ] Implement
 - [ ] Test
+      > Server side built: `IdpRegistrationController` (`GET /api/idp/registrations`, `POST /api/idp/registrations/{id}/test`, both `#[AuthorizedAdminSetting]`) lists every registration (`IdpRegistrationService::all()`) with the runtime's readiness status and reasons and its metadata address, plus whether the flag is on and Keepiq is there; `IdpRegistrationTester` runs the Test checks (metadata or discovery, each required credential by role) and returns no value. PHPUnit: `IdpRegistrationControllerTest`, `IdpRegistrationTesterTest`, `IdpRegistrationServiceTest::testAllReadsEveryRegistrationForTheScreen`. Left: the Vue section, modal and delete dialog with their l10n, so the task stays unticked.
 
 ### Task 11: Repair step for the superseded keys
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-each-organisation-has-its-own-registration-per-provider-req-idpc-002`
