@@ -58,6 +58,16 @@ export function mapFormOptions(forms) {
 }
 
 /**
+ * A value as text, '' when it is null or undefined.
+ *
+ * @param {unknown} value The value.
+ * @return {string} The text.
+ */
+function textOf(value) {
+	return String(value ?? '')
+}
+
+/**
  * Normalise a raw discovery question into the shape the field-mapping helper
  * renders (id, text, name, type) — tolerant of missing fields.
  *
@@ -70,9 +80,9 @@ export function normaliseQuestion(question) {
 	const q = question || {}
 	return {
 		id: Number(q.id ?? 0),
-		text: String(q.text ?? ''),
-		name: String(q.name ?? ''),
-		type: String(q.type ?? ''),
+		text: textOf(q.text),
+		name: textOf(q.name),
+		type: textOf(q.type),
 	}
 }
 
@@ -104,6 +114,22 @@ export function isArrayValuedQuestion(question) {
 }
 
 /**
+ * How often each non-empty question text occurs.
+ *
+ * @param {Array} questions Normalised question descriptors.
+ * @return {Map<string, number>} The count per text.
+ */
+function textCounts(questions) {
+	const counts = new Map()
+	for (const question of Array.isArray(questions) ? questions : []) {
+		const text = normaliseQuestion(question).text
+		if (text === '') continue
+		counts.set(text, (counts.get(text) || 0) + 1)
+	}
+	return counts
+}
+
+/**
  * Compute the set of question TEXTS that are ambiguous (shared by two or
  * more questions in the same form) — nextcloud-forms-connector REQ-003's
  * "never guess" precedent, surfaced in the editor before the user hits the
@@ -115,14 +141,8 @@ export function isArrayValuedQuestion(question) {
  * @spec openspec/specs/sync-editor-ui/spec.md#requirement-field-mapping-helper-prefilled-from-form-questions-req-syncui-009
  */
 export function ambiguousQuestionTexts(questions) {
-	const counts = new Map()
-	for (const question of Array.isArray(questions) ? questions : []) {
-		const text = normaliseQuestion(question).text
-		if (text === '') continue
-		counts.set(text, (counts.get(text) || 0) + 1)
-	}
 	const ambiguous = new Set()
-	for (const [text, count] of counts.entries()) {
+	for (const [text, count] of textCounts(questions).entries()) {
 		if (count > 1) ambiguous.add(text)
 	}
 	return ambiguous

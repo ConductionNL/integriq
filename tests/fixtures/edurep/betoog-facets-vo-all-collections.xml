@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?><srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/" xmlns:diag="http://www.loc.gov/zing/srw/diagnostic/" xmlns:xcql="http://www.loc.gov/zing/cql/xcql/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:meresco_srw="http://meresco.org/namespace/srw#"><srw:version>1.2</srw:version><srw:numberOfRecords>38</srw:numberOfRecords><srw:echoedSearchRetrieveRequest><srw:version>1.2</srw:version><srw:query>betoog AND lom.educational.context=VO AND lom.general.language=nl</srw:query><srw:startRecord>1</srw:startRecord><srw:maximumRecords>0</srw:maximumRecords><srw:recordPacking>string</srw:recordPacking><srw:recordSchema>lom</srw:recordSchema><srw:extraRequestData><dd:drilldown
+    xmlns:dd="http://meresco.org/namespace/drilldown"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://meresco.org/namespace/drilldown http://meresco.org/files/xsd/drilldown-20070730.xsd"><dd:term-drilldown>lom.rights.copyrightandotherrestrictions:20,meta.repository.id:20,lom.educational.context:12,lom.technical.format:12</dd:term-drilldown></dd:drilldown></srw:extraRequestData></srw:echoedSearchRetrieveRequest><srw:extraResponseData><dd:drilldown
+    xmlns:dd="http://meresco.org/namespace/drilldown"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://meresco.org/namespace/drilldown http://meresco.org/files/xsd/drilldown-20070730.xsd"><dd:term-drilldown><dd:navigator name="lom.rights.copyrightandotherrestrictions"><dd:item count="29">yes</dd:item><dd:item count="9">cc-by-nc-nd-30</dd:item></dd:navigator><dd:navigator name="meta.repository.id"><dd:item count="25">KlasCement</dd:item><dd:item count="6">metaplus</dd:item><dd:item count="4">webkwestie</dd:item><dd:item count="3">krantindeklas</dd:item></dd:navigator><dd:navigator name="lom.educational.context"><dd:item count="38">VO</dd:item><dd:item count="2">BVE</dd:item><dd:item count="2">SO</dd:item><dd:item count="1">WO</dd:item><dd:item count="1">PO</dd:item><dd:item count="1">VVE</dd:item><dd:item count="1">bedrijfsopleiding</dd:item><dd:item count="1">SBaO</dd:item></dd:navigator><dd:navigator name="lom.technical.format"><dd:item count="38">text/html</dd:item></dd:navigator></dd:term-drilldown></dd:drilldown>
+        <querytimes xmlns="http://meresco.org/namespace/timing">
+            <sruHandling>PT0.017S</sruHandling>
+            <sruQueryTime>PT0.016S</sruQueryTime>
+            <index>PT0.014S</index>
+        </querytimes>
+    </srw:extraResponseData></srw:searchRetrieveResponse>

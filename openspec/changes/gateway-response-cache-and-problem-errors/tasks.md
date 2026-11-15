@@ -26,16 +26,16 @@ Kind: code. Size M. Rows `integriq:gw-cache`, `integriq:gw-problem-json`.
 - **files**: `lib/Http/ProblemResponse.php`, `docs/problems/*.md`
 - **acceptance_criteria**:
   - GIVEN a validation failure WHEN rendered THEN the content type is application/problem+json and invalid-params lists each field
-- [ ] Implement
-- [ ] Test (PHPUnit on the class)
+- [x] Implement
+- [x] Test (PHPUnit on the class)
 
 ### Task 4: Route every gateway error through it
 - **spec_ref**: `openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002`
 - **files**: `lib/Service/EndpointService.php`
 - **acceptance_criteria**:
   - GIVEN each error path in EndpointService WHEN it fires THEN the answer is a problem document that still carries error and details
-- [ ] Implement
-- [ ] Test (PHPUnit covering authentication, rate limit, validation and upstream errors; Newman checks the content type)
+- [x] Implement
+- [x] Test (PHPUnit covering authentication, rate limit, validation and upstream errors; Newman checks the content type)
 
 ## Verification
 - [ ] `openspec validate gateway-response-cache-and-problem-errors --type change --strict` passes

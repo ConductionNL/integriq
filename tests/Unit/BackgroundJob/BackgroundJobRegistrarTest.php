@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -27,6 +30,8 @@ use OCA\Integriq\BackgroundJob\MessageRetryJobScheduler;
 use OCA\Integriq\BackgroundJob\MessageRetrySchedulerInterface;
 use OCA\Integriq\BackgroundJob\OtelExportJobScheduler;
 use OCA\Integriq\BackgroundJob\ProcessEventJobScheduler;
+use OCA\Integriq\BackgroundJob\RetentionRebaseJobScheduler;
+use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
 use OCA\Integriq\BackgroundJob\TraceExportSchedulerInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
@@ -42,6 +47,7 @@ class BackgroundJobRegistrarTest extends TestCase {
 		MessageRetrySchedulerInterface::class => MessageRetryJobScheduler::class,
 		TraceExportSchedulerInterface::class => OtelExportJobScheduler::class,
 		AttachmentFetchSchedulerInterface::class => AttachmentFetchJobScheduler::class,
+		RetentionRebaseSchedulerInterface::class => RetentionRebaseJobScheduler::class,
 	];
 
 	/**

@@ -20,7 +20,7 @@ a directory form of the existing configuration export.
   - `ConfigExport` and `ConfigImport`, over
     `lib/Service/ConfigurationService.php:340` and `:1037` and the preview at
     `lib/Service/ConfigurationImportPreviewService.php:122`.
-- Directory layout: a new `lib/Service/ConfigurationDirectoryCodec.php` splits
+- Directory layout: a new `lib/Command/Integration/ConfigurationDirectoryCodec.php` splits
   the exported document into `integriq-configuration.json` (the configuration
   itself and a file index) plus one file per entity at
   `<type>/<slug>.json`, and joins a directory back into the document

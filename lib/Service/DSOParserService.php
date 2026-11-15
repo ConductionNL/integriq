@@ -16,6 +16,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -139,6 +142,21 @@ class DSOParserService implements PortalRequestParserInterface {
 			];
 		}
 
+		return array_merge($errors, $this->formatErrors(payload: $payload));
+	}//end validatePayload()
+
+	/**
+	 * The BSN and submission date values whose format is wrong.
+	 *
+	 * @param array $payload The verzoek payload data.
+	 *
+	 * @return array Validation error objects, in check order.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-3
+	 */
+	private function formatErrors(array $payload): array {
+		$errors = [];
+
 		// Validate BSN if aanvrager contains one.
 		if (isset($payload['aanvrager']['bsn']) === true) {
 			if ($this->validateBSN(bsn: $payload['aanvrager']['bsn']) === false) {
@@ -164,7 +182,7 @@ class DSOParserService implements PortalRequestParserInterface {
 		}
 
 		return $errors;
-	}//end validatePayload()
+	}//end formatErrors()
 
 	/**
 	 * Parse a DSO-verzoek payload into structured data.

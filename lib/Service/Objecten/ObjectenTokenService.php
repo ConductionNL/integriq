@@ -3,6 +3,9 @@
 /**
  * `Authorization: Token <key>` — and what that token may do, per objecttype.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * 🔴 FAIL-CLOSED ORDERING IS THE WHOLE OF THIS CLASS. The requirement spells
  * it out: no `Authorization` header means 401 "and no register is read". So the
  * token is resolved FIRST, before an objecttype is looked up, before a register
@@ -29,9 +32,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.conduction.nl
  *
@@ -87,12 +87,40 @@ class ObjectenTokenService implements ObjectenTokenServiceInterface {
 	 * @var array<string, int>
 	 */
 	public const STATUS = [
-		self::NO_TOKEN => 401,
-		self::UNKNOWN_TOKEN => 401,
+		self::NO_CREDENTIAL => 401,
+		self::UNKNOWN_CREDENTIAL => 401,
 		self::UNKNOWN_OBJECTTYPE => 404,
 		self::REFUSED_OBJECTTYPE => 403,
 		self::READ_ONLY => 403,
 		self::ALLOWED => 200,
+	];
+
+	/**
+	 * Fields that would carry a literal key, which a declaration may not have.
+	 *
+	 * @var array<int, string>
+	 */
+	private const LITERAL_KEY_FIELDS = ['key', 'secret', 'token'];
+
+	/**
+	 * The refusal of a declaration carrying a literal key, by field name.
+	 *
+	 * @var string
+	 */
+	private const LITERAL_KEY_REFUSAL = 'a token declaration may not carry "%s": the key is resolved through the credential broker by reference, '
+		. 'so it never reaches a configuration export';
+
+	/**
+	 * The refusal of a declaration without a required field, in checking order.
+	 *
+	 * Without a principal the audit trail names an anonymous caller, which is
+	 * the thing REQ-OAF-004's third scenario exists to prevent.
+	 *
+	 * @var array<string, string>
+	 */
+	private const REQUIRED_FIELD_REFUSALS = [
+		'credential' => 'a token declaration must name the credential reference its key is resolved from',
+		'principal' => 'a token declaration must name the principal its writes are attributed to',
 	];
 
 	/**
@@ -133,46 +161,81 @@ class ObjectenTokenService implements ObjectenTokenServiceInterface {
 		$refusals = [];
 
 		foreach ($declarations as $declaration) {
-			if (is_array($declaration) === false) {
-				$refusals[] = 'a token declaration must be an object';
-				continue;
-			}
-
-			foreach (['key', 'secret', 'token'] as $forbidden) {
-				if (array_key_exists($forbidden, $declaration) === true) {
-					$refusals[] = sprintf(
-						'a token declaration may not carry "%s": the key is resolved through the credential broker by reference, '
-						. 'so it never reaches a configuration export',
-						$forbidden
-					);
-					continue 2;
-				}
-			}
-
-			$reference = trim((string)($declaration['credential'] ?? ''));
-			if ($reference === '') {
-				$refusals[] = 'a token declaration must name the credential reference its key is resolved from';
-				continue;
-			}
-
-			$principal = trim((string)($declaration['principal'] ?? ''));
-			if ($principal === '') {
-				// Without a principal the audit trail names an anonymous
-				// caller, which is the thing REQ-OAF-004's third scenario
-				// exists to prevent.
-				$refusals[] = 'a token declaration must name the principal its writes are attributed to';
+			$refusal = $this->refusalOf(declaration: $declaration);
+			if ($refusal !== null) {
+				$refusals[] = $refusal;
 				continue;
 			}
 
 			$this->tokens[] = [
-				'credential' => $reference,
-				'principal' => $principal,
+				'credential' => trim((string)$declaration['credential']),
+				'principal' => trim((string)$declaration['principal']),
 				'permissions' => $this->permissionsOf(declaration: $declaration),
 			];
-		}//end foreach
+		}
 
 		return $refusals;
 	}//end load()
+
+	/**
+	 * Why a token declaration is refused, or null when it loads.
+	 *
+	 * @param mixed $declaration One token declaration.
+	 *
+	 * @return string|null The refusal.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
+	 */
+	private function refusalOf(mixed $declaration): ?string {
+		if (is_array($declaration) === false) {
+			return 'a token declaration must be an object';
+		}
+
+		$literal = $this->literalKeyIn(declaration: $declaration);
+		if ($literal !== null) {
+			return sprintf(self::LITERAL_KEY_REFUSAL, $literal);
+		}
+
+		return $this->missingFieldRefusal(declaration: $declaration);
+	}//end refusalOf()
+
+	/**
+	 * The refusal for the first required field a declaration leaves empty, or null.
+	 *
+	 * @param array<string, mixed> $declaration One token declaration.
+	 *
+	 * @return string|null The refusal.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
+	 */
+	private function missingFieldRefusal(array $declaration): ?string {
+		foreach (self::REQUIRED_FIELD_REFUSALS as $field => $refusal) {
+			if (trim((string)($declaration[$field] ?? '')) === '') {
+				return $refusal;
+			}
+		}
+
+		return null;
+	}//end missingFieldRefusal()
+
+	/**
+	 * The first literal-key field a declaration carries, or null.
+	 *
+	 * @param array<string, mixed> $declaration One token declaration.
+	 *
+	 * @return string|null The field name.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
+	 */
+	private function literalKeyIn(array $declaration): ?string {
+		foreach (self::LITERAL_KEY_FIELDS as $forbidden) {
+			if (array_key_exists($forbidden, $declaration) === true) {
+				return $forbidden;
+			}
+		}
+
+		return null;
+	}//end literalKeyIn()
 
 	/**
 	 * The objecttype uuid a caller's `type` names, from a bare uuid or the standard's objecttype URL.
@@ -202,12 +265,12 @@ class ObjectenTokenService implements ObjectenTokenServiceInterface {
 		// 1. The token, FIRST. Nothing below this line may touch a register.
 		$key = $this->keyFrom(authorization: $authorization);
 		if ($key === null) {
-			return $this->verdict(verdict: self::NO_TOKEN, principal: '');
+			return $this->verdict(verdict: self::NO_CREDENTIAL, principal: '');
 		}
 
 		$token = $this->tokenFor(key: $key);
 		if ($token === null) {
-			return $this->verdict(verdict: self::UNKNOWN_TOKEN, principal: '');
+			return $this->verdict(verdict: self::UNKNOWN_CREDENTIAL, principal: '');
 		}
 
 		// 2. Does this instance publish the objecttype at all.

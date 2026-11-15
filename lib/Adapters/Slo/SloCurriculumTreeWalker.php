@@ -62,6 +62,23 @@ final class SloCurriculumTreeWalker implements SloCurriculumTreeWalkerInterface 
 	private const REFERENCE_KEYS = ['@id', '@type', '@link', '@references', '@context', 'uuid', 'id', 'deprecated'];
 
 	/**
+	 * The counters a run starts from.
+	 *
+	 * @var array<string,int>
+	 */
+	private const EMPTY_STATS = [
+		'nodes' => 0,
+		'leaves' => 0,
+		'skippedDeprecated' => 0,
+		'skippedUnreleased' => 0,
+		'skippedDuplicates' => 0,
+		'filteredByNiveau' => 0,
+		'prunedBranches' => 0,
+		'expansions' => 0,
+		'malformed' => 0,
+	];
+
+	/**
 	 * Objects of the current run keyed by id, from every document read.
 	 *
 	 * @var array<string,array<string,mixed>>
@@ -183,8 +200,44 @@ final class SloCurriculumTreeWalker implements SloCurriculumTreeWalkerInterface 
 	 * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-the-tree-walk-follows-the-set-profile-req-005
 	 */
 	public function walk(array $roots, array $profile, SloCurriculumClient $client, bool $rootsAreNodes): array {
-		$this->start(roots: $roots, profile: $profile, client: $client);
+		$this->profile = $profile;
+		$this->client  = $client;
+		$this->start(roots: $roots);
 
+		$nodes = $this->walkRoots(roots: $roots, rootsAreNodes: $rootsAreNodes);
+
+		$this->stats['nodes'] = count($nodes);
+		$this->client = null;
+
+		return ['nodes' => $nodes, 'stats' => $this->stats];
+	}//end walk()
+
+	/**
+	 * Reset the run state and index the roots.
+	 *
+	 * @param array<int,array<string,mixed>> $roots Root entities.
+	 *
+	 * @return void
+	 */
+	private function start(array $roots): void {
+		$this->index = [];
+		$this->visited = [];
+		$this->stats = self::EMPTY_STATS;
+
+		foreach ($roots as $root) {
+			$this->index += $this->reader->indexById(document: $root);
+		}
+	}//end start()
+
+	/**
+	 * Records for every root, the top-level nodes numbered across roots.
+	 *
+	 * @param array<int,array<string,mixed>> $roots Root entities.
+	 * @param bool $rootsAreNodes Whether every root is itself a node.
+	 *
+	 * @return array<int,array<string,mixed>> Parent-first records.
+	 */
+	private function walkRoots(array $roots, bool $rootsAreNodes): array {
 		$nodes = [];
 		$order = 0;
 		foreach ($roots as $root) {
@@ -198,42 +251,8 @@ final class SloCurriculumTreeWalker implements SloCurriculumTreeWalkerInterface 
 			}
 		}
 
-		$this->stats['nodes'] = count($nodes);
-		$this->client = null;
-
-		return ['nodes' => $nodes, 'stats' => $this->stats];
-	}//end walk()
-
-	/**
-	 * Reset the run state.
-	 *
-	 * @param array<int,array<string,mixed>> $roots Root entities.
-	 * @param array<string,mixed> $profile The set profile.
-	 * @param SloCurriculumClient $client The client.
-	 *
-	 * @return void
-	 */
-	private function start(array $roots, array $profile, SloCurriculumClient $client): void {
-		$this->index = [];
-		$this->visited = [];
-		$this->profile = $profile;
-		$this->client = $client;
-		$this->stats = [
-			'nodes' => 0,
-			'leaves' => 0,
-			'skippedDeprecated' => 0,
-			'skippedUnreleased' => 0,
-			'skippedDuplicates' => 0,
-			'filteredByNiveau' => 0,
-			'prunedBranches' => 0,
-			'expansions' => 0,
-			'malformed' => 0,
-		];
-
-		foreach ($roots as $root) {
-			$this->index += $this->reader->indexById(document: $root);
-		}
-	}//end start()
+		return $nodes;
+	}//end walkRoots()
 
 	/**
 	 * Records for one root.
@@ -245,38 +264,70 @@ final class SloCurriculumTreeWalker implements SloCurriculumTreeWalkerInterface 
 	 */
 	private function walkRoot(array $root, bool $rootsAreNodes): array {
 		if ($rootsAreNodes === true) {
-			return $this->visit(value: $root, parentUuid: null, depth: 0);
+			return $this->visit(value: $root, at: new SloTreePosition(parentUuid: null, depth: 0));
 		}
 
 		// An empty uuid is harmless here: admit() rejects it before this map is read.
 		$this->visited[$this->nodes->uuidOf(entity: $root)] = true;
 
-		return $this->visitChildren(entity: $root, parentUuid: null, depth: 1);
+		return $this->visitChildren(entity: $root, at: new SloTreePosition(parentUuid: null, depth: 1));
 	}//end walkRoot()
 
 	/**
 	 * Records for one entity and its kept descendants.
 	 *
 	 * @param mixed $value An entity, a link or a bare reference.
-	 * @param string|null $parentUuid SLO uuid of the parent node, or null at the top.
-	 * @param int $depth Depth of this entity.
+	 * @param SloTreePosition $at The parent node and depth of this entity.
 	 *
 	 * @return array<int,array<string,mixed>> This node first, then its descendants; [] when skipped.
 	 *
 	 * @throws SloCurriculumException When a guard limit is reached.
 	 */
-	private function visit(mixed $value, ?string $parentUuid, int $depth): array {
-		if ($depth > self::MAX_DEPTH) {
-			throw new SloCurriculumException(message: sprintf('The SLO tree is deeper than %d levels; the walk stopped.', self::MAX_DEPTH));
-		}
+	private function visit(mixed $value, SloTreePosition $at): array {
+		$this->guardDepth(at: $at);
 
 		$entity = $this->admit(value: $value);
 		if ($entity === null) {
 			return [];
 		}
 
+		$record = $this->recordOf(entity: $entity, parentUuid: $at->parentUuid);
+		if ($record['isLeaf'] === true) {
+			return $this->keepLeaf(record: $record);
+		}
+
+		return $this->keepBranch(
+			record: $record,
+			children: $this->visitChildren(entity: $entity, at: $at->childrenOf(parentUuid: $record['sloUuid']))
+		);
+	}//end visit()
+
+	/**
+	 * Stop a walk that descends past the depth limit.
+	 *
+	 * @param SloTreePosition $at The position about to be visited.
+	 *
+	 * @return void
+	 *
+	 * @throws SloCurriculumException When the position is deeper than the limit.
+	 */
+	private function guardDepth(SloTreePosition $at): void {
+		if ($at->depth > self::MAX_DEPTH) {
+			throw new SloCurriculumException(message: sprintf('The SLO tree is deeper than %d levels; the walk stopped.', self::MAX_DEPTH));
+		}
+	}//end guardDepth()
+
+	/**
+	 * The node record of one admitted entity, read with the run's profile.
+	 *
+	 * @param array<string,mixed> $entity The entity.
+	 * @param string|null $parentUuid SLO uuid of the parent node, or null at the top.
+	 *
+	 * @return array<string,mixed> The record.
+	 */
+	private function recordOf(array $entity, ?string $parentUuid): array {
 		$type = (string)($entity['@type'] ?? '');
-		$record = $this->nodes->record(
+		return $this->nodes->record(
 			entity: $entity,
 			context: [
 				'uuid' => $this->nodes->uuidOf(entity: $entity),
@@ -287,19 +338,25 @@ final class SloCurriculumTreeWalker implements SloCurriculumTreeWalkerInterface 
 			],
 			index: $this->index
 		);
+	}//end recordOf()
 
-		if ($record['isLeaf'] === true) {
-			return $this->keepLeaf(record: $record);
-		}
-
-		$children = $this->visitChildren(entity: $entity, parentUuid: $record['sloUuid'], depth: ($depth + 1));
+	/**
+	 * A branch's records: itself and its kept descendants, unless the niveau
+	 * filter left it without any, which prunes it.
+	 *
+	 * @param array<string,mixed> $record The branch's record.
+	 * @param array<int,array<string,mixed>> $children The records of its descendants.
+	 *
+	 * @return array<int,array<string,mixed>> The branch first, then its descendants; [] when pruned.
+	 */
+	private function keepBranch(array $record, array $children): array {
 		if ($children === [] && $this->niveauFilter() !== []) {
 			$this->stats['prunedBranches']++;
 			return [];
 		}
 
 		return array_merge([$record], $children);
-	}//end visit()
+	}//end keepBranch()
 
 	/**
 	 * Materialise an entity and decide whether it enters the walk, counting why not.
@@ -365,30 +422,43 @@ final class SloCurriculumTreeWalker implements SloCurriculumTreeWalkerInterface 
 	 * Records for the children of one entity, in profile key order.
 	 *
 	 * @param array<string,mixed> $entity The parent entity.
-	 * @param string|null $parentUuid The parent's SLO uuid, or null when the parent is the framework.
-	 * @param int $depth Depth of the children.
+	 * @param SloTreePosition $at The parent's SLO uuid (null when the parent is the framework) and the children's depth.
 	 *
 	 * @return array<int,array<string,mixed>> Records.
 	 */
-	private function visitChildren(array $entity, ?string $parentUuid, int $depth): array {
+	private function visitChildren(array $entity, SloTreePosition $at): array {
 		$records = [];
 		$order = 0;
 
-		foreach ((array)($this->profile['levels'] ?? []) as $key) {
-			foreach ($this->nodes->listOf(value: ($entity[(string)$key] ?? null)) as $child) {
-				$subtree = $this->visit(value: $child, parentUuid: $parentUuid, depth: $depth);
-				if ($subtree === []) {
-					continue;
-				}
-
-				$subtree[0]['order'] = $order;
-				$order++;
-				array_push($records, ...$subtree);
+		foreach ($this->childValues(entity: $entity) as $child) {
+			$subtree = $this->visit(value: $child, at: $at);
+			if ($subtree === []) {
+				continue;
 			}
+
+			$subtree[0]['order'] = $order;
+			$order++;
+			array_push($records, ...$subtree);
 		}
 
 		return $records;
 	}//end visitChildren()
+
+	/**
+	 * The child values of one entity, level by level in profile key order.
+	 *
+	 * @param array<string,mixed> $entity The parent entity.
+	 *
+	 * @return array<int,mixed> Entities, links or bare references.
+	 */
+	private function childValues(array $entity): array {
+		$children = [];
+		foreach ((array)($this->profile['levels'] ?? []) as $key) {
+			array_push($children, ...$this->nodes->listOf(value: ($entity[(string)$key] ?? null)));
+		}
+
+		return $children;
+	}//end childValues()
 
 	/**
 	 * Whether to skip an entity (deprecated, unreleased or already emitted), counting why.

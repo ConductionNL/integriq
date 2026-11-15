@@ -3,6 +3,9 @@
 /**
  * Configuration Import Preview Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Non-mutating dry-run companion to the existing
  * {@see \OCA\Integriq\Service\ConfigurationService::importConfiguration()}:
  * given the same OAS document, computes the creates/updates/collisions
@@ -113,7 +116,8 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 	 * @param array<string,mixed> $oas The OAS document (must contain `components`).
 	 *
 	 * @return array<string, array<int,array<string,mixed>>> Keys: creates, updates, collisions,
-	 *                                                       unresolvedReferences, credentialsNeedingReentry.
+	 *                                                       unresolvedReferences, credentialsNeedingReentry,
+	 *                                                       and deprecations when an entity declares one.
 	 *
 	 * @throws InvalidArgumentException When the document has no top-level `components` key (mirrors importConfiguration()).
 	 *
@@ -128,25 +132,37 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 		$run = new ConfigurationImportPreviewRun(slugMaps: $this->buildTargetSlugMaps());
 
 		foreach (self::COMPONENT_SCHEMAS as $bucket => $schema) {
-			$entities = ($components[$bucket] ?? []);
-			if (is_array($entities) === false) {
-				continue;
-			}
-
-			foreach ($entities as $slugKey => $payload) {
-				if (is_array($payload) === false) {
-					continue;
-				}
-
-				$this->previewEntity(
-					run: $run,
-					entity: ['type' => $schema, 'slug' => (string)($payload['slug'] ?? $slugKey), 'payload' => $payload]
-				);
+			foreach ($this->bucketEntities(entities: ($components[$bucket] ?? []), schema: $schema) as $entity) {
+				$this->previewEntity(run: $run, entity: $entity);
 			}
 		}
 
 		return $run->result;
 	}//end preview()
+
+	/**
+	 * The entities of one component bucket, as previewEntity() takes them;
+	 * a bucket or payload that is no array holds none.
+	 *
+	 * @param mixed  $entities The bucket's entities, slug key => payload.
+	 * @param string $schema   The schema the bucket's entities belong to.
+	 *
+	 * @return array<int,array{type: string, slug: string, payload: array<string, mixed>}>
+	 */
+	private function bucketEntities(mixed $entities, string $schema): array {
+		if (is_array($entities) === false) {
+			return [];
+		}
+
+		$list = [];
+		foreach ($entities as $slugKey => $payload) {
+			if (is_array($payload) === true) {
+				$list[] = ['type' => $schema, 'slug' => (string)($payload['slug'] ?? $slugKey), 'payload' => $payload];
+			}
+		}
+
+		return $list;
+	}//end bucketEntities()
 
 	/**
 	 * Add one entity's classification, unresolved references and missing credentials to the preview.
@@ -165,6 +181,8 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 			$run->result['unresolvedReferences'][] = $unresolved;
 		}
 
+		$this->recordDeprecation(run: $run, entity: $entity);
+
 		if ($entity['type'] === 'source') {
 			$missing = $this->missingCredentialFields(payload: $entity['payload']);
 			if (count($missing) > 0) {
@@ -177,6 +195,54 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 		}
 
 	}//end previewEntity()
+
+	/**
+	 * Add the entity's deprecation, when it declares one, to the preview's `deprecations`.
+	 *
+	 * @param ConfigurationImportPreviewRun                                     $run    The preview being built.
+	 * @param array{type: string, slug: string, payload: array<string, mixed>} $entity The entity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-the-legacy-sharepoint-woo-template-is-marked-deprecated-req-sppi-003
+	 */
+	private function recordDeprecation(ConfigurationImportPreviewRun $run, array $entity): void {
+		$deprecation = $this->deprecationOf(entity: $entity);
+		if ($deprecation !== null) {
+			$run->result['deprecations'][] = $deprecation;
+		}
+	}//end recordDeprecation()
+
+	/**
+	 * The deprecation an entity declares, so the import warns before it is written.
+	 *
+	 * A deprecated template carries `deprecated: {replacedBy, reason}` (a
+	 * string is read as the replacement); the preview only gains its
+	 * `deprecations` list when an entity declares one.
+	 *
+	 * @param array{type: string, slug: string, payload: array<string, mixed>} $entity The entity's schema, slug and payload.
+	 *
+	 * @return array{type: string, slug: string, replacedBy: string, reason: string}|null
+	 *
+	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-the-legacy-sharepoint-woo-template-is-marked-deprecated-req-sppi-003
+	 */
+	private function deprecationOf(array $entity): ?array {
+		$deprecated = ($entity['payload']['deprecated'] ?? null);
+		if (is_string($deprecated) === true && trim($deprecated) !== '') {
+			$deprecated = ['replacedBy' => $deprecated];
+		}
+
+		if (is_array($deprecated) === false || $deprecated === []) {
+			return null;
+		}
+
+		return [
+			'type' => $entity['type'],
+			'slug' => $entity['slug'],
+			'replacedBy' => trim((string)($deprecated['replacedBy'] ?? '')),
+			'reason' => trim((string)($deprecated['reason'] ?? '')),
+		];
+	}//end deprecationOf()
 
 	/**
 	 * Add one entity to the creates, updates or collisions of the preview.
@@ -269,35 +335,64 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 	 */
 	private function findUnresolvedReferences(array $entity, array $slugMaps): array {
 		$payload = $entity['payload'];
-		$refs = [];
 
 		// Top-level source_id / target_id (mapping + rule handlers translate
 		// these against the source slug map).
-		foreach (['source_id', 'target_id'] as $field) {
-			$value = ($payload[$field] ?? null);
-			if (is_string($value) === true && $value !== '' && isset($slugMaps['source'][$value]) === false) {
-				$refs[] = ['field' => $field, 'value' => $value];
-			}
-		}
-
+		$refs = $this->unresolvedSourceFields(payload: $payload, known: $slugMaps['source']);
 		if ($entity['type'] === 'endpoint') {
 			$refs = array_merge($refs, $this->unresolvedEndpointReferences(payload: $payload, slugMaps: $slugMaps));
 		}
 
-		// Nested configuration references (rule handler convention: keys
-		// equal to an entity type or ending with `<type>Id`).
-		$configuration = ($payload['configuration'] ?? null);
-		if (is_array($configuration) === true) {
-			foreach ($this->scanConfigurationReferences(config: $configuration, slugMaps: $slugMaps) as $ref) {
-				$refs[] = ['field' => 'configuration.' . $ref['field'], 'value' => $ref['value']];
-			}
-		}
+		$refs = array_merge($refs, $this->unresolvedConfigurationReferences(payload: $payload, slugMaps: $slugMaps));
 
 		return array_map(
 			static fn (array $ref): array => ['type' => $entity['type'], 'slug' => $entity['slug'], 'field' => $ref['field'], 'value' => $ref['value']],
 			$refs
 		);
 	}//end findUnresolvedReferences()
+
+	/**
+	 * The unresolved top-level `source_id` / `target_id` references.
+	 *
+	 * @param array<string,mixed>  $payload The entity payload.
+	 * @param array<string,string> $known   The source slug map.
+	 *
+	 * @return array<int,array{field: string, value: mixed}>
+	 */
+	private function unresolvedSourceFields(array $payload, array $known): array {
+		$refs = [];
+		foreach (['source_id', 'target_id'] as $field) {
+			$value = ($payload[$field] ?? null);
+			if ($this->isUnresolvedSlug(value: $value, known: $known) === true) {
+				$refs[] = ['field' => $field, 'value' => $value];
+			}
+		}
+
+		return $refs;
+	}//end unresolvedSourceFields()
+
+	/**
+	 * The unresolved references inside a nested `configuration` array (rule
+	 * handler convention: keys equal to an entity type or ending with `<type>Id`).
+	 *
+	 * @param array<string,mixed>                $payload  The entity payload.
+	 * @param array<string,array<string,string>> $slugMaps schema => slug => uuid.
+	 *
+	 * @return array<int,array{field: string, value: mixed}>
+	 */
+	private function unresolvedConfigurationReferences(array $payload, array $slugMaps): array {
+		$configuration = ($payload['configuration'] ?? null);
+		if (is_array($configuration) === false) {
+			return [];
+		}
+
+		$refs = [];
+		foreach ($this->scanConfigurationReferences(config: $configuration, scope: ['slugMaps' => $slugMaps, 'path' => '']) as $ref) {
+			$refs[] = ['field' => 'configuration.' . $ref['field'], 'value' => $ref['value']];
+		}
+
+		return $refs;
+	}//end unresolvedConfigurationReferences()
 
 	/**
 	 * The endpoint-specific top-level references of one endpoint payload that
@@ -311,91 +406,162 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 	 * @spec openspec/specs/configuration-export-import/spec.md#scenario-preview-classifies-creates-updates-and-collisions
 	 */
 	private function unresolvedEndpointReferences(array $payload, array $slugMaps): array {
-		$refs = [];
-		$targetType = (string)($payload['targetType'] ?? '');
-		$targetId = ($payload['targetId'] ?? null);
-		if (is_string($targetId) === true && $targetId !== ''
-			&& $targetType !== 'register/schema'
-			&& str_contains($targetId, '/') === false
-			&& isset($slugMaps['source'][$targetId]) === false
-		) {
-			$refs[] = ['field' => 'targetId', 'value' => $targetId];
-		}
+		$refs = $this->unresolvedEndpointTarget(payload: $payload, sources: $slugMaps['source']);
 
 		foreach (['inputMapping', 'outputMapping'] as $field) {
 			$value = ($payload[$field] ?? null);
-			if (is_string($value) === true && $value !== '' && isset($slugMaps['mapping'][$value]) === false) {
+			if ($this->isUnresolvedSlug(value: $value, known: $slugMaps['mapping']) === true) {
 				$refs[] = ['field' => $field, 'value' => $value];
 			}
 		}
 
-		$rules = ($payload['rules'] ?? []);
+		return array_merge($refs, $this->unresolvedRuleReferences(rules: ($payload['rules'] ?? []), known: $slugMaps['rule']));
+	}//end unresolvedEndpointReferences()
+
+	/**
+	 * The endpoint's rule slugs the target does not have, as unresolved references.
+	 *
+	 * @param mixed $rules The endpoint's rule slugs; anything but an array has none.
+	 * @param array<string, string> $known The target's rule slugs.
+	 *
+	 * @return array<int, array{field: string, value: string}>
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#scenario-preview-classifies-creates-updates-and-collisions
+	 */
+	private function unresolvedRuleReferences(mixed $rules, array $known): array {
 		if (is_array($rules) === false) {
-			return $refs;
+			return [];
 		}
 
+		$refs = [];
 		foreach ($rules as $ruleRef) {
-			if (is_string($ruleRef) === true && $ruleRef !== '' && isset($slugMaps['rule'][$ruleRef]) === false) {
+			if ($this->isUnresolvedSlug(value: $ruleRef, known: $known) === true) {
 				$refs[] = ['field' => 'rules[]', 'value' => $ruleRef];
 			}
 		}
 
 		return $refs;
-	}//end unresolvedEndpointReferences()
+	}//end unresolvedRuleReferences()
+
+	/**
+	 * The endpoint's targetId as an unresolved reference, when it names a
+	 * source slug the target does not have. Register/schema targets and
+	 * targets with a slash are not source slugs.
+	 *
+	 * @param array<string, mixed> $payload The endpoint payload.
+	 * @param array<string, string> $sources The target's source slugs.
+	 *
+	 * @return array<int, array{field: string, value: string}>
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#scenario-preview-classifies-creates-updates-and-collisions
+	 */
+	private function unresolvedEndpointTarget(array $payload, array $sources): array {
+		$targetType = (string)($payload['targetType'] ?? '');
+		$targetId = ($payload['targetId'] ?? null);
+		if ($targetType === 'register/schema' || $this->isUnresolvedSlug(value: $targetId, known: $sources) === false) {
+			return [];
+		}
+
+		if (str_contains($targetId, '/') === true) {
+			return [];
+		}
+
+		return [['field' => 'targetId', 'value' => $targetId]];
+	}//end unresolvedEndpointTarget()
+
+	/**
+	 * Whether a value is a non-empty slug that is not among the known slugs.
+	 *
+	 * @param mixed $value The referenced value.
+	 * @param array<string, string> $known The target's slugs of the referenced type.
+	 *
+	 * @return bool
+	 *
+	 * @psalm-assert-if-true non-empty-string $value
+	 */
+	private function isUnresolvedSlug(mixed $value, array $known): bool {
+		return is_string($value) === true && $value !== '' && isset($known[$value]) === false;
+	}//end isUnresolvedSlug()
 
 	/**
 	 * Recursively scan a nested configuration array for entity-reference
 	 * keys whose slug value does not resolve against the target maps.
 	 *
 	 * @param array<string,mixed> $config The configuration array.
-	 * @param array<string,array<string,string>> $slugMaps schema => slug => uuid.
-	 * @param string $path Dotted key path accumulator.
+	 * @param array{slugMaps: array<string,array<string,string>>, path: string} $scope The target's slug maps
+	 *                                                                              (schema => slug => uuid) and the
+	 *                                                                              dotted key path of $config.
 	 *
 	 * @return array<int,array{field:string,value:string}>
 	 */
-	private function scanConfigurationReferences(array $config, array $slugMaps, string $path = ''): array {
+	private function scanConfigurationReferences(array $config, array $scope): array {
 		$found = [];
 
 		foreach ($config as $key => $value) {
-			$keyPath = $path . '.' . $key;
-			if ($path === '') {
-				$keyPath = (string)$key;
-			}
-
+			$keyPath = $this->configurationKeyPath(path: $scope['path'], key: $key);
 			if (is_array($value) === true) {
-				$nested = $this->scanConfigurationReferences(config: $value, slugMaps: $slugMaps, path: $keyPath);
-				foreach ($nested as $ref) {
-					$found[] = $ref;
-				}
-
+				$nested = ['slugMaps' => $scope['slugMaps'], 'path' => $keyPath];
+				$found = array_merge($found, $this->scanConfigurationReferences(config: $value, scope: $nested));
 				continue;
 			}
 
-			if (is_string($value) === false || $value === '') {
-				continue;
+			$type = $this->referenceType(key: $key);
+			if ($type !== null && $this->isUnresolvedSlug(value: $value, known: $scope['slugMaps'][$type]) === true) {
+				$found[] = ['field' => $keyPath, 'value' => $value];
 			}
-
-			foreach (self::REFERENCE_TYPES as $type) {
-				$isReferenceKey = ($key === $type
-					|| str_ends_with((string)$key, ucfirst($type) . 'Id') === true
-					|| str_ends_with((string)$key, $type . 'Id') === true);
-				if ($isReferenceKey === false) {
-					continue;
-				}
-
-				if (isset($slugMaps[$type][$value]) === false) {
-					$found[] = [
-						'field' => $keyPath,
-						'value' => $value,
-					];
-				}
-
-				break;
-			}
-		}//end foreach
+		}
 
 		return $found;
 	}//end scanConfigurationReferences()
+
+	/**
+	 * The dotted key path of a configuration key: the key itself at the root (an empty path).
+	 *
+	 * @param string $path The dotted key path of the key's parent.
+	 * @param int|string $key The key.
+	 *
+	 * @return string
+	 */
+	private function configurationKeyPath(string $path, int|string $key): string {
+		if ($path === '') {
+			return (string)$key;
+		}
+
+		return $path . '.' . $key;
+	}//end configurationKeyPath()
+
+	/**
+	 * The entity type a configuration key references: a key equal to the
+	 * type or ending in `<type>Id` / `<Type>Id`, first type in REFERENCE_TYPES order.
+	 *
+	 * @param int|string $key The configuration key.
+	 *
+	 * @return string|null The type, or null when the key references none.
+	 */
+	private function referenceType(int|string $key): ?string {
+		foreach (self::REFERENCE_TYPES as $type) {
+			if ($this->keyReferences(key: $key, type: $type) === true) {
+				return $type;
+			}
+		}
+
+		return null;
+	}//end referenceType()
+
+	/**
+	 * Whether a configuration key references one entity type: equal to it,
+	 * or ending in `<Type>Id` or `<type>Id`.
+	 *
+	 * @param int|string $key  The configuration key.
+	 * @param string     $type The entity type.
+	 *
+	 * @return bool
+	 */
+	private function keyReferences(int|string $key, string $type): bool {
+		return $key === $type
+			|| str_ends_with((string)$key, ucfirst($type) . 'Id') === true
+			|| str_ends_with((string)$key, $type . 'Id') === true;
+	}//end keyReferences()
 
 	/**
 	 * Which REQ-005-redacted credential fields are absent/empty on an

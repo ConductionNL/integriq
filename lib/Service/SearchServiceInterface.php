@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,44 +26,6 @@ namespace OCA\Integriq\Service;
  * Public operations of {@see SearchService} that other components call.
  */
 interface SearchServiceInterface {
-	/**
-	 * Merge two facet aggregations by _id, summing the count.
-	 *
-	 * @param array $existingAggregation Already-collected aggregation entries.
-	 * @param array $newAggregation New aggregation entries to merge.
-	 *
-	 * @return array
-	 *
-	 * @spec openspec/specs/mapping-and-search/spec.md
-	 */
-	public function mergeFacets(array $existingAggregation, array $newAggregation): array;
-
-	/**
-	 * Comparator (usort) that orders search results by descending `_score`.
-	 *
-	 * @param array $a Left side.
-	 * @param array $b Right side.
-	 *
-	 * @return integer
-	 *
-	 * @spec openspec/specs/mapping-and-search/spec.md
-	 */
-	public function sortResultArray(array $a, array $b): int;
-
-	/**
-	 * Run the federated search across local and remote endpoints.
-	 *
-	 * @param array $parameters Request query parameters.
-	 * @param array $elasticConfig Elasticsearch configuration block.
-	 * @param array $dbConfig Database configuration block.
-	 * @param array $catalogi Optional catalog filter array.
-	 *
-	 * @return array
-	 *
-	 * @spec openspec/specs/mapping-and-search/spec.md
-	 */
-	public function search(array $parameters, array $elasticConfig, array $dbConfig, array $catalogi = []): array;
-
 	/**
 	 * This function unsets all keys starting with _ from filters.
 	 *

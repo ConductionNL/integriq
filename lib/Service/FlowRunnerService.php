@@ -437,6 +437,7 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 			register: self::REGISTER,
 			schema: 'source',
 			_rbac: false,
+			// Unscoped: the flow engine resolves the source of a step while running the flow.
 			_multitenancy: false
 		);
 
@@ -808,6 +809,7 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-approval-step-suspends-and-resumes-the-flow-run-req-005
 	 */
 	private function findFlowRun(string $id): ObjectEntity {
+		// Unscoped: the flow engine re-reads the run it is executing.
 		return $this->orObjectService->find(id: $id, register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN, _rbac: false, _multitenancy: false);
 	}//end findFlowRun()
 
@@ -823,6 +825,7 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-steps-execute-sequentially-in-order-req-001
 	 */
 	public function findFlow(string $id): ObjectEntity {
+		// Unscoped: the runner resolves the flow a trigger names, during a run that may have no user.
 		return $this->orObjectService->find(id: $id, register: self::REGISTER, schema: self::SCHEMA_FLOW, _rbac: false, _multitenancy: false);
 	}//end findFlow()
 }//end class

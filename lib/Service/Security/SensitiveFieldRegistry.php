@@ -17,6 +17,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service\Security;
@@ -36,6 +39,22 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 * @var string
 	 */
 	public const PLACEHOLDER = '***REDACTED***';
+
+	/**
+	 * Keys whose map is an API-key table (`keys: {"<api key>": "<user>"}`):
+	 * its own keys are the secret, whatever their shape.
+	 *
+	 * @var array<int, string>
+	 */
+	private const CREDENTIAL_TABLE_KEYS = ['keys', 'apiKeys'];
+
+	/**
+	 * The only keys a map under a CREDENTIAL_TABLE_KEYS key may hold and still be
+	 * read per key: a reference to a stored key (`apiKeys: {"id": "<uuid>"}`).
+	 *
+	 * @var array<int, string>
+	 */
+	private const KEY_REFERENCE_KEYS = ['id', 'uuid', 'value', 'credentialRef'];
 
 	/**
 	 * Header names that always carry credentials, matched case-insensitively
@@ -74,23 +93,32 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	];
 
 	/**
-	 * Secret-name regex pattern, lifted verbatim from
-	 * CallService::isSecretKeyName().
+	 * Secret-name regex pattern: CallService::isSecretKeyName()'s names, plus the
+	 * names a client certificate and its passphrase are stored under.
 	 *
 	 * @var string
 	 */
-	private const SECRET_NAME_PATTERN = '/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token'
-		. '|bearer|auth|signature|assertion|private[-_]?key|x[-_]?api[-_]?token|client[-_]?secret)/i';
+	private const SENSITIVE_NAME_PATTERN = '/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token'
+		. '|bearer|auth|signature|assertion|private[-_]?key|x[-_]?api[-_]?token|client[-_]?secret'
+		. '|pass[-_]?phrase|certificate|pkcs12|pfx)/i';
 
 	/**
 	 * Extra pattern for header names only: a session header under its own name
 	 * (X-Session, X-Session-Id) is a credential on the wire. Kept out of
-	 * SECRET_NAME_PATTERN because that pattern also walks payload fields,
+	 * SENSITIVE_NAME_PATTERN because that pattern also walks payload fields,
 	 * where a `sessionId` is a correlation id, not a secret.
 	 *
 	 * @var string
 	 */
-	private const SECRET_HEADER_PATTERN = '/session/i';
+	private const SENSITIVE_HEADER_PATTERN = '/session/i';
+
+	/**
+	 * A value that is only a bare `{{ variable.path }}` template, resolved at call time
+	 * and holding no secret itself. A template with a literal or a filter is not one.
+	 *
+	 * @var string
+	 */
+	private const PURE_TEMPLATE = '/^\{\{\s*[A-Za-z_][A-Za-z0-9_.]*\s*\}\}$/';
 
 	/**
 	 * Keys of a JSON response body that carry tokens an upstream issued,
@@ -129,7 +157,7 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 			}
 		}
 
-		return (preg_match(self::SECRET_NAME_PATTERN, $name) === 1);
+		return (preg_match(self::SENSITIVE_NAME_PATTERN, $name) === 1);
 	}//end isSensitiveName()
 
 	/**
@@ -147,7 +175,7 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 			return true;
 		}
 
-		return (preg_match(self::SECRET_HEADER_PATTERN, $name) === 1);
+		return (preg_match(self::SENSITIVE_HEADER_PATTERN, $name) === 1);
 	}//end isSensitiveHeaderName()
 
 	/**
@@ -164,7 +192,7 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 		$redacted = $this->redactArray(data: $headers);
 		foreach ($redacted as $name => $value) {
 			if (is_string($name) === true && $this->isSensitiveHeaderName(name: $name) === true) {
-				$redacted[$name] = $this->maskValue(value: $value, extraExactNames: null);
+				$redacted[$name] = (new SensitiveValueMasker(registry: $this, parentKey: $name, forExport: false))->mask(value: $value, extraExactNames: null);
 			}
 		}
 
@@ -211,7 +239,7 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 * Recursively walks an array and replaces the value of any key that
 	 * matches {@see isSensitiveName()} with the irreversible placeholder. A
 	 * list under such a key has every value masked; a map is walked by its own
-	 * keys (see maskValue()).
+	 * keys (see SensitiveValueMasker::mask()).
 	 *
 	 * For a dotted key (e.g. a flat `headers.Authorization` key, as used by
 	 * Source's dot-notation `configuration` storage), only the last
@@ -228,19 +256,59 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	public function redactArray(array $data, ?array $extraExactNames = null): array {
+		return $this->redactEntries(data: $data, options: ['extraExactNames' => $extraExactNames, 'forExport' => false]);
+	}//end redactArray()
+
+	/**
+	 * Redact every entry of a map, at any depth.
+	 *
+	 * @param array<string|int, mixed>                                     $data    The data to redact.
+	 * @param array{extraExactNames: array<int, string>|null, forExport: bool} $options Extra names, and whether an export reads the result.
+	 *
+	 * @return array<string|int, mixed> The redacted copy.
+	 */
+	private function redactEntries(array $data, array $options): array {
+		$extraExactNames = $options['extraExactNames'];
 		foreach ($data as $key => $value) {
+			$masker = new SensitiveValueMasker(registry: $this, parentKey: (string)$key, forExport: $options['forExport']);
+			if ($masker->isPublicParameter(key: (string)$key, value: $value) === true) {
+				continue;
+			}
+
 			if ($this->isSensitiveKey(key: (string)$key, extraExactNames: $extraExactNames) === true) {
-				$data[$key] = $this->maskValue(value: $value, extraExactNames: $extraExactNames);
+				$data[$key] = $masker->mask(value: $value, extraExactNames: $extraExactNames);
 				continue;
 			}
 
 			if (is_array($value) === true) {
-				$data[$key] = $this->redactArray(data: $value, extraExactNames: $extraExactNames);
+				$data[$key] = $this->redactEntries(data: $value, options: $options);
 			}
 		}
 
 		return $data;
-	}//end redactArray()
+	}//end redactEntries()
+
+	/**
+	 * Redacts a stored configuration by name and by structure, for export.
+	 *
+	 * On top of redactArray(): a session header is masked in a header map, as a
+	 * header-shaped key and in a name/value header list, and a URL's password and
+	 * secret query values are masked inside any text. Everything else is kept byte
+	 * for byte.
+	 *
+	 * @param array $data The configuration to redact. Not modified; a copy is returned.
+	 *
+	 * @return array The redacted copy.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function redactConfiguration(array $data): array {
+		// The structure is read first, while header pairs still carry their header names.
+		return $this->redactEntries(
+			data: (new StructuredSecretRedactor(registry: $this))->redact(data: $data),
+			options: ['extraExactNames' => null, 'forExport' => true]
+		);
+	}//end redactConfiguration()
 
 	/**
 	 * Whether a key names a secret: the last dot-segment of the key is matched
@@ -269,35 +337,6 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 
 		return false;
 	}//end isSensitiveKey()
-
-	/**
-	 * Masks a value held under a sensitive key.
-	 *
-	 * A scalar becomes the placeholder. A list (a PSR-7 header's values, a
-	 * basic-auth pair) keeps its length and has every value masked at any
-	 * depth: its integer keys say nothing, so it inherits its key's
-	 * sensitivity. A map is walked like any other array, because its keys name
-	 * their values: `authentication.credentialRef.credentialId` is a pointer
-	 * that export must keep (REQ-010), `authentication.password` is not.
-	 *
-	 * @param mixed                   $value           The value under a sensitive key.
-	 * @param array<int, string>|null $extraExactNames Additional exact-match names for this call.
-	 *
-	 * @return mixed The masked value.
-	 *
-	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
-	 */
-	private function maskValue(mixed $value, ?array $extraExactNames): mixed {
-		if (is_array($value) === false) {
-			return self::PLACEHOLDER;
-		}
-
-		if (array_is_list($value) === false) {
-			return $this->redactArray(data: $value, extraExactNames: $extraExactNames);
-		}
-
-		return array_map(fn (mixed $item): mixed => $this->maskListItem(item: $item), $value);
-	}//end maskValue()
 
 	/**
 	 * Masks the value of every issued-token key in a decoded JSON body. Objects
@@ -337,19 +376,51 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	}//end maskIssuedTokens()
 
 	/**
-	 * Masks one item of a list held under a sensitive key, at any depth.
+	 * Whether a value is only a bare `{{ variable.path }}` template, resolved at call time and holding no secret itself.
 	 *
-	 * @param mixed $item The list item.
+	 * @param string $value The value.
 	 *
-	 * @return mixed The placeholder, or the item's array with every value masked.
+	 * @return boolean
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
-	private function maskListItem(mixed $item): mixed {
-		if (is_array($item) === false) {
-			return self::PLACEHOLDER;
+	public function isPureTemplate(string $value): bool {
+		return preg_match(self::PURE_TEMPLATE, trim($value)) === 1;
+	}//end isPureTemplate()
+
+	/**
+	 * A copy of imported data without the values an export masked.
+	 *
+	 * A placeholder is a public string, so storing it would turn a secret into a
+	 * known value. It is left out instead, as is an array that held nothing but
+	 * placeholders; what is left out is kept by OpenRegister when it is
+	 * write-only, and has to be entered again otherwise.
+	 *
+	 * @param array $data The imported data.
+	 *
+	 * @return array The data without masked values.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function withoutRedactedValues(array $data): array {
+		return (new RedactedValueFilter())->filter(data: $data);
+	}//end withoutRedactedValues()
+
+	/**
+	 * Whether a value is a map under an API-key table key that is not a key reference.
+	 *
+	 * @param int|string $key   The key the value sits under.
+	 * @param mixed      $value The value.
+	 *
+	 * @return boolean
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function isCredentialTable(int|string $key, mixed $value): bool {
+		if (is_array($value) === false || array_is_list($value) === true || in_array($key, self::CREDENTIAL_TABLE_KEYS, true) === false) {
+			return false;
 		}
 
-		return array_map(fn (mixed $inner): mixed => $this->maskListItem(item: $inner), $item);
-	}//end maskListItem()
+		return array_diff(array_map('strval', array_keys($value)), self::KEY_REFERENCE_KEYS) !== [];
+	}//end isCredentialTable()
 }//end class

@@ -205,4 +205,110 @@ class DirectorySyncControllerTest extends TestCase {
 		}
 
 	}//end testEveryRouteIsAdminGated()
+	/**
+	 * A run record held as an ObjectEntity, the shape the run log returns.
+	 *
+	 * @param string $uuid The record uuid.
+	 * @param string $kind The result kind ('directory' or another sync's kind).
+	 *
+	 * @return ObjectEntity The run record.
+	 */
+	private function runRecord(string $uuid, string $kind): ObjectEntity {
+		$record = new ObjectEntity();
+		$record->setUuid($uuid);
+		$record->setObject(['id' => $uuid, 'synchronizationId' => 'conn-1', 'result' => ['kind' => $kind]]);
+
+		return $record;
+	}//end runRecord()
+
+	/**
+	 * A failing run answers 500 with the service's message.
+	 *
+	 * @return void
+	 */
+	public function testAFailingRunAnswers500WithTheMessage(): void {
+		$this->directorySource->method('findConnections')->willReturn([$this->connection(uuid: 'conn-1')]);
+		$this->request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => $default);
+
+		$this->directorySyncService->expects($this->once())
+			->method('run')
+			->with($this->anything(), false, false)
+			->willThrowException(new \RuntimeException('LDAP bind failed'));
+
+		$response = $this->controller()->run(id: 'conn-1');
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['error' => 'LDAP bind failed'], $response->getData());
+
+	}//end testAFailingRunAnswers500WithTheMessage()
+
+	/**
+	 * The runs list queries the run log with the connection filter and paging,
+	 * and keeps only directory runs held as ObjectEntity.
+	 *
+	 * @return void
+	 */
+	public function testTheRunsListIsFilteredToDirectoryRunsOfTheConnection(): void {
+		$params = ['connection' => 'conn-1', 'limit' => '10', 'offset' => '20'];
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($params[$key] ?? $default)
+		);
+
+		$this->orObjectService->expects($this->once())
+			->method('findAll')
+			->with(
+				[
+					'filters' => [
+						'register' => 'integriq',
+						'schema' => 'synchronization_log',
+						'synchronizationId' => 'conn-1',
+					],
+					'limit' => 10,
+					'offset' => 20,
+				]
+			)
+			->willReturn(
+				[
+					'results' => [
+						$this->runRecord(uuid: 'run-1', kind: 'directory'),
+						$this->runRecord(uuid: 'run-2', kind: 'api'),
+						['id' => 'run-3', 'result' => ['kind' => 'directory']],
+						$this->runRecord(uuid: 'run-4', kind: 'directory'),
+					],
+				]
+			);
+
+		$data = $this->controller()->runs()->getData();
+
+		$this->assertSame(2, $data['total']);
+		$this->assertSame(['run-1', 'run-4'], array_column($data['results'], 'id'));
+
+	}//end testTheRunsListIsFilteredToDirectoryRunsOfTheConnection()
+
+	/**
+	 * Without a connection parameter the runs list is not narrowed to one
+	 * connection, uses the default paging, and accepts a bare list of matches.
+	 *
+	 * @return void
+	 */
+	public function testTheRunsListWithoutAConnectionUsesDefaults(): void {
+		$this->request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => $default);
+
+		$this->orObjectService->expects($this->once())
+			->method('findAll')
+			->with(
+				[
+					'filters' => ['register' => 'integriq', 'schema' => 'synchronization_log'],
+					'limit' => 50,
+					'offset' => 0,
+				]
+			)
+			->willReturn([$this->runRecord(uuid: 'run-1', kind: 'directory')]);
+
+		$data = $this->controller()->runs()->getData();
+
+		$this->assertSame(1, $data['total']);
+		$this->assertSame('run-1', $data['results'][0]['id']);
+
+	}//end testTheRunsListWithoutAConnectionUsesDefaults()
 }//end class

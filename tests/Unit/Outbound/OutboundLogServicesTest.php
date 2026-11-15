@@ -511,4 +511,45 @@ class OutboundLogServicesTest extends TestCase {
 
 	}//end user()
 
+	/**
+	 * A retry hands the pipeline the whole delivery request and answers the whole outcome;
+	 * a pipeline that refuses is reported, not thrown.
+	 *
+	 * @return void
+	 */
+	public function testARetryHandsThePipelineTheWholeRequestAndAnswersTheWholeOutcome(): void {
+		$uuid = $this->recordedMessage();
+		$this->recorder->stepFailed($uuid, 'transport', 'connection refused');
+		$requests = [];
+
+		$result = (new OutboundRetryService($this->recorder, $this->eventService(2, $requests), $this->optOuts()->gate()))->retry($uuid, 'beheerder');
+
+		$this->assertSame(
+			['message' => $uuid, 'retried' => ['jan@example.org'], 'skipped' => [], 'succeeded' => true, 'detail' => 'Re-dispatched to 2 delivery route(s).'],
+			$result
+		);
+		$request = $requests[0];
+		$this->assertSame(
+			['dossiq', MessageRecorder::REGISTER, MessageRecorder::SCHEMA, $uuid, 'Ontvangstbevestiging', 'outbound-message-retry', 'mail', ''],
+			[$request->getSourceApp(), $request->getSubjectRegister(), $request->getSubjectSchema(), $request->getSubjectId(), $request->getSubjectLabel(), $request->getDeliveryKind(), $request->getChannel(), $request->getCorrelationId()]
+		);
+		$this->assertSame(
+			['subjectRef' => 'zaak/2026-0042', 'subject' => 'Ontvangstbevestiging', 'recipients' => ['jan@example.org'], 'attachments' => []],
+			$request->getPayload()
+		);
+
+		$refusing = $this->getMockBuilder(EventService::class)->disableOriginalConstructor()->onlyMethods(['ingestDeliveryRequest'])->getMock();
+		$refusing->method('ingestDeliveryRequest')->willThrowException(new \RuntimeException('queue full'));
+		$again = $this->recordedMessage();
+		$this->recorder->stepFailed($again, 'transport', 'connection refused');
+
+		$refused = (new OutboundRetryService($this->recorder, $refusing, $this->optOuts()->gate()))->retry($again, 'beheerder');
+
+		$this->assertSame(
+			['message' => $again, 'retried' => ['jan@example.org'], 'skipped' => [], 'succeeded' => false, 'detail' => 'The delivery pipeline refused the retry: queue full'],
+			$refused
+		);
+		$this->assertSame('beheerder', $this->records[$again]['attempts'][0]['by']);
+
+	}//end testARetryHandsThePipelineTheWholeRequestAndAnswersTheWholeOutcome()
 }//end class

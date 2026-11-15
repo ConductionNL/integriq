@@ -197,40 +197,70 @@ export default {
 						'/apps/integriq/api/admin/webhook-connections/{type}',
 						{ type: this.connection.authorizationType },
 					),
-					{
-						userId: this.account ? this.account.id : '',
-						scheme: this.scheme,
-						secret: this.secret,
-						header: this.header,
-					},
+					this.payload(),
 				)
-				this.secret = ''
-				showSuccess(
-					this.t('integriq', '{label} connection saved.', {
-						label: this.connection.label,
-					}),
-				)
-				for (const warning of data.warnings || []) {
-					showWarning(warning)
-				}
-				this.$emit('saved', data.connection)
+				this.onSaved(data)
 			} catch (e) {
-				const body = (e.response && e.response.data) || {}
-				this.accountError = (body.fieldErrors || {}).userId || ''
-				showError(
-					Array.isArray(body.errors)
-						? body.errors.join(' ')
-						: this.t(
-								'integriq',
-								'Failed to save the {label} connection.',
-								{
-									label: this.connection.label,
-								},
-							),
-				)
+				this.onFailed(e)
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * The connection as the settings endpoint takes it.
+		 *
+		 * @return {object} The account, scheme, secret and header.
+		 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
+		 */
+		payload() {
+			return {
+				userId: this.account ? this.account.id : '',
+				scheme: this.scheme,
+				secret: this.secret,
+				header: this.header,
+			}
+		},
+
+		/**
+		 * Forget the typed secret, confirm, show the server's warnings and
+		 * hand the saved connection up.
+		 *
+		 * @param {object} data The settings endpoint's answer.
+		 * @return {void}
+		 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
+		 */
+		onSaved(data) {
+			this.secret = ''
+			showSuccess(
+				this.t('integriq', '{label} connection saved.', {
+					label: this.connection.label,
+				}),
+			)
+			for (const warning of data.warnings || []) {
+				showWarning(warning)
+			}
+			this.$emit('saved', data.connection)
+		},
+
+		/**
+		 * Show why the save failed: the server's errors, else a generic line;
+		 * an account error goes next to the account field.
+		 *
+		 * @param {object} e The axios error.
+		 * @return {void}
+		 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
+		 */
+		onFailed(e) {
+			const body = (e.response && e.response.data) || {}
+			this.accountError = (body.fieldErrors || {}).userId || ''
+			showError(
+				Array.isArray(body.errors)
+					? body.errors.join(' ')
+					: this.t('integriq', 'Failed to save the {label} connection.', {
+							label: this.connection.label,
+						}),
+			)
 		},
 	},
 }

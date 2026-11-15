@@ -1,4 +1,8 @@
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+/**
  * The single row-id resolver shared by every row-action consumer.
  *
  * There were two of these — one in `handlers/actionHandlers.js`, one in

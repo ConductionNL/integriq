@@ -31,6 +31,8 @@ use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -156,14 +158,12 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 			 * Records a save.
 			 *
 			 * @param mixed $objectEntity The object.
-			 * @param string $fileName The name.
-			 * @param mixed $content The content.
-			 * @param bool $share Share flag.
-			 * @param array|null $tags Tags.
+			 * @param FileUpload $upload The file name, content, share flag and tags.
 			 *
 			 * @return mixed
 			 */
-			public function saveFile($objectEntity, $fileName, $content, $share = false, $tags = []) {
+			public function saveFile($objectEntity, FileUpload $upload) {
+				[$fileName, $content, $share, $tags] = [$upload->fileName, $upload->content, $upload->share, $upload->tags];
 				if (is_resource($content) === true) {
 					$content = stream_get_contents($content);
 				}
@@ -179,23 +179,19 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 			/**
 			 * Records an add.
 			 *
-			 * @param mixed $objectEntity The object id.
-			 * @param string $fileName The name.
-			 * @param mixed $content The content.
-			 * @param bool $share Share flag.
-			 * @param array|null $tags Tags.
-			 * @param mixed $_schema Schema.
-			 * @param mixed $_register Register.
-			 * @param mixed $registerId Register id.
+			 * @param FileTarget $target The object id and register.
+			 * @param FileUpload $upload The file name, content, share flag and tags.
 			 *
 			 * @return mixed
 			 */
-			public function addFile($objectEntity, $fileName, $content, $share = false, $tags = [], $_schema = null, $_register = null, $registerId = null) {
+			public function addFile(FileTarget $target, FileUpload $upload) {
+				[$objectEntity, $registerId] = [$target->object, $target->registerId];
+				[$fileName, $content, $share, $tags] = [$upload->fileName, $upload->content, $upload->share, $upload->tags];
 				if (is_resource($content) === true) {
 					$content = stream_get_contents($content);
 				}
 
-				$this->test->record('file.addFile', [$objectEntity, $fileName, $content, $share, $tags, $_schema, $_register, $registerId]);
+				$this->test->record('file.addFile', [$objectEntity, $fileName, $content, $share, $tags, $registerId]);
 				return 'file-node';
 			}
 
@@ -537,6 +533,16 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 			'multi-object-missing' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => [['endpoint' => '/x.pdf'], ['endpoint' => '/y.pdf']]], 'answers' => ['or.find' => ['ok', 'ok', 'missing']]],
 			'empty-with-object' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => []]],
 			'empty-without-object' => ['config' => $file(['filePath' => 'files']), 'objectId' => null, 'data' => ['files' => []]],
+			'single-empty-document-id' => ['config' => $file(['endpoint' => '/api/v1/case/c-2/document//download'])],
+			'single-empty-segment-absolute' => ['config' => $file(['endpoint' => 'https://files.invalid/case/c-2/document//download'])],
+			'single-double-slash-only-in-query' => ['config' => $file(['endpoint' => 'https://files.invalid/docs/a.pdf?next=//x'])],
+			'assoc-empty-document-id' => ['config' => $file(['filePath' => 'doc']), 'data' => ['doc' => ['endpoint' => '/case/c-2/document//download', 'filename' => 'besluit.pdf']]],
+			'indexed-empty-document-id' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => ['/keep.pdf', '/case/c-2/document//download']]],
+			'multi-empty-document-id' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => [['endpoint' => '/x.pdf', 'filename' => 'x.pdf'], ['endpoint' => '/case/c-2/document//download', 'filename' => 'leeg.pdf']]]],
+			'job-entry-empty-document-id' => ['entry' => 'job', 'config' => $file([]), 'endpoint' => '/case/c-2/document//download'],
+			'multi-empty-id-keeps-stored-file' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => [['endpoint' => '/x.pdf', 'filename' => 'x.pdf'], ['endpoint' => '/case/c-2/document//download', 'filename' => 'keep.pdf']]]],
+			'multi-all-empty-ids-keep-files' => ['config' => $file(['filePath' => 'files']), 'data' => ['files' => [['endpoint' => '/case/c-2/document//download', 'filename' => 'keep.pdf'], ['endpoint' => '/case/c-3/document//download', 'filename' => 'old.pdf']]]],
+			'single-protocol-relative' => ['config' => $file(['endpoint' => '//files.invalid/docs/a.pdf'])],
 			'job-entry-single' => ['entry' => 'job', 'config' => $file([]), 'endpoint' => '/job.pdf', 'ruleId' => 9],
 			'job-entry-indexed' => ['entry' => 'job', 'config' => $file([]), 'endpoint' => ['/j1.pdf', '/j2.pdf']],
 			'job-entry-source-missing' => ['entry' => 'job', 'config' => $file([]), 'endpoint' => '/j.pdf', 'answers' => ['source.find' => 'missing']],

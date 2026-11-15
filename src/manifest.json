@@ -200,7 +200,7 @@
     },
     {
       "id": "Store",
-      "label": "Store",
+      "label": "Marketplace",
       "icon": "StoreOutline",
       "route": "Store",
       "order": 92,
@@ -284,6 +284,14 @@
           "icon": "BellRingOutline",
           "route": "NotificatiesAbonnementen",
           "order": 30
+        },
+        {
+          "id": "EgressDestinations",
+          "label": "Outbound destinations",
+          "icon": "EarthArrowRight",
+          "route": "EgressDestinations",
+          "order": 40,
+          "permission": "admin"
         }
       ]
     },
@@ -983,6 +991,12 @@
             "handler": "testSourceHandler"
           },
           {
+            "id": "set-residency",
+            "label": "Set residency",
+            "icon": "MapMarkerRadiusOutline",
+            "handler": "setSourceResidencyHandler"
+          },
+          {
             "id": "preview-directory-run",
             "label": "Preview directory run",
             "icon": "EyeOutline",
@@ -1237,6 +1251,88 @@
             "icon": "ForumOutline",
             "title": "Incident war-room",
             "_note": "Deck and Talk are runtime-optional: OpenRegister's providers report isEnabled() false when the Nextcloud app is absent and the widget does not render. That is why the e2e spec tolerates their absence rather than asserting three widgets unconditionally."
+          },
+          {
+            "id": "src-workspace-devices",
+            "type": "record-list",
+            "icon": "Laptop",
+            "title": "Devices",
+            "_note": "connectors-endpoint-workspace-adapters (REQ-EWC-008): what the connected workspace manager reports, read through GET /api/sources/{id}/workspace-entries, which calls the vendor through the credential broker. Shown only on a source whose configuration.workspaceAdapter names one of these adapters. Each row names the Nextcloud user it maps to, or says that no user matched.",
+            "visibleWhen": {
+              "field": "configuration.workspaceAdapter",
+              "op": "in",
+              "value": [
+                "intune",
+                "jamf-pro"
+              ]
+            },
+            "content": {
+              "endpointSource": {
+                "url": "/apps/integriq/api/sources/@objectId/workspace-entries",
+                "responsePath": "entries"
+              },
+              "presentation": "rows",
+              "title": "{name}",
+              "meta": "{remoteUser} · {lastSeen|datetime}",
+              "pill": {
+                "label": "{user.displayName}",
+                "variant": "success",
+                "cases": [
+                  {
+                    "when": {
+                      "field": "userFound",
+                      "op": "eq",
+                      "value": false
+                    },
+                    "label": "No user found",
+                    "variant": "warning"
+                  }
+                ]
+              },
+              "emptyText": "No devices listed. A source without a credential calls nothing: add a credential to see what it reports.",
+              "errorText": "The workspace manager could not be read."
+            }
+          },
+          {
+            "id": "src-workspace-sessions",
+            "type": "record-list",
+            "icon": "MonitorAccount",
+            "title": "Sessions",
+            "_note": "connectors-endpoint-workspace-adapters (REQ-EWC-008): what the connected workspace manager reports, read through GET /api/sources/{id}/workspace-entries, which calls the vendor through the credential broker. Shown only on a source whose configuration.workspaceAdapter names one of these adapters. Each row names the Nextcloud user it maps to, or says that no user matched.",
+            "visibleWhen": {
+              "field": "configuration.workspaceAdapter",
+              "op": "in",
+              "value": [
+                "azure-virtual-desktop",
+                "citrix-daas"
+              ]
+            },
+            "content": {
+              "endpointSource": {
+                "url": "/apps/integriq/api/sources/@objectId/workspace-entries",
+                "responsePath": "entries"
+              },
+              "presentation": "rows",
+              "title": "{name}",
+              "meta": "{remoteUser} · {lastSeen|datetime}",
+              "pill": {
+                "label": "{user.displayName}",
+                "variant": "success",
+                "cases": [
+                  {
+                    "when": {
+                      "field": "userFound",
+                      "op": "eq",
+                      "value": false
+                    },
+                    "label": "No user found",
+                    "variant": "warning"
+                  }
+                ]
+              },
+              "emptyText": "No sessions listed. A source without a credential calls nothing: add a credential to see what it reports.",
+              "errorText": "The workspace manager could not be read."
+            }
           }
         ],
         "layout": [
@@ -1327,6 +1423,22 @@
             "gridY": 25,
             "gridWidth": 6,
             "gridHeight": 6
+          },
+          {
+            "id": "9",
+            "widgetId": "src-workspace-devices",
+            "gridX": 0,
+            "gridY": 31,
+            "gridWidth": 12,
+            "gridHeight": 6
+          },
+          {
+            "id": "10",
+            "widgetId": "src-workspace-sessions",
+            "gridX": 0,
+            "gridY": 37,
+            "gridWidth": 12,
+            "gridHeight": 6
           }
         ],
         "bodyWidgets": [
@@ -1334,6 +1446,13 @@
             "id": "src-circuit-breaker",
             "component": "CircuitBreakerBadge",
             "title": "Circuit breaker",
+            "placement": "before-body",
+            "colSpan": 12
+          },
+          {
+            "id": "src-body-capture",
+            "component": "BodyCaptureWindow",
+            "title": "Investigation window",
             "placement": "before-body",
             "colSpan": 12
           },
@@ -1376,9 +1495,13 @@
       "title": "Source logs",
       "actionsComponent": "CallLogActions",
       "slots": {
-        "row-actions": "CallLogRowActions"
+        "row-actions": "CallLogRowActions",
+        "row-detail": "CallLogDetail"
       },
       "config": {
+        "filter": {
+          "direction": "outbound"
+        },
         "filterControls": [
           {
             "key": "statusCode",
@@ -2246,6 +2369,7 @@
           "interval",
           "isEnabled",
           "lastRun",
+          "nextRun",
           "status"
         ],
         "includeFields": [
@@ -2254,6 +2378,7 @@
           "jobClass",
           "arguments",
           "interval",
+          "schedule",
           "timeSensitive",
           "allowParallelRuns",
           "isEnabled",
@@ -3158,10 +3283,11 @@
       "route": "/flows",
       "type": "index",
       "title": "Flows",
-      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this was type:custom over FlowsIndex.vue. config.entitySource names the collection and the index loads it. No columns are stated: the source's defaults are exactly the five this app rendered, and they arrive already translated. config.app stays \"openconnector\" — see FlowDetail.",
+      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this was type:custom over FlowsIndex.vue. config.entitySource names the collection and the index loads it. No columns are stated: the source's defaults are exactly the five this app rendered, and they arrive already translated. config.app stays \"openconnector\" — see FlowDetail. rowRoute names the FlowDetail page (a route name, not a path): a named-source page has no register and schema, so without it a row click opens nothing and Edit falls back to the source's own /flows path.",
       "config": {
         "entitySource": "flows",
-        "app": "openconnector"
+        "app": "openconnector",
+        "rowRoute": "FlowDetail"
       }
     },
     {
@@ -3172,6 +3298,8 @@
       "_note": "The shared `flow` page type, replacing a hand-written wrapper around the same CnFlowDetail canvas. config.app is LOAD-BEARING and deliberately still \"openconnector\", not \"integriq\": CnFlowEditorPage stamps it on a flow created here, and the Flows index filters on it. Every flow already stored carries the old literal, so renaming it to match the app id would orphan them all — the list would go empty and new flows would be invisible to it. The id moves only with a migration of the stored rows.",
       "sidebarComponent": "FlowDetailSidebar",
       "config": {
+        "listMode": true,
+        "testPayload": true,
         "app": "openconnector"
       }
     },
@@ -4381,7 +4509,7 @@
       "id": "Store",
       "route": "/store",
       "type": "index",
-      "title": "Store",
+      "title": "Marketplace",
       "_note": "ADR-080 store plane: renamed from 'Catalog'. A store is 'browse a registry and install into this instance'; a CATALOGUE is an outward-facing published catalogue (OpenCatalogi's concept) and TEMPLATES are runtime content blueprints. The old name claimed the wrong concept and the old ViewGridOutline glyph is the vocabulary's 'apps' icon, which OpenBuild uses for its Apps page. Card grid over catalog_item, kind-driven quick filters (ADR-080 Decision 5); Enable/Instantiate lives in CatalogItemDetailDialog. Old /catalog route redirects here.",
       "config": {
         "register": "integriq",
@@ -4570,6 +4698,18 @@
       "component": "DeadLettersPage",
       "title": "Dead letters",
       "_note": "Merges the former EventDeliveries (event_message, /api/events/dead-letter) and SyncDeadLetters (sync_item_dead_letter, /api/sync-dead-letter) pages into ONE navigation entry under Operations. They were the same operations view with identical Replay/Discard verbs over two tables — SyncDeadLetters' own note said 'Mirrors EventDeliveries' — and both rendered EmailAlertOutline, so the menu showed one glyph twice. This is a navigation merge, NOT a rewrite: the queues stay separate underneath (different schemas, different admin-only endpoints, different replay semantics) and DeadLettersPage delegates to the two existing components. ?queue=sync deep-links the sync queue, which is where the old /synchronizations/dead-letters route redirects.",
+      "config": {
+        "register": "integriq",
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
+      "id": "EgressDestinations",
+      "route": "/egress-destinations",
+      "type": "custom",
+      "component": "EgressDestinationsPage",
+      "title": "Outbound destinations",
+      "_note": "Custom page (connections-declare-data-residency REQ-RES-002/003): lists GET /api/egress/destinations (every enabled source plus call log hosts of the last 30 days that no source covers) with its verdict, the count per zone and the EU-only switch (PUT /api/egress/eu-only). Admin only, as the endpoints are. Not an index page: the rows are not OpenRegister objects but a computed list, and the switch is refused while a destination is not shown to be in the EU.",
       "config": {
         "register": "integriq",
         "documentationUrl": "https://integriq.conduction.nl"

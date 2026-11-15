@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -244,7 +247,8 @@ class SensitiveFieldRegistryTest extends TestCase {
 			]
 		);
 
-		$this->assertSame(['***REDACTED***', '***REDACTED***', [['k' => '***REDACTED***'], '***REDACTED***', '***REDACTED***']], $result['auth']);
+		// A map inside a list under a sensitive key is a credential entry whose own keys can be the secret, so it is masked whole.
+		$this->assertSame(['***REDACTED***', '***REDACTED***', ['***REDACTED***', '***REDACTED***', '***REDACTED***']], $result['auth']);
 		$this->assertSame(
 			['credentialRef' => ['credentialId' => 'c-1'], 'password' => '***REDACTED***', 'headers' => ['Cookie' => ['***REDACTED***']]],
 			$result['authentication']

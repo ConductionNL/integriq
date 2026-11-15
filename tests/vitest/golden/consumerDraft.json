@@ -1,0 +1,1411 @@
+{
+	"positiveIntOrNull/undefined": {
+		"result": null
+	},
+	"positiveIntOrNull/null": {
+		"result": null
+	},
+	"positiveIntOrNull/emptyString": {
+		"result": null
+	},
+	"positiveIntOrNull/zero": {
+		"result": null
+	},
+	"positiveIntOrNull/one": {
+		"result": 1
+	},
+	"positiveIntOrNull/negative": {
+		"result": null
+	},
+	"positiveIntOrNull/fraction": {
+		"result": 2
+	},
+	"positiveIntOrNull/numericString": {
+		"result": 12
+	},
+	"positiveIntOrNull/paddedString": {
+		"result": 7
+	},
+	"positiveIntOrNull/word": {
+		"result": null
+	},
+	"positiveIntOrNull/infinity": {
+		"result": null
+	},
+	"positiveIntOrNull/nan": {
+		"result": null
+	},
+	"positiveIntOrNull/boolTrue": {
+		"result": 1
+	},
+	"positiveIntOrNull/array": {
+		"result": 5
+	},
+	"consumerDraftFromItem/null": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/undefined": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/string": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/number": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/empty": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/full": {
+		"result": {
+			"name": "Portal",
+			"description": "Public portal",
+			"domains": [
+				"a.example",
+				"b.example"
+			],
+			"ips": [
+				"10.0.0.1",
+				"10.0.0.2"
+			],
+			"authorizationType": "apiKey",
+			"rateLimitRequestsPerWindow": 60,
+			"rateLimitWindowSeconds": 30,
+			"quotaLimit": 1000,
+			"quotaPeriod": "day"
+		}
+	},
+	"consumerDraftFromItem/emptyType": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/nullType": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/offListType": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "custom-x",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/numericName": {
+		"result": {
+			"name": "42",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/rateLimitNotObject": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/rateLimitNull": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/badPeriod": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": 5,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/zeroLimits": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": "hour"
+		}
+	},
+	"consumerDraftFromItem/monthQuota": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": 9,
+			"quotaPeriod": "month"
+		}
+	},
+	"consumerDraftFromItem/listsNotLists": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"consumerDraftFromItem/arrayRow": {
+		"result": {
+			"name": "",
+			"description": "",
+			"domains": [],
+			"ips": [],
+			"authorizationType": "none",
+			"rateLimitRequestsPerWindow": null,
+			"rateLimitWindowSeconds": null,
+			"quotaLimit": null,
+			"quotaPeriod": null
+		}
+	},
+	"buildConsumerPayload/none/empty/untouched": {
+		"result": {
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/empty/cleared": {
+		"result": {
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/empty/set": {
+		"result": {
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/full/untouched": {
+		"result": {
+			"name": "Portal",
+			"description": "x",
+			"authorizationType": "bearer",
+			"rateLimit": {
+				"requestsPerWindow": 60,
+				"windowSeconds": 30
+			},
+			"quota": {
+				"limit": 100,
+				"period": "hour"
+			},
+			"domains": [
+				"a.example"
+			],
+			"ips": [
+				"10.0.0.1"
+			]
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"domains",
+			"ips"
+		],
+		"hasAuthKey": false
+	},
+	"buildConsumerPayload/none/full/cleared": {
+		"result": {
+			"name": "Portal",
+			"description": "x",
+			"authorizationType": "bearer",
+			"rateLimit": {
+				"requestsPerWindow": 60,
+				"windowSeconds": 30
+			},
+			"quota": {
+				"limit": 100,
+				"period": "hour"
+			},
+			"domains": [
+				"a.example"
+			],
+			"ips": [
+				"10.0.0.1"
+			],
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"domains",
+			"ips",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/full/set": {
+		"result": {
+			"name": "Portal",
+			"description": "x",
+			"authorizationType": "bearer",
+			"rateLimit": {
+				"requestsPerWindow": 60,
+				"windowSeconds": 30
+			},
+			"quota": {
+				"limit": 100,
+				"period": "hour"
+			},
+			"domains": [
+				"a.example"
+			],
+			"ips": [
+				"10.0.0.1"
+			],
+			"authorizationConfiguration": {
+				"key": "new"
+			}
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"domains",
+			"ips",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/noneType/untouched": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/noneType/cleared": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/noneType/set": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/blankType/untouched": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/blankType/cleared": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/blankType/set": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/upperNone/untouched": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": " NONE ",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/upperNone/cleared": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": " NONE ",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/upperNone/set": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": " NONE ",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/offList/untouched": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": "custom-x",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": false
+	},
+	"buildConsumerPayload/none/offList/cleared": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": "custom-x",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/offList/set": {
+		"result": {
+			"name": "n",
+			"description": "",
+			"authorizationType": "custom-x",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": {
+				"key": "new"
+			}
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/halfRate/untouched": {
+		"result": {
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/halfRate/cleared": {
+		"result": {
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/halfRate/set": {
+		"result": {
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/emptyLists/untouched": {
+		"result": {
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/emptyLists/cleared": {
+		"result": {
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/none/emptyLists/set": {
+		"result": {
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/empty/untouched": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"extra": "x",
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/empty/cleared": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/empty/set": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/full/untouched": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"domains": [
+				"a.example"
+			],
+			"ips": [
+				"10.0.0.1"
+			],
+			"extra": "x",
+			"name": "Portal",
+			"description": "x",
+			"authorizationType": "bearer",
+			"rateLimit": {
+				"requestsPerWindow": 60,
+				"windowSeconds": 30
+			},
+			"quota": {
+				"limit": 100,
+				"period": "hour"
+			}
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"domains",
+			"ips",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": false
+	},
+	"buildConsumerPayload/stored/full/cleared": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"domains": [
+				"a.example"
+			],
+			"ips": [
+				"10.0.0.1"
+			],
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "Portal",
+			"description": "x",
+			"authorizationType": "bearer",
+			"rateLimit": {
+				"requestsPerWindow": 60,
+				"windowSeconds": 30
+			},
+			"quota": {
+				"limit": 100,
+				"period": "hour"
+			}
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"domains",
+			"ips",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/full/set": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"domains": [
+				"a.example"
+			],
+			"ips": [
+				"10.0.0.1"
+			],
+			"authorizationConfiguration": {
+				"key": "new"
+			},
+			"extra": "x",
+			"name": "Portal",
+			"description": "x",
+			"authorizationType": "bearer",
+			"rateLimit": {
+				"requestsPerWindow": 60,
+				"windowSeconds": 30
+			},
+			"quota": {
+				"limit": 100,
+				"period": "hour"
+			}
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"domains",
+			"ips",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/noneType/untouched": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/noneType/cleared": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/noneType/set": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/blankType/untouched": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/blankType/cleared": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/blankType/set": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/upperNone/untouched": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": " NONE ",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/upperNone/cleared": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": " NONE ",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/upperNone/set": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": " NONE ",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/offList/untouched": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": "custom-x",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": false
+	},
+	"buildConsumerPayload/stored/offList/cleared": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": "custom-x",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/offList/set": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": {
+				"key": "new"
+			},
+			"extra": "x",
+			"name": "n",
+			"description": "",
+			"authorizationType": "custom-x",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/halfRate/untouched": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"extra": "x",
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/halfRate/cleared": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/halfRate/set": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/emptyLists/untouched": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"extra": "x",
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null,
+			"authorizationConfiguration": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota",
+			"authorizationConfiguration"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/emptyLists/cleared": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	},
+	"buildConsumerPayload/stored/emptyLists/set": {
+		"result": {
+			"id": 9,
+			"uuid": "u-9",
+			"authorizationConfiguration": null,
+			"extra": "x",
+			"name": "",
+			"description": "",
+			"authorizationType": "none",
+			"rateLimit": null,
+			"quota": null
+		},
+		"keys": [
+			"id",
+			"uuid",
+			"authorizationConfiguration",
+			"extra",
+			"name",
+			"description",
+			"authorizationType",
+			"rateLimit",
+			"quota"
+		],
+		"hasAuthKey": true
+	}
+}

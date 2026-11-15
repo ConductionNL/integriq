@@ -55,6 +55,26 @@ export function mapTableOptions(tables) {
 }
 
 /**
+ * A value as text, or null when it is null or undefined.
+ *
+ * @param {unknown} value The value.
+ * @return {?string} The text.
+ */
+function optionalText(value) {
+	return value != null ? String(value) : null
+}
+
+/**
+ * The constraints of a column when they are an object, otherwise none.
+ *
+ * @param {unknown} value The raw constraints.
+ * @return {object} The constraints.
+ */
+function constraintsOf(value) {
+	return value && typeof value === 'object' ? value : {}
+}
+
+/**
  * Normalise a raw discovery column into the shape the mapping helper renders
  * (title, type, subtype, constraints) — tolerant of missing fields.
  *
@@ -69,10 +89,9 @@ export function normaliseColumn(column) {
 		id: Number(c.id ?? 0),
 		title: String(c.title ?? ''),
 		type: String(c.type ?? ''),
-		subtype: c.subtype != null ? String(c.subtype) : null,
+		subtype: optionalText(c.subtype),
 		mandatory: Boolean(c.mandatory),
-		constraints:
-			c.constraints && typeof c.constraints === 'object' ? c.constraints : {},
+		constraints: constraintsOf(c.constraints),
 	}
 }
 
@@ -138,6 +157,16 @@ export function columnTypeHint(column) {
 }
 
 /**
+ * Whether a stored mapping entry is an object with a column title.
+ *
+ * @param {unknown} entry The entry.
+ * @return {boolean} Truthy when it is.
+ */
+function isMappingEntry(entry) {
+	return entry && typeof entry === 'object' && typeof entry.column === 'string'
+}
+
+/**
  * Read the current `columnMapping` array from a target config blob, tolerating
  * a missing/malformed value.
  *
@@ -150,10 +179,37 @@ export function readColumnMapping(config) {
 	if (!config || typeof config !== 'object') return []
 	const mapping = config.columnMapping
 	if (!Array.isArray(mapping)) return []
-	return mapping.filter(
-		(entry) =>
-			entry && typeof entry === 'object' && typeof entry.column === 'string',
-	)
+	return mapping.filter(isMappingEntry)
+}
+
+/**
+ * A shallow copy of a config blob, or an empty blob when it is not a plain
+ * object.
+ *
+ * @param {unknown} config The config blob.
+ * @return {object} The copy.
+ */
+function plainCopy(config) {
+	return config && typeof config === 'object' && !Array.isArray(config)
+		? { ...config }
+		: {}
+}
+
+/**
+ * Set the mapping entries on a config blob, or remove the key when there
+ * are none.
+ *
+ * @param {object} base The config blob, changed in place.
+ * @param {Array} entries The mapping entries.
+ * @return {object} The same blob.
+ */
+function withMapping(base, entries) {
+	if (entries.length === 0) {
+		delete base.columnMapping
+	} else {
+		base.columnMapping = entries
+	}
+	return base
 }
 
 /**
@@ -170,10 +226,7 @@ export function readColumnMapping(config) {
  * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
  */
 export function upsertColumnMapping(config, columnTitle, value) {
-	const base =
-		config && typeof config === 'object' && !Array.isArray(config)
-			? { ...config }
-			: {}
+	const base = plainCopy(config)
 	const existing = readColumnMapping(base).filter(
 		(entry) => entry.column !== columnTitle,
 	)
@@ -183,13 +236,7 @@ export function upsertColumnMapping(config, columnTitle, value) {
 		existing.push({ column: columnTitle, value: trimmed })
 	}
 
-	if (existing.length === 0) {
-		delete base.columnMapping
-	} else {
-		base.columnMapping = existing
-	}
-
-	return base
+	return withMapping(base, existing)
 }
 
 /**

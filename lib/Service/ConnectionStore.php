@@ -260,6 +260,7 @@ class ConnectionStore implements ConnectionStoreInterface {
 		}
 
 		try {
+			// Unscoped: re-reads, unrendered, a source the caller already reached, from a check or event with no user.
 			$raw = $this->objectService->find(
 				id: $uuid,
 				register: self::REGISTER,
@@ -293,6 +294,62 @@ class ConnectionStore implements ConnectionStoreInterface {
 			operation: 			fn () => $this->objectService->saveObject(object: $payload, register: self::REGISTER, schema: 'source')
 		);
 	}//end createSource()
+
+	/**
+	 * Read a source raw by uuid, so a write back keeps its write-only credentials.
+	 *
+	 * @param string $uuid The source uuid.
+	 *
+	 * @return ObjectEntity|null The raw source, or null when it does not exist.
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	public function findSourceRaw(string $uuid): ?ObjectEntity {
+		try {
+			$raw = $this->asSystem(
+				operation: fn () => $this->objectService->find(
+					id: $uuid,
+					register: self::REGISTER,
+					schema: 'source',
+					_rbac: false,
+					_multitenancy: false,
+					_render: false
+				)
+			);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+
+		if ($raw instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		return $raw;
+	}//end findSourceRaw()
+
+	/**
+	 * Write a residency onto a raw source and keep every other field as stored.
+	 *
+	 * @param ObjectEntity        $source    The source, read raw.
+	 * @param array<string,mixed> $residency The residency to store.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	public function saveSourceResidency(ObjectEntity $source, array $residency): void {
+		$data = $source->getObject();
+		$data['residency'] = $residency;
+
+		$this->asSystem(
+			operation: fn () => $this->objectService->saveObject(
+				object: $data,
+				register: self::REGISTER,
+				schema: 'source',
+				uuid: (string)$source->getUuid()
+			)
+		);
+	}//end saveSourceResidency()
 
 	/**
 	 * Keep only the D3 properties that hold a value.
