@@ -132,7 +132,24 @@ class RouteDistanceService {
 			return $planner;
 		}
 
-		$places = $this->places(fromPostcode: $fromPostcode, toPostcode: $toPostcode);
+		return $this->routeBetween(app: $app, connectionKey: $connectionKey, planner: $planner, from: $fromPostcode, to: $toPostcode);
+	}//end distance()
+
+	/**
+	 * The route between two postcodes on the chosen planner, or the refusal.
+	 *
+	 * @param string               $app           The calling app id.
+	 * @param string               $connectionKey The app's route planner connection.
+	 * @param array<string,string> $planner       The planner: provider and profile.
+	 * @param string               $from          Where the route starts.
+	 * @param string               $to            Where the route ends.
+	 *
+	 * @return array<string,mixed> The answer, or a refusal.
+	 *
+	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
+	 */
+	private function routeBetween(string $app, string $connectionKey, array $planner, string $from, string $to): array {
+		$places = $this->places(fromPostcode: $from, toPostcode: $to);
 		if (isset($places['refusal']) === true) {
 			return $places;
 		}
@@ -142,13 +159,28 @@ class RouteDistanceService {
 			return $meters;
 		}
 
+		return self::distanceAnswer(planner: $planner, places: $places, meters: $meters);
+	}//end routeBetween()
+
+	/**
+	 * The answer for a found route: kilometres one way, the provider and both municipalities.
+	 *
+	 * @param array<string,string>              $planner The planner: provider and profile.
+	 * @param array<string,array<string,mixed>> $places  The placed postcodes, `from` and `to`.
+	 * @param float                             $meters  The route length in metres.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
+	 */
+	private static function distanceAnswer(array $planner, array $places, float $meters): array {
 		return [
 			'distanceKmOneWay' => round($meters / 1000, 1),
 			'routeProvider' => $planner['provider'],
 			'fromMunicipality' => $places['from']['municipality'],
 			'toMunicipality' => $places['to']['municipality'],
 		];
-	}//end distance()
+	}//end distanceAnswer()
 
 	/**
 	 * The planner the connection is linked to and its profile for the mode, or the refusal.
@@ -167,18 +199,12 @@ class RouteDistanceService {
 
 		$provider = self::providerOf(source: $linked['source']);
 		if ($provider === null) {
-			return self::refusal(
-				code: self::UNSUPPORTED_PROVIDER,
-				reason: sprintf('The connection "%s" is not linked to a route planner.', $linked['title'])
-			);
+			return self::refusal(code: self::UNSUPPORTED_PROVIDER, reason: sprintf('The connection "%s" is not linked to a route planner.', $linked['title']));
 		}
 
 		$profile = (self::PROFILES[$provider][$mode] ?? null);
 		if ($profile === null) {
-			return self::refusal(
-				code: self::UNSUPPORTED_MODE,
-				reason: sprintf('The route planner has no profile for the mode "%s".', $mode)
-			);
+			return self::refusal(code: self::UNSUPPORTED_MODE, reason: sprintf('The route planner has no profile for the mode "%s".', $mode));
 		}
 
 		return ['provider' => $provider, 'profile' => $profile];
@@ -218,13 +244,7 @@ class RouteDistanceService {
 	 */
 	private function routeMeters(string $app, string $connectionKey, array $planner, array $places): float|array {
 		$request = self::plannerRequest(provider: $planner['provider'], profile: $planner['profile'], from: $places['from'], to: $places['to']);
-		$answer  = $this->connections->call(
-			app: $app,
-			connectionKey: $connectionKey,
-			method: 'GET',
-			path: $request['path'],
-			query: $request['query']
-		);
+		$answer  = $this->connections->call(app: $app, connectionKey: $connectionKey, method: 'GET', path: $request['path'], query: $request['query']);
 		if (isset($answer['refusal']) === true) {
 			return $answer;
 		}
@@ -235,10 +255,7 @@ class RouteDistanceService {
 		}
 
 		if ($meters === null) {
-			return self::refusal(
-				code: self::NO_ROUTE,
-				reason: sprintf('The route planner gave no route (HTTP %d).', $answer['status'])
-			);
+			return self::refusal(code: self::NO_ROUTE, reason: sprintf('The route planner gave no route (HTTP %d).', $answer['status']));
 		}
 
 		return $meters;
@@ -271,20 +288,14 @@ class RouteDistanceService {
 	 */
 	private function place(string $postcode): array {
 		$normalised = self::normalisePostcode(postcode: $postcode);
-		$unknown    = self::refusal(
-			code: self::UNKNOWN_POSTCODE,
-			reason: sprintf('The postcode %s cannot be placed.', trim($postcode))
-		);
+		$unknown    = self::refusal(code: self::UNKNOWN_POSTCODE, reason: sprintf('The postcode %s cannot be placed.', trim($postcode)));
 		if ($normalised === null) {
 			return $unknown;
 		}
 
 		$entries = $this->geocoder->find(query: 'postcode:' . str_replace(' ', '', $normalised), rows: 5);
 		if ($entries === null) {
-			return self::refusal(
-				code: self::GEOCODER_UNAVAILABLE,
-				reason: sprintf('PDOK did not answer for the postcode %s.', $normalised)
-			);
+			return self::refusal(code: self::GEOCODER_UNAVAILABLE, reason: sprintf('PDOK did not answer for the postcode %s.', $normalised));
 		}
 
 		return (self::matchingPlace(entries: $entries, normalised: $normalised) ?? $unknown);
@@ -306,11 +317,7 @@ class RouteDistanceService {
 
 			$coordinates = self::coordinatesOf(entry: $entry);
 			if ($coordinates !== null) {
-				return [
-					'longitude' => $coordinates[0],
-					'latitude' => $coordinates[1],
-					'municipality' => (string)($entry['addressLocality'] ?? ''),
-				];
+				return ['longitude' => $coordinates[0], 'latitude' => $coordinates[1], 'municipality' => (string)($entry['addressLocality'] ?? '')];
 			}
 		}
 
@@ -370,13 +377,7 @@ class RouteDistanceService {
 	private static function plannerRequest(string $provider, string $profile, array $from, array $to): array {
 		if ($provider === 'tomtom') {
 			return [
-				'path' => sprintf(
-					'/1/calculateRoute/%.6F,%.6F:%.6F,%.6F/json',
-					$from['latitude'],
-					$from['longitude'],
-					$to['latitude'],
-					$to['longitude']
-				),
+				'path' => sprintf('/1/calculateRoute/%.6F,%.6F:%.6F,%.6F/json', $from['latitude'], $from['longitude'], $to['latitude'], $to['longitude']),
 				'query' => ['travelMode' => $profile, 'routeType' => 'fastest'],
 			];
 		}

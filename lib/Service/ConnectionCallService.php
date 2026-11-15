@@ -112,37 +112,76 @@ class ConnectionCallService {
 		array $query = [],
 		array|string|null $body = null,
 	): array {
-		$method  = strtoupper(trim($method));
-		$invalid = self::requestRefusal(method: $method, path: $path, query: $query);
-		if ($invalid !== null) {
-			return $this->refused(app: $app, key: $connectionKey, code: self::INVALID, reason: $invalid);
-		}
-
-		$linked = $this->linkedSource(app: $app, connectionKey: $connectionKey);
+		$method = strtoupper(trim($method));
+		$linked = $this->validSource(app: $app, key: $connectionKey, method: $method, path: $path, query: $query);
 		if (isset($linked['refusal']) === true) {
 			return $linked;
 		}
 
-		$source = $linked['source'];
-		$slug   = (string)($source->getObject()['slug'] ?? '');
+		$config = self::callConfig(method: $method, query: $query, body: $body);
+		return $this->callSource(app: $app, key: $connectionKey, source: $linked['source'], method: $method, path: $path, config: $config);
+	}//end call()
 
-		try {
-			$callLog = $this->callService->call(
-				source: $source,
-				endpoint: $path,
-				method: $method,
-				config: self::callConfig(method: $method, query: $query, body: $body)
-			);
-		} catch (Throwable $e) {
-			return $this->refused(
-				app: $app,
-				key: $connectionKey,
-				code: self::CALL_FAILED,
-				reason: sprintf('The call to the source "%s" failed: %s', $slug, $e->getMessage())
-			);
+	/**
+	 * The linked source for a well-formed request, or the refusal of the request or the connection.
+	 *
+	 * @param string              $app    The calling app id.
+	 * @param string              $key    The declared connection key.
+	 * @param string              $method The upper-cased method.
+	 * @param string              $path   The path below the source's location.
+	 * @param array<string,mixed> $query  Query parameters.
+	 *
+	 * @return array{source:ObjectEntity,title:string}|array{refusal:array{code:string,reason:string}}
+	 *
+	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
+	 */
+	private function validSource(string $app, string $key, string $method, string $path, array $query): array {
+		$invalid = self::requestRefusal(method: $method, path: $path, query: $query);
+		if ($invalid !== null) {
+			return $this->refused(app: $app, key: $key, code: self::INVALID, reason: $invalid);
 		}
 
-		$data     = $callLog->getObject();
+		return $this->linkedSource(app: $app, connectionKey: $key);
+	}//end validSource()
+
+	/**
+	 * Send the request to the linked source and shape its answer.
+	 *
+	 * @param string              $app           The calling app id.
+	 * @param string              $key           The declared connection key.
+	 * @param ObjectEntity        $source        The linked source.
+	 * @param string              $method        `GET` or `POST`.
+	 * @param string              $path          The path below the source's location.
+	 * @param array<string,mixed> $config        The call configuration.
+	 *
+	 * @return array{status:int,body:mixed,sourceSlug:string}|array{refusal:array{code:string,reason:string}}
+	 *
+	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
+	 */
+	private function callSource(string $app, string $key, ObjectEntity $source, string $method, string $path, array $config): array {
+		$slug = (string)($source->getObject()['slug'] ?? '');
+
+		try {
+			$callLog = $this->callService->call(source: $source, endpoint: $path, method: $method, config: $config);
+		} catch (Throwable $e) {
+			$reason = sprintf('The call to the source "%s" failed: %s', $slug, $e->getMessage());
+			return $this->refused(app: $app, key: $key, code: self::CALL_FAILED, reason: $reason);
+		}
+
+		return self::answer(data: $callLog->getObject(), slug: $slug);
+	}//end callSource()
+
+	/**
+	 * The caller's answer from a call log: status, decoded body and source slug.
+	 *
+	 * @param array<string,mixed> $data The call log's payload.
+	 * @param string              $slug The source slug.
+	 *
+	 * @return array{status:int,body:mixed,sourceSlug:string}
+	 *
+	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
+	 */
+	private static function answer(array $data, string $slug): array {
 		$response = $data['response'] ?? [];
 		if (is_array($response) === false) {
 			$response = [];
@@ -153,7 +192,7 @@ class ConnectionCallService {
 			'body' => self::decodedBody(body: $response['body'] ?? null),
 			'sourceSlug' => $slug,
 		];
-	}//end call()
+	}//end answer()
 
 	/**
 	 * The source linked to an app's declared connection, or the refusal.
@@ -169,32 +208,37 @@ class ConnectionCallService {
 		$row = $this->declaredRow(app: $app, connectionKey: $connectionKey);
 
 		if ($row === null) {
-			return $this->refused(
-				app: $app,
-				key: $connectionKey,
-				code: self::NOT_DECLARED,
-				reason: sprintf('The app "%s" declares no connection "%s".', $app, $connectionKey)
-			);
+			$reason = sprintf('The app "%s" declares no connection "%s".', $app, $connectionKey);
+			return $this->refused(app: $app, key: $connectionKey, code: self::NOT_DECLARED, reason: $reason);
 		}
 
 		$title    = (string)($row['title'] ?? $connectionKey);
-		$sourceId = (string)($row['source'] ?? '');
-		$source   = null;
-		if ($sourceId !== '') {
-			$source = $this->store->findSource(uuid: $sourceId);
-		}
-
+		$source   = $this->sourceOf(row: $row);
 		if ($source === null) {
-			return $this->refused(
-				app: $app,
-				key: $connectionKey,
-				code: self::NOT_LINKED,
-				reason: sprintf('The connection "%s" is not linked to a source yet.', $title)
-			);
+			$reason = sprintf('The connection "%s" is not linked to a source yet.', $title);
+			return $this->refused(app: $app, key: $connectionKey, code: self::NOT_LINKED, reason: $reason);
 		}
 
 		return ['source' => $source, 'title' => $title];
 	}//end linkedSource()
+
+	/**
+	 * The source a connection row is linked to, or null when it names none or the source is gone.
+	 *
+	 * @param array<string,mixed> $row The app's connection row.
+	 *
+	 * @return ObjectEntity|null
+	 *
+	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
+	 */
+	private function sourceOf(array $row): ?ObjectEntity {
+		$sourceId = (string)($row['source'] ?? '');
+		if ($sourceId === '') {
+			return null;
+		}
+
+		return $this->store->findSource(uuid: $sourceId);
+	}//end sourceOf()
 
 	/**
 	 * The app's declared connection row for a key, or null when it declares none.
@@ -319,9 +363,7 @@ class ConnectionCallService {
 		}
 
 		if (is_array($body) === true) {
-			$config['body']    = (string)json_encode($body);
-			$config['headers'] = ['Content-Type' => 'application/json'];
-			return $config;
+			return array_merge($config, ['body' => (string)json_encode($body), 'headers' => ['Content-Type' => 'application/json']]);
 		}
 
 		$config['body'] = $body;

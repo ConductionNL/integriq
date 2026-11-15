@@ -70,21 +70,8 @@ class ConnectionCallRequestedListener implements IEventListener {
 			return;
 		}
 
-		try {
-			$answer = $this->service->call(
-				app: $event->getSourceApp(),
-				connectionKey: $event->getConnectionKey(),
-				method: $event->getMethod(),
-				path: $event->getPath(),
-				query: $event->getQuery(),
-				body: $event->getBody()
-			);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'Integriq: a connection call request failed',
-				['app' => $event->getSourceApp(), 'connection' => $event->getConnectionKey(), 'error' => $e->getMessage()]
-			);
-			$event->refuse(code: ConnectionCallService::CALL_FAILED, reason: $e->getMessage());
+		$answer = $this->answerFor(event: $event);
+		if ($answer === null) {
 			return;
 		}
 
@@ -95,4 +82,46 @@ class ConnectionCallRequestedListener implements IEventListener {
 
 		$event->setResult(status: $answer['status'], body: $answer['body'], sourceSlug: $answer['sourceSlug']);
 	}//end handle()
+
+	/**
+	 * The service's answer to the request, or null when it threw and the event was refused.
+	 *
+	 * @param ConnectionCallRequestedEvent $event The request.
+	 *
+	 * @return array<string,mixed>|null
+	 *
+	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
+	 */
+	private function answerFor(ConnectionCallRequestedEvent $event): ?array {
+		try {
+			$answer = $this->ask(event: $event);
+		} catch (Throwable $e) {
+			$context = ['app' => $event->getSourceApp(), 'connection' => $event->getConnectionKey(), 'error' => $e->getMessage()];
+			$this->logger->error('Integriq: a connection call request failed', $context);
+			$event->refuse(code: ConnectionCallService::CALL_FAILED, reason: $e->getMessage());
+			return null;
+		}
+
+		return $answer;
+	}//end answerFor()
+
+	/**
+	 * Ask the service for the event's request.
+	 *
+	 * @param ConnectionCallRequestedEvent $event The request.
+	 *
+	 * @return array<string,mixed>
+	 *
+ * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
+	 */
+	private function ask(ConnectionCallRequestedEvent $event): array {
+		return $this->service->call(
+			app: $event->getSourceApp(),
+			connectionKey: $event->getConnectionKey(),
+			method: $event->getMethod(),
+			path: $event->getPath(),
+			query: $event->getQuery(),
+			body: $event->getBody()
+		);
+	}//end ask()
 }//end class

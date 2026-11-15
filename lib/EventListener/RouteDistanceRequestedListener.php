@@ -69,20 +69,8 @@ class RouteDistanceRequestedListener implements IEventListener {
 			return;
 		}
 
-		try {
-			$answer = $this->service->distance(
-				app: $event->getSourceApp(),
-				fromPostcode: $event->getFromPostcode(),
-				toPostcode: $event->getToPostcode(),
-				mode: $event->getMode(),
-				connectionKey: $event->getConnectionKey()
-			);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'Integriq: a route distance request failed',
-				['app' => $event->getSourceApp(), 'error' => $e->getMessage()]
-			);
-			$event->refuse(code: 'call-failed', reason: $e->getMessage());
+		$answer = $this->answerFor(event: $event);
+		if ($answer === null) {
 			return;
 		}
 
@@ -93,4 +81,44 @@ class RouteDistanceRequestedListener implements IEventListener {
 
 		$event->setResult(result: $answer);
 	}//end handle()
+
+	/**
+	 * The service's answer to the request, or null when it threw and the event was refused.
+	 *
+	 * @param RouteDistanceRequestedEvent $event The request.
+	 *
+	 * @return array<string,mixed>|null
+	 *
+	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
+	 */
+	private function answerFor(RouteDistanceRequestedEvent $event): ?array {
+		try {
+			$answer = $this->ask(event: $event);
+		} catch (Throwable $e) {
+			$this->logger->error('Integriq: a route distance request failed', ['app' => $event->getSourceApp(), 'error' => $e->getMessage()]);
+			$event->refuse(code: 'call-failed', reason: $e->getMessage());
+			return null;
+		}
+
+		return $answer;
+	}//end answerFor()
+
+	/**
+	 * Ask the service for the event's request.
+	 *
+	 * @param RouteDistanceRequestedEvent $event The request.
+	 *
+	 * @return array<string,mixed>
+	 *
+ * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
+	 */
+	private function ask(RouteDistanceRequestedEvent $event): array {
+		return $this->service->distance(
+			app: $event->getSourceApp(),
+			fromPostcode: $event->getFromPostcode(),
+			toPostcode: $event->getToPostcode(),
+			mode: $event->getMode(),
+			connectionKey: $event->getConnectionKey()
+		);
+	}//end ask()
 }//end class
