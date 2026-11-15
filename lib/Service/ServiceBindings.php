@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
@@ -481,8 +482,8 @@ final class ServiceBindings {
 			SettingsService::class,
 			function ($c) {
 				return new SettingsService(
-					db: $c->get('OCP\IDBConnection'),
 					config: $c->get('OCP\IAppConfig'),
+					rebaseScheduler: $c->get(RetentionRebaseSchedulerInterface::class),
 					logger: $c->get('Psr\Log\LoggerInterface')
 				);
 			}
