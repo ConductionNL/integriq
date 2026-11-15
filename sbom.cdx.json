@@ -7,7 +7,7 @@
     "tools": [
       {
         "name": "composer",
-        "version": "2.10.2"
+        "version": "2.8.12"
       },
       {
         "vendor": "cyclonedx",
@@ -5711,6 +5711,40 @@
     },
     {
       "type": "library",
+      "name": "nonrecursive-glob-match",
+      "group": "@isaacs",
+      "version": "1.1.0",
+      "bom-ref": "integriq@1.0.0|@isaacs/nonrecursive-glob-match@1.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BlueOak-1.0.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40isaacs/nonrecursive-glob-match@1.1.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@isaacs/nonrecursive-glob-match/-/nonrecursive-glob-match-1.1.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "18f9bf0dbbe4e512e68519f15c86bb9d3a4ad31b65e04d308f432c96cb8d889d45211394fb6fbd960502fdd805ec4cb84025a17c4b20c6294c44c09d1cf7c37f"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@isaacs/nonrecursive-glob-match"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "gen-mapping",
       "group": "@jridgewell",
       "version": "0.3.13",
@@ -6535,6 +6569,76 @@
           "name": "cdx:npm:package:path",
           "value": "node_modules/@nextcloud/dialogs"
         }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "core",
+          "group": "@vueuse",
+          "version": "14.4.0",
+          "bom-ref": "integriq@1.0.0|@nextcloud/dialogs@7.5.0|@vueuse/core@14.4.0",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vueuse/core@14.4.0",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vueuse/core/-/core-14.4.0.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "5f8587cf51e50b3081a185deb149227f3cd60407198171bc162e6234f420fdea5dcce07782ef056b08f786fbb0611d6719c5c69efc706187140bfef5fbeb2fb5"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@nextcloud/dialogs/node_modules/@vueuse/core"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "metadata",
+          "group": "@vueuse",
+          "version": "14.4.0",
+          "bom-ref": "integriq@1.0.0|@nextcloud/dialogs@7.5.0|@vueuse/metadata@14.4.0",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vueuse/metadata@14.4.0",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vueuse/metadata/-/metadata-14.4.0.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "b30c7fdb9e51e89c87645261c7ce398b3e424560d97427ef9193a900259ce7e739587706db89aff20513d5621d150687b7a76aefdaef20b77d4270968b2566f6"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@nextcloud/dialogs/node_modules/@vueuse/metadata"
+            }
+          ]
+        }
       ]
     },
     {
@@ -7088,6 +7192,40 @@
         },
         {
           "type": "library",
+          "name": "core",
+          "group": "@vueuse",
+          "version": "14.4.0",
+          "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.13.1|@vueuse/core@14.4.0",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vueuse/core@14.4.0",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vueuse/core/-/core-14.4.0.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "5f8587cf51e50b3081a185deb149227f3cd60407198171bc162e6234f420fdea5dcce07782ef056b08f786fbb0611d6719c5c69efc706187140bfef5fbeb2fb5"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@nextcloud/vue/node_modules/@vueuse/core"
+            }
+          ]
+        },
+        {
+          "type": "library",
           "name": "vue-router",
           "version": "5.3.1",
           "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.13.1|vue-router@5.3.1",
@@ -7116,6 +7254,40 @@
             {
               "name": "cdx:npm:package:path",
               "value": "node_modules/@nextcloud/vue/node_modules/vue-router"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "metadata",
+          "group": "@vueuse",
+          "version": "14.4.0",
+          "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.13.1|@vueuse/metadata@14.4.0",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vueuse/metadata@14.4.0",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vueuse/metadata/-/metadata-14.4.0.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "b30c7fdb9e51e89c87645261c7ce398b3e424560d97427ef9193a900259ce7e739587706db89aff20513d5621d150687b7a76aefdaef20b77d4270968b2566f6"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@nextcloud/vue/node_modules/@vueuse/metadata"
             }
           ]
         }
@@ -10644,14 +10816,84 @@
           "name": "cdx:npm:package:path",
           "value": "node_modules/@vueuse/components"
         }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "core",
+          "group": "@vueuse",
+          "version": "14.4.0",
+          "bom-ref": "integriq@1.0.0|@vueuse/components@14.4.0|@vueuse/core@14.4.0",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vueuse/core@14.4.0",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vueuse/core/-/core-14.4.0.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "5f8587cf51e50b3081a185deb149227f3cd60407198171bc162e6234f420fdea5dcce07782ef056b08f786fbb0611d6719c5c69efc706187140bfef5fbeb2fb5"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@vueuse/components/node_modules/@vueuse/core"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "metadata",
+          "group": "@vueuse",
+          "version": "14.4.0",
+          "bom-ref": "integriq@1.0.0|@vueuse/components@14.4.0|@vueuse/metadata@14.4.0",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vueuse/metadata@14.4.0",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vueuse/metadata/-/metadata-14.4.0.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "b30c7fdb9e51e89c87645261c7ce398b3e424560d97427ef9193a900259ce7e739587706db89aff20513d5621d150687b7a76aefdaef20b77d4270968b2566f6"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@vueuse/components/node_modules/@vueuse/metadata"
+            }
+          ]
+        }
       ]
     },
     {
       "type": "library",
       "name": "core",
       "group": "@vueuse",
-      "version": "14.4.0",
-      "bom-ref": "integriq@1.0.0|@vueuse/core@14.4.0",
+      "version": "15.0.0",
+      "bom-ref": "integriq@1.0.0|@vueuse/core@15.0.0",
       "licenses": [
         {
           "license": {
@@ -10659,15 +10901,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vueuse/core@14.4.0",
+      "purl": "pkg:npm/%40vueuse/core@15.0.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vueuse/core/-/core-14.4.0.tgz",
+          "url": "https://registry.npmjs.org/@vueuse/core/-/core-15.0.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "5f8587cf51e50b3081a185deb149227f3cd60407198171bc162e6234f420fdea5dcce07782ef056b08f786fbb0611d6719c5c69efc706187140bfef5fbeb2fb5"
+              "content": "66febb8799ab93b6070c9b1139bc7e0d7682073e91281529c6a2deb09fb7c5934f1bacae42cee36bb920def785aeba2e60b580ab2750ec2c0611b2d5c41e3736"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10678,14 +10920,50 @@
           "name": "cdx:npm:package:path",
           "value": "node_modules/@vueuse/core"
         }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "shared",
+          "group": "@vueuse",
+          "version": "15.0.0",
+          "bom-ref": "integriq@1.0.0|@vueuse/core@15.0.0|@vueuse/shared@15.0.0",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vueuse/shared@15.0.0",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vueuse/shared/-/shared-15.0.0.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "bdb357846adb579df13ce312c8eccc1d046f84c8197fba0d0f0d910a151eb55c704c81242274358e867d25b4f41b7cf69f6009363be609678cf72498ae7be880"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@vueuse/core/node_modules/@vueuse/shared"
+            }
+          ]
+        }
       ]
     },
     {
       "type": "library",
       "name": "metadata",
       "group": "@vueuse",
-      "version": "14.4.0",
-      "bom-ref": "integriq@1.0.0|@vueuse/metadata@14.4.0",
+      "version": "15.0.0",
+      "bom-ref": "integriq@1.0.0|@vueuse/metadata@15.0.0",
       "licenses": [
         {
           "license": {
@@ -10693,15 +10971,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vueuse/metadata@14.4.0",
+      "purl": "pkg:npm/%40vueuse/metadata@15.0.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vueuse/metadata/-/metadata-14.4.0.tgz",
+          "url": "https://registry.npmjs.org/@vueuse/metadata/-/metadata-15.0.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "b30c7fdb9e51e89c87645261c7ce398b3e424560d97427ef9193a900259ce7e739587706db89aff20513d5621d150687b7a76aefdaef20b77d4270968b2566f6"
+              "content": "b1f584e4b00300a2742a78ed1a588c75237c223fcbeee3faad72199603e5a00238cefbde7dbc3a1f92edeca240e91a90398815a961791ae8f9d071cc233ca006"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12074,10 +12352,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/balanced-match"
         }
@@ -12283,10 +12557,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/brace-expansion"
@@ -27498,24 +27768,24 @@
         {
           "type": "library",
           "name": "minimatch",
-          "version": "9.0.9",
-          "bom-ref": "integriq@1.0.0|webdav@5.10.0|minimatch@9.0.9",
+          "version": "11.0.8",
+          "bom-ref": "integriq@1.0.0|webdav@5.10.0|minimatch@11.0.8",
           "licenses": [
             {
               "license": {
-                "id": "ISC"
+                "id": "BlueOak-1.0.0"
               }
             }
           ],
-          "purl": "pkg:npm/minimatch@9.0.9",
+          "purl": "pkg:npm/minimatch@11.0.8",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/minimatch/-/minimatch-9.0.9.tgz",
+              "url": "https://registry.npmjs.org/minimatch/-/minimatch-11.0.8.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "381c0137d00be1daa61139694b6cdab31faf4de59c956ce46e57d993b2930398f78de38e373fed4429d9a26532bcd83cdf02f966ff52b3a1cc2570202fc47662"
+                  "content": "9c542e6124d5ac6bf2b15069b39221fb405d9d814dfc28f70bcd7aafafa9ef22be147ad52c61383b837d005c3292b94d96f3361d8b7e45a775522ae8ea1f3c22"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27525,72 +27795,6 @@
             {
               "name": "cdx:npm:package:path",
               "value": "node_modules/webdav/node_modules/minimatch"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "brace-expansion",
-          "version": "2.1.7",
-          "bom-ref": "integriq@1.0.0|webdav@5.10.0|brace-expansion@2.1.7",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/brace-expansion@2.1.7",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-2.1.7.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "b996dec3536a7663c34cc27c6a1d72f9bfbd40426b7e45c593745c4d0c375f48d6ff1454bc52ac83509f41d49819d4db5d9584c6d53727771cc6d9dfc35162d2"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/webdav/node_modules/brace-expansion"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "balanced-match",
-          "version": "1.0.2",
-          "bom-ref": "integriq@1.0.0|webdav@5.10.0|balanced-match@1.0.2",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/balanced-match@1.0.2",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "de849e50ed13315ebb84dd4099b5ec2b8c9aa94eed8e21e56f144364ea47d0a5bdf82797e1b440697d009f1b74b71d8cae94695b041a3f02252121098585393f"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/webdav/node_modules/balanced-match"
             }
           ]
         }
