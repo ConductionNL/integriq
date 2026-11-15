@@ -37,6 +37,44 @@ use RuntimeException;
 final class CloudEventListenerSelfSchemaFailureTest extends TestCase {
 
 	/**
+	 * Clear the listener's memoised self-schema ids before and after the test.
+	 *
+	 * The listener keeps the resolved ids in a static, so an earlier test that
+	 * resolved them would keep this one from ever reaching the failing lookup,
+	 * and the ids this test leaves behind would leak into the next.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		self::resetSelfSchemaIds();
+
+	}//end setUp()
+
+	/**
+	 * Clear the memoised ids again for the tests that follow.
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void {
+		self::resetSelfSchemaIds();
+		parent::tearDown();
+
+	}//end tearDown()
+
+	/**
+	 * Reset CloudEventListener::$selfSchemaIds to unresolved.
+	 *
+	 * @return void
+	 */
+	private static function resetSelfSchemaIds(): void {
+		$prop = (new \ReflectionClass(CloudEventListener::class))->getProperty('selfSchemaIds');
+		$prop->setAccessible(true);
+		$prop->setValue(null, null);
+
+	}//end resetSelfSchemaIds()
+
+	/**
 	 * The schema ids cannot be read: the object is forwarded and the inert guard is warned about.
 	 *
 	 * @return void
