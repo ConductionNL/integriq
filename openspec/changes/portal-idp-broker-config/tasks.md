@@ -66,8 +66,9 @@ the flag is `1`.
   - GIVEN the stub issuer WHEN a login runs THEN the request carries PKCE, `state`, `nonce` and `acr_values` for substantial and high, and the ID token verifies against the stub JWKS
   - GIVEN `private_key_jwt` WHEN the token request is made THEN the client assertion is signed with the `signing` credential; GIVEN `client_secret_basic` THEN the `clientSecret` credential is used
   - GIVEN a wrong `nonce`, a wrong `aud`, an expired token or a bad signature WHEN the callback runs THEN it is refused
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
+      > `Adapter\OidcRelyingPartyAdapter`: discovery from `{issuer}/.well-known/openid-configuration` (the document must name the registration's issuer and https endpoints), an authorization request with PKCE (S256), `state` (integriq's own state id), `nonce` (the request id the state is stored under) and `acr_values` with the registration's spellings that reach the floor; the code redeemed with `private_key_jwt` (RS256 or ES256 by the `signing` key) or `client_secret_basic` (`clientSecret`); the ID token verified against the issuer's JWKS (RS256, PS256, ES256 only), its `iss`, `aud`/`azp`, `exp` and `nonce`; the subject read through `subjectMapping` only. The nonce and code verifier live in `Adapter\OidcLoginStore` (distributed cache, login-state TTL, single use). `IdpAdapterRegistry::forRegistration()` builds it for a ready `oidc-rp` registration through `Adapter\OidcRelyingPartyAdapterFactory`, and `IdpLoginService` checks an `oidc-rp` assertion's audience against the client id. PHPUnit against `tests/Fixtures/Idp/OidcStubIssuer.php` (keys generated in the test): `OidcRelyingPartyAdapterTest`, `OidcLoginStoreTest`, `OidcRelyingPartyAdapterFactoryTest`, plus cases in `IdpRegistrationServiceTest` and `IdpLoginServiceEdgesTest`. Not done here: `IdpLoginService` still starts and finishes logins through `forProvider()`; moving both to `forRegistration()` (the callback has to find the registration from the stored state before an adapter reads the response) is shared with the SAML adapter (task 5).
 
 ### Task 7: Per-registration audience and pseudonymisation
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-pseudonymisation-mode-is-chosen-per-registration-req-idpc-005`

@@ -22,6 +22,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Auth\Idp;
 
 use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
+use OCA\Integriq\Auth\Idp\Adapter\OidcRelyingPartyAdapter;
+use OCA\Integriq\Auth\Idp\Adapter\OidcRelyingPartyAdapterFactory;
 use OCA\Integriq\Auth\Idp\IdpAdapterRegistry;
 use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
 use OCA\Integriq\Auth\Idp\IdpReadiness;
@@ -388,6 +390,37 @@ class IdpRegistrationServiceTest extends TestCase {
 		$this->assertSame(['reg-1'], $built, 'no builder for saml-sp yet, so none is called');
 	}//end testTheRegistryBindsLiveOnlyWhenReady()
 
+
+	/**
+	 * A ready `oidc-rp` registration gets the OIDC Relying Party adapter this app ships,
+	 * built for that registration; a kind builder given to the registry still wins.
+	 *
+	 * @return void
+	 */
+	public function testAReadyOidcRegistrationGetsTheBuiltInOidcAdapter(): void {
+		$this->stored = [$this->object('reg-1', self::oidc())];
+		$built = [];
+		$factory = $this->createMock(OidcRelyingPartyAdapterFactory::class);
+		$adapter = $this->createMock(OidcRelyingPartyAdapter::class);
+		$factory->expects($this->once())->method('build')->willReturnCallback(
+			function (IdpRegistration $registration) use (&$built, $adapter): OidcRelyingPartyAdapter {
+				$built[] = $registration->id;
+				return $adapter;
+			}
+		);
+		$registry = new IdpAdapterRegistry(
+			boundAdapter: new LogGovernmentIdpAdapter(logger: new NullLogger()),
+			logger: new NullLogger(),
+			registrations: $this->service(),
+			oidcAdapters: $factory
+		);
+
+		$this->assertSame($adapter, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
+		$this->assertSame(['reg-1'], $built);
+
+		$this->stored = [$this->object('reg-1', self::oidc(['clientId' => '']))];
+		$this->assertInstanceOf(LogGovernmentIdpAdapter::class, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
+	}//end testAReadyOidcRegistrationGetsTheBuiltInOidcAdapter()
 
 	/**
 	 * Without registrations the registry refuses, and an unknown provider throws.
