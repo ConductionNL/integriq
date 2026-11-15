@@ -724,20 +724,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$this->prerequisiteGuard = $prerequisiteGuard;
 		}
 
-		// Fall back to the defaults the settings read reports, from one table,
-		// so an unset key means the 30 days both log schemas declare, for
-		// synchronization and contract logs alike (integriq#2210).
-		if ($appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
-			$retention = json_decode($appConfig->getValueString(app: 'integriq', key: 'retention'), true);
-
-			$this->errorRetention = ($retention['syncLogRetention'] ?? RetentionDefaults::SYNC_LOG);
-			$this->errorContractRetention = ($retention['syncContractLogRetention'] ?? RetentionDefaults::SYNC_CONTRACT_LOG);
-			$this->successRetention = ($retention['successLogRetention'] ?? RetentionDefaults::SUCCESS_LOG);
-		} else {
-			$this->errorRetention = RetentionDefaults::SYNC_LOG;
-			$this->errorContractRetention = RetentionDefaults::SYNC_CONTRACT_LOG;
-			$this->successRetention = RetentionDefaults::SUCCESS_LOG;
-		}
+		// One resolver for every log writer, so an unset key means the 30 days
+		// both log schemas declare, for synchronization and contract logs
+		// alike (integriq#2210, platform-admin-defaults).
+		$retention = new RetentionSettings(appConfig: $appConfig);
+		$this->errorRetention = $retention->get(kind: 'syncLog');
+		$this->errorContractRetention = $retention->get(kind: 'syncContractLog');
+		$this->successRetention = $retention->get(kind: 'success');
 
 	}//end __construct()
 
