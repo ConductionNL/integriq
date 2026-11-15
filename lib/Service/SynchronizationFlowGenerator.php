@@ -3,6 +3,9 @@
 /**
  * Integriq Synchronization → Flow migration generator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Task 3.1 of `flow-native-synchronization`: renders an existing
  * Synchronization entity into a GENERATED FLOW DOCUMENT — the decomposed
  * pipeline the design draws, built entirely out of the five page-level nodes
@@ -102,9 +105,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -241,13 +241,13 @@ class SynchronizationFlowGenerator implements SynchronizationFlowGeneratorInterf
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizationService Resolves a synchronization by uuid, slug or reference.
+	 * @param SynchronizationLookupInterface $synchronizationService Resolves a synchronization by uuid, slug or reference.
 	 * @param MappingService $mappingService Resolves the source→target mapping whose keys become the written fields.
 	 * @param IL10N $l10n Translations.
 	 * @param SynchronizationActionRules $actionRules The whole refusal surface, and the steps a rule becomes.
 	 */
 	public function __construct(
-		private readonly SynchronizationService $synchronizationService,
+		private readonly SynchronizationLookupInterface $synchronizationService,
 		private readonly MappingService $mappingService,
 		private readonly IL10N $l10n,
 		private readonly SynchronizationActionRules $actionRules,
@@ -758,21 +758,7 @@ class SynchronizationFlowGenerator implements SynchronizationFlowGeneratorInterf
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function edgesFor(array $nodes): array {
-		$ids = array_map(static fn (array $node): string => (string)$node['id'], array_values($nodes));
-
-		$edges = [];
-		$total = count($ids);
-		for ($index = 0; $index < ($total - 1); $index++) {
-			$from = $ids[$index];
-			$to = $ids[($index + 1)];
-			$edges[] = [
-				'id' => $from . '-' . $to,
-				'from' => $from,
-				'to' => $to,
-			];
-		}
-
-		return $edges;
+		return PipelineEdges::chain(nodes: $nodes);
 	}//end edgesFor()
 
 	/**

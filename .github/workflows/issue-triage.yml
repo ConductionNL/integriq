@@ -10,6 +10,9 @@ on:
         type: boolean
         default: true
 
+permissions:
+  contents: read
+
 jobs:
   triage:
     # Permission CEILING for the called workflow, not a grant. All three jobs in

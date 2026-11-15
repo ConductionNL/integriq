@@ -13,6 +13,9 @@
  * @link https://github.com/ConductionNL/integriq
  *
  * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -20,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\BackgroundJob;
 
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
-use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
+use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCP\IUser;
@@ -36,7 +39,7 @@ use Throwable;
  * per request that has bijlagen, so the STAM endpoint answers 202 straight
  * after the request is saved and the downloads run on the cron worker.
  *
- * A QueuedJob, like {@see FetchFilesJob}: it runs once and removes itself.
+ * A QueuedJob, like FetchFilesJob: it runs once and removes itself.
  * Running it again for the same request is safe, because the fetcher only
  * touches entries that are not `stored`.
  *
@@ -54,14 +57,14 @@ class FetchDsoAttachmentsJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The time factory.
-	 * @param DsoAttachmentFetcherInterface $fetcher Downloads and stores the bijlagen.
+	 * @param RequestAttachmentFetcherInterface $fetcher Downloads and stores the bijlagen.
 	 * @param PortalConnectionInterface $connection Resolves the acting account and runs as it.
 	 * @param PortalConnectionAlertsInterface $alerts Tells the admins when no account is usable.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly DsoAttachmentFetcherInterface $fetcher,
+		private readonly RequestAttachmentFetcherInterface $fetcher,
 		private readonly PortalConnectionInterface $connection,
 		private readonly PortalConnectionAlertsInterface $alerts,
 		private readonly LoggerInterface $logger,

@@ -33,6 +33,7 @@ use OCA\Integriq\Broker\BrokerResult;
 use OCA\Integriq\Broker\BrokerTransportInterface;
 use OCA\Integriq\Broker\CloudEventHttpBinding;
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use Throwable;
 
 /**
@@ -95,52 +96,15 @@ class RabbitMqHttpTransport implements BrokerTransportInterface, RabbitMqHttpTra
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
 	 */
 	public function publish(BrokerPublication $publication, array $configuration): BrokerResult {
-		$baseUrl = trim((string)($configuration['baseUrl'] ?? ''));
-		if ($baseUrl === '') {
-			return BrokerResult::unconfigured(
-				self::BROKER_ID,
-				'The subscription names no RabbitMQ management baseUrl.'
-			);
+		$gap = $this->configurationGap(publication: $publication, configuration: $configuration);
+		if ($gap !== null) {
+			return $gap;
 		}
 
-		$exchange = $publication->getTopic();
-		if ($exchange === '') {
-			return BrokerResult::unconfigured(
-				self::BROKER_ID,
-				'The subscription names no exchange, and RabbitMQ publishes into one.'
-			);
-		}
-
-		$vhost = trim((string)($configuration['vhost'] ?? '/'));
-		$rendered = $this->binding->render(
-			cloudEvent: $publication->getCloudEvent(),
-			contentMode: $publication->getContentMode()
-		);
-
-		$url = rtrim($baseUrl, '/')
-			. '/api/exchanges/' . rawurlencode($vhost)
-			. '/' . rawurlencode($exchange) . '/publish';
-
-		$body = [
-			'properties' => $this->properties(publication: $publication, rendered: $rendered),
-			'routing_key' => $publication->getRoutingKey(),
-			'payload' => $rendered['body'],
-			'payload_encoding' => 'string',
-		];
+		[$url, $options] = $this->publishRequest(publication: $publication, configuration: $configuration);
 
 		try {
-			$response = $this->clientService->newClient()->post(
-				$url,
-				[
-					'headers' => array_merge(['Accept' => 'application/json'], $publication->getHeaders()),
-					'auth' => [
-						(string)($configuration['username'] ?? ''),
-						(string)($configuration['password'] ?? ''),
-					],
-					'json' => $body,
-					'timeout' => 30,
-				]
-			);
+			$response = $this->clientService->newClient()->post($url, $options);
 		} catch (Throwable $exception) {
 			return BrokerResult::refused(
 				self::BROKER_ID,
@@ -148,6 +112,89 @@ class RabbitMqHttpTransport implements BrokerTransportInterface, RabbitMqHttpTra
 			);
 		}
 
+		return $this->answerOf(publication: $publication, response: $response);
+
+	}//end publish()
+
+	/**
+	 * The result for a subscription that cannot publish: no management baseUrl, or no exchange.
+	 *
+	 * @param BrokerPublication $publication   The publication.
+	 * @param array             $configuration The subscription's broker configuration.
+	 *
+	 * @return BrokerResult|null The unconfigured result, or null when the publish can go out.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
+	 */
+	private function configurationGap(BrokerPublication $publication, array $configuration): ?BrokerResult {
+		if (trim((string)($configuration['baseUrl'] ?? '')) === '') {
+			return BrokerResult::unconfigured(
+				self::BROKER_ID,
+				'The subscription names no RabbitMQ management baseUrl.'
+			);
+		}
+
+		if ($publication->getTopic() === '') {
+			return BrokerResult::unconfigured(
+				self::BROKER_ID,
+				'The subscription names no exchange, and RabbitMQ publishes into one.'
+			);
+		}
+
+		return null;
+	}//end configurationGap()
+
+	/**
+	 * The management API publish request: the exchange's publish url and the request options.
+	 *
+	 * @param BrokerPublication $publication   The publication; its topic is the exchange.
+	 * @param array             $configuration The subscription's broker configuration.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>} The url and the options.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
+	 */
+	private function publishRequest(BrokerPublication $publication, array $configuration): array {
+		$vhost = trim((string)($configuration['vhost'] ?? '/'));
+		$rendered = $this->binding->render(
+			cloudEvent: $publication->getCloudEvent(),
+			contentMode: $publication->getContentMode()
+		);
+
+		$url = rtrim(trim((string)$configuration['baseUrl']), '/')
+			. '/api/exchanges/' . rawurlencode($vhost)
+			. '/' . rawurlencode($publication->getTopic()) . '/publish';
+
+		return [
+			$url,
+			[
+				'headers' => array_merge(['Accept' => 'application/json'], $publication->getHeaders()),
+				'auth' => [
+					(string)($configuration['username'] ?? ''),
+					(string)($configuration['password'] ?? ''),
+				],
+				'json' => [
+					'properties' => $this->properties(publication: $publication, rendered: $rendered),
+					'routing_key' => $publication->getRoutingKey(),
+					'payload' => $rendered['body'],
+					'payload_encoding' => 'string',
+				],
+				'timeout' => 30,
+			],
+		];
+	}//end publishRequest()
+
+	/**
+	 * What RabbitMQ's answer to a publish means.
+	 *
+	 * @param BrokerPublication $publication The publication.
+	 * @param IResponse         $response    The management API's answer.
+	 *
+	 * @return BrokerResult Published only for a 2xx that routed the message to a queue.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
+	 */
+	private function answerOf(BrokerPublication $publication, IResponse $response): BrokerResult {
 		$statusCode = $response->getStatusCode();
 		if ($statusCode < 200 || $statusCode >= 300) {
 			return BrokerResult::refused(
@@ -177,8 +224,7 @@ class RabbitMqHttpTransport implements BrokerTransportInterface, RabbitMqHttpTra
 		}
 
 		return BrokerResult::published(self::BROKER_ID, $publication->getEventId());
-
-	}//end publish()
+	}//end answerOf()
 
 	/**
 	 * The AMQP message properties.

@@ -3,6 +3,9 @@
 /**
  * Integriq Source Call flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.source-call` — one governed outbound HTTP request per flow
  * item, made through a CONFIGURED SOURCE and the existing `CallService`.
  *
@@ -46,9 +49,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -60,14 +60,15 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
+use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
-use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Kernel\FlowNodeIds;
 use OCA\Integriq\Service\CallServiceInterface;
 use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -75,7 +76,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use UnexpectedValueException;
@@ -86,6 +86,12 @@ use UnexpectedValueException;
  * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-2-sourcecallnode-source-targeting-per-item-execution-response-mapping
  */
 class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
+	use FlowNodePaletteDefaults;
+
+	/**
+	 * Palette icon: app and image path.
+	 */
+	private const PALETTE_ICON = ['integriq', 'flow-source-call.svg'];
 
 	/**
 	 * The step type this node answers to.
@@ -151,20 +157,6 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	}//end __construct()
 
 	/**
-	 * The step type.
-	 *
-	 * App-namespaced, so two apps cannot silently claim one type: the
-	 * registry refuses a collision rather than resolving it by load order.
-	 *
-	 * @return string The type identifier.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	public function getId(): string {
-		return self::NODE_ID;
-	}//end getId()
-
-	/**
 	 * Palette name.
 	 *
 	 * @return string The display name.
@@ -188,17 +180,6 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		);
 
 	}//end getDescription()
-
-	/**
-	 * Palette icon.
-	 *
-	 * @return string The icon URL.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('integriq', 'flow-source-call.svg');
-	}//end getIcon()
 
 	/**
 	 * The links a call this node made earns in the run log.
@@ -259,23 +240,6 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	}//end logActions()
 
 	/**
-	 * Whether the node is offered in the given scope.
-	 *
-	 * Answered with Nextcloud's own constants, per OpenRegister's convention,
-	 * and false for anything else — an unrecognised scope is not a reason to
-	 * offer a node that makes outbound calls.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
 	 * The config vocabulary of a source call.
 	 *
 	 * Only `source` is required (validateConfig below enforces that); the rest
@@ -321,14 +285,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 */
 	public function configForm(): array {
 		return [
-			[
-				'key' => 'source',
-				'label' => $this->l10n->t('Source'),
-				'type' => 'select',
-				'help' => $this->l10n->t('The configured source this step calls. The call inherits its base URL, authentication and rate limits.'),
-				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/integriq/source',
-			],
+			$this->sourceField(),
 			[
 				'key' => 'endpoint',
 				'label' => $this->l10n->t('Endpoint'),
@@ -382,6 +339,28 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	}//end configForm()
 
 	/**
+	 * The `source` field: a picker fed by the app's own sources listing, or a
+	 * template that picks the source per item.
+	 *
+	 * @return array<string, mixed> The field description.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function sourceField(): array {
+		return [
+			'key' => 'source',
+			'label' => $this->l10n->t('Source'),
+			'type' => 'select',
+			'help' => $this->l10n->t(
+				'The configured source this step calls. The call inherits its base URL, authentication and rate limits. '
+				. 'A template such as jobboard-{{ json.channel }} picks the source per item.'
+			),
+			'required' => true,
+			'optionsFrom' => '/apps/openregister/api/objects/integriq/source',
+		];
+	}//end sourceField()
+
+	/**
 	 * Reject a configuration the author cannot have meant, at flow-save time.
 	 *
 	 * @param array $config The step's authored configuration.
@@ -429,9 +408,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * Call the source once per item and return one item per input item.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata (carries the run owner).
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
@@ -439,35 +416,65 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
 		// An empty branch makes no call and produces no items. That is the
 		// filter contract, not a failure, so it short-circuits before the
 		// owner is even resolved — there is nothing to attribute.
-		if ($items === []) {
+		if ($call->items === []) {
 			return [];
 		}
 
-		$this->validateConfig(config: $config);
+		$this->validateConfig(config: $call->config);
 
-		$owner = $this->flowOwner->resolve(context: $context, nodeId: self::NODE_ID);
-		$source = $this->resolveSource(reference: trim((string)$config['source']));
+		$owner = $this->flowOwner->resolve(context: $call->context, nodeId: self::NODE_ID);
+
+		// A plain reference resolves once, before any call, exactly as it
+		// always did. A templated one names a source per item and resolves in
+		// the call pass, one lookup per distinct name.
+		$reference = trim((string)$call->config['source']);
+		$source = null;
+		if (FlowTemplate::hasPlaceholder(value: $reference) === false) {
+			$source = $this->resolveSource(reference: $reference);
+		}
 
 		return $this->flowOwner->runAs(
 			user: $owner,
-			callback: function () use ($items, $config, $context, $source) {
-				return $this->callForEachItem(items: $items, config: $config, context: $context, source: $source);
+			callback: function () use ($call, $source) {
+				return $this->callForEachItem(run: $this->startRun(call: $call, source: $source));
 			}
 		);
 
 	}//end execute()
 
 	/**
+	 * Resolve, once per step and in the owner context, what every item's call needs.
+	 *
+	 * @param FlowNodeCall      $call   The input items, the step's configuration and the run context.
+	 * @param ObjectEntity|null $source The resolved Source object, or null for a templated reference.
+	 *
+	 * @return SourceCallRun The step run.
+	 *
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function startRun(FlowNodeCall $call, ?ObjectEntity $source): SourceCallRun {
+		$config = $call->config;
+		$run = new SourceCallRun(config: $config, source: $source);
+		$run->reference = trim((string)$config['source']);
+		$run->method = strtoupper(trim((string)($config['method'] ?? 'GET')));
+		$run->outputKey = (string)($config['output'] ?? self::DEFAULT_OUTPUT_KEY);
+		$run->onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $call->context);
+		$run->stepId = FlowNodeSupport::stepId(config: $config, context: $call->context, nodeId: self::NODE_ID);
+		$run->accepted = $this->acceptedStatuses(config: $config);
+		$run->decode = strtolower(trim((string)($config['decode'] ?? ResponseDecoderInterface::MODE_AUTO)));
+		$run->items = array_values($call->items);
+
+		return $run;
+	}//end startRun()
+
+	/**
 	 * Perform one call per item, in the already-applied owner context.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
-	 * @param ObjectEntity $source The resolved Source object.
+	 * @param SourceCallRun $run The step run.
 	 *
 	 * @return array The output items.
 	 *
@@ -475,97 +482,173 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function callForEachItem(array $items, array $config, array $context, ObjectEntity $source): array {
-		$reference = trim((string)$config['source']);
-		$method = strtoupper(trim((string)($config['method'] ?? 'GET')));
-		$outputKey = (string)($config['output'] ?? self::DEFAULT_OUTPUT_KEY);
-		$onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
-		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
-		$accepted = $this->acceptedStatuses(config: $config);
-		$decode = strtolower(trim((string)($config['decode'] ?? ResponseDecoderInterface::MODE_AUTO)));
-		$outputList = [];
-		$indexed = array_values($items);
-
+	private function callForEachItem(SourceCallRun $run): array {
 		// PASS 1 — render and GUARD every endpoint, before any request is
 		// dispatched. See renderAndGuardEndpoints() for why it is its own
 		// phase rather than part of the concurrent pass.
-		[$endpoints, $records] = $this->renderAndGuardEndpoints(indexed: $indexed, config: $config);
+		[$endpoints, $records] = $this->renderAndGuardEndpoints(indexed: $run->items, config: $run->config);
+		$run->endpoints = $endpoints;
+		$run->records = $records;
+		$this->resolveItemSources(run: $run);
 
 		// PASS 2 — dispatch the calls CONCURRENTLY, bounded and in input order.
-		$settled = $this->concurrency->map(
-			$indexed,
-			function (array $item, int $index) use ($source, $endpoints, $records, $method, $config): PromiseInterface {
-				return $this->callService->callAsync(
-					source: $source,
-					endpoint: $endpoints[$index],
-					method: $method,
-					config: SourceCallRequest::build(config: $config, json: $records[$index])
-				);
-			},
-			$this->concurrencyLimit(config: $config)
-		);
+		$run->settled = $this->dispatchCalls(run: $run);
 
 		// PASS 3 — apply the step's policy in INPUT order.
 		//
 		// Every decision below is the one the serial loop made; only the moment
 		// the response arrived has changed. A run that fails on item 3 fails on
 		// item 3 whichever order the responses came back in.
-		foreach ($indexed as $index => $item) {
-			$json = $records[$index];
-			$endpoint = $endpoints[$index];
-
-			try {
-				$result = $this->outcomeOf(
-					settled: $settled[$index],
-					endpoint: $endpoint,
-					method: $method,
-					accepted: $accepted,
-					reference: $reference,
-					source: $source,
-					decode: $decode
-				);
-			} catch (FlowNodeException $exception) {
-				$this->logger->error(
-					'[openconnector.source-call] ' . $exception->getMessage(),
-					[
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'step' => $stepId,
-						'source' => $reference,
-						'endpoint' => $endpoint,
-						'method' => $method,
-					]
-				);
-
-				if ($onError !== 'continue') {
-					throw $exception;
-				}
-
-				$outputList[] = $this->errorItem(
-					item: $item,
-					index: $index,
-					json: $json,
-					stepId: $stepId,
-					reference: $reference,
-					endpoint: $endpoint,
-					method: $method,
-					exception: $exception
-				);
-				continue;
-			}//end try
-
-			$json = FlowTemplate::write(json: $json, path: $outputKey, value: $result);
-			$json = $this->applyResponseMapping(config: $config, json: $json, payload: ($result['body'] ?? null));
-
-			$outputList[] = [
-				'json' => $json,
-				'binary' => (array)($item['binary'] ?? []),
-				'pairedItem' => ['item' => $index],
-			];
-		}//end foreach
+		$outputList = [];
+		foreach (array_keys($run->items) as $index) {
+			$run->index = $index;
+			$outputList[] = $this->outputFor(run: $run);
+		}
 
 		return $outputList;
 	}//end callForEachItem()
+
+	/**
+	 * Dispatch every item's call concurrently, bounded and in input order.
+	 *
+	 * @param SourceCallRun $run The step run, its endpoints and records rendered.
+	 *
+	 * @return array The settled call per item.
+	 *
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function dispatchCalls(SourceCallRun $run): array {
+		return $this->concurrency->map(
+			$run->items,
+			function (array $item, int $index) use ($run): PromiseInterface {
+				// An item whose source did not resolve makes no request; its
+				// failure is applied in the policy pass, in input order.
+				if (isset($run->unresolved[$index]) === true) {
+					return Create::promiseFor(null);
+				}
+
+				return $this->callService->callAsync(
+					source: $run->sources[$index],
+					endpoint: $run->endpoints[$index],
+					method: $run->method,
+					config: SourceCallRequest::build(config: $run->config, json: $run->records[$index])
+				);
+			},
+			$this->concurrencyLimit(config: $run->config)
+		);
+	}//end dispatchCalls()
+
+	/**
+	 * Apply the step's policy to the current item's settled call.
+	 *
+	 * @param SourceCallRun $run The step run, `index` naming the item.
+	 *
+	 * @return array The output item.
+	 *
+	 * @throws FlowNodeException On a failure the `onError` policy does not absorb.
+	 *
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function outputFor(SourceCallRun $run): array {
+		if (isset($run->unresolved[$run->index]) === true) {
+			return $this->absorbFailure(run: $run, exception: $run->unresolved[$run->index]);
+		}
+
+		try {
+			$result = $this->outcomeOf(settled: $run->settled[$run->index], target: $this->targetOf(run: $run));
+		} catch (FlowNodeException $exception) {
+			return $this->absorbFailure(run: $run, exception: $exception);
+		}
+
+		$json = FlowTemplate::write(json: $run->records[$run->index], path: $run->outputKey, value: $result);
+		$json = $this->applyResponseMapping(config: $run->config, json: $json, payload: ($result['body'] ?? null));
+
+		return $this->outputItem(run: $run, json: $json);
+	}//end outputFor()
+
+	/**
+	 * The call target of the current item.
+	 *
+	 * @param SourceCallRun $run The step run, `index` naming the item.
+	 *
+	 * @return SourceCallTarget The target.
+	 *
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function targetOf(SourceCallRun $run): SourceCallTarget {
+		return new SourceCallTarget(
+			reference: $run->references[$run->index],
+			source: $run->sources[$run->index],
+			endpoint: $run->endpoints[$run->index],
+			method: $run->method,
+			accepted: $run->accepted,
+			decode: $run->decode
+		);
+	}//end targetOf()
+
+	/**
+	 * Log a failed call, and raise it or, under `continue`, carry it as error state.
+	 *
+	 * @param SourceCallRun     $run       The step run, `index` naming the item.
+	 * @param FlowNodeException $exception The failure.
+	 *
+	 * @return array The output item carrying explicit error state.
+	 *
+	 * @throws FlowNodeException When the `onError` policy does not absorb the failure.
+	 *
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function absorbFailure(SourceCallRun $run, FlowNodeException $exception): array {
+		$this->logFailure(run: $run, exception: $exception);
+
+		if ($run->onError !== 'continue') {
+			throw $exception;
+		}
+
+		return $this->errorItem(run: $run, exception: $exception);
+	}//end absorbFailure()
+
+	/**
+	 * Log a failed call with the step, source, endpoint and method it concerned.
+	 *
+	 * @param SourceCallRun     $run       The step run, `index` naming the item.
+	 * @param FlowNodeException $exception The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function logFailure(SourceCallRun $run, FlowNodeException $exception): void {
+		$this->logger->error(
+			'[openconnector.source-call] ' . $exception->getMessage(),
+			[
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'step' => $run->stepId,
+				'source' => $run->references[$run->index],
+				'endpoint' => $run->endpoints[$run->index],
+				'method' => $run->method,
+			]
+		);
+	}//end logFailure()
+
+	/**
+	 * An output item: the record, the input item's binary part and its position.
+	 *
+	 * @param SourceCallRun $run  The step run, `index` naming the item.
+	 * @param array         $json The item's record.
+	 *
+	 * @return array The output item.
+	 *
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function outputItem(SourceCallRun $run, array $json): array {
+		return [
+			'json' => $json,
+			'binary' => (array)($run->items[$run->index]['binary'] ?? []),
+			'pairedItem' => ['item' => $run->index],
+		];
+	}//end outputItem()
 
 	/**
 	 * Render every item's endpoint and prove each one is in bounds.
@@ -647,13 +730,8 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * decision-making, run once per item in INPUT order — so which response
 	 * arrived first cannot change which item a run fails on.
 	 *
-	 * @param array $settled One `FlowConcurrency::map()` result.
-	 * @param string $endpoint The rendered endpoint.
-	 * @param string $method The HTTP method.
-	 * @param array $accepted Statuses the author opted into.
-	 * @param string $reference The authored source reference.
-	 * @param ObjectEntity $source The resolved Source object.
-	 * @param string $decode The step's decode mode.
+	 * @param array            $settled One `FlowConcurrency::map()` result.
+	 * @param SourceCallTarget $target  What the call was made to.
 	 *
 	 * @return array The response result written onto the item.
 	 *
@@ -661,61 +739,8 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-node-that-calls-a-source-once-per-item-dispatches-those-calls-concurrently-req-015
 	 */
-	private function outcomeOf(
-		array $settled,
-		string $endpoint,
-		string $method,
-		array $accepted,
-		string $reference,
-		ObjectEntity $source,
-		string $decode=ResponseDecoderInterface::MODE_AUTO,
-	): array {
-		if ($settled['ok'] === false) {
-			// A transport-level failure (DNS, TLS, timeout, connection
-			// refused) is a failed call, never an empty response body.
-			//
-			// `callAsync()` converts every reason it CAN into a CallLog — a
-			// 4xx, a 5xx, a refused connection all fulfil with a log row, and
-			// arrive at the status check below. Reaching here means the reason
-			// was not convertible at all, which is the same set of failures the
-			// synchronous `call()` let escape as a \Throwable.
-			$reason = $settled['error'];
-
-			throw new FlowNodeException(
-				message: $this->l10n->t(
-					'The call to source "%1$s" endpoint "%2$s" failed at transport level: %3$s',
-					[$reference, $endpoint, $reason->getMessage()]
-				),
-				details: [
-					'kind' => 'transport',
-					'status' => null,
-					'source' => $reference,
-					'endpoint' => $endpoint,
-					'method' => $method,
-				],
-				previous: $reason
-			);
-		}//end if
-
-		$callLog = $settled['value'];
-		if (($callLog instanceof ObjectEntity) === false) {
-			// Defensive, and load-bearing: the two dispatch modes are kept in
-			// step by `finalizeCall()`, so anything else here means that
-			// contract moved. Say so rather than read `getObject()` off it.
-			throw new FlowNodeException(
-				message: $this->l10n->t(
-					'The call to source "%1$s" endpoint "%2$s" did not produce a call log.',
-					[$reference, $endpoint]
-				),
-				details: [
-					'kind' => 'transport',
-					'status' => null,
-					'source' => $reference,
-					'endpoint' => $endpoint,
-					'method' => $method,
-				]
-			);
-		}
+	private function outcomeOf(array $settled, SourceCallTarget $target): array {
+		$callLog = $this->callLogOf(settled: $settled, target: $target);
 
 		$body = (array)$callLog->getObject();
 		$response = (array)($body['response'] ?? []);
@@ -728,22 +753,16 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 
 		$statusMessage = (string)($body['statusMessage'] ?? ($response['statusMessage'] ?? ''));
 
-		if ($this->isSuccess(statusCode: $statusCode, accepted: $accepted) === false) {
+		if ($this->isSuccess(statusCode: $statusCode, accepted: $target->accepted) === false) {
 			throw new FlowNodeException(
 				message: $this->l10n->t(
 					'The call to source "%1$s" endpoint "%2$s" returned status %3$s (%4$s), '
 					. 'which the step does not accept.',
-					[$reference, $endpoint, (string)($statusCode ?? 'unknown'), $statusMessage]
+					[$target->reference, $target->endpoint, (string)($statusCode ?? 'unknown'), $statusMessage]
 				),
-				details: [
-					'kind' => 'status',
-					'status' => $statusCode,
-					'statusMessage' => $statusMessage,
-					'source' => $reference,
-					'endpoint' => $endpoint,
-					'method' => $method,
-					'callLog' => $callLog->getUuid(),
-				]
+				details: ['kind' => 'status', 'status' => $statusCode, 'statusMessage' => $statusMessage]
+					+ $target->where()
+					+ ['callLog' => $callLog->getUuid()]
 			);
 		}
 
@@ -751,15 +770,166 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			'status' => $statusCode,
 			'statusMessage' => $statusMessage,
 			'headers' => (array)($response['headers'] ?? []),
-			'body' => $this->decodeBody(response: $response, decode: $decode, context: [$reference, $endpoint, $method, $statusCode]),
-			'source' => $reference,
-			'sourceId' => $source->getUuid(),
-			'endpoint' => $endpoint,
-			'method' => $method,
+			'body' => $this->decodeBody(
+				response: $response,
+				decode: $target->decode,
+				context: [$target->reference, $target->endpoint, $target->method, $statusCode]
+			),
+			'source' => $target->reference,
+			'sourceId' => $target->source->getUuid(),
+			'endpoint' => $target->endpoint,
+			'method' => $target->method,
 			'callLog' => $callLog->getUuid(),
 		];
 
 	}//end outcomeOf()
+
+	/**
+	 * The call log a settled call produced, or the failure it is.
+	 *
+	 * A transport-level failure (DNS, TLS, timeout, connection refused) is a
+	 * failed call, never an empty response body. `callAsync()` converts every
+	 * reason it CAN into a CallLog (a 4xx, a 5xx, a refused connection), so a
+	 * rejection here is one that was not convertible at all.
+	 *
+	 * @param array            $settled One `FlowConcurrency::map()` result.
+	 * @param SourceCallTarget $target  What the call was made to.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @throws FlowNodeException On a transport failure or a missing call log.
+	 *
+	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-node-that-calls-a-source-once-per-item-dispatches-those-calls-concurrently-req-015
+	 */
+	private function callLogOf(array $settled, SourceCallTarget $target): ObjectEntity {
+		if ($settled['ok'] === false) {
+			$reason = $settled['error'];
+
+			throw new FlowNodeException(
+				message: $this->l10n->t(
+					'The call to source "%1$s" endpoint "%2$s" failed at transport level: %3$s',
+					[$target->reference, $target->endpoint, $reason->getMessage()]
+				),
+				details: ['kind' => 'transport', 'status' => null] + $target->where(),
+				previous: $reason
+			);
+		}
+
+		$callLog = $settled['value'];
+		if (($callLog instanceof ObjectEntity) === false) {
+			// Defensive, and load-bearing: the two dispatch modes are kept in
+			// step by `finalizeCall()`, so anything else here means that
+			// contract moved. Say so rather than read `getObject()` off it.
+			throw new FlowNodeException(
+				message: $this->l10n->t(
+					'The call to source "%1$s" endpoint "%2$s" did not produce a call log.',
+					[$target->reference, $target->endpoint]
+				),
+				details: ['kind' => 'transport', 'status' => null] + $target->where()
+			);
+		}
+
+		return $callLog;
+
+	}//end callLogOf()
+
+	/**
+	 * Give every item the source it is sent through.
+	 *
+	 * A plain reference gives every item the step's one source. A templated
+	 * reference (for example `jobboard-{{ json.channel }}`) is rendered per
+	 * item and each distinct name is looked up once per run. An item whose
+	 * name does not resolve fails on its own: under `continue` it becomes an
+	 * error item and the other items are still sent; under any other policy
+	 * the step refuses before a single request is made, as a plain unknown
+	 * source does.
+	 *
+	 * @param SourceCallRun $run The step run, its records rendered.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowNodeException When an item's source does not resolve and the policy does not absorb it.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function resolveItemSources(SourceCallRun $run): void {
+		$resolved = [];
+		foreach (array_keys($run->items) as $index) {
+			$this->assignItemSource(run: $run, index: $index, resolved: $resolved);
+		}
+
+		if ($run->unresolved === [] || $run->onError === 'continue') {
+			return;
+		}
+
+		$run->index = (int)array_key_first($run->unresolved);
+		$this->logFailure(run: $run, exception: $run->unresolved[$run->index]);
+
+		throw $run->unresolved[$run->index];
+	}//end resolveItemSources()
+
+	/**
+	 * Give one item its source: the step's one source for a plain reference,
+	 * else the source its rendered name resolves to, looked up once per name.
+	 * An item whose name does not resolve is recorded as unresolved.
+	 *
+	 * @param SourceCallRun                            $run      The step run, its records rendered.
+	 * @param int                                      $index    The item's index.
+	 * @param array<string, ObjectEntity|FlowNodeException> $resolved Lookups made so far in this run, by name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function assignItemSource(SourceCallRun $run, int $index, array &$resolved): void {
+		if ($run->source !== null) {
+			$run->references[$index] = $run->reference;
+			$run->sources[$index] = $run->source;
+			return;
+		}
+
+		$name = FlowTemplate::renderReference(template: $run->reference, json: $run->records[$index]);
+		$run->references[$index] = $name;
+		if (array_key_exists($name, $resolved) === false) {
+			$resolved[$name] = $this->resolveItemSource(name: $name);
+		}
+
+		if ($resolved[$name] instanceof ObjectEntity) {
+			$run->sources[$index] = $resolved[$name];
+			return;
+		}
+
+		$run->unresolved[$index] = $resolved[$name];
+	}//end assignItemSource()
+
+	/**
+	 * Resolve one item's rendered source name, or say why there is none.
+	 *
+	 * @param string $name The rendered source name.
+	 *
+	 * @return ObjectEntity|FlowNodeException The Source, or the item's failure.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function resolveItemSource(string $name): ObjectEntity|FlowNodeException {
+		$previous = null;
+		if ($name !== '') {
+			try {
+				return $this->resolveSource(reference: $name);
+			} catch (FlowNodeException $exception) {
+				$previous = $exception;
+			}
+		}
+
+		return new FlowNodeException(
+			message: $this->l10n->t(
+				'No source configured: "%1$s". This item makes no request.',
+				[$name]
+			),
+			details: ['kind' => 'source', 'source' => $name],
+			previous: $previous
+		);
+	}//end resolveItemSource()
 
 	/**
 	 * Resolve the Source named by the step, or refuse.
@@ -787,6 +957,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$source = null;
 
 		try {
+			// Unscoped: a flow node resolves the source its definition names, during a run that may have no user.
 			$source = $this->objectService->find(
 				id: $reference,
 				register: self::SOURCE_REGISTER,
@@ -926,50 +1097,47 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * The output key is deliberately NOT written: a failed item must not be
 	 * shaped like a successful one.
 	 *
-	 * @param array $item The input item.
-	 * @param int $index The input item's index.
-	 * @param array $json The item's record.
-	 * @param string $stepId The step id, for the error state.
-	 * @param string $reference The authored source reference.
-	 * @param string $endpoint The rendered endpoint.
-	 * @param string $method The HTTP method.
+	 * @param SourceCallRun     $run       The step run, `index` naming the item.
 	 * @param FlowNodeException $exception The failure.
 	 *
 	 * @return array The output item carrying explicit error state.
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function errorItem(
-		array $item,
-		int $index,
-		array $json,
-		string $stepId,
-		string $reference,
-		string $endpoint,
-		string $method,
-		FlowNodeException $exception,
-	): array {
+	private function errorItem(SourceCallRun $run, FlowNodeException $exception): array {
+		$json = $run->records[$run->index];
+		$json[FlowNodeSupport::ERROR_KEY] = $this->errorState(run: $run, exception: $exception);
+
+		return $this->outputItem(run: $run, json: $json);
+
+	}//end errorItem()
+
+	/**
+	 * The explicit error state of a failed call.
+	 *
+	 * @param SourceCallRun     $run       The step run, `index` naming the item.
+	 * @param FlowNodeException $exception The failure.
+	 *
+	 * @return array The error state.
+	 *
+	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function errorState(SourceCallRun $run, FlowNodeException $exception): array {
 		$details = $exception->getDetails();
 
-		$json[FlowNodeSupport::ERROR_KEY] = [
-			'step' => $stepId,
+		return [
+			'step' => $run->stepId,
 			'node' => self::NODE_ID,
 			'status' => ($details['status'] ?? null),
 			'statusMessage' => ($details['statusMessage'] ?? null),
 			'kind' => ($details['kind'] ?? 'call'),
 			'message' => $exception->getMessage(),
-			'source' => $reference,
-			'endpoint' => $endpoint,
-			'method' => $method,
+			'source' => $run->references[$run->index],
+			'endpoint' => $run->endpoints[$run->index],
+			'method' => $run->method,
 		];
 
-		return [
-			'json' => $json,
-			'binary' => (array)($item['binary'] ?? []),
-			'pairedItem' => ['item' => $index],
-		];
-
-	}//end errorItem()
+	}//end errorState()
 
 	/**
 	 * Whether a status counts as a success for this step.

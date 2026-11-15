@@ -6,9 +6,9 @@
   Replay / Discard actions.
 
   Lives in its own file under src/modals/ per the modal-isolation hydra gate.
-  It is page-local (driven by the parent SyncDeadLetterPage `open`/`entry`
+  It is page-local (driven by the parent SyncDeadLetterPage open and entry
   props rather than the shared modalBus) because the detail is only ever
-  opened from the dead-letter list and carries that row's resolved payload.
+  opened from the dead-letter list and carries the resolved payload of that row.
 
   Shows: the raw source payload (pretty-printed), the full attempt timeline
   (REQ-DLR-008), and the replay/discard audit stamps when present. The
@@ -130,16 +130,16 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcModal } from '@nextcloud/vue'
+import deadLetterDetail from '../../mixins/deadLetterDetail.js'
 
 export default {
 	name: 'SyncDeadLetterDetailModal',
 
 	components: { NcModal, NcButton },
+
+	mixins: [deadLetterDetail],
 
 	props: {
 		open: {
@@ -155,22 +155,15 @@ export default {
 
 	emits: ['close', 'changed'],
 
-	data() {
-		return {
-			confirming: null,
-			busy: false,
-		}
-	},
-
 	computed: {
 		/**
-		 * The attempt audit trail for the timeline (REQ-DLR-008).
+		 * The dead-letter row the shared detail behaviour reads.
 		 *
-		 * @return {Array}
+		 * @return {object|null}
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-inspection-req-dlr-008
 		 */
-		attempts() {
-			return Array.isArray(this.entry?.attempts) ? this.entry.attempts : []
+		record() {
+			return this.entry
 		},
 
 		/**
@@ -192,59 +185,33 @@ export default {
 		badgeClass() {
 			return `deadLetterDetail__badge--${this.entry?.status || 'unknown'}`
 		},
-
-		/**
-		 * Pretty-printed raw source payload for the viewer.
-		 *
-		 * @return {string}
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-inspection-req-dlr-008
-		 */
-		prettyPayload() {
-			try {
-				return JSON.stringify(this.entry?.payload ?? {}, null, 2)
-			} catch (e) {
-				return String(this.entry?.payload ?? '')
-			}
-		},
 	},
 
 	methods: {
 		t,
 		/**
-		 * Commit the confirmed per-item verb (replay/discard).
+		 * The app-relative URL of a verb on one sync dead letter.
 		 *
+		 * @param {string|number} id the entry uuid or id
+		 * @param {string} verb 'replay' or 'discard'
+		 * @return {string} the URL
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
 		 */
-		async commit() {
-			const verb = this.confirming
-			const id = this.entry?.uuid || this.entry?.id
-			if (!verb || !id) {
-				return
-			}
-			this.busy = true
-			try {
-				await axios.post(
-					generateUrl(`/apps/integriq/api/sync-dead-letter/${id}/${verb}`),
-				)
-				showSuccess(
-					verb === 'replay'
-						? t('integriq', 'Item replayed')
-						: t('integriq', 'Item discarded'),
-				)
-				this.$emit('changed')
-				this.$emit('close')
-			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				showError(
-					(verb === 'replay'
-						? t('integriq', 'Replay failed')
-						: t('integriq', 'Discard failed'))
-						+ (detail ? `: ${detail}` : ''),
-				)
-			} finally {
-				this.busy = false
-				this.confirming = null
-			}
+		verbPath(id, verb) {
+			return `/apps/integriq/api/sync-dead-letter/${id}/${verb}`
+		},
+
+		/**
+		 * The toast after a verb went through.
+		 *
+		 * @param {string} verb 'replay' or 'discard'
+		 * @return {string} the translated text
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
+		 */
+		doneText(verb) {
+			return verb === 'replay'
+				? t('integriq', 'Item replayed')
+				: t('integriq', 'Item discarded')
 		},
 	},
 }

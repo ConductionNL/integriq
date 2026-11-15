@@ -53,6 +53,20 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 	private const DEFAULT_ORDER = 100;
 
 	/**
+	 * Basis of a residency an administrator set.
+	 *
+	 * @var string
+	 */
+	public const RESIDENCY_ADMIN = 'set-by-admin';
+
+	/**
+	 * Basis of a residency the declaring app declared.
+	 *
+	 * @var string
+	 */
+	public const RESIDENCY_DECLARED = 'declared-by-app';
+
+	/**
 	 * A sync summary before anything happened.
 	 *
 	 * @var array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]}
@@ -284,21 +298,19 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 			return $summary;
 		}
 
-		$version = $this->appManager->getAppVersion($app);
+		$run = new ConnectionSyncRun(app: $app, version: $this->appManager->getAppVersion($app));
+		$run->existing = $existing;
+		$run->summary = $summary;
+
 		$declaredKeys = [];
 		foreach ($entries as $entry) {
-			$key = (string)$entry['key'];
-			$declaredKeys[$key] = true;
-			$summary = $this->upsert(app: $app, entry: $entry, version: $version, existing: $existing[$key] ?? null, summary: $summary);
+			$declaredKeys[(string)$entry['key']] = true;
+			$this->upsert(run: $run, entry: $entry);
 		}
 
-		foreach ($existing as $key => $row) {
-			if (isset($declaredKeys[$key]) === false) {
-				$summary = $this->retire(app: $app, row: $row, summary: $summary);
-			}
-		}
+		$this->retireUndeclared(run: $run, declaredKeys: $declaredKeys);
 
-		return $summary;
+		return $run->summary;
 	}//end syncApp()
 
 	/**
@@ -367,47 +379,167 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 	/**
 	 * Create or update one declared row.
 	 *
-	 * @param string $app The app id.
+	 * @param ConnectionSyncRun   $run   The app's sync.
 	 * @param array<string,mixed> $entry The declaration entry.
-	 * @param string $version The app's installed version.
-	 * @param array{uuid:string,data:array<string,mixed>}|null $existing The stored row, if any.
-	 * @param array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]} $summary The running summary.
 	 *
-	 * @return array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]}
+	 * @return void
 	 */
-	private function upsert(string $app, array $entry, string $version, ?array $existing, array $summary): array {
+	private function upsert(ConnectionSyncRun $run, array $entry): void {
+		$existing = ($run->existing[(string)$entry['key']] ?? null);
 		$stored = $existing['data'] ?? [];
-		$data = array_merge(
-			$stored,
-			[
-				'slug' => 'connection-' . $app . '-' . $entry['key'],
-				'app' => $app,
-				'key' => $entry['key'],
-				'title' => $entry['title'],
-				'description' => (string)($entry['description'] ?? ''),
-				'order' => (int)($entry['order'] ?? self::DEFAULT_ORDER),
-				'settingsUrl' => (string)($entry['settingsUrl'] ?? ''),
-				'declaration' => $entry,
-				'declaredVersion' => $version,
-			]
-		);
-		$data = $this->resolveRow(data: $data);
+		$data = $this->resolveRow(data: array_merge($stored, $this->declaredFields(run: $run, entry: $entry)));
+		$this->copyDeclaredResidency(run: $run, entry: $entry, sourceUuid: (string)($data['source'] ?? ''));
 
 		if ($existing === null) {
 			$this->store->save(data: $data);
-			$summary['created']++;
-			return $summary;
+			$run->summary['created']++;
+			return;
 		}
 
 		if ($this->isSame(stored: $stored, next: $data) === true) {
-			$summary['unchanged']++;
-			return $summary;
+			$run->summary['unchanged']++;
+			return;
 		}
 
 		$this->store->save(data: $data, uuid: $existing['uuid']);
-		$summary['updated']++;
-		return $summary;
+		$run->summary['updated']++;
 	}//end upsert()
+
+	/**
+	 * Copy a declared residency onto the linked source, unless an administrator set one.
+	 *
+	 * An administrator's residency always wins. An unchanged declared residency
+	 * is not written again, so the sync stays idempotent. A failure is logged and
+	 * never stops the sync of the other rows.
+	 *
+	 * @param ConnectionSyncRun   $run        The app's sync.
+	 * @param array<string,mixed> $entry      The declaration entry.
+	 * @param string              $sourceUuid The linked source, or '' when none is linked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	private function copyDeclaredResidency(ConnectionSyncRun $run, array $entry, string $sourceUuid): void {
+		$next = $this->declaredResidency(run: $run, entry: $entry, sourceUuid: $sourceUuid);
+		if ($next === null) {
+			return;
+		}
+
+		try {
+			$source = $this->store->findSourceRaw(uuid: $sourceUuid);
+			if ($source !== null && $this->keepsResidency(current: ($source->getObject()['residency'] ?? []), next: $next) === false) {
+				$next['recordedAt'] = (new \DateTimeImmutable())->format('c');
+				$this->store->saveSourceResidency(source: $source, residency: $next);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Integriq could not copy the declared residency of {declaringApp} connection {key}: {reason}',
+				['app' => 'integriq', 'declaringApp' => $run->app, 'key' => $entry['key'], 'reason' => $e->getMessage()]
+			);
+		}//end try
+	}//end copyDeclaredResidency()
+
+	/**
+	 * The residency a connection entry declares for its source, or null when
+	 * there is no source or no declared residency.
+	 *
+	 * @param ConnectionSyncRun    $run        The sync run (names the declaring app).
+	 * @param array<string, mixed> $entry      The connection entry.
+	 * @param string               $sourceUuid The source's uuid, '' when there is none.
+	 *
+	 * @return array{country: string, basis: string, evidence: string, recordedBy: string}|null
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	private function declaredResidency(ConnectionSyncRun $run, array $entry, string $sourceUuid): ?array {
+		$declared = ($entry['residency'] ?? null);
+		if ($sourceUuid === '' || is_array($declared) === false) {
+			return null;
+		}
+
+		return [
+			'country' => (string)$declared['country'],
+			'basis' => self::RESIDENCY_DECLARED,
+			'evidence' => (string)($declared['evidence'] ?? ''),
+			'recordedBy' => $run->app,
+		];
+	}//end declaredResidency()
+
+	/**
+	 * Whether the source keeps its current residency: an administrator's
+	 * record is never overwritten, and an unchanged one is not rewritten.
+	 *
+	 * @param mixed                $current The source's current residency.
+	 * @param array<string, mixed> $next    The declared residency.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	private function keepsResidency(mixed $current, array $next): bool {
+		if (is_array($current) === false) {
+			$current = [];
+		}
+
+		return ($current['basis'] ?? null) === self::RESIDENCY_ADMIN || $this->sameResidency(current: $current, next: $next) === true;
+	}//end keepsResidency()
+
+	/**
+	 * Whether a stored residency already says what the declaration says.
+	 *
+	 * @param array<string,mixed> $current The stored residency.
+	 * @param array<string,string> $next   The declared residency.
+	 *
+	 * @return bool
+	 */
+	private function sameResidency(array $current, array $next): bool {
+		foreach ($next as $field => $value) {
+			if (($current[$field] ?? null) !== $value) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end sameResidency()
+
+	/**
+	 * The fields a declaration entry sets on its row.
+	 *
+	 * @param ConnectionSyncRun   $run   The app's sync.
+	 * @param array<string,mixed> $entry The declaration entry.
+	 *
+	 * @return array<string,mixed> The declared fields.
+	 */
+	private function declaredFields(ConnectionSyncRun $run, array $entry): array {
+		return [
+			'slug' => 'connection-' . $run->app . '-' . $entry['key'],
+			'app' => $run->app,
+			'key' => $entry['key'],
+			'title' => $entry['title'],
+			'description' => (string)($entry['description'] ?? ''),
+			'order' => (int)($entry['order'] ?? self::DEFAULT_ORDER),
+			'settingsUrl' => (string)($entry['settingsUrl'] ?? ''),
+			'declaration' => $entry,
+			'declaredVersion' => $run->version,
+		];
+	}//end declaredFields()
+
+	/**
+	 * Retire every stored row whose key left the declaration.
+	 *
+	 * @param ConnectionSyncRun  $run          The app's sync.
+	 * @param array<string,bool> $declaredKeys The keys the declaration still lists.
+	 *
+	 * @return void
+	 */
+	private function retireUndeclared(ConnectionSyncRun $run, array $declaredKeys): void {
+		foreach ($run->existing as $key => $row) {
+			if (isset($declaredKeys[$key]) === false) {
+				$this->retire(run: $run, row: $row);
+			}
+		}
+	}//end retireUndeclared()
 
 	/**
 	 * Handle a stored row whose key left the declaration.
@@ -417,17 +549,16 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 	 * The mark lives in the stored declaration, so D4 rule 2 keeps giving the
 	 * same answer after a later probe or report.
 	 *
-	 * @param string $app The app id.
+	 * @param ConnectionSyncRun                            $run The app's sync.
 	 * @param array{uuid:string,data:array<string,mixed>} $row The stored row.
-	 * @param array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]} $summary The running summary.
 	 *
-	 * @return array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]}
+	 * @return void
 	 */
-	private function retire(string $app, array $row, array $summary): array {
+	private function retire(ConnectionSyncRun $run, array $row): void {
 		if ((string)($row['data']['source'] ?? '') === '') {
 			$this->store->delete(uuid: $row['uuid']);
-			$summary['deleted']++;
-			return $summary;
+			$run->summary['deleted']++;
+			return;
 		}
 
 		$data = $row['data'];
@@ -437,18 +568,17 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 		}
 
 		$declaration['available'] = false;
-		$declaration['unavailableMessage'] = 'No longer declared by ' . $app . '.';
+		$declaration['unavailableMessage'] = 'No longer declared by ' . $run->app . '.';
 		$data['declaration'] = $declaration;
 		$data = $this->resolveRow(data: $data);
 
 		if ($this->isSame(stored: $row['data'], next: $data) === true) {
-			$summary['unchanged']++;
-			return $summary;
+			$run->summary['unchanged']++;
+			return;
 		}
 
 		$this->store->save(data: $data, uuid: $row['uuid']);
-		$summary['updated']++;
-		return $summary;
+		$run->summary['updated']++;
 	}//end retire()
 
 	/**

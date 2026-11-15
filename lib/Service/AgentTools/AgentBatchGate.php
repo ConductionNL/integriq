@@ -89,21 +89,11 @@ class AgentBatchGate implements AgentBatchGateInterface {
 	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
 	 */
 	public function admit(string $proposalId, string $approvalId, array $record): array {
-		$proposal = $this->store->find(uuid: $proposalId);
+		$admission = new AgentAdmission(proposalId: $proposalId, approvalId: $approvalId, record: $record);
 		try {
-			$proposal   = $this->matching(proposal: $proposal, record: $record);
-			$approvedBy = $this->verifier->verify(
-				approvalId: $approvalId,
-				toolId: (string)$record['tool'],
-				binding: (string)($proposal['binding'] ?? ''),
-				actingAgent: (string)$record['agent']
-			);
+			[$proposal, $approvedBy] = $this->verified(admission: $admission);
 		} catch (AgentActionRefusedException $e) {
-			$record['outcome']  = 'refused';
-			$record['reason']   = $e->reason;
-			$record['proposal'] = $proposalId;
-			$record['approval'] = $approvalId;
-			$this->store->record(record: $record);
+			$this->recordRefusal(admission: $admission, reason: $e->reason);
 			throw $e;
 		}
 
@@ -115,6 +105,48 @@ class AgentBatchGate implements AgentBatchGateInterface {
 
 		return ['proposal' => $proposal, 'approvedBy' => $approvedBy];
 	}//end admit()
+
+	/**
+	 * The staged proposal matching the asked batch, and who approved it.
+	 *
+	 * @param AgentAdmission $admission The admission request.
+	 *
+	 * @return array{0: array<string, mixed>, 1: string}
+	 *
+	 * @throws AgentActionRefusedException When the batch does not match or the approval does not hold.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private function verified(AgentAdmission $admission): array {
+		$proposal = $this->matching(proposal: $this->store->find(uuid: $admission->proposalId), record: $admission->record);
+		$approvedBy = $this->verifier->verify(
+			approvalId: $admission->approvalId,
+			toolId: (string)$admission->record['tool'],
+			binding: (string)($proposal['binding'] ?? ''),
+			actingAgent: (string)$admission->record['agent']
+		);
+
+		return [$proposal, $approvedBy];
+	}//end verified()
+
+	/**
+	 * Store a refused admission with its reason, the proposal and the approval.
+	 *
+	 * @param AgentAdmission $admission The admission request.
+	 * @param string         $reason    The refusal reason.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private function recordRefusal(AgentAdmission $admission, string $reason): void {
+		$record             = $admission->record;
+		$record['outcome']  = 'refused';
+		$record['reason']   = $reason;
+		$record['proposal'] = $admission->proposalId;
+		$record['approval'] = $admission->approvalId;
+		$this->store->record(record: $record);
+	}//end recordRefusal()
 
 	/**
 	 * Keep the per-id outcomes on the closed batch.
@@ -163,6 +195,25 @@ class AgentBatchGate implements AgentBatchGateInterface {
 			throw new AgentActionRefusedException(reason: 'no-staged-batch');
 		}
 
+		self::assertSameBatch(proposal: $proposal, record: $record);
+		self::assertFresh(proposal: $proposal);
+
+		return $proposal;
+	}//end matching()
+
+	/**
+	 * Refuse a batch whose tool, store, agent, granting user or targets differ from the staged one.
+	 *
+	 * @param array<string, mixed> $proposal The staged proposal.
+	 * @param array<string, mixed> $record   The asked batch.
+	 *
+	 * @return void
+	 *
+	 * @throws AgentActionRefusedException `batch-mismatch`.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private static function assertSameBatch(array $proposal, array $record): void {
 		foreach (self::MATCHED as $field) {
 			if (($proposal[$field] ?? null) !== ($record[$field] ?? null)) {
 				throw new AgentActionRefusedException(reason: 'batch-mismatch');
@@ -176,12 +227,23 @@ class AgentBatchGate implements AgentBatchGateInterface {
 		if ($staged !== $asked) {
 			throw new AgentActionRefusedException(reason: 'batch-mismatch');
 		}
+	}//end assertSameBatch()
 
+	/**
+	 * Refuse a proposal older than the TTL, or one without a readable staging time.
+	 *
+	 * @param array<string, mixed> $proposal The staged proposal.
+	 *
+	 * @return void
+	 *
+	 * @throws AgentActionRefusedException `proposal-expired`.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private static function assertFresh(array $proposal): void {
 		$stagedAt = strtotime((string)($proposal['at'] ?? ''));
 		if ($stagedAt === false || (time() - $stagedAt) > self::PROPOSAL_TTL) {
 			throw new AgentActionRefusedException(reason: 'proposal-expired');
 		}
-
-		return $proposal;
-	}//end matching()
+	}//end assertFresh()
 }//end class

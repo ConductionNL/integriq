@@ -101,14 +101,16 @@ function yesNo(value) {
 function objectCounters(objects) {
 	const counts = objects || {}
 
-	return [
-		{ label: t('integriq', 'Found'), value: counts.found ?? 0 },
-		{ label: t('integriq', 'Skipped'), value: counts.skipped ?? 0 },
-		{ label: t('integriq', 'Created'), value: counts.created ?? 0 },
-		{ label: t('integriq', 'Updated'), value: counts.updated ?? 0 },
-		{ label: t('integriq', 'Deleted'), value: counts.deleted ?? 0 },
-		{ label: t('integriq', 'Invalid'), value: counts.invalid ?? 0 },
+	const labels = [
+		['found', t('integriq', 'Found')],
+		['skipped', t('integriq', 'Skipped')],
+		['created', t('integriq', 'Created')],
+		['updated', t('integriq', 'Updated')],
+		['deleted', t('integriq', 'Deleted')],
+		['invalid', t('integriq', 'Invalid')],
 	]
+
+	return labels.map(([key, label]) => ({ label, value: counts[key] ?? 0 }))
 }
 
 /**
@@ -147,7 +149,17 @@ function synchronizationStatus(payload) {
 		}
 	}
 
-	const message = payload.message || ''
+	return synchronizationMessageStatus(payload.message || '')
+}
+
+/**
+ * The banner for a run-log message: a known outcome, or the message itself as
+ * an error.
+ *
+ * @param {string} message The run-log message.
+ * @return {{type: string, text: string}} Banner type and text.
+ */
+function synchronizationMessageStatus(message) {
 	const known = synchronizationOutcomes()
 	if (Object.hasOwn(known, message)) {
 		return known[message]
@@ -389,16 +401,27 @@ function jobStatus(payload) {
 		}
 	}
 
-	const level = String(payload.level || '').toUpperCase()
+	const [type, fallback] = jobLevelOutcome(payload.level)
+
+	return { type, text: payload.message || fallback }
+}
+
+/**
+ * The banner type and fallback text for a job-log level, case-insensitive.
+ *
+ * @param {string|undefined} level The job-log level.
+ * @return {Array<string>} The banner type and the text used when the log has no message.
+ */
+function jobLevelOutcome(level) {
+	const key = String(level || '').toUpperCase()
 	const levels = {
 		ERROR: ['error', t('integriq', 'The job failed.')],
 		WARNING: ['warning', t('integriq', 'The job finished with a warning.')],
 	}
-	const [type, fallback] = Object.hasOwn(levels, level)
-		? levels[level]
-		: ['success', t('integriq', 'The job ran successfully.')]
 
-	return { type, text: payload.message || fallback }
+	return Object.hasOwn(levels, key)
+		? levels[key]
+		: ['success', t('integriq', 'The job ran successfully.')]
 }
 
 /**

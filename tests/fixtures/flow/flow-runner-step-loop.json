@@ -1,0 +1,1379 @@
+{
+    "empty": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "sequential-unsorted": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "a",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "b",
+                "input": {
+                    "seen": "a",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "c",
+                "input": {
+                    "seen": "b",
+                    "previous": "a"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 30,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "condition-skips": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "a",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "mapping",
+                    "status": "skipped"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 30,
+                    "type": "mapping",
+                    "status": "skipped"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "condition-passes": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "b",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "c",
+                "input": {
+                    "seen": "b",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "branch-match-forward": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "b",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "branch",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "d",
+                "input": {
+                    "seen": "b",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 40,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "branch-match-without-target": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "b",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "branch",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "c",
+                "input": {
+                    "seen": "b",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 30,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "d",
+                "input": {
+                    "seen": "c",
+                    "previous": "b"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 40,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "branch-default": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "a",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "branch",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "d",
+                "input": {
+                    "seen": "a",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 40,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "branch-no-match-no-default": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "branch",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "c",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 30,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "d",
+                "input": {
+                    "seen": "c",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 40,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "branch-unresolvable": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "branch",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "failed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "failed"
+            }
+        }
+    },
+    "branch-condition-skips": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "branch",
+                    "status": "skipped"
+                }
+            },
+            {
+                "mapping": "c",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 30,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "d",
+                "input": {
+                    "seen": "c",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 40,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "approval-middle": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "a",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "suspend": "run-1",
+                "resumeStepOrder": 30,
+                "config": {
+                    "approverGroup": "ops"
+                },
+                "input": {
+                    "seen": "a",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "approval",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "suspended"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "suspended"
+            }
+        }
+    },
+    "approval-last": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "a",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "suspend": "run-1",
+                "resumeStepOrder": 20,
+                "config": [],
+                "input": {
+                    "seen": "a",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "approval",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "suspended"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "suspended"
+            }
+        }
+    },
+    "approval-condition-skips": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "approval",
+                    "status": "skipped"
+                }
+            },
+            {
+                "mapping": "c",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 30,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "error-default-stops": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "fail",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "failed",
+                    "error": "mapping failed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "stopped"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "stopped"
+            }
+        }
+    },
+    "error-stop": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "a",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "fail",
+                "input": {
+                    "seen": "a",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "mapping",
+                    "status": "failed",
+                    "error": "mapping failed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "stopped"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "stopped"
+            }
+        }
+    },
+    "error-continue": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "a",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "fail",
+                "input": {
+                    "seen": "a",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "mapping",
+                    "status": "failed",
+                    "error": "mapping failed"
+                }
+            },
+            {
+                "mapping": "c",
+                "input": {
+                    "seen": "a",
+                    "previous": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 30,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "completed"
+            }
+        }
+    },
+    "error-dead-letter": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "fail",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "failed",
+                    "error": "mapping failed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "dead_letter"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "dead_letter"
+            }
+        }
+    },
+    "error-unknown-policy": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "fail",
+                "input": {
+                    "seen": "input"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "failed",
+                    "error": "mapping failed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "stopped"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "stopped"
+            }
+        }
+    },
+    "unsupported-type": {
+        "trace": [
+            {
+                "save": "flow_run",
+                "uuid": null,
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "running"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 10,
+                    "type": "teleport",
+                    "status": "failed",
+                    "error": "Unsupported flow step type: teleport"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-1",
+                    "stepOrder": 20,
+                    "type": "",
+                    "status": "failed",
+                    "error": "Unsupported flow step type: "
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-1",
+                "object": {
+                    "flowId": "flow-1",
+                    "triggerSource": "manual",
+                    "status": "stopped"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "triggerSource": "manual",
+                "status": "stopped"
+            }
+        }
+    },
+    "duplicate-orders": {
+        "trace": [],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\FlowRunException",
+            "message": "Flow has duplicate step order: 10"
+        }
+    },
+    "resume-at-step": {
+        "trace": [
+            {
+                "find": "flow_run",
+                "id": "run-7"
+            },
+            {
+                "find": "flow",
+                "id": "flow-1"
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-7",
+                "object": {
+                    "flowId": "flow-1",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "c",
+                "input": {
+                    "seen": "snapshot"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-7",
+                    "stepOrder": 30,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "mapping": "d",
+                "input": {
+                    "seen": "c",
+                    "previous": "snapshot"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-7",
+                    "stepOrder": 40,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-7",
+                "object": {
+                    "flowId": "flow-1",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "status": "completed"
+            }
+        }
+    },
+    "resume-at-first": {
+        "trace": [
+            {
+                "find": "flow_run",
+                "id": "run-7"
+            },
+            {
+                "find": "flow",
+                "id": "flow-1"
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-7",
+                "object": {
+                    "flowId": "flow-1",
+                    "status": "running"
+                }
+            },
+            {
+                "mapping": "a",
+                "input": {
+                    "seen": "snapshot"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-7",
+                    "stepOrder": 10,
+                    "type": "mapping",
+                    "status": "completed"
+                }
+            },
+            {
+                "suspend": "run-7",
+                "resumeStepOrder": 30,
+                "config": [],
+                "input": {
+                    "seen": "a",
+                    "previous": "snapshot"
+                }
+            },
+            {
+                "save": "flow_run_log",
+                "uuid": null,
+                "object": {
+                    "flowRunId": "run-7",
+                    "stepOrder": 20,
+                    "type": "approval",
+                    "status": "completed"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-7",
+                "object": {
+                    "flowId": "flow-1",
+                    "status": "suspended"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "status": "suspended"
+            }
+        }
+    },
+    "resume-at-unknown": {
+        "trace": [
+            {
+                "find": "flow_run",
+                "id": "run-7"
+            },
+            {
+                "find": "flow",
+                "id": "flow-1"
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-7",
+                "object": {
+                    "flowId": "flow-1",
+                    "status": "running"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-7",
+                "object": {
+                    "flowId": "flow-1",
+                    "status": "failed"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\FlowRunException",
+            "message": "Resume step order 25 does not resolve to an existing step"
+        }
+    },
+    "resume-empty-flow": {
+        "trace": [
+            {
+                "find": "flow_run",
+                "id": "run-7"
+            },
+            {
+                "find": "flow",
+                "id": "flow-1"
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-7",
+                "object": {
+                    "flowId": "flow-1",
+                    "status": "running"
+                }
+            },
+            {
+                "save": "flow_run",
+                "uuid": "run-7",
+                "object": {
+                    "flowId": "flow-1",
+                    "status": "completed"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "flowId": "flow-1",
+                "status": "completed"
+            }
+        }
+    }
+}

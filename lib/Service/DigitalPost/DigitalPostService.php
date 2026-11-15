@@ -79,117 +79,257 @@ class DigitalPostService implements DigitalPostServiceInterface {
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
 	 */
 	public function handleSendRequest(DigitalPostSendRequestedEvent $event): void {
-		$config = $this->sourceConfig(sourceId: $event->getSourceId());
-		if ($config === null) {
-			$event->setHandled(true);
-			$event->setRefusal(
-				sprintf('No digital post source is configured under "%s". Nothing was sent.', $event->getSourceId()),
-				'unknown_source'
-			);
-
-			return;
-		}
-
-		$providerId = (string)($config['providerId'] ?? '');
-		if ($this->providers->has($providerId) === false) {
-			$event->setHandled(true);
-			$event->setRefusal(
-				sprintf(
-					'The source "%s" names the provider "%s", which nothing answers to. Registered providers: %s.',
-					$event->getSourceId(),
-					$providerId,
-					implode(', ', $this->providers->ids())
-				),
-				'unknown_provider'
-			);
-
+		$send = $this->startSend(event: $event);
+		if ($send === null) {
 			return;
 		}
 
 		$this->account->runOrRefuse(
 			what: 'send',
-			operation: function () use ($event, $providerId, $config): void {
-				$this->sendAsAccount(event: $event, providerId: $providerId, config: $config);
-			},
-			refuse: static function (string $reason) use ($event): void {
-				$event->setHandled(true);
-				$event->setRefusal($reason . ' The letter cannot be stored, so nothing was sent.', self::CODE_NO_SERVICE_ACCOUNT);
-			}
+			operation: fn () => $this->sendAsAccount(send: $send),
+			refuse: fn (string $reason) => $this->refuseWithoutAccount(event: $event, reason: $reason)
 		);
 
 	}//end handleSendRequest()
 
 	/**
+	 * Start a send from its source, refusing a request whose source or provider is unknown.
+	 *
+	 * @param DigitalPostSendRequestedEvent $event The request.
+	 *
+	 * @return DigitalPostSend|null The send, or null when the request was refused.
+	 */
+	private function startSend(DigitalPostSendRequestedEvent $event): ?DigitalPostSend {
+		$config = $this->sourceConfig(sourceId: $event->getSourceId());
+		if ($config === null) {
+			$this->refuseUnknownSource(event: $event);
+			return null;
+		}
+
+		$send = new DigitalPostSend(event: $event, config: $config);
+		if ($this->providers->has($send->providerId) === false) {
+			$this->refuseUnknownProvider(send: $send);
+			return null;
+		}
+
+		return $send;
+	}//end startSend()
+
+	/**
+	 * Refuse a request naming a source nobody configured.
+	 *
+	 * @param DigitalPostSendRequestedEvent $event The request.
+	 *
+	 * @return void
+	 */
+	private function refuseUnknownSource(DigitalPostSendRequestedEvent $event): void {
+		$event->setHandled(true);
+		$event->setRefusal(
+			sprintf('No digital post source is configured under "%s". Nothing was sent.', $event->getSourceId()),
+			'unknown_source'
+		);
+	}//end refuseUnknownSource()
+
+	/**
+	 * Refuse a request whose source names a provider nothing answers to.
+	 *
+	 * @param DigitalPostSend $send The send.
+	 *
+	 * @return void
+	 */
+	private function refuseUnknownProvider(DigitalPostSend $send): void {
+		$send->event->setHandled(true);
+		$send->event->setRefusal(
+			sprintf(
+				'The source "%s" names the provider "%s", which nothing answers to. Registered providers: %s.',
+				$send->event->getSourceId(),
+				$send->providerId,
+				implode(', ', $this->providers->ids())
+			),
+			'unknown_provider'
+		);
+	}//end refuseUnknownProvider()
+
+	/**
+	 * Refuse a send for which no usable digital post account exists.
+	 *
+	 * @param DigitalPostSendRequestedEvent $event  The request.
+	 * @param string                        $reason Why the account is not usable.
+	 *
+	 * @return void
+	 */
+	private function refuseWithoutAccount(DigitalPostSendRequestedEvent $event, string $reason): void {
+		$event->setHandled(true);
+		$event->setRefusal($reason . ' The letter cannot be stored, so nothing was sent.', self::CODE_NO_SERVICE_ACCOUNT);
+	}//end refuseWithoutAccount()
+
+	/**
 	 * Ask the opt-outs, store, send and record, as the digital post account.
 	 *
-	 * @param DigitalPostSendRequestedEvent $event      The request.
-	 * @param string                        $providerId The provider the source names.
-	 * @param array<string,mixed>           $config     The source configuration.
+	 * @param DigitalPostSend $send The send.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
 	 */
-	private function sendAsAccount(DigitalPostSendRequestedEvent $event, string $providerId, array $config): void {
-		$decision = $this->askOptOuts(event: $event);
+	private function sendAsAccount(DigitalPostSend $send): void {
+		$decision = $this->askOptOuts(event: $send->event);
 		if ($decision === null) {
 			return;
 		}
 
-		$composed = $this->gate->compose(
-			body: $event->getBody(),
-			decision: $decision,
-			channel: 'digital-post',
-			caseRef: $event->getCaseRef()
-		);
+		$send->decision = $decision;
+		$send->body = $this->composedBody(send: $send);
+		$send->message = $this->queuedMessage(send: $send);
+		if ($this->store(send: $send) === true) {
+			$this->deliver(send: $send);
+		}
+	}//end sendAsAccount()
 
-		$message = [
+	/**
+	 * The body as the opt-out gate composes it for this letter.
+	 *
+	 * @param DigitalPostSend $send The send, its decision set.
+	 *
+	 * @return string The body.
+	 */
+	private function composedBody(DigitalPostSend $send): string {
+		return $this->gate->compose(
+			body: $send->event->getBody(),
+			decision: $send->decision,
+			channel: 'digital-post',
+			caseRef: $send->event->getCaseRef()
+		)['body'];
+	}//end composedBody()
+
+	/**
+	 * The message as it is stored before the provider is called.
+	 *
+	 * @param DigitalPostSend $send The send, its body composed.
+	 *
+	 * @return array<string,mixed> The queued message.
+	 */
+	private function queuedMessage(DigitalPostSend $send): array {
+		$event = $send->event;
+		$letter = [
 			'recipient' => $event->getRecipient(),
 			'subject' => $event->getSubject(),
-			'body' => $composed['body'],
+			'body' => $send->body,
 			'attachments' => $event->getAttachments(),
-			'requestedBy' => $event->getRequestedBy(),
-			'sourceApp' => $event->getSourceApp(),
-			'sourceId' => $event->getSourceId(),
-			'providerId' => $providerId,
-			'correlationId' => $event->getCorrelationId(),
-			'category' => $event->getCategory(),
-			'caseRef' => $event->getCaseRef(),
+		];
+
+		return ($letter + $this->messageOrigin(send: $send) + $this->queuedState());
+	}//end queuedMessage()
+
+	/**
+	 * Who asked for the letter, from where, through which provider and about what.
+	 *
+	 * @param DigitalPostSend $send The send.
+	 *
+	 * @return array<string,string> The origin fields.
+	 */
+	private function messageOrigin(DigitalPostSend $send): array {
+		return [
+			'requestedBy' => $send->event->getRequestedBy(),
+			'sourceApp' => $send->event->getSourceApp(),
+			'sourceId' => $send->event->getSourceId(),
+			'providerId' => $send->providerId,
+			'correlationId' => $send->event->getCorrelationId(),
+			'category' => $send->event->getCategory(),
+			'caseRef' => $send->event->getCaseRef(),
+		];
+	}//end messageOrigin()
+
+	/**
+	 * The state a letter is stored in before the provider is called.
+	 *
+	 * @return array<string,mixed> The state fields.
+	 */
+	private function queuedState(): array {
+		return [
 			'status' => DigitalPostResult::STATUS_QUEUED,
 			'lastError' => '',
 			'simulated' => false,
 			'created' => gmdate('c'),
 		];
+	}//end queuedState()
 
-		$messageId = $this->persist(message: $message, uuid: null);
-		$event->setHandled(true);
+	/**
+	 * Store the queued letter; a letter that cannot be stored is refused and not sent.
+	 *
+	 * @param DigitalPostSend $send The send, its message set.
+	 *
+	 * @return bool True when the letter was stored.
+	 */
+	private function store(DigitalPostSend $send): bool {
+		$messageId = $this->persist(message: $send->message, uuid: null);
+		$send->event->setHandled(true);
 
 		if ($messageId === null) {
-			$event->setRefusal('The letter could not be stored, so it was not sent.', 'not_stored');
-
-			return;
+			$send->event->setRefusal('The letter could not be stored, so it was not sent.', 'not_stored');
+			return false;
 		}
 
-		$logRow = $this->gate->open(
-			channel: 'digital-post',
-			subjectRef: $event->getCaseRef(),
-			subject: $event->getSubject(),
-			body: $composed['body'],
-			address: (string)$decision['address'],
-			options: ['sourceApp' => $event->getSourceApp(), 'correlationId' => $event->getCorrelationId(), 'caseRef' => $event->getCaseRef()],
-			decision: $decision
-		);
-		$result = $this->sendThroughProvider(providerId: $providerId, message: $message, config: $config);
-		$this->recordOutcome(logRow: $logRow, address: (string)$decision['address'], result: $result);
+		$send->messageId = $messageId;
+		return true;
+	}//end store()
+
+	/**
+	 * Send the stored letter through its provider, record and announce the outcome, and answer the request.
+	 *
+	 * @param DigitalPostSend $send The send, its message stored.
+	 *
+	 * @return void
+	 */
+	private function deliver(DigitalPostSend $send): void {
+		$send->logRow = $this->openLogRow(send: $send);
+		$result = $this->sendThroughProvider(send: $send);
+		$this->recordOutcome(send: $send, result: $result);
 
 		// The attachments stay on the message whatever happened, which is what
 		// "a failed send keeps the letter" means: the PDF is still there to
 		// retry with.
-		$message = array_merge($message, $result->toArray());
-		$this->persist(message: $message, uuid: $messageId);
+		$this->persist(message: array_merge($send->message, $result->toArray()), uuid: $send->messageId);
 
-		$this->announce(messageId: $messageId, previousStatus: DigitalPostResult::STATUS_QUEUED, result: $result, requestedBy: $event->getRequestedBy());
+		$this->announce(
+			messageId: $send->messageId,
+			previousStatus: DigitalPostResult::STATUS_QUEUED,
+			result: $result,
+			requestedBy: $send->event->getRequestedBy()
+		);
+		$this->answer(send: $send, result: $result);
+	}//end deliver()
 
+	/**
+	 * Open the letter's outbound log row.
+	 *
+	 * @param DigitalPostSend $send The send, its message stored.
+	 *
+	 * @return string|null The row.
+	 */
+	private function openLogRow(DigitalPostSend $send): ?string {
+		$event = $send->event;
+
+		return $this->gate->open(
+			channel: 'digital-post',
+			subjectRef: $event->getCaseRef(),
+			subject: $event->getSubject(),
+			body: $send->body,
+			address: (string)$send->decision['address'],
+			options: ['sourceApp' => $event->getSourceApp(), 'correlationId' => $event->getCorrelationId(), 'caseRef' => $event->getCaseRef()],
+			decision: $send->decision
+		);
+	}//end openLogRow()
+
+	/**
+	 * Answer the request: the provider's refusal, or the message id.
+	 *
+	 * @param DigitalPostSend   $send   The send.
+	 * @param DigitalPostResult $result What the provider answered.
+	 *
+	 * @return void
+	 */
+	private function answer(DigitalPostSend $send, DigitalPostResult $result): void {
 		if ($result->isRefused() === true) {
 			// A provider that knows why (`not_subscribed`) says so; anything else
 			// stays the generic provider refusal the sending apps already read.
@@ -198,13 +338,13 @@ class DigitalPostService implements DigitalPostServiceInterface {
 				$code = 'provider_refused';
 			}
 
-			$event->setRefusal($result->getError(), $code);
+			$send->event->setRefusal($result->getError(), $code);
 
 			return;
 		}
 
-		$event->setMessageId($messageId);
-	}//end sendAsAccount()
+		$send->event->setMessageId($send->messageId);
+	}//end answer()
 
 	/**
 	 * Ask the opt-out list about this letter.
@@ -244,19 +384,19 @@ class DigitalPostService implements DigitalPostServiceInterface {
 	/**
 	 * Note on the outbound log row whether the provider took the letter.
 	 *
-	 * @param string|null $logRow The row.
-	 * @param string $address The recipient key.
+	 * @param DigitalPostSend   $send   The send: its log row and recipient key.
 	 * @param DigitalPostResult $result What the provider answered.
 	 *
 	 * @return void
 	 */
-	private function recordOutcome(?string $logRow, string $address, DigitalPostResult $result): void {
+	private function recordOutcome(DigitalPostSend $send, DigitalPostResult $result): void {
+		$address = (string)$send->decision['address'];
 		if ($result->isRefused() === true) {
-			$this->gate->failed(uuid: $logRow, address: $address, step: OutboundSendGateInterface::STEP_SEND, reason: $result->getError());
+			$this->gate->failed(uuid: $send->logRow, address: $address, step: OutboundSendGateInterface::STEP_SEND, reason: $result->getError());
 			return;
 		}
 
-		$this->gate->handedOver(uuid: $logRow, address: $address, reference: $result->getProviderReference());
+		$this->gate->handedOver(uuid: $send->logRow, address: $address, reference: $result->getProviderReference());
 	}//end recordOutcome()
 
 	/**
@@ -349,17 +489,15 @@ class DigitalPostService implements DigitalPostServiceInterface {
 	 * Call the provider, turning anything it throws into a refusal rather than
 	 * an exception that loses the letter.
 	 *
-	 * @param string $providerId The provider id.
-	 * @param array<string,mixed> $message The message.
-	 * @param array<string,mixed> $config The source configuration.
+	 * @param DigitalPostSend $send The send: its provider, message and source configuration.
 	 *
 	 * @return DigitalPostResult What the provider answered.
 	 */
-	private function sendThroughProvider(string $providerId, array $message, array $config): DigitalPostResult {
+	private function sendThroughProvider(DigitalPostSend $send): DigitalPostResult {
 		try {
-			return $this->providers->get($providerId)->send($message, $config);
+			return $this->providers->get($send->providerId)->send($send->message, $send->config);
 		} catch (Throwable $e) {
-			$this->logger->warning('digital-post.send.failed', ['provider' => $providerId, 'error' => $e->getMessage()]);
+			$this->logger->warning('digital-post.send.failed', ['provider' => $send->providerId, 'error' => $e->getMessage()]);
 
 			return DigitalPostResult::refused($e->getMessage());
 		}

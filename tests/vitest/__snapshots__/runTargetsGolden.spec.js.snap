@@ -836,6 +836,64 @@ exports[`run descriptors golden > job/run renders as recorded 1`] = `
         ],
       },
     ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
   ],
   "status": [
     {
@@ -884,6 +942,14 @@ exports[`run descriptors golden > job/run renders as recorded 1`] = `
     },
     {
       "text": "Success",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
       "type": "success",
     },
     {
@@ -1758,6 +1824,64 @@ exports[`run descriptors golden > job/test renders as recorded 1`] = `
         ],
       },
     ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
   ],
   "status": [
     {
@@ -1806,6 +1930,14 @@ exports[`run descriptors golden > job/test renders as recorded 1`] = `
     },
     {
       "text": "Success",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
       "type": "success",
     },
     {
@@ -2091,6 +2223,8 @@ exports[`run descriptors golden > synchronization/run renders as recorded 1`] = 
     },
   ],
   "retry": [
+    null,
+    null,
     null,
     null,
     null,
@@ -2986,6 +3120,134 @@ exports[`run descriptors golden > synchronization/run renders as recorded 1`] = 
         "value": [
           {
             "label": "Found",
+            "value": 1,
+          },
+          {
+            "label": "Skipped",
+            "value": 2,
+          },
+          {
+            "label": "Created",
+            "value": 3,
+          },
+          {
+            "label": "Updated",
+            "value": 4,
+          },
+          {
+            "label": "Deleted",
+            "value": 5,
+          },
+          {
+            "label": "Invalid",
+            "value": 6,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": "",
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": false,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
             "value": 0,
           },
           {
@@ -3754,6 +4016,14 @@ exports[`run descriptors golden > synchronization/run renders as recorded 1`] = 
     {
       "text": "The synchronization completed successfully.",
       "type": "success",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
     },
     {
       "text": "The synchronization did not complete.",
@@ -4838,6 +5108,134 @@ exports[`run descriptors golden > synchronization/test renders as recorded 1`] =
         "value": [
           {
             "label": "Found",
+            "value": 1,
+          },
+          {
+            "label": "Skipped",
+            "value": 2,
+          },
+          {
+            "label": "Created",
+            "value": 3,
+          },
+          {
+            "label": "Updated",
+            "value": 4,
+          },
+          {
+            "label": "Deleted",
+            "value": 5,
+          },
+          {
+            "label": "Invalid",
+            "value": 6,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": "",
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": false,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
             "value": 0,
           },
           {
@@ -5606,6 +6004,14 @@ exports[`run descriptors golden > synchronization/test renders as recorded 1`] =
     {
       "text": "The synchronization completed successfully.",
       "type": "success",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
     },
     {
       "text": "The synchronization did not complete.",

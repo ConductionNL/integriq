@@ -88,7 +88,7 @@
         },
         "name": "Austria OpenTender Weekly Sync",
         "description": "Runs the austria-opentender-to-spectr-tender synchronization weekly. Ships disabled; an administrator switches it on. Each run downloads `full.jsonl.gz` and reads one batch of `sourceConfig.pageSize` records (default 5,000); a run with batches left comes back on the next cron tick, so one pass over the file takes several ticks. The synchronization-contract-keyed upsert dedups on re-run.",
-        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "austria-opentender-to-spectr-tender"
         },

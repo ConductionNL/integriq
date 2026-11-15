@@ -3,6 +3,9 @@
 /**
  * Integriq Mapping Twig Runtime.
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Runtime class invoked by the MappingExtension Twig filters/functions to
  * perform encoding, mapping execution and source/file lookups.
  *
@@ -22,7 +25,7 @@
  * `OCA\OpenRegister\Twig\MappingRuntime`; the three that need Integriq's
  * own services — callSource, getTargetIdByOriginId, getOriginIdByTargetId — are
  * contributed to that engine via `RegisterMappingFunctionsEvent`
- * (see Listener\MappingFunctionRegistrationListener).
+ * (see MappingFunctionRegistrationListener).
  *
  * This copy is retained only while Integriq's own MappingService still
  * exists. Do NOT add functions here: a function registered on this environment

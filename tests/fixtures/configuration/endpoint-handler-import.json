@@ -1,0 +1,438 @@
+{
+    "api-known": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "api",
+                    "targetId": "src-uuid-5",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "database-known": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "database",
+                    "targetId": "src-uuid-6",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "api-unknown": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "api",
+                    "targetId": "nope",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "api-register-slug": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "api",
+                    "targetId": "reg-one/sch-two",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "register-schema-known": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "register/schema",
+                    "targetId": "1/2",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "register-schema-partly": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "register/schema",
+                    "targetId": "4/unknown",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "register-schema-extra": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "register/schema",
+                    "targetId": "1/2",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "register-schema-no-slash": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "register/schema",
+                    "targetId": "src-five",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "register-schema-empty-parts": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "register/schema",
+                    "targetId": "/",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "other-type": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "zgw",
+                    "targetId": "src-five",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "type-true": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": true,
+                    "targetId": "src-uuid-5",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "type-zero": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": 0,
+                    "targetId": "src-five",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "id-without-type": {
+        "saves": [
+            {
+                "object": {
+                    "targetId": "src-five",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "type-without-id": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "api",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "id-null": {
+        "saves": [
+            {
+                "object": {
+                    "targetType": "api",
+                    "targetId": null,
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "mappings-known": {
+        "saves": [
+            {
+                "object": {
+                    "inputMapping": "map-uuid-7",
+                    "outputMapping": 8,
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "mappings-unknown": {
+        "saves": [
+            {
+                "object": {
+                    "inputMapping": "zz",
+                    "outputMapping": "map-seven-x",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "mappings-zero": {
+        "saves": [
+            {
+                "object": {
+                    "inputMapping": "zero",
+                    "outputMapping": null,
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "input-only": {
+        "saves": [
+            {
+                "object": {
+                    "inputMapping": 8,
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "output-only": {
+        "saves": [
+            {
+                "object": {
+                    "outputMapping": "map-uuid-7",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "rules": {
+        "saves": [
+            {
+                "object": {
+                    "rules": {
+                        "0": "rule-uuid-3",
+                        "1": 33,
+                        "4": "rule-uuid-3"
+                    }
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "rules-int": {
+        "saves": [
+            {
+                "object": {
+                    "rules": {
+                        "1": 33
+                    }
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "rules-keyed": {
+        "saves": [
+            {
+                "object": {
+                    "rules": {
+                        "a": "rule-uuid-3",
+                        "c": 33
+                    }
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "rules-empty": {
+        "saves": [
+            {
+                "object": {
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "rules-string": {
+        "saves": [
+            {
+                "object": {
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "rules-null": {
+        "saves": [
+            {
+                "object": {
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "rules-bad-element": {
+        "throws": "TypeError",
+        "saves": []
+    },
+    "existing-slug": {
+        "saves": [
+            {
+                "object": {
+                    "slug": "ep-nine",
+                    "name": "existing",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": "ep-uuid-9"
+            }
+        ]
+    },
+    "new-slug": {
+        "saves": [
+            {
+                "object": {
+                    "slug": "brand-new",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "null-slug": {
+        "saves": [
+            {
+                "object": {
+                    "slug": null,
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "no-slug": {
+        "saves": [
+            {
+                "object": {
+                    "name": "anonymous",
+                    "rules": []
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": null
+            }
+        ]
+    },
+    "everything": {
+        "saves": [
+            {
+                "object": {
+                    "slug": "ep-nine",
+                    "targetType": "register/schema",
+                    "targetId": "1/2",
+                    "inputMapping": "map-uuid-7",
+                    "outputMapping": 8,
+                    "rules": [
+                        "rule-uuid-3"
+                    ],
+                    "extra": {
+                        "kept": true
+                    }
+                },
+                "register": "integriq",
+                "schema": "endpoint",
+                "uuid": "ep-uuid-9"
+            }
+        ]
+    }
+}

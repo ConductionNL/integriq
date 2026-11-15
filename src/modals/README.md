@@ -45,4 +45,5 @@ own change rather than riding along with a feature.
 | `Synchronization/TestSynchronization.vue` | — | `src/modals/v2/RunActionModal.vue` (`synchronization/test` descriptor). Nothing was carried over: it rendered an HTTP status/headers/body table copied from `TestSource`, which does not match the run-log payload `POST /api/synchronizations/{id}/test` actually returns, so it would have shown an empty table even had it been wired up. |
 | `TestSource/TestSource.vue` | #f5af2cac | `src/modals/v2/TestSourceModal.vue`. |
 | `Job/RunJob.vue` | — | `src/modals/v2/RunActionModal.vue` (`job/run` descriptor). |
+| `Endpoint/AddEndpointRule.vue` | — | `src/modals/v2/AddEndpointRuleModal.vue` (#836), opened through `ModalHost` on `EVENT_OPEN_ADD_ENDPOINT_RULE`: the same rule picker over OR objects, with multi-select. |
 | `Job/TestJob.vue` | — | `src/modals/v2/RunActionModal.vue` (`job/test` descriptor) — under the honest name. `JobsController::test()` is `run()` with `forceRun` forced on, not a dry run, so the modal and the row-action label both say "Force run". |

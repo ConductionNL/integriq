@@ -166,10 +166,10 @@ class CtiEventIntake implements CtiEventIntakeInterface {
 			return 0;
 		}
 
-		$configuration = ($source['configuration'] ?? []);
-		$accepted      = 0;
+		$run      = new CtiIntakeRun(sourceId: $sourceId, configuration: ($source['configuration'] ?? []));
+		$accepted = 0;
 
-		foreach ($provider->normalize(sourceConfiguration: $configuration, payload: $payload) as $normalised) {
+		foreach ($provider->normalize(sourceConfiguration: $run->configuration, payload: $payload) as $normalised) {
 			if (is_array($normalised) === false) {
 				continue;
 			}
@@ -183,7 +183,7 @@ class CtiEventIntake implements CtiEventIntakeInterface {
 				continue;
 			}
 
-			$this->dispatchFor(normalised: $normalised, configuration: $configuration, sourceId: $sourceId);
+			$this->dispatchFor(normalised: $normalised, run: $run);
 			$accepted++;
 		}
 
@@ -198,27 +198,13 @@ class CtiEventIntake implements CtiEventIntakeInterface {
 	 * that really happened into a 500 back to the PBX, which would make it
 	 * retry an event that was already handled.
 	 *
-	 * @param array $normalised The normalised event.
-	 * @param array $configuration The source configuration.
-	 * @param string $sourceId The source id.
+	 * @param array        $normalised The normalised event.
+	 * @param CtiIntakeRun $run        The source it came from.
 	 *
 	 * @return void
 	 */
-	private function dispatchFor(array $normalised, array $configuration, string $sourceId): void {
-		$number  = (string) ($normalised['callerNumber'] ?? '');
-		$context = $this->context->resolve(e164: $number, sourceConfiguration: $configuration);
-
-		$event = new CallEvent(
-			kind: (string) ($normalised['kind'] ?? ''),
-			callId: (string) ($normalised['callId'] ?? ''),
-			callerNumber: $number,
-			caller: $context['caller'],
-			openCases: $context['openCases'],
-			agentId: (string) ($normalised['agentId'] ?? ''),
-			sourceId: $sourceId,
-			at: (string) ($normalised['at'] ?? ''),
-			durationSeconds: (int) ($normalised['durationSeconds'] ?? 0)
-		);
+	private function dispatchFor(array $normalised, CtiIntakeRun $run): void {
+		$event = $this->eventFor(normalised: $normalised, run: $run);
 
 		// Logged BEFORE the dispatch: a panel that records the contact moment
 		// the instant it sees `ended` must find the call. A failed write costs
@@ -232,12 +218,37 @@ class CtiEventIntake implements CtiEventIntakeInterface {
 		try {
 			$this->dispatcher->dispatchTyped($event);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				'[CtiEventIntake] a listener threw on '.$event->cloudEventType().': '.$e->getMessage(),
-				['exception' => $e]
-			);
+			$this->logger->error('[CtiEventIntake] a listener threw on '.$event->cloudEventType().': '.$e->getMessage(), ['exception' => $e]);
 		}
 
 	}//end dispatchFor()
+
+	/**
+	 * The call event for one normalised event, with the caller and their open cases.
+	 *
+	 * @param array<string, mixed> $normalised The provider's normalised event.
+	 * @param CtiIntakeRun         $run        The source it came from.
+	 *
+	 * @return CallEvent
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 */
+	private function eventFor(array $normalised, CtiIntakeRun $run): CallEvent {
+		$number  = (string) ($normalised['callerNumber'] ?? '');
+		$context = $this->context->resolve(e164: $number, sourceConfiguration: $run->configuration);
+
+		return new CallEvent(
+			kind: (string) ($normalised['kind'] ?? ''),
+			callId: (string) ($normalised['callId'] ?? ''),
+			callerNumber: $number,
+			caller: $context['caller'],
+			openCases: $context['openCases'],
+			agentId: (string) ($normalised['agentId'] ?? ''),
+			sourceId: $run->sourceId,
+			at: (string) ($normalised['at'] ?? ''),
+			durationSeconds: (int) ($normalised['durationSeconds'] ?? 0)
+		);
+
+	}//end eventFor()
 
 }//end class

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <phpmd-baseline>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Action/EventAction.php" method="run"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Action/EventAction.php" method="run"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Action/SynchronizationAction.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Job/EventAction.php" method="run"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Job/EventAction.php" method="run"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Job/SynchronizationAction.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Adapters/Pdok/PdokGeocodingClientHttp.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Adapters/Pdok/PdokWfsClientHttp.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Adapters/Pdok/PdokWmsClientHttp.php"/>
@@ -87,7 +87,7 @@
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Gateway/GatewayRegistry.php"/>
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Gateway/GatewayRegistry.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Gateway/SourceGatewayTransport.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Http/XMLResponse.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/XMLResponse.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/Adapter/FormSubmissionAdapter.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/Adapter/MessagingChannelAdapter.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/Adapter/TeamsChannelAdapter.php"/>

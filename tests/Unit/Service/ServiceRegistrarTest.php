@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -50,6 +53,7 @@ use OCA\Integriq\Service\CardfeedSyncService;
 use OCA\Integriq\Service\CardfeedSyncServiceInterface;
 use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\Integriq\Service\CatalogRegistryServiceInterface;
+use OCA\Integriq\Service\CloudEventEmitterInterface;
 use OCA\Integriq\Service\ConfigurationImportPreviewService;
 use OCA\Integriq\Service\ConfigurationImportPreviewServiceInterface;
 use OCA\Integriq\Service\ConfigurationService;
@@ -67,7 +71,6 @@ use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\DSOParserService;
-use OCA\Integriq\Service\DSOParserServiceInterface;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceServiceInterface;
@@ -88,11 +91,8 @@ use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\DsoIngestService;
-use OCA\Integriq\Service\DsoIngestServiceInterface;
-use OCA\Integriq\Service\Dso\DsoActivityOverview;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
-use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
@@ -100,6 +100,8 @@ use OCA\Integriq\Service\EndpointCacheService;
 use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\Integriq\Service\EndpointCorsPolicy;
 use OCA\Integriq\Service\EndpointCorsPolicyInterface;
+use OCA\Integriq\Service\Event\EventForwardingGuardInterface;
+use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\EndpointServiceInterface;
 use OCA\Integriq\Service\EnvironmentService;
@@ -152,6 +154,8 @@ use OCA\Integriq\Service\JobToFlowGenerator;
 use OCA\Integriq\Service\JobToFlowGeneratorInterface;
 use OCA\Integriq\Service\KissSyncService;
 use OCA\Integriq\Service\KissSyncServiceInterface;
+use OCA\Integriq\Service\Kiss\CallerSearchInterface;
+use OCA\Integriq\Service\Kiss\ConfiguredCallerSearch;
 use OCA\Integriq\Service\Kiss\CtiEventIntake;
 use OCA\Integriq\Service\Kiss\CtiEventIntakeInterface;
 use OCA\Integriq\Service\Lti\LtiAgsService;
@@ -209,9 +213,13 @@ use OCA\Integriq\Service\PaymentIntentServiceInterface;
 use OCA\Integriq\Service\PeppolTransmissionService;
 use OCA\Integriq\Service\PeppolTransmissionServiceInterface;
 use OCA\Integriq\Service\Portal\ActivityMappingTableInterface;
+use OCA\Integriq\Service\Portal\ActivityOverview;
 use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Portal\PortalRequestIntakeInterface;
+use OCA\Integriq\Service\Portal\PortalRequestParserInterface;
+use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\Integriq\Service\Portal\UnmappedActivitiesInterface;
 use OCA\Integriq\Service\PromotionService;
 use OCA\Integriq\Service\PromotionServiceInterface;
@@ -235,6 +243,8 @@ use OCA\Integriq\Service\RunSummaryService;
 use OCA\Integriq\Service\RunSummaryServiceInterface;
 use OCA\Integriq\Service\SearchService;
 use OCA\Integriq\Service\SearchServiceInterface;
+use OCA\Integriq\Service\Security\SecretRedactorInterface;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\SecurityService;
 use OCA\Integriq\Service\SecurityServiceInterface;
 use OCA\Integriq\Service\Security\AuthenticationConfigAuditor;
@@ -247,12 +257,16 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutorInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Service\Security\InlineSecretMigrationFactoryInterface;
+use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
+use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\Service\SettingsService;
 use OCA\Integriq\Service\SettingsServiceInterface;
 use OCA\Integriq\Service\SignedPayloadVerifierInterface;
+use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
+use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
 use OCA\Integriq\Service\SmsDispatchService;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
 use OCA\Integriq\Service\SoftwareCatalogueService;
@@ -283,6 +297,7 @@ use OCA\Integriq\Service\SynchronizationFlowGenerator;
 use OCA\Integriq\Service\SynchronizationFlowGeneratorInterface;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationLogServiceInterface;
+use OCA\Integriq\Service\SynchronizationLookupInterface;
 use OCA\Integriq\Service\SynchronizationRunProgressService;
 use OCA\Integriq\Service\SynchronizationRunProgressServiceInterface;
 use OCA\Integriq\Service\SynchronizationService;
@@ -334,7 +349,7 @@ class ServiceRegistrarTest extends TestCase {
 		FlowRunnerServiceInterface::class => FlowRunnerService::class,
 		KissSyncServiceInterface::class => KissSyncService::class,
 		JobToFlowGeneratorInterface::class => JobToFlowGenerator::class,
-		DsoIngestServiceInterface::class => DsoIngestService::class,
+		PortalRequestIntakeInterface::class => DsoIngestService::class,
 		AuthenticationServiceInterface::class => AuthenticationService::class,
 		SoftwareCatalogueServiceInterface::class => SoftwareCatalogueService::class,
 		OpenFormulierenIntakeServiceInterface::class => OpenFormulierenIntakeService::class,
@@ -356,7 +371,7 @@ class ServiceRegistrarTest extends TestCase {
 		ExchangeJobRunnerInterface::class => ExchangeJobRunner::class,
 		ConnectionRegistryServiceInterface::class => ConnectionRegistryService::class,
 		EudiStatusListServiceInterface::class => EudiStatusListService::class,
-		DSOParserServiceInterface::class => DSOParserService::class,
+		PortalRequestParserInterface::class => DSOParserService::class,
 		ApprovalDecisionServiceInterface::class => ApprovalDecisionService::class,
 		UwlrEduVServiceInterface::class => UwlrEduVService::class,
 		PaymentIntentServiceInterface::class => PaymentIntentService::class,
@@ -369,7 +384,7 @@ class ServiceRegistrarTest extends TestCase {
 		SettingsServiceInterface::class => SettingsService::class,
 		ExchangeReadModelInterface::class => ExchangeReadModel::class,
 		SearchServiceInterface::class => SearchService::class,
-		DsoAttachmentFetcherInterface::class => DsoAttachmentFetcher::class,
+		RequestAttachmentFetcherInterface::class => DsoAttachmentFetcher::class,
 		ConnectionAlertServiceInterface::class => ConnectionAlertService::class,
 		SynchronizationContractServiceInterface::class => SynchronizationContractService::class,
 		BerichtenboxSourceSettingsInterface::class => BerichtenboxSourceSettings::class,
@@ -409,6 +424,7 @@ class ServiceRegistrarTest extends TestCase {
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
 		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
+		CallerSearchInterface::class => ConfiguredCallerSearch::class,
 		IntakeGroupsInterface::class => IntakeGroups::class,
 		ObjecttypeEndpointHandlerInterface::class => ObjecttypeEndpointHandler::class,
 		ActionAuthServiceInterface::class => ActionAuthService::class,
@@ -417,7 +433,7 @@ class ServiceRegistrarTest extends TestCase {
 		SubscriptionRequestHandlerInterface::class => SubscriptionRequestHandler::class,
 		SubscriptionRosterInterface::class => SubscriptionRoster::class,
 		AgentBatchGateInterface::class => AgentBatchGate::class,
-		ActivityOverviewInterface::class => DsoActivityOverview::class,
+		ActivityOverviewInterface::class => ActivityOverview::class,
 		WebhookGateInterface::class => WebhookGate::class,
 		EnvironmentServiceInterface::class => EnvironmentService::class,
 		FormsSyncAdapterInterface::class => FormsSyncAdapter::class,
@@ -425,7 +441,9 @@ class ServiceRegistrarTest extends TestCase {
 		IntakeDocumentDispatcherInterface::class => IntakeDocumentDispatcher::class,
 		EndpointCorsPolicyInterface::class => EndpointCorsPolicy::class,
 		SourceTestServiceInterface::class => SourceTestService::class,
+		SynchronizationLookupInterface::class => SynchronizationService::class,
 		EgressGuardInterface::class => EgressGuard::class,
+		SecretRedactorInterface::class => SensitiveFieldRegistry::class,
 		SecurityServiceInterface::class => SecurityService::class,
 		ResponseDecoderInterface::class => ResponseDecoder::class,
 		OpenRegisterCredentialBridgeInterface::class => OpenRegisterCredentialBridge::class,
@@ -433,6 +451,7 @@ class ServiceRegistrarTest extends TestCase {
 		InlineSecretMigrationPlannerInterface::class => InlineSecretMigrationPlanner::class,
 		InlineSecretMigrationExecutorInterface::class => InlineSecretMigrationExecutor::class,
 		InlineSecretMigrationFactoryInterface::class => InlineSecretMigrationFactory::class,
+		PlaceholderSecretRepairInterface::class => PlaceholderSecretRepair::class,
 		RegistryUpdateClientInterface::class => RegistryUpdateClient::class,
 		AgentActionStoreInterface::class => AgentActionStore::class,
 		CaseReferenceDetectorInterface::class => CaseReferenceDetector::class,
@@ -450,6 +469,8 @@ class ServiceRegistrarTest extends TestCase {
 		ActivityMappingTableInterface::class => DsoActivityTable::class,
 		ApiVersionNegotiationInterface::class => ZgwVersionNegotiationService::class,
 		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
+		PhoneNumberNormaliserInterface::class => E164PhoneNumberNormaliser::class,
+		CloudEventEmitterInterface::class => EventService::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 
@@ -457,6 +478,7 @@ class ServiceRegistrarTest extends TestCase {
 	 * The services the registrar builds with a factory, in registration order.
 	 */
 	private const FACTORIES = [
+		'OCA\\Integriq\\Service\\Event\\EventForwardingGuardInterface',
 		'OCA\\Integriq\\Service\\SettingsService',
 		'OCA\\Integriq\\Service\\Registry\\SubscriptionRegistry',
 		'OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistry',
@@ -513,6 +535,32 @@ class ServiceRegistrarTest extends TestCase {
 			$this->assertTrue(interface_exists($contract), $contract);
 			$this->assertContains($contract, class_implements($implementation), $implementation);
 		}
+	}
+
+	/**
+	 * The forwarding guard is built per resolution, so every listener keeps its own chain counter.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude container wiring invariant, the guard's decision is specified on EventLoopGuard
+	 */
+	public function testForwardingGuardIsANewEventLoopGuardPerResolution(): void {
+		$registered = [];
+		$context = $this->createMock(IRegistrationContext::class);
+		$context->method('registerService')->willReturnCallback(
+			function (string $name, callable $factory, bool $shared = true) use (&$registered): void {
+				$registered[$name] = [$factory, $shared];
+			}
+		);
+
+		(new ServiceRegistrar())->register(context: $context);
+
+		[$factory, $shared] = $registered[EventForwardingGuardInterface::class];
+		$this->assertFalse($shared);
+		$first = $factory();
+		$this->assertInstanceOf(EventLoopGuard::class, $first);
+		$this->assertNotSame($first, $factory());
+		$this->assertSame('chain-ceiling-reached-in-one-request', EventLoopGuard::REFUSED_CEILING);
 	}
 
 	/**

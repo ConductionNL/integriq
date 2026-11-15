@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -20,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Mtls;
 
 use GuzzleHttp\Client;
-use OCA\Integriq\Exception\MtlsHandshakeException;
 use Psr\Http\Message\ResponseInterface;
 
 /**

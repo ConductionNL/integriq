@@ -3,6 +3,9 @@
 /**
  * Integriq DSO Attachment Fetcher.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Downloads the bijlagen a `dso_verzoek` references and attaches each one as
  * a file to that request object, through OpenRegister's FileService, tagged
  * `dso-bijlage`. OpenRegister stores the file in the object's own folder in
@@ -28,9 +31,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
@@ -41,11 +41,14 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Dso;
 
 use Exception;
-use OCA\Integriq\Exception\DsoAttachmentTooLargeException;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Service\DsoIngestService;
+use OCA\Integriq\Service\PayloadTooLargeException;
+use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -56,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
  */
-class DsoAttachmentFetcher implements DsoAttachmentFetcherInterface {
+class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 
 	/**
 	 * Downloads tried per entry before it is `failed` for good (REQ-DSO-005).
@@ -183,21 +186,18 @@ class DsoAttachmentFetcher implements DsoAttachmentFetcherInterface {
 		array $sourceConfiguration,
 		FileService $fileService
 	): array {
-		$url = (string)($entry['url'] ?? '');
-		if ($url === '') {
-			return $this->failed(entry: $entry, error: 'The bijlage has no URL.', terminal: true);
+		$refusal = $this->refuseUrl(entry: $entry, sourceConfiguration: $sourceConfiguration);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		// The URL comes from the inbound payload and the request carries the
-		// source's credential, so only https is fetched (no file://, no plain http).
-		if (strtolower((string)parse_url($url, PHP_URL_SCHEME)) !== 'https') {
-			return $this->failed(entry: $entry, error: 'Only https bijlage URLs are downloaded.', terminal: true);
-		}
-
-		$maxBytes = (int)($sourceConfiguration['maxFileSize'] ?? self::DEFAULT_MAX_FILE_SIZE);
-		if ($maxBytes <= 0) {
-			$maxBytes = self::DEFAULT_MAX_FILE_SIZE;
-		}
+		$job = [
+			'request' => $request,
+			'sourceConfiguration' => $sourceConfiguration,
+			'fileService' => $fileService,
+			'url' => (string)$entry['url'],
+			'maxBytes' => $this->maxBytes(sourceConfiguration: $sourceConfiguration),
+		];
 
 		$attempts = (int)($entry['attempts'] ?? 0);
 		$lastError = '';
@@ -205,30 +205,8 @@ class DsoAttachmentFetcher implements DsoAttachmentFetcherInterface {
 			$attempts++;
 			$entry['attempts'] = $attempts;
 			try {
-				$stream = $this->client->download(
-					sourceConfiguration: $sourceConfiguration,
-					url: $url,
-					maxBytes: $maxBytes
-				);
-				try {
-					$file = $fileService->addFile(
-						objectEntity: $request,
-						fileName: (string)($entry['name'] ?? ''),
-						content: $stream,
-						tags: [self::TAG]
-					);
-				} finally {
-					if (is_resource($stream) === true) {
-						fclose($stream);
-					}
-				}
-
-				unset($entry['error']);
-				$entry['status'] = 'stored';
-				$entry['fileId'] = (int)$file->getId();
-
-				return $entry;
-			} catch (DsoAttachmentTooLargeException $exception) {
+				return $this->storeOnce(job: $job, entry: $entry);
+			} catch (PayloadTooLargeException $exception) {
 				$entry['status'] = 'too-large';
 				$entry['error'] = $exception->getMessage();
 
@@ -250,6 +228,108 @@ class DsoAttachmentFetcher implements DsoAttachmentFetcherInterface {
 
 		return $this->failed(entry: $entry, error: $lastError, terminal: false);
 	}//end fetchOne()
+
+	/**
+	 * The failed entry when the bijlage URL may not be fetched, or null when it may.
+	 *
+	 * The URL comes from the inbound payload and the request carries the
+	 * source's credential, so only https is fetched (no file://, no plain http),
+	 * only from the host and port of the source's `baseUrl`, and never with
+	 * credentials in the URL itself.
+	 *
+	 * @param array $entry               The attachment entry.
+	 * @param array $sourceConfiguration The active DSO source's `configuration`.
+	 *
+	 * @return array|null The terminally failed entry, or null.
+	 */
+	private function refuseUrl(array $entry, array $sourceConfiguration): ?array {
+		$url = (string)($entry['url'] ?? '');
+		if ($url === '') {
+			return $this->failed(entry: $entry, error: 'The bijlage has no URL.', terminal: true);
+		}
+
+		if (strtolower((string)parse_url($url, PHP_URL_SCHEME)) !== 'https') {
+			return $this->failed(entry: $entry, error: 'Only https bijlage URLs are downloaded.', terminal: true);
+		}
+
+		$origin = $this->originOf(url: (string)($sourceConfiguration['baseUrl'] ?? ''));
+		if ($origin === null || $this->originOf(url: $url) !== $origin) {
+			return $this->failed(entry: $entry, error: 'Only bijlage URLs on the DSO source host are downloaded.', terminal: true);
+		}
+
+		return null;
+	}//end refuseUrl()
+
+	/**
+	 * The `host:port` of an https URL without userinfo, or null when the URL has neither form.
+	 *
+	 * @param string $url The URL.
+	 *
+	 * @return string|null The lowercased origin.
+	 */
+	private function originOf(string $url): ?string {
+		$parts = parse_url($url);
+		if (is_array($parts) === false
+			|| strtolower((string)($parts['scheme'] ?? '')) !== 'https'
+			|| isset($parts['user']) === true
+			|| isset($parts['pass']) === true
+			|| (string)($parts['host'] ?? '') === ''
+		) {
+			return null;
+		}
+
+		return strtolower((string)$parts['host']) . ':' . (int)($parts['port'] ?? 443);
+	}//end originOf()
+
+	/**
+	 * The download size cap: the source's maxFileSize, or the default when unset or not positive.
+	 *
+	 * @param array $sourceConfiguration The `dso` source's configuration.
+	 *
+	 * @return integer Bytes.
+	 */
+	private function maxBytes(array $sourceConfiguration): int {
+		$maxBytes = (int)($sourceConfiguration['maxFileSize'] ?? self::DEFAULT_MAX_FILE_SIZE);
+		if ($maxBytes <= 0) {
+			return self::DEFAULT_MAX_FILE_SIZE;
+		}
+
+		return $maxBytes;
+	}//end maxBytes()
+
+	/**
+	 * One attempt: download the bijlage with the source's credential and store it on the request.
+	 *
+	 * @param array{request: ObjectEntity, sourceConfiguration: array, fileService: FileService, url: string, maxBytes: int} $job   The download.
+	 * @param array                                                                                                         $entry The attachment entry.
+	 *
+	 * @return array The stored entry.
+	 *
+	 * @throws Exception When the download or the store fails.
+	 */
+	private function storeOnce(array $job, array $entry): array {
+		$stream = $this->client->download(
+			sourceConfiguration: $job['sourceConfiguration'],
+			url: $job['url'],
+			maxBytes: $job['maxBytes']
+		);
+		try {
+			$file = $job['fileService']->addFile(
+				target: new FileTarget(object: $job['request']),
+				upload: new FileUpload(fileName: (string)($entry['name'] ?? ''), content: $stream, share: false, tags: [self::TAG])
+			);
+		} finally {
+			if (is_resource($stream) === true) {
+				fclose($stream);
+			}
+		}
+
+		unset($entry['error']);
+		$entry['status'] = 'stored';
+		$entry['fileId'] = (int)$file->getId();
+
+		return $entry;
+	}//end storeOnce()
 
 	/**
 	 * Whether an entry still needs a download: `pending`, or `failed` with attempts left.

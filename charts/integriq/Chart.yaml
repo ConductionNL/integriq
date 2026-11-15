@@ -1,0 +1,18 @@
+# Rendered from ConductionNL/.github templates/app-deploy.
+apiVersion: v2
+name: integriq
+description: Nextcloud with integriq and OpenRegister, on the official Nextcloud chart. For evaluation and test environments.
+type: application
+version: 0.1.0
+appVersion: "latest"
+home: https://github.com/ConductionNL/integriq
+sources:
+  - https://github.com/ConductionNL/integriq
+  - https://github.com/nextcloud/helm
+maintainers:
+  - name: Conduction B.V.
+    email: info@conduction.nl
+dependencies:
+  - name: nextcloud
+    version: 9.4.1
+    repository: https://nextcloud.github.io/helm/

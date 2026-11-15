@@ -49,6 +49,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 * @var array<int,string>
 	 */
 	private const CLOSED = [
+		'addresses',
 		'agent_action',
 		'app_connection',
 		'call_log',
@@ -70,6 +71,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'openformulieren_submission',
 		'outbound_message',
 		'payment_intent',
+		'peppol_inbound_document',
 		'recipient_key',
 		'recipient_opt_out',
 		'rule',

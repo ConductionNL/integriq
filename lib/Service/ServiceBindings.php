@@ -16,15 +16,22 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\CitrixDaasAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\IntuneAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\JamfProAdapter;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
@@ -58,10 +65,10 @@ use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
-use OCA\Integriq\Service\Dso\DsoActivityOverview;
+use OCA\Integriq\Service\Event\EventForwardingGuardInterface;
+use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
-use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
@@ -90,6 +97,8 @@ use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\Integriq\Service\Intake\WebhookTrustMigrator;
 use OCA\Integriq\Service\Intake\WebhookTrustMigratorInterface;
 use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
+use OCA\Integriq\Service\Kiss\CallerSearchInterface;
+use OCA\Integriq\Service\Kiss\ConfiguredCallerSearch;
 use OCA\Integriq\Service\Kiss\CtiEventIntake;
 use OCA\Integriq\Service\Kiss\CtiEventIntakeInterface;
 use OCA\Integriq\Service\Lti\LtiAgsService;
@@ -137,9 +146,13 @@ use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
 use OCA\Integriq\Service\Portal\ActivityMappingTableInterface;
+use OCA\Integriq\Service\Portal\ActivityOverview;
 use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Portal\PortalRequestIntakeInterface;
+use OCA\Integriq\Service\Portal\PortalRequestParserInterface;
+use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\Integriq\Service\Portal\UnmappedActivitiesInterface;
 use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
 use OCA\Integriq\Service\Registry\KvkMutatieProvider;
@@ -167,6 +180,12 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Service\Security\InlineSecretMigrationFactoryInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
+use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
+use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
+use OCA\Integriq\Service\Security\SecretRedactorInterface;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
+use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClient;
@@ -205,6 +224,176 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * @spec exclude container wiring only, the registrar has no behaviour of its own
  */
 final class ServiceBindings {
+
+	/**
+	 * The contracts of the services other components call most, bound to their class in this order.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	private const CONTRACTS = [
+		CallServiceInterface::class => CallService::class,
+		EndpointServiceInterface::class => EndpointService::class,
+		EventServiceInterface::class => EventService::class,
+		SynchronizationServiceInterface::class => SynchronizationService::class,
+		ConfigurationServiceInterface::class => ConfigurationService::class,
+		BrokeredCallServiceInterface::class => BrokeredCallService::class,
+		LegacyToRegisterMigratorInterface::class => LegacyToRegisterMigrator::class,
+		EudiCredentialOfferServiceInterface::class => EudiCredentialOfferService::class,
+		MappingServiceInterface::class => MappingService::class,
+		ApprovalServiceInterface::class => ApprovalService::class,
+		BankfeedSyncServiceInterface::class => BankfeedSyncService::class,
+		LtiLaunchServiceInterface::class => LtiLaunchService::class,
+		IBabsConnectorServiceInterface::class => IBabsConnectorService::class,
+		JobServiceInterface::class => JobService::class,
+		CatalogRegistryServiceInterface::class => CatalogRegistryService::class,
+		UserServiceInterface::class => UserService::class,
+		NotificatiesSubscriberServiceInterface::class => NotificatiesSubscriberService::class,
+		SynchronizationFlowGeneratorInterface::class => SynchronizationFlowGenerator::class,
+		PromotionServiceInterface::class => PromotionService::class,
+		StufZknSyncServiceInterface::class => StufZknSyncService::class,
+		RuleToFlowGeneratorInterface::class => RuleToFlowGenerator::class,
+		FlowRunnerServiceInterface::class => FlowRunnerService::class,
+		KissSyncServiceInterface::class => KissSyncService::class,
+		JobToFlowGeneratorInterface::class => JobToFlowGenerator::class,
+		PortalRequestIntakeInterface::class => DsoIngestService::class,
+		AuthenticationServiceInterface::class => AuthenticationService::class,
+		SoftwareCatalogueServiceInterface::class => SoftwareCatalogueService::class,
+		OpenFormulierenIntakeServiceInterface::class => OpenFormulierenIntakeService::class,
+		LtiKeyServiceInterface::class => LtiKeyService::class,
+		CardfeedSyncServiceInterface::class => CardfeedSyncService::class,
+		ExchangeJobServiceInterface::class => ExchangeJobService::class,
+		PeppolTransmissionServiceInterface::class => PeppolTransmissionService::class,
+		LtiAgsServiceInterface::class => LtiAgsService::class,
+		IwmoIjwSyncServiceInterface::class => IwmoIjwSyncService::class,
+		StufZdsOutboundInterface::class => StufZdsOutbound::class,
+		SmsDispatchServiceInterface::class => SmsDispatchService::class,
+		StufProviderReceiverInterface::class => StufProviderReceiver::class,
+		DigitalPostServiceInterface::class => DigitalPostService::class,
+		ExchangeRejectionServiceInterface::class => ExchangeRejectionService::class,
+		ConfigurationImportPreviewServiceInterface::class => ConfigurationImportPreviewService::class,
+		ExecutionTraceServiceInterface::class => ExecutionTraceService::class,
+		DocumentGenerationServiceInterface::class => DocumentGenerationService::class,
+		ObjectEndpointHandlerInterface::class => ObjectEndpointHandler::class,
+		ExchangeJobRunnerInterface::class => ExchangeJobRunner::class,
+		ConnectionRegistryServiceInterface::class => ConnectionRegistryService::class,
+		EudiStatusListServiceInterface::class => EudiStatusListService::class,
+		PortalRequestParserInterface::class => DSOParserService::class,
+		ApprovalDecisionServiceInterface::class => ApprovalDecisionService::class,
+		UwlrEduVServiceInterface::class => UwlrEduVService::class,
+		PaymentIntentServiceInterface::class => PaymentIntentService::class,
+		EudiIssuerKeyServiceInterface::class => EudiIssuerKeyService::class,
+		VerzuimloketServiceInterface::class => VerzuimloketService::class,
+		LtiPlatformLoginServiceInterface::class => LtiPlatformLoginService::class,
+		RodServiceInterface::class => RodService::class,
+		EndpointCacheServiceInterface::class => EndpointCacheService::class,
+		OsoServiceInterface::class => OsoService::class,
+		SettingsServiceInterface::class => SettingsService::class,
+		ExchangeReadModelInterface::class => ExchangeReadModel::class,
+		SearchServiceInterface::class => SearchService::class,
+		RequestAttachmentFetcherInterface::class => DsoAttachmentFetcher::class,
+		ConnectionAlertServiceInterface::class => ConnectionAlertService::class,
+		SynchronizationContractServiceInterface::class => SynchronizationContractService::class,
+		BerichtenboxSourceSettingsInterface::class => BerichtenboxSourceSettings::class,
+		ConnectionMonitorServiceInterface::class => ConnectionMonitorService::class,
+		TablesSyncAdapterInterface::class => TablesSyncAdapter::class,
+	];
+
+	/**
+	 * The contracts of the supporting services other components call, bound in this order.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	private const SUPPORTING_CONTRACTS = [
+		StufZdsConfirmationReceiverInterface::class => StufZdsConfirmationReceiver::class,
+		FscCallServiceInterface::class => FscCallService::class,
+		ConnectionStoreInterface::class => ConnectionStore::class,
+		ObjectWriteHandlerInterface::class => ObjectWriteHandler::class,
+		PortalConnectionInterface::class => DsoConnection::class,
+		ZgwSetInstallerInterface::class => ZgwSetInstaller::class,
+		AuthenticationConfigAuditorInterface::class => AuthenticationConfigAuditor::class,
+		StufZdsCaseClientInterface::class => StufZdsCaseClient::class,
+		MailboxSourceHandlerInterface::class => MailboxSourceHandler::class,
+		ObjectenTokenServiceInterface::class => ObjectenTokenService::class,
+		RunSummaryServiceInterface::class => RunSummaryService::class,
+		SignedPayloadVerifierInterface::class => DSOSignatureVerifierService::class,
+		ConnectionProbeServiceInterface::class => ConnectionProbeService::class,
+		WebhookSignatureServiceInterface::class => WebhookSignatureService::class,
+		SyncItemDeadLetterServiceInterface::class => SyncItemDeadLetterService::class,
+		SynchronizationRunProgressServiceInterface::class => SynchronizationRunProgressService::class,
+		DigitalPostAccountInterface::class => DigitalPostAccount::class,
+		AuthenticationConfigRemoverInterface::class => AuthenticationConfigRemover::class,
+		MtlsConfigResolverInterface::class => MtlsConfigResolver::class,
+		RecordOwnershipServiceInterface::class => RecordOwnershipService::class,
+		DashboardDatasourceServiceInterface::class => DashboardDatasourceService::class,
+		SourceMappingServiceInterface::class => SourceMappingService::class,
+		MailIntakeServiceInterface::class => MailIntakeService::class,
+		FlowGraphMigrationServiceInterface::class => FlowGraphMigrationService::class,
+		WebhookConnectionInterface::class => WebhookConnection::class,
+		SynchronizationLogServiceInterface::class => SynchronizationLogService::class,
+		DemoDataServiceInterface::class => DemoDataService::class,
+		BerichtenboxHealthInterface::class => BerichtenboxHealth::class,
+		ZgwVersionTranslationServiceInterface::class => ZgwVersionTranslationService::class,
+		SourceDestructionServiceInterface::class => SourceDestructionService::class,
+		UnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
+		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
+		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
+		CtiEventIntakeInterface::class => CtiEventIntake::class,
+		CallerSearchInterface::class => ConfiguredCallerSearch::class,
+		IntakeGroupsInterface::class => IntakeGroups::class,
+		ObjecttypeEndpointHandlerInterface::class => ObjecttypeEndpointHandler::class,
+		ActionAuthServiceInterface::class => ActionAuthService::class,
+		LtiNrpsServiceInterface::class => LtiNrpsService::class,
+		RecordProvenanceServiceInterface::class => RecordProvenanceService::class,
+		SubscriptionRequestHandlerInterface::class => SubscriptionRequestHandler::class,
+		SubscriptionRosterInterface::class => SubscriptionRoster::class,
+		AgentBatchGateInterface::class => AgentBatchGate::class,
+		ActivityOverviewInterface::class => ActivityOverview::class,
+		WebhookGateInterface::class => WebhookGate::class,
+		EnvironmentServiceInterface::class => EnvironmentService::class,
+		FormsSyncAdapterInterface::class => FormsSyncAdapter::class,
+		PortalConnectionAlertsInterface::class => DsoConnectionAlerts::class,
+		IntakeDocumentDispatcherInterface::class => IntakeDocumentDispatcher::class,
+		EndpointCorsPolicyInterface::class => EndpointCorsPolicy::class,
+		SourceTestServiceInterface::class => SourceTestService::class,
+		SynchronizationLookupInterface::class => SynchronizationService::class,
+	];
+
+	/**
+	 * The helpers callers in other components used to build with `new` or call statically, bound in this order.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	private const INJECTED_HELPERS = [
+		EgressGuardInterface::class => EgressGuard::class,
+		SecretRedactorInterface::class => SensitiveFieldRegistry::class,
+		SecurityServiceInterface::class => SecurityService::class,
+		ResponseDecoderInterface::class => ResponseDecoder::class,
+		OpenRegisterCredentialBridgeInterface::class => OpenRegisterCredentialBridge::class,
+		WebhookProfilesInterface::class => WebhookProfiles::class,
+		InlineSecretMigrationPlannerInterface::class => InlineSecretMigrationPlanner::class,
+		InlineSecretMigrationExecutorInterface::class => InlineSecretMigrationExecutor::class,
+		InlineSecretMigrationFactoryInterface::class => InlineSecretMigrationFactory::class,
+		PlaceholderSecretRepairInterface::class => PlaceholderSecretRepair::class,
+		RegistryUpdateClientInterface::class => RegistryUpdateClient::class,
+		AgentActionStoreInterface::class => AgentActionStore::class,
+		CaseReferenceDetectorInterface::class => CaseReferenceDetector::class,
+		LocalDeleteGuardInterface::class => LocalDeleteGuard::class,
+		MessageParserInterface::class => MessageParser::class,
+		DeadLetterProjectionInterface::class => DeadLetterProjection::class,
+		MtlsTransportServiceInterface::class => MtlsTransportService::class,
+		ExchangeTargetCatalogueInterface::class => ExchangeTargetCatalogue::class,
+		MessageValidationServiceInterface::class => MessageValidationService::class,
+		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
+		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
+		SubscriptionRegistryInterface::class => SubscriptionRegistry::class,
+		DocumentProviderRegistryInterface::class => DocumentGenerationProviderRegistry::class,
+		ToolPlatformDetailsInterface::class => LtiPlatformDetailsService::class,
+		ActivityMappingTableInterface::class => DsoActivityTable::class,
+		ApiVersionNegotiationInterface::class => ZgwVersionNegotiationService::class,
+		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
+		PhoneNumberNormaliserInterface::class => E164PhoneNumberNormaliser::class,
+		CloudEventEmitterInterface::class => EventService::class,
+	];
 	/**
 	 * Register the contract aliases on the app's registration context.
 	 *
@@ -242,6 +431,8 @@ final class ServiceBindings {
 	 *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
 	 *     proving the `AbstractCategoryAdapterProvider` registration pattern
 	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
+	 *   - IntuneAdapter, JamfProAdapter, CitrixDaasAdapter — the endpoint-workspace
+	 *     adapters of connectors-endpoint-workspace-adapters (REQ-EWC-008).
 	 *
 	 * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
 	 * integriq is loaded but openregister isn't enabled yet) so boot
@@ -264,6 +455,9 @@ final class ServiceBindings {
 			$registry = $container->get(IntegrationRegistry::class);
 			$registry->addProvider($container->get(SynchronizationContractProvider::class));
 			$registry->addProvider($container->get(AzureVirtualDesktopAdapter::class));
+			$registry->addProvider($container->get(IntuneAdapter::class));
+			$registry->addProvider($container->get(JamfProAdapter::class));
+			$registry->addProvider($container->get(CitrixDaasAdapter::class));
 			$registry->addProvider($container->get(SharePointOnlineAdapter::class));
 			$registry->addProvider($container->get(Microsoft365Adapter::class));
 			$registry->addProvider($container->get(S3Adapter::class));
@@ -296,8 +490,8 @@ final class ServiceBindings {
 			SettingsService::class,
 			function ($c) {
 				return new SettingsService(
-					db: $c->get('OCP\IDBConnection'),
 					config: $c->get('OCP\IAppConfig'),
+					rebaseScheduler: $c->get(RetentionRebaseSchedulerInterface::class),
 					logger: $c->get('Psr\Log\LoggerInterface')
 				);
 			}
@@ -504,71 +698,7 @@ final class ServiceBindings {
 	 * @return void
 	 */
 	private function registerContracts(IRegistrationContext $context): void {
-		$context->registerServiceAlias(CallServiceInterface::class, CallService::class);
-		$context->registerServiceAlias(EndpointServiceInterface::class, EndpointService::class);
-		$context->registerServiceAlias(EventServiceInterface::class, EventService::class);
-		$context->registerServiceAlias(SynchronizationServiceInterface::class, SynchronizationService::class);
-		$context->registerServiceAlias(ConfigurationServiceInterface::class, ConfigurationService::class);
-		$context->registerServiceAlias(BrokeredCallServiceInterface::class, BrokeredCallService::class);
-		$context->registerServiceAlias(LegacyToRegisterMigratorInterface::class, LegacyToRegisterMigrator::class);
-		$context->registerServiceAlias(EudiCredentialOfferServiceInterface::class, EudiCredentialOfferService::class);
-		$context->registerServiceAlias(MappingServiceInterface::class, MappingService::class);
-		$context->registerServiceAlias(ApprovalServiceInterface::class, ApprovalService::class);
-		$context->registerServiceAlias(BankfeedSyncServiceInterface::class, BankfeedSyncService::class);
-		$context->registerServiceAlias(LtiLaunchServiceInterface::class, LtiLaunchService::class);
-		$context->registerServiceAlias(IBabsConnectorServiceInterface::class, IBabsConnectorService::class);
-		$context->registerServiceAlias(JobServiceInterface::class, JobService::class);
-		$context->registerServiceAlias(CatalogRegistryServiceInterface::class, CatalogRegistryService::class);
-		$context->registerServiceAlias(UserServiceInterface::class, UserService::class);
-		$context->registerServiceAlias(NotificatiesSubscriberServiceInterface::class, NotificatiesSubscriberService::class);
-		$context->registerServiceAlias(SynchronizationFlowGeneratorInterface::class, SynchronizationFlowGenerator::class);
-		$context->registerServiceAlias(PromotionServiceInterface::class, PromotionService::class);
-		$context->registerServiceAlias(StufZknSyncServiceInterface::class, StufZknSyncService::class);
-		$context->registerServiceAlias(RuleToFlowGeneratorInterface::class, RuleToFlowGenerator::class);
-		$context->registerServiceAlias(FlowRunnerServiceInterface::class, FlowRunnerService::class);
-		$context->registerServiceAlias(KissSyncServiceInterface::class, KissSyncService::class);
-		$context->registerServiceAlias(JobToFlowGeneratorInterface::class, JobToFlowGenerator::class);
-		$context->registerServiceAlias(DsoIngestServiceInterface::class, DsoIngestService::class);
-		$context->registerServiceAlias(AuthenticationServiceInterface::class, AuthenticationService::class);
-		$context->registerServiceAlias(SoftwareCatalogueServiceInterface::class, SoftwareCatalogueService::class);
-		$context->registerServiceAlias(OpenFormulierenIntakeServiceInterface::class, OpenFormulierenIntakeService::class);
-		$context->registerServiceAlias(LtiKeyServiceInterface::class, LtiKeyService::class);
-		$context->registerServiceAlias(CardfeedSyncServiceInterface::class, CardfeedSyncService::class);
-		$context->registerServiceAlias(ExchangeJobServiceInterface::class, ExchangeJobService::class);
-		$context->registerServiceAlias(PeppolTransmissionServiceInterface::class, PeppolTransmissionService::class);
-		$context->registerServiceAlias(LtiAgsServiceInterface::class, LtiAgsService::class);
-		$context->registerServiceAlias(IwmoIjwSyncServiceInterface::class, IwmoIjwSyncService::class);
-		$context->registerServiceAlias(StufZdsOutboundInterface::class, StufZdsOutbound::class);
-		$context->registerServiceAlias(SmsDispatchServiceInterface::class, SmsDispatchService::class);
-		$context->registerServiceAlias(StufProviderReceiverInterface::class, StufProviderReceiver::class);
-		$context->registerServiceAlias(DigitalPostServiceInterface::class, DigitalPostService::class);
-		$context->registerServiceAlias(ExchangeRejectionServiceInterface::class, ExchangeRejectionService::class);
-		$context->registerServiceAlias(ConfigurationImportPreviewServiceInterface::class, ConfigurationImportPreviewService::class);
-		$context->registerServiceAlias(ExecutionTraceServiceInterface::class, ExecutionTraceService::class);
-		$context->registerServiceAlias(DocumentGenerationServiceInterface::class, DocumentGenerationService::class);
-		$context->registerServiceAlias(ObjectEndpointHandlerInterface::class, ObjectEndpointHandler::class);
-		$context->registerServiceAlias(ExchangeJobRunnerInterface::class, ExchangeJobRunner::class);
-		$context->registerServiceAlias(ConnectionRegistryServiceInterface::class, ConnectionRegistryService::class);
-		$context->registerServiceAlias(EudiStatusListServiceInterface::class, EudiStatusListService::class);
-		$context->registerServiceAlias(DSOParserServiceInterface::class, DSOParserService::class);
-		$context->registerServiceAlias(ApprovalDecisionServiceInterface::class, ApprovalDecisionService::class);
-		$context->registerServiceAlias(UwlrEduVServiceInterface::class, UwlrEduVService::class);
-		$context->registerServiceAlias(PaymentIntentServiceInterface::class, PaymentIntentService::class);
-		$context->registerServiceAlias(EudiIssuerKeyServiceInterface::class, EudiIssuerKeyService::class);
-		$context->registerServiceAlias(VerzuimloketServiceInterface::class, VerzuimloketService::class);
-		$context->registerServiceAlias(LtiPlatformLoginServiceInterface::class, LtiPlatformLoginService::class);
-		$context->registerServiceAlias(RodServiceInterface::class, RodService::class);
-		$context->registerServiceAlias(EndpointCacheServiceInterface::class, EndpointCacheService::class);
-		$context->registerServiceAlias(OsoServiceInterface::class, OsoService::class);
-		$context->registerServiceAlias(SettingsServiceInterface::class, SettingsService::class);
-		$context->registerServiceAlias(ExchangeReadModelInterface::class, ExchangeReadModel::class);
-		$context->registerServiceAlias(SearchServiceInterface::class, SearchService::class);
-		$context->registerServiceAlias(DsoAttachmentFetcherInterface::class, DsoAttachmentFetcher::class);
-		$context->registerServiceAlias(ConnectionAlertServiceInterface::class, ConnectionAlertService::class);
-		$context->registerServiceAlias(SynchronizationContractServiceInterface::class, SynchronizationContractService::class);
-		$context->registerServiceAlias(BerichtenboxSourceSettingsInterface::class, BerichtenboxSourceSettings::class);
-		$context->registerServiceAlias(ConnectionMonitorServiceInterface::class, ConnectionMonitorService::class);
-		$context->registerServiceAlias(TablesSyncAdapterInterface::class, TablesSyncAdapter::class);
+		$this->aliasAll(context: $context, aliases: self::CONTRACTS);
 	}//end registerContracts()
 
 	/**
@@ -579,56 +709,7 @@ final class ServiceBindings {
 	 * @return void
 	 */
 	private function registerSupportingContracts(IRegistrationContext $context): void {
-		$context->registerServiceAlias(StufZdsConfirmationReceiverInterface::class, StufZdsConfirmationReceiver::class);
-		$context->registerServiceAlias(FscCallServiceInterface::class, FscCallService::class);
-		$context->registerServiceAlias(ConnectionStoreInterface::class, ConnectionStore::class);
-		$context->registerServiceAlias(ObjectWriteHandlerInterface::class, ObjectWriteHandler::class);
-		$context->registerServiceAlias(PortalConnectionInterface::class, DsoConnection::class);
-		$context->registerServiceAlias(ZgwSetInstallerInterface::class, ZgwSetInstaller::class);
-		$context->registerServiceAlias(AuthenticationConfigAuditorInterface::class, AuthenticationConfigAuditor::class);
-		$context->registerServiceAlias(StufZdsCaseClientInterface::class, StufZdsCaseClient::class);
-		$context->registerServiceAlias(MailboxSourceHandlerInterface::class, MailboxSourceHandler::class);
-		$context->registerServiceAlias(ObjectenTokenServiceInterface::class, ObjectenTokenService::class);
-		$context->registerServiceAlias(RunSummaryServiceInterface::class, RunSummaryService::class);
-		$context->registerServiceAlias(SignedPayloadVerifierInterface::class, DSOSignatureVerifierService::class);
-		$context->registerServiceAlias(ConnectionProbeServiceInterface::class, ConnectionProbeService::class);
-		$context->registerServiceAlias(WebhookSignatureServiceInterface::class, WebhookSignatureService::class);
-		$context->registerServiceAlias(SyncItemDeadLetterServiceInterface::class, SyncItemDeadLetterService::class);
-		$context->registerServiceAlias(SynchronizationRunProgressServiceInterface::class, SynchronizationRunProgressService::class);
-		$context->registerServiceAlias(DigitalPostAccountInterface::class, DigitalPostAccount::class);
-		$context->registerServiceAlias(AuthenticationConfigRemoverInterface::class, AuthenticationConfigRemover::class);
-		$context->registerServiceAlias(MtlsConfigResolverInterface::class, MtlsConfigResolver::class);
-		$context->registerServiceAlias(RecordOwnershipServiceInterface::class, RecordOwnershipService::class);
-		$context->registerServiceAlias(DashboardDatasourceServiceInterface::class, DashboardDatasourceService::class);
-		$context->registerServiceAlias(SourceMappingServiceInterface::class, SourceMappingService::class);
-		$context->registerServiceAlias(MailIntakeServiceInterface::class, MailIntakeService::class);
-		$context->registerServiceAlias(FlowGraphMigrationServiceInterface::class, FlowGraphMigrationService::class);
-		$context->registerServiceAlias(WebhookConnectionInterface::class, WebhookConnection::class);
-		$context->registerServiceAlias(SynchronizationLogServiceInterface::class, SynchronizationLogService::class);
-		$context->registerServiceAlias(DemoDataServiceInterface::class, DemoDataService::class);
-		$context->registerServiceAlias(BerichtenboxHealthInterface::class, BerichtenboxHealth::class);
-		$context->registerServiceAlias(ZgwVersionTranslationServiceInterface::class, ZgwVersionTranslationService::class);
-		$context->registerServiceAlias(SourceDestructionServiceInterface::class, SourceDestructionService::class);
-		$context->registerServiceAlias(UnmappedActivitiesInterface::class, DsoUnmappedActivities::class);
-		$context->registerServiceAlias(WebhookTrustMigratorInterface::class, WebhookTrustMigrator::class);
-		$context->registerServiceAlias(Microsoft365AdapterInterface::class, Microsoft365Adapter::class);
-		$context->registerServiceAlias(CtiEventIntakeInterface::class, CtiEventIntake::class);
-		$context->registerServiceAlias(IntakeGroupsInterface::class, IntakeGroups::class);
-		$context->registerServiceAlias(ObjecttypeEndpointHandlerInterface::class, ObjecttypeEndpointHandler::class);
-		$context->registerServiceAlias(ActionAuthServiceInterface::class, ActionAuthService::class);
-		$context->registerServiceAlias(LtiNrpsServiceInterface::class, LtiNrpsService::class);
-		$context->registerServiceAlias(RecordProvenanceServiceInterface::class, RecordProvenanceService::class);
-		$context->registerServiceAlias(SubscriptionRequestHandlerInterface::class, SubscriptionRequestHandler::class);
-		$context->registerServiceAlias(SubscriptionRosterInterface::class, SubscriptionRoster::class);
-		$context->registerServiceAlias(AgentBatchGateInterface::class, AgentBatchGate::class);
-		$context->registerServiceAlias(ActivityOverviewInterface::class, DsoActivityOverview::class);
-		$context->registerServiceAlias(WebhookGateInterface::class, WebhookGate::class);
-		$context->registerServiceAlias(EnvironmentServiceInterface::class, EnvironmentService::class);
-		$context->registerServiceAlias(FormsSyncAdapterInterface::class, FormsSyncAdapter::class);
-		$context->registerServiceAlias(PortalConnectionAlertsInterface::class, DsoConnectionAlerts::class);
-		$context->registerServiceAlias(IntakeDocumentDispatcherInterface::class, IntakeDocumentDispatcher::class);
-		$context->registerServiceAlias(EndpointCorsPolicyInterface::class, EndpointCorsPolicy::class);
-		$context->registerServiceAlias(SourceTestServiceInterface::class, SourceTestService::class);
+		$this->aliasAll(context: $context, aliases: self::SUPPORTING_CONTRACTS);
 	}//end registerSupportingContracts()
 
 	/**
@@ -640,30 +721,22 @@ final class ServiceBindings {
 	 * @return void
 	 */
 	private function registerInjectedHelpers(IRegistrationContext $context): void {
-		$context->registerServiceAlias(EgressGuardInterface::class, EgressGuard::class);
-		$context->registerServiceAlias(SecurityServiceInterface::class, SecurityService::class);
-		$context->registerServiceAlias(ResponseDecoderInterface::class, ResponseDecoder::class);
-		$context->registerServiceAlias(OpenRegisterCredentialBridgeInterface::class, OpenRegisterCredentialBridge::class);
-		$context->registerServiceAlias(WebhookProfilesInterface::class, WebhookProfiles::class);
-		$context->registerServiceAlias(InlineSecretMigrationPlannerInterface::class, InlineSecretMigrationPlanner::class);
-		$context->registerServiceAlias(InlineSecretMigrationExecutorInterface::class, InlineSecretMigrationExecutor::class);
-		$context->registerServiceAlias(InlineSecretMigrationFactoryInterface::class, InlineSecretMigrationFactory::class);
-		$context->registerServiceAlias(RegistryUpdateClientInterface::class, RegistryUpdateClient::class);
-		$context->registerServiceAlias(AgentActionStoreInterface::class, AgentActionStore::class);
-		$context->registerServiceAlias(CaseReferenceDetectorInterface::class, CaseReferenceDetector::class);
-		$context->registerServiceAlias(LocalDeleteGuardInterface::class, LocalDeleteGuard::class);
-		$context->registerServiceAlias(MessageParserInterface::class, MessageParser::class);
-		$context->registerServiceAlias(DeadLetterProjectionInterface::class, DeadLetterProjection::class);
-		$context->registerServiceAlias(MtlsTransportServiceInterface::class, MtlsTransportService::class);
-		$context->registerServiceAlias(ExchangeTargetCatalogueInterface::class, ExchangeTargetCatalogue::class);
-		$context->registerServiceAlias(MessageValidationServiceInterface::class, MessageValidationService::class);
-		$context->registerServiceAlias(DigitalPostProviderRegistryInterface::class, DigitalPostProviderRegistry::class);
-		$context->registerServiceAlias(DocumentConnectionGuardInterface::class, DocumentConnectionGuard::class);
-		$context->registerServiceAlias(SubscriptionRegistryInterface::class, SubscriptionRegistry::class);
-		$context->registerServiceAlias(DocumentProviderRegistryInterface::class, DocumentGenerationProviderRegistry::class);
-		$context->registerServiceAlias(ToolPlatformDetailsInterface::class, LtiPlatformDetailsService::class);
-		$context->registerServiceAlias(ActivityMappingTableInterface::class, DsoActivityTable::class);
-		$context->registerServiceAlias(ApiVersionNegotiationInterface::class, ZgwVersionNegotiationService::class);
-		$context->registerServiceAlias(SubscriptionSigningPolicyInterface::class, SubscriptionSigningPolicy::class);
+		$this->aliasAll(context: $context, aliases: self::INJECTED_HELPERS);
+		// Not shared: each listener keeps its own chain counter.
+		$context->registerService(EventForwardingGuardInterface::class, static fn (): EventLoopGuard => new EventLoopGuard(), false);
 	}//end registerInjectedHelpers()
+
+	/**
+	 * Bind each contract to its class, in the order given.
+	 *
+	 * @param IRegistrationContext               $context The registration context.
+	 * @param array<class-string, class-string> $aliases Contract => class.
+	 *
+	 * @return void
+	 */
+	private function aliasAll(IRegistrationContext $context, array $aliases): void {
+		foreach ($aliases as $contract => $service) {
+			$context->registerServiceAlias($contract, $service);
+		}
+	}//end aliasAll()
 }

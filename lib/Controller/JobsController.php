@@ -16,12 +16,18 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Controller;
 
+use DateTimeImmutable;
 use Exception;
+use InvalidArgumentException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\JobCalendarSchedule;
 use OCA\Integriq\Service\JobServiceInterface;
 use OCA\Integriq\Service\SearchServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -49,6 +55,8 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class JobsController extends Controller {
+	use LogPageListing;
+
 	/**
 	 * Constructor for the JobController.
 	 *
@@ -59,6 +67,7 @@ class JobsController extends Controller {
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
+	 * @param JobCalendarSchedule|null $calendar The calendar calculator the schedule preview uses.
 	 *
 	 * @return void
 	 */
@@ -70,6 +79,7 @@ class JobsController extends Controller {
 		private IL10N $l,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthServiceInterface $actionAuth,
+		private readonly ?JobCalendarSchedule $calendar = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -87,103 +97,50 @@ class JobsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function logs(SearchServiceInterface $searchService): JSONResponse {
-		try {
-			// Get filters from request.
-			$filters = $this->request->getParams();
-			$specialFilters = [];
-
-			// Pagination using _page and _limit.
-			if (isset($filters['_limit']) === true) {
-				$limit = (int)$filters['_limit'];
-			} else {
-				$limit = 20;
-			}
-
-			if (isset($filters['_page']) === true) {
-				$page = (int)$filters['_page'];
-			} else {
-				$page = 1;
-			}
-
-			$offset = (($page - 1) * $limit);
-			unset($filters['_limit'], $filters['_page']);
-
-			// Handle special filters.
-			if (empty($filters['date_from']) === false) {
-				$specialFilters['date_from'] = $filters['date_from'];
-			}
-
-			if (empty($filters['date_to']) === false) {
-				$specialFilters['date_to'] = $filters['date_to'];
-			}
-
-			if (empty($filters['status']) === false) {
-				$specialFilters['status'] = $filters['status'];
-			}
-
-			if (empty($filters['slow_executions']) === false) {
-				$specialFilters['slow_executions'] = 5000;
-				// 5 seconds in milliseconds.
-			}
-
-			// Build search conditions and parameters.
-			$searchConditions = [];
-			$searchParams = [];
-
-			if (empty($specialFilters['date_from']) === false) {
-				$searchConditions[] = 'created >= ?';
-				$searchParams[] = $specialFilters['date_from'];
-			}
-
-			if (empty($specialFilters['date_to']) === false) {
-				$searchConditions[] = 'created <= ?';
-				$searchParams[] = $specialFilters['date_to'];
-			}
-
-			if (empty($specialFilters['status']) === false) {
-				$searchConditions[] = 'status = ?';
-				$searchParams[] = $specialFilters['status'];
-			}
-
-			if (empty($specialFilters['slow_executions']) === false) {
-				$searchConditions[] = 'execution_time > ?';
-				$searchParams[] = $specialFilters['slow_executions'];
-			}
-
-			// Remove special query params from filters.
-			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-			// Get job logs with filters and pagination via OR ObjectService.
-			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'job_log'], $filters);
-			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
-			$jobLogs = ($matches['results'] ?? $matches);
-			$total = ($matches['total'] ?? count($jobLogs));
-			if ($limit > 0) {
-				$pages = ceil($total / $limit);
-			} else {
-				$pages = 1;
-			}
-
-			if ($limit > 0) {
-				$currentPage = (floor($offset / $limit) + 1);
-			} else {
-				$currentPage = 1;
-			}
-
-			// Return flattened paginated response.
-			return new JSONResponse(
-				[
-					'results' => $jobLogs,
-					'page' => $currentPage,
-					'pages' => $pages,
-					'results_count' => count($jobLogs),
-					'total' => $total,
-				]
-			);
-		} catch (\Exception $e) {
-			return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: %s', [$e->getMessage()])], 500);
-		}//end try
+		return $this->logPage(searchService: $searchService, schema: 'job_log');
 	}//end logs()
+
+	/**
+	 * The next five run times of a calendar, for the job form's preview.
+	 *
+	 * Computed by the same calculator the run loop uses, so what the form shows
+	 * is what the job does. Requires the action `job.schedule-preview`, default
+	 * admin, so a preview does not open a read of the job list to everyone.
+	 *
+	 * @return JSONResponse `{"runs": ["<ISO 8601>", ...]}`, 400 naming the
+	 *                      malformed field, 401 or 403.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-job-form-previews-the-next-five-run-times-req-jcal-003
+	 */
+	#[NoAdminRequired]
+	public function schedulePreview(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: 'job.schedule-preview');
+
+		$calendar = $this->request->getParam('schedule', $this->request->getParam('calendar'));
+		if (is_array($calendar) === false) {
+			return new JSONResponse(
+				['error' => $this->l->t('A calendar schedule is required.')],
+				\OCP\AppFramework\Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			$runs = ($this->calendar ?? new JobCalendarSchedule())->preview(calendar: $calendar, count: 5);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], \OCP\AppFramework\Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse(
+			['runs' => array_map(static fn (DateTimeImmutable $run): string => $run->format('c'), $runs)]
+		);
+	}//end schedulePreview()
 
 	/**
 	 * Executes a job.
@@ -210,7 +167,7 @@ class JobsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'job.run');
 
 		try {
-			$job = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'job', _rbac: false, _multitenancy: false);
+			$job = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'job', _rbac: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
 		}
@@ -279,7 +236,7 @@ class JobsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'job.test');
 
 		try {
-			$job = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'job', _rbac: false, _multitenancy: false);
+			$job = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'job', _rbac: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
 		}

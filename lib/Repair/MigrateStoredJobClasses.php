@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
+/**
  * Integriq Migrate Stored Job Classes Repair Step.
  *
  * Repair step that rewrites the PHP class names STORED INSIDE job objects
@@ -41,9 +46,9 @@
  *     `lib/Settings/register.d/environments-and-promotion.json`), and
  *     `adapterClass` is not declared on any schema in the register. It is an
  *     orphaned seed file, so there is nothing stored to repair.
- *   - Nextcloud's own `oc_jobs` rows for this app's `<background-jobs>` also
- *     hold class names, but that table is the SERVER's, not this app's, and is
- *     deliberately left to Nextcloud — see the note in the class body.
+ *   - Nextcloud's own `oc_jobs` rows also hold class names. This step leaves
+ *     them alone; {@see MigrateMovedJobClasses}, which runs right after it,
+ *     rewrites the rows of the job classes that moved inside this app.
  *
  * SAFETY. Matches the two sibling rename steps:
  *   - idempotent: a value that already carries the new prefix is skipped, so a
@@ -130,6 +135,20 @@ class MigrateStoredJobClasses implements IRepairStep {
 	private const REGISTER = 'integriq';
 
 	/**
+	 * The step name that prefixes its output and log lines.
+	 *
+	 * @var string
+	 */
+	protected const STEP = 'MigrateStoredJobClasses';
+
+	/**
+	 * What the stale values name, for the output lines.
+	 *
+	 * @var string
+	 */
+	protected const OLD_NAMES = 'the openconnector namespace';
+
+	/**
 	 * The schema whose objects carry a stored PHP class name.
 	 *
 	 * @var string
@@ -202,17 +221,8 @@ class MigrateStoredJobClasses implements IRepairStep {
 			return;
 		}
 
-		try {
-			$orObjectService = $this->container->get(OrObjectService::class);
-		} catch (Throwable $e) {
-			$output->warning(
-				'MigrateStoredJobClasses: could not resolve the OpenRegister object service; '
-				. 'stored jobClass values were NOT migrated.'
-			);
-			$this->logger->error(
-				'Integriq: MigrateStoredJobClasses service resolution failed',
-				['exception' => $e->getMessage()]
-			);
+		$orObjectService = $this->resolveObjectService(output: $output);
+		if ($orObjectService === null) {
 			return;
 		}
 
@@ -220,27 +230,58 @@ class MigrateStoredJobClasses implements IRepairStep {
 			return $this->migrateAll(orObjectService: $orObjectService, output: $output);
 		};
 
-		$counts = $this->runAsSystem(migrate: $migrate);
+		$this->reportCounts(output: $output, counts: $this->runAsSystem(migrate: $migrate));
+	}//end run()
 
+	/**
+	 * The OpenRegister object service, or null (reported) when it cannot be resolved.
+	 *
+	 * @param IOutput $output The output interface for progress reporting
+	 *
+	 * @return OrObjectService|null
+	 */
+	private function resolveObjectService(IOutput $output): ?OrObjectService {
+		try {
+			return $this->container->get(OrObjectService::class);
+		} catch (Throwable $e) {
+			$output->warning(
+				static::STEP . ': could not resolve the OpenRegister object service; '
+				. 'stored jobClass values were NOT migrated.'
+			);
+			$this->logger->error(
+				'Integriq: ' . static::STEP . ' service resolution failed',
+				['exception' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end resolveObjectService()
+
+	/**
+	 * Report what the pass rewrote, and loudly what it could not.
+	 *
+	 * @param IOutput                         $output The output interface for progress reporting
+	 * @param array{migrated:int,failed:int} $counts Counts from the pass
+	 *
+	 * @return void
+	 */
+	private function reportCounts(IOutput $output, array $counts): void {
 		$migrated = (int)($counts['migrated'] ?? 0);
 		$failed = (int)($counts['failed'] ?? 0);
-
 		if ($migrated === 0 && $failed === 0) {
-			$output->info('MigrateStoredJobClasses: no stored jobClass still names the openconnector namespace.');
+			$output->info(static::STEP . ': no stored jobClass still names ' . static::OLD_NAMES . '.');
 			return;
 		}
 
-		$output->info('MigrateStoredJobClasses: rewrote ' . $migrated . ' stored jobClass value(s).');
-
+		$output->info(static::STEP . ': rewrote ' . $migrated . ' stored jobClass value(s).');
 		if ($failed > 0) {
 			// Surfaced loudly: a job left on the old class name does not error
 			// at run time, it silently stops executing (see the class docblock).
 			$output->warning(
-				'MigrateStoredJobClasses: ' . $failed . ' job(s) could NOT be rewritten and still name the '
-				. 'openconnector namespace. Those jobs will not run until their jobClass is corrected.'
+				static::STEP . ': ' . $failed . ' job(s) could NOT be rewritten and still name '
+				. static::OLD_NAMES . '. Those jobs will not run until their jobClass is corrected.'
 			);
 		}
-	}//end run()
+	}//end reportCounts()
 
 	/**
 	 * Run the migration as the CLI system principal where OpenRegister offers it.
@@ -276,57 +317,101 @@ class MigrateStoredJobClasses implements IRepairStep {
 	 * @return array{migrated:int,failed:int} Counts for the caller's summary
 	 */
 	private function migrateAll(OrObjectService $orObjectService, IOutput $output): array {
-		$migrated = 0;
-		$failed = 0;
-		$offset = 0;
-
+		$run = $this->newRun(orObjectService: $orObjectService, output: $output);
 		for ($page = 0; $page < self::MAX_PAGES; $page++) {
-			try {
-				$result = $orObjectService->findAll(
-					config: [
-						'filters' => ['register' => self::REGISTER, 'schema' => self::SCHEMA],
-						'limit' => self::PAGE_SIZE,
-						'offset' => $offset,
-					]
-				);
-			} catch (Throwable $e) {
-				$output->warning(
-					'MigrateStoredJobClasses: could not enumerate stored jobs at offset ' . $offset
-					. '; stopping. Some jobClass values may still name the openconnector namespace.'
-				);
-				$this->logger->error(
-					'Integriq: MigrateStoredJobClasses enumeration failed',
-					['offset' => $offset, 'exception' => $e->getMessage()]
-				);
-				break;
-			}//end try
-
-			$items = ($result['results'] ?? $result);
-			if (is_array($items) === false || count($items) === 0) {
-				break;
-			}
-
+			$items = $this->jobPage(run: $run);
 			foreach ($items as $item) {
-				$outcome = $this->migrateOne(item: $item, orObjectService: $orObjectService);
-				if ($outcome === true) {
-					$migrated++;
-				} elseif ($outcome === false) {
-					$failed++;
-				}
+				$run->count(outcome: $this->migrateOne(item: $item, orObjectService: $orObjectService));
 			}
 
-			// A short page is the last page. Guarding on the page size rather
-			// than on a reported total keeps this correct even if the backend
-			// omits `total`.
+			// A short page (or none) is the last page. Guarding on the page
+			// size rather than on a reported total keeps this correct even if
+			// the backend omits `total`.
 			if (count($items) < self::PAGE_SIZE) {
 				break;
 			}
 
-			$offset += self::PAGE_SIZE;
-		}//end for
+			$run->offset += self::PAGE_SIZE;
+		}
 
-		return ['migrated' => $migrated, 'failed' => $failed];
+		return ['migrated' => $run->migrated, 'failed' => $run->failed];
 	}//end migrateAll()
+
+	/**
+	 * A fresh pass over the stored jobs, at the first page with nothing counted.
+	 *
+	 * @param OrObjectService $orObjectService The OR object service
+	 * @param IOutput         $output          The repair output channel
+	 *
+	 * @return JobClassMigrationRun
+	 */
+	private function newRun(OrObjectService $orObjectService, IOutput $output): JobClassMigrationRun {
+		$run = new JobClassMigrationRun();
+		$run->objects = $orObjectService;
+		$run->output = $output;
+
+		return $run;
+	}//end newRun()
+
+	/**
+	 * The stored jobs at the run's offset; none when the backend answers no
+	 * list or the enumeration fails (reported).
+	 *
+	 * @param JobClassMigrationRun $run The pass.
+	 *
+	 * @return array<int|string, mixed> The page's items.
+	 */
+	private function jobPage(JobClassMigrationRun $run): array {
+		try {
+			$result = $run->objects->findAll(
+				config: [
+					'filters' => ['register' => self::REGISTER, 'schema' => self::SCHEMA],
+					'limit' => self::PAGE_SIZE,
+					'offset' => $run->offset,
+				]
+			);
+		} catch (Throwable $e) {
+			$this->reportEnumerationFailure(run: $run, exception: $e);
+			return [];
+		}
+
+		return $this->pageItems(result: $result);
+	}//end jobPage()
+
+	/**
+	 * The items of one findAll() answer; none when it holds no list.
+	 *
+	 * @param mixed $result What findAll() answered.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function pageItems(mixed $result): array {
+		$items = ($result['results'] ?? $result);
+		if (is_array($items) === false) {
+			return [];
+		}
+
+		return $items;
+	}//end pageItems()
+
+	/**
+	 * Report an enumeration that failed, and stopped the pass, at the run's offset.
+	 *
+	 * @param JobClassMigrationRun $run       The pass.
+	 * @param Throwable            $exception The failure.
+	 *
+	 * @return void
+	 */
+	private function reportEnumerationFailure(JobClassMigrationRun $run, Throwable $exception): void {
+		$run->output->warning(
+			static::STEP . ': could not enumerate stored jobs at offset ' . $run->offset
+			. '; stopping. Some jobClass values may still name ' . static::OLD_NAMES . '.'
+		);
+		$this->logger->error(
+			'Integriq: ' . static::STEP . ' enumeration failed',
+			['offset' => $run->offset, 'exception' => $exception->getMessage()]
+		);
+	}//end reportEnumerationFailure()
 
 	/**
 	 * Rewrite one job object's stored class name when it names the old namespace.
@@ -353,15 +438,12 @@ class MigrateStoredJobClasses implements IRepairStep {
 				return null;
 			}
 
-			// Only the exact old prefix is touched. An already-migrated value,
-			// a third-party class or anything unrecognised is left alone
-			// rather than guessed at.
-			if (str_starts_with($current, self::OLD_CLASS_PREFIX) === false) {
+			$renamed = $this->renamedClass(class: $current);
+			if ($renamed === null) {
 				return null;
 			}
 
-			$data[self::CLASS_PROPERTY] = self::NEW_CLASS_PREFIX
-				. substr($current, strlen(self::OLD_CLASS_PREFIX));
+			$data[self::CLASS_PROPERTY] = $renamed;
 
 			$orObjectService->saveObject(
 				object: $data,
@@ -379,4 +461,26 @@ class MigrateStoredJobClasses implements IRepairStep {
 			return false;
 		}//end try
 	}//end migrateOne()
+
+	/**
+	 * The new name of a stored class name, or null when it is left as it is.
+	 *
+	 * Only the exact old prefix is touched. An already-migrated value, a
+	 * third-party class or anything unrecognised is left alone rather than
+	 * guessed at.
+	 *
+	 * @param string $class The stored class name
+	 *
+	 * @return string|null The class name to store, or null to leave it
+	 *
+	 * @spec exclude One-off openconnector->integriq app-id rename plumbing: it
+	 *       maps a stored class-name string and adds no behaviour of its own.
+	 */
+	protected function renamedClass(string $class): ?string {
+		if (str_starts_with($class, self::OLD_CLASS_PREFIX) === false) {
+			return null;
+		}
+
+		return self::NEW_CLASS_PREFIX . substr($class, strlen(self::OLD_CLASS_PREFIX));
+	}//end renamedClass()
 }//end class

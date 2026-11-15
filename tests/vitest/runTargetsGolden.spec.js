@@ -103,6 +103,19 @@ const PAYLOADS = [
 		stackTrace: { frame_0: 'one', frame_1: 2 },
 	},
 	{ stackTrace: {} },
+	{
+		result: {
+			objects: {
+				found: 1,
+				skipped: 2,
+				created: 3,
+				updated: 4,
+				deleted: 5,
+				invalid: 6,
+			},
+		},
+	},
+	{ result: { objects: { skipped: '', invalid: false, found: null } } },
 	...GUARDS.map((guard) => ({ result: { objects: { deletionGuard: guard } } })),
 ]
 

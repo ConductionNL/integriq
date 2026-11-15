@@ -139,6 +139,7 @@ class DsoConnection implements PortalConnectionInterface {
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
 	public function findConsumers(string $authorizationType = self::AUTHORIZATION_TYPE): array {
+		// Unscoped: DSO intake resolves its consumers as the system, before any user is known.
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
@@ -351,6 +352,7 @@ class DsoConnection implements PortalConnectionInterface {
 				register: self::REGISTER,
 				schema: self::SCHEMA_CONSUMER,
 				_rbac: false,
+				// Unscoped: reads the raw stored consumer, with its secret, to sign a DSO call as the system.
 				_multitenancy: false,
 				_render: false
 			);

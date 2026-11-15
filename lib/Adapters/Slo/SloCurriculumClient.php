@@ -36,8 +36,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Slo;
 
-use OCA\Integriq\Exception\SloCurriculumException;
-
 /**
  * Abstract SLO curriculum client: one GET, one raw body.
  *

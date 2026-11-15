@@ -1,0 +1,200 @@
+{
+    "issuer": {
+        "zaaksysteem": {
+            "consumer": {
+                "source": "integriq",
+                "uuid": "c-jwt",
+                "name": "zaaksysteem",
+                "userId": "svc-zs",
+                "authorizationType": "jwt",
+                "configuration": {
+                    "algorithm": "HS256"
+                },
+                "record": "entity:c-jwt"
+            },
+            "calls": [
+                [
+                    {
+                        "filters": {
+                            "register": "integriq",
+                            "schema": "consumer",
+                            "name": "zaaksysteem"
+                        }
+                    },
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ]
+        },
+        "portal": {
+            "consumer": {
+                "source": "integriq",
+                "uuid": "c-key",
+                "name": "portal",
+                "userId": "svc-portal",
+                "authorizationType": "ApiKey",
+                "configuration": {
+                    "apiKey": "k-123"
+                },
+                "record": "entity:c-key"
+            },
+            "calls": [
+                [
+                    {
+                        "filters": {
+                            "register": "integriq",
+                            "schema": "consumer",
+                            "name": "portal"
+                        }
+                    },
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ]
+        },
+        "badconfig": {
+            "consumer": {
+                "source": "integriq",
+                "uuid": "c-bad-config",
+                "name": "badconfig",
+                "userId": null,
+                "authorizationType": "5",
+                "configuration": [],
+                "record": "entity:c-bad-config"
+            },
+            "calls": [
+                [
+                    {
+                        "filters": {
+                            "register": "integriq",
+                            "schema": "consumer",
+                            "name": "badconfig"
+                        }
+                    },
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ]
+        },
+        "no entity uuid": {
+            "consumer": {
+                "source": "integriq",
+                "uuid": "data-uuid",
+                "name": "no entity uuid",
+                "userId": null,
+                "authorizationType": "apikey",
+                "configuration": {
+                    "apiKey": "k-000"
+                },
+                "record": "entity:"
+            },
+            "calls": [
+                [
+                    {
+                        "filters": {
+                            "register": "integriq",
+                            "schema": "consumer",
+                            "name": "no entity uuid"
+                        }
+                    },
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ]
+        },
+        "nobody": {
+            "consumer": null,
+            "calls": [
+                [
+                    {
+                        "filters": {
+                            "register": "integriq",
+                            "schema": "consumer",
+                            "name": "nobody"
+                        }
+                    },
+                    [
+                        false,
+                        false
+                    ]
+                ]
+            ]
+        }
+    },
+    "apiKey": {
+        "k-123": {
+            "consumer": {
+                "source": "integriq",
+                "uuid": "c-key",
+                "name": "portal",
+                "userId": "svc-portal",
+                "authorizationType": "ApiKey",
+                "configuration": {
+                    "apiKey": "k-123"
+                },
+                "record": "entity:c-key"
+            },
+            "reads": 1
+        },
+        "k-456": {
+            "consumer": {
+                "source": "integriq",
+                "uuid": "c-key2",
+                "name": "other",
+                "userId": null,
+                "authorizationType": "apikey",
+                "configuration": {
+                    "apiKey": "k-456"
+                },
+                "record": "entity:c-key2"
+            },
+            "reads": 1
+        },
+        "k-000": {
+            "consumer": {
+                "source": "integriq",
+                "uuid": "data-uuid",
+                "name": "no entity uuid",
+                "userId": null,
+                "authorizationType": "apikey",
+                "configuration": {
+                    "apiKey": "k-000"
+                },
+                "record": "entity:"
+            },
+            "reads": 1
+        },
+        "(empty)": {
+            "consumer": null,
+            "reads": 0
+        },
+        "k-789": {
+            "consumer": null,
+            "reads": 1
+        },
+        "123": {
+            "consumer": null,
+            "reads": 1
+        },
+        "K-123": {
+            "consumer": null,
+            "reads": 1
+        },
+        "k-12": {
+            "consumer": null,
+            "reads": 1
+        },
+        "nope": {
+            "consumer": null,
+            "reads": 1
+        }
+    }
+}

@@ -226,6 +226,116 @@ class NotifyNlControllerTest extends TestCase {
 	}//end testSendMapsProviderExceptionToBadGateway()
 
 	/**
+	 * Every refusal code answers 409 with that code and the refusal's own
+	 * message, and no other code does.
+	 *
+	 * @return array<string,array{0:string,1:int}>
+	 */
+	public static function refusalCodes(): array {
+		return [
+			'opted-out'             => ['opted-out', Http::STATUS_CONFLICT],
+			'no-consent'            => ['no-consent', Http::STATUS_CONFLICT],
+			'invalid-address'       => ['invalid-address', Http::STATUS_CONFLICT],
+			'authority-unavailable' => ['authority-unavailable', Http::STATUS_CONFLICT],
+			'another code'          => ['rate-limited', Http::STATUS_BAD_GATEWAY],
+		];
+
+	}//end refusalCodes()
+
+	/**
+	 * A refusal code answers 409, any other provider failure 502.
+	 *
+	 * @param string $code   The provider error code.
+	 * @param int    $status The expected status.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider refusalCodes
+	 */
+	public function testSendAnswersEachDecisionCode(string $code, int $status): void {
+		$this->request->method('getParams')->willReturn(['to' => '0612345678']);
+		$this->dispatchService->method('sendMessage')
+			->willThrowException(new SmsProviderException(message: 'refused here', errorCode: $code));
+
+		$response = $this->controller->send();
+
+		$this->assertSame($status, $response->getStatus());
+		$expected = ['error' => 'sms_send_failed', 'message' => 'refused here'];
+		if ($status === Http::STATUS_CONFLICT) {
+			$expected['error'] = $code;
+		}
+
+		$this->assertSame($expected, $response->getData());
+
+	}//end testSendAnswersEachDecisionCode()
+
+	/**
+	 * send() asks for the `sms.send` action, and a caller refused it never
+	 * reaches the dispatch service.
+	 *
+	 * @return void
+	 */
+	public function testSendStopsACallerRefusedTheSendAction(): void {
+		$this->request->method('getParams')->willReturn(['to' => '0612345678', 'body' => 'hello']);
+		$this->actionAuth->expects($this->once())->method('requireAction')
+			->with($this->anything(), 'sms.send')
+			->willThrowException(new \OCP\AppFramework\OCS\OCSForbiddenException('no'));
+		$this->dispatchService->expects($this->never())->method('sendMessage');
+
+		$this->expectException(\OCP\AppFramework\OCS\OCSForbiddenException::class);
+		$this->controller->send();
+
+	}//end testSendStopsACallerRefusedTheSendAction()
+
+	/**
+	 * The options carry a trimmed category (blank falls back to `service`),
+	 * a string case reference only, and personalisation only when it is a list;
+	 * the object uri reaches the service as a string.
+	 *
+	 * @return void
+	 */
+	public function testSendPassesTheRequestOptions(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'to' => '0612345678',
+				'templateId' => 7,
+				'personalisation' => 'not a list',
+				'category' => '  reminder ',
+				'caseRef' => 'ZAAK-1',
+				'objectUri' => 42,
+			]
+		);
+		$message = new ObjectEntity();
+		$message->setObject(['status' => 'queued']);
+		$message->setUuid('sms-uuid-2');
+		$this->dispatchService->expects($this->once())->method('sendMessage')
+			->with('0612345678', '', ['templateId' => 7, 'category' => 'reminder', 'caseRef' => 'ZAAK-1'], null, '42')
+			->willReturn($message);
+
+		$this->assertSame(['status' => 'queued', 'id' => 'sms-uuid-2'], $this->controller->send()->getData());
+
+	}//end testSendPassesTheRequestOptions()
+
+	/**
+	 * A blank category and a non-string case reference fall back to `service`
+	 * and leave the case reference out.
+	 *
+	 * @return void
+	 */
+	public function testSendFallsBackToTheServiceCategory(): void {
+		$this->request->method('getParams')->willReturn(['to' => '0612345678', 'category' => '   ', 'caseRef' => 5]);
+		$message = new ObjectEntity();
+		$message->setObject([]);
+		$message->setUuid('sms-uuid-3');
+		$this->dispatchService->expects($this->once())->method('sendMessage')
+			->with('0612345678', '', ['category' => 'service'], null, null)
+			->willReturn($message);
+
+		$this->controller->send();
+
+	}//end testSendFallsBackToTheServiceCategory()
+
+	/**
 	 * status() rejects an empty id with 400, never reaching the dispatch service.
 	 *
 	 * @return void
@@ -261,4 +371,105 @@ class NotifyNlControllerTest extends TestCase {
 
 
 
+	/**
+	 * status() answers 401 to a caller without a session and asks for the
+	 * `sms.status` action otherwise.
+	 *
+	 * @return void
+	 */
+	public function testStatusGatesTheCaller(): void {
+		$anonymous = $this->createMock(IUserSession::class);
+		$anonymous->method('getUser')->willReturn(null);
+		$this->userSession = $anonymous;
+		$this->dispatchService->expects($this->never())->method('pollStatus');
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $this->buildController()->status(id: 'sms-uuid-1')->getStatus());
+
+		$this->actionAuth->expects($this->once())->method('requireAction')
+			->with($this->anything(), 'sms.status')
+			->willThrowException(new \OCP\AppFramework\OCS\OCSForbiddenException('no'));
+		$this->expectException(\OCP\AppFramework\OCS\OCSForbiddenException::class);
+		$this->controller->status(id: 'sms-uuid-1');
+
+	}//end testStatusGatesTheCaller()
+
+	/**
+	 * A failed status poll answers the 502 envelope with the provider's message.
+	 *
+	 * @return void
+	 */
+	public function testStatusMapsAFailedPollToBadGateway(): void {
+		$this->dispatchService->method('pollStatus')->willThrowException(new SmsProviderException(message: 'gateway down'));
+
+		$response = $this->controller->status(id: 'sms-uuid-1');
+
+		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
+		$this->assertSame(['error' => 'sms_status_unavailable', 'message' => 'gateway down'], $response->getData());
+
+	}//end testStatusMapsAFailedPollToBadGateway()
+
+	/**
+	 * A signed callback hands its message id, status (default empty) and
+	 * detail (as a string) to the dispatch service and answers received.
+	 *
+	 * @return void
+	 */
+	public function testInboundRecordsTheStatusCallback(): void {
+		$this->identifyAs(params: ['providerMessageId' => 99, 'detail' => 5]);
+		$this->dispatchService->expects($this->once())->method('handleStatusCallback')->with('99', '', '5');
+
+		$response = $this->controller->inbound();
+
+		$this->assertSame(['received' => true], $response->getData());
+
+	}//end testInboundRecordsTheStatusCallback()
+
+	/**
+	 * A callback without a message id is logged with its keys and still
+	 * answers received.
+	 *
+	 * @return void
+	 */
+	public function testInboundLogsACallbackWithoutAMessageId(): void {
+		$this->identifyAs(params: ['status' => 'delivered']);
+		$this->dispatchService->expects($this->never())->method('handleStatusCallback');
+		$this->logger->expects($this->once())->method('warning')
+			->with('[NotifyNlController] inbound webhook payload missing providerMessageId', ['keys' => ['status']]);
+
+		$this->assertSame(['received' => true], $this->controller->inbound()->getData());
+
+	}//end testInboundLogsACallbackWithoutAMessageId()
+
+	/**
+	 * A refused identification is answered as is, and nothing is delivered;
+	 * a delivery that throws answers the gate's not-stored response.
+	 *
+	 * @return void
+	 */
+	public function testInboundAnswersTheGatesRefusals(): void {
+		$refusal = new \OCP\AppFramework\Http\JSONResponse(['error' => 'bad signature'], Http::STATUS_UNAUTHORIZED);
+		$this->gate->method('identify')->willReturnOnConsecutiveCalls($refusal, new \OCA\Integriq\Service\Dso\DsoIdentity($this->createMock(IUser::class), 'c-1'));
+		$this->request->method('getParams')->willReturn(['providerMessageId' => 'nnl-1']);
+		$this->gate->expects($this->once())->method('deliver')->willThrowException(new \RuntimeException('write refused'));
+		$notStored = new \OCP\AppFramework\Http\JSONResponse(['error' => 'not stored'], Http::STATUS_SERVICE_UNAVAILABLE);
+		$this->gate->expects($this->once())->method('notStored')->with('notifynl-webhook', 'write refused')->willReturn($notStored);
+
+		$this->assertSame($refusal, $this->controller->inbound());
+		$this->assertSame($notStored, $this->controller->inbound());
+
+	}//end testInboundAnswersTheGatesRefusals()
+
+	/**
+	 * Let the gate identify the caller, run the delivery and see these params.
+	 *
+	 * @param array<string,mixed> $params The callback's params.
+	 *
+	 * @return void
+	 */
+	private function identifyAs(array $params): void {
+		$this->gate->method('identify')->willReturn(new \OCA\Integriq\Service\Dso\DsoIdentity($this->createMock(IUser::class), 'c-1'));
+		$this->gate->method('deliver')->willReturnCallback(fn ($identity, callable $operation) => $operation());
+		$this->request->method('getParams')->willReturn($params);
+
+	}//end identifyAs()
 }//end class

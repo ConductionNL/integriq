@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,8 +26,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\AppInfo;
 
 // @todo Remove ViewUpdatedOrCreatedEventListener once it lives in the software catalog application.
-use OCA\Integriq\Capabilities;
 use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Middleware\ApiContractMiddleware;
 use OCA\Integriq\Outbound\OutboundRegistrar;
 use OCA\Integriq\Expression\ExpressionRegistrar;
 use OCA\Integriq\Flow\FlowRegistrar;
@@ -40,7 +43,6 @@ use OCA\Integriq\Controller\HealthController;
 use OCA\Integriq\Controller\MetricsController;
 use OCA\Integriq\EventListener\EventListenerRegistrar;
 use OCA\Integriq\Gateway\GatewayRegistrar;
-use OCA\Integriq\Mcp\McpRegistrar;
 use OCA\Integriq\Migration\MigrationRegistrar;
 use OCA\Integriq\Notification\NotificationRegistrar;
 use OCA\Integriq\PropertySource\PropertySourceRegistrar;
@@ -51,7 +53,9 @@ use OCA\Integriq\Settings\SettingsRegistrar;
 use OCA\Integriq\SetupCheck\SetupCheckRegistrar;
 use OCA\Integriq\Sources\SourcesRegistrar;
 use OCA\Integriq\Db\DbRegistrar;
+use OCA\Integriq\Service\Job\MovedJobClasses;
 use OCA\Integriq\Service\ServiceRegistrar;
+use OCA\Integriq\BackgroundJob\BackgroundJobRegistrar;
 use OCA\Integriq\WorkflowEngine\RegisterOperationsListener;
 use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
@@ -121,6 +125,11 @@ class Application extends App implements IBootstrap {
 		// (never throws) when OpenRegister is absent or disabled — fall through
 		// to the degraded path.
 		OpenRegisterAutoloader::register();
+		// Stored job classes may still carry a moved class's old name.
+		MovedJobClasses::registerAliases();
+
+		// API-Version header and problem details on the JSON API (spec api-contract).
+		$context->registerMiddleware(ApiContractMiddleware::class);
 
 		$this->assertStorageMigrated();
 
@@ -150,6 +159,7 @@ class Application extends App implements IBootstrap {
 		(new BridgeRegistrar())->register(context: $context);
 		(new ExpressionRegistrar())->register(context: $context);
 		(new DbRegistrar())->register(context: $context);
+		(new BackgroundJobRegistrar())->register(context: $context);
 
 		/*
 		 * Event dispatcher registration.
@@ -621,7 +631,7 @@ class Application extends App implements IBootstrap {
 		// way; OpenRegister must load on an instance without Integriq.
 		$dispatcher->addServiceListener(
 			eventName: \OCA\OpenRegister\Service\RegisterMappingFunctionsEvent::class,
-			className: \OCA\Integriq\Listener\MappingFunctionRegistrationListener::class
+			className: \OCA\Integriq\Twig\MappingFunctionRegistrationListener::class
 		);
 
 	}//end registerMappingFunctions()

@@ -21,11 +21,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Exchange;
 
-use OCA\Integriq\Action\ExchangeJobAction;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Service\Exchange\ExchangeJobService;
 use OCA\Integriq\Service\Exchange\ExchangeTargetCatalogue;
+use OCA\Integriq\Service\Job\ExchangeJobAction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;

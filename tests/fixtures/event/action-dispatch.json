@@ -1010,5 +1010,540 @@
                 "msg-1"
             ]
         ]
+    },
+    "broker-unknown-id": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "broker.get",
+                "b-1"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "failed",
+                    "subscription": "sub-1",
+                    "error": "unknown broker b-1",
+                    "lastAttempt": "<date>",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "unknown broker b-1"
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "broker-published": {
+        "outcome": {
+            "return": true
+        },
+        "log": [
+            [
+                "broker.get",
+                "b-1"
+            ],
+            [
+                "broker.publish",
+                "t",
+                []
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "delivered",
+                    "subscription": "sub-1",
+                    "deliveredAt": "<string>",
+                    "lastAttempt": "<date>",
+                    "nextAttempt": null,
+                    "attempts": [
+                        {
+                            "at": "<string>"
+                        }
+                    ]
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "broker-refused": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "broker.get",
+                "b-1"
+            ],
+            [
+                "broker.publish",
+                "t",
+                []
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "failed",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "Broker publish refused: no route",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "statusCode": 312
+                        }
+                    ],
+                    "nextAttempt": "<date>"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "broker-publish-throws": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "broker.get",
+                "b-1"
+            ],
+            [
+                "broker.publish",
+                "t",
+                []
+            ],
+            [
+                "logger.error",
+                "Failed to dispatch broker action for event message: broker broke",
+                [
+                    "exception",
+                    "eventMessage"
+                ]
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "failed",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "broker broke",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "broker broke"
+                        }
+                    ],
+                    "nextAttempt": "<date>"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "job-level-error": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "j-1",
+                "job"
+            ],
+            [
+                "jobs.executeJob",
+                "job-j-1",
+                [
+                    true,
+                    {}
+                ]
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "failed",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "job execution reported level ERROR",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "job execution reported level ERROR"
+                        }
+                    ],
+                    "nextAttempt": "<date>"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "job-find-throws": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "j-1",
+                "job"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "failed",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "job not found",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "job not found"
+                        }
+                    ],
+                    "nextAttempt": "<date>"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "flow-find-null": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "flows.findFlow",
+                "f-1"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "failed",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "flow not found",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "flow not found"
+                        }
+                    ],
+                    "nextAttempt": "<date>"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "flow-run-stopped": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "flows.findFlow",
+                "f-1"
+            ],
+            [
+                "flows.run",
+                "flow-f-1",
+                [],
+                "event"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "failed",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "flow run ended with status stopped",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "flow run ended with status stopped"
+                        }
+                    ],
+                    "nextAttempt": "<date>"
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "sync-retry-policy-capped": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "s-1",
+                "synchronization"
+            ],
+            [
+                "sync.synchronize",
+                "synchronization-s-1",
+                true
+            ],
+            [
+                "logger.error",
+                "Failed to run synchronization action for event message: sync broke",
+                [
+                    "exception",
+                    "eventMessage"
+                ]
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "abandoned",
+                    "subscription": "sub-1",
+                    "retryCount": 2,
+                    "lastAttempt": "<date>",
+                    "error": "sync broke",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "sync broke"
+                        }
+                    ],
+                    "nextAttempt": null
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "job-retry-policy": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "status": "abandoned",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "job not found",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "job not found"
+                        }
+                    ],
+                    "nextAttempt": null
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "flow-retry-policy": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "status": "abandoned",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "flow not found",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "flow not found"
+                        }
+                    ],
+                    "nextAttempt": null
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "notificaties-retry-policy": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "src-1",
+                "source"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "abandoned",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "source not found",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "source not found"
+                        }
+                    ],
+                    "nextAttempt": null
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "broker-retry-policy": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "broker.get",
+                "b-1"
+            ],
+            [
+                "broker.publish",
+                "t",
+                []
+            ],
+            [
+                "logger.error",
+                "Failed to dispatch broker action for event message: broker broke",
+                [
+                    "exception",
+                    "eventMessage"
+                ]
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "abandoned",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "broker broke",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "error": "broker broke"
+                        }
+                    ],
+                    "nextAttempt": null
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "broker-refused-retry-policy": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "broker.get",
+                "b-1"
+            ],
+            [
+                "broker.publish",
+                "t",
+                []
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "abandoned",
+                    "subscription": "sub-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "Broker publish refused: no route",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "statusCode": 312
+                        }
+                    ],
+                    "nextAttempt": null
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
+    },
+    "notificaties-500-retry-policy": {
+        "outcome": {
+            "return": false
+        },
+        "log": [
+            [
+                "or.find",
+                "src-1",
+                "source"
+            ],
+            [
+                "or.find",
+                "ev-1",
+                "event"
+            ],
+            [
+                "call.call",
+                "source-src-1",
+                "/notificaties",
+                "POST",
+                {
+                    "json": {
+                        "kanaal": "zaken",
+                        "hoofdObject": null,
+                        "resource": "object",
+                        "resourceUrl": null,
+                        "actie": "",
+                        "aanmaakdatum": null,
+                        "kenmerken": []
+                    }
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "status": "abandoned",
+                    "subscription": "sub-1",
+                    "eventId": "ev-1",
+                    "retryCount": 1,
+                    "lastAttempt": "<date>",
+                    "error": "Notificaties publish failed with status code: 500",
+                    "attempts": [
+                        {
+                            "at": "<string>",
+                            "statusCode": 500
+                        }
+                    ],
+                    "nextAttempt": null
+                },
+                "event_message",
+                "msg-1"
+            ]
+        ]
     }
 }

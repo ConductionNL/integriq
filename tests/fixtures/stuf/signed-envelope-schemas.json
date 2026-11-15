@@ -1,0 +1,74 @@
+{
+    "OCA\\Integriq\\Service\\Oso\\OsoKennisnetClient": {
+        "type": "object",
+        "required": [
+            "endpoint",
+            "certificateRef"
+        ],
+        "properties": {
+            "endpoint": {
+                "type": "string",
+                "format": "uri",
+                "description": "Kennisnet OSO export endpoint URL."
+            },
+            "certificateRef": {
+                "type": "string",
+                "description": "Broker credentialRef for the PKIoverheid certificate. Never stored here (ADR-007). Required when provider=kennisnet."
+            }
+        }
+    },
+    "OCA\\Integriq\\Service\\Rod\\RodEdukoppelingClient": {
+        "type": "object",
+        "required": [
+            "endpoint",
+            "certificateRef"
+        ],
+        "properties": {
+            "endpoint": {
+                "type": "string",
+                "format": "uri",
+                "description": "DUO ROD Edukoppeling endpoint URL (WUS transport profile)."
+            },
+            "certificateRef": {
+                "type": "string",
+                "description": "Broker credentialRef for the PKIoverheid / DUO software-vendor certificate. Never stored here (ADR-007). Activation is gated on the DUO certificate holder decision (M3(c), open in decisions.md)."
+            }
+        }
+    },
+    "OCA\\Integriq\\Service\\UwlrEduV\\UwlrEduVKennisnetClient": {
+        "type": "object",
+        "required": [
+            "endpoint",
+            "certificateRef"
+        ],
+        "properties": {
+            "endpoint": {
+                "type": "string",
+                "format": "uri",
+                "description": "UWLR/Edu-V/Basispoort/Entree-content koppelvlak endpoint URL."
+            },
+            "certificateRef": {
+                "type": "string",
+                "description": "Broker credentialRef for the PKIoverheid certificate. Never stored here (ADR-007). Required when provider=uwlr-eduv."
+            }
+        }
+    },
+    "OCA\\Integriq\\Service\\Verzuimloket\\VerzuimloketEdukoppelingClient": {
+        "type": "object",
+        "required": [
+            "endpoint",
+            "certificateRef"
+        ],
+        "properties": {
+            "endpoint": {
+                "type": "string",
+                "format": "uri",
+                "description": "DUO Verzuimloket Edukoppeling endpoint URL (WUS transport profile)."
+            },
+            "certificateRef": {
+                "type": "string",
+                "description": "Broker credentialRef for the PKIoverheid / DUO software-vendor certificate. Never stored here (ADR-007). Activation is gated on the DUO certificate holder decision (M3(c), open in decisions.md)."
+            }
+        }
+    }
+}

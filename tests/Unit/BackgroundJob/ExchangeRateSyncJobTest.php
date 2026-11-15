@@ -11,14 +11,17 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\BackgroundJob;
 
+use OCA\Integriq\BackgroundJob\ExchangeRate\ExchangeRateImportService;
 use OCA\Integriq\BackgroundJob\ExchangeRateSyncJob;
-use OCA\Integriq\Service\ExchangeRate\ExchangeRateImportService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

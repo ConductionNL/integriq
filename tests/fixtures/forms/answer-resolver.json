@@ -1,0 +1,104 @@
+[
+    {
+        "ref": 1,
+        "outcome": "Jan"
+    },
+    {
+        "ref": "1",
+        "outcome": "Jan"
+    },
+    {
+        "ref": 2,
+        "outcome": [
+            "lezen",
+            "fietsen",
+            null
+        ]
+    },
+    {
+        "ref": "2",
+        "outcome": [
+            "lezen",
+            "fietsen",
+            null
+        ]
+    },
+    {
+        "ref": 3,
+        "outcome": null
+    },
+    {
+        "ref": "Naam",
+        "outcome": "Jan"
+    },
+    {
+        "ref": "Hobby",
+        "outcome": [
+            "lezen",
+            "fietsen",
+            null
+        ]
+    },
+    {
+        "ref": "Dubbel",
+        "outcome": "refused: OCA\\Integriq\\Exception\\FormsConfigException: Ambiguous question text 'Dubbel' matches multiple questions (ids: 3, 4) \u2014 reference by question id instead of text."
+    },
+    {
+        "ref": "Uniek",
+        "outcome": [
+            "a"
+        ]
+    },
+    {
+        "ref": "Zonder id",
+        "outcome": "nul"
+    },
+    {
+        "ref": "Leeg",
+        "outcome": null
+    },
+    {
+        "ref": 7,
+        "outcome": null
+    },
+    {
+        "ref": 8,
+        "outcome": null
+    },
+    {
+        "ref": "Array",
+        "outcome": null
+    },
+    {
+        "ref": 9,
+        "outcome": "12"
+    },
+    {
+        "ref": 99,
+        "outcome": null
+    },
+    {
+        "ref": "Onbekend",
+        "outcome": null
+    },
+    {
+        "ref": "",
+        "outcome": null
+    },
+    {
+        "ref": "01",
+        "outcome": "Jan"
+    },
+    {
+        "ref": 0,
+        "outcome": "nul"
+    },
+    {
+        "ref": "1a",
+        "outcome": null
+    },
+    {
+        "ref": "no questions",
+        "outcome": "lezen"
+    }
+]

@@ -21,6 +21,9 @@
  *
  * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -32,8 +35,8 @@ use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Exception\DsoTranslationException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
-use OCA\Integriq\Service\DsoIngestServiceInterface;
-use OCA\Integriq\Service\DSOParserServiceInterface;
+use OCA\Integriq\Service\Portal\PortalRequestIntakeInterface;
+use OCA\Integriq\Service\Portal\PortalRequestParserInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\Dso\DsoIdentity;
@@ -73,11 +76,11 @@ class DSOController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request Request object.
-	 * @param DSOParserServiceInterface $parser The DSO payload parser service.
+	 * @param PortalRequestParserInterface $parser The DSO payload parser service.
 	 * @param LoggerInterface $logger Logger for error handling.
 	 * @param PortalConnectionInterface $connection The dso-stam consumer: signature, account, rights, runAs().
 	 * @param PortalConnectionAlertsInterface $alerts Admin notifications when a push is refused with 503.
-	 * @param DsoIngestServiceInterface $ingestService dso_verzoek persistence, mapping, outbound.
+	 * @param PortalRequestIntakeInterface $ingestService dso_verzoek persistence, mapping, outbound.
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IUserSession $userSession The user session (status/list/outbound
 	 *                                  endpoints).
@@ -89,11 +92,11 @@ class DSOController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly DSOParserServiceInterface $parser,
+		private readonly PortalRequestParserInterface $parser,
 		private readonly LoggerInterface $logger,
 		private readonly PortalConnectionInterface $connection,
 		private readonly PortalConnectionAlertsInterface $alerts,
-		private readonly DsoIngestServiceInterface $ingestService,
+		private readonly PortalRequestIntakeInterface $ingestService,
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
@@ -457,11 +460,6 @@ class DSOController extends Controller {
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
 	 */
 	private function getRawContent(): string {
-		$content = file_get_contents(filename: 'php://input');
-		if ($content === false) {
-			return '';
-		}
-
-		return $content;
+		return (new RawRequestBody())->read();
 	}//end getRawContent()
 }//end class
