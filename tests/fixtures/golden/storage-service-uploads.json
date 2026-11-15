@@ -1,0 +1,235 @@
+{
+    "create empty file": {
+        "parts": [],
+        "cached": [],
+        "calls": [
+            "get /up",
+            "newFile doc.txt",
+            "newFolder doc.txt_parts"
+        ]
+    },
+    "create smaller than a part": {
+        "parts": [
+            {
+                "id": "part-0 (Symfony\\Component\\Uid\\UuidV4)",
+                "size": 400,
+                "order": 1,
+                "object": "obj-1",
+                "successful": false
+            }
+        ],
+        "cached": {
+            "upload_part-0": {
+                "upload-target-id": 42,
+                "upload-target-path": "/up/doc.txt_parts",
+                "number-of-parts": 1.0
+            }
+        },
+        "calls": [
+            "get /up",
+            "newFile doc.txt",
+            "newFolder doc.txt_parts"
+        ]
+    },
+    "create exactly two parts": {
+        "parts": [
+            {
+                "id": "part-0 (Symfony\\Component\\Uid\\UuidV4)",
+                "size": 1000,
+                "order": 1,
+                "object": null,
+                "successful": false
+            },
+            {
+                "id": "part-1 (Symfony\\Component\\Uid\\UuidV4)",
+                "size": 1000,
+                "order": 2,
+                "object": null,
+                "successful": false
+            }
+        ],
+        "cached": {
+            "upload_part-0": {
+                "upload-target-id": 42,
+                "upload-target-path": "/up/doc.txt_parts",
+                "number-of-parts": 2.0
+            },
+            "upload_part-1": {
+                "upload-target-id": 42,
+                "upload-target-path": "/up/doc.txt_parts",
+                "number-of-parts": 2.0
+            }
+        },
+        "calls": [
+            "get /up",
+            "newFile doc.txt",
+            "newFolder doc.txt_parts"
+        ]
+    },
+    "create two and a bit": {
+        "parts": [
+            {
+                "id": "part-0 (Symfony\\Component\\Uid\\UuidV4)",
+                "size": 1000,
+                "order": 1,
+                "object": "obj-2",
+                "successful": false
+            },
+            {
+                "id": "part-1 (Symfony\\Component\\Uid\\UuidV4)",
+                "size": 1000,
+                "order": 2,
+                "object": "obj-2",
+                "successful": false
+            },
+            {
+                "id": "part-2 (Symfony\\Component\\Uid\\UuidV4)",
+                "size": 1,
+                "order": 3,
+                "object": "obj-2",
+                "successful": false
+            }
+        ],
+        "cached": {
+            "upload_part-0": {
+                "upload-target-id": 42,
+                "upload-target-path": "/up/doc.txt_parts",
+                "number-of-parts": 3.0
+            },
+            "upload_part-1": {
+                "upload-target-id": 42,
+                "upload-target-path": "/up/doc.txt_parts",
+                "number-of-parts": 3.0
+            },
+            "upload_part-2": {
+                "upload-target-id": 42,
+                "upload-target-path": "/up/doc.txt_parts",
+                "number-of-parts": 3.0
+            }
+        },
+        "calls": [
+            "get /up",
+            "newFile doc.txt",
+            "newFolder doc.txt_parts"
+        ]
+    },
+    "write first of three": {
+        "answer": true,
+        "calls": [
+            "get /up/doc.txt_parts",
+            "newFile 1.part.txt data-1",
+            "get /up/doc.txt_parts",
+            "getDirectoryListing"
+        ]
+    },
+    "write last of three, in order": {
+        "answer": true,
+        "calls": [
+            "get /up/doc.txt_parts",
+            "newFile 3.part.txt data-3",
+            "get /up/doc.txt_parts",
+            "getDirectoryListing",
+            "read 1.part.txt",
+            "delete 1.part.txt",
+            "read 2.part.txt",
+            "delete 2.part.txt",
+            "read 3.part.txt",
+            "delete 3.part.txt",
+            "getDirectoryListing",
+            "delete the parts folder",
+            "putContent abdata-3"
+        ]
+    },
+    "write last of three, folder kept": {
+        "answer": true,
+        "calls": [
+            "get /up/doc.txt_parts",
+            "newFile 3.part.txt data-3",
+            "get /up/doc.txt_parts",
+            "getDirectoryListing",
+            "read 1.part.txt",
+            "delete 1.part.txt",
+            "read 2.part.txt",
+            "delete 2.part.txt",
+            "read 3.part.txt",
+            "delete 3.part.txt",
+            "getDirectoryListing",
+            "putContent abdata-3"
+        ]
+    },
+    "write listed out of order": {
+        "answer": true,
+        "calls": [
+            "get /up/doc.txt_parts",
+            "newFile 3.part.txt data-3",
+            "get /up/doc.txt_parts",
+            "getDirectoryListing"
+        ]
+    },
+    "write a part missing": {
+        "answer": true,
+        "calls": [
+            "get /up/doc.txt_parts",
+            "newFile 3.part.txt data-3",
+            "get /up/doc.txt_parts",
+            "getDirectoryListing"
+        ]
+    },
+    "write a part twice too many": {
+        "answer": true,
+        "calls": [
+            "get /up/doc.txt_parts",
+            "newFile 3.part.txt data-3",
+            "get /up/doc.txt_parts",
+            "getDirectoryListing"
+        ]
+    },
+    "write ten parts, string order": {
+        "answer": true,
+        "calls": [
+            "get /up/doc.txt_parts",
+            "newFile 10.part.txt data-10",
+            "get /up/doc.txt_parts",
+            "getDirectoryListing"
+        ]
+    },
+    "write an extra file joins too": {
+        "answer": true,
+        "calls": [
+            "get /up/doc.txt_parts",
+            "newFile 2.part.txt data-2",
+            "get /up/doc.txt_parts",
+            "getDirectoryListing"
+        ]
+    },
+    "write a sub folder is skipped": {
+        "answer": true,
+        "calls": [
+            "get /up/doc.txt_parts",
+            "newFile 2.part.txt data-2",
+            "get /up/doc.txt_parts",
+            "getDirectoryListing"
+        ]
+    },
+    "write other extension": {
+        "answer": true,
+        "calls": [
+            "get /up/doc.txt_parts",
+            "newFile 2.part.txt data-2",
+            "get /up/doc.txt_parts",
+            "getDirectoryListing"
+        ]
+    },
+    "write parts folder is a file": {
+        "answer": "OCP\\Files\\NotFoundException: target folder is not a folder",
+        "calls": [
+            "get /up/doc.txt_parts"
+        ]
+    },
+    "write target is a folder": {
+        "answer": "OCP\\Files\\NotFoundException: target file is not a file",
+        "calls": [
+            "get /up/doc.txt_parts"
+        ]
+    }
+}

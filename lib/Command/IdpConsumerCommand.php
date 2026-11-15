@@ -102,57 +102,131 @@ class IdpConsumerCommand extends Command {
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-consuming-app-is-registered-with-its-return-addresses-req-idp-003
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$id = trim((string)$input->getArgument('consumer'));
-		if (preg_match('/^[a-z0-9][a-z0-9_\-]{0,63}$/', $id) !== 1) {
-			$output->writeln('<error>A consumer id is lowercase letters, digits, dashes and underscores.</error>');
+		$request = new IdpConsumerRequest(input: $input, output: $output);
+		$request->id = trim((string)$input->getArgument('consumer'));
+		if (preg_match('/^[a-z0-9][a-z0-9_\-]{0,63}$/', $request->id) !== 1) {
+			return $this->refused(output: $output, message: 'A consumer id is lowercase letters, digits, dashes and underscores.');
+		}
+
+		$consumer = $this->consumerFor(request: $request);
+		if ($consumer === null) {
 			return 1;
 		}
 
+		$this->config->saveConsumer(consumer: $consumer);
+		$this->report(request: $request, consumer: $consumer);
+
+		return 0;
+
+	}//end execute()
+
+	/**
+	 * The consumer the run registers, or null when it refused (and said why).
+	 *
+	 * @param IdpConsumerRequest $request The run; takes the settled return addresses and secret reference.
+	 *
+	 * @return IdpConsumer|null The consumer to save.
+	 */
+	private function consumerFor(IdpConsumerRequest $request): ?IdpConsumer {
 		// A consumer nobody registered reads as an empty, disabled one, so
 		// every option below falls back to the same place.
-		$existing = ($this->config->consumer(consumer: $id) ?? new IdpConsumer(id: $id, enabled: false));
+		$existing = ($this->config->consumer(consumer: $request->id) ?? new IdpConsumer(id: $request->id, enabled: false));
 
-		$returnUrls = $this->returnUrls(input: $input, output: $output, existing: $existing);
+		$returnUrls = $this->returnUrls(input: $request->input, output: $request->output, existing: $existing);
 		if ($returnUrls === null) {
-			return 1;
+			return null;
 		}
 
-		$secretRef = $this->option(input: $input, name: 'secret-ref', fallback: $existing->getSecretRef());
-		if ($existing->isLegacy() === true && $secretRef === '') {
-			// The inline secret is not carried into the new form: it would
-			// put a plaintext secret back into app config under a new shape.
-			$output->writeln(
-				'<error>' . $id . ' holds its secret inline. Give --secret-ref with a credential broker reference to move it.</error>'
-			);
-			return 1;
+		$request->returnUrls = $returnUrls;
+		$request->secretRef = $this->option(input: $request->input, name: 'secret-ref', fallback: $existing->getSecretRef());
+		if ($this->refusesLegacy(request: $request, existing: $existing) === true) {
+			return null;
 		}
 
-		$consumer = new IdpConsumer(
-			id: $id,
-			enabled: ($input->getOption('disable') !== true),
-			returnUrls: $returnUrls,
-			secretRef: $secretRef,
+		return $this->built(request: $request, existing: $existing);
+
+	}//end consumerFor()
+
+	/**
+	 * Refuse to move an inline-secret consumer without a secret reference.
+	 *
+	 * @param IdpConsumerRequest $request  The run, with its settled secret reference.
+	 * @param IdpConsumer        $existing The stored consumer.
+	 *
+	 * @return bool True when the run was refused (and said why).
+	 */
+	private function refusesLegacy(IdpConsumerRequest $request, IdpConsumer $existing): bool {
+		if ($existing->isLegacy() === false || $request->secretRef !== '') {
+			return false;
+		}
+
+		// The inline secret is not carried into the new form: it would
+		// put a plaintext secret back into app config under a new shape.
+		$this->refused(
+			output: $request->output,
+			message: $request->id . ' holds its secret inline. Give --secret-ref with a credential broker reference to move it.'
+		);
+		return true;
+
+	}//end refusesLegacy()
+
+	/**
+	 * The consumer from the run's settled values and the stored organisation as fallback.
+	 *
+	 * @param IdpConsumerRequest $request  The run.
+	 * @param IdpConsumer        $existing The stored (or empty) consumer.
+	 *
+	 * @return IdpConsumer The consumer.
+	 */
+	private function built(IdpConsumerRequest $request, IdpConsumer $existing): IdpConsumer {
+		return new IdpConsumer(
+			id: $request->id,
+			enabled: ($request->input->getOption('disable') !== true),
+			returnUrls: $request->returnUrls,
+			secretRef: $request->secretRef,
 			secretOrganisation: $this->option(
-				input: $input,
+				input: $request->input,
 				name: 'secret-organisation',
 				fallback: $existing->getSecretOrganisation()
 			)
 		);
-		$this->config->saveConsumer(consumer: $consumer);
 
+	}//end built()
+
+	/**
+	 * Say what was saved, and warn when an enabled consumer still cannot sign anybody in.
+	 *
+	 * @param IdpConsumerRequest $request  The run.
+	 * @param IdpConsumer        $consumer The saved consumer.
+	 *
+	 * @return void
+	 */
+	private function report(IdpConsumerRequest $request, IdpConsumer $consumer): void {
 		$state = 'disabled';
 		if ($consumer->isEnabled() === true) {
 			$state = 'enabled';
 		}
 
-		$output->writeln($id . ' is ' . $state . ' with ' . count($returnUrls) . ' return address(es).');
-		if ($consumer->isEnabled() === true && ($returnUrls === [] || $secretRef === '')) {
-			$output->writeln('<comment>' . $id . ' cannot sign anybody in until it has a return address and a secret reference.</comment>');
+		$request->output->writeln($request->id . ' is ' . $state . ' with ' . count($request->returnUrls) . ' return address(es).');
+		if ($consumer->isEnabled() === true && ($request->returnUrls === [] || $request->secretRef === '')) {
+			$request->output->writeln('<comment>' . $request->id . ' cannot sign anybody in until it has a return address and a secret reference.</comment>');
 		}
 
-		return 0;
+	}//end report()
 
-	}//end execute()
+	/**
+	 * Say why the run stops.
+	 *
+	 * @param OutputInterface $output  The output.
+	 * @param string          $message Why.
+	 *
+	 * @return int The failure exit code.
+	 */
+	private function refused(OutputInterface $output, string $message): int {
+		$output->writeln('<error>' . $message . '</error>');
+		return 1;
+
+	}//end refused()
 
 	/**
 	 * The return addresses to store: the ones asked for, or the ones already there.

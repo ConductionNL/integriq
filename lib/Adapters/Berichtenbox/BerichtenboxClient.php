@@ -3,6 +3,9 @@
 /**
  * Integriq — the MijnOverheid Berichtenbox client (abstract base).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The contract follows the interface Logius publishes, in the Technische
  * Aansluithandleiding MijnOverheid Berichtenbox 1.6.4:
  *
@@ -29,9 +32,6 @@
  *
  * @link https://www.integriq.nl
  * @link https://www.logius.nl/domeinen/interactie/mijnoverheid/documentatie/technische-aansluithandleiding-mijnoverheid-berichtenbox
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

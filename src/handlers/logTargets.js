@@ -1,4 +1,8 @@
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+/**
  * Where each "View logs" surface navigates, as one table.
  *
  * Keyed by the manifest row-action id. `handlers/actionHandlers.js` resolves

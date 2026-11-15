@@ -204,8 +204,7 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 
 		$decoded = $this->dispatchJson(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'GET',
-			path: $this->templatesPath()
+			call: new VendorCall(method: 'GET', path: $this->templatesPath())
 		);
 
 		$templates = [];
@@ -251,9 +250,7 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 
 			$decoded = $this->dispatchJson(
 				sourceConfiguration: $sourceConfiguration,
-				method: 'POST',
-				path: $this->renderPath(),
-				body: $this->renderEnvelope(templateId: $templateId, data: $data)
+				call: new VendorCall(method: 'POST', path: $this->renderPath(), body: $this->renderEnvelope(templateId: $templateId, data: $data))
 			);
 		} catch (DocumentGenerationException $exception) {
 			if ($exception->isUnreachable() === true) {
@@ -289,8 +286,7 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 		try {
 			$decoded = $this->dispatchJson(
 				sourceConfiguration: $sourceConfiguration,
-				method: 'GET',
-				path: $this->statusPath(providerJobId: $providerJobId)
+				call: new VendorCall(method: 'GET', path: $this->statusPath(providerJobId: $providerJobId))
 			);
 		} catch (DocumentGenerationException $exception) {
 			if ($exception->isUnreachable() === true) {
@@ -328,8 +324,7 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 
 		$response = $this->dispatch(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'GET',
-			path: '/documents/' . rawurlencode($fileReference)
+			call: new VendorCall(method: 'GET', path: '/documents/' . rawurlencode($fileReference))
 		);
 
 		$status = $response->getStatusCode();
@@ -417,10 +412,8 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	/**
 	 * Dispatch one brokered call and decode its JSON body.
 	 *
-	 * @param array $sourceConfiguration The source's `configuration` object.
-	 * @param string $method The HTTP method.
-	 * @param string $path The path, relative to the base URL.
-	 * @param array|null $body The request body, when there is one.
+	 * @param array      $sourceConfiguration The source's `configuration` object.
+	 * @param VendorCall $call                The method, path and optional body.
 	 *
 	 * @return array<string, mixed> The decoded body.
 	 *
@@ -428,22 +421,34 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 *
 	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
-	protected function dispatchJson(
-		array $sourceConfiguration,
-		string $method,
-		string $path,
-		?array $body = null,
-	): array {
-		$response = $this->dispatch(
-			sourceConfiguration: $sourceConfiguration,
-			method: $method,
-			path: $path,
-			body: $body
-		);
+	protected function dispatchJson(array $sourceConfiguration, VendorCall $call): array {
+		$response = $this->dispatch(sourceConfiguration: $sourceConfiguration, call: $call);
 
 		$status = $response->getStatusCode();
 		$raw = (string)$response->getBody();
+		$this->assertAnswered(status: $status);
 
+		$decoded = json_decode($raw, true);
+		if (is_array($decoded) === false) {
+			throw new DocumentGenerationException(
+				message: 'The ' . $this->getProviderId() . ' vendor answered something that is not JSON.'
+			);
+		}
+
+		return $decoded;
+
+	}//end dispatchJson()
+
+	/**
+	 * Refuse an answer outside 2xx: a 5xx as unreachable, anything else as a refusal.
+	 *
+	 * @param int $status The HTTP status.
+	 *
+	 * @return void
+	 *
+	 * @throws DocumentGenerationException On a non-2xx status.
+	 */
+	private function assertAnswered(int $status): void {
 		if ($status >= 500) {
 			// The vendor is there and broken, which is the same to us as not
 			// being there: nobody knows whether the render happened.
@@ -459,24 +464,13 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 			);
 		}
 
-		$decoded = json_decode($raw, true);
-		if (is_array($decoded) === false) {
-			throw new DocumentGenerationException(
-				message: 'The ' . $this->getProviderId() . ' vendor answered something that is not JSON.'
-			);
-		}
-
-		return $decoded;
-
-	}//end dispatchJson()
+	}//end assertAnswered()
 
 	/**
 	 * Dispatch one brokered call.
 	 *
-	 * @param array $sourceConfiguration The source's `configuration` object.
-	 * @param string $method The HTTP method.
-	 * @param string $path The path, relative to the base URL.
-	 * @param array|null $body The request body, when there is one.
+	 * @param array      $sourceConfiguration The source's `configuration` object.
+	 * @param VendorCall $call                The method, path and optional body.
 	 *
 	 * @return Response The raw response.
 	 *
@@ -484,31 +478,22 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 	 *
 	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-credentials-are-resolved-by-reference-never-passed-by-value-req-dgv-003
 	 */
-	protected function dispatch(
-		array $sourceConfiguration,
-		string $method,
-		string $path,
-		?array $body = null,
-	): Response {
+	protected function dispatch(array $sourceConfiguration, VendorCall $call): Response {
 		$config = ['authentication' => ($sourceConfiguration['authentication'] ?? [])];
-		if ($body !== null) {
-			$config['body'] = json_encode($body);
+		if ($call->body !== null) {
+			$config['body'] = json_encode($call->body);
 			$config['headers'] = ['Content-Type' => ['application/json']];
 		}
 
-		$url = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/') . $path;
+		$url = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/') . $call->path;
 
 		try {
-			$dispatch = $this->brokeredCallService->prepare(
-				config: $config,
-				sourceData: ['type' => 'documentGeneration'],
-				asynchronous: false
-			);
+			$dispatch = $this->prepareDispatch(config: $config);
 
 			return $this->brokeredCallService->dispatch(
 				credentialId: $dispatch['credentialId'],
 				actingUserId: $dispatch['actingUserId'],
-				method: $method,
+				method: $call->method,
 				url: $url,
 				config: $config
 			);
@@ -518,20 +503,51 @@ abstract class AbstractRestDocumentGenerationProvider implements DocumentGenerat
 				previous: $exception
 			);
 		} catch (Throwable $exception) {
-			// The message carries the vendor and the URL, never the payload
-			// and never the credential: the broker holds the material and
-			// this class never sees it.
-			$this->logger->warning(
-				'[' . static::class . '] the vendor could not be reached',
-				['providerId' => $this->getProviderId(), 'exception' => $exception->getMessage()]
-			);
-
-			throw (new DocumentGenerationException(
-				message: 'The ' . $this->getProviderId() . ' vendor at ' . $url . ' could not be reached: '
-					. $exception->getMessage() . '. Nobody can say yet whether the document was produced.',
-				previous: $exception
-			))->asUnreachable();
+			throw $this->unreachableVendor(url: $url, exception: $exception);
 		}//end try
 
 	}//end dispatch()
+
+	/**
+	 * Ask the broker which credential and acting user the call runs under.
+	 *
+	 * @param array $config The brokered call configuration.
+	 *
+	 * @return array{credentialId: string, actingUserId: string|null} The prepared dispatch.
+	 *
+	 * @throws BrokeredCallConfigurationException When the broker refuses the configuration.
+	 */
+	private function prepareDispatch(array $config): array {
+		return $this->brokeredCallService->prepare(
+			config: $config,
+			sourceData: ['type' => 'documentGeneration'],
+			asynchronous: false
+		);
+
+	}//end prepareDispatch()
+
+	/**
+	 * Log that the vendor could not be reached and build the unreachable exception.
+	 *
+	 * The message carries the vendor and the URL, never the payload and never
+	 * the credential: the broker holds the material and this class never sees it.
+	 *
+	 * @param string    $url       The URL called.
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return DocumentGenerationException The exception, marked unreachable.
+	 */
+	private function unreachableVendor(string $url, Throwable $exception): DocumentGenerationException {
+		$this->logger->warning(
+			'[' . static::class . '] the vendor could not be reached',
+			['providerId' => $this->getProviderId(), 'exception' => $exception->getMessage()]
+		);
+
+		return (new DocumentGenerationException(
+			message: 'The ' . $this->getProviderId() . ' vendor at ' . $url . ' could not be reached: '
+				. $exception->getMessage() . '. Nobody can say yet whether the document was produced.',
+			previous: $exception
+		))->asUnreachable();
+
+	}//end unreachableVendor()
 }//end class

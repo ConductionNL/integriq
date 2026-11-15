@@ -17,6 +17,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -59,6 +62,13 @@ class LtiAgsServiceTest extends TestCase {
 	private const TOOL_CLIENT_ID = 'tool-client-1';
 	private const DEPLOYMENT_A = 'dep-a';
 	private const DEPLOYMENT_B = 'dep-b';
+
+	/**
+	 * The golden token and score outcomes, taken before the route methods were split.
+	 *
+	 * @var string
+	 */
+	private const GOLDEN_ACCESS = '{"outcomes":{"named deployment":{"type":"Bearer","expires":3600,"scope":"https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/score","tokenLength":64,"grant":{"deploymentUuid":"dep-a","toolUuid":"tool-uuid-1","scopes":["https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/score"]}},"only deployment":{"type":"Bearer","expires":3600,"scope":"https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/lineitem.readonly https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/score","tokenLength":64,"grant":{"deploymentUuid":"dep-a","toolUuid":"tool-uuid-1","scopes":["https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/lineitem.readonly","https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/score"]}},"empty deployment":{"type":"Bearer","expires":3600,"scope":"https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/score","tokenLength":64,"grant":{"deploymentUuid":"dep-a","toolUuid":"tool-uuid-1","scopes":["https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/score"]}},"spaced scopes":{"type":"Bearer","expires":3600,"scope":"https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/score https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/lineitem.readonly","tokenLength":64,"grant":{"deploymentUuid":"dep-a","toolUuid":"tool-uuid-1","scopes":["https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/score","https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/lineitem.readonly"]}},"iss differs from sub":{"refused":"client_assertion iss\\/sub mismatch","status":400,"details":[]},"no iss":{"refused":"id_token missing iss claim","status":400,"details":[]},"expired":{"refused":"The token has expired","status":401,"details":{"iat":"a time","exp":"a time","time checked":"a time"}},"unknown deployment":{"refused":"Unknown lti_deployment","status":400,"details":[]},"deployment of another tool":{"refused":"Deployment is not registered under the asserting tool","status":403,"details":[]},"no scope":{"refused":"No scope requested","status":400,"details":[]},"scope not allowed":{"refused":"Requested scope not permitted","status":400,"details":{"scope":"https:\\/\\/example.test\\/scope\\/admin"}},"one scope not allowed":{"refused":"Requested scope not permitted","status":400,"details":{"scope":"https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/score https:\\/\\/example.test\\/scope\\/admin"}},"score scored":{"messagesCreated":2},"score read-only token":{"refused":"Access token lacks the required scope","status":403,"details":{"requiredScope":"https:\\/\\/purl.imsglobal.org\\/spec\\/lti-ags\\/scope\\/score"}},"score other deployment":{"refused":"Access token is not scoped to this deployment","status":403,"details":[]},"score unknown token":{"refused":"Invalid or expired access token","status":401,"details":[]}},"events":[["nl.conduction.lti.ags.score.received","lti_deployment\\/dep-a","line-1",{"deploymentUuid":"dep-a","deploymentId":"deploy-a","lineItemId":"line-1","gradeSink":{"targetType":"register\\/schema","targetId":"20\\/111"},"score":{"userId":"u-1","scoreGiven":7}},null]]}';
 
 	private JWK $toolKey;
 
@@ -626,4 +636,89 @@ class LtiAgsServiceTest extends TestCase {
 		}
 
 	}//end testTokenEndpointFailureDuringPublishNotSilentlyDropped()
+
+	/**
+	 * GOLDEN: every allowed and refused token request, and every score
+	 * receipt, pinned as the answer (the random token only as the grant it
+	 * resolves to) or the refusal's class, message, status and details, with
+	 * every CloudEvent emitted. Pinned before the route methods were split.
+	 *
+	 * @return void
+	 */
+	public function testGoldenTokenIssuanceAndScoreReceipt(): void {
+		$events = [];
+		$eventService = $this->createMock(EventService::class);
+		$eventService->method('emitCloudEvent')->willReturnCallback(
+			function (...$args) use (&$events): array {
+				$events[] = $args;
+				return [new ObjectEntity(), new ObjectEntity()];
+			}
+		);
+		$fixtures = $this->makeFixtures();
+		$service = $this->makeService($fixtures, null, null, $eventService);
+
+		$score = LtiAgsService::SCOPE_SCORE;
+		$read = LtiAgsService::SCOPE_LINEITEM_READONLY;
+		$requests = [
+			'named deployment' => [[], $score, self::DEPLOYMENT_A],
+			'only deployment' => [[], $read . ' ' . $score, null],
+			'empty deployment' => [[], $score, ''],
+			'spaced scopes' => [[], '  ' . $score . '   ' . $read . ' ', self::DEPLOYMENT_A],
+			'iss differs from sub' => [['sub' => 'someone-else'], $score, self::DEPLOYMENT_A],
+			'no iss' => [['iss' => ''], $score, self::DEPLOYMENT_A],
+			'expired' => [['exp' => (time() - 3600), 'iat' => (time() - 7200)], $score, self::DEPLOYMENT_A],
+			'unknown deployment' => [[], $score, 'dep-none'],
+			'deployment of another tool' => [[], $score, self::DEPLOYMENT_B],
+			'no scope' => [[], '   ', self::DEPLOYMENT_A],
+			'scope not allowed' => [[], 'https://example.test/scope/admin', self::DEPLOYMENT_A],
+			'one scope not allowed' => [[], $score . ' https://example.test/scope/admin', self::DEPLOYMENT_A],
+		];
+		$outcomes = [];
+		$tokens = [];
+		foreach ($requests as $name => [$claims, $scope, $deployment]) {
+			try {
+				$token = $service->issueAccessToken($this->signClientAssertion($claims), $scope, $deployment);
+				$tokens[$name] = $token['access_token'];
+				$outcomes[$name] = [
+					'type' => $token['token_type'],
+					'expires' => $token['expires_in'],
+					'scope' => $token['scope'],
+					'tokenLength' => strlen($token['access_token']),
+					'grant' => $service->resolveAccessToken($token['access_token']),
+				];
+			} catch (LtiValidationException $exception) {
+				$outcomes[$name] = ['refused' => $exception->getMessage(), 'status' => $exception->getHttpStatus(), 'details' => $this->untimed(details: $exception->getDetails())];
+			}
+		}
+
+		$receipts = [
+			'scored' => [$tokens['named deployment'], self::DEPLOYMENT_A],
+			'read-only token' => [$service->issueAccessToken($this->signClientAssertion(), $read, self::DEPLOYMENT_A)['access_token'], self::DEPLOYMENT_A],
+			'other deployment' => [$tokens['named deployment'], self::DEPLOYMENT_B],
+			'unknown token' => ['not-a-token', self::DEPLOYMENT_A],
+		];
+		foreach ($receipts as $name => [$accessToken, $deployment]) {
+			try {
+				$outcomes['score ' . $name] = $service->receiveScore($accessToken, $deployment, 'line-1', ['userId' => 'u-1', 'scoreGiven' => 7]);
+			} catch (LtiValidationException $exception) {
+				$outcomes['score ' . $name] = ['refused' => $exception->getMessage(), 'status' => $exception->getHttpStatus(), 'details' => $this->untimed(details: $exception->getDetails())];
+			}
+		}
+
+		$this->assertSame(self::GOLDEN_ACCESS, json_encode(['outcomes' => $outcomes, 'events' => $events]));
+
+	}//end testGoldenTokenIssuanceAndScoreReceipt()
+
+	/**
+	 * Refusal details with clock readings shown only as present.
+	 *
+	 * @param array<string, mixed> $details The details.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function untimed(array $details): array {
+		return array_map(static fn ($value) => (is_int($value) === true) ? 'a time' : $value, $details);
+
+	}//end untimed()
+
 }//end class

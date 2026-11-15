@@ -34,12 +34,14 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Sms\DeliveryResult;
 use OCA\Integriq\Service\Sms\LogSmsProvider;
 use OCA\Integriq\Service\Sms\PhoneNumberValidator;
 use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
 use OCA\Integriq\Service\Sms\SmsProviderInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -94,6 +96,13 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	public const EVENT_TYPE_DELIVERY_STATUS = 'nl.conduction.sms.delivery.status';
 
 	/**
+	 * Every SMS binding by provider id.
+	 *
+	 * @var SmsProviderRegistry
+	 */
+	private readonly SmsProviderRegistry $providers;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService OR object service for source/message persistence.
@@ -104,6 +113,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
 	 * @param OutboundSendGateInterface $gate Asks the opt-out list, adds the unsubscribe text, keeps the log row.
+	 * @param SmsProviderRegistry|null $providers Every SMS binding by provider id; log and NotifyNL only when not given.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -114,7 +124,9 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
 		private readonly OutboundSendGateInterface $gate,
+		?SmsProviderRegistry $providers = null,
 	) {
+		$this->providers = ($providers ?? new SmsProviderRegistry(logProvider: $logProvider, notifyNl: $notifyNlProvider));
 
 	}//end __construct()
 
@@ -398,19 +410,28 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	/**
 	 * Select the provider binding named by `configuration.provider` (default `log`).
 	 *
+	 * A value no binding answers to resolves to a binding that refuses every
+	 * call naming that value, so the message is stored `failed` instead of
+	 * reported sent through the log binding.
+	 *
 	 * @param array $configuration The SMS source's `configuration` object.
 	 *
 	 * @return SmsProviderInterface The resolved provider binding.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
 	 */
 	public function resolveProvider(array $configuration): SmsProviderInterface {
-		$provider = ($configuration['provider'] ?? $this->logProvider->getProviderId());
-		if ($provider === $this->notifyNlProvider->getProviderId()) {
-			return $this->notifyNlProvider;
+		$provider = ($configuration['provider'] ?? null);
+		if (is_scalar($provider) === true) {
+			$provider = (string)$provider;
 		}
 
-		return $this->logProvider;
+		if (is_string($provider) === false) {
+			$provider = null;
+		}
+
+		return $this->providers->resolve(providerId: $provider);
 	}//end resolveProvider()
 
 	/**
@@ -423,27 +444,16 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-send-endpoint-consumable-by-sibling-apps-req-006
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new SmsProviderException(
 				message: 'No active SMS source is configured (register "openconnector", schema "source", '
 					. 'type "sms", isEnabled=true). Configure one before using the SMS channel.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**

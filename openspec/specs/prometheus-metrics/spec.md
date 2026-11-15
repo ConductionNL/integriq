@@ -11,7 +11,7 @@ Expose application metrics in Prometheus text exposition format at `GET /api/met
 @e2e exclude metrics and health-check endpoints — no browser UI, verified by Newman/API tests
 ## Requirements
 
-### REQ-PROM-001: Metrics Endpoint
+### Requirement: Metrics Endpoint (REQ-PROM-001)
 
 The app MUST expose `GET /index.php/apps/integriq/api/metrics` returning `text/plain; version=0.0.4; charset=utf-8`. The endpoint MUST require admin authentication (Nextcloud admin session or API token). All metrics MUST follow the Prometheus text exposition format with `# HELP`, `# TYPE`, and metric lines.
 
@@ -46,7 +46,7 @@ The app MUST expose `GET /index.php/apps/integriq/api/metrics` returning `text/p
 - **WHEN** each scrape runs the database queries
 - **THEN** query execution completes within 500ms using indexed COUNT queries on the existing Integriq tables.
 
-### REQ-PROM-002: Application Info Gauge
+### Requirement: Application Info Gauge (REQ-PROM-002)
 
 The app MUST expose an `integriq_info` gauge metric with labels `version` (app version), `php_version`, and `nextcloud_version`. The value is always 1. This enables Prometheus queries like `integriq_info{version="2.1.0"}` to track which version is deployed.
 
@@ -68,7 +68,7 @@ The app MUST expose an `integriq_info` gauge metric with labels `version` (app v
 - **WHEN** the metrics endpoint is called
 - **THEN** the version label defaults to "0.0.0" rather than omitting the metric.
 
-### REQ-PROM-003: Application Up Gauge
+### Requirement: Application Up Gauge (REQ-PROM-003)
 
 The app MUST expose an `integriq_up` gauge metric. The value is 1 if the app is healthy (database accessible, core tables exist), 0 if degraded (database errors, missing tables).
 
@@ -90,7 +90,7 @@ The app MUST expose an `integriq_up` gauge metric. The value is 1 if the app is 
 - **WHEN** the metrics endpoint is called
 - **THEN** `integriq_up` is 0 and the health check details explain the missing table.
 
-### REQ-PROM-004: Sources Gauge by Type
+### Requirement: Sources Gauge by Type (REQ-PROM-004)
 
 The app MUST expose `integriq_sources_total` as a gauge with label `type` (rest/soap/graphql/json/xml/ftp/sftp). The value is the current count of configured sources per type, queried from the `openconnector_sources` table grouped by `type` column.
 
@@ -112,7 +112,7 @@ The app MUST expose `integriq_sources_total` as a gauge with label `type` (rest/
 - **WHEN** the metrics endpoint is called
 - **THEN** it is counted under the default label "rest" (existing MetricsController behavior).
 
-### REQ-PROM-005: Call Counter by Status
+### Requirement: Call Counter by Status (REQ-PROM-005)
 
 The app MUST expose `integriq_calls_total` as a counter with label `status` (HTTP status code). The value is the total number of API calls logged in the `openconnector_call_logs` table, grouped by `status_code`. This enables monitoring of error rates and API call volumes.
 
@@ -134,7 +134,7 @@ The app MUST expose `integriq_calls_total` as a counter with label `status` (HTT
 - **WHEN** the next metrics scrape runs
 - **THEN** `integriq_calls_total{status="429"}` appears with count 1.
 
-### REQ-PROM-006: Synchronization Metrics
+### Requirement: Synchronization Metrics (REQ-PROM-006)
 
 The app MUST expose synchronization metrics: `integriq_synchronizations_total` (gauge, total configured synchronizations) and `integriq_synchronization_runs_total` (counter with label `status`, total sync log entries grouped by result). These enable monitoring of sync health and failure rates.
 
@@ -156,7 +156,7 @@ The app MUST expose synchronization metrics: `integriq_synchronizations_total` (
 - **WHEN** the sync log records the failure
 - **THEN** the next scrape increments `integriq_synchronization_runs_total{status="error"}`.
 
-### REQ-PROM-007: Endpoint Metrics
+### Requirement: Endpoint Metrics (REQ-PROM-007)
 
 The app MUST expose `integriq_endpoints_total` (gauge) counting the total number of registered endpoints, and `integriq_endpoint_hits_total` (counter with labels `endpoint`, `method`) tracking request counts per endpoint. This enables monitoring of which endpoints are most active.
 
@@ -178,7 +178,7 @@ The app MUST expose `integriq_endpoints_total` (gauge) counting the total number
 - **WHEN** the metrics endpoint is called
 - **THEN** results are limited to the top 100 by hit count to prevent metric cardinality explosion.
 
-### REQ-PROM-008: Job Queue Metrics
+### Requirement: Job Queue Metrics (REQ-PROM-008)
 
 The app MUST expose `integriq_jobs_total` (gauge) counting configured jobs, and `integriq_job_runs_total` (counter with label `status`) counting job execution log entries. This enables monitoring of background job health.
 
@@ -200,7 +200,7 @@ The app MUST expose `integriq_jobs_total` (gauge) counting configured jobs, and 
 - **WHEN** the metrics endpoint is called
 - **THEN** `integriq_jobs_total 0` is emitted.
 
-### REQ-PROM-009: Mapping and Rule Metrics
+### Requirement: Mapping and Rule Metrics (REQ-PROM-009)
 
 The app MUST expose `integriq_mappings_total` (gauge) and `integriq_rules_total` (gauge) counting configured mappings and rules respectively. These are lightweight counters providing operational overview.
 
@@ -222,7 +222,7 @@ The app MUST expose `integriq_mappings_total` (gauge) and `integriq_rules_total`
 - **WHEN** the metrics endpoint collects this metric
 - **THEN** a zero-value fallback is emitted with a warning logged.
 
-### REQ-PROM-010: Health Check Endpoint
+### Requirement: Health Check Endpoint (REQ-PROM-010)
 
 The app MUST expose `GET /index.php/apps/integriq/api/health` returning JSON `{"status": "ok"|"degraded"|"error", "checks": {...}}`. Checks include: database connectivity (SELECT 1), source table accessibility (COUNT from sources table), and optionally source endpoint reachability for critical sources. The health endpoint requires admin authentication.
 

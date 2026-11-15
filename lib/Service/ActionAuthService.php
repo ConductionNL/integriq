@@ -3,6 +3,9 @@
 /**
  * Action Authorization Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Implements the ADR-023 action-level authorization pattern: each controller
  * method declares an action name (e.g. "source.test") and delegates the
  * authorization decision to this service, which resolves the action against

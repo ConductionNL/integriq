@@ -29,6 +29,7 @@ use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 use OCA\OpenRegister\Service\Task\TaskService as ORTaskService;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -183,10 +184,10 @@ class ApprovalServiceTaskFirstTest extends TestCase {
 		$this->taskService->method('import')->willReturn($this->task('task-9'));
 		$offered = null;
 		$this->taskService->expects($this->once())->method('offer')->willReturnCallback(
-			function (string $uuid, array $pool, ?string $actor) use (&$offered): Task {
-				$offered = [$uuid, $pool, $actor];
+			function (TaskActorRef $ref, array $pool) use (&$offered): Task {
+				$offered = [$ref->uuid, $pool, $ref->actor];
 
-				return $this->task($uuid);
+				return $this->task($ref->uuid);
 			}
 		);
 		$this->notifications->expects($this->never())->method('notify');

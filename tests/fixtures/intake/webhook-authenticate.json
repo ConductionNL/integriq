@@ -1,0 +1,250 @@
+{
+    "allowed": {
+        "identity": [
+            "svc",
+            "c-1"
+        ],
+        "headers": [
+            "X-Sig"
+        ],
+        "calls": [
+            {
+                "verify": [
+                    "{\"a\":1}",
+                    "sig-for-X-Sig",
+                    {
+                        "scheme": "hmac-sha256-hex",
+                        "secret": "s3cr3t",
+                        "toleranceSeconds": 60
+                    }
+                ]
+            },
+            {
+                "missing": [
+                    "svc",
+                    [
+                        "create",
+                        "update"
+                    ],
+                    "openformulieren_submission"
+                ]
+            }
+        ]
+    },
+    "defaults": {
+        "identity": [
+            "svc",
+            "c-2"
+        ],
+        "headers": [
+            "X-OpenConnector-Signature"
+        ],
+        "calls": [
+            {
+                "verify": [
+                    "{\"a\":1}",
+                    "sig-for-X-OpenConnector-Signature",
+                    {
+                        "scheme": "openconnector",
+                        "secret": "",
+                        "toleranceSeconds": 300
+                    }
+                ]
+            },
+            {
+                "missing": [
+                    "svc",
+                    [
+                        "create",
+                        "update"
+                    ],
+                    "openformulieren_submission"
+                ]
+            }
+        ]
+    },
+    "no consumer": {
+        "refused": [
+            "OCA\\Integriq\\Exception\\DsoConnectionUnavailableException",
+            "No openformulieren consumer is configured.",
+            "no_connection",
+            "openformulieren"
+        ],
+        "headers": [],
+        "calls": []
+    },
+    "two consumers": {
+        "refused": [
+            "OCA\\Integriq\\Exception\\DsoConnectionUnavailableException",
+            "2 openformulieren consumers exist; the webhook does not guess which account to use.",
+            "ambiguous_connection",
+            "openformulieren"
+        ],
+        "headers": [],
+        "calls": []
+    },
+    "bad signature": {
+        "refused": [
+            "OCA\\Integriq\\Exception\\DsoSignatureException",
+            "Open Formulieren webhook signature validation failed",
+            null,
+            null
+        ],
+        "headers": [
+            "X-Sig"
+        ],
+        "calls": [
+            {
+                "verify": [
+                    "{\"a\":1}",
+                    "sig-for-X-Sig",
+                    {
+                        "scheme": "hmac-sha256-hex",
+                        "secret": "s3cr3t",
+                        "toleranceSeconds": 60
+                    }
+                ]
+            }
+        ]
+    },
+    "no account": {
+        "refused": [
+            "OCA\\Integriq\\Exception\\DsoConnectionUnavailableException",
+            "The Open Formulieren connection names no account to act as.",
+            "no_account",
+            "openformulieren"
+        ],
+        "headers": [
+            "X-Sig"
+        ],
+        "calls": [
+            {
+                "verify": [
+                    "{\"a\":1}",
+                    "sig-for-X-Sig",
+                    {
+                        "scheme": "hmac-sha256-hex",
+                        "secret": "s3cr3t",
+                        "toleranceSeconds": 60
+                    }
+                ]
+            }
+        ]
+    },
+    "unknown account": {
+        "refused": [
+            "OCA\\Integriq\\Exception\\DsoConnectionUnavailableException",
+            "The Open Formulieren connection account \"ghost\" does not exist.",
+            "account_unknown",
+            "openformulieren"
+        ],
+        "headers": [
+            "X-Sig"
+        ],
+        "calls": [
+            {
+                "verify": [
+                    "{\"a\":1}",
+                    "sig-for-X-Sig",
+                    {
+                        "scheme": "hmac-sha256-hex",
+                        "secret": "s3cr3t",
+                        "toleranceSeconds": 60
+                    }
+                ]
+            }
+        ]
+    },
+    "disabled account": {
+        "refused": [
+            "OCA\\Integriq\\Exception\\DsoConnectionUnavailableException",
+            "The Open Formulieren connection account \"off\" is disabled.",
+            "account_disabled",
+            "openformulieren"
+        ],
+        "headers": [
+            "X-Sig"
+        ],
+        "calls": [
+            {
+                "verify": [
+                    "{\"a\":1}",
+                    "sig-for-X-Sig",
+                    {
+                        "scheme": "hmac-sha256-hex",
+                        "secret": "s3cr3t",
+                        "toleranceSeconds": 60
+                    }
+                ]
+            }
+        ]
+    },
+    "rights unverifiable": {
+        "refused": [
+            "OCA\\Integriq\\Exception\\DsoConnectionUnavailableException",
+            "The rights of Open Formulieren connection account \"svc\" could not be checked.",
+            "rights_unverifiable",
+            "openformulieren"
+        ],
+        "headers": [
+            "X-Sig"
+        ],
+        "calls": [
+            {
+                "verify": [
+                    "{\"a\":1}",
+                    "sig-for-X-Sig",
+                    {
+                        "scheme": "hmac-sha256-hex",
+                        "secret": "s3cr3t",
+                        "toleranceSeconds": 60
+                    }
+                ]
+            },
+            {
+                "missing": [
+                    "svc",
+                    [
+                        "create",
+                        "update"
+                    ],
+                    "openformulieren_submission"
+                ]
+            }
+        ]
+    },
+    "rights missing": {
+        "refused": [
+            "OCA\\Integriq\\Exception\\DsoConnectionUnavailableException",
+            "Open Formulieren connection account \"svc\" lacks update on openformulieren_submission.",
+            "account_lacks_rights",
+            "openformulieren"
+        ],
+        "headers": [
+            "X-Sig"
+        ],
+        "calls": [
+            {
+                "verify": [
+                    "{\"a\":1}",
+                    "sig-for-X-Sig",
+                    {
+                        "scheme": "hmac-sha256-hex",
+                        "secret": "s3cr3t",
+                        "toleranceSeconds": 60
+                    }
+                ]
+            },
+            {
+                "missing": [
+                    "svc",
+                    [
+                        "create",
+                        "update"
+                    ],
+                    "openformulieren_submission"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,15 @@
+{
+  "elements": [
+    {
+      "integrationContext": "urn:li:organization:2414183",
+      "companyApplyUrl": "https://werken.example.nl/vacatures/5b7d2c1e-8a44-4f0e-9a71-2f3c6d9e1a01",
+      "externalJobPostingId": "5b7d2c1e-8a44-4f0e-9a71-2f3c6d9e1a01",
+      "jobPostingOperationType": "CREATE",
+      "title": "Medior Vue-developer",
+      "description": "Wij zoeken een medior Vue-developer voor ons platformteam. Placeholder vacaturetekst (recruiting-ats-basic seed).",
+      "listedAt": 1781481600000,
+      "employmentStatus": "FULL_TIME",
+      "location": "Netherlands"
+    }
+  ]
+}

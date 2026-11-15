@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://github.com/ConductionNL/integriq
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -370,6 +373,7 @@ class SynchronizationRunProgressService implements SynchronizationRunProgressSer
 				schema: self::SCHEMA,
 				uuid: $uuid,
 				_rbac: false,
+				// Unscoped: system write of synchronisation run progress.
 				_multitenancy: false,
 				silent: true,
 				_validation: false,

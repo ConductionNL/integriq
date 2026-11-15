@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Controller;
@@ -153,18 +156,24 @@ class MappingsController extends Controller {
 		$openRegisters = $objectService->getOpenRegisters();
 
 		// Get all parameters from the request.
-		$data = $this->request->getParams();
+		return $this->runMappingTest(openRegisters: $openRegisters, data: $this->request->getParams());
 
-		// Validate that required parameters are present. Missing params are a client
-		// error, so return a clean 400 rather than letting an exception escape as a 500.
+	}//end test()
+
+	/**
+	 * Check the test's input, resolve its schema and run it.
+	 *
+	 * Missing params are a client error, so they answer a clean 400 rather
+	 * than letting an exception escape as a 500.
+	 *
+	 * @param \OCA\OpenRegister\Service\ObjectService|null $openRegisters OpenRegister's object service, null when not installed.
+	 * @param array<string, mixed>                           $data          The request parameters.
+	 *
+	 * @return JSONResponse The result and its validity, or the error response.
+	 */
+	private function runMappingTest(?\OCA\OpenRegister\Service\ObjectService $openRegisters, array $data): JSONResponse {
 		if (isset($data['inputObject']) === false || isset($data['mapping']) === false) {
-			return new JSONResponse(
-				data: [
-					'error' => $this->l->t('Bad request'),
-					'message' => $this->l->t('Both `inputObject` and `mapping` are required'),
-				],
-				statusCode: 400
-			);
+			return $this->missingTestInput();
 		}
 
 		$schema = $this->resolveTestSchema(openRegisters: $openRegisters, schemaId: ($data['schema'] ?? null));
@@ -172,15 +181,42 @@ class MappingsController extends Controller {
 			return $schema;
 		}
 
-		// MappingService::executeMapping() accepts a polymorphic payload and
-		// hydrates arrays into a Mapping value object itself.
-		$mappingPayload = $data['mapping'];
-		if (is_array($mappingPayload) === false) {
-			$mappingPayload = ['mapping' => $mappingPayload];
-		}
+		$test = new MappingTestRequest();
+		$test->data = $data;
+		$test->openRegisters = $openRegisters;
+		$test->schema = $schema;
 
+		return $this->mapAndValidate(test: $test);
+
+	}//end runMappingTest()
+
+	/**
+	 * The 400 for a test without `inputObject` or `mapping`.
+	 *
+	 * @return JSONResponse
+	 */
+	private function missingTestInput(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $this->l->t('Bad request'),
+				'message' => $this->l->t('Both `inputObject` and `mapping` are required'),
+			],
+			statusCode: 400
+		);
+
+	}//end missingTestInput()
+
+	/**
+	 * Run the mapping on the input and, when asked, validate the result.
+	 *
+	 * @param MappingTestRequest $test The test.
+	 *
+	 * @return JSONResponse The result and its validity, or the 400 a failing mapping answers.
+	 */
+	private function mapAndValidate(MappingTestRequest $test): JSONResponse {
 		try {
-			$resultObject = $this->mappingService->executeMapping(mapping: $mappingPayload, input: $data['inputObject']);
+			$mappingPayload = $this->mappingPayload(mapping: $test->data['mapping']);
+			$resultObject = $this->mappingService->executeMapping(mapping: $mappingPayload, input: $test->data['inputObject']);
 		} catch (Exception $e) {
 			return new JSONResponse(
 				[
@@ -191,21 +227,51 @@ class MappingsController extends Controller {
 			);
 		}
 
-		$report = ['isValid' => true, 'validationErrors' => []];
+		return new JSONResponse(['resultObject' => $resultObject] + $this->testReport(test: $test, resultObject: $resultObject));
 
-		// A resolved schema implies OpenRegister is installed (412 above otherwise).
-		if ($schema !== false && empty($data['validation']) === false) {
-			// Validation lives on the ValidateObject handler; passing the Schema
-			// entity lets it derive the schema object and run the unique-field
-			// and extended-type checks too.
-			$report = $this->validationReport(
-				result: $openRegisters->getValidateHandler()->validateObject(object: $resultObject, schema: $schema)
-			);
+	}//end mapAndValidate()
+
+	/**
+	 * The mapping as MappingService::executeMapping() takes it: it accepts a
+	 * polymorphic payload and hydrates arrays into a Mapping value object itself.
+	 *
+	 * @param mixed $mapping The requested mapping.
+	 *
+	 * @return array
+	 */
+	private function mappingPayload(mixed $mapping): array {
+		if (is_array($mapping) === false) {
+			return ['mapping' => $mapping];
 		}
 
-		return new JSONResponse(['resultObject' => $resultObject] + $report);
+		return $mapping;
 
-	}//end test()
+	}//end mappingPayload()
+
+	/**
+	 * The validity fields of the test response: valid without validation,
+	 * else the schema validation's verdict.
+	 *
+	 * A resolved schema implies OpenRegister is installed (412 otherwise).
+	 * Validation lives on the ValidateObject handler; passing the Schema
+	 * entity lets it derive the schema object and run the unique-field and
+	 * extended-type checks too.
+	 *
+	 * @param MappingTestRequest $test         The test.
+	 * @param mixed              $resultObject The mapped result.
+	 *
+	 * @return array{isValid: bool, validationErrors: array}
+	 */
+	private function testReport(MappingTestRequest $test, mixed $resultObject): array {
+		if ($test->validates() === false) {
+			return ['isValid' => true, 'validationErrors' => []];
+		}
+
+		return $this->validationReport(
+			result: $test->openRegisters->getValidateHandler()->validateObject(object: $resultObject, schema: $test->schema)
+		);
+
+	}//end testReport()
 
 	/**
 	 * Resolve the schema a mapping test validates against.
@@ -228,33 +294,65 @@ class MappingsController extends Controller {
 		}
 
 		if ($openRegisters === null) {
-			return new JSONResponse(
-				data: [
-					'error' => $this->l->t('Setup error'),
-					'message' => $this->l->t('OpenRegisters must be installed to validate schema.'),
-				],
-				statusCode: 412
-			);
+			return $this->openRegistersMissing();
 		}
 
-		try {
-			$schema = $openRegisters->setSchema($schemaId)->getCurrentSchemaEntity();
-		} catch (DoesNotExistException $exception) {
-			$schema = null;
-		}
-
+		$schema = $this->findTestSchema(openRegisters: $openRegisters, schemaId: $schemaId);
 		if ($schema === null) {
-			return new JSONResponse(
-				data: [
-					'error' => $this->l->t('Not found'),
-					'message' => $this->l->t('The specified schema could not be found.'),
-				],
-				statusCode: 404
-			);
+			return $this->testSchemaNotFound();
 		}
 
 		return $schema;
 	}//end resolveTestSchema()
+
+	/**
+	 * The schema entity for a requested schema, or null when there is none.
+	 *
+	 * @param \OCA\OpenRegister\Service\ObjectService $openRegisters OpenRegister's object service.
+	 * @param mixed                                   $schemaId      The requested schema.
+	 *
+	 * @return object|null
+	 */
+	private function findTestSchema(\OCA\OpenRegister\Service\ObjectService $openRegisters, mixed $schemaId): ?object {
+		try {
+			return $openRegisters->setSchema($schemaId)->getCurrentSchemaEntity();
+		} catch (DoesNotExistException $exception) {
+			return null;
+		}
+
+	}//end findTestSchema()
+
+	/**
+	 * The 412 for a schema test without OpenRegister installed.
+	 *
+	 * @return JSONResponse
+	 */
+	private function openRegistersMissing(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $this->l->t('Setup error'),
+				'message' => $this->l->t('OpenRegisters must be installed to validate schema.'),
+			],
+			statusCode: 412
+		);
+
+	}//end openRegistersMissing()
+
+	/**
+	 * The 404 for a schema test against a schema that does not exist.
+	 *
+	 * @return JSONResponse
+	 */
+	private function testSchemaNotFound(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $this->l->t('Not found'),
+				'message' => $this->l->t('The specified schema could not be found.'),
+			],
+			statusCode: 404
+		);
+
+	}//end testSchemaNotFound()
 
 	/**
 	 * Turn a schema validation result into the test response's validity fields.

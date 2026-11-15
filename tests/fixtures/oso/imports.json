@@ -1,0 +1,68 @@
+{
+    "full": {
+        "sourceSchoolBrin": "12AB",
+        "learnerEckId": "eck-1",
+        "categories": [
+            {
+                "category": "zorg",
+                "included": true,
+                "data": {
+                    "a": 1
+                }
+            },
+            {
+                "category": "toets",
+                "included": false,
+                "data": []
+            },
+            {
+                "category": "",
+                "included": false,
+                "data": []
+            }
+        ],
+        "draftProfile": {
+            "givenName": "Jan",
+            "familyName": "Jansen",
+            "birthDate": "2015-01-02",
+            "eckId": "eck-1",
+            "schoolId": "12AB"
+        },
+        "attachmentRefs": [
+            "r-1",
+            " r-2 "
+        ]
+    },
+    "minimal": {
+        "sourceSchoolBrin": "12AB",
+        "learnerEckId": "eck-2",
+        "categories": [],
+        "draftProfile": null,
+        "attachmentRefs": []
+    },
+    "name-only": {
+        "sourceSchoolBrin": "12AB",
+        "learnerEckId": "eck-3",
+        "categories": [],
+        "draftProfile": {
+            "givenName": "Piet",
+            "familyName": null,
+            "birthDate": null,
+            "eckId": "eck-3",
+            "schoolId": "12AB"
+        },
+        "attachmentRefs": []
+    },
+    "empty-lists": {
+        "sourceSchoolBrin": "12AB",
+        "learnerEckId": "eck-4",
+        "categories": [],
+        "draftProfile": null,
+        "attachmentRefs": []
+    },
+    "no-brin": "refused: Inbound OSO dossier is missing stuurgegevens.afzenderBrin — refusing to import from an unidentified school.",
+    "no-body": "refused: Inbound OSO dossier is missing body.leerlingEckId — refusing to import an unidentified learner.",
+    "no-eck": "refused: Inbound OSO dossier is missing body.leerlingEckId — refusing to import an unidentified learner.",
+    "empty": "refused: Inbound OSO dossier is empty.",
+    "malformed": "refused: Inbound OSO dossier is not well-formed XML."
+}

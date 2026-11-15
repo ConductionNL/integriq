@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\UwlrEduV;
 
+use OCA\Integriq\Service\Helper\ProviderIndex;
+use OCA\Integriq\Service\Helper\ProviderIds;
 use RuntimeException;
 
 /**
@@ -33,9 +35,9 @@ class UwlrEduVProviderRegistry {
 	/**
 	 * Bindings keyed by provider id.
 	 *
-	 * @var array<string,UwlrEduVProviderInterface>
+	 * @var ProviderIndex<UwlrEduVProviderInterface>
 	 */
-	private array $providers = [];
+	private readonly ProviderIndex $index;
 
 	/**
 	 * Constructor.
@@ -43,13 +45,7 @@ class UwlrEduVProviderRegistry {
 	 * @param iterable<UwlrEduVProviderInterface> $providers The bindings.
 	 */
 	public function __construct(iterable $providers = []) {
-		foreach ($providers as $provider) {
-			if (isset($this->providers[$provider->getProviderId()]) === true) {
-				continue;
-			}
-
-			$this->providers[$provider->getProviderId()] = $provider;
-		}
+		$this->index = new ProviderIndex(kind: 'UWLR/Edu-V', providers: $providers);
 	}//end __construct()
 
 	/**
@@ -62,7 +58,7 @@ class UwlrEduVProviderRegistry {
 	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function has(string $providerId): bool {
-		return isset($this->providers[$providerId]);
+		return $this->index->has(providerId: $providerId);
 	}//end has()
 
 	/**
@@ -77,27 +73,7 @@ class UwlrEduVProviderRegistry {
 	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function get(string $providerId): UwlrEduVProviderInterface {
-		$resolved = $providerId;
-		if ($resolved === '') {
-			$resolved = 'log';
-		}
-
-		if (isset($this->providers[$resolved]) === false) {
-			$knownIds = '(none)';
-			if ($this->ids() !== []) {
-				$knownIds = implode(', ', $this->ids());
-			}
-
-			throw new RuntimeException(
-				sprintf(
-					'No UWLR/Edu-V provider is registered under "%s". Registered providers: %s. Nothing was sent.',
-					$resolved,
-					$knownIds
-				)
-			);
-		}
-
-		return $this->providers[$resolved];
+		return $this->index->get(providerId: ProviderIds::orLog(providerId: $providerId));
 	}//end get()
 
 	/**
@@ -108,6 +84,6 @@ class UwlrEduVProviderRegistry {
 	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function ids(): array {
-		return array_keys($this->providers);
+		return $this->index->ids();
 	}//end ids()
 }//end class
