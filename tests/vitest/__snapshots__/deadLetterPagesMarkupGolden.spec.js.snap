@@ -1,0 +1,208 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`EventDeliveriesPage bulk bar > one selected row is counted 1`] = `"<div class="eventDeliveries__bulk" data-testid="bulk-bar"><span>1 selected</span><span>Replay 1 messages now?</span><button class="NcButton">Confirm</button><button class="NcButton">Cancel</button></div>"`;
+
+exports[`EventDeliveriesPage bulk bar > steps through the bulk flow as recorded 1`] = `
+[
+  [
+    "none selected",
+    false,
+  ],
+  [
+    "selected",
+    "<div class="eventDeliveries__bulk" data-testid="bulk-bar"><span>2 selected</span><button class="NcButton">Replay selected</button><button class="NcButton">Discard selected</button></div>",
+  ],
+  [
+    "replay asked",
+    "replay",
+    "<div class="eventDeliveries__bulk" data-testid="bulk-bar"><span>2 selected</span><span>Replay 2 messages now?</span><button class="NcButton">Confirm</button><button class="NcButton">Cancel</button></div>",
+  ],
+  [
+    "cancelled",
+    null,
+    "<div class="eventDeliveries__bulk" data-testid="bulk-bar"><span>2 selected</span><button class="NcButton">Replay selected</button><button class="NcButton">Discard selected</button></div>",
+  ],
+  [
+    "discard asked",
+    "discard",
+    "<div class="eventDeliveries__bulk" data-testid="bulk-bar"><span>2 selected</span><span>Discard 2 messages?</span><button class="NcButton">Confirm</button><button class="NcButton">Cancel</button></div>",
+  ],
+  [
+    "busy",
+    "<div class="eventDeliveries__bulk" data-testid="bulk-bar"><span>2 selected</span><span>Discard 2 messages?</span><button class="NcButton" disabled="">Confirm</button><button class="NcButton" disabled="">Cancel</button></div>",
+  ],
+  [
+    "committed",
+    [
+      [
+        "/index.php/apps/integriq/api/events/dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+    ],
+    null,
+  ],
+]
+`;
+
+exports[`EventDeliveriesPage bulk bar > steps through the bulk flow as recorded 2`] = `
+"<div class="eventDeliveries">
+  <div class="eventDeliveries__header">
+    <h2>Event deliveries</h2>
+    <div class="eventDeliveries__filters">
+      <div class="NcSelect" inputlabel="Status" options="failed,abandoned,failed,abandoned,discarded"></div>
+      <div class="NcTextField"></div>
+      <div class="NcCheckboxRadioSwitch" data-testid="nextcloud-event-filter">Nextcloud event</div>
+    </div>
+  </div>
+  <!--v-if-->
+  <table class="eventDeliveries__table" data-testid="deliveries-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th scope="col">Event</th>
+        <th scope="col">Subscription</th>
+        <th scope="col">Action</th>
+        <th scope="col">Status</th>
+        <th scope="col">Retries</th>
+        <th scope="col">Last attempt</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="NcCheckboxRadioSwitch" aria-label="Select delivery a"></div>
+        </td>
+        <td>—</td>
+        <td>s</td>
+        <td><span class="eventDeliveries__actionBadge" data-testid="action-kind-badge">webhook</span></td>
+        <td><span class="eventDeliveries__badge eventDeliveries__badge--failed">failed</span></td>
+        <td>0</td>
+        <td></td>
+        <td><button class="NcButton">Inspect</button></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="NcCheckboxRadioSwitch" aria-label="Select delivery b"></div>
+        </td>
+        <td>—</td>
+        <td>s</td>
+        <td><span class="eventDeliveries__actionBadge" data-testid="action-kind-badge">webhook</span></td>
+        <td><span class="eventDeliveries__badge eventDeliveries__badge--abandoned">abandoned</span></td>
+        <td>0</td>
+        <td></td>
+        <td><button class="NcButton">Inspect</button></td>
+      </tr>
+    </tbody>
+  </table>
+  <!---->
+</div>"
+`;
+
+exports[`SyncDeadLetterPage bulk bar > one selected row is counted 1`] = `"<div class="syncDeadLetters__bulk" data-testid="bulk-bar"><span>1 selected</span><span>Replay 1 items now?</span><button class="NcButton">Confirm</button><button class="NcButton">Cancel</button></div>"`;
+
+exports[`SyncDeadLetterPage bulk bar > steps through the bulk flow as recorded 1`] = `
+[
+  [
+    "none selected",
+    false,
+  ],
+  [
+    "selected",
+    "<div class="syncDeadLetters__bulk" data-testid="bulk-bar"><span>2 selected</span><button class="NcButton">Replay selected</button><button class="NcButton">Discard selected</button></div>",
+  ],
+  [
+    "replay asked",
+    "replay",
+    "<div class="syncDeadLetters__bulk" data-testid="bulk-bar"><span>2 selected</span><span>Replay 2 items now?</span><button class="NcButton">Confirm</button><button class="NcButton">Cancel</button></div>",
+  ],
+  [
+    "cancelled",
+    null,
+    "<div class="syncDeadLetters__bulk" data-testid="bulk-bar"><span>2 selected</span><button class="NcButton">Replay selected</button><button class="NcButton">Discard selected</button></div>",
+  ],
+  [
+    "discard asked",
+    "discard",
+    "<div class="syncDeadLetters__bulk" data-testid="bulk-bar"><span>2 selected</span><span>Discard 2 items?</span><button class="NcButton">Confirm</button><button class="NcButton">Cancel</button></div>",
+  ],
+  [
+    "busy",
+    "<div class="syncDeadLetters__bulk" data-testid="bulk-bar"><span>2 selected</span><span>Discard 2 items?</span><button class="NcButton" disabled="">Confirm</button><button class="NcButton" disabled="">Cancel</button></div>",
+  ],
+  [
+    "committed",
+    [
+      [
+        "/index.php/apps/integriq/api/sync-dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+    ],
+    null,
+  ],
+]
+`;
+
+exports[`SyncDeadLetterPage bulk bar > steps through the bulk flow as recorded 2`] = `
+"<div class="syncDeadLetters">
+  <div class="syncDeadLetters__header">
+    <h2>Sync dead letters</h2>
+    <div class="syncDeadLetters__filters">
+      <div class="NcSelect" inputlabel="Status" options="failed,replayed,discarded"></div>
+      <div class="NcTextField"></div>
+    </div>
+  </div>
+  <!--v-if-->
+  <table class="syncDeadLetters__table" data-testid="dead-letters-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th scope="col">Synchronization</th>
+        <th scope="col">Origin ID</th>
+        <th scope="col">Status</th>
+        <th scope="col">Retries</th>
+        <th scope="col">Created</th>
+        <th scope="col">Error</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="NcCheckboxRadioSwitch" aria-label="Select dead letter a"></div>
+        </td>
+        <td>y</td>
+        <td>—</td>
+        <td><span class="syncDeadLetters__badge syncDeadLetters__badge--failed">failed</span></td>
+        <td>0</td>
+        <td></td>
+        <td class="syncDeadLetters__errorCell"></td>
+        <td><button class="NcButton">Inspect</button></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="NcCheckboxRadioSwitch" aria-label="Select dead letter b"></div>
+        </td>
+        <td>y</td>
+        <td>—</td>
+        <td><span class="syncDeadLetters__badge syncDeadLetters__badge--abandoned">abandoned</span></td>
+        <td>0</td>
+        <td></td>
+        <td class="syncDeadLetters__errorCell"></td>
+        <td><button class="NcButton">Inspect</button></td>
+      </tr>
+    </tbody>
+  </table>
+  <!---->
+</div>"
+`;

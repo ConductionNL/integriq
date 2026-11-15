@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema elementFormDefault="qualified" targetNamespace="http://schemas.rdw.nl/GEB/Shared/Types/2009/01"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://schemas.rdw.nl/GEB/Shared/Types/2009/01">
+	<xs:complexType name="ArrayOfKlant">
+		<xs:sequence>
+			<xs:element minOccurs="0" maxOccurs="unbounded" name="Klant" nillable="true" type="tns:Klant" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="ArrayOfKlant" nillable="true" type="tns:ArrayOfKlant" />
+	<xs:complexType name="Klant">
+		<xs:sequence>
+			<xs:element minOccurs="0" name="Key" nillable="true" type="xs:string" />
+			<xs:element minOccurs="0" name="Rol" type="tns:KlantRol" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="Klant" nillable="true" type="tns:Klant" />
+	<xs:simpleType name="KlantRol">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Burger" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="KlantRol" nillable="true" type="tns:KlantRol" />
+	<xs:complexType name="DependentServiceFault">
+		<xs:sequence>
+			<xs:element name="Message" nillable="true" type="xs:string" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="DependentServiceFault" nillable="true" type="tns:DependentServiceFault" />
+	<xs:complexType name="ApplicationFault">
+		<xs:sequence>
+			<xs:element name="Message" nillable="true" type="xs:string" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="ApplicationFault" nillable="true" type="tns:ApplicationFault" />
+</xs:schema>

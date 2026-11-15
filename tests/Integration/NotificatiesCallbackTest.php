@@ -30,7 +30,8 @@ namespace OCA\Integriq\Tests\Integration;
 
 use OCA\Integriq\Controller\NotificatiesSubscriberController;
 use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Tests\Helpers\OpenRegisterCredentials;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\FlowRunnerService;
@@ -173,7 +174,7 @@ class NotificatiesCallbackTest extends TestCase {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
-		$authorizationService = new AuthorizationService(
+		$authorizationService = OpenRegisterCredentials::bridge(
 			$this->createMock(IUserManager::class),
 			$this->createMock(IUserSession::class),
 			$orObjectService,
@@ -288,7 +289,7 @@ class NotificatiesCallbackTest extends TestCase {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
-		$authorizationService = new AuthorizationService(
+		$authorizationService = OpenRegisterCredentials::bridge(
 			$this->createMock(IUserManager::class),
 			$this->createMock(IUserSession::class),
 			$orObjectService,

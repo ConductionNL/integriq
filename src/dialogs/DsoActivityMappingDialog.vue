@@ -180,6 +180,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import closableDialog from '../mixins/closableDialog.js'
 import {
 	draftFromRow,
 	draftProblems,
@@ -198,6 +199,8 @@ export default {
 		NcSelect,
 		NcTextField,
 	},
+
+	mixins: [closableDialog],
 
 	props: {
 		open: { type: Boolean, default: false },
@@ -296,29 +299,6 @@ export default {
 				id: this.draft.id,
 				payload: payloadFromDraft(this.draft),
 			})
-		},
-
-		/**
-		 * Close the dialog.
-		 *
-		 * @return {void}
-		 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-4.1
-		 */
-		close() {
-			this.$emit('close')
-		},
-
-		/**
-		 * Close when NcDialog closes itself.
-		 *
-		 * @param {boolean} open Whether the dialog is open.
-		 * @return {void}
-		 * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-4.1
-		 */
-		onOpenChanged(open) {
-			if (!open) {
-				this.close()
-			}
 		},
 	},
 }

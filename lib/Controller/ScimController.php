@@ -11,7 +11,7 @@
  * and a rejection is logged.
  *
  * The credential is the app's existing consumer-backed API key store, resolved
- * by `AuthorizationService::authorizeApiKey()`. No new secret is introduced and
+ * by `OpenRegisterCredentialBridge::authorizeApiKey()` (OpenRegister's check). No new secret is introduced and
  * none is written into this package.
  *
  * @category Controller
@@ -35,10 +35,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Directory\ScimProvisioningService;
+use OCA\Integriq\Directory\ScimProvisioningServiceInterface;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -93,8 +93,8 @@ class ScimController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param ScimProvisioningService $provisioningService Applies the SCIM call.
-	 * @param AuthorizationService $authorizationService The existing inbound credential check.
+	 * @param ScimProvisioningServiceInterface $provisioningService Applies the SCIM call.
+	 * @param OpenRegisterCredentialBridgeInterface $authorizationService The existing inbound credential check.
 	 * @param LoggerInterface $logger Logger for rejections.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
@@ -102,8 +102,8 @@ class ScimController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly ScimProvisioningService $provisioningService,
-		private readonly AuthorizationService $authorizationService,
+		private readonly ScimProvisioningServiceInterface $provisioningService,
+		private readonly OpenRegisterCredentialBridgeInterface $authorizationService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -184,16 +184,7 @@ class ScimController extends Controller {
 				consumerLabel: $this->consumerLabel()
 			);
 		} catch (DirectorySyncRefusalException $refusal) {
-			// Same shape as the group route: the log names what was refused, the
-			// body carries only what the refusal decided is safe to tell a caller.
-			$this->logger->warning(
-				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
-			);
-
-			return $this->scimError(
-				status: Http::STATUS_FORBIDDEN,
-				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
-			);
+			return $this->refusedUserWrite(refusal: $refusal);
 		}
 
 		return new JSONResponse($resource, Http::STATUS_CREATED);
@@ -227,16 +218,7 @@ class ScimController extends Controller {
 				consumerLabel: $this->consumerLabel()
 			);
 		} catch (DirectorySyncRefusalException $refusal) {
-			// Same shape as the group route: the log names what was refused, the
-			// body carries only what the refusal decided is safe to tell a caller.
-			$this->logger->warning(
-				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
-			);
-
-			return $this->scimError(
-				status: Http::STATUS_FORBIDDEN,
-				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
-			);
+			return $this->refusedUserWrite(refusal: $refusal);
 		}
 
 		return new JSONResponse($updated);
@@ -267,16 +249,7 @@ class ScimController extends Controller {
 				consumerLabel: $this->consumerLabel()
 			);
 		} catch (DirectorySyncRefusalException $refusal) {
-			// Same shape as the group route: the log names what was refused, the
-			// body carries only what the refusal decided is safe to tell a caller.
-			$this->logger->warning(
-				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
-			);
-
-			return $this->scimError(
-				status: Http::STATUS_FORBIDDEN,
-				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
-			);
+			return $this->refusedUserWrite(refusal: $refusal);
 		}
 
 
@@ -458,6 +431,28 @@ class ScimController extends Controller {
 		return (string)$this->callingConsumer->getUuid();
 
 	}//end consumerLabel()
+
+	/**
+	 * The 403 answer to a refused user write, logged.
+	 *
+	 * Same shape as the group route: the log names what was refused, the body
+	 * carries only what the refusal decided is safe to tell a caller.
+	 *
+	 * @param DirectorySyncRefusalException $refusal The refusal.
+	 *
+	 * @return JSONResponse
+	 */
+	private function refusedUserWrite(DirectorySyncRefusalException $refusal): JSONResponse {
+		$this->logger->warning(
+			'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
+		);
+
+		return $this->scimError(
+			status: Http::STATUS_FORBIDDEN,
+			detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
+		);
+
+	}//end refusedUserWrite()
 
 	/**
 	 * Read an exact-match value out of a SCIM `filter` query parameter.

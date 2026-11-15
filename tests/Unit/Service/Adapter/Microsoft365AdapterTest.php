@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -74,7 +77,7 @@ class Microsoft365AdapterTest extends TestCase {
 	public function testCapabilitiesAreReadOnly(): void {
 		$capabilities = $this->adapter->getCapabilities();
 
-		$this->assertSame(['calendar-read', 'mail-metadata-read'], $capabilities);
+		$this->assertSame(['calendar-read', 'mail-metadata-read', 'search-federation', 'document-fetch'], $capabilities);
 		$this->assertNotContains('mail-send', $capabilities);
 		$this->assertNotContains('mail-write', $capabilities);
 	}//end testCapabilitiesAreReadOnly()

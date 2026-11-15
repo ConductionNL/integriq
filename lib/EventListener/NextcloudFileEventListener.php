@@ -18,19 +18,23 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Files\Events\Node\AbstractNodeEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeDeletedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
+use OCP\Files\Node;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -61,13 +65,24 @@ class NextcloudFileEventListener implements IEventListener {
 	private const SOURCE = '/nextcloud/files';
 
 	/**
+	 * The node event classes and their CloudEvents type.
+	 *
+	 * @var array<class-string, string>
+	 */
+	private const TYPES = [
+		NodeCreatedEvent::class => 'com.nextcloud.files.node.created',
+		NodeWrittenEvent::class => 'com.nextcloud.files.node.updated',
+		NodeDeletedEvent::class => 'com.nextcloud.files.node.deleted',
+	];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param EventService $eventService Service for managing CloudEvents.
+	 * @param EventServiceInterface $eventService Service for managing CloudEvents.
 	 * @param LoggerInterface $logger Logger instance.
 	 */
 	public function __construct(
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -90,15 +105,7 @@ class NextcloudFileEventListener implements IEventListener {
 			return;
 		}
 
-		$type = null;
-		if ($event instanceof NodeCreatedEvent) {
-			$type = 'com.nextcloud.files.node.created';
-		} elseif ($event instanceof NodeWrittenEvent) {
-			$type = 'com.nextcloud.files.node.updated';
-		} elseif ($event instanceof NodeDeletedEvent) {
-			$type = 'com.nextcloud.files.node.deleted';
-		}
-
+		$type = $this->eventType(event: $event);
 		if ($type === null) {
 			return;
 		}
@@ -111,27 +118,7 @@ class NextcloudFileEventListener implements IEventListener {
 				return;
 			}
 
-			$node = $event->getNode();
-			$owner = $node->getOwner();
-			$ownerUid = null;
-			if ($owner !== null) {
-				$ownerUid = $owner->getUID();
-			}
-
-			$this->eventService->handleNextcloudEvent(
-				type: $type,
-				payload: [
-					'source' => self::SOURCE,
-					'subject' => (string)$node->getId(),
-					'data' => [
-						'path' => $node->getPath(),
-						'fileid' => $node->getId(),
-						'mimetype' => $node->getMimetype(),
-						'owner' => $ownerUid,
-					],
-					'userId' => $ownerUid,
-				]
-			);
+			$this->eventService->handleNextcloudEvent(type: $type, payload: $this->payload(node: $event->getNode()));
 		} catch (\Throwable $e) {
 			// Broad catch is deliberate: this listener runs synchronously
 			// inside the file operation that triggered it. A failure here
@@ -146,4 +133,50 @@ class NextcloudFileEventListener implements IEventListener {
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * The CloudEvents type of a created, written or deleted node, or null.
+	 *
+	 * @param AbstractNodeEvent $event The node event.
+	 *
+	 * @return string|null
+	 */
+	private function eventType(AbstractNodeEvent $event): ?string {
+		foreach (self::TYPES as $class => $type) {
+			if ($event instanceof $class) {
+				return $type;
+			}
+		}
+
+		return null;
+
+	}//end eventType()
+
+	/**
+	 * The CloudEvent payload of a node: its path, id, mimetype and owner.
+	 *
+	 * @param Node $node The node.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function payload(Node $node): array {
+		$owner = $node->getOwner();
+		$ownerUid = null;
+		if ($owner !== null) {
+			$ownerUid = $owner->getUID();
+		}
+
+		return [
+			'source' => self::SOURCE,
+			'subject' => (string)$node->getId(),
+			'data' => [
+				'path' => $node->getPath(),
+				'fileid' => $node->getId(),
+				'mimetype' => $node->getMimetype(),
+				'owner' => $ownerUid,
+			],
+			'userId' => $ownerUid,
+		];
+
+	}//end payload()
 }//end class

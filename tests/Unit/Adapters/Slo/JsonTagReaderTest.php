@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-jsontag-responses-are-read-into-linked-arrays-req-004
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -19,7 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Adapters\Slo;
 
 use OCA\Integriq\Adapters\Slo\JsonTagReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
-use OCA\Integriq\Exception\SloCurriculumException;
+use OCA\Integriq\Adapters\Slo\SloCurriculumException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -143,4 +146,19 @@ class JsonTagReaderTest extends TestCase {
 		$this->assertSame('abc', (new JsonTagReader())->lastSegment('/uuid/abc'));
 		$this->assertSame('abc', (new JsonTagReader())->lastSegment('abc'));
 	}//end testLastSegment()
+	/**
+	 * A document that is not an object or a list indexes nothing; nested objects are indexed by id and tail.
+	 *
+	 * @return void
+	 */
+	public function testIndexByIdSkipsScalarDocuments(): void {
+		$reader = new JsonTagReader();
+
+		$this->assertSame([], $reader->indexById('<object id="/uuid/a">'));
+		$this->assertSame([], $reader->indexById(null));
+		$this->assertSame([], $reader->indexById(42));
+
+		$inner = ['@id' => '/uuid/b', 'title' => 'b'];
+		$this->assertSame(['/uuid/b' => $inner, 'b' => $inner], $reader->indexById(['x', 3, ['L' => [$inner]]]));
+	}//end testIndexByIdSkipsScalarDocuments()
 }//end class

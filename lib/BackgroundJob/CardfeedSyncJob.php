@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\CardfeedSyncService;
+use OCA\Integriq\Service\CardfeedSyncServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -60,14 +60,14 @@ class CardfeedSyncJob extends TimedJob {
 	 * CardfeedSyncJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param CardfeedSyncService $syncService The cardfeed sync service.
+	 * @param CardfeedSyncServiceInterface $syncService The cardfeed sync service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 *
 	 * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly CardfeedSyncService $syncService,
+		private readonly CardfeedSyncServiceInterface $syncService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

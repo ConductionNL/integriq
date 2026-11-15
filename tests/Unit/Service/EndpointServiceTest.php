@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -18,8 +21,9 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EndpointRuleDispatch;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\MappingService;
@@ -96,6 +100,13 @@ class EndpointServiceTest extends TestCase {
 	private $schemaMapper;
 
 	/**
+	 * The call engine double.
+	 *
+	 * @var CallService&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $callService;
+
+	/**
 	 * Set up test fixtures.
 	 *
 	 * @return void
@@ -107,6 +118,7 @@ class EndpointServiceTest extends TestCase {
 
 		$this->objectService = $this->createMock(ObjectService::class);
 		$callService = $this->createMock(CallService::class);
+		$this->callService = $callService;
 		$logger = $this->createMock(LoggerInterface::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 		$this->urlGenerator->method('getBaseUrl')->willReturn('https://example.org');
@@ -115,7 +127,7 @@ class EndpointServiceTest extends TestCase {
 		$config = $this->createMock(IConfig::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$storageService = $this->createMock(StorageService::class);
-		$authService = $this->createMock(AuthorizationService::class);
+		$authService = $this->createMock(OpenRegisterCredentialBridge::class);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$container = $this->container;
 		$syncService = $this->createMock(SynchronizationService::class);
@@ -273,6 +285,45 @@ class EndpointServiceTest extends TestCase {
 	}//end testHandleRequestWithProxyTargetTypeReturnsResponse()
 
 	/**
+	 * An endpoint with targets is routed: when its only target's breaker is open
+	 * it answers 503 naming the group, and the call engine is never called.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
+	 */
+	public function testAnEndpointWithTargetsIsRoutedAndAnswers503WhenNoneIsHealthy(): void {
+		$down = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['location' => 'https://example.com', 'circuitBreakerState' => 'open', 'circuitBreakerOpenedAt' => time()],
+			'source-down'
+		);
+		$this->orObjectService->method('find')->willReturn($down);
+		$this->callService->expects($this->never())->method('call');
+
+		$endpointEntity = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'method' => 'GET',
+				'path' => '/api/routed',
+				'targetType' => 'api',
+				'targets' => [['source' => 'source-down', 'weight' => 1]],
+			],
+			'endpoint-routed'
+		);
+
+		$request = $this->createMock(\OCP\IRequest::class);
+		$request->method('getMethod')->willReturn('GET');
+		$request->method('getParams')->willReturn([]);
+		$request->method('getHeader')->willReturn('');
+
+		$response = $this->service->handleRequest($endpointEntity, $request, '/api/routed');
+
+		$this->assertSame(503, $response->getStatus());
+		$this->assertSame('', $response->getData()['group']);
+	}//end testAnEndpointWithTargetsIsRoutedAndAnswers503WhenNoneIsHealthy()
+
+	/**
 	 * Test that generateEndpointUrl returns a string (does not throw) for a valid schema mapper mock.
 	 *
 	 * @return void
@@ -297,6 +348,33 @@ class EndpointServiceTest extends TestCase {
 	}//end testGenerateEndpointUrlReturnsString()
 
 	/**
+	 * A rule pipeline run over the given rule, as dispatchEndpointRule() hands it to a rule processor.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity           $rule      The rule.
+	 * @param string|null                                $objectId  The object id.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity|null      $endpoint  The endpoint.
+	 * @param \OCA\Integriq\Service\Helper\FlowToken|null $flowToken The flow token.
+	 * @param string                                     $timing    The timing.
+	 *
+	 * @return EndpointRuleDispatch
+	 */
+	private function ruleRun(
+		\OCA\OpenRegister\Db\ObjectEntity $rule,
+		?string $objectId = null,
+		?\OCA\OpenRegister\Db\ObjectEntity $endpoint = null,
+		?\OCA\Integriq\Service\Helper\FlowToken $flowToken = null,
+		string $timing = 'before',
+	): EndpointRuleDispatch {
+		$run = new EndpointRuleDispatch();
+		$run->rule = $rule;
+		$run->objectId = $objectId;
+		$run->endpoint = ($endpoint ?? ObjectServiceMockBuilder::objectEntity($this, [], 'endpoint-1'));
+		$run->flowToken = $flowToken;
+		$run->timing = $timing;
+		return $run;
+	}//end ruleRun()
+
+	/**
 	 * Test that locking rules keep the OpenRegister lock payload shape.
 	 *
 	 * @return void
@@ -315,7 +393,7 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'processLockingRule');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->service, $rule, ['body' => []], 'object-uuid');
+		$result = $method->invoke($this->service, $this->ruleRun(rule: $rule, objectId: 'object-uuid'), ['body' => []]);
 
 		$this->assertSame(['locked' => true, 'process' => 'test-process'], $result['body']);
 	}//end testProcessLockingRuleReturnsLockPayloadArray()
@@ -339,7 +417,7 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'processLockingRule');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->service, $rule, ['body' => []], 'object-uuid');
+		$result = $method->invoke($this->service, $this->ruleRun(rule: $rule, objectId: 'object-uuid'), ['body' => []]);
 
 		$this->assertSame(['unlocked' => true], $result['body']);
 	}//end testProcessLockingRuleNormalisesUnlockBoolean()
@@ -363,7 +441,7 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'processApprovalRule');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->service, $rule, $endpoint, $flowToken, 'before');
+		$result = $method->invoke($this->service, $this->ruleRun(rule: $rule, endpoint: $endpoint, flowToken: $flowToken, timing: 'before'));
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
 		$this->assertSame(202, $result->getStatus());
@@ -390,7 +468,7 @@ class EndpointServiceTest extends TestCase {
 		$method->setAccessible(true);
 
 		$this->expectException(\Exception::class);
-		$method->invoke($this->service, $rule, $endpoint, $flowToken, 'after');
+		$method->invoke($this->service, $this->ruleRun(rule: $rule, endpoint: $endpoint, flowToken: $flowToken, timing: 'after'));
 	}//end testProcessApprovalRuleAfterThrows()
 
 	/**
@@ -532,7 +610,7 @@ class EndpointServiceTest extends TestCase {
 			$this->orObjectService,
 			$this->createMock(IConfig::class),
 			$this->createMock(StorageService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$this->container,
 			$this->createMock(SynchronizationService::class),
 			$this->createMock(RuleService::class),
@@ -639,7 +717,7 @@ class EndpointServiceTest extends TestCase {
 					$this->orObjectService,
 					$this->createMock(IConfig::class),
 					$this->createMock(StorageService::class),
-					$this->createMock(AuthorizationService::class),
+					$this->createMock(OpenRegisterCredentialBridge::class),
 					$this->container,
 					$this->createMock(SynchronizationService::class),
 					$this->createMock(RuleService::class),
@@ -716,7 +794,7 @@ class EndpointServiceTest extends TestCase {
 			$this->orObjectService,
 			$this->createMock(IConfig::class),
 			$this->createMock(StorageService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$container,
 			$syncService,
 			$ruleService,
@@ -1102,4 +1180,150 @@ class EndpointServiceTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame(['error' => 'not found', 'message' => 'the object with id obj-1 does not exist'], $response->getData());
 	}//end testADraftAnswersTheSameNotFoundAsAMissingObject()
+	/**
+	 * Run processRules() over the given rules with a custom-rule service.
+	 *
+	 * @param array      $rules            Rule bodies by uuid, in endpoint order.
+	 * @param RuleService $ruleService     The rule service the custom rules call.
+	 * @param array      $options          `resumeAfterOrder`, `trace` and the request `body`.
+	 *
+	 * @return mixed The pipeline result.
+	 */
+	private function runRulePipeline(array $rules, RuleService $ruleService, array $options = []): mixed {
+		$service = $this->buildServiceForTraceTests($ruleService, $this->createMock(ContainerInterface::class));
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'ep', 'rules' => array_keys($rules)], 'endpoint-pipeline');
+		$this->orObjectService->method('find')->willReturnCallback(
+			fn (...$args) => ObjectServiceMockBuilder::objectEntity($this, $rules[($args['id'] ?? $args[0])], ($args['id'] ?? $args[0]))
+		);
+
+		$method = new \ReflectionMethod(EndpointService::class, 'processRules');
+		$method->setAccessible(true);
+
+		return $method->invoke(
+			$service,
+			$endpoint,
+			$this->createMock(\OCP\IRequest::class),
+			['parameters' => [], 'headers' => [], 'path' => '/x', 'method' => 'GET', 'body' => ($options['body'] ?? [])],
+			'before',
+			null,
+			new \OCA\Integriq\Service\Helper\FlowToken(),
+			($options['resumeAfterOrder'] ?? null),
+			($options['trace'] ?? null),
+			false
+		);
+	}//end runRulePipeline()
+
+	/**
+	 * A resumed pipeline skips the rules up to the suspended order.
+	 *
+	 * @return void
+	 */
+	public function testProcessRulesResumeSkipsRulesThatAlreadyRan(): void {
+		$seen = [];
+		$ruleService = $this->createMock(RuleService::class);
+		$ruleService->method('processCustomRule')->willReturnCallback(
+			function (...$args) use (&$seen) {
+				$seen[] = ($args['rule'] ?? $args[0])->getUuid();
+				return ($args['data'] ?? $args[1]);
+			}
+		);
+
+		$this->runRulePipeline(
+			[
+				'r-5' => ['order' => 5, 'name' => 'first', 'type' => 'custom', 'timing' => 'before'],
+				'r-10' => ['order' => 10, 'name' => 'second', 'type' => 'custom', 'timing' => 'before'],
+			],
+			$ruleService,
+			['resumeAfterOrder' => 5]
+		);
+
+		$this->assertSame(['r-10'], $seen);
+	}//end testProcessRulesResumeSkipsRulesThatAlreadyRan()
+
+	/**
+	 * A JSON string from the rule conditions reaches the rule decoded, and `_extendedInput` is dropped from the result.
+	 *
+	 * @return void
+	 */
+	public function testProcessRulesDecodesLogicResultAndDropsExtendedInput(): void {
+		$received = null;
+		$ruleService = $this->createMock(RuleService::class);
+		$ruleService->method('processCustomRule')->willReturnCallback(
+			function (...$args) use (&$received) {
+				$received = ($args['data'] ?? $args[1]);
+				return ['body' => ['ok' => true, '_extendedInput' => ['x' => 1]]];
+			}
+		);
+
+		$result = $this->runRulePipeline(
+			['r-1' => ['order' => 1, 'name' => 'json', 'type' => 'custom', 'timing' => 'before', 'conditions' => ['cat' => ['{"a":', '1}']]]],
+			$ruleService
+		);
+
+		$this->assertSame(['a' => 1], $received['logicResult']);
+		$this->assertArrayNotHasKey('flowToken', $received);
+		$this->assertSame(['ok' => true], $result['body']);
+	}//end testProcessRulesDecodesLogicResultAndDropsExtendedInput()
+
+	/**
+	 * A failing rule ends the pipeline with a 500 and an `error` step naming the rule type.
+	 *
+	 * @return void
+	 */
+	public function testProcessRulesFailingRuleRecordsAnErrorStep(): void {
+		$ruleService = $this->createMock(RuleService::class);
+		$ruleService->method('processCustomRule')->willThrowException(new \Exception('boom'));
+		$trace = new \OCA\Integriq\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-pipeline');
+
+		$result = $this->runRulePipeline(
+			['r-1' => ['order' => 1, 'name' => 'fails', 'type' => 'custom', 'timing' => 'before']],
+			$ruleService,
+			['trace' => $trace]
+		);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+		$this->assertSame(500, $result->getStatus());
+		$steps = $trace->getSteps();
+		$this->assertCount(1, $steps);
+		$this->assertSame('error', $steps[0]['status']);
+		$this->assertSame('fails', $steps[0]['name']);
+		$this->assertSame('custom', $steps[0]['output']['ruleType']);
+		$this->assertSame('boom', $steps[0]['output']['message']);
+	}//end testProcessRulesFailingRuleRecordsAnErrorStep()
+
+	/**
+	 * An unsupported rule type ends the pipeline with a 500.
+	 *
+	 * @return void
+	 */
+	public function testProcessRulesUnsupportedTypeFails(): void {
+		$result = $this->runRulePipeline(
+			['r-1' => ['order' => 1, 'name' => 'odd', 'type' => 'no_such_type', 'timing' => 'before']],
+			$this->createMock(RuleService::class)
+		);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+		$this->assertSame(500, $result->getStatus());
+	}//end testProcessRulesUnsupportedTypeFails()
+	/**
+	 * A successful rule's step carries its input and output with secrets redacted.
+	 *
+	 * @return void
+	 */
+	public function testProcessRulesSuccessStepIsRedacted(): void {
+		$ruleService = $this->createMock(RuleService::class);
+		$ruleService->method('processCustomRule')->willReturn(['body' => ['password' => 'out-secret']]);
+		$trace = new \OCA\Integriq\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-pipeline');
+
+		$this->runRulePipeline(
+			['r-1' => ['order' => 1, 'name' => 'ok', 'type' => 'custom', 'timing' => 'before']],
+			$ruleService,
+			['trace' => $trace, 'body' => ['password' => 'in-secret']]
+		);
+
+		$step = $trace->getSteps()[0];
+		$this->assertSame('success', $step['status']);
+		$this->assertNotSame('in-secret', $step['input']['body']['password']);
+		$this->assertNotSame('out-secret', $step['output']['body']['password']);
+	}//end testProcessRulesSuccessStepIsRedacted()
 }//end class

@@ -261,6 +261,8 @@ const MANIFEST_PAGES: ManifestPage[] = [
 	{ id: 'FormSubmissions', route: '/messages/form-submissions', type: 'logs' },
 	{ id: 'Store', route: '/store', type: 'index' },
 	{ id: 'DirectoryRuns', route: '/directory-runs', type: 'logs' },
+	// The saved column mappings a delivered file is read through.
+	{ id: 'Migrations', route: '/migrations', type: 'index' },
 	{
 		id: 'DeadLetters',
 		route: '/dead-letters',
@@ -312,6 +314,10 @@ const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
 	// because the object does not exist in OR — that is expected for the
 	// smoke route and must not fail the console-gate.
 	/Error fetching .+\/__nonexistent__/i,
+	// The same expected miss on the shared `flow` page type: CnFlowDetail
+	// logs "could not resolve flow by id" when the id names no flow, which
+	// `__nonexistent__` never does.
+	/cn-flow: could not resolve flow by id __nonexistent__/i,
 	// OpenRegister's AnalyticsLinksController answers 501 with
 	// `{code: 'APP_NOT_AVAILABLE'}` when the optional NC Analytics app is not
 	// installed, which it is not on a plain instance. MappingDetail asks for

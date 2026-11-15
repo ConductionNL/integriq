@@ -1,0 +1,85 @@
+{
+    "migratable": [],
+    "no-references-anywhere": [
+        "The rule carries no uuid, slug or reference, so the generated flow could not record what it was generated from.",
+        "The endpoint carries no uuid, slug or reference, so the rule's scope could not be recorded.",
+        "The endpoint \"Create tender\" does not list this rule, so it never runs there and the trigger would be derived from a scope the rule has nothing to do with."
+    ],
+    "endpoint-does-not-list-rule": [
+        "The endpoint \"Create tender\" does not list this rule, so it never runs there and the trigger would be derived from a scope the rule has nothing to do with."
+    ],
+    "endpoint-target-type": [
+        "The endpoint's targetType is \"source\": an object trigger needs a register and a schema, and only a \"register/schema\" endpoint has them."
+    ],
+    "endpoint-target-not-a-pair": [
+        "The endpoint's targetId \"spectr\" is not a \"register/schema\" pair, so the trigger has no register and schema to name."
+    ],
+    "endpoint-target-empty": [
+        "The endpoint's targetId \"\" is not a \"register/schema\" pair, so the trigger has no register and schema to name."
+    ],
+    "endpoint-read-method": [
+        "The endpoint's method is \"GET\": it changes no object, so no object event ever fires and the generated flow would never start. Object triggers exist for POST, PUT, PATCH, DELETE."
+    ],
+    "everything-wrong-in-scope": [
+        "The rule carries no uuid, slug or reference, so the generated flow could not record what it was generated from.",
+        "The endpoint carries no uuid, slug or reference, so the rule's scope could not be recorded.",
+        "The endpoint \"Create tender\" does not list this rule, so it never runs there and the trigger would be derived from a scope the rule has nothing to do with.",
+        "The endpoint's targetType is \"url\": an object trigger needs a register and a schema, and only a \"register/schema\" endpoint has them.",
+        "The endpoint's method is \"OPTIONS\": it changes no object, so no object event ever fires and the generated flow would never start. Object triggers exist for POST, PUT, PATCH, DELETE."
+    ],
+    "timing-before": [
+        "timing \"before\": an object trigger fires AFTER the change is committed, so a rule that runs before the write — and can still change or refuse it — has nothing to fire on."
+    ],
+    "timing-default": [
+        "timing \"before\": an object trigger fires AFTER the change is committed, so a rule that runs before the write — and can still change or refuse it — has nothing to fire on."
+    ],
+    "conditions-empty-string": [],
+    "conditions-empty-array": [],
+    "conditions-scalar": [
+        "conditions: the rule stores a integer where a JsonLogic expression tree is expected, so there is nothing the switch could evaluate."
+    ],
+    "conditions-sub-scope": [
+        "conditions use the sub-scope operator(s) some, which rebind what \"var\" means inside them. Rewriting request paths to item paths through one of those would be wrong exactly where it looked right, so it is refused rather than guessed.",
+        "conditions read \"id\": an object event carries the object and nothing else — no request, no headers, no query — so only \"body\" paths have an equivalent. Dropping the rest would make this rule fire on every object instead of some."
+    ],
+    "conditions-request-paths": [
+        "conditions read \"headers.x-api-key\", \"query.page\": an object event carries the object and nothing else — no request, no headers, no query — so only \"body\" paths have an equivalent. Dropping the rest would make this rule fire on every object instead of some."
+    ],
+    "conditions-both": [
+        "conditions use the sub-scope operator(s) all, which rebind what \"var\" means inside them. Rewriting request paths to item paths through one of those would be wrong exactly where it looked right, so it is refused rather than guessed.",
+        "conditions read \"ok\", \"path.id\": an object event carries the object and nothing else — no request, no headers, no query — so only \"body\" paths have an equivalent. Dropping the rest would make this rule fire on every object instead of some."
+    ],
+    "type-envelope": [
+        "type \"mapping\": this rule kind acts on the request/response envelope, and an object event has no envelope to act on — no step reproduces it. The kinds with an object-event equivalent are \"synchronization\" and \"flow\"."
+    ],
+    "type-missing": [
+        "type \"\": this rule kind acts on the request/response envelope, and an object event has no envelope to act on — no step reproduces it. The kinds with an object-event equivalent are \"synchronization\" and \"flow\"."
+    ],
+    "flow-rule-ok": [],
+    "flow-rule-missing": [
+        "configuration.flow is not set: \"openregister.sub-flow\" needs a flow to run."
+    ],
+    "sync-missing": [
+        "configuration.synchronization is not set: \"openconnector.synchronization-run\" must name a configured synchronization, and this step never creates one."
+    ],
+    "sync-block-keys": [
+        "configuration.synchronization is not set: \"openconnector.synchronization-run\" must name a configured synchronization, and this step never creates one.",
+        "configuration.synchronization.preDelay, retainResponse: the run step reads none of these — it takes a synchronization and a force flag and nothing else — so the pre/post handling around the run would silently disappear."
+    ],
+    "sync-block-clean": [
+        "configuration.synchronization is not set: \"openconnector.synchronization-run\" must name a configured synchronization, and this step never creates one."
+    ],
+    "sync-is-test": [
+        "configuration.isTest: the run step has no test mode, so a rule that deliberately performed no writes would become one that does."
+    ],
+    "sync-is-test-false": [],
+    "sync-config": [
+        "configuration.synchronizationConfig: merging or overwriting the request body with the run result happens inside the endpoint pipeline and has no step."
+    ],
+    "sync-everything": [
+        "configuration.synchronization is not set: \"openconnector.synchronization-run\" must name a configured synchronization, and this step never creates one.",
+        "configuration.synchronization.objectIdPath, postDelay: the run step reads none of these — it takes a synchronization and a force flag and nothing else — so the pre/post handling around the run would silently disappear.",
+        "configuration.isTest: the run step has no test mode, so a rule that deliberately performed no writes would become one that does.",
+        "configuration.synchronizationConfig: merging or overwriting the request body with the run result happens inside the endpoint pipeline and has no step."
+    ]
+}

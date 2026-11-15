@@ -3,6 +3,9 @@
 /**
  * Integriq Source Paginate flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.source-paginate` — the "[Fetch a page]" step of the decomposed
  * synchronization flow. It emits ONE FLOW ITEM PER PAGE, each carrying the
  * page's objects as an array, so every downstream step (`apply-mapping`,
@@ -74,9 +77,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -88,9 +88,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
-use OCA\Integriq\Exception\FlowNodeException;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -98,7 +98,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Throwable;
@@ -109,21 +108,15 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#1-engine-steps-each-a-thin-adapter-over-a-kept-service
  */
-class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
-
-	use SynchronizationLogActions;
+class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SourcePaginateNodeInterface {
+	use FlowNodePaletteDefaults;
 
 	/**
-	 * The step type this node answers to.
-	 *
-	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
-	 * rename: this value is written into stored flow documents (OpenRegister
-	 * objects). Renaming it makes every existing flow reference a node type
-	 * nothing answers to.
-	 *
-	 * @var string
+	 * Palette icon: app and image path.
 	 */
-	public const NODE_ID = 'openconnector.source-paginate';
+	private const PALETTE_ICON = ['integriq', 'flow-synchronization-run.svg'];
+
+	use SynchronizationLogActions;
 
 	/**
 	 * How many objects one emitted page carries by default.
@@ -150,14 +143,14 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizationService The existing fetch engine.
+	 * @param SynchronizationServiceInterface $synchronizationService The existing fetch engine.
 	 * @param FlowOwner $flowOwner Fail-closed run-owner resolution.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon.
 	 * @param LoggerInterface $logger Run diagnostics.
 	 */
 	public function __construct(
-		private readonly SynchronizationService $synchronizationService,
+		private readonly SynchronizationServiceInterface $synchronizationService,
 		private readonly FlowOwner $flowOwner,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
@@ -165,17 +158,6 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	) {
 
 	}//end __construct()
-
-	/**
-	 * The step type.
-	 *
-	 * @return string The type identifier.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function getId(): string {
-		return self::NODE_ID;
-	}//end getId()
 
 	/**
 	 * Palette name.
@@ -201,30 +183,6 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		);
 
 	}//end getDescription()
-
-	/**
-	 * Palette icon.
-	 *
-	 * @return string The icon URL.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('integriq', 'flow-synchronization-run.svg');
-	}//end getIcon()
-
-	/**
-	 * Whether the node is offered in the given scope.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The node's whole config vocabulary.
@@ -334,9 +292,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	/**
 	 * Fetch the source and fan out its pages, in the run owner's context.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata (carries the run owner).
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array One output item per fetched page, per input item.
 	 *
@@ -344,7 +300,11 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+
 		// An empty branch fetches nothing and produces no items — the filter
 		// contract, not a failure, so it short-circuits before the owner is
 		// resolved: there is nothing to attribute.

@@ -1,0 +1,562 @@
+{
+	"ageText 0": {
+		"result": "{count} seconds {\"count\":0}",
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			]
+		]
+	},
+	"ageText 1": {
+		"result": "{count} seconds {\"count\":0}",
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			]
+		]
+	},
+	"ageText 2": {
+		"result": "{count} seconds {\"count\":0}",
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			]
+		]
+	},
+	"ageText 3": {
+		"result": "{count} seconds {\"count\":0}",
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			]
+		]
+	},
+	"ageText 4": {
+		"result": "{count} seconds {\"count\":0}",
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			]
+		]
+	},
+	"ageText 5": {
+		"result": "{count} seconds {\"count\":0}",
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			]
+		]
+	},
+	"ageText 6": {
+		"result": "{count} seconds {\"count\":29}",
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 29
+				}
+			]
+		]
+	},
+	"ageText 7": {
+		"result": "{count} minutes {\"count\":1}",
+		"calls": [
+			[
+				"integriq",
+				"{count} minutes",
+				{
+					"count": 1
+				}
+			]
+		]
+	},
+	"ageText 8": {
+		"result": "{count} minutes {\"count\":1}",
+		"calls": [
+			[
+				"integriq",
+				"{count} minutes",
+				{
+					"count": 1
+				}
+			]
+		]
+	},
+	"ageText 9": {
+		"result": "{count} minutes {\"count\":1}",
+		"calls": [
+			[
+				"integriq",
+				"{count} minutes",
+				{
+					"count": 1
+				}
+			]
+		]
+	},
+	"ageText 10": {
+		"result": "{count} minutes {\"count\":60}",
+		"calls": [
+			[
+				"integriq",
+				"{count} minutes",
+				{
+					"count": 60
+				}
+			]
+		]
+	},
+	"ageText 11": {
+		"result": "{count} hours {\"count\":1}",
+		"calls": [
+			[
+				"integriq",
+				"{count} hours",
+				{
+					"count": 1
+				}
+			]
+		]
+	},
+	"ageText 12": {
+		"result": "{count} hours {\"count\":24}",
+		"calls": [
+			[
+				"integriq",
+				"{count} hours",
+				{
+					"count": 24
+				}
+			]
+		]
+	},
+	"ageText 13": {
+		"result": "{count} days {\"count\":1}",
+		"calls": [
+			[
+				"integriq",
+				"{count} days",
+				{
+					"count": 1
+				}
+			]
+		]
+	},
+	"ageText 14": {
+		"result": "{count} days {\"count\":2}",
+		"calls": [
+			[
+				"integriq",
+				"{count} days",
+				{
+					"count": 2
+				}
+			]
+		]
+	},
+	"ageText 15": {
+		"result": "{count} minutes {\"count\":2}",
+		"calls": [
+			[
+				"integriq",
+				"{count} minutes",
+				{
+					"count": 2
+				}
+			]
+		]
+	},
+	"provenanceState none": {
+		"result": {
+			"state": "cached",
+			"text": "Read from the registry {age} ago. {\"age\":\"{count} seconds {\\\"count\\\":0}\"}"
+		},
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			],
+			[
+				"integriq",
+				"Read from the registry {age} ago.",
+				{
+					"age": "{count} seconds {\"count\":0}"
+				}
+			]
+		]
+	},
+	"provenanceState null": {
+		"result": {
+			"state": "cached",
+			"text": "Read from the registry {age} ago. {\"age\":\"{count} seconds {\\\"count\\\":0}\"}"
+		},
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			],
+			[
+				"integriq",
+				"Read from the registry {age} ago.",
+				{
+					"age": "{count} seconds {\"count\":0}"
+				}
+			]
+		]
+	},
+	"provenanceState empty": {
+		"result": {
+			"state": "cached",
+			"text": "Read from the registry {age} ago. {\"age\":\"{count} seconds {\\\"count\\\":0}\"}"
+		},
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			],
+			[
+				"integriq",
+				"Read from the registry {age} ago.",
+				{
+					"age": "{count} seconds {\"count\":0}"
+				}
+			]
+		]
+	},
+	"provenanceState unreachableNoAge": {
+		"result": {
+			"state": "unreachable",
+			"text": "The registry did not answer and nothing was read before."
+		},
+		"calls": [
+			[
+				"integriq",
+				"The registry did not answer and nothing was read before.",
+				"__undefined__"
+			]
+		]
+	},
+	"provenanceState unreachableNullAge": {
+		"result": {
+			"state": "unreachable",
+			"text": "The registry did not answer and nothing was read before."
+		},
+		"calls": [
+			[
+				"integriq",
+				"The registry did not answer and nothing was read before.",
+				"__undefined__"
+			]
+		]
+	},
+	"provenanceState unreachableZeroAge": {
+		"result": {
+			"state": "unreachable",
+			"text": "The registry did not answer. This is the last value read, {age} ago. {\"age\":\"{count} seconds {\\\"count\\\":0}\"}"
+		},
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			],
+			[
+				"integriq",
+				"The registry did not answer. This is the last value read, {age} ago.",
+				{
+					"age": "{count} seconds {\"count\":0}"
+				}
+			]
+		]
+	},
+	"provenanceState unreachableAged": {
+		"result": {
+			"state": "unreachable",
+			"text": "The registry did not answer. This is the last value read, {age} ago. {\"age\":\"{count} hours {\\\"count\\\":2}\"}"
+		},
+		"calls": [
+			[
+				"integriq",
+				"{count} hours",
+				{
+					"count": 2
+				}
+			],
+			[
+				"integriq",
+				"The registry did not answer. This is the last value read, {age} ago.",
+				{
+					"age": "{count} hours {\"count\":2}"
+				}
+			]
+		]
+	},
+	"provenanceState unreachableAndLive": {
+		"result": {
+			"state": "unreachable",
+			"text": "The registry did not answer. This is the last value read, {age} ago. {\"age\":\"{count} seconds {\\\"count\\\":5}\"}"
+		},
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 5
+				}
+			],
+			[
+				"integriq",
+				"The registry did not answer. This is the last value read, {age} ago.",
+				{
+					"age": "{count} seconds {\"count\":5}"
+				}
+			]
+		]
+	},
+	"provenanceState unreachableFalsy": {
+		"result": {
+			"state": "cached",
+			"text": "Read from the registry {age} ago. {\"age\":\"{count} minutes {\\\"count\\\":1}\"}"
+		},
+		"calls": [
+			[
+				"integriq",
+				"{count} minutes",
+				{
+					"count": 1
+				}
+			],
+			[
+				"integriq",
+				"Read from the registry {age} ago.",
+				{
+					"age": "{count} minutes {\"count\":1}"
+				}
+			]
+		]
+	},
+	"provenanceState live": {
+		"result": {
+			"state": "live",
+			"text": "Read from the registry just now."
+		},
+		"calls": [["integriq", "Read from the registry just now.", "__undefined__"]]
+	},
+	"provenanceState liveTruthy": {
+		"result": {
+			"state": "live",
+			"text": "Read from the registry just now."
+		},
+		"calls": [["integriq", "Read from the registry just now.", "__undefined__"]]
+	},
+	"provenanceState cachedNoAge": {
+		"result": {
+			"state": "cached",
+			"text": "Read from the registry {age} ago. {\"age\":\"{count} seconds {\\\"count\\\":0}\"}"
+		},
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 0
+				}
+			],
+			[
+				"integriq",
+				"Read from the registry {age} ago.",
+				{
+					"age": "{count} seconds {\"count\":0}"
+				}
+			]
+		]
+	},
+	"provenanceState cachedAged": {
+		"result": {
+			"state": "cached",
+			"text": "Read from the registry {age} ago. {\"age\":\"{count} days {\\\"count\\\":1}\"}"
+		},
+		"calls": [
+			[
+				"integriq",
+				"{count} days",
+				{
+					"count": 1
+				}
+			],
+			[
+				"integriq",
+				"Read from the registry {age} ago.",
+				{
+					"age": "{count} days {\"count\":1}"
+				}
+			]
+		]
+	},
+	"provenanceState cachedString": {
+		"result": {
+			"state": "cached",
+			"text": "Read from the registry {age} ago. {\"age\":\"{count} seconds {\\\"count\\\":45}\"}"
+		},
+		"calls": [
+			[
+				"integriq",
+				"{count} seconds",
+				{
+					"count": 45
+				}
+			],
+			[
+				"integriq",
+				"Read from the registry {age} ago.",
+				{
+					"age": "{count} seconds {\"count\":45}"
+				}
+			]
+		]
+	},
+	"valueRows undefined": [],
+	"valueRows null": [],
+	"valueRows emptyString": [
+		{
+			"key": "",
+			"text": ""
+		}
+	],
+	"valueRows string": [
+		{
+			"key": "",
+			"text": "Amsterdam"
+		}
+	],
+	"valueRows zero": [
+		{
+			"key": "",
+			"text": "0"
+		}
+	],
+	"valueRows number": [
+		{
+			"key": "",
+			"text": "42"
+		}
+	],
+	"valueRows boolFalse": [
+		{
+			"key": "",
+			"text": "false"
+		}
+	],
+	"valueRows boolTrue": [
+		{
+			"key": "",
+			"text": "true"
+		}
+	],
+	"valueRows emptyArray": [
+		{
+			"key": "",
+			"text": "[]"
+		}
+	],
+	"valueRows array": [
+		{
+			"key": "",
+			"text": "[1,\"a\",null]"
+		}
+	],
+	"valueRows emptyObject": [],
+	"valueRows flat": [
+		{
+			"key": "a",
+			"text": "x"
+		},
+		{
+			"key": "b",
+			"text": "2"
+		},
+		{
+			"key": "c",
+			"text": "true"
+		},
+		{
+			"key": "d",
+			"text": ""
+		},
+		{
+			"key": "e",
+			"text": ""
+		},
+		{
+			"key": "f",
+			"text": ""
+		}
+	],
+	"valueRows nested": [
+		{
+			"key": "a",
+			"text": "{\"b\":1}"
+		},
+		{
+			"key": "c",
+			"text": "[1,2]"
+		},
+		{
+			"key": "d",
+			"text": "[]"
+		},
+		{
+			"key": "e",
+			"text": "{}"
+		}
+	],
+	"valueRows emptyKey": [
+		{
+			"key": "",
+			"text": "blank"
+		}
+	],
+	"listOf undefined": [],
+	"listOf null": [],
+	"listOf array": [1, 2],
+	"listOf results": [3],
+	"listOf resultsNotArray": [],
+	"listOf object": [],
+	"listOf string": []
+}

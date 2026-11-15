@@ -49,8 +49,10 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 * @var array<int,string>
 	 */
 	private const CLOSED = [
+		'addresses',
 		'agent_action',
 		'app_connection',
+		'call_log',
 		'column_mapping',
 		'connection_alert',
 		'consumer',
@@ -69,11 +71,13 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'openformulieren_submission',
 		'outbound_message',
 		'payment_intent',
+		'peppol_inbound_document',
 		'recipient_key',
 		'recipient_opt_out',
 		'rule',
 		'sender_identity',
 		'source',
+		'stuf_message',
 		'verdict',
 	];
 
@@ -97,11 +101,9 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 * @var array<int,string>
 	 */
 	private const DENY_ALL = [
-		'digitalPostMessage',
 		'intake_routing_rule',
 		'mail_message',
 		'mapping_version',
-		'outbound_message',
 		'payment_intent',
 		'recipient_key',
 		'recipient_opt_out',
@@ -123,7 +125,6 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'approval_request',
 		'bankfeed_batch',
 		'bankfeed_connection',
-		'call_log',
 		'cardfeed_account',
 		'cardfeed_batch',
 		'catalog_item',
@@ -159,7 +160,6 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'ris_sync_record',
 		'rod_message',
 		'sms_message',
-		'stuf_message',
 		'sync_item_dead_letter',
 		'synchronization',
 		'synchronization_contract',

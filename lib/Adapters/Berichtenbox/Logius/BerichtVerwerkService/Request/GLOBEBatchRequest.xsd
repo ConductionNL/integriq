@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns="http://schemas.rdw.nl/GEB/BerichtVerwerkService/Types/2009/01" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ns1="http://schemas.rdw.nl/GEB/BerichtenProsessor/Bericht/Types/2009/01" targetNamespace="http://schemas.rdw.nl/GEB/BerichtVerwerkService/Types/2009/01" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:import namespace="http://schemas.rdw.nl/GEB/BerichtenProsessor/Bericht/Types/2009/01" schemaLocation="GLOBEBatchRequestTypes.xsd"/>
+	<xs:element name="Berichten">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="BatchInformatie">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="BatchID" type="ns1:guid">
+								<xs:annotation>
+									<xs:documentation>De BatchID is een GUID en moet worden ingevuld door de leverancier. Let op deze batchID moet uniek zijn voor elke batch.</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="AanmaakDatum" type="xs:dateTime"/>
+							<xs:element name="BerichtLeverancierID">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:minLength value="1"/>
+										<xs:maxLength value="25"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element maxOccurs="1000" ref="ns1:Bericht">
+			          <xs:annotation>
+			              <xs:documentation>Een batch bevat minimaal 1 bericht en maximumaal 1000.</xs:documentation>
+			          </xs:annotation>
+			        </xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

@@ -10,7 +10,8 @@
  * limit, the call log and the circuit breaker all apply. DI binds this class
  * only when `slo.curriculum.feature_flag` is `1` or `true`.
  *
- * The body is kept on the call log (`logBody`): SLO's curriculum is public
+ * The body is kept on the call log (`logBody`, passing this class, which is on
+ * BodyCapturePolicy::LOG_BODY_ALLOWLIST): SLO's curriculum is public
  * reference data, and the adapter needs the body.
  *
  * @category Adapter
@@ -32,8 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Slo;
 
-use OCA\Integriq\Exception\SloCurriculumException;
-use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\CallServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Throwable;
@@ -54,11 +54,11 @@ final class SloCurriculumClientHttp extends SloCurriculumClient {
 	/**
 	 * Constructor.
 	 *
-	 * @param CallService $callService Integriq's outbound HTTP surface.
+	 * @param CallServiceInterface $callService Integriq's outbound HTTP surface.
 	 * @param OrObjectService $orObjectService OpenRegister object service, to resolve the seeded source.
 	 */
 	public function __construct(
-		private readonly CallService $callService,
+		private readonly CallServiceInterface $callService,
 		private readonly OrObjectService $orObjectService,
 	) {
 	}//end __construct()
@@ -96,7 +96,7 @@ final class SloCurriculumClientHttp extends SloCurriculumClient {
 				source: $source,
 				endpoint: $endpoint,
 				method: 'GET',
-				config: ['query' => $query, 'headers' => ['Accept' => $accept], 'logBody' => true]
+				config: ['query' => $query, 'headers' => ['Accept' => $accept], 'logBody' => self::class]
 			);
 		} catch (Throwable $exception) {
 			throw new SloCurriculumException(

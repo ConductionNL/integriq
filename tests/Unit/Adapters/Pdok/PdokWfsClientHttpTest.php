@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -170,6 +173,7 @@ class PdokWfsClientHttpTest extends TestCase {
 		$this->assertSame('FeatureCollection', $result['type']);
 		$this->assertSame([], $result['features']);
 		$this->assertSame(0, $result['totalFeatures']);
+		$this->assertTrue($result['unanswered']);
 	}//end testGetFeatureReturnsEmptyCollectionOnDecodeFailure()
 
 }//end class

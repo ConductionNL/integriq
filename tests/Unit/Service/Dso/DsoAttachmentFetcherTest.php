@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Dso;
 
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
@@ -181,7 +183,12 @@ class DsoAttachmentFetcherTest extends TestCase {
 
 		$fileService = $this->getMockBuilder(FileService::class)->disableOriginalConstructor()->getMock();
 		$fileService->method('addFile')->willReturnCallback(
-			function ($objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []) {
+			function (FileTarget $target, FileUpload $upload) {
+				$objectEntity = $target->object;
+				$fileName = $upload->fileName;
+				$content = $upload->content;
+				$share = $upload->share;
+				$tags = $upload->tags;
 				if ($this->dieOnAddFile !== null && count($this->addFileCalls) + 1 === $this->dieOnAddFile) {
 					throw new \Error('worker killed');
 				}
@@ -282,7 +289,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 	 * @return void
 	 */
 	public function testMtlsSourceDownloadsThroughTheMtlsTransport(): void {
-		$this->sourceConfiguration = ['authentication' => ['mode' => 'mtls', 'mtls' => []]];
+		$this->sourceConfiguration = ['baseUrl' => 'https://dso-lv.example.nl/api/v1', 'authentication' => ['mode' => 'mtls', 'mtls' => []]];
 		$this->storeRequest([$this->pending('tekening.pdf')]);
 
 		$resolver = $this->createMock(MtlsConfigResolver::class);
@@ -431,6 +438,71 @@ class DsoAttachmentFetcherTest extends TestCase {
 		$this->assertSame([3, 3, 3], array_column($attachments, 'attempts'));
 
 	}//end testMissingOrNonHttpsUrlIsRefusedWithoutARequest()
+
+	/**
+	 * A bijlage URL off the DSO source's host and port, or with credentials in
+	 * it, is refused before any request carries the source's credential.
+	 *
+	 * @return void
+	 */
+	public function testBijlageOffTheSourceHostIsRefusedWithoutARequest(): void {
+		$this->storeRequest(attachments: [
+			['name' => 'a.pdf', 'url' => 'https://elsewhere.example.com/docs/a.pdf', 'status' => 'pending', 'attempts' => 0],
+			['name' => 'b.pdf', 'url' => 'https://dso-lv.example.nl.elsewhere.example.com/b.pdf', 'status' => 'pending', 'attempts' => 0],
+			['name' => 'c.pdf', 'url' => 'https://dso-lv.example.nl:8443/docs/c.pdf', 'status' => 'pending', 'attempts' => 0],
+			['name' => 'd.pdf', 'url' => 'https://user@elsewhere.example.com/docs/d.pdf', 'status' => 'pending', 'attempts' => 0],
+			['name' => 'e.pdf', 'url' => 'https://dso-lv.example.nl@elsewhere.example.com/e.pdf', 'status' => 'pending', 'attempts' => 0],
+		]);
+		$fetcher = $this->buildFetcher(responses: array_fill(start_index: 0, count: 5, value: new Response(status: 200, headers: [], body: 'PDF')));
+
+		$attachments = $fetcher->fetchPending(requestUuid: 'verzoek-1');
+
+		$this->assertSame(expected: [], actual: $this->history);
+		$this->assertSame(expected: ['failed', 'failed', 'failed', 'failed', 'failed'], actual: array_column(array: $attachments, column_key: 'status'));
+		$this->assertSame(expected: [3, 3, 3, 3, 3], actual: array_column(array: $attachments, column_key: 'attempts'));
+		$this->assertSame(expected: [], actual: $this->addFileCalls);
+
+	}//end testBijlageOffTheSourceHostIsRefusedWithoutARequest()
+
+	/**
+	 * Without a usable `baseUrl` on the source no bijlage is downloaded.
+	 *
+	 * @return void
+	 */
+	public function testSourceWithoutBaseUrlDownloadsNothing(): void {
+		$this->sourceConfiguration = ['authentication' => ['encryptedToken' => 'ciphertext-blob']];
+		$this->storeRequest(attachments: [$this->pending(name: 'tekening.pdf')]);
+		$fetcher = $this->buildFetcher(responses: [new Response(status: 200, headers: [], body: 'PDF')]);
+
+		$attachments = $fetcher->fetchPending(requestUuid: 'verzoek-1');
+
+		$this->assertSame(expected: [], actual: $this->history);
+		$this->assertSame(expected: 'failed', actual: $attachments[0]['status']);
+
+	}//end testSourceWithoutBaseUrlDownloadsNothing()
+
+	/**
+	 * The host comparison ignores case and an explicit default port.
+	 *
+	 * @return void
+	 */
+	public function testSameHostInOtherCaseOrWithDefaultPortIsDownloaded(): void {
+		$this->storeRequest(attachments: [
+			['name' => 'a.pdf', 'url' => 'https://DSO-LV.example.nl/docs/a.pdf', 'status' => 'pending', 'attempts' => 0],
+			['name' => 'b.pdf', 'url' => 'https://dso-lv.example.nl:443/docs/b.pdf', 'status' => 'pending', 'attempts' => 0],
+		]);
+		$fetcher = $this->buildFetcher(
+			responses: [
+				new Response(status: 200, headers: [], body: 'PDF'),
+				new Response(status: 200, headers: [], body: 'PDF'),
+			]
+		);
+
+		$attachments = $fetcher->fetchPending(requestUuid: 'verzoek-1');
+
+		$this->assertSame(expected: ['stored', 'stored'], actual: array_column(array: $attachments, column_key: 'status'));
+
+	}//end testSameHostInOtherCaseOrWithDefaultPortIsDownloaded()
 
 	/**
 	 * Without OpenRegister's FileService nothing is downloaded and every entry stays pending.

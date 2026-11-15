@@ -30,10 +30,10 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\OsoProviderException;
 use OCA\Integriq\Exception\OsoTranslationException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\OsoService;
-use OCA\Integriq\Service\Intake\WebhookGate;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\OsoServiceInterface;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -45,7 +45,6 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Push (register an OSO export) + signed inbound import receiver + signed export retour receiver.
@@ -63,20 +62,20 @@ class OsoController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param OsoService $osoService Export/import/retour orchestration logic.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param OsoServiceInterface $osoService Export/import/retour orchestration logic.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OsoService $osoService,
-		private readonly WebhookGate $gate,
+		private readonly OsoServiceInterface $osoService,
+		private readonly WebhookGateInterface $gate,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -164,6 +163,10 @@ class OsoController extends Controller {
 	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
+	 * @contract tests/Unit/Controller/XmlWebhooksConsumerTest.php — signed delivery stored as the
+	 *           connection's account, 503 without an account, 401 on a wrong signature
+	 *           (data provider `webhooks()`, which calls the method by name)
+	 *
 	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 * @spec openspec/changes/oso-inbound-on-the-consumer-model/specs/oso-adapter/spec.md#requirement-the-import-and-the-retour-act-as-the-oso-connections-account-req-020
 	 */
@@ -194,26 +197,9 @@ class OsoController extends Controller {
 	 * @spec openspec/changes/oso-inbound-on-the-consumer-model/specs/oso-adapter/spec.md#requirement-the-import-and-the-retour-act-as-the-oso-connections-account-req-020
 	 */
 	private function handleSignedInbound(callable $handler): JSONResponse {
-		$rawBody = $this->getRawContent();
+		$receipt = new SignedWebhookReceipt(gate: $this->gate, request: $this->request, profile: WebhookProfilesInterface::OSO);
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::OSO, rawBody: $rawBody, request: $this->request);
-		if ($identity instanceof JSONResponse) {
-			return $identity;
-		}
-
-		try {
-			$this->gate->deliver(
-				identity: $identity,
-				operation: function () use ($handler, $rawBody): void {
-					$handler($rawBody);
-				}
-			);
-		} catch (Throwable $exception) {
-			// The account's write was refused: answer 503 so OSO delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::OSO, reason: $exception->getMessage());
-		}//end try
-
-		return new JSONResponse(['received' => true]);
+		return $receipt->receive(rawBody: $this->getRawContent(), handler: $handler);
 	}//end handleSignedInbound()
 
 	/**
@@ -222,11 +208,6 @@ class OsoController extends Controller {
 	 * @return string The raw request body.
 	 */
 	private function getRawContent(): string {
-		$content = file_get_contents(filename: 'php://input');
-		if ($content === false) {
-			return '';
-		}
-
-		return $content;
+		return (new RawRequestBody())->read();
 	}//end getRawContent()
 }//end class

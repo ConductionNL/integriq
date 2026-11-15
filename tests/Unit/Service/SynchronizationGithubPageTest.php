@@ -14,6 +14,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -30,7 +33,7 @@ use ReflectionMethod;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 /**
- * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
+ * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-spent-quota-suspends-the-run-req-ghp-004
  */
 class SynchronizationGithubPageTest extends TestCase {
 

@@ -22,6 +22,9 @@
  * @SuppressWarnings(PHPMD.MissingImport)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -40,7 +43,7 @@ use function React\Promise\all;
 /**
  * Handles Software Catalogue model/view extension and organisation/contact lifecycle events.
  */
-class SoftwareCatalogueService {
+class SoftwareCatalogueService implements SoftwareCatalogueServiceInterface {
 
 	public const SUFFIX = '-sc';
 

@@ -314,7 +314,7 @@ class EndoflifeDateRegisterFragmentTest extends TestCase {
 			// Job: generic dispatch, daily cadence, correct slug-addressed
 			// synchronizationId (Task 3 finding — slug resolution confirmed
 			// in tasks.md).
-			$this->assertSame('OCA\\Integriq\\Action\\SynchronizationAction', $job['jobClass'] ?? null);
+			$this->assertSame('OCA\\Integriq\\Service\\Job\\SynchronizationAction', $job['jobClass'] ?? null);
 			$this->assertSame($syncSlug, $job['arguments']['synchronizationId'] ?? null);
 			$this->assertSame(86400, $job['interval'] ?? null);
 			$this->assertTrue($job['isEnabled'] ?? null);

@@ -7,6 +7,17 @@ depends_on: [sources-per-user-oauth]
 
 ## Summary
 
+Search Microsoft 365 files, mail and chat through Microsoft Graph and fetch any hit by its handle, offered to sibling apps as typed search and fetch commands.
+
+- Rows: the integriq half of dossiq's `woo-requests-gather-documents-from-sources` (opencatalogi row `wr-search-sources`), and the base for Woo row 1.16 "Chat and messaging material is a source for a request, and a message keeps the conversation it sat in" (not statutory). 1.16 closes with the second part.
+- Wave: 2.
+- Depends on: `integriq/sources-per-user-oauth` (no issue yet; https://github.com/ConductionNL/integriq/tree/development/openspec/changes/sources-per-user-oauth) for the delegated grant. Consumer: `dossiq/woo-requests-gather-documents-from-sources` (https://github.com/ConductionNL/dossiq/issues/3160).
+- Decision: D1 (2026-10-05), dossiq owns the Woo request; integriq only searches and fetches.
+
+Build rules: openspec/woo-build-rules.md
+
+## Overview
+
 A Woo officer gathering the documents for a Woo request has to search SharePoint, Teams and mailboxes by hand, outside the case. dossiq's search dialog is written and waits on integriq for the Microsoft 365 part: integriq can list and fetch documents in one SharePoint site, and cannot search. This change adds a search over Microsoft Graph across files, mail and chat messages, answering hits in the result envelope integriq's document connector spec already defines, and a fetch of any hit by its handle, both as typed commands.
 
 ## Why

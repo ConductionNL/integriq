@@ -75,3 +75,10 @@
 - [x] 10.3 Add this change to the integriq umbrella index and tick it there when it archives.
       Listed as task 8.1 of `competitor-parity-2026-09`; that tick waits for
       this change's archive, which waits for 10.1.
+
+## 11. Hold a message that fails a send check
+
+- [ ] 11.1 Call `HoldQueue::hold()` from the send gate when a check refuses a message (REQ-OSI-010).
+      `lib/Outbound/OutboundSendGate.php`, `lib/Outbound/Identity/HoldQueue.php`.
+      Row `integriq:msg-hold-queue`.
+- [ ] 11.2 List held messages with their reason, and offer release and withdraw to the send right.

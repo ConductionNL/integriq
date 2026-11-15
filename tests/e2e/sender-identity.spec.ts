@@ -15,8 +15,9 @@
  * message, none of which a browser can stage.
  */
 
-import { expect, request as playwrightRequest, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { APP_BASE } from './spec-coverage/_helpers.ts'
+import { anonymousRequest } from './support/anonymous.ts'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
@@ -90,9 +91,9 @@ test.describe('sender identity', () => {
 	test('a recipient stops the updates on one case without an account', async () => {
 		// The link is followed by someone with no session at all: that is the
 		// whole point of binding it to a signed token rather than to an account.
-		const anonymous = await playwrightRequest.newContext({
-			baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080',
-		})
+		// With no account there is no user language either: the page follows
+		// the browser's, so the probe asks as a Dutch browser does.
+		const anonymous = await anonymousRequest({ 'Accept-Language': 'nl' })
 
 		const resp = await anonymous.get(
 			'/index.php/apps/integriq/unsubscribe/not-a-real-token',
@@ -142,9 +143,7 @@ test.describe('sender identity', () => {
 	})
 
 	test('an anonymous caller cannot read the opt-out list', async () => {
-		const anonymous = await playwrightRequest.newContext({
-			baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080',
-		})
+		const anonymous = await anonymousRequest()
 
 		const resp = await anonymous.get(`${API_BASE}/outbound/opt-outs`, {
 			failOnStatusCode: false,
@@ -158,9 +157,7 @@ test.describe('sender identity', () => {
 		// The least privileged principal that should be refused. The identities
 		// carry signing material, so an unauthenticated 2xx here would be a key
 		// disclosure, not merely an information leak.
-		const anonymous = await playwrightRequest.newContext({
-			baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080',
-		})
+		const anonymous = await anonymousRequest()
 
 		const resp = await anonymous.get(`${API_BASE}/outbound/identities`, {
 			failOnStatusCode: false,

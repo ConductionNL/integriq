@@ -36,7 +36,7 @@ use OCP\IConfig;
  *
  * @spec openspec/changes/ori-public-serving/specs/endpoint-runtime/spec.md#requirement-an-endpoint-may-declare-its-own-cors-policy-req-ep-014
  */
-class EndpointCorsPolicy {
+class EndpointCorsPolicy implements EndpointCorsPolicyInterface {
 
 	/**
 	 * Methods allowed when the policy names none.

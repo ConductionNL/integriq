@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Connectors;
 
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use OCP\ICache;
@@ -44,8 +46,10 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
+ * @SuppressWarnings(PHPMD.TooManyMethods) -- the lookup, cache, circuit and upstream steps are each named
  */
-class PdokConnector {
+class PdokConnector implements PdokConnectorInterface {
 	/**
 	 * Base URL for the PDOK Locatieserver v3.1.
 	 */
@@ -97,6 +101,21 @@ class PdokConnector {
 	private const BREAKER_OPEN_SECONDS = 30;
 
 	/**
+	 * OpenRegister register that holds the stored addresses.
+	 */
+	private const OR_REGISTER = 'integriq';
+
+	/**
+	 * OpenRegister schema of the stored addresses.
+	 */
+	private const OR_SCHEMA = 'addresses';
+
+	/**
+	 * Seconds a stored `fetchedAt` may lie in the future before it counts as stale.
+	 */
+	private const CLOCK_SKEW_SECONDS = 300;
+
+	/**
 	 * Cache for APCu-backed responses + breaker state.
 	 *
 	 * Nullable: if no cache backend is configured the connector still
@@ -138,13 +157,15 @@ class PdokConnector {
 	 * @param string $query Search query (must be non-empty).
 	 *
 	 * @return array Normalised suggestion documents.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-pdok-connector-class
 	 */
 	public function suggest(string $query): array {
 		if (trim($query) === '') {
 			return ['docs' => [], 'numFound' => 0];
 		}
 
-		return $this->fetch(endpoint: 'suggest', params: ['q' => $query, 'rows' => 10], ttl: self::TTL_QUERY, writeThrough: false);
+		return $this->fetch(query: new PdokQuery(endpoint: 'suggest', params: ['q' => $query, 'rows' => 10], ttl: self::TTL_QUERY, writeThrough: false));
 	}//end suggest()
 
 	/**
@@ -153,13 +174,15 @@ class PdokConnector {
 	 * @param string $id PDOK identifier (e.g., `adr-0363200000218908`).
 	 *
 	 * @return array Normalised lookup document.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-pdok-connector-class
 	 */
 	public function lookup(string $id): array {
 		if (trim($id) === '') {
 			return ['docs' => [], 'numFound' => 0];
 		}
 
-		return $this->fetch(endpoint: 'lookup', params: ['id' => $id], ttl: self::TTL_RESOLVED, writeThrough: true);
+		return $this->fetch(query: new PdokQuery(endpoint: 'lookup', params: ['id' => $id], ttl: self::TTL_RESOLVED, writeThrough: true));
 	}//end lookup()
 
 	/**
@@ -170,6 +193,8 @@ class PdokConnector {
 	 * @param int $start Page offset (default 0).
 	 *
 	 * @return array Normalised free-search documents.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-pdok-connector-class
 	 */
 	public function free(string $query, int $rows = 10, int $start = 0): array {
 		if (trim($query) === '') {
@@ -178,7 +203,7 @@ class PdokConnector {
 
 		$params = ['q' => $query, 'rows' => $rows, 'start' => $start];
 
-		return $this->fetch(endpoint: 'free', params: $params, ttl: self::TTL_QUERY, writeThrough: false);
+		return $this->fetch(query: new PdokQuery(endpoint: 'free', params: $params, ttl: self::TTL_QUERY, writeThrough: false));
 	}//end free()
 
 	/**
@@ -188,111 +213,123 @@ class PdokConnector {
 	 * @param float $lng Longitude (WGS84).
 	 *
 	 * @return array Normalised reverse-geocode document.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-pdok-connector-class
 	 */
 	public function reverse(float $lat, float $lng): array {
 		$params = ['type' => 'adres', 'lat' => $lat, 'lon' => $lng, 'rows' => 1];
 
-		return $this->fetch(endpoint: 'reverse', params: $params, ttl: self::TTL_RESOLVED, writeThrough: true);
+		return $this->fetch(query: new PdokQuery(endpoint: 'reverse', params: $params, ttl: self::TTL_RESOLVED, writeThrough: true));
 	}//end reverse()
 
 	/**
-	 * Internal: fetch a normalised PDOK response with cache + write-through.
+	 * Answer one PDOK call: from the cache, from the addresses register
+	 * (lookup and reverse only), or from upstream unless the circuit is open.
 	 *
-	 * Order of resolution:
-	 *   1. APCu cache lookup (cheapest path, no logging)
-	 *   2. OR addresses-register lookup by `pdokId` if `$writeThrough && lookup-by-id`
-	 *   3. Circuit-breaker check
-	 *   4. Upstream `callPdok()` with retry/backoff
-	 *   5. Normalise → cache → write-through (when applicable)
+	 * @param PdokQuery $query The call.
 	 *
-	 * @param string $endpoint PDOK endpoint name (suggest|lookup|free|reverse).
-	 * @param array $params Query string parameters.
-	 * @param int $ttl Cache TTL in seconds.
-	 * @param bool $writeThrough True for lookup/reverse (results stored to OR).
+	 * @return array Normalised envelope; `stale: true` when upstream could not answer.
 	 *
-	 * @return array `{docs: array, numFound: int, stale?: bool}` normalised payload.
+	 * @spec openspec/specs/pdok-adapter/spec.md
 	 */
-	private function fetch(string $endpoint, array $params, int $ttl, bool $writeThrough): array {
-		$cacheKey = $this->cacheKey(endpoint: $endpoint, params: $params);
+	private function fetch(PdokQuery $query): array {
+		$cacheKey = $this->cacheKey(endpoint: $query->endpoint, params: $query->params);
 		$cached = $this->cacheGet(key: $cacheKey);
 		if ($cached !== null) {
 			return $cached;
 		}
 
 		// Check OR for an existing record before calling upstream (lookup/reverse only).
-		if ($writeThrough === true) {
-			$orHit = $this->orLookup(endpoint: $endpoint, params: $params);
+		if ($query->writeThrough === true) {
+			$orHit = $this->orLookup(endpoint: $query->endpoint, params: $query->params);
 			if ($orHit !== null) {
-				$this->logCall(
-					endpoint: $endpoint,
-					cacheHit: true,
-					orHit: true,
-					upstreamLatencyMs: null,
-					httpStatus: null,
-					circuitState: $this->circuitState(),
-					writeThrough: false
-				);
-				$this->cacheSet(key: $cacheKey, value: $orHit, ttl: $ttl);
+				$this->logCall(context: $this->callContext(query: $query, outcome: ['cache_hit' => true, 'or_hit' => true]));
+				$this->cacheSet(key: $cacheKey, value: $orHit, ttl: $query->ttl);
 				return $orHit;
 			}
 		}
 
 		// Circuit breaker — short-circuit when open and no fallback is available.
 		if ($this->circuitState() === 'open') {
-			$this->logCall(
-				endpoint: $endpoint,
-				cacheHit: false,
-				orHit: false,
-				upstreamLatencyMs: null,
-				httpStatus: null,
-				circuitState: 'open',
-				writeThrough: false
-			);
+			$this->logCall(context: $this->callContext(query: $query, outcome: ['circuit_state' => 'open']));
 			return ['docs' => [], 'numFound' => 0, 'stale' => true];
 		}
 
+		return $this->fetchUpstream(query: $query, cacheKey: $cacheKey);
+	}//end fetch()
+
+	/**
+	 * Call upstream, cache and write through its answer, and log the call.
+	 *
+	 * @param PdokQuery $query    The call.
+	 * @param string    $cacheKey The cache key the answer is stored under.
+	 *
+	 * @return array Normalised envelope; `stale: true` when upstream failed.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md
+	 */
+	private function fetchUpstream(PdokQuery $query, string $cacheKey): array {
 		$started = microtime(true);
-		$httpCode = null;
 		try {
-			$raw = $this->callPdok(endpoint: $endpoint, params: $params);
-			$httpCode = 200;
+			$raw = $this->callPdok(endpoint: $query->endpoint, params: $query->params);
 		} catch (PdokUpstreamException $e) {
-			$httpCode = $e->getStatusCode();
 			$this->logCall(
-				endpoint: $endpoint,
-				cacheHit: false,
-				orHit: false,
-				upstreamLatencyMs: (int)((microtime(true) - $started) * 1000),
-				httpStatus: $httpCode,
-				circuitState: $this->circuitState(),
-				writeThrough: false
+				context: $this->callContext(
+					query: $query,
+					outcome: ['upstream_latency_ms' => (int)((microtime(true) - $started) * 1000), 'http_status' => $e->getStatusCode()]
+				)
 			);
 			return ['docs' => [], 'numFound' => 0, 'stale' => true];
 		}
 
 		$normalised = $this->normaliseResponse(raw: $raw);
 
-		$this->cacheSet(key: $cacheKey, value: $normalised, ttl: $ttl);
+		$this->cacheSet(key: $cacheKey, value: $normalised, ttl: $query->ttl);
 
-		if ($writeThrough === true) {
+		if ($query->writeThrough === true) {
 			foreach ($normalised['docs'] as $doc) {
 				$this->writeThrough(doc: $doc);
 			}
 		}
 
-		$latencyMs = (int)((microtime(true) - $started) * 1000);
 		$this->logCall(
-			endpoint: $endpoint,
-			cacheHit: false,
-			orHit: false,
-			upstreamLatencyMs: $latencyMs,
-			httpStatus: $httpCode,
-			circuitState: $this->circuitState(),
-			writeThrough: $writeThrough
+			context: $this->callContext(
+				query: $query,
+				outcome: ['upstream_latency_ms' => (int)((microtime(true) - $started) * 1000), 'http_status' => 200, 'write_through' => $query->writeThrough]
+			)
 		);
 
 		return $normalised;
-	}//end fetch()
+	}//end fetchUpstream()
+
+	/**
+	 * The observability context of one call: the defaults of a call that did
+	 * not hit a cache or the register, overlaid with what happened.
+	 *
+	 * @param PdokQuery $query   The call.
+	 * @param array     $outcome The context keys that differ from the defaults.
+	 *
+	 * @return array The log context, in its fixed key order.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md
+	 */
+	private function callContext(PdokQuery $query, array $outcome): array {
+		$defaults = [
+			'endpoint' => $query->endpoint,
+			'cache_hit' => false,
+			'or_hit' => false,
+			'upstream_latency_ms' => null,
+			'http_status' => null,
+			'circuit_state' => null,
+			'write_through' => false,
+		];
+		$context = array_replace($defaults, $outcome);
+		if ($context['circuit_state'] === null) {
+			$context['circuit_state'] = $this->circuitState();
+		}
+
+		return $context;
+	}//end callContext()
 
 	/**
 	 * Issue the HTTP GET to PDOK with retry on 429 and circuit-breaker bookkeeping.
@@ -509,57 +546,150 @@ class PdokConnector {
 	 */
 	private function orLookup(string $endpoint, array $params): ?array {
 		$objectService = $this->getOpenRegisterObjectService();
-		if ($objectService === null) {
+		$query = $this->storedQuery(endpoint: $endpoint, params: $params);
+		if ($objectService === null || $query === null) {
 			return null;
 		}
 
 		try {
-			if ($endpoint === 'lookup' && isset($params['id']) === true) {
-				$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll(
-					[
-						'limit' => 1,
-						'filter' => ['pdokId' => $params['id']],
-					]
-				);
-			} elseif ($endpoint === 'reverse' && isset($params['lat'], $params['lon']) === true) {
-				$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll(
-					[
-						'limit' => 1,
-						'geo' => [
-							'near' => [(float)$params['lat'], (float)$params['lon']],
-							'radius' => 10,
-						],
-					]
-				);
-			} else {
-				return null;
-			}
+			$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll($query);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'PdokConnector: OR lookup failed',
-				['endpoint' => $endpoint, 'exception' => $e->getMessage()]
-			);
+			$this->storedLookupFailed(endpoint: $endpoint, exception: $e);
 			return null;
-		}//end try
+		}
 
+		return $this->freshStored(docs: $docs);
+	}//end orLookup()
+
+	/**
+	 * The stored-address query for a lookup by id or a reverse lookup by coordinates.
+	 *
+	 * @param string $endpoint The PDOK endpoint.
+	 * @param array  $params   The call parameters.
+	 *
+	 * @return array|null The query, or null when the endpoint has no stored lookup or lacks its parameters.
+	 */
+	private function storedQuery(string $endpoint, array $params): ?array {
+		return match ($endpoint) {
+			'lookup' => $this->idQuery(params: $params),
+			'reverse' => $this->nearQuery(params: $params),
+			default => null,
+		};
+	}//end storedQuery()
+
+	/**
+	 * The stored-address query for a lookup by PDOK id.
+	 *
+	 * @param array $params The call parameters.
+	 *
+	 * @return array|null The query, or null without an id.
+	 */
+	private function idQuery(array $params): ?array {
+		if (isset($params['id']) === false) {
+			return null;
+		}
+
+		return [
+			'limit' => 1,
+			'filter' => ['pdokId' => $params['id']],
+		];
+	}//end idQuery()
+
+	/**
+	 * The stored-address query for a reverse lookup: the nearest address within 10 m.
+	 *
+	 * @param array $params The call parameters.
+	 *
+	 * @return array|null The query, or null without both coordinates.
+	 */
+	private function nearQuery(array $params): ?array {
+		if (isset($params['lat'], $params['lon']) === false) {
+			return null;
+		}
+
+		return [
+			'limit' => 1,
+			'geo' => [
+				'near' => [(float)$params['lat'], (float)$params['lon']],
+				'radius' => 10,
+			],
+		];
+	}//end nearQuery()
+
+	/**
+	 * Log a stored-address query that failed; the call falls through to PDOK.
+	 *
+	 * @param string    $endpoint  The PDOK endpoint.
+	 * @param Throwable $exception Why the query failed.
+	 *
+	 * @return void
+	 */
+	private function storedLookupFailed(string $endpoint, Throwable $exception): void {
+		$this->logger->warning(
+			'PdokConnector: OR lookup failed',
+			['endpoint' => $endpoint, 'exception' => $exception->getMessage()]
+		);
+	}//end storedLookupFailed()
+
+	/**
+	 * The first stored address as an answer, when it is still fresh.
+	 *
+	 * @param array $docs The stored addresses found.
+	 *
+	 * @return array|null `{docs: [first], numFound: 1}`, or null when none was found or it is stale.
+	 */
+	private function freshStored(array $docs): ?array {
 		if (empty($docs) === true) {
 			return null;
 		}
 
-		$age = (time() - strtotime(($docs[0]['fetchedAt'] ?? '1970-01-01T00:00:00Z')));
-		if ($age > self::TTL_RESOLVED) {
+		if ($this->isFresh(fetchedAt: ($docs[0]['fetchedAt'] ?? null)) === false) {
 			return null;
 		}
 
 		return ['docs' => [$docs[0]], 'numFound' => 1];
-	}//end orLookup()
+	}//end freshStored()
+
+	/**
+	 * Whether a stored address was fetched within the resolved TTL.
+	 *
+	 * A `fetchedAt` that cannot be read, or that lies further in the future
+	 * than the allowed clock skew, counts as stale, so a row with a planted
+	 * date is fetched again instead of being served for ever.
+	 *
+	 * @param mixed $fetchedAt The stored `fetchedAt` value.
+	 *
+	 * @return bool True when the row may be served.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-write-through-to-or-addresses-register
+	 */
+	private function isFresh(mixed $fetchedAt): bool {
+		if (is_string($fetchedAt) === false) {
+			return false;
+		}
+
+		$fetched = strtotime($fetchedAt);
+		if ($fetched === false) {
+			return false;
+		}
+
+		$age = (time() - $fetched);
+		return $age >= -self::CLOCK_SKEW_SECONDS && $age <= self::TTL_RESOLVED;
+	}//end isFresh()
 
 	/**
 	 * Persist a normalised PDOK document into OR's `addresses` register.
 	 *
+	 * The save runs in the system context: the schema grants create and
+	 * update to admins only, so a signed-in user cannot write an address
+	 * through the object API, while the connector still can. `fetchedAt` is
+	 * set to the connector's own clock.
+	 *
 	 * @param array $doc Normalised PostalAddress.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-write-through-to-or-addresses-register
 	 */
 	public function writeThrough(array $doc): void {
 		$objectService = $this->getOpenRegisterObjectService();
@@ -569,10 +699,12 @@ class PdokConnector {
 
 		try {
 			$objectService->saveObject(
-				register: 'integriq',
-				schema: 'addresses',
-				object: $doc,
-				uniqueOn: ['pdokId'],
+				object: array_replace($doc, ['fetchedAt' => gmdate('Y-m-d\TH:i:s\Z')]),
+				register: self::OR_REGISTER,
+				schema: self::OR_SCHEMA,
+				uuid: $this->storedUuid(objectService: $objectService, pdokId: (string)$doc['pdokId']),
+				_rbac: false,
+				_multitenancy: true,
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -582,6 +714,34 @@ class PdokConnector {
 		}
 
 	}//end writeThrough()
+
+	/**
+	 * Find the uuid of the stored address for a pdokId, so a save updates it.
+	 *
+	 * @param ObjectService $objectService OpenRegister's object service.
+	 * @param string        $pdokId        The PDOK document id.
+	 *
+	 * @return string|null The stored object's uuid, or null when none is stored.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-write-through-to-or-addresses-register
+	 */
+	private function storedUuid(ObjectService $objectService, string $pdokId): ?string {
+		$rows = $objectService->findAll(
+			config: [
+				'limit' => 1,
+				'filters' => ['register' => self::OR_REGISTER, 'schema' => self::OR_SCHEMA, 'pdokId' => $pdokId],
+			],
+			_rbac: true,
+			_multitenancy: true,
+		);
+
+		$row = ($rows[0] ?? null);
+		if ($row instanceof ObjectEntity === false || $row->getUuid() === '') {
+			return null;
+		}
+
+		return $row->getUuid();
+	}//end storedUuid()
 
 	/**
 	 * Read the current breaker state from the cache.
@@ -682,11 +842,11 @@ class PdokConnector {
 	/**
 	 * Resolve OR's ObjectService if installed; null otherwise.
 	 *
-	 * @return \OCA\OpenRegister\Service\ObjectService|null
+	 * @return ObjectService|null
 	 */
-	private function getOpenRegisterObjectService() {
+	private function getOpenRegisterObjectService(): ?ObjectService {
 		try {
-			return $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
+			return $this->container->get(ObjectService::class);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -696,45 +856,19 @@ class PdokConnector {
 	/**
 	 * Emit a single structured observability log entry per upstream call.
 	 *
-	 * @param string $endpoint PDOK endpoint name.
-	 * @param bool $cacheHit True when APCu served the call.
-	 * @param bool $orHit True when OR served the call.
-	 * @param int|null $upstreamLatencyMs Upstream call latency (null on cache/OR hits).
-	 * @param int|null $httpStatus HTTP status code from upstream (null on cache/OR hits).
-	 * @param string $circuitState Current breaker state.
-	 * @param bool $writeThrough True when this call wrote to OR.
+	 * @param array $context The call context from callContext(): endpoint,
+	 *                       cache_hit, or_hit, upstream_latency_ms,
+	 *                       http_status, circuit_state and write_through.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md
 	 */
-	private function logCall(
-		string $endpoint,
-		bool $cacheHit,
-		bool $orHit,
-		?int $upstreamLatencyMs,
-		?int $httpStatus,
-		string $circuitState,
-		bool $writeThrough,
-	): void {
-		$level = 'debug';
-		if ($circuitState === 'open' || ($httpStatus !== null && $httpStatus >= 500)) {
-			$level = 'error';
-		} elseif ($httpStatus === 429) {
-			$level = 'warning';
-		}
-
-		$context = [
-			'endpoint' => $endpoint,
-			'cache_hit' => $cacheHit,
-			'or_hit' => $orHit,
-			'upstream_latency_ms' => $upstreamLatencyMs,
-			'http_status' => $httpStatus,
-			'circuit_state' => $circuitState,
-			'write_through' => $writeThrough,
-		];
-
-		if ($level === 'error') {
+	private function logCall(array $context): void {
+		$httpStatus = $context['http_status'];
+		if ($context['circuit_state'] === 'open' || ($httpStatus !== null && $httpStatus >= 500)) {
 			$this->logger->error('PdokConnector upstream call', $context);
-		} elseif ($level === 'warning') {
+		} elseif ($httpStatus === 429) {
 			$this->logger->warning('PdokConnector upstream call', $context);
 		} else {
 			$this->logger->debug('PdokConnector upstream call', $context);

@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/specs/connection-registry/spec.md#requirement-apps-report-and-refresh-through-two-typed-events-req-conn-004
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,6 +26,7 @@ use OCA\Integriq\EventListener\ConnectionAppLifecycleListener;
 use OCA\Integriq\EventListener\ConnectionRefreshRequestedListener;
 use OCA\Integriq\EventListener\ConnectionStatusReportedListener;
 use OCA\Integriq\Service\ConnectionRegistryService;
+use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCP\App\Events\AppDisableEvent;
 use OCP\App\Events\AppEnableEvent;
 use OCP\EventDispatcher\Event;
@@ -62,7 +66,7 @@ class ConnectionEventListenersTest extends TestCase {
 			return $container;
 		}
 
-		$container->method('get')->with(ConnectionRegistryService::class)->willReturn($registry);
+		$container->method('get')->with(ConnectionRegistryServiceInterface::class)->willReturn($registry);
 		return $container;
 	}//end container()
 

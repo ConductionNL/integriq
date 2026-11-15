@@ -1,0 +1,15 @@
+{
+	"_comment": "ADR-037 register fragment, call-log lockdown (Q-integriq-1, decision 137). The `call_log` schema had NO `authorization` block, so OpenRegister's generic object API handed every call record to any signed-in account, including the `replayRequest` a failed call keeps (secrets redacted, personal data not) and which CallLogController shows only to holders of the replay permission. Every verb is admin-only now. Integriq's own code reads and writes call records with `_rbac: false` behind its own gate: CallLogController checks call-log.read and call-log.replay, and the engine records calls on behalf of whoever triggered them (CallRecorder, CallService, EndpointService inbound rows). Admins keep the call log pages (SourceLogs, EndpointLogs, CloudEventLogs), which read through the generic API.",
+	"components": {
+		"schemas": {
+			"call_log": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			}
+		}
+	}
+}

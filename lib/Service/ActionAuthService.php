@@ -3,6 +3,9 @@
 /**
  * Action Authorization Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Implements the ADR-023 action-level authorization pattern: each controller
  * method declares an action name (e.g. "source.test") and delegates the
  * authorization decision to this service, which resolves the action against
@@ -12,7 +15,7 @@
  *   - Data RBAC (who can read/write which objects) is OpenRegister's job.
  *   - Action RBAC (who can invoke which controller method) is this service.
  *   - Admin-only operations (editing the matrix itself, app config, rebase)
- *     bypass this service and use #[AuthorizedAdminSetting(Application::APP_ID)]
+ *     bypass this service and use #[AuthorizedAdminSetting(AppIdentity::APP_ID)]
  *     at the route layer.
  *
  * Controllers call `requireAction` which throws OCSForbiddenException when
@@ -38,7 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -53,7 +56,7 @@ use OCP\IUser;
  *
  * @spec openspec/specs/action-authorization/spec.md#requirement-enforcement-is-centralised-in-actionauthservice
  */
-class ActionAuthService {
+class ActionAuthService implements ActionAuthServiceInterface {
 	private const CONFIG_KEY = 'actions';
 
 	/**
@@ -163,7 +166,7 @@ class ActionAuthService {
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-the-action-registry-is-declared-seeded-admin-only-and-stored-in-iappconfig
 	 */
 	public function getMatrix(): array {
-		$json = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, '{}');
+		$json = $this->appConfig->getValueString(AppIdentity::APP_ID, self::CONFIG_KEY, '{}');
 
 		try {
 			$decoded = json_decode($json, associative: true, depth: 512, flags: JSON_THROW_ON_ERROR);
@@ -224,7 +227,7 @@ class ActionAuthService {
 		}
 
 		$json = json_encode($normalized, flags: JSON_THROW_ON_ERROR);
-		$this->appConfig->setValueString(Application::APP_ID, self::CONFIG_KEY, $json);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::CONFIG_KEY, $json);
 
 	}//end setMatrix()
 

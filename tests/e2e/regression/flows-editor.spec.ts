@@ -112,7 +112,9 @@ test.describe('the Flows surface', () => {
 
 		// CnIndexPage chrome, not the deprecated bespoke table.
 		await expect(page.locator('.cn-index-page')).toBeVisible({ timeout: 20000 })
-		await expect(page.getByRole('button', { name: 'New flow' })).toBeVisible({
+		// A link, not a button: CnFlowsPage renders New flow as an NcButton
+		// with `:to`, which is a router link to /flows/new.
+		await expect(page.getByRole('link', { name: 'New flow' })).toBeVisible({
 			timeout: 15000,
 		})
 	})
@@ -140,23 +142,16 @@ test.describe('the Flows surface', () => {
 		).toBeVisible({ timeout: 15000 })
 		await expect(page.getByText('No steps yet')).toHaveCount(0)
 
-		// The palette offers the catalogue; an in-flight catalogue must not be
-		// reported as an unreadable one (the failure text used to show on
-		// every first paint of this route).
-		//
-		// ⚠️ THE PALETTE IS STILL IN THE SIDEBAR HERE. It moves to a modal off
-		// the toolbar in nextcloud-vue 2.40.0, and #1889 rewrote this to drive
-		// that modal — but this app's lockfile resolves 2.39.0, where the
-		// sidebar still carries the palette under a Steps tab and the toolbar
-		// has no "Add a step" button at all. The rewrite turned a passing
-		// assertion into a 60-second timeout.
-		//
-		// When this app moves to 2.40.0, this is the line that changes, and
-		// openregister's `tests/e2e/ci/flow-controls.spec.ts` is the worked
-		// example.
-		await expect(
-			page.locator('.cn-flow-sidebar__palette-item').first(),
-		).toBeVisible({ timeout: 15000 })
+		// The step catalogue is offered from the toolbar. Since nextcloud-vue
+		// 2.40.0 the palette is CnFlowStepPickerModal, opened by the toolbar's
+		// "add a step" button, and `.cn-flow-sidebar__palette-item` no longer
+		// renders anywhere (this app resolves 2.65.0). openregister's
+		// tests/e2e/ci/flow-controls.spec.ts asserts the same button. An
+		// in-flight catalogue must still not be reported as an unreadable one
+		// (the failure text used to show on every first paint of this route).
+		await expect(page.locator('[data-testid="flow-add-step"]')).toBeVisible({
+			timeout: 15000,
+		})
 		await expect(page.getByText('could not be read')).toHaveCount(0)
 	})
 

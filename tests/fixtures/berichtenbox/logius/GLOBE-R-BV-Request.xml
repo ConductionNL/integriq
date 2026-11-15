@@ -1,0 +1,28 @@
+<ns1:Berichten xmlns:ns1="http://schemas.rdw.nl/GEB/BerichtVerwerkService/Types/2009/01">
+	<ns1:BatchInformatie>
+		<ns1:BatchID>batchID</ns1:BatchID>
+		<ns1:AanmaakDatum>2017-03-03T08:09:08.790Z</ns1:AanmaakDatum>
+		<ns1:BerichtLeverancierID>OIN Nummer</ns1:BerichtLeverancierID>
+	</ns1:BatchInformatie>
+	<ns2:Bericht xmlns:ns2="http://schemas.rdw.nl/GEB/BerichtenProsessor/Bericht/Types/2009/01">
+		<ns2:BerichtInformatie>
+			<ns2:BatchID>batchId</ns2:BatchID>
+			<ns2:BerichtID>berichtId1</ns2:BerichtID>
+			<ns2:BerichtType>Berichttype</ns2:BerichtType>
+			<ns2:PublicatieDatum>2017-03-03T08:09:08.790Z</ns2:PublicatieDatum>
+			<ns2:Onderwerp>Opgevuld met een zin van maximaal 50 karakters</ns2:Onderwerp>
+			<ns2:BerichtTekst>Dit is berichtinhoud van batch bericht</ns2:BerichtTekst>
+			<ns2:Referentie>Dit is bericht referentie</ns2:Referentie>
+			<ns2:GebruikerID>BSN</ns2:GebruikerID>
+			<ns2:SoortGebruiker>Burger</ns2:SoortGebruiker>
+		</ns2:BerichtInformatie>
+		<ns2:Bijlagen>
+			<ns2:Bijlage>
+				<ns2:Inhoud>RGl0IGlzIGluaG91ZCB2YW4gYmlqbGFnZSAx</ns2:Inhoud>
+				<ns2:BijlageType>Pdf</ns2:BijlageType>
+				<ns2:Omschrijving>Omschrijving van de bijlage 1</ns2:Omschrijving>
+				<ns2:Volgorde>1</ns2:Volgorde>
+			</ns2:Bijlage>
+		</ns2:Bijlagen>
+	</ns2:Bericht>
+</ns1:Berichten>

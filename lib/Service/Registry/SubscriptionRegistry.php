@@ -26,7 +26,7 @@ namespace OCA\Integriq\Service\Registry;
  *
  * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-provider-per-registry-req-rsc-001
  */
-class SubscriptionRegistry {
+class SubscriptionRegistry implements SubscriptionRegistryInterface {
 	/**
 	 * Bindings keyed by registry id.
 	 *

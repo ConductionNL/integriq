@@ -3,6 +3,9 @@
 /**
  * Integriq ProvisionIntakeGroups repair step.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `dso_verzoek` and `openformulieren_submission` carry BSNs. Since
  * bsn-intake-records-access-rules their authorization blocks grant them to
  * four groups only (plus administrators): the intake groups `dso-intake` and
@@ -29,9 +32,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://conduction.nl
  *
  * @spec openspec/changes/bsn-intake-records-access-rules/tasks.md#task-3
@@ -41,9 +41,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Service\Intake\IntakeGroups;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -51,9 +52,11 @@ use Psr\Container\ContainerInterface;
 use Throwable;
 
 /**
- * Creates the intake and handler groups and enrols the existing intake accounts.
+ * Creates the intake and handler groups and enrols the existing intake accounts,
+ * and the digital post account in the group its schema grants.
  *
  * @spec openspec/changes/bsn-intake-records-access-rules/tasks.md#task-3
+ * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
  */
 class ProvisionIntakeGroups implements IRepairStep {
 
@@ -63,21 +66,24 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 * @var array<string, string>
 	 */
 	private const INTAKE_GROUP_OF = [
-		DsoConnection::AUTHORIZATION_TYPE => IntakeGroups::DSO_INTAKE,
-		OpenFormulierenConnection::AUTHORIZATION_TYPE => IntakeGroups::OPEN_FORMULIEREN_INTAKE,
+		PortalConnectionInterface::AUTHORIZATION_TYPE => IntakeGroupsInterface::DSO_INTAKE,
+		OpenFormulierenConnection::AUTHORIZATION_TYPE => IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE,
+		DigitalPostAccountInterface::AUTHORIZATION_TYPE => IntakeGroupsInterface::DIGITAL_POST_SENDERS,
 	];
 
 	/**
 	 * Constructor.
 	 *
-	 * @param IntakeGroups       $groups    Creates the groups and enrols the accounts.
+	 * @param IntakeGroupsInterface       $groups    Creates the groups and enrols the accounts.
 	 * @param ContainerInterface $container Resolves the OpenRegister-backed connection lazily.
+	 * @param WebhookProfilesInterface $webhookProfiles The fixed webhook profiles.
 	 *
 	 * @spec openspec/changes/bsn-intake-records-access-rules/tasks.md#task-3
 	 */
 	public function __construct(
-		private readonly IntakeGroups $groups,
+		private readonly IntakeGroupsInterface $groups,
 		private readonly ContainerInterface $container,
+		private readonly WebhookProfilesInterface $webhookProfiles,
 	) {
 
 	}//end __construct()
@@ -90,7 +96,8 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 * @spec openspec/changes/bsn-intake-records-access-rules/tasks.md#task-3
 	 */
 	public function getName(): string {
-		return 'Create the intake and handler groups for DSO verzoeken, Open Formulieren submissions, intake messages and verdicts';
+		return 'Create the intake and handler groups for DSO verzoeken, Open Formulieren submissions, intake messages and verdicts, '
+			. 'and the digital post group';
 
 	}//end getName()
 
@@ -104,14 +111,14 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 * @spec openspec/changes/bsn-intake-records-access-rules/tasks.md#task-3
 	 */
 	public function run(IOutput $output): void {
-		foreach (IntakeGroups::ALL as $groupId) {
+		foreach (IntakeGroupsInterface::ALL as $groupId) {
 			if ($this->groups->ensure(groupId: $groupId) === null) {
 				$output->warning('Could not create group ' . $groupId . '.');
 			}
 		}
 
 		try {
-			$connection = $this->container->get(DsoConnection::class);
+			$connection = $this->container->get(PortalConnectionInterface::class);
 		} catch (Throwable $exception) {
 			$output->warning('Intake accounts not enrolled: OpenRegister is not available (' . $exception->getMessage() . ').');
 			return;
@@ -144,7 +151,7 @@ class ProvisionIntakeGroups implements IRepairStep {
 	 */
 	private function intakeGroupOf(): array {
 		$groupOf = self::INTAKE_GROUP_OF;
-		foreach (WebhookProfiles::all() as $profile) {
+		foreach ($this->webhookProfiles->profiles() as $profile) {
 			if ($profile->intakeGroup !== null) {
 				$groupOf[$profile->authorizationType] = $profile->intakeGroup;
 			}

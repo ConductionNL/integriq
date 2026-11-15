@@ -13,6 +13,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -21,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\MigrateFlowStepsToGraph;
 use OCA\Integriq\Service\FlowGraphMigrationService;
+use OCA\Integriq\Service\FlowGraphMigrationServiceInterface;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -66,7 +70,7 @@ class MigrateFlowStepsToGraphTest extends TestCase {
 			);
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(FlowGraphMigrationService::class)->willReturn($migration);
+		$container->method('get')->with(FlowGraphMigrationServiceInterface::class)->willReturn($migration);
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('warning')

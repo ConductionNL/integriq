@@ -29,11 +29,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
-use OCA\Integriq\Service\WebhookSignatureService;
-use OCA\Integriq\Service\Intake\IntakeGroups;
+use OCA\Integriq\Service\WebhookSignatureServiceInterface;
+use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -70,7 +70,7 @@ class OpenFormulierenSettingsController extends Controller {
 	 * @param IRequest                  $request      The request.
 	 * @param OpenFormulierenConnection $connection   Finds, checks and saves the consumer.
 	 * @param IGroupManager             $groupManager Tells an administrator account apart.
-	 * @param IntakeGroups              $groups       Puts the chosen account in the openformulieren-intake group.
+	 * @param IntakeGroupsInterface              $groups       Puts the chosen account in the openformulieren-intake group.
 	 * @param IL10N                     $l            Field errors and warnings.
 	 * @param LoggerInterface           $logger       Diagnostics.
 	 *
@@ -80,11 +80,11 @@ class OpenFormulierenSettingsController extends Controller {
 		IRequest $request,
 		private readonly OpenFormulierenConnection $connection,
 		private readonly IGroupManager $groupManager,
-		private readonly IntakeGroups $groups,
+		private readonly IntakeGroupsInterface $groups,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -103,30 +103,7 @@ class OpenFormulierenSettingsController extends Controller {
 			return $this->ambiguous();
 		}
 
-		$data = [];
-		if ($consumer !== null) {
-			$data = $consumer->getObject();
-		}
-
-		$trust = ($data['authorizationConfiguration'] ?? []);
-		if (is_array($trust) === false) {
-			$trust = [];
-		}
-
-		$userId = (string)($data['userId'] ?? '');
-
-		return new JSONResponse(
-			[
-				'configured' => ($consumer !== null),
-				'scheme' => (string)($trust['scheme'] ?? OpenFormulierenConnection::DEFAULT_SCHEME),
-				'secretConfigured' => ((string)($trust['secret'] ?? '') !== ''),
-				'header' => (string)($trust['header'] ?? OpenFormulierenConnection::DEFAULT_HEADER),
-				'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS),
-				'userId' => $userId,
-				'account' => $this->describeAccount(userId: $userId),
-				'handlerGroup' => $this->groups->describe(groupId: IntakeGroups::OPEN_FORMULIEREN_HANDLERS),
-			]
-		);
+		return $this->configResponse(stored: new StoredConsumer(consumer: $consumer), configured: ($consumer !== null));
 
 	}//end getConfig()
 
@@ -144,6 +121,57 @@ class OpenFormulierenSettingsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(): JSONResponse {
+		$submitted = $this->submitted();
+		if ($submitted instanceof JSONResponse) {
+			return $submitted;
+		}
+
+		$warnings = [];
+		$refusal = $this->accountRefusal(submitted: $submitted, warnings: $warnings);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$failure = $this->save(submitted: $submitted);
+		if ($failure !== null) {
+			return $failure;
+		}
+
+		return $this->saved(submitted: $submitted, warnings: $warnings);
+
+	}//end setConfig()
+
+	/**
+	 * The Open Formulieren connection as the admin form reads it. Never returns the secret.
+	 *
+	 * @param StoredConsumer $stored     The consumer's trust configuration and account.
+	 * @param bool           $configured Whether the consumer exists.
+	 *
+	 * @return JSONResponse The connection state.
+	 */
+	private function configResponse(StoredConsumer $stored, bool $configured): JSONResponse {
+		$trust = $stored->trust;
+
+		return new JSONResponse(
+			[
+				'configured' => $configured,
+				'scheme' => (string)($trust['scheme'] ?? OpenFormulierenConnection::DEFAULT_SCHEME),
+				'secretConfigured' => ((string)($trust['secret'] ?? '') !== ''),
+				'header' => (string)($trust['header'] ?? OpenFormulierenConnection::DEFAULT_HEADER),
+				'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureServiceInterface::DEFAULT_TOLERANCE_SECONDS),
+				'userId' => $stored->userId,
+				'account' => $this->accountState()->describe(userId: $stored->userId),
+				'handlerGroup' => $this->groups->describe(groupId: IntakeGroupsInterface::OPEN_FORMULIEREN_HANDLERS),
+			]
+		);
+	}//end configResponse()
+
+	/**
+	 * The trust and account the request submits, or the 400 answer for an unknown scheme.
+	 *
+	 * @return SubmittedConnection|JSONResponse
+	 */
+	private function submitted(): SubmittedConnection|JSONResponse {
 		$scheme = (string)$this->request->getParam('scheme', OpenFormulierenConnection::DEFAULT_SCHEME);
 		if (in_array($scheme, self::SCHEMES, true) === false) {
 			$schemeError = $this->l->t('Unknown signature scheme %s.', [$scheme]);
@@ -153,30 +181,57 @@ class OpenFormulierenSettingsController extends Controller {
 			);
 		}
 
+		return new SubmittedConnection(
+			trust: $this->submittedTrust(scheme: $scheme),
+			userId: trim((string)$this->request->getParam('userId', ''))
+		);
+	}//end submitted()
+
+	/**
+	 * The submitted trust: scheme, secret, header (default when blank) and tolerance (at least 1).
+	 *
+	 * @param string $scheme The known signature scheme.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function submittedTrust(string $scheme): array {
 		$header = trim((string)$this->request->getParam('header', OpenFormulierenConnection::DEFAULT_HEADER));
 		if ($header === '') {
 			$header = OpenFormulierenConnection::DEFAULT_HEADER;
 		}
 
-		$trust = [
+		return [
 			'scheme' => $scheme,
 			'secret' => (string)$this->request->getParam('secret', ''),
 			'header' => $header,
-			'toleranceSeconds' => max(1, (int)$this->request->getParam('toleranceSeconds', WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS)),
+			'toleranceSeconds' => max(1, (int)$this->request->getParam('toleranceSeconds', WebhookSignatureServiceInterface::DEFAULT_TOLERANCE_SECONDS)),
 		];
-		$userId = trim((string)$this->request->getParam('userId', ''));
+	}//end submittedTrust()
 
-		$warnings = [];
-		if ($userId !== '') {
-			$fieldError = $this->accountError(userId: $userId, warnings: $warnings);
-			if ($fieldError !== null) {
-				return new JSONResponse(
-					['errors' => [$fieldError], 'fieldErrors' => ['userId' => $fieldError]],
-					Http::STATUS_BAD_REQUEST
-				);
-			}
+	/**
+	 * The 400 answer for a chosen account that may not be the intake account, or null.
+	 *
+	 * @param SubmittedConnection $submitted The submitted trust and account.
+	 * @param list<string>        $warnings  Collects non-blocking warnings.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function accountRefusal(SubmittedConnection $submitted, array &$warnings): ?JSONResponse {
+		if ($submitted->userId === '') {
+			return null;
 		}
 
+		return $this->accountCheck()->refusal(fieldError: $this->accountError(userId: $submitted->userId, warnings: $warnings));
+	}//end accountRefusal()
+
+	/**
+	 * Save the consumer, creating it when there is none, and release the previous account.
+	 *
+	 * @param SubmittedConnection $submitted The submitted trust and account.
+	 *
+	 * @return JSONResponse|null The 409 or 400 answer when it was not saved, or null.
+	 */
+	private function save(SubmittedConnection $submitted): ?JSONResponse {
 		try {
 			$consumer = $this->connection->findConsumer();
 		} catch (DsoConnectionUnavailableException) {
@@ -184,44 +239,86 @@ class OpenFormulierenSettingsController extends Controller {
 		}
 
 		try {
-			$this->connection->saveConsumer(
-				data: $this->consumerData(consumer: $consumer, trust: $trust, userId: $userId),
-				uuid: $consumer?->getUuid()
-			);
+			$this->connection->saveConsumer(data: $this->consumerData(consumer: $consumer, submitted: $submitted), uuid: $consumer?->getUuid());
 		} catch (Throwable $exception) {
-			$this->logger->error(
-				'[OpenFormulierenSettingsController] the Open Formulieren connection was not saved',
-				['exception' => $exception->getMessage()]
-			);
-			return new JSONResponse(
-				['errors' => [$this->l->t('The Open Formulieren connection was not saved: %s', [$exception->getMessage()])]],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->saveFailed(exception: $exception);
 		}
 
-		$this->withdrawPrevious(consumer: $consumer, userId: $userId);
+		$this->accountCheck()->withdrawPrevious(consumer: $consumer, userId: $submitted->userId);
+		return null;
+	}//end save()
 
+	/**
+	 * The 400 answer, logged, when the consumer could not be saved.
+	 *
+	 * @param Throwable $exception Why.
+	 *
+	 * @return JSONResponse
+	 */
+	private function saveFailed(Throwable $exception): JSONResponse {
+		$this->logger->error(
+			'[OpenFormulierenSettingsController] the Open Formulieren connection was not saved',
+			['exception' => $exception->getMessage()]
+		);
+		return new JSONResponse(
+			['errors' => [$this->l->t('The Open Formulieren connection was not saved: %s', [$exception->getMessage()])]],
+			Http::STATUS_BAD_REQUEST
+		);
+	}//end saveFailed()
+
+	/**
+	 * The answer to a saved connection: the scheme and account, with warnings.
+	 *
+	 * @param SubmittedConnection $submitted The saved trust and account.
+	 * @param list<string>        $warnings  The warnings.
+	 *
+	 * @return JSONResponse
+	 */
+	private function saved(SubmittedConnection $submitted, array $warnings): JSONResponse {
 		return new JSONResponse(
 			[
-				'scheme' => $scheme,
-				'userId' => $userId,
-				'account' => $this->describeAccount(userId: $userId),
+				'scheme' => $submitted->trust['scheme'],
+				'userId' => $submitted->userId,
+				'account' => $this->accountState()->describe(userId: $submitted->userId),
 				'warnings' => $warnings,
 			]
 		);
+	}//end saved()
 
-	}//end setConfig()
+	/**
+	 * The state of the connection's account.
+	 *
+	 * @return IntakeAccountState
+	 */
+	private function accountState(): IntakeAccountState {
+		return new IntakeAccountState(connection: $this->connection, l: $this->l);
+	}//end accountState()
+
+	/**
+	 * The checks on the connection's account.
+	 *
+	 * @return IntakeAccountCheck
+	 */
+	private function accountCheck(): IntakeAccountCheck {
+		return new IntakeAccountCheck(
+			connection: $this->connection,
+			groups: $this->groups,
+			groupManager: $this->groupManager,
+			l: $this->l,
+			intakeGroup: IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE
+		);
+	}//end accountCheck()
 
 	/**
 	 * The consumer data to save, keeping the stored secret when none was sent.
 	 *
-	 * @param ObjectEntity|null    $consumer The existing consumer, or null.
-	 * @param array<string, mixed> $trust    The submitted trust.
-	 * @param string               $userId   The chosen account, or ''.
+	 * @param ObjectEntity|null   $consumer  The existing consumer, or null.
+	 * @param SubmittedConnection $submitted The submitted trust and account.
 	 *
 	 * @return array<string, mixed> The consumer data.
 	 */
-	private function consumerData(?ObjectEntity $consumer, array $trust, string $userId): array {
+	private function consumerData(?ObjectEntity $consumer, SubmittedConnection $submitted): array {
+		$trust = $submitted->trust;
 		$data = [
 			'name' => 'Open Formulieren',
 			'description' => 'Signed submissions of Open Formulieren. Every submission is stored as the account in userId.',
@@ -236,7 +333,7 @@ class OpenFormulierenSettingsController extends Controller {
 
 		$data['authorizationType'] = OpenFormulierenConnection::AUTHORIZATION_TYPE;
 		$data['authorizationConfiguration'] = $trust;
-		$data['userId'] = $userId;
+		$data['userId'] = $submitted->userId;
 
 		return $data;
 
@@ -256,24 +353,6 @@ class OpenFormulierenSettingsController extends Controller {
 	}//end ambiguous()
 
 	/**
-	 * Take the account the connection used before out of the intake group.
-	 *
-	 * @param ObjectEntity|null $consumer The consumer as it was before the save.
-	 * @param string            $userId   The account it has now, or ''.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#requirement-submissions-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-008
-	 */
-	private function withdrawPrevious(?ObjectEntity $consumer, string $userId): void {
-		$previous = (string)(($consumer?->getObject() ?? [])['userId'] ?? '');
-		if ($previous !== '' && $previous !== $userId) {
-			$this->groups->withdraw(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $previous);
-		}
-
-	}//end withdrawPrevious()
-
-	/**
 	 * Why the account cannot be the intake account, or null when it can.
 	 *
 	 * @param string       $userId   The chosen uid.
@@ -282,26 +361,12 @@ class OpenFormulierenSettingsController extends Controller {
 	 * @return string|null The field error, or null.
 	 */
 	private function accountError(string $userId, array &$warnings): ?string {
-		try {
-			$this->connection->resolveAccount(userId: $userId);
-		} catch (DsoConnectionUnavailableException $exception) {
-			if ($exception->getReason() === DsoConnectionUnavailableException::ACCOUNT_DISABLED) {
-				return $this->l->t('Account %s is disabled.', [$userId]);
-			}
-
-			return $this->l->t('Account %s does not exist.', [$userId]);
+		$unresolvable = $this->accountState()->unresolvable(userId: $userId);
+		if ($unresolvable !== null) {
+			return $unresolvable;
 		}
 
-		// The authorization block grants the intake group, so the chosen
-		// account joins it before its rights are checked. It leaves again when
-		// the check still refuses it and it was not a member before.
-		$wasMember = $this->groups->isMember(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $userId);
-		$this->groups->enrol(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $userId);
-
-		$missing = $this->connection->missingRights(userId: $userId);
-		if ($missing !== null && $missing !== [] && $wasMember === false) {
-			$this->groups->withdraw(groupId: IntakeGroups::OPEN_FORMULIEREN_INTAKE, userId: $userId);
-		}
+		$missing = $this->accountCheck()->missingRights(userId: $userId);
 
 		if ($missing === null) {
 			$warnings[] = $this->l->t('The rights of account %s could not be checked. Submissions are refused until they can be.', [$userId]);
@@ -309,38 +374,10 @@ class OpenFormulierenSettingsController extends Controller {
 			return $this->l->t('Account %1$s lacks the %2$s right on Open Formulieren submissions.', [$userId, implode(', ', $missing)]);
 		}
 
-		if ($this->groupManager->isAdmin($userId) === true) {
-			$warnings[] = $this->l->t('Account %s is an administrator. A dedicated account keeps the audit trail readable.', [$userId]);
-		}
+		$this->accountCheck()->warnAdministrator(userId: $userId, warnings: $warnings);
 
 		return null;
 
 	}//end accountError()
 
-	/**
-	 * The one-line state of an account.
-	 *
-	 * @param string $userId The uid, or ''.
-	 *
-	 * @return array{state: string, displayName: string} The state.
-	 */
-	private function describeAccount(string $userId): array {
-		if ($userId === '') {
-			return ['state' => 'none', 'displayName' => ''];
-		}
-
-		try {
-			$account = $this->connection->resolveAccount(userId: $userId);
-		} catch (DsoConnectionUnavailableException $exception) {
-			$state = 'unknown';
-			if ($exception->getReason() === DsoConnectionUnavailableException::ACCOUNT_DISABLED) {
-				$state = 'disabled';
-			}
-
-			return ['state' => $state, 'displayName' => $userId];
-		}
-
-		return ['state' => 'ok', 'displayName' => $account->getDisplayName()];
-
-	}//end describeAccount()
 }//end class

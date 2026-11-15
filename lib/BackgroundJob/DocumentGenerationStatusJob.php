@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
+use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -65,13 +65,13 @@ class DocumentGenerationStatusJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
 	 * @param ORObjectService $objectService Reads the unsettled jobs.
-	 * @param DocumentGenerationService $service Polls one job.
+	 * @param DocumentGenerationServiceInterface $service Polls one job.
 	 * @param LoggerInterface $logger Logger for sweep outcomes.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly ORObjectService $objectService,
-		private readonly DocumentGenerationService $service,
+		private readonly DocumentGenerationServiceInterface $service,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -112,8 +112,8 @@ class DocumentGenerationStatusJob extends TimedJob {
 			$matches = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => DocumentGenerationService::REGISTER,
-						'schema' => DocumentGenerationService::SCHEMA_JOB,
+						'register' => DocumentGenerationServiceInterface::REGISTER,
+						'schema' => DocumentGenerationServiceInterface::SCHEMA_JOB,
 						'status' => $status,
 					],
 					'limit' => self::BATCH,

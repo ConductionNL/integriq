@@ -22,8 +22,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\Cardfeed;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Exception\CardfeedProviderException;
+use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\Cardfeed\RestCardfeedProvider;
 use OCP\IL10N;

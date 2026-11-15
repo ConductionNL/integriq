@@ -30,9 +30,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\AuthenticationException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\AuthorizationService;
-use OCA\Integriq\Service\NotificatiesSubscriberService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
+use OCA\Integriq\Service\NotificatiesSubscriberServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -63,10 +63,10 @@ class NotificatiesSubscriberController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param NotificatiesSubscriberService $subscriberService Abonnement lifecycle + notification normalization.
-	 * @param AuthorizationService $authorizationService Reused REQ-CON-001/REQ-CON-002 consumer apiKey auth path.
+	 * @param NotificatiesSubscriberServiceInterface $subscriberService Abonnement lifecycle + notification normalization.
+	 * @param OpenRegisterCredentialBridgeInterface $authorizationService Reused REQ-CON-001/REQ-CON-002 consumer apiKey auth path.
 	 * @param OrObjectService $orObjectService Direct OR access for abonnement listing.
-	 * @param ActionAuthService $actionAuth The action authorization service (ADR-023).
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service (ADR-023).
 	 * @param IUserSession $userSession The user session (CRUD endpoints only).
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
@@ -74,10 +74,10 @@ class NotificatiesSubscriberController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly NotificatiesSubscriberService $subscriberService,
-		private readonly AuthorizationService $authorizationService,
+		private readonly NotificatiesSubscriberServiceInterface $subscriberService,
+		private readonly OpenRegisterCredentialBridgeInterface $authorizationService,
 		private readonly OrObjectService $orObjectService,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
@@ -239,7 +239,7 @@ class NotificatiesSubscriberController extends Controller {
 	 * and its companion `consumerId` for a defense-in-depth cross-check
 	 * (REQ-002 requires *a* matching consumer; this additionally requires it
 	 * to be *this abonnement's own* consumer) — no side-effecting processing
-	 * of any kind runs before {@see AuthorizationService::authorizeApiKey()}
+	 * of any kind runs before {@see OpenRegisterCredentialBridge::authorizeApiKey()}
 	 * passes.
 	 *
 	 * RATE-LIMIT RATIONALE (ADR-082): Notificaties API callback. The publisher
@@ -297,7 +297,7 @@ class NotificatiesSubscriberController extends Controller {
 
 	/**
 	 * Verify the callback's `Authorization` (or per-abonnement configured
-	 * header, Decision 4) against {@see AuthorizationService::authorizeApiKey()},
+	 * header, Decision 4) against {@see OpenRegisterCredentialBridge::authorizeApiKey()},
 	 * then cross-check the resolved consumer is THIS abonnement's own
 	 * companion consumer (defense-in-depth beyond REQ-002's literal "*a*
 	 * matching consumer" text — the presented credential must not merely

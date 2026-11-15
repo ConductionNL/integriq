@@ -13,6 +13,9 @@
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-sibling-app-starts-a-platform-launch-with-a-typed-event-req-ltil-001
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-the-platform-authorizes-the-tools-login-redirect-and-posts-the-launch-token-req-ltil-002
  * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-a-providers-catalogue-arrives-in-learniq-as-draft-courses-that-launch-through-lti-req-cmkt-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,7 +26,7 @@ use OCA\Integriq\Controller\LtiPlatformController;
 use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\EventListener\LtiLaunchRequestedListener;
 use OCA\Integriq\Exception\LtiValidationException;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Lti\LtiAgsService;
 use OCA\Integriq\Service\Lti\LtiCustomParameterReader;
 use OCA\Integriq\Service\Lti\LtiJwksResolverService;
@@ -574,7 +577,7 @@ class LtiPlatformLaunchTest extends TestCase {
 			static function (string $routeName, array $arguments = []): string {
 				$routes = require __DIR__ . '/../../../../appinfo/routes.php';
 				foreach ($routes['routes'] as $route) {
-					if ('integriq.' . str_replace('#', '.', $route['name']) === $routeName && ($route['verb'] ?? 'GET') === 'GET') {
+					if ('integriq.' . str_replace('#', '.', $route['name']) . ($route['postfix'] ?? '') === $routeName && ($route['verb'] ?? 'GET') === 'GET') {
 						$url = $route['url'];
 						foreach ($arguments as $key => $value) {
 							$url = str_replace('{' . $key . '}', (string)$value, $url);
@@ -779,7 +782,7 @@ class LtiPlatformLaunchTest extends TestCase {
 
 		return new LtiLaunchService(
 			$this->makeResolver(),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$this->createMock(LtiJwksResolverService::class),
 			$keyService,
 			$cacheFactory,

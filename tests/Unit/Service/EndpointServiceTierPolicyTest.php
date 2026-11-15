@@ -25,7 +25,7 @@ use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
 use OCA\Integriq\Service\ApprovalService;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\ConsumerScopeService;
 use OCA\Integriq\Service\EndpointService;
@@ -73,7 +73,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 	private $orObjectService;
 
 	/**
-	 * @var AuthorizationService|MockObject
+	 * @var OpenRegisterCredentialBridge|MockObject
 	 */
 	private $authorizationService;
 
@@ -94,7 +94,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		parent::setUp();
 
 		$this->orObjectService = ObjectServiceMockBuilder::make($this);
-		$this->authorizationService = $this->createMock(AuthorizationService::class);
+		$this->authorizationService = $this->createMock(OpenRegisterCredentialBridge::class);
 		$this->rateLimitService = $this->createMock(InboundRateLimitService::class);
 
 		$objectService = $this->createMock(ObjectService::class);
@@ -433,9 +433,11 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$product = ObjectServiceMockBuilder::objectEntity($this, [], 'product-uuid-1');
 
 		$captured = null;
+		$rbac = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema) use (&$captured) {
+			function (array $object, string $register, string $schema, ?string $uuid = null, bool $_rbac = true) use (&$captured, &$rbac) {
 				$captured = $object;
+				$rbac = $_rbac;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
 			}
 		);
@@ -447,6 +449,8 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$this->assertSame('endpoint-uuid-1', $captured['endpoint']);
 		$this->assertSame(200, $captured['statusCode']);
 		$this->assertSame(42, $captured['responseTime']);
+		// call_log is admin-only (REQ-OCD-012); an inbound caller is never admin.
+		$this->assertFalse($rbac, 'The inbound call_log must be written with _rbac: false');
 	}//end testRecordInboundCallLogPersistsRowWithProductAndEndpoint()
 
 	/**
@@ -466,5 +470,82 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		// No exception propagated — assertion is that execution reached here.
 		$this->assertTrue(true);
 	}//end testRecordInboundCallLogFailureNeverThrows()
+
+	/**
+	 * REQ-OCD-012 — the inbound 429 call_log is written past RBAC: call_log is
+	 * admin-only in the register and a throttled consumer is never an admin.
+	 *
+	 * @return void
+	 */
+	public function testRecordInboundThrottleWritesPastRbac(): void {
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, [], 'consumer-uuid-1');
+
+		$calls = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (array $object, string $register, string $schema, ?string $uuid = null, bool $_rbac = true) use (&$calls) {
+				$calls[] = ['schema' => $schema, 'object' => $object, 'rbac' => $_rbac];
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
+			}
+		);
+
+		$method = new \ReflectionMethod($this->service, 'recordInboundThrottle');
+		$method->invoke($this->service, $consumer, new \OCA\Integriq\Service\RateLimit\RateLimitDecision(allowed: false, reason: 'rate'));
+
+		$this->assertCount(1, $calls);
+		$this->assertSame('call_log', $calls[0]['schema']);
+		$this->assertSame(429, $calls[0]['object']['statusCode']);
+		$this->assertFalse($calls[0]['rbac'], 'The inbound throttle call_log must be written with _rbac: false');
+	}//end testRecordInboundThrottleWritesPastRbac()
+
+	/**
+	 * An inbound call log is filed under the endpoint's organisation, so the
+	 * organisation's scoped log views list it (REQ-TEN-001).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	public function testRecordInboundCallLogIsFiledUnderTheEndpointsOrganisation(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, [], 'endpoint-uuid-1');
+		$endpoint->setOrganisation('0a0a0a0a-0000-4000-8000-00000000000a');
+		$product = ObjectServiceMockBuilder::objectEntity($this, [], 'product-uuid-1');
+
+		$captured = null;
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$captured) {
+				$captured = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
+			}
+		);
+
+		$this->service->recordInboundCallLog(endpoint: $endpoint, product: $product, statusCode: 200, durationMs: 5.0);
+
+		$this->assertSame(expected: ['organisation' => '0a0a0a0a-0000-4000-8000-00000000000a'], actual: $captured['@self']);
+	}//end testRecordInboundCallLogIsFiledUnderTheEndpointsOrganisation()
+
+	/**
+	 * An inbound 429 log is filed under the throttled consumer's organisation (REQ-TEN-001).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	public function testRecordInboundThrottleIsFiledUnderTheConsumersOrganisation(): void {
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, [], 'consumer-uuid-1');
+		$consumer->setOrganisation('0b0b0b0b-0000-4000-8000-00000000000b');
+
+		$captured = null;
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$captured) {
+				$captured = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
+			}
+		);
+
+		$method = new \ReflectionMethod($this->service, 'recordInboundThrottle');
+		$method->invoke($this->service, $consumer, new \OCA\Integriq\Service\RateLimit\RateLimitDecision(allowed: false, reason: 'rate'));
+
+		$this->assertSame(expected: ['organisation' => '0b0b0b0b-0000-4000-8000-00000000000b'], actual: $captured['@self']);
+	}//end testRecordInboundThrottleIsFiledUnderTheConsumersOrganisation()
 
 }//end class

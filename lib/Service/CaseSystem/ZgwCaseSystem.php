@@ -72,7 +72,7 @@ class ZgwCaseSystem {
 			'read-case' => $this->readCase(body: $body, configuration: $configuration),
 			'list-documents' => $this->listDocuments(body: $body, configuration: $configuration),
 			'read-document' => $this->readDocument(body: $body, configuration: $configuration),
-			'add-document' => $this->addDocument(body: $body, configuration: $configuration, sourceName: $sourceName),
+			'add-document' => $this->addDocument(run: new DocumentAdditionRun(body: $body, configuration: $configuration, sourceName: $sourceName)),
 			'create-case' => $this->createCase(body: $body, configuration: $configuration),
 			default => throw new CaseSystemRefusal(status: 404, message: 'The case system has no operation "' . $operation . '".'),
 		};
@@ -183,41 +183,65 @@ class ZgwCaseSystem {
 	/**
 	 * Add a document to a case: create the informatieobject, then link it.
 	 *
-	 * @param array<string,mixed> $body          The body: case, name, kind, content, confidential, ground.
-	 * @param array<string,mixed> $configuration The source configuration.
-	 * @param string              $sourceName    The default author.
+	 * @param DocumentAdditionRun $run The body (case, name, kind, content, confidential, ground), the source configuration and the default author.
 	 *
 	 * @return array{url:string} The document's address.
 	 *
 	 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-adding-a-document-maps-kind-and-confidentiality-onto-zgw-req-cso-002
 	 */
-	private function addDocument(array $body, array $configuration, string $sourceName): array {
-		$case = self::text(body: $body, key: 'case', operation: 'add-document');
-		$name = self::text(body: $body, key: 'name', operation: 'add-document');
-		$kind = (string)($body['kind'] ?? '');
-		$type = (string)(((array)($configuration['kinds'] ?? []))[$kind] ?? '');
+	private function addDocument(DocumentAdditionRun $run): array {
+		$run->case = self::text(body: $run->body, key: 'case', operation: 'add-document');
+		$run->name = self::text(body: $run->body, key: 'name', operation: 'add-document');
+		$run->type = $this->documentType(run: $run);
+		if (base64_decode((string)($run->body['content'] ?? ''), true) === false) {
+			throw new CaseSystemRefusal(status: 422, message: 'add-document needs its content in base64.');
+		}
+
+		$run->zaken = self::setting(configuration: $run->configuration, key: 'zakenSource');
+		$run->documenten = self::setting(configuration: $run->configuration, key: 'documentenSource');
+		$url = $this->createDocument(run: $run);
+		$this->linkToCase(run: $run, url: $url);
+
+		return ['url' => $url];
+	}//end addDocument()
+
+	/**
+	 * The informatieobjecttype the document's kind maps to in the kinds table.
+	 *
+	 * @param DocumentAdditionRun $run The document being added.
+	 *
+	 * @return string The informatieobjecttype url.
+	 *
+	 * @throws CaseSystemRefusal When the kind has no document type (422).
+	 */
+	private function documentType(DocumentAdditionRun $run): string {
+		$kind = (string)($run->body['kind'] ?? '');
+		$type = (string)(((array)($run->configuration['kinds'] ?? []))[$kind] ?? '');
 		if ($type === '') {
 			throw new CaseSystemRefusal(status: 422, message: 'The kind "' . $kind . '" has no document type in this case system\'s kinds table.');
 		}
 
-		$content = (string)($body['content'] ?? '');
-		if (base64_decode($content, true) === false) {
-			throw new CaseSystemRefusal(status: 422, message: 'add-document needs its content in base64.');
-		}
+		return $type;
 
-		$zaken = self::setting(configuration: $configuration, key: 'zakenSource');
-		$documenten = self::setting(configuration: $configuration, key: 'documentenSource');
-		$payload = $this->documentPayload(
-			name: $name,
-			type: $type,
-			content: $content,
-			body: $body,
-			configuration: $configuration,
-			sourceName: $sourceName
-		);
+	}//end documentType()
 
+	/**
+	 * Create the informatieobject in the Documenten API.
+	 *
+	 * @param DocumentAdditionRun $run The document being added.
+	 *
+	 * @return string The document's address.
+	 *
+	 * @throws CaseSystemRefusal When the Documenten API refuses or answers no address.
+	 */
+	private function createDocument(DocumentAdditionRun $run): string {
 		$created = (array)self::accepted(
-			answer: $this->transport->send(sourceId: $documenten, method: 'POST', address: '/enkelvoudiginformatieobjecten', options: ['json' => $payload]),
+			answer: $this->transport->send(
+				sourceId: $run->documenten,
+				method: 'POST',
+				address: '/enkelvoudiginformatieobjecten',
+				options: ['json' => $this->documentPayload(run: $run)]
+			),
 			api: 'Documenten API'
 		);
 		$url = (string)($created['url'] ?? '');
@@ -225,74 +249,110 @@ class ZgwCaseSystem {
 			throw new CaseSystemRefusal(status: 502, message: 'The Documenten API created the document without an address.');
 		}
 
+		return $url;
+
+	}//end createDocument()
+
+	/**
+	 * Link the document to its case; a refused link removes the document so no orphan stays behind.
+	 *
+	 * @param DocumentAdditionRun $run The document being added.
+	 * @param string              $url The document's address.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseSystemRefusal When the Zaken API refuses the link.
+	 */
+	private function linkToCase(DocumentAdditionRun $run, string $url): void {
 		$link = $this->transport->send(
-			sourceId: $zaken,
+			sourceId: $run->zaken,
 			method: 'POST',
 			address: '/zaakinformatieobjecten',
-			options: ['json' => ['informatieobject' => $url, 'zaak' => $case, 'titel' => mb_substr($name, 0, 200)]]
+			options: ['json' => ['informatieobject' => $url, 'zaak' => $run->case, 'titel' => mb_substr($run->name, 0, 200)]]
 		);
 		if ($link['status'] >= 300) {
-			$this->removeOrphan(documenten: $documenten, url: $url);
+			$this->removeOrphan(documenten: $run->documenten, url: $url);
 		}
 
 		self::accepted(answer: $link, api: 'Zaken API');
 
-		return ['url' => $url];
-	}//end addDocument()
+	}//end linkToCase()
 
 	/**
 	 * The Documenten API request body for a new document.
 	 *
-	 * @param string              $name          The document name.
-	 * @param string              $type          The informatieobjecttype url.
-	 * @param string              $content       The content in base64.
-	 * @param array<string,mixed> $body          The caller's body (confidential, ground).
-	 * @param array<string,mixed> $configuration The source configuration.
-	 * @param string              $sourceName    The default author.
+	 * @param DocumentAdditionRun $run The document being added.
 	 *
 	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-adding-a-document-maps-kind-and-confidentiality-onto-zgw-req-cso-002
 	 */
-	private function documentPayload(
-		string $name,
-		string $type,
-		string $content,
-		array $body,
-		array $configuration,
-		string $sourceName,
-	): array {
-		$confidential = ($body['confidential'] ?? false) === true;
-		$level = (string)($configuration['publicAs'] ?? 'openbaar');
-		if ($confidential === true) {
-			$level = (string)($configuration['confidentialAs'] ?? 'vertrouwelijk');
-		}
-
-		$author = (string)($configuration['auteur'] ?? $sourceName);
-		if ($author === '') {
-			$author = 'Integriq';
-		}
-
+	private function documentPayload(DocumentAdditionRun $run): array {
 		$payload = [
-			'bronorganisatie' => self::setting(configuration: $configuration, key: 'bronorganisatie'),
+			'bronorganisatie' => self::setting(configuration: $run->configuration, key: 'bronorganisatie'),
 			'creatiedatum' => (new DateTime())->format('Y-m-d'),
-			'titel' => mb_substr($name, 0, 200),
-			'auteur' => mb_substr($author, 0, 200),
+			'titel' => mb_substr($run->name, 0, 200),
+			'auteur' => mb_substr($this->documentAuthor(run: $run), 0, 200),
 			// ISO 639-2/B, as the Documenten API asks: Dutch is "dut".
 			'taal' => 'dut',
-			'informatieobjecttype' => $type,
-			'vertrouwelijkheidaanduiding' => $level,
-			'bestandsnaam' => mb_substr($name, 0, 255),
-			'inhoud' => $content,
+			'informatieobjecttype' => $run->type,
+			'vertrouwelijkheidaanduiding' => $this->confidentialityLevel(run: $run),
+			'bestandsnaam' => mb_substr($run->name, 0, 255),
+			'inhoud' => (string)($run->body['content'] ?? ''),
 		];
 
-		$ground = (string)($body['ground'] ?? '');
-		if ($confidential === true && $ground !== '') {
+		$ground = (string)($run->body['ground'] ?? '');
+		if ($this->isConfidential(run: $run) === true && $ground !== '') {
 			$payload['beschrijving'] = mb_substr($ground, 0, 1000);
 		}
 
 		return $payload;
 	}//end documentPayload()
+
+	/**
+	 * Whether the caller marked the document confidential (strictly `true`).
+	 *
+	 * @param DocumentAdditionRun $run The document being added.
+	 *
+	 * @return bool True when confidential.
+	 */
+	private function isConfidential(DocumentAdditionRun $run): bool {
+		return ($run->body['confidential'] ?? false) === true;
+
+	}//end isConfidential()
+
+	/**
+	 * The vertrouwelijkheidaanduiding: the configured confidential level, else the configured public one.
+	 *
+	 * @param DocumentAdditionRun $run The document being added.
+	 *
+	 * @return string The level.
+	 */
+	private function confidentialityLevel(DocumentAdditionRun $run): string {
+		if ($this->isConfidential(run: $run) === true) {
+			return (string)($run->configuration['confidentialAs'] ?? 'vertrouwelijk');
+		}
+
+		return (string)($run->configuration['publicAs'] ?? 'openbaar');
+
+	}//end confidentialityLevel()
+
+	/**
+	 * The author: the configured `auteur`, else the source's name, else `Integriq`.
+	 *
+	 * @param DocumentAdditionRun $run The document being added.
+	 *
+	 * @return string The author.
+	 */
+	private function documentAuthor(DocumentAdditionRun $run): string {
+		$author = (string)($run->configuration['auteur'] ?? $run->sourceName);
+		if ($author === '') {
+			return 'Integriq';
+		}
+
+		return $author;
+
+	}//end documentAuthor()
 
 	/**
 	 * Delete a document whose link to its case failed, so no orphan stays behind.

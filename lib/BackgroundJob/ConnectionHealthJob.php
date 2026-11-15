@@ -34,8 +34,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\ConnectionProbeService;
-use OCA\Integriq\Service\ConnectionRegistryService;
+use DateTimeImmutable;
+use OCA\Integriq\Service\CertificateExpiryAlertService;
+use OCA\Integriq\Service\ConnectionProbeServiceInterface;
+use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Container\ContainerInterface;
@@ -87,15 +89,20 @@ class ConnectionHealthJob extends TimedJob {
 	protected function run($argument): void {
 		$this->phase(
 			name: 'declaration sync',
-			operation: fn () => $this->container->get(ConnectionRegistryService::class)->syncChangedDeclarations()
+			operation: fn () => $this->container->get(ConnectionRegistryServiceInterface::class)->syncChangedDeclarations()
 		);
 		$this->phase(
 			name: 'source probes',
-			operation: fn () => $this->container->get(ConnectionProbeService::class)->probeDue(limit: ConnectionProbeService::PROBE_LIMIT)
+			operation: fn () => $this->container->get(ConnectionProbeServiceInterface::class)->probeDue(limit: ConnectionProbeServiceInterface::PROBE_LIMIT)
 		);
 		$this->phase(
 			name: 'status refresh',
-			operation: fn () => $this->container->get(ConnectionRegistryService::class)->refresh()
+			operation: fn () => $this->container->get(ConnectionRegistryServiceInterface::class)->refresh()
+		);
+		// Certificate expiry alerts at 30, 14 and 7 days (REQ-CRUN-008).
+		$this->phase(
+			name: 'certificate expiry alerts',
+			operation: fn () => $this->container->get(CertificateExpiryAlertService::class)->evaluate(now: new DateTimeImmutable())
 		);
 	}//end run()
 

@@ -3,6 +3,9 @@
 /**
  * The raw-source-read contract for the six direct-Guzzle clients (ocon#242).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * These six bypass {@see \OCA\Integriq\Service\CallService} entirely, so they
  * never benefit from its `_render: false` re-resolve (`resolveSourceForDispatch`,
  * ocon#236). Each located its active source through a RENDERED `findAll()` and then
@@ -34,9 +37,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.Integriq.nl
  */
 
@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\BackgroundJob\AttachmentFetchJobScheduler;
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoClient;
@@ -59,6 +60,7 @@ use OCA\Integriq\Service\IwmoIjw\IStandardsClient;
 use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
 use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
 use OCA\Integriq\Service\IwmoIjwSyncService;
+use OCA\Integriq\Service\Kiss\CallEventLog;
 use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
 use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
 use OCA\Integriq\Service\KissSyncService;
@@ -73,7 +75,6 @@ use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\Integriq\Service\StufZkn\StufZknClient;
 use OCA\Integriq\Service\StufZknSyncService;
 use OCA\Integriq\Tests\Helpers\NestedWriteOnlyRenderBoundaryObjectService;
-use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCP\BackgroundJob\IJobList;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
@@ -175,13 +176,12 @@ class SourceRawReadContractTest extends TestCase {
 			),
 			'Dso' => new DsoIngestService(
 				$fake,
-				$this->getMockBuilder(HandoffService::class)->disableOriginalConstructor()->getMock(),
 				new DsoRequestTranslator(),
 				new LogDsoConnectorProvider(),
 				$this->getMockBuilder(DsoClient::class)->disableOriginalConstructor()->getMock(),
 				$logger,
 				$resolver,
-				$this->createMock(IJobList::class),
+				new AttachmentFetchJobScheduler($this->createMock(IJobList::class)),
 				new DsoActivityMapper(new DsoActivityTable($fake))
 			),
 			'Kiss' => new KissSyncService(
@@ -190,7 +190,8 @@ class SourceRawReadContractTest extends TestCase {
 				$this->getMockBuilder(KlantinteractiesClient::class)->disableOriginalConstructor()->getMock(),
 				$this->l10n(),
 				$logger,
-				$resolver
+				$resolver,
+				new CallEventLog($fake)
 			),
 			'StufZkn' => new StufZknSyncService(
 				$fake,

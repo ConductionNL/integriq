@@ -24,6 +24,7 @@ use OCA\Integriq\BackgroundJob\DigitalPostInboundJob;
 use OCA\Integriq\Event\DigitalPostDeliveredEvent;
 use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
 use OCA\Integriq\Service\ConnectionStore;
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostResult;
@@ -34,6 +35,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IDBConnection;
+use OCP\IUser;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
@@ -60,6 +62,13 @@ class DigitalPostServiceTest extends TestCase {
 	private array $dispatched = [];
 
 	/**
+	 * Whether the doubled object service refuses every write.
+	 *
+	 * @var bool
+	 */
+	private bool $failSaves = false;
+
+	/**
 	 * The opt-out services, once built.
 	 *
 	 * @var OptOutFixture|null
@@ -75,6 +84,7 @@ class DigitalPostServiceTest extends TestCase {
 		parent::setUp();
 		$this->saved = [];
 		$this->dispatched = [];
+		$this->failSaves = false;
 		$this->optOuts = null;
 	}//end setUp()
 
@@ -100,15 +110,16 @@ class DigitalPostServiceTest extends TestCase {
 	 * Build the service over a configured source.
 	 *
 	 * @param DigitalPostProviderInterface $provider The binding.
-	 * @param array<string,mixed>|null $sourceConfig The source configuration, or null for no such source.
+	 * @param array<string,mixed>|string|null $sourceConfig The source configuration (an array, or as stored JSON text), or null for no such source.
 	 *
 	 * @return DigitalPostService The service under test.
 	 */
-	private function service(DigitalPostProviderInterface $provider, ?array $sourceConfig): DigitalPostService {
+	private function service(DigitalPostProviderInterface $provider, array|string|null $sourceConfig): DigitalPostService {
 		$store = $this->getMockBuilder(ConnectionStore::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findSourceBySlug'])
+			->onlyMethods(['findSourceBySlug', 'readSourceRaw'])
 			->getMock();
+		$store->method('readSourceRaw')->willReturnArgument(0);
 
 		if ($sourceConfig === null) {
 			$store->method('findSourceBySlug')->willReturn(null);
@@ -121,6 +132,10 @@ class DigitalPostServiceTest extends TestCase {
 		$objectService = $this->createMock(OrObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) {
+				if ($this->failSaves === true) {
+					throw new \RuntimeException('OpenRegister refused the write');
+				}
+
 				$this->saved[] = $object;
 				$entity = $this->createMock(ObjectEntity::class);
 				$entity->method('getUuid')->willReturn(($uuid ?? 'msg-1'));
@@ -142,9 +157,28 @@ class DigitalPostServiceTest extends TestCase {
 			$objectService,
 			$dispatcher,
 			$this->createMock(LoggerInterface::class),
-			$this->optOuts()->gate()
+			$this->optOuts()->gate(),
+			$this->account()
 		);
 	}//end service()
+
+	/**
+	 * A digital post account that is always usable and runs the operation as given.
+	 *
+	 * The account itself is covered by DigitalPostServiceAccountTest.
+	 *
+	 * @return DigitalPostAccount
+	 */
+	private function account(): DigitalPostAccount {
+		$account = $this->getMockBuilder(DigitalPostAccount::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['resolve', 'runAs'])
+			->getMock();
+		$account->method('resolve')->willReturn($this->createMock(IUser::class));
+		$account->method('runAs')->willReturnCallback(static fn (IUser $user, callable $operation): mixed => $operation());
+
+		return $account;
+	}//end account()
 
 	/**
 	 * The opt-out services over in-memory tables, one per test.
@@ -386,6 +420,56 @@ class DigitalPostServiceTest extends TestCase {
 	}//end testAStatusPollAnnouncesOnlyRealChanges()
 
 	/**
+	 * A provider's own refusal code reaches the sending app, so it can tell
+	 * "not subscribed" from "opted out".
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-opt-out-and-category-rules-run-first-and-do-not-change-req-dpa-014
+	 */
+	public function testAProviderRefusalCodeReachesTheSendingApp(): void {
+		$service = $this->service(
+			$this->provider('berichtenbox', DigitalPostResult::refused('Not subscribed. Nothing was sent.', 'not_subscribed')),
+			['providerId' => 'berichtenbox']
+		);
+		$event = $this->request('besluit');
+
+		$service->handleSendRequest($event);
+
+		$this->assertSame('not_subscribed', $event->getRefusal()['code']);
+		$this->assertSame('besluit', $this->saved[0]['category']);
+	}//end testAProviderRefusalCodeReachesTheSendingApp()
+
+	/**
+	 * A status is acknowledged to the provider only after it is stored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#scenario-a-result-is-not-lost-when-saving-fails
+	 */
+	public function testAStatusIsAcknowledgedOnlyOnceStored(): void {
+		$acknowledged = [];
+		$provider = $this->createMock(DigitalPostProviderInterface::class);
+		$provider->method('getProviderId')->willReturn('berichtenbox');
+		$provider->method('status')->willReturn(DigitalPostResult::accepted(DigitalPostResult::STATUS_DELIVERED, 'ref-1'));
+		$provider->method('statusRecorded')->willReturnCallback(
+			function (string $reference) use (&$acknowledged): void {
+				$acknowledged[] = $reference;
+			}
+		);
+		$message = ['uuid' => 'msg-1', 'providerId' => 'berichtenbox', 'providerReference' => 'ref-1', 'status' => 'sent', 'sourceId' => 'berichtenbox-source'];
+
+		$this->failSaves = true;
+		$this->assertSame(0, $this->service($provider, ['providerId' => 'berichtenbox'])->pollStatuses([$message]));
+		$this->assertSame([], $acknowledged, 'A status that was not stored stays with the provider for the next run.');
+		$this->assertSame([], $this->dispatched);
+
+		$this->failSaves = false;
+		$this->assertSame(1, $this->service($provider, ['providerId' => 'berichtenbox'])->pollStatuses([$message]));
+		$this->assertSame(['ref-1'], $acknowledged);
+	}//end testAStatusIsAcknowledgedOnlyOnceStored()
+
+	/**
 	 * Health answers what a source page shows: last send, last error, queue
 	 * depth.
 	 *
@@ -484,4 +568,174 @@ class DigitalPostServiceTest extends TestCase {
 
 		$this->assertSame(0, $job->pollSource(['slug' => 'een-api', 'configuration' => ['type' => 'api']]));
 	}//end testASourceWithNoDigitalPostProviderIsNotPolled()
+
+	/**
+	 * The whole queued letter, what the provider is handed, the stored outcome and the
+	 * announcement; a letter that cannot be stored is refused before the provider is called.
+	 *
+	 * @return void
+	 */
+	public function testTheWholeLetterItsSendAndAnUnstorableLetter(): void {
+		$config = ['providerId' => 'berichtenbox', 'senderOin' => '000'];
+		$provider = $this->createMock(DigitalPostProviderInterface::class);
+		$provider->method('getProviderId')->willReturn('berichtenbox');
+		$handed = [];
+		$provider->expects($this->once())->method('send')->willReturnCallback(
+			static function (array $message, array $sourceConfig) use (&$handed): DigitalPostResult {
+				$handed = [$message, $sourceConfig];
+				return DigitalPostResult::accepted(DigitalPostResult::STATUS_SENT, 'ref-9');
+			}
+		);
+		$event = $this->request(category: 'case-update', caseRef: 'zaak/1');
+
+		$this->service($provider, $config)->handleSendRequest($event);
+
+		$queued = $this->saved[0];
+		$this->assertMatchesRegularExpression('/^\d{4}-\d\d-\d\dT/', $queued['created']);
+		$queued['created'] = 'NOW';
+		$this->assertSame(
+			[
+				'recipient' => '999993653',
+				'subject' => 'Uw aanvraag',
+				'body' => $queued['body'],
+				'attachments' => [['name' => 'besluit.pdf', 'url' => 'https://example.test/besluit.pdf']],
+				'requestedBy' => 'behandelaar1',
+				'sourceApp' => 'dossiq',
+				'sourceId' => 'berichtenbox-source',
+				'providerId' => 'berichtenbox',
+				'correlationId' => 'corr-1',
+				'category' => 'case-update',
+				'caseRef' => 'zaak/1',
+				'status' => DigitalPostResult::STATUS_QUEUED,
+				'lastError' => '',
+				'simulated' => false,
+				'created' => 'NOW',
+			],
+			$queued
+		);
+		$this->assertStringStartsWith('Beste heer De Vries,', $queued['body']);
+		$this->assertSame($this->saved[0], $handed[0]);
+		$this->assertSame($config, $handed[1]);
+		$this->assertSame(array_merge($this->saved[0], ['status' => DigitalPostResult::STATUS_SENT, 'providerReference' => 'ref-9', 'lastError' => '', 'simulated' => false]), $this->saved[1]);
+		$announced = $this->dispatched[0];
+		$this->assertSame(['msg-1', DigitalPostResult::STATUS_SENT, 'behandelaar1', DigitalPostResult::STATUS_QUEUED, false, ''], [$announced->getMessageId(), $announced->getStatus(), $announced->getRequestedBy(), $announced->getPreviousStatus(), $announced->isSimulated(), $announced->getLastError()]);
+		$this->assertSame('msg-1', $event->getMessageId());
+
+		$this->setUp();
+		$this->failSaves = true;
+		$unstored = $this->request();
+		$silent = $this->createMock(DigitalPostProviderInterface::class);
+		$silent->method('getProviderId')->willReturn('berichtenbox');
+		$silent->expects($this->never())->method('send');
+		try {
+			$this->service($silent, $config)->handleSendRequest($unstored);
+		} catch (\Throwable $exception) {
+			$this->fail('An unstorable letter is refused, not thrown: ' . $exception->getMessage());
+		}
+
+		$this->assertTrue($unstored->isHandled());
+		$this->assertSame('not_stored', $unstored->getRefusal()['code']);
+		$this->assertNull($unstored->getMessageId());
+		$this->assertSame([], $this->dispatched);
+
+	}//end testTheWholeLetterItsSendAndAnUnstorableLetter()
+
+	/**
+	 * A provider that throws on send does not lose the letter: it is stored
+	 * as failed with the provider's message, and the sender gets a refusal.
+	 *
+	 * @return void
+	 */
+	public function testAThrowingProviderIsAFailedSendNotALostLetter(): void {
+		$provider = $this->createMock(DigitalPostProviderInterface::class);
+		$provider->method('getProviderId')->willReturn('berichtenbox');
+		$provider->method('send')->willThrowException(new \RuntimeException('connection reset by Logius'));
+		$service = $this->service($provider, ['providerId' => 'berichtenbox']);
+		$event = $this->request();
+
+		$service->handleSendRequest($event);
+
+		$stored = end($this->saved);
+		$this->assertSame(DigitalPostResult::STATUS_FAILED, $stored['status']);
+		$this->assertSame('connection reset by Logius', $stored['lastError']);
+		$this->assertCount(1, $stored['attachments']);
+		$this->assertSame('provider_refused', $event->getRefusal()['code']);
+		$this->assertNull($event->getMessageId());
+
+	}//end testAThrowingProviderIsAFailedSendNotALostLetter()
+
+	/**
+	 * A status poll skips messages it cannot poll (no id, no reference, an
+	 * unknown provider) and one whose provider throws, and still polls the
+	 * rest.
+	 *
+	 * @return void
+	 */
+	public function testAStatusPollSkipsWhatItCannotPoll(): void {
+		$asked = [];
+		$provider = $this->createMock(DigitalPostProviderInterface::class);
+		$provider->method('getProviderId')->willReturn('berichtenbox');
+		$provider->method('status')->willReturnCallback(
+			function (string $reference) use (&$asked): DigitalPostResult {
+				$asked[] = $reference;
+				if ($reference === 'ref-throws') {
+					throw new \RuntimeException('timeout');
+				}
+
+				return DigitalPostResult::accepted(DigitalPostResult::STATUS_DELIVERED, $reference);
+			}
+		);
+		$service = $this->service($provider, ['providerId' => 'berichtenbox']);
+		$base = ['providerId' => 'berichtenbox', 'status' => DigitalPostResult::STATUS_SENT, 'requestedBy' => 'behandelaar1', 'sourceId' => 'bb'];
+
+		$changed = $service->pollStatuses(
+			[
+				['providerReference' => 'ref-no-id'] + $base,
+				['uuid' => 'msg-no-ref'] + $base,
+				['uuid' => 'msg-other', 'providerReference' => 'ref-other', 'providerId' => 'postex'] + $base,
+				['uuid' => 'msg-throws', 'providerReference' => 'ref-throws'] + $base,
+				['id' => 'msg-by-id', 'providerReference' => 'ref-ok'] + $base,
+			]
+		);
+
+		$this->assertSame(['ref-throws', 'ref-ok'], $asked);
+		$this->assertSame(1, $changed);
+		$this->assertCount(1, $this->dispatched);
+		$this->assertSame('msg-by-id', $this->dispatched[0]->getMessageId());
+		$this->assertSame(DigitalPostResult::STATUS_DELIVERED, end($this->saved)['status']);
+
+	}//end testAStatusPollSkipsWhatItCannotPoll()
+
+	/**
+	 * The provider is handed the source configuration: decoded when stored as
+	 * JSON text, empty when it is neither, and empty without a source id.
+	 *
+	 * @return void
+	 */
+	public function testAStatusPollHandsTheProviderTheSourceConfiguration(): void {
+		$cases = [
+			['{"providerId":"berichtenbox","mode":"live"}', 'bb', ['providerId' => 'berichtenbox', 'mode' => 'live']],
+			['not json', 'bb', []],
+			[['mode' => 'test'], '', []],
+		];
+
+		foreach ($cases as [$stored, $sourceId, $expected]) {
+			$handed = null;
+			$provider = $this->createMock(DigitalPostProviderInterface::class);
+			$provider->method('getProviderId')->willReturn('berichtenbox');
+			$provider->method('status')->willReturnCallback(
+				function (string $reference, array $config) use (&$handed): DigitalPostResult {
+					$handed = $config;
+					return DigitalPostResult::accepted(DigitalPostResult::STATUS_SENT, $reference);
+				}
+			);
+
+			$this->service($provider, $stored)->pollStatuses(
+				[['uuid' => 'msg-1', 'providerId' => 'berichtenbox', 'providerReference' => 'ref-1', 'status' => DigitalPostResult::STATUS_SENT, 'sourceId' => $sourceId]]
+			);
+
+			$this->assertSame($expected, $handed, json_encode($stored));
+		}
+
+	}//end testAStatusPollHandsTheProviderTheSourceConfiguration()
 }//end class

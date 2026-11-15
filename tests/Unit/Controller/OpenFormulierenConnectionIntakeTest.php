@@ -20,12 +20,17 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#requirement-the-intake-acts-as-the-open-formulieren-connections-account-req-006
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -154,8 +159,8 @@ class OpenFormulierenConnectionIntakeTest extends TestCase {
 
 		$fileService = $this->getMockBuilder(FileService::class)->disableOriginalConstructor()->getMock();
 		$fileService->method('addFile')->willReturnCallback(
-			function ($objectEntity, string $fileName): File {
-				$this->storedFiles[] = ['name' => $fileName, 'uid' => $this->worldSession->getUser()?->getUID()];
+			function (FileTarget $target, FileUpload $upload): File {
+				$this->storedFiles[] = ['name' => $upload->fileName, 'uid' => $this->worldSession->getUser()?->getUID()];
 				$file = $this->createMock(File::class);
 				$file->method('getId')->willReturn(500 + count($this->storedFiles));
 				return $file;

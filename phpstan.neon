@@ -16,6 +16,12 @@ parameters:
     scanFiles:
         - tests/stubs/OCA/OpenRegister/Mcp/Attribute/McpTool.php
         - tests/stubs/OCA/OpenRegister/Mcp/IMcpScannableServices.php
+        # gate 23 (consumer-auth-on-openregister): OpenRegister's credential
+        # checks, the real files copied from openregister development 75088d6237.
+        - tests/stubs/OCA/OpenRegister/Exception/AuthenticationException.php
+        - tests/stubs/OCA/OpenRegister/Service/AuthorizationService.php
+        - tests/stubs/OCA/OpenRegister/Service/Consumer/ConsumerSource.php
+        - tests/stubs/OCA/OpenRegister/Service/Consumer/ResolvedConsumer.php
     # App-specific only. The base already sets level, paths, bootstrapFiles,
     # excludePaths, scanDirectories and every fleet-wide ignore.
     excludePaths:
@@ -41,7 +47,7 @@ parameters:
         # reference OCA\OpenRegister\Service\Flow\* (IFlowNode,
         # RegisterFlowNodesEvent), which exists only at runtime and only on an
         # OpenRegister that ships the flow engine — that is precisely what the
-        # class_exists() guard in Application::registerFlowNodes() is for.
+        # class_exists() guard in FlowBindings::registerListeners() is for.
         # "implements unknown interface" cannot be baselined, so exclusion is
         # required (same pattern as SynchronizationContractProvider above). The
         # flow helpers that do NOT touch OpenRegister types (FlowConfigGuard,
@@ -81,6 +87,13 @@ parameters:
         # unreachable: at runtime all of them `use` it — FetchFileNode included,
         # which is why that entry sits directly above this one.
         - lib/Flow/SynchronizationLogActions.php
+        # FlowNodePaletteDefaults is the palette-metadata trait those same
+        # flow nodes share (getId / getScope / getIcon). Every user is one of
+        # the excluded node classes above, so PHPStan again sees a trait
+        # "used zero times" that neither a baseline nor ignoreErrors can
+        # absorb — the same reason, the same remedy, as
+        # SynchronizationLogActions directly above.
+        - lib/Flow/FlowNodePaletteDefaults.php
         # IntegriqMetricsProvider implements OCA\OpenRegister\AppHost\IMetricsProvider
         # and AbstractCategoryAdapterProvider extends
         # OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider — both peer-app
@@ -96,7 +109,7 @@ parameters:
         # same limitation, same remedy, as SynchronizationContractProvider above.
         - lib/BackgroundJob/DeferredViewCascadeJob.php
         # ConnectionAlertRecipientResolver implements
-        # OCA\OpenRegister\Service\Notification\RecipientResolverInterface, the
+        # OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface, the
         # contract OpenRegister's notification engine resolves `expression`
         # recipients through, which exists only at runtime. "implements unknown
         # interface" is a general error no baseline absorbs; same remedy as
@@ -152,6 +165,7 @@ parameters:
                 - lib/Controller/SourcesController.php
                 - lib/Controller/SynchronizationsController.php
                 - lib/Service/EndpointService.php
+                - lib/Service/ApprovalDecisionService.php
         # The same OpenRegister-is-runtime-only effect, one layer further on.
         # IntakeRoutingService::firstMatchingRule() fills $rules from
         # ObjectEntity::getObject(), which resolves to an error type, so usort

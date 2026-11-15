@@ -6,7 +6,7 @@
  *
  * `outputMapping` sat on the endpoint schema and its edit form, and no line of
  * the runtime read it, so a consumer got the register's shape whatever the
- * endpoint declared. `dispatchAfterBeforeRules()` now hands the body the
+ * endpoint declared. `answerSchemaRequest()` now hands the body the
  * `after` rules produced to `applyOutputMapping()` before it answers. These
  * tests run that step with a real MappingService and a real mapping object,
  * for one object and for a list. (The whole tail cannot run in a unit test:
@@ -20,6 +20,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/specs/endpoint-runtime/spec.md#requirement-an-endpoints-output-mapping-reshapes-its-answer-req-gtp-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -29,7 +32,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\FlowRunnerService;
@@ -122,7 +125,7 @@ class EndpointServiceOutputMappingTest extends TestCase {
 			ObjectServiceMockBuilder::make($this),
 			$this->createMock(IConfig::class),
 			$this->createMock(StorageService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$this->createMock(ContainerInterface::class),
 			$this->createMock(SynchronizationService::class),
 			$this->createMock(RuleService::class),
@@ -240,7 +243,7 @@ class EndpointServiceOutputMappingTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRequestTailAppliesTheOutputMappingAfterTheAfterRules(): void {
-		$tail = new ReflectionMethod(EndpointService::class, 'dispatchAfterBeforeRules');
+		$tail = new ReflectionMethod(EndpointService::class, 'answerSchemaRequest');
 		$lines = file((string)$tail->getFileName());
 		$body = implode('', array_slice($lines, $tail->getStartLine() - 1, $tail->getEndLine() - $tail->getStartLine() + 1));
 
@@ -249,7 +252,7 @@ class EndpointServiceOutputMappingTest extends TestCase {
 		$answer = strpos($body, 'return new JSONResponse(data: $answerBody');
 
 		$this->assertNotFalse($afterRules);
-		$this->assertNotFalse($mapping, 'dispatchAfterBeforeRules() must call applyOutputMapping().');
+		$this->assertNotFalse($mapping, 'answerSchemaRequest() must call applyOutputMapping().');
 		$this->assertNotFalse($answer, 'The answer must be built from the mapped body.');
 		$this->assertTrue($afterRules < $mapping && $mapping < $answer);
 	}//end testTheRequestTailAppliesTheOutputMappingAfterTheAfterRules()

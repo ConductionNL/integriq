@@ -1,0 +1,7 @@
+<ns0:AbonnementAanvraag xmlns:ns0="http://schemas.overheid.nl/GEB/AbonnementServiceProcessor/2014/02">
+  <BerichtLeverancier>
+    <OIN>OIN nummer</OIN>
+  </BerichtLeverancier>
+  <VerzoekId>${Genereer ids#verzoekId}</VerzoekId>
+  <MutatieDatum>2016-02-02T12:23:16.326Z</MutatieDatum>
+</ns0:AbonnementAanvraag>

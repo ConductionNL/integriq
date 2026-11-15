@@ -3,6 +3,9 @@
 /**
  * Which environment variables an expression may read, and who said so.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * 🔴 WHAT THE ALLOWLIST ADMITS: EXACT KEYS, ONE AT A TIME, AND NOTHING ELSE.
  * No wildcard, no prefix pattern, no empty entry meaning all, no regular
  * expression, no case-insensitive match. Every one of those turns a list of
@@ -32,9 +35,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.conduction.nl
  *
  * @spec openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md
@@ -53,7 +53,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md
  */
-class EnvironmentAllowlist {
+class EnvironmentAllowlist implements EnvironmentAllowlistInterface {
 
 	/**
 	 * The app the list is stored under.

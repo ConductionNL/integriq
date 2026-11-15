@@ -2,6 +2,9 @@
 
 /**
  * PHPStan bootstrap file - registers OCP autoloader for static analysis.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 $autoloader = require __DIR__ . '/vendor/autoload.php';

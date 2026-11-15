@@ -17,13 +17,16 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-4
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\IBabsConnectorService;
+use OCA\Integriq\Service\IBabsConnectorServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -54,7 +57,7 @@ class RISPollJob extends TimedJob {
 	 * RISPollJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param IBabsConnectorService $ibabsConnectorService iBabs connector service.
+	 * @param IBabsConnectorServiceInterface $ibabsConnectorService iBabs connector service.
 	 * @param OrObjectService $orObjectService OR object service for sync records.
 	 * @param LoggerInterface $logger Logger for error handling.
 	 *
@@ -62,7 +65,7 @@ class RISPollJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly IBabsConnectorService $ibabsConnectorService,
+		private readonly IBabsConnectorServiceInterface $ibabsConnectorService,
 		private readonly OrObjectService $orObjectService,
 		private readonly LoggerInterface $logger,
 	) {

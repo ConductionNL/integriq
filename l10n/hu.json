@@ -1,5 +1,6 @@
 {
     "translations": {
+        "synchronizations": "szinkronizálások",
         "A signing secret is configured (hidden).": "Aláírási titok van beállítva (rejtett).",
         "Copied to clipboard": "Vágólapra másolva",
         "Copy": "Másolás",

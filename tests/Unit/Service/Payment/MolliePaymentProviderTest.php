@@ -21,8 +21,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\Payment;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Exception\PaymentProviderException;
+use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\Payment\MolliePaymentProvider;
 use OCP\IL10N;

@@ -1,5 +1,6 @@
 {
     "translations": {
+        "synchronizations": "synchronizace",
         "A signing secret is configured (hidden).": "Podpisový tajný klíč je nakonfigurován (skryt).",
         "Copied to clipboard": "Zkopírováno do schránky",
         "Copy": "Kopírovat",

@@ -23,6 +23,9 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/execution-trace/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -30,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use OCA\Integriq\Service\Otel\TraceExportQueue;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -40,9 +44,16 @@ use Psr\Log\LoggerInterface;
 /**
  * Trace assembly, persistence, retrieval, and replay orchestration.
  *
+ * Coupling is 13, one over the threshold: replay() names the four services
+ * it re-runs (resolved lazily from the container), and persist() hands the
+ * trace to the OpenTelemetry export queue. Splitting replay out is the
+ * remedy when this class next grows.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
  * @spec openspec/specs/execution-trace/spec.md
  */
-class ExecutionTraceService {
+class ExecutionTraceService implements ExecutionTraceServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding execution traces.
@@ -70,11 +81,14 @@ class ExecutionTraceService {
 	 *                                               construction time, to avoid a circular service graph
 	 *                                               (those four services constructor-inject THIS service).
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 * @param TraceExportQueue|null $exportQueue Queues a finished, sampled trace for OpenTelemetry export
+	 *                                           (REQ-OTEL-002); absent, nothing is exported.
 	 */
 	public function __construct(
 		private readonly ORObjectService $orObjectService,
 		private readonly ContainerInterface $containerInterface,
 		private readonly LoggerInterface $logger,
+		private readonly ?TraceExportQueue $exportQueue = null,
 	) {
 	}//end __construct()
 
@@ -118,7 +132,20 @@ class ExecutionTraceService {
 			'isReplay' => $trace->isReplay(),
 			'dryRun' => $trace->isDryRun(),
 			'triggeredBy' => $trace->getTriggeredBy(),
+			'startedAtUs' => $trace->getStartedAtUs(),
+			'finishedAtUs' => (int)round(microtime(true) * 1000000),
 		];
+		if ($trace->getParentSpanId() !== null) {
+			// Only written when a caller's traceparent was accepted: the
+			// schema types it as a 16-hex string, not null (REQ-OTEL-004).
+			$payload['parentSpanId'] = $trace->getParentSpanId();
+		}
+
+		if ($trace->getInboundOtelTraceId() !== null) {
+			// The caller's W3C trace id, apart from the record's own uuid
+			// (REQ-OTEL-004).
+			$payload['otelTraceId'] = $trace->getInboundOtelTraceId();
+		}
 
 		if ($resume === true) {
 			$this->logger->debug(
@@ -127,16 +154,52 @@ class ExecutionTraceService {
 			);
 		}
 
-		return $this->orObjectService->saveObject(
+		$saved = $this->orObjectService->saveObject(
 			object: $payload,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
 			uuid: $trace->getTraceId(),
 			_rbac: false,
+			// Unscoped: system write of telemetry from background jobs and listeners, no user session.
 			_multitenancy: false
 		);
 
+		$this->exportQueue?->queue(trace: $trace, status: $status);
+
+		return $saved;
+
 	}//end persist()
+
+	/**
+	 * Read a persisted trace for the export job, as plain data.
+	 *
+	 * The job runs from cron without a session and the id is one this
+	 * service queued itself, never caller input, so OpenRegister's access
+	 * layer is bypassed the same way {@see persist()} writes.
+	 *
+	 * @param string $traceId The trace uuid.
+	 *
+	 * @return array|null The trace data, or null when it no longer exists.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
+	 */
+	public function findForExport(string $traceId): ?array {
+		try {
+			$trace = $this->orObjectService->find(
+				id: $traceId,
+				register: self::REGISTER,
+				schema: self::SCHEMA,
+				_rbac: false,
+				// Unscoped: the OpenTelemetry export job reads the trace it was queued for, no user session.
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $exception) {
+			return null;
+		}
+
+		return $trace->getObject();
+
+	}//end findForExport()
 
 	/**
 	 * Find one execution_trace by id.
@@ -230,35 +293,56 @@ class ExecutionTraceService {
 			throw new DoesNotExistException('No such execution_trace: ' . $traceId);
 		}
 
-		$originalData = $original->getObject();
-		$entryPoint = (string)($originalData['entryPoint'] ?? '');
-		$entryPointId = ($originalData['entryPointId'] ?? null);
-		$steps = (array)($originalData['steps'] ?? []);
+		$request = new TraceReplayRequest(original: $original->getObject());
+		$request->force = $force;
+		$request->actorUid = $actorUid;
 
+		$newTrace = $this->replayTrace(request: $request, traceId: $traceId);
+
+		return $this->persist(trace: $newTrace, status: $this->replayStatus(request: $request, trace: $newTrace));
+	}//end replay()
+
+	/**
+	 * The new trace a replay records into, linked to the original by `replayOf`.
+	 *
+	 * @param TraceReplayRequest $request The replay.
+	 * @param string $traceId The original trace's id.
+	 *
+	 * @return ExecutionTraceContext The new trace context; a dry run unless forced.
+	 */
+	private function replayTrace(TraceReplayRequest $request, string $traceId): ExecutionTraceContext {
 		$newTraceEntryPoint = 'endpoint';
-		if ($entryPoint !== '') {
-			$newTraceEntryPoint = $entryPoint;
+		if ($request->entryPoint !== '') {
+			$newTraceEntryPoint = $request->entryPoint;
 		}
 
-		$newTrace = new ExecutionTraceContext(
+		return new ExecutionTraceContext(
 			entryPoint: $newTraceEntryPoint,
-			entryPointId: $entryPointId,
+			entryPointId: $request->entryPointId,
 			replayOf: $traceId,
 			isReplay: true,
-			dryRun: ($force === false),
+			dryRun: ($request->force === false),
 			triggeredBy: 'manual'
 		);
+	}//end replayTrace()
 
-		$status = match ($entryPoint) {
-			'sync' => $this->replaySync(entryPointId: $entryPointId, steps: $steps, trace: $newTrace, force: $force),
-			'job' => $this->replayJob(entryPointId: $entryPointId, trace: $newTrace, force: $force),
-			'event' => $this->replayEvent(entryPointId: $entryPointId, actorUid: $actorUid, trace: $newTrace, force: $force),
-			'endpoint' => $this->replayEndpoint(entryPointId: $entryPointId, steps: $steps, trace: $newTrace, force: $force),
+	/**
+	 * Replay through the original entry point's own dispatch and tell how it went.
+	 *
+	 * @param TraceReplayRequest $request The replay.
+	 * @param ExecutionTraceContext $trace The new trace context.
+	 *
+	 * @return string success|failed; failed for an entry point this service cannot replay.
+	 */
+	private function replayStatus(TraceReplayRequest $request, ExecutionTraceContext $trace): string {
+		return match ($request->entryPoint) {
+			'sync' => $this->replaySync(request: $request, trace: $trace),
+			'job' => $this->replayJob(entryPointId: $request->entryPointId, trace: $trace, force: $request->force),
+			'event' => $this->replayEvent(entryPointId: $request->entryPointId, actorUid: $request->actorUid, trace: $trace, force: $request->force),
+			'endpoint' => $this->replayEndpoint(request: $request, trace: $trace),
 			default => 'failed',
 		};
-
-		return $this->persist(trace: $newTrace, status: $status);
-	}//end replay()
+	}//end replayStatus()
 
 	/**
 	 * Extract the redacted `input` snapshot of the first step of a given
@@ -290,40 +374,62 @@ class ExecutionTraceService {
 	 * Dispatch a `sync`-entryPoint replay via `SynchronizationService::replaySynchronizationItem()`
 	 * (REQ-005/REQ-006).
 	 *
-	 * @param string|null $entryPointId The synchronization's uuid.
-	 * @param array $steps The original trace's steps (payload source).
+	 * @param TraceReplayRequest $request The replay: the synchronization's uuid, the steps (payload source) and force.
 	 * @param ExecutionTraceContext $trace The new trace context.
-	 * @param boolean $force False = dry-run (`isTest: true`); true = real write.
 	 *
 	 * @return string success|failed.
 	 */
-	private function replaySync(?string $entryPointId, array $steps, ExecutionTraceContext $trace, bool $force): string {
-		if ($entryPointId === null) {
+	private function replaySync(TraceReplayRequest $request, ExecutionTraceContext $trace): string {
+		if ($request->entryPointId === null) {
 			return 'failed';
 		}
 
 		try {
-			$synchronizationService = $this->containerInterface->get(SynchronizationService::class);
-			$synchronization = $synchronizationService->getSynchronization(id: $entryPointId)->jsonSerialize();
-			$payload = $this->extractStepInput(steps: $steps, type: 'synchronization');
-
-			$synchronizationService->replaySynchronizationItem(
-				synchronization: $synchronization,
-				payload: $payload,
-				isTest: ($force === false),
-				trace: $trace
-			);
+			$this->replaySynchronizationItem(request: $request, trace: $trace);
 
 			return 'success';
 		} catch (\Throwable $exception) {
-			$this->logger->warning(
-				'ExecutionTraceService: sync-entryPoint replay failed.',
-				['entryPointId' => $entryPointId, 'exception' => $exception->getMessage()]
-			);
-			return 'failed';
-		}//end try
+			return $this->replayFailed(request: $request, exception: $exception);
+		}
 
 	}//end replaySync()
+
+	/**
+	 * Replay the synchronization item of the original trace; a dry run is a test run (`isTest: true`).
+	 *
+	 * @param TraceReplayRequest $request The replay.
+	 * @param ExecutionTraceContext $trace The new trace context.
+	 *
+	 * @return void
+	 */
+	private function replaySynchronizationItem(TraceReplayRequest $request, ExecutionTraceContext $trace): void {
+		$synchronizationService = $this->containerInterface->get(SynchronizationService::class);
+		$synchronization = $synchronizationService->getSynchronization(id: $request->entryPointId)->jsonSerialize();
+		$payload = $this->extractStepInput(steps: $request->steps, type: 'synchronization');
+
+		$synchronizationService->replaySynchronizationItem(
+			synchronization: $synchronization,
+			payload: $payload,
+			isTest: ($request->force === false),
+			trace: $trace
+		);
+	}//end replaySynchronizationItem()
+
+	/**
+	 * Log a replay the engine refused or broke on.
+	 *
+	 * @param TraceReplayRequest $request The replay.
+	 * @param \Throwable $exception What the engine threw.
+	 *
+	 * @return string failed.
+	 */
+	private function replayFailed(TraceReplayRequest $request, \Throwable $exception): string {
+		$this->logger->warning(
+			sprintf('ExecutionTraceService: %s-entryPoint replay failed.', $request->entryPoint),
+			['entryPointId' => $request->entryPointId, 'exception' => $exception->getMessage()]
+		);
+		return 'failed';
+	}//end replayFailed()
 
 	/**
 	 * Dispatch a `job`-entryPoint replay via `JobService::executeJob()`
@@ -359,6 +465,7 @@ class ExecutionTraceService {
 				register: 'integriq',
 				schema: 'job',
 				_rbac: false,
+				// Unscoped: replay re-reads the job of a trace the caller already reached in scope.
 				_multitenancy: false
 			);
 			$jobService = $this->containerInterface->get(JobService::class);
@@ -407,6 +514,7 @@ class ExecutionTraceService {
 				register: 'integriq',
 				schema: 'event_message',
 				_rbac: false,
+				// Unscoped: replay re-reads the event of a trace the caller already reached in scope.
 				_multitenancy: false
 			);
 			$preview = $eventService->previewWebhookDelivery(message: $message);
@@ -427,49 +535,64 @@ class ExecutionTraceService {
 	 * Dispatch an `endpoint`-entryPoint replay via `EndpointService::replay()`
 	 * (REQ-005/REQ-006, `rule-pipeline` REQ-RULE-011).
 	 *
-	 * @param string|null $entryPointId The endpoint's uuid.
-	 * @param array $steps The original trace's steps (request snapshot source).
+	 * @param TraceReplayRequest $request The replay: the endpoint's uuid, the steps (request snapshot source) and force.
 	 * @param ExecutionTraceContext $trace The new trace context.
-	 * @param boolean $force False = dry-run (`dryRun: true`); true = real dispatch.
 	 *
 	 * @return string success|failed.
 	 */
-	private function replayEndpoint(?string $entryPointId, array $steps, ExecutionTraceContext $trace, bool $force): string {
-		if ($entryPointId === null) {
+	private function replayEndpoint(TraceReplayRequest $request, ExecutionTraceContext $trace): string {
+		if ($request->entryPointId === null) {
 			return 'failed';
 		}
 
 		try {
-			$endpointService = $this->containerInterface->get(EndpointService::class);
-			$endpoint = $endpointService->getEndpointById($entryPointId);
-			if ($endpoint === null) {
-				return 'failed';
-			}
-
-			$requestSnapshot = $this->extractStepInput(steps: $steps, type: 'rule');
-			$response = $endpointService->replay(
-				endpoint: $endpoint,
-				requestSnapshot: $requestSnapshot,
-				trace: $trace,
-				dryRun: ($force === false)
-			);
-			$statusCode = $response->getStatus();
-
-			// 200-299 covers the approval-suspend 202 case too (design.md
-			// Decision 4 / approval-workflow REQ-001's HTTP 202 pending_approval
-			// response), so no separate 202 check is needed.
-			if ($statusCode >= 200 && $statusCode < 300) {
-				return 'success';
-			}
-
-			return 'failed';
+			return $this->endpointReplayStatus(request: $request, trace: $trace);
 		} catch (\Throwable $exception) {
-			$this->logger->warning(
-				'ExecutionTraceService: endpoint-entryPoint replay failed.',
-				['entryPointId' => $entryPointId, 'exception' => $exception->getMessage()]
-			);
-			return 'failed';
-		}//end try
+			return $this->replayFailed(request: $request, exception: $exception);
+		}
 
 	}//end replayEndpoint()
+
+	/**
+	 * Replay the endpoint with the original rule request; a dry run is `dryRun: true`.
+	 *
+	 * @param TraceReplayRequest $request The replay.
+	 * @param ExecutionTraceContext $trace The new trace context.
+	 *
+	 * @return string success for a 2xx answer, failed otherwise or when the endpoint is gone.
+	 */
+	private function endpointReplayStatus(TraceReplayRequest $request, ExecutionTraceContext $trace): string {
+		$endpointService = $this->containerInterface->get(EndpointService::class);
+		$endpoint = $endpointService->getEndpointById($request->entryPointId);
+		if ($endpoint === null) {
+			return 'failed';
+		}
+
+		$response = $endpointService->replay(
+			endpoint: $endpoint,
+			requestSnapshot: $this->extractStepInput(steps: $request->steps, type: 'rule'),
+			trace: $trace,
+			dryRun: ($request->force === false)
+		);
+
+		return $this->endpointOutcome(statusCode: $response->getStatus());
+	}//end endpointReplayStatus()
+
+	/**
+	 * The replay status of an endpoint's answer.
+	 *
+	 * @param int $statusCode The HTTP status the replayed endpoint answered.
+	 *
+	 * @return string success for 2xx, failed otherwise.
+	 */
+	private function endpointOutcome(int $statusCode): string {
+		// 200-299 covers the approval-suspend 202 case too (design.md
+		// Decision 4 / approval-workflow REQ-001's HTTP 202 pending_approval
+		// response), so no separate 202 check is needed.
+		if ($statusCode >= 200 && $statusCode < 300) {
+			return 'success';
+		}
+
+		return 'failed';
+	}//end endpointOutcome()
 }//end class

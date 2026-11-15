@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -716,5 +719,56 @@ class JobServiceTest extends TestCase {
 		$advancedNextRun = new \DateTime($savedJobRows[0]['nextRun']);
 		$this->assertGreaterThan(new \DateTime($now), $advancedNextRun, "Job A's nextRun must advance past the original due timestamp");
 	}//end testRunProcessesAllThreeJobsWhenTheFirstThrows()
+
+	/**
+	 * A job whose action reports `resumeSoon` (a batched synchronization with
+	 * batches left) is due again on the next tick, not after its interval.
+	 * The control job, identical but without the flag, keeps its interval.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bounded-jsonl-sync/specs/job-scheduling/spec.md#requirement-a-job-with-work-left-runs-again-on-the-next-tick
+	 */
+	public function testResumeSoonSchedulesTheNextRunOnTheNextTick(): void {
+		$due = (new \DateTime('-1 hour'))->format('c');
+		$makeJob = function (string $uuid, string $class) use ($due) {
+			return ObjectServiceMockBuilder::objectEntity(
+				$this,
+				['isEnabled' => true, 'jobClass' => $class, 'interval' => 604800, 'nextRun' => $due, 'arguments' => []],
+				$uuid
+			);
+		};
+
+		$jobs = [$makeJob('job-resume', 'OCA\\Integriq\\Action\\ResumingAction'), $makeJob('job-control', 'OCA\\Integriq\\Action\\FinishedAction')];
+		$this->objectService->method('findAll')->willReturnCallback(static fn () => ['results' => $jobs, 'total' => 2]);
+		$this->container->method('get')->willReturnCallback(
+			static function (string $class) {
+				$resume = ($class === 'OCA\\Integriq\\Action\\ResumingAction');
+				return new class($resume) {
+					public function __construct(private bool $resume) {
+					}
+					public function run(array $args): array {
+						return ['level' => 'INFO', 'message' => 'ok', 'resumeSoon' => $this->resume];
+					}
+				};
+			}
+		);
+
+		$nextRuns = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$nextRuns) {
+				$object = ($args[0] ?? []);
+				if (($args[2] ?? null) === 'job' && isset($object['nextRun']) === true) {
+					$nextRuns[$args[3]] = new \DateTime($object['nextRun']);
+				}
+				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) === true ? $object : [], ($args[3] ?? 'saved'));
+			}
+		);
+
+		$this->service->run();
+
+		$this->assertLessThanOrEqual(new \DateTime('+1 minute'), $nextRuns['job-resume']);
+		$this->assertGreaterThan(new \DateTime('+6 days'), $nextRuns['job-control']);
+	}//end testResumeSoonSchedulesTheNextRunOnTheNextTick()
 
 }//end class

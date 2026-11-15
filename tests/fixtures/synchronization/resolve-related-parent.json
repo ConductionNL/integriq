@@ -1,0 +1,433 @@
+{
+    "other-source-type": {
+        "outcome": {
+            "return": null
+        },
+        "log": []
+    },
+    "no-source-type": {
+        "outcome": {
+            "return": null
+        },
+        "log": []
+    },
+    "empty-source-id": {
+        "outcome": {
+            "return": null
+        },
+        "log": []
+    },
+    "source-id-without-slash": {
+        "outcome": {
+            "return": null
+        },
+        "log": []
+    },
+    "other-trigger-source": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ]
+        ]
+    },
+    "relation-config-not-array": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":\"zaak\"}}"
+            ]
+        ]
+    },
+    "empty-relation": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":[]}}"
+            ]
+        ]
+    },
+    "numeric-relation-key": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":[\"zaak\"]}}"
+            ]
+        ]
+    },
+    "numeric-relation-key-in-object": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":[\"zaak\"]}}"
+            ]
+        ]
+    },
+    "relative-path-reference": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ]
+        ]
+    },
+    "blank-relation-key": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"  \":true}}}"
+            ]
+        ]
+    },
+    "padded-relation-key": {
+        "outcome": {
+            "return": {
+                "uuid": "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "title": "parent"
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\" zaak \":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ],
+            [
+                "openRegisters.find",
+                "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "1",
+                "2"
+            ]
+        ]
+    },
+    "only-first-key-counts": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ]
+        ]
+    },
+    "dotted-relation-key": {
+        "outcome": {
+            "return": {
+                "uuid": "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "title": "parent"
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"meta.zaak\":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ],
+            [
+                "openRegisters.find",
+                "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "1",
+                "2"
+            ]
+        ]
+    },
+    "reference-missing": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ]
+        ]
+    },
+    "reference-not-string": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ]
+        ]
+    },
+    "reference-blank": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ]
+        ]
+    },
+    "uuid": {
+        "outcome": {
+            "return": {
+                "uuid": "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "title": "parent"
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ],
+            [
+                "openRegisters.find",
+                "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "1",
+                "2"
+            ]
+        ]
+    },
+    "padded-uuid": {
+        "outcome": {
+            "return": {
+                "uuid": "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "title": "parent"
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ],
+            [
+                "openRegisters.find",
+                "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "1",
+                "2"
+            ]
+        ]
+    },
+    "url": {
+        "outcome": {
+            "return": {
+                "uuid": "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "title": "parent"
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ],
+            [
+                "openRegisters.find",
+                "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "1",
+                "2"
+            ]
+        ]
+    },
+    "url-trailing-slash": {
+        "outcome": {
+            "return": {
+                "uuid": "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "title": "parent"
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ],
+            [
+                "openRegisters.find",
+                "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "1",
+                "2"
+            ]
+        ]
+    },
+    "url-without-path": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ]
+        ]
+    },
+    "url-last-segment-not-uuid": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ]
+        ]
+    },
+    "not-uuid-not-url": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ]
+        ]
+    },
+    "no-open-registers": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ]
+        ]
+    },
+    "find-null": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ],
+            [
+                "openRegisters.find",
+                "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "1",
+                "2"
+            ]
+        ]
+    },
+    "find-throws": {
+        "outcome": {
+            "return": null
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ],
+            [
+                "openRegisters.find",
+                "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "1",
+                "2"
+            ],
+            [
+                "logger.debug",
+                "Failed resolving related parent object via configured relation key.",
+                {
+                    "synchronizationId": 9,
+                    "sourceId": "1/2",
+                    "triggerSourceId": "3/7",
+                    "relationKeys": [
+                        "zaak"
+                    ],
+                    "relationReference": "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                    "parentObjectId": "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                    "error": "not found"
+                }
+            ]
+        ]
+    },
+    "source-id-extra-slash": {
+        "outcome": {
+            "return": {
+                "uuid": "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "title": "parent"
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true,\"other\":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ],
+            [
+                "openRegisters.find",
+                "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "1",
+                "2/3"
+            ]
+        ]
+    },
+    "string-register-schema": {
+        "outcome": {
+            "return": {
+                "uuid": "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "title": "parent"
+            }
+        },
+        "log": [
+            [
+                "callService.applyConfigDot",
+                "{\"triggerFromRelatedObjects\":{\"3\\/7\":{\"zaak\":true}}}"
+            ],
+            [
+                "objectService.getOpenRegisters"
+            ],
+            [
+                "openRegisters.find",
+                "0b6f1c62-3c55-4b8e-9d0a-6a3c1f1e2d4b",
+                "1",
+                "2"
+            ]
+        ]
+    }
+}
