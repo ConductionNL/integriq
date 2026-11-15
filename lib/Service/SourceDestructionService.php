@@ -206,6 +206,7 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 		}
 
 		try {
+			// Unscoped: an inbound destruction notice resolves the object it names, with no user session.
 			$object = $this->objectService->find(id: $id, register: 'integriq', schema: $schema, _rbac: false, _multitenancy: false);
 		} catch (Throwable $exception) {
 			return null;

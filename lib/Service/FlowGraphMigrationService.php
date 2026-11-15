@@ -219,6 +219,7 @@ class FlowGraphMigrationService implements FlowGraphMigrationServiceInterface {
 	 */
 	private function liveFlows(): array {
 		try {
+			// Unscoped: a migration reads every live flow, as the system.
 			$matches = $this->orObjectService->findAll(
 				config: [
 					'filters' => [

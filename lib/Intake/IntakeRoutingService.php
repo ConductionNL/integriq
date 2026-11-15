@@ -383,6 +383,7 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 	 * @return mixed The result rows, or whatever the object service answered.
 	 */
 	private function readChannelRules(InboundMessage $message): mixed {
+		// Unscoped: inbound message routing reads its channel rules as the system, before any user is known.
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
