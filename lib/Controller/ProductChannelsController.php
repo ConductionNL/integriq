@@ -218,7 +218,24 @@ class ProductChannelsController extends Controller {
 			return $refusal;
 		}
 
-		$data = $this->subscriptionFor(access: $access, style: 'push') + ['sink' => $sink];
+		$response = $this->savePushSubscription(data: $this->subscriptionFor(access: $access, style: 'push') + ['sink' => $sink]);
+		if ($response === null) {
+			return $this->unavailable();
+		}
+
+		return new JSONResponse($response, Http::STATUS_CREATED, $access['headers']);
+	}//end subscribe()
+
+	/**
+	 * Save a push subscription and answer it masked, with its signing secret revealed once.
+	 *
+	 * @param array<string, mixed> $data The event_subscription to save.
+	 *
+	 * @return array<string, mixed>|null The answer, or null when it could not be saved.
+	 *
+	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 */
+	private function savePushSubscription(array $data): ?array {
 		try {
 			$saved = $this->objects->saveObject(object: $data, register: 'integriq', schema: 'event_subscription', _rbac: false, _multitenancy: false);
 			$stored = $this->objects->find(
@@ -231,7 +248,7 @@ class ProductChannelsController extends Controller {
 			);
 		} catch (Throwable $exception) {
 			$this->logger->warning('integriq: a product channel push subscription could not be saved: ' . $exception->getMessage());
-			return $this->unavailable();
+			return null;
 		}
 
 		$response = (new SubscriptionSecretMasker())->mask(subscription: $saved->getObject());
@@ -239,8 +256,8 @@ class ProductChannelsController extends Controller {
 			$response += $this->signingPolicy->reveal(stored: (array)$stored->getObject());
 		}
 
-		return new JSONResponse($response, Http::STATUS_CREATED, $access['headers']);
-	}//end subscribe()
+		return $response;
+	}//end savePushSubscription()
 
 	/**
 	 * DELETE /api/products/{productSlug}/channels/{channel}/subscriptions/{id}: end a push subscription.
@@ -304,7 +321,7 @@ class ProductChannelsController extends Controller {
 		}
 
 		$headers = $this->policy->buildDeprecationHeaders(product: $product);
-		$limited = $this->spendBudget(product: $product, consumer: $subscriber['consumer'], subscription: $subscriber['subscription']);
+		$limited = $this->spendBudget(product: $product, subscriber: $subscriber);
 		if ($limited instanceof JSONResponse) {
 			return $limited;
 		}
@@ -341,14 +358,14 @@ class ProductChannelsController extends Controller {
 	 * Spend one request of the subscription tier's budget, under the counter key
 	 * the product's endpoints use.
 	 *
-	 * @param ObjectEntity $product      The product.
-	 * @param ObjectEntity $consumer     The consumer.
-	 * @param ObjectEntity $subscription Its product subscription.
+	 * @param ObjectEntity                                              $product    The product.
+	 * @param array{consumer: ObjectEntity, subscription: ObjectEntity} $subscriber The consumer and its product subscription.
 	 *
 	 * @return array<string, string>|JSONResponse The RateLimit headers, or 429.
 	 */
-	private function spendBudget(ObjectEntity $product, ObjectEntity $consumer, ObjectEntity $subscription): array|JSONResponse {
-		$tier = $this->policy->resolveTierPolicy(product: $product, subscription: $subscription);
+	private function spendBudget(ObjectEntity $product, array $subscriber): array|JSONResponse {
+		$consumer = $subscriber['consumer'];
+		$tier = $this->policy->resolveTierPolicy(product: $product, subscription: $subscriber['subscription']);
 		if ($tier === null || $this->rateLimits === null || ($tier['rateLimit'] === null && $tier['quota'] === null)) {
 			return [];
 		}
@@ -470,16 +487,35 @@ class ProductChannelsController extends Controller {
 			return [];
 		}
 
-		return array_values(
-			array_filter(
-				(array)($matches['results'] ?? $matches),
-				static fn ($row): bool => $row instanceof ObjectEntity
-					&& ($row->getObject()['productSubscription'] ?? null) === $productSubscription
-					&& ($row->getObject()['productChannel'] ?? null) === $channel
-					&& ($row->getObject()['style'] ?? null) === $style
-			)
-		);
+		$wanted = ['productSubscription' => $productSubscription, 'productChannel' => $channel, 'style' => $style];
+
+		return array_values(array_filter((array)($matches['results'] ?? $matches), static fn ($row): bool => self::matches(row: $row, wanted: $wanted)));
 	}//end ownSubscriptions()
+
+	/**
+	 * Whether a row is an event_subscription carrying every wanted value.
+	 *
+	 * @param mixed                 $row    The row.
+	 * @param array<string, string> $wanted The field values it must carry.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 */
+	private static function matches(mixed $row, array $wanted): bool {
+		if ($row instanceof ObjectEntity === false) {
+			return false;
+		}
+
+		$object = $row->getObject();
+		foreach ($wanted as $field => $value) {
+			if (($object[$field] ?? null) !== $value) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end matches()
 
 	/**
 	 * A new event subscription on this channel for the consumer.

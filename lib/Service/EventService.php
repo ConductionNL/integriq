@@ -1036,8 +1036,25 @@ class EventService implements EventServiceInterface {
 			return true;
 		}
 
-		// Deferred, not failed: the retry count is left alone, so waiting for the
-		// quota window never spends the subscription's retry budget.
+		$this->deferForQuota(message: $message, held: $held);
+
+		return true;
+	}//end holdForProduct()
+
+	/**
+	 * Defer a delivery to the end of its product's quota window.
+	 *
+	 * Deferred, not failed: the retry count is left alone, so waiting for the
+	 * quota window never spends the subscription's retry budget.
+	 *
+	 * @param ObjectEntity                                $message The message under delivery.
+	 * @param array{reason: string, retryAfter: int|null} $held    The hold: why, and how many seconds to wait.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 */
+	private function deferForQuota(ObjectEntity $message, array $held): void {
 		$messageData = $message->getObject();
 		$messageData['status'] = 'failed';
 		$messageData['error'] = $held['reason'];
@@ -1051,9 +1068,7 @@ class EventService implements EventServiceInterface {
 			_rbac: false,
 			_multitenancy: false
 		);
-
-		return true;
-	}//end holdForProduct()
+	}//end deferForQuota()
 
 	/**
 	 * Abandon a push delivery whose sink the egress guard refuses.
