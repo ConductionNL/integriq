@@ -313,6 +313,7 @@ class StufZdsRegistrationLegTest extends TestCase {
 		} catch (RegistrationRefusal $refusal) {
 			$this->assertSame([RegistrationRefusal::OUTSIDE_REFUSED, false], [$refusal->getReason(), $refusal->isRetryable()]);
 			$this->assertSame('Fo03: document geweigerd', $refusal->getMessage());
+			$this->assertSame($steps, $refusal->getSteps());
 		}
 	}//end testARefusedDocumentIsOutsideRefusedAndKeepsTheZaakForTheRetry()
 }//end class

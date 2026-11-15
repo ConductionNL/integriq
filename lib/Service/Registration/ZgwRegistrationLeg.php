@@ -60,6 +60,13 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 	private const LANGUAGES = ['nl' => 'dut', 'en' => 'eng', 'de' => 'ger', 'fr' => 'fre'];
 
 	/**
+	 * Finds a case an earlier hand-over created without a record of it.
+	 *
+	 * @var ZgwCaseLookup
+	 */
+	private readonly ZgwCaseLookup $lookup;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CallServiceCaseSystemTransport $transport Sends to the target's ZGW sources.
@@ -75,6 +82,7 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 		private readonly ?ZgwDocumentDelivery $documents = null,
 		private readonly ?RegistrationFiles $files = null,
 	) {
+		$this->lookup = new ZgwCaseLookup(transport: $transport, time: $time);
 	}//end __construct()
 
 	/**
@@ -112,24 +120,55 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 
 		$run = new ZgwRegistrationRun(settings: $settings, steps: $steps);
 
+		try {
+			$this->registerSteps(run: $run, mapped: $mapped, handover: $handover, files: $files);
+		} catch (RegistrationRefusal $refusal) {
+			// What was created stays recorded, so a repeat resumes after it.
+			throw $refusal->withSteps(steps: $run->steps());
+		}
+
+		$zaak = (array)$run->done(step: 'zaak');
+
+		return ['externalReference' => (string)($zaak['reference'] ?? ''), 'externalUrl' => (string)($zaak['url'] ?? ''), 'steps' => $run->steps()];
+	}//end register()
+
+	/**
+	 * Do every step not done yet: the case (or the one found by kenmerk), the role, the documents and the properties.
+	 *
+	 * @param ZgwRegistrationRun             $run      The run, with the steps already done.
+	 * @param array<string,mixed>            $mapped   The mapped case.
+	 * @param array<string,mixed>            $handover The hand-over.
+	 * @param array<int,array<string,mixed>> $files    The files to send.
+	 *
+	 * @return void
+	 *
+	 * @throws RegistrationRefusal When a step is refused.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
+	 */
+	private function registerSteps(ZgwRegistrationRun $run, array $mapped, array $handover, array $files): void {
+		$settings = $run->settings;
 		if ($run->done(step: 'zaak') === null) {
-			$case = $this->createCase(settings: $settings, body: self::casePayload(settings: $settings, mapped: $mapped, handover: $handover));
-			$run->record(step: ['step' => 'zaak', 'url' => $case['url'], 'reference' => $case['identificatie']]);
+			$run->record(
+				step: $this->lookup->existingCase(settings: $settings, handover: $handover)
+					?? $this->createCase(settings: $settings, body: self::casePayload(settings: $settings, mapped: $mapped, handover: $handover))
+			);
 		}
 
 		$zaak = (array)$run->done(step: 'zaak');
 		$role = self::initiator(applicant: (array)($handover['applicant'] ?? []), zaak: (string)($zaak['url'] ?? ''));
 		if ($role !== null && $run->done(step: 'rol') === null) {
-			$role += array_filter(['roltype' => $settings['initiatorRoltype']]);
-			$this->post(source: $settings['zaken'], call: ['address' => '/rollen', 'json' => $role]);
+			if ($this->lookup->needsInitiator(settings: $settings, zaak: $zaak) === true) {
+				$role += array_filter(['roltype' => $settings['initiatorRoltype']]);
+				$this->post(source: $settings['zaken'], call: ['address' => '/rollen', 'json' => $role]);
+			}
+
 			$run->record(step: ['step' => 'rol']);
 		}
 
 		$this->addDocuments(run: $run, zaak: (string)($zaak['url'] ?? ''), files: $files, handover: $handover);
 		$this->addProperties(run: $run, zaak: (string)($zaak['url'] ?? ''));
-
-		return ['externalReference' => (string)($zaak['reference'] ?? ''), 'externalUrl' => (string)($zaak['url'] ?? ''), 'steps' => $run->steps()];
-	}//end register()
+	}//end registerSteps()
 
 	/**
 	 * The target's ZGW settings, refused when one the leg needs is missing.
@@ -331,7 +370,7 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 	 * @param array<string,mixed> $settings The target's ZGW settings.
 	 * @param array<string,mixed> $body     The case.
 	 *
-	 * @return array{url:string,identificatie:string}
+	 * @return array{step:string,url:string,reference:string} The zaak step for the created case.
 	 *
 	 * @throws RegistrationRefusal When the Zaken API refuses it or cannot be reached.
 	 *
@@ -351,7 +390,7 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 			);
 		}
 
-		return ['url' => $url, 'identificatie' => (string)($created['identificatie'] ?? '')];
+		return ['step' => 'zaak', 'url' => $url, 'reference' => (string)($created['identificatie'] ?? '')];
 	}//end createCase()
 
 	/**

@@ -227,34 +227,40 @@ class StufZdsRegistrationLeg implements RegistrationLeg {
 	 */
 	private function addDocuments(string $source, array $target, string $zaak, array $files, array $handover, array $steps): array {
 		$done = array_column($steps, 'step');
-		foreach ($files as $entry) {
-			$step = 'document:' . (int)($entry['file']['fileId'] ?? 0);
-			if (in_array($step, $done, true) === true || $this->documents === null || $this->sources === null || $this->files === null) {
-				continue;
-			}
+		// The zaak and every document sent stay recorded when a later one is refused,
+		// so a repeat sends only what is missing.
+		try {
+			foreach ($files as $entry) {
+				$step = 'document:' . (int)($entry['file']['fileId'] ?? 0);
+				if (in_array($step, $done, true) === true || $this->documents === null || $this->sources === null || $this->files === null) {
+					continue;
+				}
 
-			$read  = $this->files->read(app: (string)($handover['app'] ?? ''), file: $entry['file']);
-			$titel = $read['name'];
-			if ($entry['pdf'] === true) {
-				$titel = (string)($handover['form']['title'] ?? $read['name']);
-			}
+				$read  = $this->files->read(app: (string)($handover['app'] ?? ''), file: $entry['file']);
+				$titel = $read['name'];
+				if ($entry['pdf'] === true) {
+					$titel = (string)($handover['form']['title'] ?? $read['name']);
+				}
 
-			try {
-				$sent = $this->documents->deliver(
-					source: $this->sources->source(sourceId: $source),
-					document: ['titel' => $titel, 'formaat' => $read['mimeType'], 'auteur' => (string)($handover['app'] ?? 'integriq')],
-					file: ['content' => $read['content'], 'filename' => $read['name'], 'mimeType' => $read['mimeType']],
-					zaakIdentificatie: $zaak,
-					documenttype: trim((string)$target['stufZds']['documenttypeCode'])
-				);
-			} catch (StufZknTranslationException $e) {
-				throw new RegistrationRefusal(reason: RegistrationRefusal::MAPPING_FAILED, retryable: false, message: $e->getMessage());
-			} catch (StufZknProviderException $e) {
-				throw new RegistrationRefusal(reason: RegistrationRefusal::OUTSIDE_REFUSED, retryable: false, message: $e->getMessage());
-			}
+				try {
+					$sent = $this->documents->deliver(
+						source: $this->sources->source(sourceId: $source),
+						document: ['titel' => $titel, 'formaat' => $read['mimeType'], 'auteur' => (string)($handover['app'] ?? 'integriq')],
+						file: ['content' => $read['content'], 'filename' => $read['name'], 'mimeType' => $read['mimeType']],
+						zaakIdentificatie: $zaak,
+						documenttype: trim((string)$target['stufZds']['documenttypeCode'])
+					);
+				} catch (StufZknTranslationException $e) {
+					throw new RegistrationRefusal(reason: RegistrationRefusal::MAPPING_FAILED, retryable: false, message: $e->getMessage());
+				} catch (StufZknProviderException $e) {
+					throw new RegistrationRefusal(reason: RegistrationRefusal::OUTSIDE_REFUSED, retryable: false, message: $e->getMessage());
+				}
 
-			$steps[] = ['step' => $step, 'identificatie' => $sent['identificatie'], 'referentienummer' => $sent['referentienummer']];
-		}//end foreach
+				$steps[] = ['step' => $step, 'identificatie' => $sent['identificatie'], 'referentienummer' => $sent['referentienummer']];
+			}//end foreach
+		} catch (RegistrationRefusal $refusal) {
+			throw $refusal->withSteps(steps: $steps);
+		}//end try
 
 		return $steps;
 	}//end addDocuments()

@@ -290,4 +290,43 @@ class RegistrationServiceTest extends TestCase {
 		$this->assertSame(['portaliq'], RegistrationService::allowedApps(target: ['allowedApps' => []]));
 		$this->assertSame(['dossiq'], RegistrationService::allowedApps(target: ['allowedApps' => ['dossiq', 7]]));
 	}//end testAllowedAppsDefaultToPortaliq()
+	/**
+	 * A refusal carrying the leg's steps stores them on the failed record, so a repeat resumes after them.
+	 *
+	 * @return void
+	 */
+	public function testARefusalCarryingStepsStoresThemOnTheFailedRecord(): void {
+		$this->target(self::TARGET);
+		$this->mappings->method('executeMapping')->willReturn(['subject' => 'x']);
+		$done = [['step' => 'zaak', 'url' => 'https://zaken.example/z-1', 'reference' => 'ZAAK-1']];
+		$this->json->method('register')->willThrowException(
+			(new RegistrationRefusal(reason: RegistrationRefusal::SOURCE_UNAVAILABLE, retryable: true, message: 'down'))->withSteps($done)
+		);
+
+		$answer = $this->service()->register('portaliq', 'json-milieu', self::HANDOVER);
+
+		$this->assertSame(RegistrationRefusal::SOURCE_UNAVAILABLE, $answer['code']);
+		$failed = end($this->saved)[0];
+		$this->assertSame('failed', $failed['state']);
+		$this->assertSame($done, $failed['steps']);
+	}//end testARefusalCarryingStepsStoresThemOnTheFailedRecord()
+
+	/**
+	 * A refusal without steps keeps the steps the record already had.
+	 *
+	 * @return void
+	 */
+	public function testARefusalWithoutStepsKeepsTheRecordedSteps(): void {
+		$this->target(self::TARGET);
+		$earlier = [['step' => 'post', 'reference' => 'R-1']];
+		$this->store->method('findRecord')->willReturn(['uuid' => 'rec-9', 'data' => ['state' => 'failed', 'steps' => $earlier]]);
+		$this->mappings->method('executeMapping')->willReturn(['subject' => 'x']);
+		$this->json->method('register')->willThrowException(new RegistrationRefusal(reason: RegistrationRefusal::OUTSIDE_REFUSED, retryable: false, message: 'no'));
+
+		$this->service()->register('portaliq', 'json-milieu', self::HANDOVER);
+
+		$failed = end($this->saved);
+		$this->assertSame('rec-9', $failed[1]);
+		$this->assertSame($earlier, $failed[0]['steps']);
+	}//end testARefusalWithoutStepsKeepsTheRecordedSteps()
 }//end class

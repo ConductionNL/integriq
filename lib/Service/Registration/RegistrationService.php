@@ -194,10 +194,13 @@ class RegistrationService {
 			// The leg reads files as the calling app, so the caller's id wins over anything the hand-over says.
 			$result = $leg->register(target: $target, mapped: $mapped, handover: ['app' => $app] + $handover, steps: $data['steps']);
 		} catch (RegistrationRefusal $refusal) {
-			$this->store->saveRecord(
-				data: ['state' => 'failed', 'lastError' => $refusal->toAnswer(), 'finishedAt' => self::now()] + $data,
-				uuid: $uuid
-			);
+			// Keep what the leg already did, so a repeat resumes after it.
+			$failed = ['state' => 'failed', 'lastError' => $refusal->toAnswer(), 'finishedAt' => self::now()];
+			if ($refusal->getSteps() !== null) {
+				$failed['steps'] = $refusal->getSteps();
+			}
+
+			$this->store->saveRecord(data: $failed + $data, uuid: $uuid);
 			throw $refusal;
 		}
 
