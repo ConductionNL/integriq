@@ -267,4 +267,15 @@ class IdpSecretSeamTest extends TestCase {
 		$this->assertSame('new-key', $seam->read(registration: 'reg-1', organisation: 'org-a', role: 'signing', reference: 'cred-signing'));
 		$this->assertCount(2, $this->calls);
 	}//end testARotatedValueIsUsedOnTheNextRead()
+	/**
+	 * A blank organisation is passed to the broker as no organisation, not as ''.
+	 *
+	 * @return void
+	 */
+	public function testABlankOrganisationIsNoOrganisation(): void {
+		$this->answers = ['secret-a'];
+
+		$this->assertSame('secret-a', $this->seam()->read(registration: 'reg-1', organisation: '  ', role: 'salt', reference: 'cred-salt'));
+		$this->assertSame([['cred-salt', BrokeredCallServiceInterface::APP_ID, null, null]], $this->calls);
+	}//end testABlankOrganisationIsNoOrganisation()
 }//end class

@@ -43,7 +43,7 @@ Row in the shillinq matrix: `bnk-fx-rates`, "Book foreign-currency transactions 
 
 ## Impact
 
-- New: `lib/Settings/register.d/ecb-exchange-rates-source.json` (schema, source), `lib/BackgroundJob/ExchangeRate/EcbReferenceRateParser.php`, `lib/BackgroundJob/ExchangeRate/ExchangeRateImportService.php`, `lib/BackgroundJob/ExchangeRateSyncJob.php`, `lib/Event/ExchangeRateRequestedEvent.php`, its listener and `lib/Service/ExchangeRateService.php`.
+- New: `lib/Settings/register.d/ecb-exchange-rates-source.json` (schema, source), `lib/BackgroundJob/ExchangeRate/EcbReferenceRateParser.php`, `lib/BackgroundJob/ExchangeRate/ExchangeRateImportService.php`, `lib/BackgroundJob/ExchangeRateSyncJob.php`, `lib/Event/ExchangeRateRequestedEvent.php`, its listener and `lib/EventListener/ExchangeRateService.php`.
 - Changed: `appinfo/info.xml`, `lib/AppInfo/Application.php`, `lib/Service/CatalogRegistryService.php`.
 
 ## Cross-project dependencies
