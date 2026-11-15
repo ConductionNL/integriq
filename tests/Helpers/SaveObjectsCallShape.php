@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Helpers;
 
-use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use PHPUnit\Framework\Constraint\Callback;
 use PHPUnit\Framework\Constraint\Constraint;
 use PHPUnit\Framework\Constraint\IsAnything;

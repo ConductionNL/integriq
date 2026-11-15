@@ -237,12 +237,12 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Object\\BulkBatchDefaults') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/BulkBatchDefaults.php';
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\BulkBatchDefaults') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/BulkBatchDefaults.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Object\\BulkSaveOptions') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/BulkSaveOptions.php';
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\BulkSaveOptions') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/BulkSaveOptions.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {

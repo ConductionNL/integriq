@@ -32,8 +32,8 @@ namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
-use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
-use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\Uid\Uuid;
 
