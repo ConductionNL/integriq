@@ -84,26 +84,9 @@ class BerichtenboxCheck implements ISetupCheck {
 			return SetupResult::success($this->l10n->t('No Berichtenbox source is configured.'));
 		}
 
-		$problems = [];
-		if ($findings['waiting'] > 0) {
-			$problems[] = $this->l10n->n(
-				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
-				'%n Berichtenbox letter has waited more than 24 hours for a result from Logius. Its status stays sent; check the ebMS adapter and the Leveranciersportaal.',
-				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
-				'%n Berichtenbox letters have waited more than 24 hours for a result from Logius. Their status stays sent; check the ebMS adapter and the Leveranciersportaal.',
-				$findings['waiting']
-			);
-		}
-
+		$problems = $this->waitingProblems(waiting: (int)$findings['waiting']);
 		foreach ($findings['certificates'] as $certificate) {
-			$problems[] = match ($certificate['problem']) {
-				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
-				'missing' => $this->l10n->t('Berichtenbox source %s has no PKIoverheid certificate. Upload it under Administration settings, Integriq.', [$certificate['slug']]),
-				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
-				'expires-soon' => $this->l10n->t('The PKIoverheid certificate of Berichtenbox source %1$s expires on %2$s. Upload its successor before then, or every letter is refused.', [$certificate['slug'], $certificate['validTo']]),
-				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
-				default => $this->l10n->t('The PKIoverheid certificate of Berichtenbox source %1$s cannot be used (%2$s). Every letter is refused until a usable one is uploaded.', [$certificate['slug'], $certificate['problem']]),
-			};
+			$problems[] = $this->certificateProblem(certificate: $certificate);
 		}
 
 		if ($problems === []) {
@@ -112,4 +95,49 @@ class BerichtenboxCheck implements ISetupCheck {
 
 		return SetupResult::warning(implode(' ', $problems));
 	}//end run()
+
+	/**
+	 * The problem of letters that waited more than a day for a Logius result, if any.
+	 *
+	 * @param int $waiting How many letters wait.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
+	 */
+	private function waitingProblems(int $waiting): array {
+		if ($waiting <= 0) {
+			return [];
+		}
+
+		return [
+			$this->l10n->n(
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
+				'%n Berichtenbox letter has waited more than 24 hours for a result from Logius. Its status stays sent; check the ebMS adapter and the Leveranciersportaal.',
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
+				'%n Berichtenbox letters have waited more than 24 hours for a result from Logius. Their status stays sent; check the ebMS adapter and the Leveranciersportaal.',
+				$waiting
+			),
+		];
+	}//end waitingProblems()
+
+	/**
+	 * The problem one source's certificate has.
+	 *
+	 * @param array<string, string> $certificate The source's slug, problem and validTo.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
+	 */
+	private function certificateProblem(array $certificate): string {
+		return match ($certificate['problem']) {
+			// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
+			'missing' => $this->l10n->t('Berichtenbox source %s has no PKIoverheid certificate. Upload it under Administration settings, Integriq.', [$certificate['slug']]),
+			// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
+			'expires-soon' => $this->l10n->t('The PKIoverheid certificate of Berichtenbox source %1$s expires on %2$s. Upload its successor before then, or every letter is refused.', [$certificate['slug'], $certificate['validTo']]),
+			// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
+			default => $this->l10n->t('The PKIoverheid certificate of Berichtenbox source %1$s cannot be used (%2$s). Every letter is refused until a usable one is uploaded.', [$certificate['slug'], $certificate['problem']]),
+		};
+	}//end certificateProblem()
 }//end class

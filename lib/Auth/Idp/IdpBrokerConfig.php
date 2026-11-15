@@ -204,58 +204,6 @@ class IdpBrokerConfig implements IdpBrokerConfigInterface {
 	}//end saveConsumer()
 
 	/**
-	 * The EntityID an assertion from this provider must name as its audience.
-	 *
-	 * @param string $provider The provider id.
-	 *
-	 * @return string The EntityID, or an empty string when none is configured.
-	 *
-	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-replay-audience-confusion-and-idp-initiated-flows-are-rejected
-	 */
-	public function entityId(string $provider): string {
-		return (string)($this->map(key: self::KEY_ENTITY_IDS)[strtolower(trim($provider))] ?? '');
-
-	}//end entityId()
-
-	/**
-	 * One organisation's pseudonym salt.
-	 *
-	 * @param string $organisation The organisation id.
-	 *
-	 * @return string The salt, or an empty string when the organisation has none.
-	 *
-	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-bsn-pseudonymisation-at-the-broker-edge
-	 */
-	public function organisationSalt(string $organisation): string {
-		return (string)($this->map(key: self::KEY_SALTS)[strtolower(trim($organisation))] ?? '');
-
-	}//end organisationSalt()
-
-	/**
-	 * One provider's assurance-level aliases.
-	 *
-	 * @param string $provider The provider id.
-	 *
-	 * @return array<string,string> The aliases.
-	 *
-	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-trust-levels-map-to-the-eidas-aligned-vocabulary
-	 */
-	public function trustAliases(string $provider): array {
-		$aliases = ($this->map(key: self::KEY_TRUST_ALIASES)[strtolower(trim($provider))] ?? []);
-		if (is_array($aliases) === false) {
-			return [];
-		}
-
-		$narrowed = [];
-		foreach ($aliases as $raw => $canonical) {
-			$narrowed[(string)$raw] = (string)$canonical;
-		}
-
-		return $narrowed;
-
-	}//end trustAliases()
-
-	/**
 	 * One JSON-map setting.
 	 *
 	 * A setting that is not a JSON object reads as empty rather than as

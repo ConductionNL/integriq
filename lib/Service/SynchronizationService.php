@@ -68,11 +68,14 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Ownership\DisappearanceApplier;
 use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
 use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -114,6 +117,7 @@ use Twig\Error\SyntaxError;
  *   real reduction is splitting the engine, which is a design change and not a lint fix.
  */
 class SynchronizationService implements SynchronizationServiceInterface {
+	use OrganisationBoundary;
 
 	/**
 	 * Total pages the last fetched page advertised via its `Link` header.
@@ -535,6 +539,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	private int $fileFetchFailed = 0;
 
+	/**
+	 * Files refused before any request since the last tally reset: their
+	 * endpoint carries an empty path segment, i.e. an empty document id.
+	 *
+	 * @var int
+	 */
+	private int $fileFetchSkipped = 0;
+
 	// Contracts are now read/written directly through the OpenRegister
 	// ObjectService — the legacy SynchronizationContractMapper container
 	// lookup is dropped in W5. See findContract*() / persistContract() /
@@ -712,20 +724,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$this->prerequisiteGuard = $prerequisiteGuard;
 		}
 
-		// Fall back to the defaults the settings read reports, from one table,
-		// so an unset key means the 30 days both log schemas declare, for
-		// synchronization and contract logs alike (integriq#2210).
-		if ($appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
-			$retention = json_decode($appConfig->getValueString(app: 'integriq', key: 'retention'), true);
-
-			$this->errorRetention = ($retention['syncLogRetention'] ?? RetentionDefaults::SYNC_LOG);
-			$this->errorContractRetention = ($retention['syncContractLogRetention'] ?? RetentionDefaults::SYNC_CONTRACT_LOG);
-			$this->successRetention = ($retention['successLogRetention'] ?? RetentionDefaults::SUCCESS_LOG);
-		} else {
-			$this->errorRetention = RetentionDefaults::SYNC_LOG;
-			$this->errorContractRetention = RetentionDefaults::SYNC_CONTRACT_LOG;
-			$this->successRetention = RetentionDefaults::SUCCESS_LOG;
-		}
+		// One resolver for every log writer, so an unset key means the 30 days
+		// both log schemas declare, for synchronization and contract logs
+		// alike (integriq#2210, platform-admin-defaults).
+		$retention = new RetentionSettings(appConfig: $appConfig);
+		$this->errorRetention = $retention->get(kind: 'syncLog');
+		$this->errorContractRetention = $retention->get(kind: 'syncContractLog');
+		$this->successRetention = $retention->get(kind: 'success');
 
 	}//end __construct()
 
@@ -1456,22 +1461,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	private function contractIdentity(array $object): ?string {
-		$uuid = ($object['uuid'] ?? null);
-		if ($uuid !== null && (string)$uuid !== '') {
-			return (string)$uuid;
-		}
-
-		$id = ($object['id'] ?? null);
-		if ($id === null || is_numeric($id) === true) {
-			return null;
-		}
-
-		$id = (string)$id;
-		if ($id === '') {
-			return null;
-		}
-
-		return $id;
+		return ContractIdentity::forUpsert(object: $object);
 	}//end contractIdentity()
 
 	/**
@@ -1659,6 +1649,57 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	private function findSource(string|int $id): array {
 		return $this->findSourceObject(id: $id)->jsonSerialize();
 	}//end findSource()
+
+	/**
+	 * The source or target a synchronization names, refused when it belongs to another organisation.
+	 *
+	 * The source is read unscoped (see findSourceObject()), so the synchronization's
+	 * own organisation bounds which source it may use.
+	 *
+	 * @param array           $synchronization The synchronization payload, with `@self.organisation`.
+	 * @param string|int|null $id              The source id the synchronization names.
+	 *
+	 * @return ObjectEntity The source object.
+	 *
+	 * @throws DoesNotExistException When there is no such source, or it belongs to another organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	private function findSynchronizationSource(array $synchronization, string|int|null $id): ObjectEntity {
+		if ($id === null || $id === '') {
+			throw new DoesNotExistException('The source you are looking for does not exist');
+		}
+
+		$source = $this->findSourceObject(id: $id);
+		$this->assertSynchronizationOrganisation(synchronization: $synchronization, source: $source);
+
+		return $source;
+	}//end findSynchronizationSource()
+
+	/**
+	 * Refuse a source that belongs to another organisation than the synchronization.
+	 *
+	 * @param array        $synchronization The synchronization payload, with `@self.organisation`.
+	 * @param ObjectEntity $source          The source or target it names.
+	 *
+	 * @return void
+	 *
+	 * @throws DoesNotExistException When the source belongs to another organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	private function assertSynchronizationOrganisation(array $synchronization, ObjectEntity $source): void {
+		if ($this->sameOrganisation(first: $this->organisationOf(object: $synchronization), second: $this->organisationOf(object: $source)) === true) {
+			return;
+		}
+
+		$this->logger->warning(
+			'integriq: synchronization refused a source of another organisation',
+			['synchronizationId' => ($synchronization['id'] ?? null), 'sourceId' => $source->getUuid()]
+		);
+
+		throw new DoesNotExistException('The source you are looking for does not exist');
+	}//end assertSynchronizationOrganisation()
 
 	/**
 	 * Find a source by its `location`, or build a TRANSIENT one if no match exists.
@@ -2402,7 +2443,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	): ?array {
 		$serializedObject = $this->extendInternBeforeConditions(synchronization: $synchronization, object: $object);
 		if (self::conditionsHold(conditions: ($synchronization['conditions'] ?? []), data: (array)$serializedObject) === false) {
-			return null;
+			return $this->withdrawWhenConditionsStopHolding(
+				synchronization: $synchronization,
+				object: $serializedObject,
+				log: $log,
+				flowToken: $flowToken,
+				isTest: $isTest,
+				trace: $trace
+			);
 		}
 
 		// Keep the working object in sync with pre-condition enrichment so mapping
@@ -2445,6 +2493,60 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return $this->internContractResult(result: $result, isTest: $isTest);
 	}//end synchronizeInternToExtern()
+
+	/**
+	 * Remove an object from the target once the synchronization's conditions stop holding for it.
+	 *
+	 * Opt-in per synchronization with `targetConfig.deleteWhenConditionsFail:
+	 * true`. Without it an object whose conditions fail is skipped, as before.
+	 * With it, an object that was pushed earlier (its contract names a target
+	 * id) is deleted at the target through the synchronization's normal delete
+	 * path, so an approved leave request that is later rejected removes the
+	 * absence it created. An object never pushed is still skipped.
+	 *
+	 * @param array                      $synchronization The synchronization.
+	 * @param mixed                      $object          The object, serialized, after extend-before-conditions.
+	 * @param SynchronizationRunLog      $log             The run log.
+	 * @param FlowToken                  $flowToken       The flow token.
+	 * @param bool|null                  $isTest          Whether this is a test run (no persist).
+	 * @param ExecutionTraceContext|null $trace           The active execution trace context.
+	 *
+	 * @return array|null The contract after the delete, or null when nothing was withdrawn.
+	 *
+	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
+	 */
+	private function withdrawWhenConditionsStopHolding(
+		array $synchronization,
+		mixed $object,
+		SynchronizationRunLog $log,
+		FlowToken &$flowToken,
+		?bool $isTest,
+		?ExecutionTraceContext $trace,
+	): ?array {
+		if ((($synchronization['targetConfig']['deleteWhenConditionsFail'] ?? false) === true) === false) {
+			return null;
+		}
+
+		$contract = $this->findInternContract(synchronization: $synchronization, originId: $this->internOriginId(object: $object));
+		if (is_array($contract) === false || empty($contract['targetId']) === true) {
+			return null;
+		}
+
+		$object = (array)$object;
+		$result = $this->synchronizeContract(
+			synchronizationContract: $contract,
+			synchronization: $synchronization,
+			flowToken: $flowToken,
+			object: $object,
+			isTest: $isTest,
+			force: true,
+			log: $log,
+			mutationType: 'delete',
+			trace: $trace
+		);
+
+		return $this->internContractResult(result: $result, isTest: $isTest);
+	}//end withdrawWhenConditionsStopHolding()
 
 	/**
 	 * What an intern-to-extern run answers for a contract synchronization's result.
@@ -4340,7 +4442,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$sourceId = $source;
 		}
 
-		$source = $this->findSource(id: $sourceId);
+		$source = $this->findSynchronizationSource(synchronization: $synchronization, id: $sourceId)->jsonSerialize();
 
 		// Let's get the source config.
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
@@ -5023,6 +5125,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	private function findTargetInScope(DeletionRun $run, string|int $targetId): mixed {
 		try {
+			// Unscoped: the engine re-reads the target its own run wrote, during a run that may have no user.
 			return $this->orObjectService->find(
 				id: (string)$targetId,
 				register: $run->registerId,
@@ -6138,6 +6241,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		[$registerId, $schemaId] = array_pad(explode(separator: '/', string: (string)($synchronization['targetId'] ?? '')), 2, '');
+		// System read, unscoped: the engine reads the target its own contract points at, during a run that may have no user.
 		$targetObject = $this->orObjectService->find(
 			id: (string)$contract['targetId'],
 			register: $registerId,
@@ -7014,7 +7118,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			throw new Exception('nextcloud-table target is missing a required targetConfig.tableId');
 		}
 
-		$target = $this->findSourceObject(id: ($synchronization['targetId'] ?? null));
+		$target = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['targetId'] ?? null));
 		$targetId = ($synchronizationContract['targetId'] ?? null);
 
 		if ($action === 'delete') {
@@ -7168,7 +7272,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$viewId = (int)$sourceConfig['viewId'];
 		}
 
-		$source = $this->findSourceObject(id: ($synchronization['sourceId'] ?? null));
+		$source = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['sourceId'] ?? null));
 
 		$rows = $this->tablesSyncAdapter->fetchAllRows(source: $source, tableId: $tableId, viewId: $viewId);
 
@@ -7213,7 +7317,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			throw new Exception('nextcloud-form source is missing a required sourceConfig.formId');
 		}
 
-		$source = $this->findSourceObject(id: ($synchronization['sourceId'] ?? null));
+		$source = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['sourceId'] ?? null));
 
 		$submissions = $this->formsSyncAdapter->fetchAllSubmissions(source: $source, formId: $formId);
 
@@ -7266,7 +7370,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// findOrCreateSourceByLocation() never persisted) is used directly —
 		// avoiding a findSource(id: ...) lookup that would throw
 		// DoesNotExistException for a source that was never saved (REQ-012).
-		$fetch->source = ($resolvedSource ?? $this->findSource(id: ($synchronization['sourceId'] ?? null)));
+		if ($resolvedSource === null) {
+			$resolvedSource = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['sourceId'] ?? null))->jsonSerialize();
+		}
+
+		$fetch->source = $resolvedSource;
 
 		$this->checkRateLimit(source: $fetch->source);
 
@@ -7818,6 +7926,26 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	}//end pagedFetchExceedsMemory()
 
 	/**
+	 * Whether the answer pages by a next link: it carries a `next` key, or the
+	 * synchronization declares `paginationMode: nextLink` (Microsoft Graph), whose
+	 * answer carries its next page as `@odata.nextLink` and has none on its last
+	 * page, where a page number would refetch the first page
+	 * (connectors-sharepoint-publication-intake).
+	 *
+	 * @param array $result          The answer of the call.
+	 * @param array $synchronization The synchronization.
+	 *
+	 * @return bool
+	 */
+	private function pagesByNextLink(array $result, array $synchronization): bool {
+		if (array_key_exists('next', $result) === true) {
+			return true;
+		}
+
+		return strtolower(trim((string)($synchronization['sourceConfig']['paginationMode'] ?? ''))) === 'nextlink';
+	}//end pagesByNextLink()
+
+	/**
 	 * Gets information for the next page in pagination.
 	 *
 	 * This method determines the next page URL and configuration based on the current
@@ -7847,7 +7975,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		// Determine pagination method if not already known.
-		if ($usesNextEndpoint === null && array_key_exists('next', $result) === true) {
+		if ($usesNextEndpoint === null && $this->pagesByNextLink(result: $result, synchronization: $synchronization) === true) {
 			$usesNextEndpoint = true;
 		}
 
@@ -9822,7 +9950,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @return string|null The URL for the next page of results, or null if there is no next page.
 	 */
 	public function getNextlinkFromCall(array $body): ?string {
-		return $body['next'] ?? null;
+		return $body['next'] ?? $body['@odata.nextLink'] ?? null;
 	}//end getNextlinkFromCall()
 
 	/**
@@ -10080,7 +10208,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	private function prepareTargetWrite(TargetWrite $write, bool $readOrigin): void {
 		$synchronization = $write->synchronization;
-		$write->target = $this->findSource(id: ($synchronization['targetId'] ?? null));
+		$write->target = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['targetId'] ?? null))->jsonSerialize();
 
 		if (($synchronization['sourceType'] ?? null) === 'register/schema' && ($write->contract['originId'] ?? null) !== null) {
 			$sourceIds = explode(separator: '/', string: ($synchronization['sourceId'] ?? null));
@@ -10488,7 +10616,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 			$file   = $this->zgwDocumentFile(zgw: $stuf, contract: $contract, document: $document, destination: 'the StUF-ZDS case system');
 			$result = $this->containerInterface->get(StufZdsDocumentDelivery::class)->deliver(
-				source: $this->rawSourceObject(id: (string)($synchronization['targetId'] ?? '')),
+				source: $this->rawSourceObject(synchronization: $synchronization, id: (string)($synchronization['targetId'] ?? '')),
 				document: $document,
 				file: $file,
 				zaakIdentificatie: $case,
@@ -10523,14 +10651,19 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * to the rendered source when the raw read fails, whose missing credential
 	 * the client then refuses.
 	 *
-	 * @param string $id The source id.
+	 * @param array  $synchronization The synchronization, whose organisation bounds the source.
+	 * @param string $id              The source id.
 	 *
 	 * @return array The source object.
 	 *
+	 * @throws DoesNotExistException When the source belongs to another organisation.
+	 *
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
-	private function rawSourceObject(string $id): array {
+	private function rawSourceObject(array $synchronization, string $id): array {
 		try {
+			// Unscoped: the engine reads the raw source of a synchronization it runs, during a run that may have no user.
 			$raw = $this->orObjectService->find(
 				id: $id,
 				register: 'integriq',
@@ -10539,14 +10672,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				_multitenancy: false,
 				_render: false
 			);
-			if ($raw !== null) {
-				return $raw->getObject();
-			}
 		} catch (\Throwable $e) {
 			$this->logger->warning('Raw source read failed; using the rendered source.', ['sourceId' => $id, 'exception' => $e->getMessage()]);
+			$raw = null;
 		}
 
-		return $this->findSourceObject(id: $id)->getObject();
+		if ($raw === null) {
+			return $this->findSynchronizationSource(synchronization: $synchronization, id: $id)->getObject();
+		}
+
+		$this->assertSynchronizationOrganisation(synchronization: $synchronization, source: $raw);
+
+		return $raw->getObject();
 	}//end rawSourceObject()
 
 	/**
@@ -11014,30 +11151,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				// Update data with rule result.
 				$data = $result;
 
-				// A fetch_file rule reports WHAT IT DID, not merely that it ran.
-				// `processFetchFileRule()` catches its own per-file failures so
-				// one bad attachment cannot abort the object, which meant this
-				// line said "Successfully applied" for a rule that wrote ZERO
-				// files — and nothing downstream could tell that from 40. The
-				// tally is the only thing that discriminates.
-				$outcome = '';
-				if (($rule['type'] ?? null) === 'fetch_file') {
-					$tally = $this->takeFileFetchTally();
-					$outcome = ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed'];
-
-					if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
-						$this->logger->warning(
-							'Rule ' . ($rule['name'] ?? '') . ' of type fetch_file saved NO files ('
-							. $tally['failed'] . ' failed) for synchronization '
-							. ($synchronization['name'] ?? '') . '. The rule ran; its files did not arrive.'
-						);
-					}
-				}
-
 				$this->logger->info(
 					'Successfully applied rule for synchronization ' . ($synchronization['name'] ?? '')
 					. ' with rule ' . ($rule['name'] ?? '') . ' of type ' . ($rule['type'] ?? '')
-					. $outcome
+					. $this->fetchFileRuleOutcome(rule: $rule, synchronization: $synchronization)
 				);
 			}//end foreach
 
@@ -11049,6 +11166,40 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return new JSONResponse(['error' => 'Rule processing failed: ' . $e->getMessage()], 500);
 		}//end try
 	}//end processRules()
+
+
+	/**
+	 * The outcome suffix of a rule's "Successfully applied" log line.
+	 *
+	 * A fetch_file rule reports WHAT IT DID, not merely that it ran.
+	 * `processFetchFileRule()` catches its own per-file failures so one bad
+	 * attachment cannot abort the object, which meant that line said
+	 * "Successfully applied" for a rule that wrote ZERO files — and nothing
+	 * downstream could tell that from 40. The tally is the only thing that
+	 * discriminates. Any other rule type gets an empty suffix.
+	 *
+	 * @param array $rule            The rule that just ran.
+	 * @param array $synchronization The synchronization it ran for, for the log line.
+	 *
+	 * @return string The suffix, empty for every rule type but fetch_file.
+	 */
+	private function fetchFileRuleOutcome(array $rule, array $synchronization): string {
+		if (($rule['type'] ?? null) !== 'fetch_file') {
+			return '';
+		}
+
+		$tally = $this->takeFileFetchTally();
+		if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
+			$this->logger->warning(
+				'Rule ' . ($rule['name'] ?? '') . ' of type fetch_file saved NO files ('
+				. $tally['failed'] . ' failed) for synchronization '
+				. ($synchronization['name'] ?? '') . '. The rule ran; its files did not arrive.'
+			);
+		}
+
+		return ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed']
+			. ', skipped: ' . $tally['skipped'];
+	}//end fetchFileRuleOutcome()
 
 	/**
 	 * Resolve one rule by id, for callers outside this service.
@@ -11087,6 +11238,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	public function findRule(string $id): ?array {
 		try {
+			// System read, unscoped: a synchronization resolves the rule it names, as the system (see the docblock).
 			$object = $this->orObjectService->find(
 				id: $id,
 				register: 'integriq',
@@ -11595,10 +11747,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$file->objectEntity = $objectService->find(id: $file->objectId);
 		$stored = $file->fileService->saveFile(
 			objectEntity: $file->objectEntity,
-			fileName: $file->filename,
-			content: $saveContent,
-			share: $shouldShare,
-			tags: $file->tags
+			upload: new FileUpload(fileName: $file->filename, content: $saveContent, share: $shouldShare, tags: ($file->tags ?? []))
 		);
 
 		if ($stored !== null) {
@@ -11625,14 +11774,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		$stored = $file->fileService->addFile(
-			objectEntity: $file->objectId,
-			fileName: $file->filename,
-			content: $addContent,
-			share: ($file->config['autoShare'] ?? false),
-			tags: $file->tags,
-			_schema: ($file->config['schema'] ?? null),
-			_register: ($file->config['register'] ?? null),
-			registerId: $file->registerId
+			target: new FileTarget(object: $file->objectId, registerId: $file->registerId),
+			upload: new FileUpload(
+				fileName: $file->filename,
+				content: $addContent,
+				share: ($file->config['autoShare'] ?? false),
+				tags: ($file->tags ?? [])
+			)
 		);
 
 		if ($stored !== null) {
@@ -12545,6 +12693,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	private function fetchFileSafely(FileFetchRequest $request, FileFetchItem $item): void {
+		if ($this->skipEmptyPathSegment(endpoint: $item->endpoint, objectId: $item->objectId) === true) {
+			return;
+		}
+
 		try {
 			// Execute the file fetching operation.
 			$this->fetchFile(request: $request, item: $item);
@@ -12562,18 +12714,75 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	}//end fetchFileSafely()
 
 	/**
+	 * Refuse an endpoint with an empty path segment before the source is called.
+	 *
+	 * `/api/v1/case/<zaak>/document//download` is what a source emits when the
+	 * document id of an attachment is empty. That request cannot succeed — the
+	 * source answers 500 `Document UUID "" invalid` on every run — so it is not
+	 * made. Counted as SKIPPED, not failed: nothing was tried, and the operator
+	 * needs to read "the source sent an attachment without an id", not "the
+	 * download failed". The object and its contract are unaffected either way
+	 * (REQ-021: the contract is persisted before the after-rules run).
+	 *
+	 * @param string $endpoint The endpoint as resolved for one file.
+	 * @param string|null $objectId The object the file would be attached to, for the log line.
+	 *
+	 * @return bool True when the endpoint was refused and the file must be skipped.
+	 *
+	 * @spec openspec/changes/fetch-file-skip-empty-document-id/specs/synchronization-files/spec.md#requirement-an-endpoint-with-an-empty-path-segment-shall-be-skipped-before-the-source-is-called
+	 */
+	private function skipEmptyPathSegment(string $endpoint, ?string $objectId): bool {
+		if ($this->hasEmptyPathSegment(endpoint: $endpoint) === false) {
+			return false;
+		}
+
+		$this->fileFetchSkipped++;
+		$this->logger->warning(
+			'[SynchronizationService] fetch_file: skipped endpoint ' . $endpoint . ' for object '
+			. ($objectId ?? '(none)') . ': its path has an empty segment (an empty document id); the source is not called.'
+		);
+
+		return true;
+	}//end skipEmptyPathSegment()
+
+	/**
+	 * Whether the PATH of an endpoint contains an empty segment (`//`).
+	 *
+	 * The scheme separator (`https://`), a protocol-relative authority (`//host`
+	 * at the very start), the query string and the fragment are not part of the
+	 * path and never count. Every other `//` does, deliberately: a key with an
+	 * empty segment (`bucket//key.pdf`) is refused as well — the trade-off the
+	 * spec states.
+	 *
+	 * @param string $endpoint The endpoint, relative to the source or absolute.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/fetch-file-skip-empty-document-id/specs/synchronization-files/spec.md#requirement-an-endpoint-with-an-empty-path-segment-shall-be-skipped-before-the-source-is-called
+	 */
+	private function hasEmptyPathSegment(string $endpoint): bool {
+		$withoutScheme = (string)preg_replace('~^([a-z][a-z0-9+.\-]*:)?//[^/?#]*~i', '', $endpoint);
+		$path = explode('?', $withoutScheme, 2)[0];
+		$path = explode('#', $path, 2)[0];
+
+		return str_contains($path, '//');
+	}//end hasEmptyPathSegment()
+
+	/**
 	 * Reset and read the per-rule file tally.
 	 *
-	 * @return array{succeeded: int, failed: int} The tally since the last reset.
+	 * @return array{succeeded: int, failed: int, skipped: int} The tally since the last reset.
 	 */
 	private function takeFileFetchTally(): array {
 		$tally = [
 			'succeeded' => $this->fileFetchSucceeded,
 			'failed' => $this->fileFetchFailed,
+			'skipped' => $this->fileFetchSkipped,
 		];
 
 		$this->fileFetchSucceeded = 0;
 		$this->fileFetchFailed = 0;
+		$this->fileFetchSkipped = 0;
 
 		return $tally;
 	}//end takeFileFetchTally()
@@ -12672,10 +12881,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 					// Use the new saveFile method.
 					$file = $fileService->saveFile(
 						objectEntity: $objectEntity,
-						fileName: $fileName,
-						content: $content,
-						share: $shouldShare,
-						tags: $allTags
+						upload: new FileUpload(fileName: $fileName, content: $content, share: $shouldShare, tags: $allTags)
 					);
 
 					$result[$key] = $file->getPath();
@@ -12701,10 +12907,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				// Use the new saveFile method.
 				$file = $fileService->saveFile(
 					objectEntity: $objectEntity,
-					fileName: $fileName,
-					content: $content,
-					share: $shouldShare,
-					tags: $tags
+					upload: new FileUpload(fileName: $fileName, content: $content, share: $shouldShare, tags: $tags)
 				);
 
 				$dataDot[$config['filePath']] = $file->getPath();
@@ -13506,6 +13709,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$newFileNames = $this->fetchFilesConcurrently(request: $request, items: $items);
 
+		// A refused item keeps its slot, exactly like a failed download does
+		// (the reject leg of fetchFileAsync() tracks its name): the source still
+		// lists the attachment, it only sent no usable id this run. Without this
+		// the cleanup below deletes the file stored for that slot on an earlier
+		// run — and every file of the object when every item was refused.
+		foreach ($resolved['skipped'] as $skippedItem) {
+			$trackingFilename = $this->trackingFilenameFor(item: $skippedItem);
+			if ($trackingFilename !== null) {
+				$newFileNames[] = $trackingFilename;
+			}
+		}
+
 		// Always run cleanup, even if newFileNames is empty.
 		// This handles the case where all files should be removed from an object.
 		$this->cleanupOrphanedFiles(objectId: $targetObjectId, newFileNames: $newFileNames);
@@ -13522,12 +13737,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @param FileFetchRequest $request The fetch_file request whose endpoint is a list of endpoints or file objects.
 	 *
 	 * @return array{items: array<int, array{endpoint: string, objectId: string|null, filename: string|null,
-	 *               tags: array, published: mixed, registerId: mixed}>, lastObjectId: string|null}
+	 *               tags: array, published: mixed, registerId: mixed}>,
+	 *               skipped: array<int, array{endpoint: string, filename: string|null}>, lastObjectId: string|null}
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-not-depend-on-source-ordering-or-split-source-load
 	 */
 	private function resolveMultiFileWorkItems(FileFetchRequest $request): array {
 		$items = [];
+		$skipped = [];
 		$objectId = $request->objectId;
 		$lastObjectId = $objectId;
 
@@ -13562,6 +13779,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				continue;
 			}
 
+			// Refused here, not in the concurrent fetcher: that path never goes
+			// through fetchFileSafely(), and an item that is not in the list is
+			// neither requested nor counted against the byte budget. It is kept
+			// aside so the cleanup still counts its slot as present.
+			if (is_string($actualEndpoint) === true
+				&& $this->skipEmptyPathSegment(endpoint: $actualEndpoint, objectId: $lastObjectId) === true
+			) {
+				$skipped[] = ['endpoint' => $actualEndpoint, 'filename' => $filename];
+				continue;
+			}
+
 			$items[] = [
 				'endpoint' => $actualEndpoint,
 				'objectId' => $lastObjectId,
@@ -13574,6 +13802,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return [
 			'items' => $items,
+			'skipped' => $skipped,
 			'lastObjectId' => $lastObjectId,
 		];
 	}//end resolveMultiFileWorkItems()
@@ -14090,23 +14319,45 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	private function trackFetchedFilename(array $item, FileFetchRun $run): void {
-		$trackingFilename = $item['filename'];
+		$trackingFilename = $this->trackingFilenameFor(item: $item);
+		if ($trackingFilename !== null) {
+			$run->fileNames[] = $trackingFilename;
+		}
+	}//end trackFetchedFilename()
+
+	/**
+	 * The name the cleanup knows one file item by.
+	 *
+	 * Prefer the filename the item resolved, fall back to the last endpoint path
+	 * segment, and fall back again to a hash when that segment is empty or
+	 * query-string-bearing — the rules of the sequential path, unchanged.
+	 *
+	 * @param array $item The work item: `endpoint` and `filename` (nullable).
+	 *
+	 * @return string|null The tracking filename, or null when none can be formed.
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 */
+	private function trackingFilenameFor(array $item): ?string {
+		$trackingFilename = ($item['filename'] ?? null);
 
 		if ($trackingFilename === null) {
 			// Try to extract filename from endpoint URL.
-			$pathParts = explode('/', $item['endpoint']);
+			$pathParts = explode('/', (string)$item['endpoint']);
 			$trackingFilename = end($pathParts);
 
 			// If still no clear filename, generate a fallback.
 			if (empty($trackingFilename) === true || strpos($trackingFilename, '?') !== false) {
-				$trackingFilename = 'file_' . md5($item['endpoint']);
+				$trackingFilename = 'file_' . md5((string)$item['endpoint']);
 			}
 		}
 
-		if (empty($trackingFilename) === false) {
-			$run->fileNames[] = $trackingFilename;
+		if (empty($trackingFilename) === true) {
+			return null;
 		}
-	}//end trackFetchedFilename()
+
+		return (string)$trackingFilename;
+	}//end trackingFilenameFor()
 
 	/**
 	 * Cleans up files for an object based on the current attachments array.

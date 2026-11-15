@@ -3,6 +3,9 @@
 /**
  * Remaining plaintext-secret disclosure regression test (ocon#147 phase C, #214, openregister#380).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Phases 1/2/B closed the leaks on `source`, `consumer` and `event_subscription`. This is
  * phase C — the remaining schemas ocon#147 names:
  *
@@ -34,9 +37,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  */

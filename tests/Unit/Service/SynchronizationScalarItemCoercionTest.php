@@ -5,6 +5,9 @@
  * SynchronizationService::synchronizeExternToIntern()'s per-item loop
  * (change sync-engine-scalar-items, closes #1050).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Before this change, `getOriginId()` and `processSynchronizationObject()`
  * are `array`-typed; PHP does not coerce a scalar across a strict type
  * hint, so a source returning bare scalars (e.g.
@@ -31,9 +34,6 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

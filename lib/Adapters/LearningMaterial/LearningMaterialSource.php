@@ -35,8 +35,9 @@ interface LearningMaterialSource {
 	 * Search the source.
 	 *
 	 * @param string $query The user's words.
-	 * @param array<string,mixed> $filters `levels`, `licenses`, `formats`, `collection`, `excludeCollections`
-	 *                                     (lists), `language` (string) and `pageSize` (int).
+	 * @param array<string,mixed> $filters `levels`, `licenses`, `formats`, `collection`, `excludeLicenses`,
+	 *                                     `excludeFormats`, `excludeCollections` (lists), `language` (string),
+	 *                                     `pageSize` (int) and `facets` (false leaves the counts out).
 	 * @param int $page The page, from 1.
 	 *
 	 * @return SearchResult The page with its total and facet counts.

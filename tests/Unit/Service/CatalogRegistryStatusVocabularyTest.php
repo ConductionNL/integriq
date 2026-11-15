@@ -48,7 +48,7 @@ class CatalogRegistryStatusVocabularyTest extends TestCase {
 		$objects->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn($flagValue);
-		return new CatalogRegistryService(new IntegrationRegistry(), $objects, $appConfig, new NullLogger());
+		return new CatalogRegistryService(new IntegrationRegistry(new NullLogger()), $objects, $appConfig, new NullLogger());
 	}//end service()
 
 	/**

@@ -1,0 +1,31 @@
+{
+  "$comment": "ADR-037 register fragment (platform-bookkeeping-catalogue-items D1). A dormant bookkeeping source template the catalogue lists under its bookkeeping category (CatalogRegistryService::SLUG_CATEGORY_OVERRIDES). No key material: the credential is a broker reference the administrator creates when instantiating it; the live binding fails closed without it. The sandbox record of the same connector in integriq_seed_data.json is for demos only.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "mollie-payments"
+        },
+        "name": "Mollie payments",
+        "description": "Take payments through a Mollie account (https://docs.mollie.com/reference/payments-api): create a payment, send the payer to its checkout and follow its status through the webhook. Create the credential named below (the Mollie API key) in the credential broker, then enable.",
+        "type": "payment",
+        "location": "https://api.mollie.com/v2",
+        "documentation": "https://docs.mollie.com/reference/payments-api",
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0",
+        "configuration": {
+          "provider": "mollie",
+          "baseUrl": "https://api.mollie.com/v2",
+          "authentication": {
+            "credentialRef": {
+              "credentialName": "mollie-payments-api-key"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

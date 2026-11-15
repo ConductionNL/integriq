@@ -1,0 +1,63 @@
+{
+    "migratable": [],
+    "no-run-as": [
+        "No acting account is configured, so a converted job would have no identity to run as. A schedule fires with nobody present, and the job's own owner is not used as a fallback. Set the \"job_flow_run_as\" setting to an existing account first."
+    ],
+    "run-as-missing": [
+        "The configured acting account \"ghost\" is not an existing user, so every flow generated from a job would be refused when saved. Point \"job_flow_run_as\" at an account that exists."
+    ],
+    "no-reference": [
+        "The job carries no uuid, slug or reference, so the generated flow could not record what it was generated from and nobody could trace it back."
+    ],
+    "zero-interval": [
+        "interval \"0\": a schedule trigger needs a cadence, and a job with no positive interval has none to translate."
+    ],
+    "missing-interval": [
+        "interval \"\": a schedule trigger needs a cadence, and a job with no positive interval has none to translate."
+    ],
+    "odd-interval": [
+        "interval 7 seconds: a five-field cron is absolute wall-clock time, so only an interval that divides the hour or the day evenly is the same cadence. The expressible intervals are: 60, 120, 180, 240, 300, 360, 600, 720, 900, 1200, 1800, 3600, 7200, 10800, 14400, 21600, 28800, 43200, 86400. Rounding to the nearest one would change how often this job runs."
+    ],
+    "schedule-after": [
+        "scheduleAfter \"2026-01-01\": a cron expression has no \"not before\" bound, so a delayed-start job would begin firing on the next tick instead."
+    ],
+    "single-run": [
+        "singleRun: a schedule trigger fires for as long as the flow is enabled; there is no \"run once and disable myself\" in the cron vocabulary."
+    ],
+    "user-id": [
+        "userId \"anja\": a scheduled flow runs as its OWNER — the account that creates it — and a generated document cannot set an owner, so the run identity would silently change."
+    ],
+    "no-job-class": [
+        "jobClass is not set, so there is no action for a flow step to stand in for."
+    ],
+    "ping": [
+        "jobClass \"OCA\\Integriq\\Service\\Job\\PingAction\": a ping calls the Source's own location with no path, and \"openconnector.source-call\" refuses an empty \"endpoint\" — it only calls a path RELATIVE to the source, so there is no step that reproduces a bare ping."
+    ],
+    "event": [
+        "jobClass \"OCA\\Integriq\\Service\\Job\\EventAction\": no flow node emits a CloudEvent onto the event bus, so a generated flow would run green and deliver nothing."
+    ],
+    "unknown-class": [
+        "jobClass \"OCA\\Other\\Job\": no flow node stands in for this action. Only \"OCA\\Integriq\\Service\\Job\\SynchronizationAction\" and \"OCA\\Integriq\\Service\\Job\\FlowAction\" have decomposed equivalents."
+    ],
+    "legacy-class-name": [
+        "jobClass \"OCA\\OpenConnector\\Action\\SynchronizationAction\": no flow node stands in for this action. Only \"OCA\\Integriq\\Service\\Job\\SynchronizationAction\" and \"OCA\\Integriq\\Service\\Job\\FlowAction\" have decomposed equivalents."
+    ],
+    "flow-no-target": [
+        "arguments.flowId is not set: \"openregister.sub-flow\" needs a flow to run."
+    ],
+    "flow-extra-arguments": [
+        "arguments extra, more: nothing in the generated flow reads them, and an argument the action used but the step ignores is exactly a flow that does less while reporting success."
+    ],
+    "sync-no-target": [
+        "arguments.synchronizationId is not set: \"openconnector.synchronization-run\" must name a configured synchronization, and this step never creates one."
+    ],
+    "everything": [
+        "The job carries no uuid, slug or reference, so the generated flow could not record what it was generated from and nobody could trace it back.",
+        "No acting account is configured, so a converted job would have no identity to run as. A schedule fires with nobody present, and the job's own owner is not used as a fallback. Set the \"job_flow_run_as\" setting to an existing account first.",
+        "interval 7 seconds: a five-field cron is absolute wall-clock time, so only an interval that divides the hour or the day evenly is the same cadence. The expressible intervals are: 60, 120, 180, 240, 300, 360, 600, 720, 900, 1200, 1800, 3600, 7200, 10800, 14400, 21600, 28800, 43200, 86400. Rounding to the nearest one would change how often this job runs.",
+        "scheduleAfter \"x\": a cron expression has no \"not before\" bound, so a delayed-start job would begin firing on the next tick instead.",
+        "singleRun: a schedule trigger fires for as long as the flow is enabled; there is no \"run once and disable myself\" in the cron vocabulary.",
+        "userId \"u\": a scheduled flow runs as its OWNER — the account that creates it — and a generated document cannot set an owner, so the run identity would silently change.",
+        "jobClass \"OCA\\Other\\Job\": no flow node stands in for this action. Only \"OCA\\Integriq\\Service\\Job\\SynchronizationAction\" and \"OCA\\Integriq\\Service\\Job\\FlowAction\" have decomposed equivalents."
+    ]
+}

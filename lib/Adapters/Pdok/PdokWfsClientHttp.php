@@ -29,7 +29,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Adapters\Pdok;
 
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -47,14 +46,14 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 	/**
 	 * Default request timeout in seconds.
 	 */
-	public const DEFAULT_TIMEOUT = 15;
+	public const DEFAULT_TIMEOUT = PdokHttpGet::DEFAULT_TIMEOUT;
 
 	/**
-	 * Base URI template used for all WFS requests.
+	 * The GET every WFS request goes through.
 	 *
-	 * @var string
+	 * @var PdokHttpGet
 	 */
-	private string $baseUri;
+	private readonly PdokHttpGet $get;
 
 	/**
 	 * Constructor.
@@ -64,15 +63,16 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 	 * @param string|null $baseUri Optional override of the base URI template (must contain `{dataset}`).
 	 */
 	public function __construct(
-		private readonly ClientInterface $httpClient,
+		ClientInterface $httpClient,
 		private readonly LoggerInterface $logger,
 		?string $baseUri = null,
 	) {
+		$template = self::DEFAULT_BASE_URI;
 		if ($baseUri !== null && $baseUri !== '') {
-			$this->baseUri = $baseUri;
-		} else {
-			$this->baseUri = self::DEFAULT_BASE_URI;
+			$template = $baseUri;
 		}
+
+		$this->get = new PdokHttpGet(httpClient: $httpClient, logger: $logger, baseUri: $template, failureEvent: 'pdok-wfs.http.transport');
 
 	}//end __construct()
 
@@ -84,7 +84,7 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 	 * @return string The raw XML capabilities document.
 	 */
 	public function getCapabilities(string $dataset): string {
-		return $this->requestRaw(
+		return $this->get->body(request: new PdokGetRequest(
 			dataset: $dataset,
 			query: [
 				'service' => 'WFS',
@@ -92,7 +92,7 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 				'version' => '2.0.0',
 			],
 			expectedAccept: 'application/xml'
-		);
+		));
 
 	}//end getCapabilities()
 
@@ -105,7 +105,7 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 	 * @return string The raw XML feature-type schema.
 	 */
 	public function describeFeatureType(string $dataset, string $featureType): string {
-		return $this->requestRaw(
+		return $this->get->body(request: new PdokGetRequest(
 			dataset: $dataset,
 			query: [
 				'service' => 'WFS',
@@ -114,7 +114,7 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 				'typeNames' => $featureType,
 			],
 			expectedAccept: 'application/xml'
-		);
+		));
 
 	}//end describeFeatureType()
 
@@ -149,9 +149,31 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 			'count' => max(1, $count),
 			'srsName' => $srsName,
 		];
+		$query += $this->bboxParameter(bbox: $bbox, srsName: $srsName);
+		if ($filterFields !== []) {
+			$query['filter'] = $this->buildOgcFilter(filterFields: $filterFields);
+		}
 
-		if ($bbox !== null && count($bbox) === 4) {
-			$query['bbox'] = implode(
+		$body = $this->get->body(request: new PdokGetRequest(dataset: $dataset, query: $query, expectedAccept: 'application/json'));
+
+		return $this->featureCollection(body: $body, logContext: ['dataset' => $dataset, 'featureType' => $featureType]);
+	}//end getFeature()
+
+	/**
+	 * The `bbox` parameter for four coordinates, suffixed with the CRS; none otherwise.
+	 *
+	 * @param array|null $bbox    Bounding box (minx,miny,maxx,maxy), or null.
+	 * @param string     $srsName The CRS.
+	 *
+	 * @return array<string,string>
+	 */
+	private function bboxParameter(?array $bbox, string $srsName): array {
+		if ($bbox === null || count($bbox) !== 4) {
+			return [];
+		}
+
+		return [
+			'bbox' => implode(
 				',',
 				[
 					(string)(float)$bbox[0],
@@ -160,39 +182,38 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 					(string)(float)$bbox[3],
 					$srsName,
 				]
-			);
-		}
+			),
+		];
+	}//end bboxParameter()
 
-		if ($filterFields !== []) {
-			$query['filter'] = $this->buildOgcFilter(filterFields: $filterFields);
-		}
-
-		$body = $this->requestRaw(dataset: $dataset, query: $query, expectedAccept: 'application/json');
+	/**
+	 * The decoded GeoJSON FeatureCollection, or an empty one marked unanswered.
+	 *
+	 * `unanswered` tells a caller that decides on the answer that this
+	 * empty collection is a failure, not "nothing matched".
+	 *
+	 * @param string              $body       The raw response body.
+	 * @param array<string,mixed> $logContext The dataset and feature type, for the decode warning.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function featureCollection(string $body, array $logContext): array {
 		$decoded = json_decode($body, true);
-
-		if (is_array($decoded) === false) {
-			$this->logger->warning(
-				'pdok-wfs.http.decode',
-				[
-					'dataset' => $dataset,
-					'featureType' => $featureType,
-					'bodySize' => strlen($body),
-				]
-			);
-			// `unanswered` tells a caller that decides on the answer that this
-			// empty collection is a failure, not "nothing matched".
-			return [
-				'type' => 'FeatureCollection',
-				'features' => [],
-				'totalFeatures' => 0,
-				'numberMatched' => 0,
-				'numberReturned' => 0,
-				'unanswered' => true,
-			];
+		if (is_array($decoded) === true) {
+			return $decoded;
 		}
 
-		return $decoded;
-	}//end getFeature()
+		$this->logger->warning('pdok-wfs.http.decode', $logContext + ['bodySize' => strlen($body)]);
+
+		return [
+			'type' => 'FeatureCollection',
+			'features' => [],
+			'totalFeatures' => 0,
+			'numberMatched' => 0,
+			'numberReturned' => 0,
+			'unanswered' => true,
+		];
+	}//end featureCollection()
 
 	/**
 	 * Flavour identifier.
@@ -228,41 +249,4 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 		return '<fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"><fes:And>' . implode('', $parts) . '</fes:And></fes:Filter>';
 	}//end buildOgcFilter()
 
-	/**
-	 * Issue a WFS GET request and return the raw response body.
-	 *
-	 * @param string $dataset Dataset slug to interpolate.
-	 * @param array<string,mixed> $query Query-string parameters.
-	 * @param string $expectedAccept The expected response MIME type.
-	 *
-	 * @return string The raw response body (empty on transport failure).
-	 */
-	private function requestRaw(string $dataset, array $query, string $expectedAccept): string {
-		$uri = str_replace('{dataset}', rawurlencode($dataset), $this->baseUri);
-
-		try {
-			$response = $this->httpClient->request(
-				'GET',
-				$uri,
-				[
-					'query' => $query,
-					'timeout' => self::DEFAULT_TIMEOUT,
-					'headers' => ['Accept' => $expectedAccept],
-				]
-			);
-		} catch (GuzzleException $e) {
-			$this->logger->error(
-				'pdok-wfs.http.transport',
-				[
-					'uri' => $uri,
-					'dataset' => $dataset,
-					'request' => ($query['request'] ?? null),
-					'message' => $e->getMessage(),
-				]
-			);
-			return '';
-		}//end try
-
-		return (string)$response->getBody();
-	}//end requestRaw()
 }//end class

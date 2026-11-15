@@ -10,7 +10,8 @@
  * limit, the call log and the circuit breaker all apply. DI binds this class
  * only when `slo.curriculum.feature_flag` is `1` or `true`.
  *
- * The body is kept on the call log (`logBody`): SLO's curriculum is public
+ * The body is kept on the call log (`logBody`, passing this class, which is on
+ * BodyCapturePolicy::LOG_BODY_ALLOWLIST): SLO's curriculum is public
  * reference data, and the adapter needs the body.
  *
  * @category Adapter
@@ -95,7 +96,7 @@ final class SloCurriculumClientHttp extends SloCurriculumClient {
 				source: $source,
 				endpoint: $endpoint,
 				method: 'GET',
-				config: ['query' => $query, 'headers' => ['Accept' => $accept], 'logBody' => true]
+				config: ['query' => $query, 'headers' => ['Accept' => $accept], 'logBody' => self::class]
 			);
 		} catch (Throwable $exception) {
 			throw new SloCurriculumException(

@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/edurep-source/spec.md#requirement-search-maps-filters-to-cql-and-asks-for-facets
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -90,7 +93,7 @@ class EdurepSourceHttpTest extends TestCase {
 					return str_starts_with($url, EdurepHttpTransport::ENDPOINT . '?')
 						&& $query['query'] === 'betoog AND lom.general.language=nl'
 						&& $query['startRecord'] === '51' && $query['maximumRecords'] === '50'
-						&& $query['x-term-drilldown'] === 'lom.rights.copyrightandotherrestrictions:10,meta.repository.id:12,lom.educational.context:8,lom.technical.format:8';
+						&& $query['x-term-drilldown'] === 'lom.rights.copyrightandotherrestrictions:20,meta.repository.id:20,lom.educational.context:12,lom.technical.format:12';
 				}),
 				$this->callback(static fn (array $options): bool => $options['timeout'] === 10)
 			)

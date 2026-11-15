@@ -5,7 +5,9 @@
  *
  * Searches and finds open learning material in Edurep (Kennisnet) over SRU:
  * small pages, facet counts on licence, collection, level and format, and
- * one record by its identifier. The transport decides live or recorded.
+ * one record by its identifier. A facet whose group has a filter set is counted
+ * by its own drilldown call without that filter, so its options stay visible.
+ * The transport decides live or recorded.
  *
  * @category Adapter
  * @package  OCA\Integriq\Adapters\LearningMaterial
@@ -36,7 +38,37 @@ use Psr\Log\LoggerInterface;
 class EdurepSource implements LearningMaterialSource {
 	public const PAGE_SIZE = 10;
 	public const MAX_PAGE_SIZE = 50;
-	public const DRILLDOWN = 'lom.rights.copyrightandotherrestrictions:10,meta.repository.id:12,lom.educational.context:8,lom.technical.format:8';
+
+	/**
+	 * Each facet's index and how many values to ask for.
+	 *
+	 * @var array<string,int>
+	 */
+	public const FACET_LIMITS = [
+		'lom.rights.copyrightandotherrestrictions' => 20,
+		'meta.repository.id' => 20,
+		'lom.educational.context' => 12,
+		'lom.technical.format' => 12,
+	];
+
+	/**
+	 * The filter keys that narrow each facet's index.
+	 *
+	 * @var array<string,list<string>>
+	 */
+	public const FACET_FILTERS = [
+		'lom.rights.copyrightandotherrestrictions' => ['licenses', 'excludeLicenses'],
+		'meta.repository.id' => ['collection', 'excludeCollections'],
+		'lom.educational.context' => ['levels'],
+		'lom.technical.format' => ['formats', 'excludeFormats'],
+	];
+
+	/**
+	 * The paging of a drilldown call: counts only, no records.
+	 *
+	 * @var array{page: int, pageSize: int}
+	 */
+	private const COUNTS_ONLY = ['page' => 1, 'pageSize' => 0];
 
 	/**
 	 * The cql.
@@ -67,7 +99,7 @@ class EdurepSource implements LearningMaterialSource {
 	}//end __construct()
 
 	/**
-	 * Search Edurep.
+	 * Search Edurep: one call, plus one counts-only call per filter group with a filter set.
 	 *
 	 * @param string $query The user's words.
 	 * @param array<string,mixed> $filters The normalised filters, `pageSize` included.
@@ -82,9 +114,15 @@ class EdurepSource implements LearningMaterialSource {
 	public function search(string $query, array $filters, int $page): SearchResult {
 		$paging = ['page' => max(1, $page), 'pageSize' => self::pageSize(requested: $filters['pageSize'] ?? null)];
 		$parameters = self::parameters(query: $this->cql->search(query: $query, filters: $filters), paging: $paging);
-		$parameters['x-term-drilldown'] = self::DRILLDOWN;
+		if (($filters['facets'] ?? true) === false) {
+			return $this->request(parameters: $parameters, paging: $paging);
+		}
 
-		return $this->request(parameters: $parameters, paging: $paging);
+		$narrowed = self::narrowedFacets(filters: $filters);
+		$parameters += array_filter(['x-term-drilldown' => self::drilldown(limits: array_diff_key(self::FACET_LIMITS, $narrowed))]);
+		$result = $this->request(parameters: $parameters, paging: $paging);
+
+		return $result->withFacets(facets: $this->countsWithoutOwnFilter(search: ['query' => $query, 'filters' => $filters], narrowed: $narrowed));
 	}//end search()
 
 	/**
@@ -125,6 +163,56 @@ class EdurepSource implements LearningMaterialSource {
 
 		return min(self::MAX_PAGE_SIZE, max(1, (int)$requested));
 	}//end pageSize()
+
+	/**
+	 * Count each narrowed facet with its own filter left out and every other filter kept.
+	 *
+	 * @param array{query: string, filters: array<string,mixed>} $search The search.
+	 * @param array<string,list<string>> $narrowed The narrowed facets with their filter keys.
+	 *
+	 * @return array<string,list<array{value: string, count: int}>> Facet name to its values with counts.
+	 *
+	 * @throws SourceUnavailableException When Edurep does not answer.
+	 *
+	 * @spec openspec/specs/edurep-source/spec.md#requirement-a-filter-groups-counts-leave-out-its-own-filter
+	 */
+	private function countsWithoutOwnFilter(array $search, array $narrowed): array {
+		$facets = [];
+		foreach ($narrowed as $index => $keys) {
+			$filters = array_diff_key($search['filters'], array_flip($keys));
+			$parameters = self::parameters(query: $this->cql->search(query: $search['query'], filters: $filters), paging: self::COUNTS_ONLY);
+			$parameters['x-term-drilldown'] = self::drilldown(limits: [$index => self::FACET_LIMITS[$index]]);
+			$facets[$index] = ($this->request(parameters: $parameters, paging: self::COUNTS_ONLY)->facets[$index] ?? []);
+		}
+
+		return $facets;
+	}//end countsWithoutOwnFilter()
+
+	/**
+	 * The facets a filter narrows, with the filter keys of each.
+	 *
+	 * @param array<string,mixed> $filters The filters.
+	 *
+	 * @return array<string,list<string>> The narrowed facets.
+	 */
+	private static function narrowedFacets(array $filters): array {
+		$isSet = static fn (array $keys): bool => array_filter(array_intersect_key($filters, array_flip($keys))) !== [];
+
+		return array_filter(self::FACET_FILTERS, $isSet);
+	}//end narrowedFacets()
+
+	/**
+	 * The `x-term-drilldown` value for some facets.
+	 *
+	 * @param array<string,int> $limits Facet index to the number of values.
+	 *
+	 * @return string The value, empty for no facets.
+	 */
+	private static function drilldown(array $limits): string {
+		$terms = array_map(static fn (string $index, int $limit): string => $index . ':' . $limit, array_keys($limits), $limits);
+
+		return implode(',', $terms);
+	}//end drilldown()
 
 	/**
 	 * The SRU parameters of one request.

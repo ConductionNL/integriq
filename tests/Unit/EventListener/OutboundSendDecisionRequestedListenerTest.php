@@ -349,4 +349,28 @@ class OutboundSendDecisionRequestedListenerTest extends TestCase {
 
 	}//end dispatcher()
 
+	/**
+	 * A recipient the registry gave no decision for leaves the event unhandled,
+	 * so the sender reads no decision at all.
+	 *
+	 * @return void
+	 */
+	public function testARecipientWithoutADecisionLeavesTheEventUnhandled(): void {
+		$registry = $this->createMock(\OCA\Integriq\Outbound\Identity\OptOutRegistryInterface::class);
+		$registry->method('isAuthorityEnabled')->willReturn(true);
+		$decision = ['send' => true, 'overridden' => false, 'code' => 'allowed', 'reason' => '', 'unsubscribe' => null, 'address' => 'a@x.nl'];
+		$registry->method('decideMany')->willReturn(['a@x.nl' => $decision, 'c@x.nl' => $decision]);
+		$event = new \OCA\Integriq\Event\OutboundSendDecisionRequestedEvent(
+			'pipelinq',
+			'email',
+			'service',
+			[['address' => 'a@x.nl'], ['address' => 'b@x.nl'], ['address' => 'c@x.nl']]
+		);
+
+		(new OutboundSendDecisionRequestedListener($registry, new NullLogger()))->handle($event);
+
+		$this->assertFalse($event->isHandled());
+		$this->assertSame([], $event->getDecisions());
+
+	}//end testARecipientWithoutADecisionLeavesTheEventUnhandled()
 }//end class

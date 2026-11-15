@@ -44,6 +44,17 @@ final class EdurepCqlBuilder {
 		'collection' => 'meta.repository.id',
 	];
 
+	/**
+	 * Exclusion filter key to the index it leaves out. Edurep answers a NOT on its
+	 * licence index with no results, so `excludeLicenses` narrows `licenses` instead.
+	 *
+	 * @var array<string,string>
+	 */
+	public const EXCLUDE_INDEXES = [
+		'excludeFormats' => 'lom.technical.format',
+		'excludeCollections' => 'meta.repository.id',
+	];
+
 	public const COLLECTION_INDEX = 'meta.repository.id';
 	public const LANGUAGE_INDEX = 'lom.general.language';
 	public const DEFAULT_LANGUAGE = 'nl';
@@ -54,6 +65,13 @@ final class EdurepCqlBuilder {
 	 * @var list<string>
 	 */
 	private const KEYWORDS = ['and', 'or', 'not', 'prox'];
+
+	/**
+	 * Rights values Edurep indexes that have no LicenseCode.
+	 *
+	 * @var list<string>
+	 */
+	private const UNVERSIONED_LICENSES = ['cc-by-nd'];
 
 	/**
 	 * The search query: words and filters joined with AND, excluded collections with NOT.
@@ -73,13 +91,27 @@ final class EdurepCqlBuilder {
 		}
 
 		$clauses[] = $this->anyOf(index: self::LANGUAGE_INDEX, values: [(string)($filters['language'] ?? self::DEFAULT_LANGUAGE)]);
-		$cql = implode(' AND ', array_filter($clauses));
-		foreach ($this->filterValues(filters: $filters, key: 'excludeCollections') as $collection) {
-			$cql .= ' NOT ' . self::COLLECTION_INDEX . '=' . $this->escape(value: $collection);
+
+		return implode(' AND ', array_filter($clauses)) . $this->exclusions(filters: $filters);
+	}//end search()
+
+	/**
+	 * The NOT clauses of the exclusion filters.
+	 *
+	 * @param array<string,mixed> $filters The normalised filters.
+	 *
+	 * @return string The clauses, each with its leading NOT.
+	 */
+	private function exclusions(array $filters): string {
+		$cql = '';
+		foreach (self::EXCLUDE_INDEXES as $key => $index) {
+			foreach ($this->listOf(filters: $filters, key: $key) as $value) {
+				$cql .= ' NOT ' . $index . '=' . $this->escape(value: $value);
+			}
 		}
 
 		return $cql;
-	}//end search()
+	}//end exclusions()
 
 	/**
 	 * The lookup query for one record: its quoted identifier, or the last path segment of one.
@@ -154,17 +186,73 @@ final class EdurepCqlBuilder {
 	 * @param string $key The filter key.
 	 *
 	 * @return list<string> The values.
+	 */
+	private function filterValues(array $filters, string $key): array {
+		if ($key === 'licenses') {
+			return $this->licenseValues(filters: $filters);
+		}
+
+		return $this->listOf(filters: $filters, key: $key);
+	}//end filterValues()
+
+	/**
+	 * The licence values to match: the chosen ones, or every known one, without the excluded ones.
+	 *
+	 * @param array<string,mixed> $filters The normalised filters.
+	 *
+	 * @return list<string> Edurep's rights values.
+	 */
+	private function licenseValues(array $filters): array {
+		$chosen = $this->edurepCodes(codes: $this->listOf(filters: $filters, key: 'licenses'));
+		$excluded = $this->edurepCodes(codes: $this->listOf(filters: $filters, key: 'excludeLicenses'));
+		if ($excluded === []) {
+			return $chosen;
+		}
+
+		if ($chosen === []) {
+			$chosen = $this->allLicenses();
+		}
+
+		return array_values(array_diff($chosen, $excluded));
+	}//end licenseValues()
+
+	/**
+	 * Every rights value Edurep indexes.
+	 *
+	 * @return list<string> The values.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) LicenseCode::cases is the enum's own list.
+	 */
+	private function allLicenses(): array {
+		$known = array_map(static fn (LicenseCode $code): string => $code->toEdurep(), LicenseCode::cases());
+
+		return array_merge($known, self::UNVERSIONED_LICENSES);
+	}//end allLicenses()
+
+	/**
+	 * Normalised licence codes as Edurep's values; an unknown code is dropped.
+	 *
+	 * @param list<string> $codes The normalised codes.
+	 *
+	 * @return list<string> Edurep's values.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) LicenseCode::tryFrom is the enum's pure named constructor.
 	 */
-	private function filterValues(array $filters, string $key): array {
-		$values = array_values(array_map('strval', array_filter((array)($filters[$key] ?? []), 'is_scalar')));
-		if ($key !== 'licenses') {
-			return $values;
-		}
+	private function edurepCodes(array $codes): array {
+		$known = array_filter(array_map(static fn (string $code): ?LicenseCode => LicenseCode::tryFrom(value: $code), $codes));
 
-		$codes = array_filter(array_map(static fn (string $code): ?LicenseCode => LicenseCode::tryFrom(value: $code), $values));
+		return array_values(array_map(static fn (LicenseCode $code): string => $code->toEdurep(), $known));
+	}//end edurepCodes()
 
-		return array_values(array_map(static fn (LicenseCode $code): string => $code->toEdurep(), $codes));
-	}//end filterValues()
+	/**
+	 * The scalar values of one filter key as strings.
+	 *
+	 * @param array<string,mixed> $filters The normalised filters.
+	 * @param string $key The filter key.
+	 *
+	 * @return list<string> The values.
+	 */
+	private function listOf(array $filters, string $key): array {
+		return array_values(array_map('strval', array_filter((array)($filters[$key] ?? []), 'is_scalar')));
+	}//end listOf()
 }//end class

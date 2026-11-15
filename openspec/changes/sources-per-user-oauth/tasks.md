@@ -10,8 +10,8 @@ Kind: code. Size M. Row `buildiq:int-per-user-oauth`.
 - **acceptance_criteria**:
   - GIVEN two users with their own token sets WHEN each calls the same endpoint THEN each call is made with that user's credential
   - GIVEN a sessionless job on a per-user source WHEN it runs THEN it is refused with a message naming the reason
-- [ ] Implement
-- [ ] Test (PHPUnit with a fake broker; no fallback to a shared credential)
+- [x] Implement
+- [x] Test (PHPUnit with a fake broker; no fallback to a shared credential)
 
 ### Task 2: The connect prompt
 - **spec_ref**: `openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-user-without-a-connected-account-is-sent-to-connect-it-req-puoa-002`
@@ -28,6 +28,10 @@ Kind: code. Size M. Row `buildiq:int-per-user-oauth`.
   - GIVEN a user with one connected account WHEN they disconnect it in personal settings THEN their next call gets the connect prompt again
 - [ ] Implement
 - [ ] Test (Playwright end to end against the broker's connect flow with a mock provider)
+
+## Build notes
+
+Task 1 is built: `credentialRef` accepts `{"provider": "<slug>", "perUser": true}`, and `BrokeredCallService::prepare()` resolves it to the signed-in user's own enabled personal credential at that provider, with no fallback. A sessionless call is refused, no account raises `PerUserAccountNotConnectedException` (carrying the provider for task 2), and two accounts are refused rather than guessed. The source schema moves to 1.5.0. Task 2 waits on `lib/Http/ProblemResponse.php` from `gateway-response-cache-and-problem-errors`, which is not on development yet. Task 3 is a personal settings section, which the fleet build rules do not allow (user settings live in the app's settings modal); it needs a design decision before it is built.
 
 ## Verification
 - [ ] `openspec validate sources-per-user-oauth --type change --strict` passes
