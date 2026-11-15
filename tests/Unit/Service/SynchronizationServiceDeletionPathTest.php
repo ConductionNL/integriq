@@ -285,4 +285,26 @@ class SynchronizationServiceDeletionPathTest extends TestCase {
 		$this->assertSame(0, $this->runDeletion(['target-1', 'target-2']));
 		$this->assertSame([], $this->updateTargetCalls);
 	}
+	/**
+	 * The contract of a deleted target is persisted after the delete, in the contract schema.
+	 *
+	 * @return void
+	 */
+	public function testTheDeletedContractIsPersisted(): void {
+		$this->seed(['target-1', 'target-2', 'target-3']);
+		$saved = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$saved) {
+				$saved[] = ['object' => $args[0], 'schema' => $args[2]];
+
+				return ObjectServiceMockBuilder::objectEntity($this, $args[0], 'saved');
+			}
+		);
+
+		$this->runDeletion(['target-1', 'target-2']);
+
+		$this->assertCount(1, $saved);
+		$this->assertSame('target-3', $saved[0]['object']['targetId']);
+		$this->assertSame('synchronization_contract', $saved[0]['schema']);
+	}
 }

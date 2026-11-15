@@ -26,13 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Outbound\Identity\DomainAlignmentChecker;
-use OCA\Integriq\Outbound\Identity\HoldQueue;
-use OCA\Integriq\Outbound\Identity\OptOutCategories;
-use OCA\Integriq\Outbound\Identity\OptOutRegistry;
-use OCA\Integriq\Outbound\Identity\SenderIdentityService;
-use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Outbound\Identity\DomainAlignmentCheckerInterface;
+use OCA\Integriq\Outbound\Identity\HoldQueueInterface;
+use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
+use OCA\Integriq\Outbound\Identity\OptOutRegistryInterface;
+use OCA\Integriq\Outbound\Identity\SenderIdentityServiceInterface;
+use OCA\Integriq\Outbound\Identity\UnsubscribeTokenServiceInterface;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -76,12 +76,12 @@ class SenderIdentityController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal.
-	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
-	 * @param SenderIdentityService $identities The identities on this instance.
-	 * @param DomainAlignmentChecker $alignment Checks SPF, DKIM and DMARC.
-	 * @param UnsubscribeTokenService $tokens Mints and verifies unsubscribe tokens.
-	 * @param OptOutRegistry $optOuts Holds the opt-outs an unsubscribe adds to.
-	 * @param HoldQueue $holdQueue Holds and withdraws a message inside its window.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
+	 * @param SenderIdentityServiceInterface $identities The identities on this instance.
+	 * @param DomainAlignmentCheckerInterface $alignment Checks SPF, DKIM and DMARC.
+	 * @param UnsubscribeTokenServiceInterface $tokens Mints and verifies unsubscribe tokens.
+	 * @param OptOutRegistryInterface $optOuts Holds the opt-outs an unsubscribe adds to.
+	 * @param HoldQueueInterface $holdQueue Holds and withdraws a message inside its window.
 	 * @param IL10N $l Translations.
 	 * @param IURLGenerator $urls Builds the confirmation form's target.
 	 */
@@ -89,12 +89,12 @@ class SenderIdentityController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
-		private readonly SenderIdentityService $identities,
-		private readonly DomainAlignmentChecker $alignment,
-		private readonly UnsubscribeTokenService $tokens,
-		private readonly OptOutRegistry $optOuts,
-		private readonly HoldQueue $holdQueue,
+		private readonly ActionAuthServiceInterface $actionAuth,
+		private readonly SenderIdentityServiceInterface $identities,
+		private readonly DomainAlignmentCheckerInterface $alignment,
+		private readonly UnsubscribeTokenServiceInterface $tokens,
+		private readonly OptOutRegistryInterface $optOuts,
+		private readonly HoldQueueInterface $holdQueue,
 		private readonly IL10N $l,
 		private readonly IURLGenerator $urls,
 	) {
@@ -130,7 +130,7 @@ class SenderIdentityController extends Controller {
 				'displayName' => (string)($identity['displayName'] ?? ''),
 				'address' => (string)($identity['address'] ?? ''),
 				'isDefault' => (bool)($identity['isDefault'] ?? false),
-				'quotingLevel' => (string)($identity['quotingLevel'] ?? SenderIdentityService::QUOTING_LAST),
+				'quotingLevel' => (string)($identity['quotingLevel'] ?? SenderIdentityServiceInterface::QUOTING_LAST),
 				'holdWindowSeconds' => (int)($identity['holdWindowSeconds'] ?? 0),
 				'alignment' => ($identity['alignment'] ?? null),
 				'envelope' => $this->identities->envelopeFor($identity),
@@ -298,52 +298,12 @@ class SenderIdentityController extends Controller {
 			return $refusal;
 		}
 
-		$source = 'unsubscribe-link';
-		if ($claim['format'] === 'v1') {
-			$source = 'unsubscribe-link-v1';
-		}
-
-		if ((string)$this->request->getParam('List-Unsubscribe', '') === 'One-Click') {
-			$source = 'one-click';
-		}
-
+		$source = $this->unsubscribeSource(claim: $claim);
 		if ($choice === 'all') {
-			$this->optOuts->record(
-				[
-					'address' => $claim['address'],
-					'state' => 'opted-out',
-					'scope' => OptOutRegistry::SCOPE_INSTANCE,
-					'purpose' => OptOutCategories::PURPOSE_ALL,
-					'source' => $source,
-					'sourceApp' => 'integriq',
-				]
-			);
-
-			return $this->unsubscribePage(
-				state: 'stopped',
-				message: $this->l->t('Done. You will no longer receive messages from us, except statutory notices such as a besluit.'),
-				status: Http::STATUS_OK
-			);
+			return $this->stopEverything(claim: $claim, source: $source);
 		}
 
-		if ($claim['format'] !== UnsubscribeTokenService::PREFIX_V3) {
-			$this->optOuts->add($claim['address'], OptOutRegistry::SCOPE_CASE, $claim['caseRef'], $source);
-		}
-
-		if ($claim['format'] === UnsubscribeTokenService::PREFIX_V3) {
-			$this->optOuts->record(
-				[
-					'address' => $claim['address'],
-					'state' => 'opted-out',
-					'scope' => $claim['scope'],
-					'channel' => $claim['channel'],
-					'ref' => $claim['ref'],
-					'purpose' => $claim['purpose'],
-					'source' => $source,
-					'sourceApp' => 'integriq',
-				]
-			);
-		}
+		$this->stopWhatTheLinkNames(claim: $claim, source: $source);
 
 		return $this->unsubscribePage(
 			state: 'stopped',
@@ -352,6 +312,90 @@ class SenderIdentityController extends Controller {
 		);
 
 	}//end unsubscribeConfirm()
+
+	/**
+	 * Where an unsubscribe came from: a one-click POST, an old-format link, or a link.
+	 *
+	 * @param array<string,mixed> $claim The verified token claim.
+	 *
+	 * @return string The opt-out's source.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	private function unsubscribeSource(array $claim): string {
+		if ((string)$this->request->getParam('List-Unsubscribe', '') === 'One-Click') {
+			return 'one-click';
+		}
+
+		if ($claim['format'] === 'v1') {
+			return 'unsubscribe-link-v1';
+		}
+
+		return 'unsubscribe-link';
+
+	}//end unsubscribeSource()
+
+	/**
+	 * Stop everything that is not statutory for the link's address.
+	 *
+	 * @param array<string,mixed> $claim  The verified token claim.
+	 * @param string              $source Where the unsubscribe came from.
+	 *
+	 * @return TemplateResponse The confirmation page.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	private function stopEverything(array $claim, string $source): TemplateResponse {
+		$this->optOuts->record(
+			[
+				'address' => $claim['address'],
+				'state' => 'opted-out',
+				'scope' => OptOutRegistryInterface::SCOPE_INSTANCE,
+				'purpose' => OptOutCategoriesInterface::PURPOSE_ALL,
+				'source' => $source,
+				'sourceApp' => 'integriq',
+			]
+		);
+
+		return $this->unsubscribePage(
+			state: 'stopped',
+			message: $this->l->t('Done. You will no longer receive messages from us, except statutory notices such as a besluit.'),
+			status: Http::STATUS_OK
+		);
+
+	}//end stopEverything()
+
+	/**
+	 * Stop what the link names: its case for an older link, its scope, channel,
+	 * reference and purpose for a v3 link.
+	 *
+	 * @param array<string,mixed> $claim  The verified token claim.
+	 * @param string              $source Where the unsubscribe came from.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	private function stopWhatTheLinkNames(array $claim, string $source): void {
+		if ($claim['format'] !== UnsubscribeTokenServiceInterface::PREFIX_V3) {
+			$this->optOuts->add($claim['address'], OptOutRegistryInterface::SCOPE_CASE, $claim['caseRef'], $source);
+			return;
+		}
+
+		$this->optOuts->record(
+			[
+				'address' => $claim['address'],
+				'state' => 'opted-out',
+				'scope' => $claim['scope'],
+				'channel' => $claim['channel'],
+				'ref' => $claim['ref'],
+				'purpose' => $claim['purpose'],
+				'source' => $source,
+				'sourceApp' => 'integriq',
+			]
+		);
+
+	}//end stopWhatTheLinkNames()
 
 	/**
 	 * The decision log: suppressions, overrides, changes and allowed counts.
@@ -383,7 +427,7 @@ class SenderIdentityController extends Controller {
 	 * @return TemplateResponse|null The page, or null when the link is usable.
 	 */
 	private function refusalFor(array $claim): ?TemplateResponse {
-		if ($claim['status'] === UnsubscribeTokenService::STATUS_EXPIRED) {
+		if ($claim['status'] === UnsubscribeTokenServiceInterface::STATUS_EXPIRED) {
 			return $this->unsubscribePage(
 				state: 'expired',
 				message: $this->l->t('This link has expired. Nothing was changed. Use the link in a more recent message.'),
@@ -391,7 +435,7 @@ class SenderIdentityController extends Controller {
 			);
 		}
 
-		if ($claim['status'] !== UnsubscribeTokenService::STATUS_VALID || $claim['address'] === '') {
+		if ($claim['status'] !== UnsubscribeTokenServiceInterface::STATUS_VALID || $claim['address'] === '') {
 			return $this->unsubscribePage(
 				state: 'invalid',
 				message: $this->l->t('This link is not valid. Nothing was changed.'),
@@ -411,8 +455,8 @@ class SenderIdentityController extends Controller {
 	 * @return string The sentence.
 	 */
 	private function describe(array $claim): string {
-		if ($claim['purpose'] === OptOutCategories::PURPOSE_MARKETING) {
-			if ($claim['scope'] === OptOutRegistry::SCOPE_CHANNEL) {
+		if ($claim['purpose'] === OptOutCategoriesInterface::PURPOSE_MARKETING) {
+			if ($claim['scope'] === OptOutRegistryInterface::SCOPE_CHANNEL) {
 				return $this->l->t(
 					'You will no longer receive newsletters and campaigns by %s. Other messages, such as appointment reminders, still arrive.',
 					[$claim['channel']]
@@ -423,9 +467,9 @@ class SenderIdentityController extends Controller {
 		}
 
 		return match ($claim['scope']) {
-			OptOutRegistry::SCOPE_CHANNEL => $this->l->t('You will no longer receive these messages by %s.', [$claim['channel']]),
-			OptOutRegistry::SCOPE_LIST => $this->l->t('You will no longer receive messages from this list.'),
-			OptOutRegistry::SCOPE_INSTANCE => $this->l->t('You will no longer receive messages from us.'),
+			OptOutRegistryInterface::SCOPE_CHANNEL => $this->l->t('You will no longer receive these messages by %s.', [$claim['channel']]),
+			OptOutRegistryInterface::SCOPE_LIST => $this->l->t('You will no longer receive messages from this list.'),
+			OptOutRegistryInterface::SCOPE_INSTANCE => $this->l->t('You will no longer receive messages from us.'),
 			default => $this->l->t('You will no longer receive updates about this case.'),
 		};
 
@@ -448,7 +492,7 @@ class SenderIdentityController extends Controller {
 		$params = $response->getParams();
 		$params['action'] = $this->urls->linkToRoute('integriq.senderIdentity.unsubscribeConfirm', ['token' => $token]);
 		// Offer to stop everything unless this link already does.
-		$params['offerAll'] = ($claim['scope'] !== OptOutRegistry::SCOPE_INSTANCE || $claim['purpose'] !== OptOutCategories::PURPOSE_ALL);
+		$params['offerAll'] = ($claim['scope'] !== OptOutRegistryInterface::SCOPE_INSTANCE || $claim['purpose'] !== OptOutCategoriesInterface::PURPOSE_ALL);
 		$response->setParams($params);
 
 		return $response;

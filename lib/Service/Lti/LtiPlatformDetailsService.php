@@ -40,7 +40,7 @@ use OCP\IURLGenerator;
  *
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-an-administrator-can-give-a-tool-the-platform-details-it-needs-req-ltil-004
  */
-class LtiPlatformDetailsService {
+class LtiPlatformDetailsService implements ToolPlatformDetailsInterface {
 
 	/**
 	 * Constructor.
@@ -77,6 +77,7 @@ class LtiPlatformDetailsService {
 				register: 'integriq',
 				schema: 'lti_tool',
 				_rbac: false,
+				// Unscoped: admin-only endpoint (LtiPlatformDetailsController); an administrator reads the values before approving the tool.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {

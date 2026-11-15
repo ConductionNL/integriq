@@ -41,7 +41,7 @@ interface CallDispatcherInterface {
 	 * @return array{statusCode:int,body:mixed,headers:array<string,mixed>,durationMs:int,detail:string}
 	 *         What came back.
 	 *
-	 * @throws \OCA\Integriq\Exception\CallDispatchException When the call could not be made at all.
+	 * @throws \OCA\Integriq\Outbound\Call\CallDispatchException When the call could not be made at all.
 	 */
 	public function dispatch(string $target, array $request): array;
 

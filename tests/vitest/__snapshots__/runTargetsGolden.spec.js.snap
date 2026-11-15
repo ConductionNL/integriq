@@ -1,0 +1,6088 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`run descriptors golden > job/run renders as recorded 1`] = `
+{
+  "initialOptionValues": {
+    "forceRun": false,
+  },
+  "logsLink": [
+    {
+      "name": "JobLogs",
+      "query": {
+        "jobId": 9,
+      },
+    },
+    {
+      "name": "JobLogs",
+      "query": {
+        "jobId": "u-1",
+      },
+    },
+    {
+      "name": "JobLogs",
+      "query": {
+        "jobId": 4,
+      },
+    },
+    null,
+  ],
+  "options": [
+    {
+      "key": "forceRun",
+      "label": "Force run",
+      "note": "Ignore both the schedule and the enabled flag, and execute the job right now. Without it, a job that is disabled or not yet due does nothing at all.",
+      "noteType": "info",
+    },
+  ],
+  "request": [
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/9",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/9",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/9",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/9",
+    },
+    {
+      "body": {
+        "forceRun": true,
+      },
+      "url": "/apps/integriq/api/jobs/run/9",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/u-1",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/u-1",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/u-1",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/u-1",
+    },
+    {
+      "body": {
+        "forceRun": true,
+      },
+      "url": "/apps/integriq/api/jobs/run/u-1",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/4",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/4",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/4",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/4",
+    },
+    {
+      "body": {
+        "forceRun": true,
+      },
+      "url": "/apps/integriq/api/jobs/run/4",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/null",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/null",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/null",
+    },
+    {
+      "body": {
+        "forceRun": false,
+      },
+      "url": "/apps/integriq/api/jobs/run/null",
+    },
+    {
+      "body": {
+        "forceRun": true,
+      },
+      "url": "/apps/integriq/api/jobs/run/null",
+    },
+  ],
+  "runLabel": "Run",
+  "sections": [
+    [],
+    [],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "error",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "ERROR",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "warning",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "Warning",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "INFO",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "13 ms",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "INFO",
+          },
+          {
+            "label": "Execution time",
+            "value": "0 ms",
+          },
+          {
+            "label": "Job class",
+            "value": "OCA\\Job",
+          },
+          {
+            "label": "Last run",
+            "value": "2026-01-01",
+          },
+          {
+            "label": "Next run",
+            "value": "2026-01-02",
+          },
+        ],
+      },
+      {
+        "id": "stackTrace",
+        "kind": "list",
+        "title": "Stack trace",
+        "value": [
+          "one",
+          "2",
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+  ],
+  "status": [
+    {
+      "text": "Nothing was executed: the job is not due to run yet and force run was off.",
+      "type": "warning",
+    },
+    {
+      "text": "Nothing was executed: the job is not due to run yet and force run was off.",
+      "type": "warning",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "Success",
+      "type": "success",
+    },
+    {
+      "text": "pending_approval",
+      "type": "success",
+    },
+    {
+      "text": "Boom",
+      "type": "success",
+    },
+    {
+      "text": "Job crashed",
+      "type": "error",
+    },
+    {
+      "text": "The job failed.",
+      "type": "error",
+    },
+    {
+      "text": "The job finished with a warning.",
+      "type": "warning",
+    },
+    {
+      "text": "Half done",
+      "type": "warning",
+    },
+    {
+      "text": "Done",
+      "type": "success",
+    },
+    {
+      "text": "Success",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+  ],
+  "title": "Run job",
+  "visibleOptions": [
+    [
+      "forceRun",
+    ],
+    [
+      "forceRun",
+    ],
+    [
+      "forceRun",
+    ],
+    [
+      "forceRun",
+    ],
+    [
+      "forceRun",
+    ],
+  ],
+}
+`;
+
+exports[`run descriptors golden > job/test renders as recorded 1`] = `
+{
+  "initialOptionValues": {
+    "forceRun": true,
+  },
+  "intro": "This executes the job for real — it is not a dry run. The only difference from a normal run is that the schedule and the enabled flag are ignored.",
+  "logsLink": [
+    {
+      "name": "JobLogs",
+      "query": {
+        "jobId": 9,
+      },
+    },
+    {
+      "name": "JobLogs",
+      "query": {
+        "jobId": "u-1",
+      },
+    },
+    {
+      "name": "JobLogs",
+      "query": {
+        "jobId": 4,
+      },
+    },
+    null,
+  ],
+  "options": [
+    {
+      "key": "forceRun",
+      "label": "Force run",
+      "locked": true,
+      "note": "Always on for this action: the endpoint ignores the schedule and the enabled flag by definition.",
+      "noteType": "info",
+    },
+  ],
+  "request": [
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/9",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/9",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/9",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/9",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/9",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/u-1",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/u-1",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/u-1",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/u-1",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/u-1",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/4",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/4",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/4",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/4",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/4",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/null",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/null",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/null",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/null",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/jobs/test/null",
+    },
+  ],
+  "runLabel": "Force run",
+  "sections": [
+    [],
+    [],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "error",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "ERROR",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "warning",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "Warning",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "INFO",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "13 ms",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "INFO",
+          },
+          {
+            "label": "Execution time",
+            "value": "0 ms",
+          },
+          {
+            "label": "Job class",
+            "value": "OCA\\Job",
+          },
+          {
+            "label": "Last run",
+            "value": "2026-01-01",
+          },
+          {
+            "label": "Next run",
+            "value": "2026-01-02",
+          },
+        ],
+      },
+      {
+        "id": "stackTrace",
+        "kind": "list",
+        "title": "Stack trace",
+        "value": [
+          "one",
+          "2",
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Level",
+            "value": "—",
+          },
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Job class",
+            "value": "—",
+          },
+          {
+            "label": "Last run",
+            "value": "—",
+          },
+          {
+            "label": "Next run",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+  ],
+  "status": [
+    {
+      "text": "Nothing was executed: the job is not due to run yet and force run was off.",
+      "type": "warning",
+    },
+    {
+      "text": "Nothing was executed: the job is not due to run yet and force run was off.",
+      "type": "warning",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "Success",
+      "type": "success",
+    },
+    {
+      "text": "pending_approval",
+      "type": "success",
+    },
+    {
+      "text": "Boom",
+      "type": "success",
+    },
+    {
+      "text": "Job crashed",
+      "type": "error",
+    },
+    {
+      "text": "The job failed.",
+      "type": "error",
+    },
+    {
+      "text": "The job finished with a warning.",
+      "type": "warning",
+    },
+    {
+      "text": "Half done",
+      "type": "warning",
+    },
+    {
+      "text": "Done",
+      "type": "success",
+    },
+    {
+      "text": "Success",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The job ran successfully.",
+      "type": "success",
+    },
+  ],
+  "title": "Force run job",
+  "visibleOptions": [
+    [
+      "forceRun",
+    ],
+    [
+      "forceRun",
+    ],
+    [
+      "forceRun",
+    ],
+    [
+      "forceRun",
+    ],
+    [
+      "forceRun",
+    ],
+  ],
+}
+`;
+
+exports[`run descriptors golden > synchronization/run renders as recorded 1`] = `
+{
+  "initialOptionValues": {
+    "force": false,
+    "forceDeletion": false,
+    "test": false,
+  },
+  "logsLink": [
+    {
+      "name": "SynchronizationLogs",
+      "query": {
+        "synchronizationId": 9,
+      },
+    },
+    {
+      "name": "SynchronizationLogs",
+      "query": {
+        "synchronizationId": "u-1",
+      },
+    },
+    {
+      "name": "SynchronizationLogs",
+      "query": {
+        "synchronizationId": 4,
+      },
+    },
+    null,
+  ],
+  "options": [
+    {
+      "key": "test",
+      "label": "Test mode",
+      "note": "Run every step of the synchronization without saving anything: no contract is written and the target system is left untouched. Use it to verify a mapping or condition before a real run.",
+      "noteType": "info",
+    },
+    {
+      "key": "force",
+      "label": "Force",
+      "note": "Update the contract even when the engine detects no change. Useful after editing a mapping, when the source data itself is unchanged.",
+      "noteType": "info",
+    },
+    {
+      "disabledNote": "Not available while this synchronization is in incremental mode: deletion detection is switched off entirely and force deletion cannot override that. Set the sync mode to full first.",
+      "disabledWhen": [
+        false,
+        true,
+        false,
+        false,
+      ],
+      "hiddenWhen": [
+        false,
+        true,
+        true,
+        false,
+        false,
+      ],
+      "key": "forceDeletion",
+      "label": "Force deletion",
+      "note": "Override the deletion-ratio guard, which aborts a cleanup pass that would delete an unusually large share of the existing objects. Only use this when you already know the deletions are correct.",
+      "noteType": "warning",
+    },
+  ],
+  "request": [
+    {
+      "body": {
+        "force": false,
+        "forceDeletion": false,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/9/run",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/9/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/9/test",
+    },
+    {
+      "body": {
+        "force": true,
+        "forceDeletion": true,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/9/run",
+    },
+    {
+      "body": {
+        "force": false,
+        "forceDeletion": false,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/9/run",
+    },
+    {
+      "body": {
+        "force": false,
+        "forceDeletion": false,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/u-1/run",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/u-1/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/u-1/test",
+    },
+    {
+      "body": {
+        "force": true,
+        "forceDeletion": true,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/u-1/run",
+    },
+    {
+      "body": {
+        "force": false,
+        "forceDeletion": false,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/u-1/run",
+    },
+    {
+      "body": {
+        "force": false,
+        "forceDeletion": false,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/4/run",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/4/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/4/test",
+    },
+    {
+      "body": {
+        "force": true,
+        "forceDeletion": true,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/4/run",
+    },
+    {
+      "body": {
+        "force": false,
+        "forceDeletion": false,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/4/run",
+    },
+    {
+      "body": {
+        "force": false,
+        "forceDeletion": false,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/null/run",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/null/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/null/test",
+    },
+    {
+      "body": {
+        "force": true,
+        "forceDeletion": true,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/null/run",
+    },
+    {
+      "body": {
+        "force": false,
+        "forceDeletion": false,
+        "test": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/null/run",
+    },
+  ],
+  "retry": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+      "label": "Run again with force deletion",
+      "values": {
+        "forceDeletion": true,
+      },
+    },
+    {
+      "label": "Run again with force deletion",
+      "values": {
+        "forceDeletion": true,
+      },
+    },
+    {
+      "label": "Run again with force deletion",
+      "values": {
+        "forceDeletion": true,
+      },
+    },
+    {
+      "label": "Run again with force deletion",
+      "values": {
+        "forceDeletion": true,
+      },
+    },
+    {
+      "label": "Run again with force deletion",
+      "values": {
+        "forceDeletion": true,
+      },
+    },
+    null,
+  ],
+  "runLabel": "Run",
+  "sections": [
+    [],
+    [],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 5,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 2,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "13 ms",
+          },
+          {
+            "label": "Direction",
+            "value": "push",
+          },
+          {
+            "label": "Test mode",
+            "value": "Yes",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "2",
+          },
+          {
+            "label": "Contract logs",
+            "value": "1",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "Yes",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "0 ms",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 1,
+          },
+          {
+            "label": "Skipped",
+            "value": 2,
+          },
+          {
+            "label": "Created",
+            "value": 3,
+          },
+          {
+            "label": "Updated",
+            "value": 4,
+          },
+          {
+            "label": "Deleted",
+            "value": 5,
+          },
+          {
+            "label": "Invalid",
+            "value": 6,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": "",
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": false,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: deletion detection is switched off entirely while this synchronization is in incremental mode. Force deletion cannot override that — set the sync mode to full first.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the fetch from the source did not complete, so the engine could not tell a genuinely removed record from one it simply never saw.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [
+          {
+            "label": "Would have deleted",
+            "value": "46 / 100",
+          },
+          {
+            "label": "Share of existing objects",
+            "value": "45.7%",
+          },
+          {
+            "label": "Guard threshold",
+            "value": "25%",
+          },
+        ],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [
+          {
+            "label": "Would have deleted",
+            "value": "3 / ?",
+          },
+        ],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [
+          {
+            "label": "Share of existing objects",
+            "value": "50%",
+          },
+        ],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: a guard stopped the cleanup pass.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+  ],
+  "status": [
+    {
+      "text": "The run returned no result.",
+      "type": "warning",
+    },
+    {
+      "text": "The run returned no result.",
+      "type": "warning",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization completed successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The run is waiting for approval and made no changes. Approve the request to let it continue.",
+      "type": "warning",
+    },
+    {
+      "text": "Boom",
+      "type": "error",
+    },
+    {
+      "text": "Job crashed",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "Half done",
+      "type": "error",
+    },
+    {
+      "text": "Done",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization completed successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+  ],
+  "title": "Run synchronization",
+  "visibleOptions": [
+    [
+      "test",
+      "force",
+      "forceDeletion",
+    ],
+    [
+      "test",
+      "force",
+    ],
+    [
+      "test",
+      "force",
+    ],
+    [
+      "test",
+      "force",
+      "forceDeletion",
+    ],
+    [
+      "test",
+      "force",
+      "forceDeletion",
+    ],
+  ],
+}
+`;
+
+exports[`run descriptors golden > synchronization/test renders as recorded 1`] = `
+{
+  "initialOptionValues": {
+    "force": false,
+  },
+  "intro": "A dry run executes all the synchronization logic but saves nothing: no contract is written and the target system is not touched.",
+  "logsLink": [
+    {
+      "name": "SynchronizationLogs",
+      "query": {
+        "synchronizationId": 9,
+      },
+    },
+    {
+      "name": "SynchronizationLogs",
+      "query": {
+        "synchronizationId": "u-1",
+      },
+    },
+    {
+      "name": "SynchronizationLogs",
+      "query": {
+        "synchronizationId": 4,
+      },
+    },
+    null,
+  ],
+  "options": [
+    {
+      "key": "force",
+      "label": "Force",
+      "note": "Update the contract even when the engine detects no change. Useful after editing a mapping, when the source data itself is unchanged.",
+      "noteType": "info",
+    },
+  ],
+  "request": [
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/9/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/9/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/9/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/9/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/9/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/u-1/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/u-1/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/u-1/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/u-1/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/u-1/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/4/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/4/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/4/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/4/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/4/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/null/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/null/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/null/test",
+    },
+    {
+      "body": {
+        "force": true,
+      },
+      "url": "/apps/integriq/api/synchronizations/null/test",
+    },
+    {
+      "body": {
+        "force": false,
+      },
+      "url": "/apps/integriq/api/synchronizations/null/test",
+    },
+  ],
+  "runLabel": "Run test",
+  "sections": [
+    [],
+    [],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 5,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 2,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "13 ms",
+          },
+          {
+            "label": "Direction",
+            "value": "push",
+          },
+          {
+            "label": "Test mode",
+            "value": "Yes",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "2",
+          },
+          {
+            "label": "Contract logs",
+            "value": "1",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "Yes",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "0 ms",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 1,
+          },
+          {
+            "label": "Skipped",
+            "value": 2,
+          },
+          {
+            "label": "Created",
+            "value": 3,
+          },
+          {
+            "label": "Updated",
+            "value": 4,
+          },
+          {
+            "label": "Deleted",
+            "value": 5,
+          },
+          {
+            "label": "Invalid",
+            "value": 6,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": "",
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": false,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: deletion detection is switched off entirely while this synchronization is in incremental mode. Force deletion cannot override that — set the sync mode to full first.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the fetch from the source did not complete, so the engine could not tell a genuinely removed record from one it simply never saw.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [
+          {
+            "label": "Would have deleted",
+            "value": "46 / 100",
+          },
+          {
+            "label": "Share of existing objects",
+            "value": "45.7%",
+          },
+          {
+            "label": "Guard threshold",
+            "value": "25%",
+          },
+        ],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [
+          {
+            "label": "Would have deleted",
+            "value": "3 / ?",
+          },
+        ],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [
+          {
+            "label": "Share of existing objects",
+            "value": "50%",
+          },
+        ],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: the run would have removed an unusually large share of the existing objects, so the deletion-ratio guard stopped it. Check the numbers below — if the deletions are correct, run again with force deletion.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "deletionGuard",
+        "kind": "note",
+        "noteType": "warning",
+        "rows": [],
+        "title": "Deletion guarded",
+        "value": "No objects were deleted: a guard stopped the cleanup pass.",
+      },
+      {
+        "id": "objects",
+        "kind": "counters",
+        "title": "Objects",
+        "value": [
+          {
+            "label": "Found",
+            "value": 0,
+          },
+          {
+            "label": "Skipped",
+            "value": 0,
+          },
+          {
+            "label": "Created",
+            "value": 0,
+          },
+          {
+            "label": "Updated",
+            "value": 0,
+          },
+          {
+            "label": "Deleted",
+            "value": 0,
+          },
+          {
+            "label": "Invalid",
+            "value": 0,
+          },
+        ],
+      },
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Execution time",
+            "value": "—",
+          },
+          {
+            "label": "Direction",
+            "value": "—",
+          },
+          {
+            "label": "Test mode",
+            "value": "No",
+          },
+          {
+            "label": "Forced",
+            "value": "No",
+          },
+          {
+            "label": "Contracts",
+            "value": "0",
+          },
+          {
+            "label": "Contract logs",
+            "value": "0",
+          },
+        ],
+      },
+    ],
+  ],
+  "status": [
+    {
+      "text": "The run returned no result.",
+      "type": "warning",
+    },
+    {
+      "text": "The run returned no result.",
+      "type": "warning",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization completed successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The run is waiting for approval and made no changes. Approve the request to let it continue.",
+      "type": "warning",
+    },
+    {
+      "text": "Boom",
+      "type": "error",
+    },
+    {
+      "text": "Job crashed",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "Half done",
+      "type": "error",
+    },
+    {
+      "text": "Done",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization completed successfully.",
+      "type": "success",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The synchronization did not complete.",
+      "type": "error",
+    },
+  ],
+  "title": "Test synchronization (dry run)",
+  "visibleOptions": [
+    [
+      "force",
+    ],
+    [
+      "force",
+    ],
+    [
+      "force",
+    ],
+    [
+      "force",
+    ],
+    [
+      "force",
+    ],
+  ],
+}
+`;

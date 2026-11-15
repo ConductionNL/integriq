@@ -32,6 +32,7 @@ use OCA\Integriq\Flow\FetchFileNode;
 use OCA\Integriq\Flow\FlowNodeSupport;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -190,14 +191,14 @@ class FetchFileNodeTest extends TestCase {
 			}
 		);
 
-		$items = $this->node->execute(
+		$items = $this->node->execute(new FlowNodeCall(
 			items: [
 				$this->item(['syncedId' => 'obj-1']),
 				$this->item(['syncedId' => 'obj-2']),
 			],
 			config: ['rule' => 'grab-docs'],
 			context: $this->context()
-		);
+		));
 
 		$this->assertSame([['grab-docs', 'obj-1'], ['grab-docs', 'obj-2']], $seen);
 		// The service's RETURN is kept — it carries the placeholder values the
@@ -224,11 +225,11 @@ class FetchFileNodeTest extends TestCase {
 
 		$this->synchronizations->expects($this->never())->method('runFetchFileRule');
 
-		$items = $this->node->execute(
+		$items = $this->node->execute(new FlowNodeCall(
 			items: [$this->item(['syncedId' => '']), $this->item(['other' => 'thing'])],
 			config: ['rule' => 'grab-docs'],
 			context: $this->context()
-		);
+		));
 
 		// Skipped, but still PASSED ON. An item dropped here would vanish from
 		// the page before `contract-commit` and `contract-sweep` see it, and
@@ -253,11 +254,11 @@ class FetchFileNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			items: [$this->item(['written' => ['uuid' => 'obj-9']])],
 			config: ['rule' => 'grab-docs', 'objectIdPath' => 'written.uuid'],
 			context: $this->context()
-		);
+		));
 
 		$this->assertSame(['obj-9'], $seen);
 
@@ -281,11 +282,11 @@ class FetchFileNodeTest extends TestCase {
 			}
 		);
 
-		$items = $this->node->execute(
+		$items = $this->node->execute(new FlowNodeCall(
 			items: [$this->item(['syncedId' => 'obj-1']), $this->item(['syncedId' => 'obj-2'])],
 			config: ['rule' => 'grab-docs', 'onError' => 'continue'],
 			context: $this->context()
-		);
+		));
 
 		$this->assertCount(2, $items);
 		$error = $items[0]['json'][FlowNodeSupport::ERROR_KEY];
@@ -315,11 +316,11 @@ class FetchFileNodeTest extends TestCase {
 
 		$this->expectExceptionMessageMatches('/the source refused/');
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			items: [$this->item(['syncedId' => 'obj-1'])],
 			config: ['rule' => 'grab-docs', 'onError' => 'stop'],
 			context: $this->context()
-		);
+		));
 
 	}//end testUnderStopAFailureEndsTheRun()
 
@@ -333,7 +334,7 @@ class FetchFileNodeTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$this->node->execute(items: [], config: ['rule' => 'grab-docs'], context: $this->context())
+			$this->node->execute(new FlowNodeCall(items: [], config: ['rule' => 'grab-docs'], context: $this->context()))
 		);
 
 	}//end testAnEmptyPageFetchesNothing()

@@ -1,0 +1,208 @@
+{
+	"_comment": "ADR-037 register fragment (forms-service-fetch-for-apps Task 1, spec REQ-SF-001, design D2). Declares `serviceFetch`: a named call another app may ask integriq to make, with declared inputs, an output mapping and the apps allowed to call it. The object names a source, a path and mappings, so the authorization block is the lockdown shape of 99-mail-schemas-lockdown.json: four EMPTY rule lists deny everyone except the `admin` group and an object's owner. ServiceFetchService reads fetches in system context (`_rbac: false`) on behalf of the calling app, and ServiceFetchController projects them for designers without source, path, query or mappings. Also adds `context` to `call_log`, the calling app and fetch slug of a fetch's call (design D4). Does NOT edit lib/Settings/integriq_register.json.",
+	"components": {
+		"registers": {
+			"integriq": {
+				"schemas": [
+					"serviceFetch"
+				]
+			}
+		},
+		"schemas": {
+			"serviceFetch": {
+				"slug": "serviceFetch",
+				"title": "Service fetch",
+				"icon": "CloudDownloadOutline",
+				"version": "1.0.0",
+				"summary": "A named call another app may ask integriq to make",
+				"description": "A service fetch takes named inputs, calls one integriq source with them and answers named outputs through an output mapping. An app asks for it by slug; it never sees the source, its credential or the raw answer. See openspec/changes/forms-service-fetch-for-apps/design.md D2.",
+				"type": "object",
+				"required": [
+					"slug",
+					"title",
+					"source",
+					"method",
+					"outputMapping"
+				],
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": []
+				},
+				"properties": {
+					"slug": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 128,
+						"pattern": "^[a-z0-9][a-z0-9-]*$",
+						"description": "The name an app asks for the fetch by. Unique.",
+						"title": "Slug"
+					},
+					"title": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 255,
+						"description": "The name a form designer sees.",
+						"title": "Title"
+					},
+					"description": {
+						"type": "string",
+						"maxLength": 2000,
+						"description": "What the fetch answers, for a form designer.",
+						"title": "Description"
+					},
+					"source": {
+						"type": "string",
+						"format": "uuid",
+						"$ref": "#/components/schemas/source",
+						"description": "The integriq source the fetch calls.",
+						"title": "Source"
+					},
+					"method": {
+						"type": "string",
+						"enum": [
+							"GET",
+							"POST"
+						],
+						"default": "GET",
+						"description": "The HTTP method of the call.",
+						"title": "Method"
+					},
+					"path": {
+						"type": "string",
+						"maxLength": 2000,
+						"description": "The path relative to the source location, with {input} placeholders.",
+						"title": "Path"
+					},
+					"query": {
+						"type": "object",
+						"additionalProperties": {
+							"type": "string"
+						},
+						"description": "Query parameter name to template, with {input} placeholders.",
+						"title": "Query"
+					},
+					"bodyMapping": {
+						"type": "string",
+						"format": "uuid",
+						"$ref": "#/components/schemas/mapping",
+						"description": "A mapping from the inputs to the request body. POST only.",
+						"title": "Body mapping"
+					},
+					"inputs": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"required": [
+								"name",
+								"type"
+							],
+							"properties": {
+								"name": {
+									"type": "string",
+									"minLength": 1,
+									"title": "Name"
+								},
+								"type": {
+									"type": "string",
+									"enum": [
+										"string",
+										"number",
+										"date",
+										"boolean"
+									],
+									"title": "Type"
+								},
+								"required": {
+									"type": "boolean",
+									"default": false,
+									"title": "Required"
+								}
+							}
+						},
+						"description": "The inputs an app passes. Undeclared inputs are dropped.",
+						"title": "Inputs"
+					},
+					"outputMapping": {
+						"type": "string",
+						"format": "uuid",
+						"$ref": "#/components/schemas/mapping",
+						"description": "A mapping from the answer, given as {status, body}, to the outputs.",
+						"title": "Output mapping"
+					},
+					"outputs": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"required": [
+								"name"
+							],
+							"properties": {
+								"name": {
+									"type": "string",
+									"minLength": 1,
+									"title": "Name"
+								},
+								"type": {
+									"type": "string",
+									"title": "Type"
+								},
+								"label": {
+									"type": "string",
+									"title": "Label"
+								},
+								"required": {
+									"type": "boolean",
+									"default": false,
+									"title": "Required"
+								}
+							}
+						},
+						"description": "The outputs an app receives. Anything the mapping writes outside this list is dropped.",
+						"title": "Outputs"
+					},
+					"allowedApps": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "The app ids that may call the fetch. Empty means none.",
+						"title": "Allowed apps"
+					},
+					"timeoutMs": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 15000,
+						"default": 5000,
+						"description": "How long the call may take, in milliseconds. At most 15000.",
+						"title": "Timeout (ms)"
+					},
+					"cacheSeconds": {
+						"type": "integer",
+						"minimum": 0,
+						"default": 0,
+						"description": "How long an answer is reused for the same inputs. 0 is not at all.",
+						"title": "Cache (seconds)"
+					},
+					"enabled": {
+						"type": "boolean",
+						"default": true,
+						"description": "A disabled fetch answers unknown-fetch.",
+						"title": "Enabled"
+					}
+				}
+			},
+			"call_log": {
+				"properties": {
+					"context": {
+						"type": "object",
+						"description": "Who asked for the call, when another app did: the calling app and the service fetch slug (forms-service-fetch-for-apps design D4).",
+						"title": "Context"
+					}
+				}
+			}
+		}
+	}
+}

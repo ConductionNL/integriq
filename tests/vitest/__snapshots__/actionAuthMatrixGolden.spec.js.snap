@@ -1,0 +1,889 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`action matrix golden > loads as recorded 1`] = `
+[
+  {
+    "answer": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+        "job.run",
+      ],
+      "groups": [
+        "admin",
+        "ops",
+        "devs",
+      ],
+      "matrix": {
+        "flow.edit": "ops",
+        "other": [
+          "x",
+        ],
+        "sync.run": [
+          "ops",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+        "job.run",
+      ],
+      "error": "",
+      "groups": [
+        "admin",
+        "ops",
+        "devs",
+      ],
+      "loading": false,
+      "matrix": {
+        "flow.edit": [],
+        "job.run": [],
+        "sync.run": [
+          "ops",
+        ],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "get",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+      ],
+    ],
+  },
+  {
+    "answer": {
+      "actions": "sync.run",
+      "groups": null,
+      "matrix": [],
+    },
+    "state": {
+      "actions": [],
+      "error": "",
+      "groups": [],
+      "loading": false,
+      "matrix": {},
+      "saving": false,
+    },
+    "trace": [
+      [
+        "get",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+      ],
+    ],
+  },
+  {
+    "answer": {
+      "actions": [
+        "a",
+      ],
+      "groups": [
+        "g",
+      ],
+      "matrix": null,
+    },
+    "state": {
+      "actions": [
+        "a",
+      ],
+      "error": "",
+      "groups": [
+        "g",
+      ],
+      "loading": false,
+      "matrix": {
+        "a": [],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "get",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+      ],
+    ],
+  },
+  {
+    "answer": {},
+    "state": {
+      "actions": [],
+      "error": "",
+      "groups": [],
+      "loading": false,
+      "matrix": {},
+      "saving": false,
+    },
+    "trace": [
+      [
+        "get",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+      ],
+    ],
+  },
+  {
+    "answer": "Error",
+    "state": {
+      "actions": [],
+      "error": "Failed to load the action matrix.",
+      "groups": [],
+      "loading": false,
+      "matrix": {},
+      "saving": false,
+    },
+    "trace": [
+      [
+        "get",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+      ],
+      [
+        "console",
+        "Failed to load action matrix",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`action matrix golden > saves as recorded 1`] = `
+[
+  {
+    "answer": {
+      "matrix": {
+        "flow.edit": "admin",
+        "sync.run": [
+          "admin",
+          "ops",
+        ],
+      },
+    },
+    "savingDuring": true,
+    "start": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+      ],
+      "matrix": {
+        "flow.edit": [],
+        "sync.run": [
+          "ops",
+          "admin",
+          "devs",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+      ],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "flow.edit": [],
+        "sync.run": [
+          "admin",
+          "ops",
+        ],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {
+            "flow.edit": [
+              "admin",
+            ],
+            "sync.run": [
+              "admin",
+              "ops",
+              "devs",
+            ],
+          },
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": {
+      "matrix": "no",
+    },
+    "savingDuring": true,
+    "start": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+      ],
+      "matrix": {
+        "flow.edit": [],
+        "sync.run": [
+          "ops",
+          "admin",
+          "devs",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+      ],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "flow.edit": [],
+        "sync.run": [],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {
+            "flow.edit": [
+              "admin",
+            ],
+            "sync.run": [
+              "admin",
+              "ops",
+              "devs",
+            ],
+          },
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": null,
+    "savingDuring": true,
+    "start": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+      ],
+      "matrix": {
+        "flow.edit": [],
+        "sync.run": [
+          "ops",
+          "admin",
+          "devs",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+      ],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "flow.edit": [],
+        "sync.run": [],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {
+            "flow.edit": [
+              "admin",
+            ],
+            "sync.run": [
+              "admin",
+              "ops",
+              "devs",
+            ],
+          },
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": {},
+    "savingDuring": true,
+    "start": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+      ],
+      "matrix": {
+        "flow.edit": [],
+        "sync.run": [
+          "ops",
+          "admin",
+          "devs",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+      ],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "flow.edit": [],
+        "sync.run": [],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {
+            "flow.edit": [
+              "admin",
+            ],
+            "sync.run": [
+              "admin",
+              "ops",
+              "devs",
+            ],
+          },
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": "Error",
+    "savingDuring": true,
+    "start": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+      ],
+      "matrix": {
+        "flow.edit": [],
+        "sync.run": [
+          "ops",
+          "admin",
+          "devs",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "flow.edit",
+      ],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "flow.edit": [],
+        "sync.run": [
+          "ops",
+          "admin",
+          "devs",
+        ],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {
+            "flow.edit": [
+              "admin",
+            ],
+            "sync.run": [
+              "admin",
+              "ops",
+              "devs",
+            ],
+          },
+        },
+      ],
+      [
+        "console",
+        "Failed to save action matrix",
+      ],
+      [
+        "error",
+        "Failed to save the action matrix.",
+      ],
+    ],
+  },
+  {
+    "answer": {
+      "matrix": {
+        "flow.edit": "admin",
+        "sync.run": [
+          "admin",
+          "ops",
+        ],
+      },
+    },
+    "savingDuring": true,
+    "start": {
+      "actions": [
+        "sync.run",
+        "job.run",
+      ],
+      "matrix": {
+        "sync.run": [
+          "admin",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "job.run",
+      ],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "job.run": [],
+        "sync.run": [
+          "admin",
+          "ops",
+        ],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {
+            "job.run": [
+              "admin",
+            ],
+            "sync.run": [
+              "admin",
+            ],
+          },
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": {
+      "matrix": "no",
+    },
+    "savingDuring": true,
+    "start": {
+      "actions": [
+        "sync.run",
+        "job.run",
+      ],
+      "matrix": {
+        "sync.run": [
+          "admin",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "job.run",
+      ],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "job.run": [],
+        "sync.run": [],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {
+            "job.run": [
+              "admin",
+            ],
+            "sync.run": [
+              "admin",
+            ],
+          },
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": null,
+    "savingDuring": true,
+    "start": {
+      "actions": [
+        "sync.run",
+        "job.run",
+      ],
+      "matrix": {
+        "sync.run": [
+          "admin",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "job.run",
+      ],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "job.run": [],
+        "sync.run": [],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {
+            "job.run": [
+              "admin",
+            ],
+            "sync.run": [
+              "admin",
+            ],
+          },
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": {},
+    "savingDuring": true,
+    "start": {
+      "actions": [
+        "sync.run",
+        "job.run",
+      ],
+      "matrix": {
+        "sync.run": [
+          "admin",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "job.run",
+      ],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "job.run": [],
+        "sync.run": [],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {
+            "job.run": [
+              "admin",
+            ],
+            "sync.run": [
+              "admin",
+            ],
+          },
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": "Error",
+    "savingDuring": true,
+    "start": {
+      "actions": [
+        "sync.run",
+        "job.run",
+      ],
+      "matrix": {
+        "sync.run": [
+          "admin",
+        ],
+      },
+    },
+    "state": {
+      "actions": [
+        "sync.run",
+        "job.run",
+      ],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "sync.run": [
+          "admin",
+        ],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {
+            "job.run": [
+              "admin",
+            ],
+            "sync.run": [
+              "admin",
+            ],
+          },
+        },
+      ],
+      [
+        "console",
+        "Failed to save action matrix",
+      ],
+      [
+        "error",
+        "Failed to save the action matrix.",
+      ],
+    ],
+  },
+  {
+    "answer": {
+      "matrix": {
+        "flow.edit": "admin",
+        "sync.run": [
+          "admin",
+          "ops",
+        ],
+      },
+    },
+    "savingDuring": true,
+    "start": {
+      "actions": [],
+      "matrix": {
+        "stray": [
+          "ops",
+        ],
+      },
+    },
+    "state": {
+      "actions": [],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {},
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {},
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": {
+      "matrix": "no",
+    },
+    "savingDuring": true,
+    "start": {
+      "actions": [],
+      "matrix": {
+        "stray": [
+          "ops",
+        ],
+      },
+    },
+    "state": {
+      "actions": [],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {},
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {},
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": null,
+    "savingDuring": true,
+    "start": {
+      "actions": [],
+      "matrix": {
+        "stray": [
+          "ops",
+        ],
+      },
+    },
+    "state": {
+      "actions": [],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {},
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {},
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": {},
+    "savingDuring": true,
+    "start": {
+      "actions": [],
+      "matrix": {
+        "stray": [
+          "ops",
+        ],
+      },
+    },
+    "state": {
+      "actions": [],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {},
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {},
+        },
+      ],
+      [
+        "success",
+        "Action matrix saved.",
+      ],
+    ],
+  },
+  {
+    "answer": "Error",
+    "savingDuring": true,
+    "start": {
+      "actions": [],
+      "matrix": {
+        "stray": [
+          "ops",
+        ],
+      },
+    },
+    "state": {
+      "actions": [],
+      "error": "",
+      "groups": [],
+      "loading": true,
+      "matrix": {
+        "stray": [
+          "ops",
+        ],
+      },
+      "saving": false,
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/action-matrix",
+        {
+          "matrix": {},
+        },
+      ],
+      [
+        "console",
+        "Failed to save action matrix",
+      ],
+      [
+        "error",
+        "Failed to save the action matrix.",
+      ],
+    ],
+  },
+]
+`;

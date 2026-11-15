@@ -40,7 +40,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\SourceRequestedEvent;
-use OCA\Integriq\Service\ConnectionStore;
+use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Security\IRemoteHostValidator;
@@ -78,14 +78,14 @@ class SourceRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConnectionStore      $store         Reads and creates Sources as the system.
+	 * @param ConnectionStoreInterface      $store         Reads and creates Sources as the system.
 	 * @param IRemoteHostValidator $hostValidator Nextcloud's rule for which hosts may be called.
 	 * @param LoggerInterface      $logger        The audit and failure log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ConnectionStore $store,
+		private readonly ConnectionStoreInterface $store,
 		private readonly IRemoteHostValidator $hostValidator,
 		private readonly LoggerInterface $logger,
 	) {

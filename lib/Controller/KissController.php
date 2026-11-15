@@ -29,8 +29,8 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\CallEventNotFoundException;
 use OCA\Integriq\Exception\KissProviderException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\KissSyncService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\KissSyncServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -54,18 +54,18 @@ class KissController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param KissSyncService $syncService Push/pull orchestration logic.
+	 * @param KissSyncServiceInterface $syncService Push/pull orchestration logic.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly KissSyncService $syncService,
+		private readonly KissSyncServiceInterface $syncService,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -102,12 +102,7 @@ class KissController extends Controller {
 
 		$params = $this->request->getParams();
 		$onderwerp = (string)($params['onderwerp'] ?? '');
-		$channel = (string)($params['channel'] ?? '');
-		if ($channel === '' && (string)($params['callId'] ?? '') !== '') {
-			// A contact moment for a call is on the phone channel.
-			$channel = 'telefoon';
-		}
-
+		$channel = $this->channelOf(params: $params);
 		if ($onderwerp === '' || $channel === '') {
 			return new JSONResponse(
 				[
@@ -118,11 +113,42 @@ class KissController extends Controller {
 			);
 		}
 
-		$input = $this->buildPushInput(onderwerp: $onderwerp, channel: $channel, params: $params);
+		return $this->push(input: $this->buildPushInput(onderwerp: $onderwerp, channel: $channel, params: $params));
 
+	}//end createCustomerContact()
+
+	/**
+	 * The contact moment's channel: as given, or the phone for a call.
+	 *
+	 * @param array<string,mixed> $params The request params.
+	 *
+	 * @return string The channel, or an empty string.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 */
+	private function channelOf(array $params): string {
+		$channel = (string)($params['channel'] ?? '');
+		if ($channel === '' && (string)($params['callId'] ?? '') !== '') {
+			// A contact moment for a call is on the phone channel.
+			return 'telefoon';
+		}
+
+		return $channel;
+
+	}//end channelOf()
+
+	/**
+	 * Push the contact moment and answer the result or the failure envelope.
+	 *
+	 * @param array<string,mixed> $input The push input.
+	 *
+	 * @return JSONResponse The result, a 404 for an unknown call, or a 503/502 provider failure.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 */
+	private function push(array $input): JSONResponse {
 		try {
-			$result = $this->syncService->pushCustomerContact(input: $input);
-			return new JSONResponse($result);
+			return new JSONResponse($this->syncService->pushCustomerContact(input: $input));
 		} catch (CallEventNotFoundException $exception) {
 			return new JSONResponse(
 				[
@@ -132,19 +158,33 @@ class KissController extends Controller {
 				Http::STATUS_NOT_FOUND
 			);
 		} catch (KissProviderException $exception) {
-			$this->logger->warning('[KissController] push failed: ' . $exception->getMessage());
+			return $this->providerFailure(exception: $exception);
+		}
 
-			$status = Http::STATUS_BAD_GATEWAY;
-			$code = 'kiss_push_failed';
-			if (str_contains($exception->getMessage(), 'No active KISS source') === true) {
-				$status = Http::STATUS_SERVICE_UNAVAILABLE;
-				$code = 'not_configured';
-			}
+	}//end push()
 
-			return new JSONResponse(['error' => $code, 'message' => $exception->getMessage()], $status);
-		}//end try
+	/**
+	 * The envelope of a failed push: 503 when no KISS source is active, else 502.
+	 *
+	 * @param KissProviderException $exception The provider's failure.
+	 *
+	 * @return JSONResponse The error envelope.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 */
+	private function providerFailure(KissProviderException $exception): JSONResponse {
+		$this->logger->warning('[KissController] push failed: ' . $exception->getMessage());
 
-	}//end createCustomerContact()
+		$status = Http::STATUS_BAD_GATEWAY;
+		$code = 'kiss_push_failed';
+		if (str_contains($exception->getMessage(), 'No active KISS source') === true) {
+			$status = Http::STATUS_SERVICE_UNAVAILABLE;
+			$code = 'not_configured';
+		}
+
+		return new JSONResponse(['error' => $code, 'message' => $exception->getMessage()], $status);
+
+	}//end providerFailure()
 
 	/**
 	 * Assemble the `KissSyncService::pushCustomerContact()` input array from the

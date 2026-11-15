@@ -1,0 +1,21 @@
+{
+    "empty": "[{\"field\":\"verzoekId\",\"error\":\"required_field_missing\",\"message\":\"VerzoekId is verplicht\"},{\"field\":\"type\",\"error\":\"required_field_missing\",\"message\":\"Type is verplicht\"},{\"field\":\"indieningsdatum\",\"error\":\"required_field_missing\",\"message\":\"Indieningsdatum is verplicht\"},{\"field\":\"aanvrager\",\"error\":\"required_field_missing\",\"message\":\"Aanvrager is verplicht\"},{\"field\":\"locatie\",\"error\":\"required_field_missing\",\"message\":\"Locatie is verplicht\"},{\"field\":\"activiteiten\",\"error\":\"required_field_missing\",\"message\":\"Activiteiten is verplicht\"}]",
+    "valid": "[]",
+    "valid-datetime": "[]",
+    "empty-strings": "[{\"field\":\"verzoekId\",\"error\":\"required_field_missing\",\"message\":\"VerzoekId is verplicht\"},{\"field\":\"type\",\"error\":\"required_field_missing\",\"message\":\"Type is verplicht\"},{\"field\":\"indieningsdatum\",\"error\":\"required_field_missing\",\"message\":\"Indieningsdatum is verplicht\"},{\"field\":\"aanvrager\",\"error\":\"required_field_missing\",\"message\":\"Aanvrager is verplicht\"},{\"field\":\"locatie\",\"error\":\"required_field_missing\",\"message\":\"Locatie is verplicht\"},{\"field\":\"activiteiten\",\"error\":\"required_field_missing\",\"message\":\"Activiteiten is verplicht\"},{\"field\":\"type\",\"error\":\"invalid_enum_value\",\"message\":\"Type must be one of: aanvraag, melding, informatieverzoek, vooroverleg\"},{\"field\":\"activiteiten\",\"error\":\"invalid_type\",\"message\":\"Activiteiten must be an array\"},{\"field\":\"indieningsdatum\",\"error\":\"invalid_date_format\",\"message\":\"The submission date must be in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)\"}]",
+    "nulls": "[{\"field\":\"verzoekId\",\"error\":\"required_field_missing\",\"message\":\"VerzoekId is verplicht\"},{\"field\":\"type\",\"error\":\"required_field_missing\",\"message\":\"Type is verplicht\"},{\"field\":\"indieningsdatum\",\"error\":\"required_field_missing\",\"message\":\"Indieningsdatum is verplicht\"},{\"field\":\"aanvrager\",\"error\":\"required_field_missing\",\"message\":\"Aanvrager is verplicht\"},{\"field\":\"locatie\",\"error\":\"required_field_missing\",\"message\":\"Locatie is verplicht\"},{\"field\":\"activiteiten\",\"error\":\"required_field_missing\",\"message\":\"Activiteiten is verplicht\"}]",
+    "zero-and-false": "[]",
+    "bad-type": "[{\"field\":\"type\",\"error\":\"invalid_enum_value\",\"message\":\"Type must be one of: aanvraag, melding, informatieverzoek, vooroverleg\"}]",
+    "type-int": "[{\"field\":\"type\",\"error\":\"invalid_enum_value\",\"message\":\"Type must be one of: aanvraag, melding, informatieverzoek, vooroverleg\"}]",
+    "every-type": "[]",
+    "informatieverzoek": "[]",
+    "vooroverleg": "[]",
+    "activiteiten-string": "[{\"field\":\"activiteiten\",\"error\":\"invalid_type\",\"message\":\"Activiteiten must be an array\"}]",
+    "activiteiten-empty-array": "[]",
+    "bad-bsn": "[{\"field\":\"aanvrager.bsn\",\"error\":\"invalid_bsn\",\"message\":\"BSN does not pass the 11-proef validation\"}]",
+    "short-bsn": "[{\"field\":\"aanvrager.bsn\",\"error\":\"invalid_bsn\",\"message\":\"BSN does not pass the 11-proef validation\"}]",
+    "no-bsn": "[]",
+    "bad-date": "[{\"field\":\"indieningsdatum\",\"error\":\"invalid_date_format\",\"message\":\"The submission date must be in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)\"}]",
+    "date-int": "TypeError",
+    "everything-wrong": "[{\"field\":\"verzoekId\",\"error\":\"required_field_missing\",\"message\":\"VerzoekId is verplicht\"},{\"field\":\"locatie\",\"error\":\"required_field_missing\",\"message\":\"Locatie is verplicht\"},{\"field\":\"type\",\"error\":\"invalid_enum_value\",\"message\":\"Type must be one of: aanvraag, melding, informatieverzoek, vooroverleg\"},{\"field\":\"activiteiten\",\"error\":\"invalid_type\",\"message\":\"Activiteiten must be an array\"},{\"field\":\"aanvrager.bsn\",\"error\":\"invalid_bsn\",\"message\":\"BSN does not pass the 11-proef validation\"},{\"field\":\"indieningsdatum\",\"error\":\"invalid_date_format\",\"message\":\"The submission date must be in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)\"}]"
+}

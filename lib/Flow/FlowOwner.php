@@ -3,6 +3,9 @@
 /**
  * Integriq Flow Owner.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Fail-closed identity resolution for the node types Integriq contributes
  * to OpenRegister's flow engine.
  *
@@ -31,9 +34,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -45,7 +45,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
-use OCA\Integriq\Exception\FlowNodeException;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;

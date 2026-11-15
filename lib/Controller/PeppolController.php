@@ -28,10 +28,11 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\PeppolProviderException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\PeppolTransmissionService;
-use OCA\Integriq\Service\Intake\WebhookGate;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\PeppolTransmissionServiceInterface;
+use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -48,6 +49,8 @@ use Throwable;
 /**
  * Peppol participant lookup + signed inbound receive webhook.
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) -- a controller wires its services, gate, session, l10n and log
+ *
  * @spec openspec/specs/peppol-access-point-connector/spec.md
  * @spec openspec/changes/peppol-inbound-on-the-consumer-model/specs/peppol-access-point-connector/spec.md#requirement-the-inbound-webhook-acts-as-the-peppol-connections-account-req-020
  *
@@ -60,20 +63,20 @@ class PeppolController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param PeppolTransmissionService $transmissionService Lookup + transmission/callback logic.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param PeppolTransmissionServiceInterface $transmissionService Lookup + transmission/callback logic.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (participants endpoint).
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PeppolTransmissionService $transmissionService,
-		private readonly WebhookGate $gate,
+		private readonly PeppolTransmissionServiceInterface $transmissionService,
+		private readonly WebhookGateInterface $gate,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -110,6 +113,18 @@ class PeppolController extends Controller {
 			);
 		}
 
+		return $this->lookupParticipant(peppolId: $peppolId);
+
+	}//end participants()
+
+	/**
+	 * Look a valid participant up at the access point and answer the result.
+	 *
+	 * @param string $peppolId The participant identifier (`scheme:identifier`).
+	 *
+	 * @return JSONResponse `{exists, supportedDocTypes}`, or the 502 error envelope.
+	 */
+	private function lookupParticipant(string $peppolId): JSONResponse {
 		try {
 			$result = $this->transmissionService->lookupParticipant(peppolId: $peppolId);
 			if ($result['exists'] === false) {
@@ -121,17 +136,30 @@ class PeppolController extends Controller {
 
 			return new JSONResponse($result);
 		} catch (PeppolProviderException $exception) {
-			$this->logger->warning(
-				'[PeppolController] participant lookup failed: ' . $exception->getMessage(),
-				['peppolId' => $peppolId]
-			);
-			return new JSONResponse(
-				['error' => 'peppol_unavailable', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_GATEWAY
-			);
-		}//end try
+			return $this->lookupFailure(exception: $exception, peppolId: $peppolId);
+		}
 
-	}//end participants()
+	}//end lookupParticipant()
+
+	/**
+	 * Log a failed lookup and answer it.
+	 *
+	 * @param PeppolProviderException $exception The access point's failure.
+	 * @param string                  $peppolId  The participant identifier looked up.
+	 *
+	 * @return JSONResponse The 502 error envelope.
+	 */
+	private function lookupFailure(PeppolProviderException $exception, string $peppolId): JSONResponse {
+		$this->logger->warning(
+			'[PeppolController] participant lookup failed: ' . $exception->getMessage(),
+			['peppolId' => $peppolId]
+		);
+		return new JSONResponse(
+			['error' => 'peppol_unavailable', 'message' => $exception->getMessage()],
+			Http::STATUS_BAD_GATEWAY
+		);
+
+	}//end lookupFailure()
 
 	/**
 	 * Receive an Access Point delivery callback or inbound-document notification.
@@ -158,7 +186,7 @@ class PeppolController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::PEPPOL, rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfilesInterface::PEPPOL, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -167,41 +195,105 @@ class PeppolController extends Controller {
 		// JSON body into params) — NOT a second json_decode($rawBody) — mirroring
 		// DSOController: signature verification runs over the exact raw bytes,
 		// while payload access goes through the framework's normalised params.
-		$body = $this->request->getParams();
+		return $this->deliverCallback(identity: $identity, body: $this->request->getParams());
+	}//end inbound()
 
+	/**
+	 * Record a signed callback as the connection's account.
+	 *
+	 * @param DsoIdentity         $identity The consumer the callback authenticated as.
+	 * @param array<string,mixed> $body     The callback's params.
+	 *
+	 * @return JSONResponse `{received: true}`, or 503 when the account's write was refused.
+	 */
+	private function deliverCallback(DsoIdentity $identity, array $body): JSONResponse {
 		try {
 			$this->gate->deliver(
 				identity: $identity,
 				operation: function () use ($body): void {
-					if (isset($body['transmissionId']) === true) {
-						$detail = null;
-						if (isset($body['detail']) === true) {
-							$detail = (string)$body['detail'];
-						}
-
-						$this->transmissionService->handleDeliveryCallback(
-							transmissionId: (string)$body['transmissionId'],
-							status: (string)($body['status'] ?? ''),
-							detail: $detail
-						);
-					} elseif (isset($body['senderPeppolId']) === true) {
-						$this->transmissionService->handleInboundDocument(
-							senderPeppolId: (string)$body['senderPeppolId'],
-							documentType: (string)($body['documentType'] ?? ''),
-							payloadReference: (string)($body['payloadReference'] ?? '')
-						);
-					} else {
-						$this->logger->warning('[PeppolController] inbound webhook payload matched neither known shape', ['keys' => array_keys($body)]);
-					}
+					$this->recordCallback(body: $body);
 				}
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so the access point delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::PEPPOL, reason: $exception->getMessage());
-		}//end try
+			return $this->gate->notStored(profile: WebhookProfilesInterface::PEPPOL, reason: $exception->getMessage());
+		}
 
 		return new JSONResponse(['received' => true]);
-	}//end inbound()
+
+	}//end deliverCallback()
+
+	/**
+	 * Hand a callback to the transmission service by its shape: a delivery
+	 * callback (it names a transmission), else an inbound document (it names a
+	 * sender), else log the payload's keys.
+	 *
+	 * @param array<string,mixed> $body The callback's params.
+	 *
+	 * @return void
+	 */
+	private function recordCallback(array $body): void {
+		if (isset($body['transmissionId']) === true) {
+			$this->recordDeliveryCallback(body: $body);
+			return;
+		}
+
+		if (isset($body['senderPeppolId']) === true) {
+			$this->recordInboundDocument(body: $body);
+			return;
+		}
+
+		$this->logger->warning('[PeppolController] inbound webhook payload matched neither known shape', ['keys' => array_keys($body)]);
+
+	}//end recordCallback()
+
+	/**
+	 * Hand a delivery callback to the transmission service.
+	 *
+	 * @param array<string,mixed> $body The callback's params; it names a transmission.
+	 *
+	 * @return void
+	 */
+	private function recordDeliveryCallback(array $body): void {
+		$this->transmissionService->handleDeliveryCallback(
+			transmissionId: (string)$body['transmissionId'],
+			status: (string)($body['status'] ?? ''),
+			detail: $this->detailOf(body: $body)
+		);
+
+	}//end recordDeliveryCallback()
+
+	/**
+	 * Hand an inbound-document notification to the transmission service.
+	 *
+	 * @param array<string,mixed> $body The callback's params; it names a sender.
+	 *
+	 * @return void
+	 */
+	private function recordInboundDocument(array $body): void {
+		$this->transmissionService->handleInboundDocument(
+			senderPeppolId: (string)$body['senderPeppolId'],
+			documentType: (string)($body['documentType'] ?? ''),
+			payloadReference: (string)($body['payloadReference'] ?? '')
+		);
+
+	}//end recordInboundDocument()
+
+	/**
+	 * A delivery callback's detail as a string, or null when it carries none.
+	 *
+	 * @param array<string,mixed> $body The callback's params.
+	 *
+	 * @return string|null The detail, or null.
+	 */
+	private function detailOf(array $body): string|null {
+		if (isset($body['detail']) === true) {
+			return (string)$body['detail'];
+		}
+
+		return null;
+
+	}//end detailOf()
 
 	/**
 	 * Read the raw request body bytes for signature verification.

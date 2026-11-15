@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\Service\FlowGraphMigrationService;
+use OCA\Integriq\Service\FlowGraphMigrationServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -92,36 +92,12 @@ class MigrateFlowStepsToGraph implements IRepairStep {
 			return;
 		}
 
-		try {
-			$migration = $this->container->get(FlowGraphMigrationService::class);
-			$report = $migration->migrate(apply: true);
-		} catch (Throwable $e) {
-			// Non-fatal by contract: the legacy runner still executes steps[],
-			// and the occ command re-runs the migration on demand.
-			$this->logger->warning(
-				'MigrateFlowStepsToGraph: migration pass failed, flows stay on steps[]: ' . $e->getMessage(),
-				['exception' => $e]
-			);
-
+		$report = $this->migrationReport();
+		if ($report === null) {
 			return;
 		}
 
-		$migrated = 0;
-		$refused = 0;
-		foreach ($report as $row) {
-			if ($row['action'] === FlowGraphMigrationService::MIGRATED) {
-				$migrated++;
-			}
-
-			if ($row['action'] === FlowGraphMigrationService::REFUSED) {
-				$refused++;
-				$this->logger->warning(
-					'MigrateFlowStepsToGraph: flow refused, staying on steps[]',
-					['flowId' => $row['id'], 'name' => $row['name'], 'reasons' => $row['reasons']]
-				);
-			}
-		}
-
+		[$migrated, $refused] = $this->countOutcomes(report: $report);
 		if (($migrated + $refused) > 0) {
 			$output->info(sprintf(
 				'Flow steps-to-graph migration: %d migrated, %d refused (see the log), %d total.',
@@ -132,4 +108,58 @@ class MigrateFlowStepsToGraph implements IRepairStep {
 		}
 
 	}//end run()
+
+	/**
+	 * Run the migration pass, or answer null after logging why it failed.
+	 *
+	 * @return array<int, array<string, mixed>>|null The per-flow report.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function migrationReport(): ?array {
+		try {
+			$migration = $this->container->get(FlowGraphMigrationServiceInterface::class);
+			return $migration->migrate(apply: true);
+		} catch (Throwable $e) {
+			// Non-fatal by contract: the legacy runner still executes steps[],
+			// and the occ command re-runs the migration on demand.
+			$this->logger->warning(
+				'MigrateFlowStepsToGraph: migration pass failed, flows stay on steps[]: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+
+			return null;
+		}
+
+	}//end migrationReport()
+
+	/**
+	 * Count the migrated and refused flows, logging each refusal.
+	 *
+	 * @param array<int, array<string, mixed>> $report The per-flow report.
+	 *
+	 * @return array{0: int, 1: int} Migrated and refused counts.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function countOutcomes(array $report): array {
+		$migrated = 0;
+		$refused = 0;
+		foreach ($report as $row) {
+			if ($row['action'] === FlowGraphMigrationServiceInterface::MIGRATED) {
+				$migrated++;
+			}
+
+			if ($row['action'] === FlowGraphMigrationServiceInterface::REFUSED) {
+				$refused++;
+				$this->logger->warning(
+					'MigrateFlowStepsToGraph: flow refused, staying on steps[]',
+					['flowId' => $row['id'], 'name' => $row['name'], 'reasons' => $row['reasons']]
+				);
+			}
+		}
+
+		return [$migrated, $refused];
+
+	}//end countOutcomes()
 }//end class

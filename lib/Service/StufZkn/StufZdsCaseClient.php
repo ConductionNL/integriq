@@ -24,7 +24,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
  */
 
 declare(strict_types=1);
@@ -37,9 +37,9 @@ use OCA\Integriq\Exception\StufZknTranslationException;
 /**
  * Builds StUF-ZDS case messages and hands them to the outbound side.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
  */
-class StufZdsCaseClient {
+class StufZdsCaseClient implements StufZdsCaseClientInterface {
 
 	/**
 	 * Constructor.
@@ -75,10 +75,10 @@ class StufZdsCaseClient {
 	 * @throws StufZknProviderException    When the source cannot send.
 	 * @throws StufZknTranslationException When the case cannot be expressed.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function creeerZaak(string $sourceId, array $case, string $zaaktypeOmschrijving, array $context=[]): array {
-		$source = $this->restSource(sourceId: $sourceId);
+		$source = $this->restSource(sourceId: $sourceId, context: $context);
 		if ($this->breaker->allows(sourceId: $source['id']) === false) {
 			return $this->circuitOpen();
 		}
@@ -122,14 +122,14 @@ class StufZdsCaseClient {
 	 * @throws StufZknProviderException    When the source cannot send.
 	 * @throws StufZknTranslationException When no zaak identificatie is given.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function actualiseerZaak(string $sourceId, string $caseIdentification, array $changes, array $context=[]): array {
 		if (trim($caseIdentification) === '') {
 			throw new StufZknTranslationException(message: 'actualiseerZaak needs the zaak identificatie the case system knows the case by.');
 		}
 
-		$source = $this->restSource(sourceId: $sourceId);
+		$source = $this->restSource(sourceId: $sourceId, context: $context);
 		if ($this->breaker->allows(sourceId: $source['id']) === false) {
 			return $this->circuitOpen();
 		}
@@ -153,10 +153,10 @@ class StufZdsCaseClient {
 	 * @throws StufZknProviderException    When the source cannot send.
 	 * @throws StufZknTranslationException When the template is not registered or a required field is missing.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function vrijBericht(string $sourceId, string $name, array $payload, array $context=[]): array {
-		$source   = $this->restSource(sourceId: $sourceId);
+		$source   = $this->restSource(sourceId: $sourceId, context: $context);
 		$template = null;
 		foreach ((array)($source['configuration']['freeMessageTemplates'] ?? []) as $candidate) {
 			if (is_array($candidate) === true && ($candidate['name'] ?? '') === $name) {
@@ -191,10 +191,10 @@ class StufZdsCaseClient {
 	 *
 	 * @throws StufZknProviderException When the source cannot send.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function geefZaakdetails(string $sourceId, string $caseIdentification, array $wantedElements=[], array $context=[]): array {
-		$source = $this->restSource(sourceId: $sourceId);
+		$source = $this->restSource(sourceId: $sourceId, context: $context);
 		if ($this->breaker->allows(sourceId: $source['id']) === false) {
 			return ($this->circuitOpen() + ['case' => null]);
 		}
@@ -226,10 +226,10 @@ class StufZdsCaseClient {
 	 *
 	 * @throws StufZknProviderException When the source cannot send.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function genereerZaakIdentificatie(string $sourceId, array $context=[]): array {
-		$source = $this->restSource(sourceId: $sourceId);
+		$source = $this->restSource(sourceId: $sourceId, context: $context);
 		if ($this->breaker->allows(sourceId: $source['id']) === false) {
 			return $this->circuitOpen();
 		}
@@ -252,19 +252,35 @@ class StufZdsCaseClient {
 	}//end genereerZaakIdentificatie()
 
 	/**
-	 * Read the source and refuse one that would send nothing.
+	 * Read the source and refuse one that would send nothing, or that belongs to another app.
+	 *
+	 * A source that names its app in `configuration.owningApp` takes case commands from that
+	 * app only, so with two case apps installed one cannot send for the other's source.
 	 *
 	 * @param string $sourceId The source id.
+	 * @param array  $context  The command context, read for `sourceApp`.
 	 *
 	 * @return array The source, `id` set.
 	 *
-	 * @throws StufZknProviderException When the source is missing or in log mode.
+	 * @throws StufZknProviderException When the source is missing, in log mode, or owned by another app.
+	 *
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
 	 */
-	private function restSource(string $sourceId): array {
+	private function restSource(string $sourceId, array $context=[]): array {
 		$source = $this->log->source(sourceId: $sourceId);
 		if (($source['configuration']['provider'] ?? 'log') !== 'rest') {
 			throw new StufZknProviderException(
 				message: 'The StUF-ZKN source is not in rest mode (configuration.provider); the log provider sends nothing, so no case message was sent.'
+			);
+		}
+
+		$owningApp = trim((string)($source['configuration']['owningApp'] ?? ''));
+		if ($owningApp !== '' && (string)($context['sourceApp'] ?? '') !== $owningApp) {
+			throw new StufZknProviderException(
+				message: sprintf(
+					'The StUF-ZKN source belongs to the app "%s" (configuration.owningApp); a case command from another app is not sent.',
+					$owningApp
+				)
 			);
 		}
 

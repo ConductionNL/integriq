@@ -158,4 +158,82 @@ class DatasourceControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 	}//end testMissingSourceReturns404()
+
+	/**
+	 * The ttl and params a request carries, and what reaches the service.
+	 *
+	 * @return array<string,array{0:array<string,mixed>,1:array<string,mixed>,2:int|null}>
+	 */
+	public static function requestReadings(): array {
+		return [
+			'no ttl, no params'       => [[], [], null],
+			'numeric string ttl'      => [['ttl' => '30'], [], 30],
+			'fractional ttl'          => [['ttl' => 12.7], [], 12],
+			'non-numeric ttl'         => [['ttl' => 'soon'], [], null],
+			'null ttl'                => [['ttl' => null], [], null],
+			'params not a list'       => [['params' => 'q=1'], [], null],
+			'params kept, url gone'   => [['params' => ['q' => 1, 'url' => 'x']], ['q' => 1], null],
+		];
+
+	}//end requestReadings()
+
+	/**
+	 * Each reading reaches the service as recorded.
+	 *
+	 * @param array<string,mixed> $body   The request body besides valueExpr.
+	 * @param array<string,mixed> $params The params the service sees.
+	 * @param int|null            $ttl    The ttl the service sees.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider requestReadings
+	 */
+	public function testTheRequestReachesTheService(array $body, array $params, ?int $ttl): void {
+		$this->request->method('getParams')->willReturn(['valueExpr' => '$.ok'] + $body);
+		$this->service->expects($this->once())->method('resolve')
+			->with('src-1', '$.ok', $params, $ttl)
+			->willReturn(['value' => 1]);
+
+		$this->assertSame(['value' => 1], $this->controller->resolve(service: $this->service, sourceId: 'src-1')->getData());
+
+	}//end testTheRequestReachesTheService()
+
+	/**
+	 * The error bodies, and only the unexpected failure is logged.
+	 *
+	 * @return void
+	 */
+	public function testTheErrorBodies(): void {
+		$this->request->method('getParams')->willReturnOnConsecutiveCalls(
+			['valueExpr' => ''],
+			['valueExpr' => '$.ok'],
+			['valueExpr' => '$.ok'],
+			['valueExpr' => '$.ok']
+		);
+		$failure = new \RuntimeException('boom');
+		$this->service->method('resolve')->willReturnOnConsecutiveCalls(
+			$this->throwException(new NotAuthorizedException('nope')),
+			$this->throwException($this->createMock(DoesNotExistException::class)),
+			$this->throwException($failure)
+		);
+		$this->logger->expects($this->once())->method('error')
+			->with('dashboard-http-datasource: resolve failed unexpectedly: boom', ['exception' => $failure]);
+
+		$answers = [];
+		for ($i = 0; $i < 4; $i++) {
+			$response = $this->controller->resolve(service: $this->service, sourceId: 'src-1');
+			$answers[] = [$response->getStatus(), $response->getData()];
+		}
+
+		$this->assertSame(
+			[
+				[Http::STATUS_BAD_REQUEST, ['error' => 'valueExpr is required']],
+				[Http::STATUS_FORBIDDEN, ['error' => 'Not authorized to read this source']],
+				[Http::STATUS_NOT_FOUND, ['error' => 'Source not found']],
+				[Http::STATUS_INTERNAL_SERVER_ERROR, ['error' => 'Failed to resolve value']],
+			],
+			$answers
+		);
+
+	}//end testTheErrorBodies()
 }//end class

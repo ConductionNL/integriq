@@ -225,4 +225,25 @@ class BerichtenboxLetterBuilderTest extends TestCase {
 		$this->expectExceptionMessage('does not validate against the Logius schema');
 		(new BerichtenboxLetterBuilder())->assertValid(str_replace('>Burger<', '>Bedrijf<', $batch->xml));
 	}//end testTheSchemaCheckRejectsAMalformedBatch()
+
+	/**
+	 * The schema path names the vendored request schema the letters are checked
+	 * against, and that schema declares the namespace a built letter is in.
+	 *
+	 * @return void
+	 */
+	public function testTheSchemaPathIsTheVendoredRequestSchemaOfTheLetter(): void {
+		$path = BerichtenboxLetterBuilder::schemaPath();
+		$this->assertSame(
+			realpath(dirname(__DIR__, 4) . '/lib/Adapters/Berichtenbox/Logius/BerichtVerwerkService/Request/GLOBEBatchRequest.xsd'),
+			realpath($path)
+		);
+
+		$schema = new DOMDocument();
+		$this->assertTrue($schema->load($path, LIBXML_NONET));
+		$batch = (new BerichtenboxLetterBuilder())->build($this->message(), self::OIN, 'BESLUIT');
+		$letter = new DOMDocument();
+		$letter->loadXML($batch->xml, LIBXML_NONET);
+		$this->assertSame($schema->documentElement->getAttribute('targetNamespace'), $letter->documentElement->namespaceURI);
+	}//end testTheSchemaPathIsTheVendoredRequestSchemaOfTheLetter()
 }//end class

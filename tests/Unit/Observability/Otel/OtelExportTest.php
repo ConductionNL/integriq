@@ -24,12 +24,13 @@ namespace OCA\Integriq\Tests\Unit\Observability\Otel;
 
 use InvalidArgumentException;
 use OCA\Integriq\BackgroundJob\OtelExportJob;
+use OCA\Integriq\BackgroundJob\OtelExportJobScheduler;
 use OCA\Integriq\Observability\Otel\OtelExportBreaker;
 use OCA\Integriq\Observability\Otel\OtelSettings;
 use OCA\Integriq\Observability\Otel\OtlpTraceExporter;
 use OCA\Integriq\Observability\Otel\SpanMapper;
 use OCA\Integriq\Observability\Otel\TraceExporterInterface;
-use OCA\Integriq\Observability\Otel\TraceExportQueue;
+use OCA\Integriq\Service\Otel\TraceExportQueue;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\ExecutionTraceService;
@@ -416,7 +417,7 @@ class OtelExportTest extends TestCase {
 				$warnings[] = $context['skippedTotal'];
 			}
 		);
-		$queue = new TraceExportQueue($this->settings(), $jobList, $logger, $this->breaker(), $this->clock(1000));
+		$queue = new TraceExportQueue($this->settings(), new OtelExportJobScheduler($jobList), $logger, $this->breaker(), $this->clock(1000));
 		$this->writes = [];
 
 		$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
@@ -452,7 +453,7 @@ class OtelExportTest extends TestCase {
 			$this->config = ['otel_enabled' => true, 'otel_endpoint' => 'https://otel.example.org', 'otel_breaker_open_until' => 1300];
 			$logger = $this->createMock(LoggerInterface::class);
 			$logger->expects($this->once())->method('warning')->with($this->anything(), $this->callback(static fn (array $context) => $context['skippedTotal'] === 0));
-			$queue = new TraceExportQueue($this->settings(), $this->createMock(IJobList::class), $logger, $this->breaker($cacheFactory), $this->clock(1000));
+			$queue = new TraceExportQueue($this->settings(), new OtelExportJobScheduler($this->createMock(IJobList::class)), $logger, $this->breaker($cacheFactory), $this->clock(1000));
 
 			$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
 			$this->assertFalse($queue->queue(trace: new ExecutionTraceContext(entryPoint: 'job'), status: 'failed'));
@@ -504,7 +505,7 @@ class OtelExportTest extends TestCase {
 		$clients = $this->createMock(IClientService::class);
 		$clients->expects($this->never())->method('newClient');
 
-		$service = new ExecutionTraceService($objects, $this->createMock(ContainerInterface::class), $this->createMock(LoggerInterface::class), new TraceExportQueue($this->settings(), $jobList, $this->createMock(LoggerInterface::class)));
+		$service = new ExecutionTraceService($objects, $this->createMock(ContainerInterface::class), $this->createMock(LoggerInterface::class), new TraceExportQueue($this->settings(), new OtelExportJobScheduler($jobList), $this->createMock(LoggerInterface::class)));
 
 		$trace = new ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'ep-1', traceId: '4bf92f35-77b3-4da6-a3ce-929d0e0e4736');
 		$trace->setParentSpanId('00f067aa0ba902b7');

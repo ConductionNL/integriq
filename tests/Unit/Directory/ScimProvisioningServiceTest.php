@@ -585,4 +585,190 @@ class ScimProvisioningServiceTest extends TestCase {
 		$this->assertTrue($written);
 
 	}//end testAManagedGroupIsWrittenNormally()
+
+	/**
+	 * A stub account with the given state.
+	 *
+	 * @param string      $uid         The uid.
+	 * @param bool        $enabled     Whether it is enabled.
+	 * @param string|null $email       Its email address.
+	 * @param string      $displayName Its display name.
+	 *
+	 * @return IUser&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function account(string $uid, bool $enabled = true, ?string $email = null, string $displayName = ''): IUser {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$user->method('isEnabled')->willReturn($enabled);
+		$user->method('getEMailAddress')->willReturn($email);
+		$user->method('getDisplayName')->willReturn($displayName);
+
+		return $user;
+	}//end account()
+
+	/**
+	 * A group stub with an id and display name.
+	 *
+	 * @param string $gid     The group id.
+	 * @param string $display The display name.
+	 *
+	 * @return IGroup&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function namedGroup(string $gid, string $display = ''): IGroup {
+		$group = $this->createMock(IGroup::class);
+		$group->method('getGID')->willReturn($gid);
+		$group->method('getDisplayName')->willReturn($display);
+
+		return $group;
+	}//end namedGroup()
+
+	/**
+	 * An upsert writes the display name, the first email and an activation,
+	 * and answers the account as a SCIM resource with its groups.
+	 *
+	 * @return void
+	 */
+	public function testAnUpsertWritesTheProfileAndAnswersTheResource(): void {
+		$user = $this->account(uid: 'dana', enabled: true, email: 'dana@gemeente.nl', displayName: 'Dana de Vries');
+		$user->expects($this->once())->method('setDisplayName')->with('Dana de Vries');
+		$user->expects($this->once())->method('setEMailAddress')->with('dana@gemeente.nl');
+		$user->expects($this->once())->method('setEnabled')->with(true);
+		$this->userManager->method('get')->willReturn($user);
+		$this->groupManager->method('isInGroup')->willReturn(false);
+		$this->groupManager->method('getUserGroups')->with($user)->willReturn([$this->namedGroup('vergunningen', 'Vergunningen')]);
+
+		$resource = $this->service()->upsertUser(
+			resource: ['userName' => 'dana', 'displayName' => 'Dana de Vries', 'emails' => [['value' => 'dana@gemeente.nl'], ['value' => 'other@x.nl']], 'active' => 1],
+			consumerLabel: 'consumer-1'
+		);
+
+		$this->assertSame(
+			[
+				'schemas' => ['urn:ietf:params:scim:schemas:core:2.0:User'],
+				'id' => 'dana',
+				'userName' => 'dana',
+				'displayName' => 'Dana de Vries',
+				'active' => true,
+				'emails' => [['value' => 'dana@gemeente.nl', 'primary' => true]],
+				'groups' => [['value' => 'vergunningen', 'display' => 'Vergunningen']],
+			],
+			$resource
+		);
+	}//end testAnUpsertWritesTheProfileAndAnswersTheResource()
+
+	/**
+	 * An upsert without profile fields or active leaves the account as it is.
+	 *
+	 * @return void
+	 */
+	public function testAnUpsertWithoutFieldsChangesNothing(): void {
+		$user = $this->account(uid: 'dana', email: '');
+		$user->expects($this->never())->method('setDisplayName');
+		$user->expects($this->never())->method('setEMailAddress');
+		$user->expects($this->never())->method('setEnabled');
+		$this->userManager->method('get')->willReturn($user);
+		$this->groupManager->method('isInGroup')->willReturn(false);
+		$this->groupManager->method('getUserGroups')->willReturn([]);
+
+		$resource = $this->service()->upsertUser(resource: ['userName' => 'dana'], consumerLabel: 'consumer-1');
+
+		$this->assertSame([], $resource['emails']);
+	}//end testAnUpsertWithoutFieldsChangesNothing()
+
+	/**
+	 * An account the backend will not create answers an inactive placeholder resource.
+	 *
+	 * @return void
+	 */
+	public function testAnAccountTheBackendWillNotCreateAnswersInactive(): void {
+		$this->userManager->method('get')->willReturn(null);
+		$this->userManager->expects($this->once())->method('createUser')->with('eva', 'a-throwaway-password')->willReturn(false);
+
+		$resource = $this->service()->upsertUser(resource: ['userName' => 'eva', 'displayName' => 'Eva'], consumerLabel: 'consumer-1');
+
+		$this->assertSame(['schemas' => ['urn:ietf:params:scim:schemas:core:2.0:User'], 'id' => 'eva', 'userName' => 'eva', 'active' => false], $resource);
+	}//end testAnAccountTheBackendWillNotCreateAnswersInactive()
+
+	/**
+	 * Deactivating an unknown account reports nothing.
+	 *
+	 * @return void
+	 */
+	public function testDeactivatingAnUnknownAccountReportsNothing(): void {
+		$this->userManager->method('get')->willReturn(null);
+
+		$this->assertSame([], $this->service()->deactivateUser(userId: 'ghost', consumerLabel: 'consumer-1', expectedConsumers: ['dossiq']));
+	}//end testDeactivatingAnUnknownAccountReportsNothing()
+
+	/**
+	 * A user is read by id; an unknown one is null, and a filtered list holds it or nothing.
+	 *
+	 * @return void
+	 */
+	public function testGetUserAndAFilteredList(): void {
+		$dana = $this->account(uid: 'dana', enabled: false, displayName: 'Dana');
+		$this->userManager->method('get')->willReturnMap([['dana', $dana], ['ghost', null]]);
+		$this->groupManager->method('getUserGroups')->willReturn([]);
+		$this->userManager->expects($this->never())->method('search');
+
+		$this->assertNull($this->service()->getUser('ghost'));
+		$this->assertSame(['dana', false], [$this->service()->getUser('dana')['userName'], $this->service()->getUser('dana')['active']]);
+		$this->assertSame(['dana'], array_column($this->service()->listUsers(filterUserName: 'dana'), 'userName'));
+		$this->assertSame([], $this->service()->listUsers(filterUserName: 'ghost'));
+	}//end testGetUserAndAFilteredList()
+
+	/**
+	 * A filtered group list keeps only the exact group id the search found.
+	 *
+	 * @return void
+	 */
+	public function testAFilteredGroupListKeepsOnlyTheExactGroup(): void {
+		$exact = $this->namedGroup('vergunningen', 'Vergunningen');
+		$exact->method('getUsers')->willReturn([]);
+		$near = $this->namedGroup('vergunningen-archief', 'Archief');
+		$near->method('getUsers')->willReturn([]);
+		$this->groupManager->method('search')->with('vergunningen')->willReturn([$near, $exact]);
+
+		$groups = $this->service()->listGroups(filterDisplayName: 'vergunningen');
+
+		$this->assertSame(['vergunningen'], array_column($groups, 'id'));
+	}//end testAFilteredGroupListKeepsOnlyTheExactGroup()
+
+	/**
+	 * Setting the members of a missing group writes nothing and answers false.
+	 *
+	 * @return void
+	 */
+	public function testSettingMembersOfAMissingGroupWritesNothing(): void {
+		$this->groupManager->method('get')->willReturn(null);
+		$this->userManager->expects($this->never())->method('get');
+
+		$this->assertFalse($this->service()->setGroupMembers(groupId: 'vergunningen', members: [['value' => 'dana']], consumerLabel: 'consumer-1'));
+	}//end testSettingMembersOfAMissingGroupWritesNothing()
+
+	/**
+	 * Setting the members removes those absent, keeps those present, and adds
+	 * only known new accounts; empty member values are ignored.
+	 *
+	 * @return void
+	 */
+	public function testSettingMembersReconcilesTheGroup(): void {
+		$stays = $this->account(uid: 'anja');
+		$leaves = $this->account(uid: 'bram');
+		$joins = $this->account(uid: 'cees');
+		$group = $this->createMock(IGroup::class);
+		$group->method('getUsers')->willReturn([$stays, $leaves]);
+		$group->expects($this->once())->method('removeUser')->with($leaves);
+		$group->expects($this->once())->method('addUser')->with($joins);
+		$this->groupManager->method('get')->with('vergunningen')->willReturn($group);
+		$this->userManager->method('get')->willReturnMap([['cees', $joins], ['ghost', null]]);
+
+		$written = $this->service()->setGroupMembers(
+			groupId: 'vergunningen',
+			members: [['value' => 'anja'], ['value' => 'cees'], ['value' => 'ghost'], ['value' => ''], ['display' => 'no value']],
+			consumerLabel: 'consumer-1'
+		);
+
+		$this->assertTrue($written);
+	}//end testSettingMembersReconcilesTheGroup()
 }//end class

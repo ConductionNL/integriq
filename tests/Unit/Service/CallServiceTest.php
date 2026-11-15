@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -16,8 +19,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
+use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
@@ -81,6 +86,7 @@ class CallServiceTest extends TestCase {
 			$logger,
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 		);
 	}//end setUp()
 
@@ -130,6 +136,7 @@ class CallServiceTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 		);
 	}//end buildBrokeredCallService()
 
@@ -621,7 +628,7 @@ class CallServiceTest extends TestCase {
 		$service->call(
 			source: $this->makeBrokeredSource(configuration: $configuration),
 			endpoint: '/v1/items',
-			config: ['logBody' => true],
+			config: ['logBody' => SloCurriculumClientHttp::class],
 		);
 
 		$logs = $this->savedCallLogs();
@@ -631,6 +638,57 @@ class CallServiceTest extends TestCase {
 		$this->assertStringNotContainsString('super-secret-value', $log['response']['body']);
 		$this->assertStringContainsString('***REDACTED***', $log['response']['body']);
 	}//end testGuzzlePathScrubsSecretEchoedInResponseBody()
+
+	/**
+	 * A session header under its own name and the tokens an upstream issues in
+	 * a JSON body (an OAuth token answer) are masked in the stored CallLog,
+	 * while the entity the caller gets back keeps the real response.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+	 */
+	public function testGuzzlePathMasksSessionHeaderAndIssuedTokensInStoredCallLog(): void {
+		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered->method('hasCredentialRef')->willReturn(false);
+
+		$service = $this->buildBrokeredCallService($brokered);
+
+		$mockClient = $this->createMock(\GuzzleHttp\Client::class);
+		$mockClient->method('request')->willReturn(
+			new Response(
+				200,
+				['X-Session' => 'live-session-42', 'Content-Type' => 'application/json'],
+				'{"access_token":"issued-access-1","refresh_token":"issued-refresh-1","nested":{"id_token":"issued-id-1"},"expires_in":3600}'
+			)
+		);
+
+		$clientProperty = new \ReflectionProperty(CallService::class, 'client');
+		$clientProperty->setAccessible(true);
+		$clientProperty->setValue($service, $mockClient);
+
+		$callLog = $service->call(
+			source: $this->makeBrokeredSource(configuration: []),
+			endpoint: '/oauth/token',
+			config: ['logBody' => SloCurriculumClientHttp::class],
+		);
+
+		$logs = $this->savedCallLogs();
+		$this->assertCount(1, $logs);
+		$log = $logs[0]['object'];
+		$this->assertSame(['***REDACTED***'], $log['response']['headers']['X-Session']);
+		$this->assertSame(['application/json'], $log['response']['headers']['Content-Type']);
+		$body = json_decode($log['response']['body'], true);
+		$this->assertSame('***REDACTED***', $body['access_token']);
+		$this->assertSame('***REDACTED***', $body['refresh_token']);
+		$this->assertSame('***REDACTED***', $body['nested']['id_token']);
+		$this->assertSame(3600, $body['expires_in']);
+		$this->assertStringNotContainsString('issued-', json_encode($log));
+		$this->assertStringNotContainsString('live-session-42', json_encode($log));
+
+		// The caller still reads the real answer.
+		$this->assertStringContainsString('issued-access-1', $callLog->getObject()['response']['body']);
+	}//end testGuzzlePathMasksSessionHeaderAndIssuedTokensInStoredCallLog()
 
 	/**
 	 * REQ-006 scenario "a secret-bearing query-string parameter is redacted
@@ -711,6 +769,7 @@ class CallServiceTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 		);
 
 		$mockClient = $this->createMock(\GuzzleHttp\Client::class);
@@ -2529,4 +2588,174 @@ class CallServiceTest extends TestCase {
 
 	}//end testRedactSecretsFromUrlLeavesCleanUrlsUntouched()
 
+	/**
+	 * App-injected credentials: a refused secret or certificate is a 409 log with nothing
+	 * sent, and the hydrated source data and configuration are what the call is sent with.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	public function testInjectedCredentialsRefuseOrReachTheDispatch(): void {
+		$outcomes = [];
+		foreach (['secret-refused', 'certificate-refused'] as $case) {
+			$brokered = $this->createMock(BrokeredCallService::class);
+			$brokered->method('hasCredentialRef')->willReturn(false);
+			$brokered->method('hasInjectableCredentials')->willReturn(true);
+			$brokered->method('hasInjectableTlsIdentity')->willReturn(true);
+			if ($case === 'secret-refused') {
+				$brokered->method('hydrateInjectableCredentials')->willThrowException(new BrokeredCallConfigurationException(message: 'The secret could not be read.'));
+				$brokered->expects($this->never())->method('hydrateInjectableTlsIdentity');
+			} else {
+				$brokered->method('hydrateInjectableCredentials')->willReturnArgument(0);
+				$brokered->method('hydrateInjectableTlsIdentity')->willThrowException(new BrokeredCallConfigurationException(message: 'The certificate could not be read.'));
+			}
+
+			$service = $this->buildBrokeredCallService($brokered);
+			$this->mockGuzzleSequence($service, []);
+			$service->call(source: $this->makePlainSource(), endpoint: '/v1/items');
+			$logs = $this->savedCallLogs();
+			$outcomes[$case] = [count($logs), $logs[0]['object']['statusCode'], $logs[0]['object']['statusMessage'], $logs[0]['rbac']];
+		}
+
+		$this->assertSame(
+			[
+				'secret-refused' => [1, 409, 'The secret could not be read.', false],
+				'certificate-refused' => [1, 409, 'The certificate could not be read.', false],
+			],
+			$outcomes
+		);
+
+		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered->method('hasCredentialRef')->willReturn(false);
+		$brokered->method('hasInjectableCredentials')->willReturn(true);
+		$brokered->method('hydrateInjectableCredentials')->willReturnCallback(
+			static fn (array $sourceData): array => (['location' => 'https://hydrated.example.invalid'] + $sourceData)
+		);
+		$brokered->method('hasInjectableTlsIdentity')->willReturn(true);
+		$brokered->method('hydrateInjectableTlsIdentity')->willReturnCallback(
+			static fn (array $config): array => array_merge($config, ['headers' => ['X-Hydrated' => 'yes']])
+		);
+		$service = $this->buildBrokeredCallService($brokered);
+		$sent = [];
+		$mockClient = $this->createMock(\GuzzleHttp\Client::class);
+		$mockClient->method('request')->willReturnCallback(
+			static function (string $method, string $url, array $config) use (&$sent): Response {
+				$sent = [$method, $url, ($config['headers']['X-Hydrated'] ?? null)];
+				return new Response(200, [], '{}');
+			}
+		);
+		$clientProperty = new \ReflectionProperty(CallService::class, 'client');
+		$clientProperty->setAccessible(true);
+		$clientProperty->setValue($service, $mockClient);
+
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items');
+
+		$this->assertSame(['GET', 'https://hydrated.example.invalid/v1/items', 'yes'], $sent);
+
+	}//end testInjectedCredentialsRefuseOrReachTheDispatch()
+
+	/**
+	 * The logged request and response of a finished call, and the trace step it adds:
+	 * a non-UTF-8 body is logged base64, the remote IP falls back from X-Real-IP to
+	 * X-Forwarded-For, and an error status is a failed step with the logged exchange.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+	 */
+	public function testAFinishedCallLogsItsExchangeAndTracesIt(): void {
+		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered->method('hasCredentialRef')->willReturn(false);
+		$service = $this->buildBrokeredCallService($brokered);
+		$this->mockGuzzleSequence(
+			$service,
+			[
+				new Response(500, ['X-Forwarded-For' => '10.0.0.2', 'X-Thing' => 'y'], "\xff\xfe raw"),
+				new Response(201, ['X-Real-IP' => '10.0.0.1', 'X-Forwarded-For' => '10.0.0.2'], '{"ok":true}'),
+				new Response(204, [], ''),
+			]
+		);
+
+		$steps = [];
+		$trace = $this->createMock(\OCA\Integriq\Service\Helper\ExecutionTraceContext::class);
+		$trace->method('addStep')->willReturnCallback(
+			static function (...$arguments) use (&$steps): void {
+				$steps[] = $arguments;
+			}
+		);
+
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', config: ['logBody' => SloCurriculumClientHttp::class], trace: $trace);
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', method: 'POST', config: ['logBody' => SloCurriculumClientHttp::class]);
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/empty');
+
+		$logs = $this->savedCallLogs();
+		$failed = $logs[0]['object'];
+		$this->assertSame(['url' => 'https://api.example.invalid/v1/items', 'method' => 'GET'], array_slice($failed['request'], 0, 2, true));
+		$response = $failed['response'];
+		$this->assertSame([500, 'Internal Server Error', '10.0.0.2', base64_encode("\xff\xfe raw"), 'base64'], [$response['statusCode'], $response['statusMessage'], $response['remoteIp'], $response['body'], $response['encoding']]);
+		$this->assertSame(['statusCode', 'statusMessage', 'responseTime', 'size', 'remoteIp', 'headers', 'body', 'encoding'], array_keys($response));
+		$this->assertGreaterThanOrEqual(0, $response['responseTime']);
+		$this->assertSame(['y'], $response['headers']['X-Thing']);
+
+		$this->assertSame(['10.0.0.1', '{"ok":true}', 'UTF-8', 'POST'], [$logs[1]['object']['response']['remoteIp'], $logs[1]['object']['response']['body'], $logs[1]['object']['response']['encoding'], $logs[1]['object']['request']['method']]);
+		$this->assertNull($logs[2]['object']['response']['remoteIp']);
+
+		$this->assertCount(1, $steps);
+		[$type, $name, $timing, $status, $input, $output, $startedAt, $finishedAt, $spanId] = $steps[0];
+		$this->assertSame(['call', 'retry-source', null, 'error'], [$type, $name, $timing, $status]);
+		$this->assertMatchesRegularExpression('/^[0-9a-f]{16}$/', (string)$spanId);
+		$this->assertSame('https://api.example.invalid/v1/items', $input['url']);
+		$this->assertSame(500, $output['statusCode']);
+		$this->assertLessThanOrEqual($finishedAt, $startedAt);
+
+	}//end testAFinishedCallLogsItsExchangeAndTracesIt()
+
+	/**
+	 * An asynchronous call classifies its outcome for the breaker as the retry loop does:
+	 * a retryable status counts a failure, a success below 400 resets the count, and a
+	 * non-retryable error (404) records neither.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+	 */
+	public function testCallAsyncRecordsTheBreakerOutcomeLikeTheRetryLoop(): void {
+		$outcomes = [];
+		foreach (['retryable' => 503, 'not-retryable' => 404, 'success' => 200] as $name => $status) {
+			$this->saved = [];
+			$brokered = $this->createMock(BrokeredCallService::class);
+			$brokered->method('hasCredentialRef')->willReturn(false);
+			$service = $this->buildBrokeredCallService($brokered);
+
+			$mockClient = $this->createMock(\GuzzleHttp\Client::class);
+			$mockClient->method('requestAsync')->willReturn(\GuzzleHttp\Promise\Create::promiseFor(new Response($status, [], '{}')));
+			$clientProperty = new \ReflectionProperty(CallService::class, 'client');
+			$clientProperty->setAccessible(true);
+			$clientProperty->setValue($service, $mockClient);
+
+			$source = new ObjectEntity();
+			$source->setUuid('source-uuid-async-breaker');
+			$source->setObject(
+				[
+					'name' => 'async-source',
+					'isEnabled' => true,
+					'location' => 'https://api.example.invalid',
+					'configuration' => [],
+					'circuitBreakerFailureCount' => 2,
+				]
+			);
+
+			$service->callAsync(source: $source, endpoint: '/things')->wait();
+
+			$sourceSaves = array_values(array_filter($this->saved, static fn ($row) => $row['schema'] === 'source'));
+			$outcomes[$name] = array_map(
+				static fn (array $row): array => [($row['object']['circuitBreakerFailureCount'] ?? null), ($row['object']['circuitBreakerState'] ?? null)],
+				$sourceSaves
+			);
+		}
+
+		$this->assertSame(['retryable' => [[3, null]], 'not-retryable' => [], 'success' => [[0, 'closed']]], $outcomes);
+
+	}//end testCallAsyncRecordsTheBreakerOutcomeLikeTheRetryLoop()
 }//end class

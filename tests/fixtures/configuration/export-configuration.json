@@ -1,0 +1,155 @@
+{
+    "export": {
+        "components": {
+            "sources": {
+                "default": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "source-one",
+                        "type": "api",
+                        "location": "https://a.invalid"
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "type": "database",
+                        "location": "https://b.invalid",
+                        "slug": "src-2"
+                    }
+                ]
+            },
+            "endpoints": {
+                "register/schema": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "endpoint-one",
+                        "targetType": "register/schema",
+                        "targetId": "register-7/schema-11",
+                        "rules": [
+                            "rule-one"
+                        ]
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "endpoint-three",
+                        "targetType": "register/schema",
+                        "targetId": "noslash"
+                    }
+                ],
+                "api": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "endpoint-two",
+                        "targetType": "api",
+                        "targetId": "source-one"
+                    }
+                ]
+            },
+            "mappings": {
+                "mapping": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "mapping-one",
+                        "mapping": {
+                            "a": "b"
+                        }
+                    }
+                ]
+            },
+            "rules": {
+                "mapping": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "rule-one",
+                        "type": "mapping",
+                        "configuration": {
+                            "mapping": "mapping-one"
+                        }
+                    }
+                ]
+            },
+            "jobs": {
+                "job": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "job-one",
+                        "jobClass": "X",
+                        "arguments": {
+                            "synchronizationId": "sync-one"
+                        }
+                    }
+                ]
+            },
+            "synchronizations": {
+                "register/schema": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "sync-one",
+                        "sourceType": "register/schema",
+                        "sourceId": "register-8/schema-12",
+                        "targetType": "register/schema",
+                        "targetId": "register-7/schema-13",
+                        "sourceTargetMapping": "map-1"
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "sourceType": "api",
+                        "sourceId": "source-one",
+                        "targetType": "register/schema",
+                        "targetId": "99/98",
+                        "slug": "sync-2"
+                    }
+                ]
+            }
+        }
+    },
+    "lookups": [
+        [
+            "register.find",
+            "7"
+        ],
+        [
+            "register.find",
+            "8"
+        ],
+        [
+            "register.find",
+            "99"
+        ],
+        [
+            "schema.find",
+            "11"
+        ],
+        [
+            "schema.find",
+            "12"
+        ],
+        [
+            "schema.find",
+            "13"
+        ],
+        [
+            "schema.find",
+            "98"
+        ]
+    ]
+}

@@ -82,7 +82,7 @@
         },
         "name": "Diavgeia Greece Weekly Sync",
         "description": "Runs the greece-diavgeia-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence.",
-        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "greece-diavgeia-to-spectr-tender"
         },
@@ -90,7 +90,7 @@
         "isEnabled": false,
         "singleRun": false,
         "allowParallelRuns": false,
-        "version": "1.0.0"
+        "version": "1.0.1"
       }
     ]
   }

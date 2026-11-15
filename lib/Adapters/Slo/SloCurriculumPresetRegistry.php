@@ -29,15 +29,12 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Slo;
 
-use OCA\Integriq\Exception\SloCurriculumException;
-use OCA\Integriq\Exception\UnknownSloCurriculumSetException;
-
 /**
  * Loads the seeded SLO source template once; immutable at runtime.
  *
  * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-a-dormant-slo-source-template-carries-the-set-profiles-and-the-attribution-req-001
  */
-final class SloCurriculumPresetRegistry {
+final class SloCurriculumPresetRegistry implements SloCurriculumPresetRegistryInterface {
 	/**
 	 * Slug of the seeded source object.
 	 */

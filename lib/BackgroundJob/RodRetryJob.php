@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\RodService;
+use OCA\Integriq\Service\RodServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -56,12 +56,12 @@ class RodRetryJob extends TimedJob {
 	 * RodRetryJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param RodService $rodService The ROD service.
+	 * @param RodServiceInterface $rodService The ROD service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly RodService $rodService,
+		private readonly RodServiceInterface $rodService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

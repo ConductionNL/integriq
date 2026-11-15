@@ -38,6 +38,7 @@ use OCA\Integriq\Exception\CardfeedProviderException;
 use OCA\Integriq\Service\Cardfeed\CardfeedProviderInterface;
 use OCA\Integriq\Service\Cardfeed\LogCardfeedProvider;
 use OCA\Integriq\Service\Cardfeed\RestCardfeedProvider;
+use OCA\Integriq\Service\Helper\RandomUuid;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -52,7 +53,7 @@ use Throwable;
  *
  * @spec openspec/specs/corporate-card-feed/spec.md
  */
-class CardfeedSyncService {
+class CardfeedSyncService implements CardfeedSyncServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding cardfeed sources, accounts, and batches.
@@ -120,7 +121,7 @@ class CardfeedSyncService {
 	 * @param ORObjectService $objectService OR object service for source/account/batch persistence.
 	 * @param LogCardfeedProvider $logProvider The sandbox provider binding.
 	 * @param RestCardfeedProvider $restProvider The generic REST provider binding.
-	 * @param EventService $eventService Emits the synced CloudEvent.
+	 * @param CloudEventEmitterInterface $eventService Emits the synced CloudEvent.
 	 * @param IL10N $l The localization service (operator-facing detail text).
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
@@ -128,7 +129,7 @@ class CardfeedSyncService {
 		private readonly ORObjectService $objectService,
 		private readonly LogCardfeedProvider $logProvider,
 		private readonly RestCardfeedProvider $restProvider,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -583,10 +584,6 @@ class CardfeedSyncService {
 	 * @return string The generated UUID.
 	 */
 	private function generateUuid(): string {
-		$bytes = random_bytes(16);
-		$bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
-		$bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+		return RandomUuid::version4();
 	}//end generateUuid()
 }//end class

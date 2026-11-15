@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -724,7 +727,7 @@ class JobServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+	 * @spec openspec/changes/bounded-jsonl-sync/specs/job-scheduling/spec.md#requirement-a-job-with-work-left-runs-again-on-the-next-tick
 	 */
 	public function testResumeSoonSchedulesTheNextRunOnTheNextTick(): void {
 		$due = (new \DateTime('-1 hour'))->format('c');

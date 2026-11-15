@@ -1,0 +1,192 @@
+{
+  "count": 14,
+  "_embedded": {
+    "payments": [
+      {
+        "resource": "payment",
+        "id": "tr_ex0001",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0002",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0003",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0004",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0005",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0006",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0007",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0008",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0009",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0010",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0011",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0012",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0013",
+        "amount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.75",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      },
+      {
+        "resource": "payment",
+        "id": "tr_ex0014",
+        "amount": {
+          "value": "43.65",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "43.65",
+          "currency": "EUR"
+        },
+        "status": "paid"
+      }
+    ]
+  },
+  "_links": {
+    "next": null
+  }
+}

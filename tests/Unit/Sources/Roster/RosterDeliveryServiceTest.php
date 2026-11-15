@@ -216,22 +216,22 @@ class RosterDeliveryServiceTest extends TestCase {
 	}//end testListenerIgnoresOtherEvents()
 
 	/**
-	 * The abstract client is bound to the mock and the listener is registered.
+	 * The abstract client is bound to the mock, or to Zermelo behind the flag, and the listener is registered.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-the-adapter-can-be-constructed-on-an-instance-req-006
 	 */
 	public function testApplicationBindsTheClientAndRegistersTheListener(): void {
-		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/AppInfo/Application.php');
+		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/Adapters/AdaptersBindings.php');
 
 		$this->assertMatchesRegularExpression(
-			'/registerService\(\s*RosterImportClient::class,\s*static function \(\$c\) \{\s*return \$c->get\(RosterImportClientMock::class\);/',
+			'/registerService\(\s*RosterImportClient::class,\s*static fn \(\$c\) => \$c->get\(\s*self::liveOrMock\(.*?flagKey: RosterImportSourceAdapter::FLAG_KEY,\s*live: RosterImportClientZermelo::class,\s*mock: RosterImportClientMock::class/s',
 			$source
 		);
 		$this->assertMatchesRegularExpression(
 			'/registerEventListener\(\s*RosterImportRequestedEvent::class,\s*RosterImportRequestedListener::class\s*\)/',
-			$source
+			(string)file_get_contents(__DIR__ . '/../../../../lib/EventListener/EventListenerBindings.php')
 		);
 	}//end testApplicationBindsTheClientAndRegistersTheListener()
 }//end class

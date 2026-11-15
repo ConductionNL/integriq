@@ -1,0 +1,64 @@
+{
+    "cards": [
+        {
+            "slug": "template:bare",
+            "name": "bare",
+            "description": "",
+            "category": "Integrations",
+            "kind": "source-template",
+            "mechanism": "mock-seeded",
+            "flagKey": "",
+            "sourceTemplateSlug": "bare",
+            "standards": [
+                "REST API"
+            ],
+            "sourceType": "api",
+            "tier": "curated",
+            "verifiedAgainst": ""
+        },
+        {
+            "slug": "template:brp",
+            "name": "BRP",
+            "description": "",
+            "category": "Integrations",
+            "kind": "source-template",
+            "mechanism": "mock-seeded",
+            "flagKey": "",
+            "sourceTemplateSlug": "brp",
+            "standards": [
+                "REST API"
+            ],
+            "sourceType": "api",
+            "tier": "curated",
+            "verifiedAgainst": ""
+        },
+        {
+            "slug": "template:zrc",
+            "name": "Zaken API",
+            "description": "Zaakregistratie",
+            "category": "Zaken",
+            "kind": "source-template",
+            "mechanism": "mock-seeded",
+            "flagKey": "",
+            "sourceTemplateSlug": "zrc",
+            "standards": [
+                "ZGW"
+            ],
+            "sourceType": "json",
+            "tier": "verified",
+            "verifiedAgainst": "v1.5",
+            "snapshotDate": "2026-01-01"
+        }
+    ],
+    "payload zrc": {
+        "name": "Zaken API",
+        "description": "Zaakregistratie",
+        "type": "json",
+        "slug": "zrc"
+    },
+    "payload bare": {
+        "slug": "bare"
+    },
+    "payload unknown": null,
+    "missing directory": []
+}
