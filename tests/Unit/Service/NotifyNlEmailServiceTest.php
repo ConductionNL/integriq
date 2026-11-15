@@ -39,6 +39,7 @@ use Psr\Log\NullLogger;
  * NotifyNL e-mail: validated, asked, recorded, handed over; callbacks move the right recipient.
  *
  * @covers \OCA\Integriq\Service\NotifyNlEmailService
+ * @uses   \OCA\Integriq\Service\Security\ActiveSourceLookup
  * @uses   \OCA\Integriq\Service\Security\RawSourceResolver
  * @uses   \OCA\Integriq\Service\Sms\DeliveryResult
  * @uses   \OCA\Integriq\Exception\SmsProviderException

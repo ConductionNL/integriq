@@ -31,6 +31,7 @@ namespace OCA\Integriq\Service;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -334,23 +335,8 @@ class NotifyNlEmailService {
 	 * @throws SmsProviderException With code `unknown-source` when no enabled NotifyNL source answers.
 	 */
 	private function sourceConfiguration(?string $sourceSlug): array {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => RawSourceResolver::REGISTER,
-					'schema' => RawSourceResolver::SCHEMA,
-					'type' => SmsDispatchService::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => self::SOURCE_LIMIT,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-		if (is_array($results) === false) {
-			$results = [];
-		}
-
-		foreach ($results as $candidate) {
+		$query = ActiveSourceLookup::enabledQuery(sourceType: SmsDispatchService::SOURCE_TYPE, limit: self::SOURCE_LIMIT);
+		foreach (ActiveSourceLookup::resultsOf(matches: $this->objectService->findAll(config: $query)) as $candidate) {
 			if (self::isNotifyNlSource(source: $candidate, sourceSlug: $sourceSlug) === true) {
 				$configuration = ($this->rawSourceResolver->resolveRaw(source: $candidate)->getObject()['configuration'] ?? []);
 				return (array)$configuration;

@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\SmsProviderException;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Sms\SmsProviderRegistry;
 use OCA\Integriq\Service\Sms\SmsStatusCallback;
@@ -104,24 +105,9 @@ class SmsStatusCallbackService {
 			return null;
 		}
 
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => RawSourceResolver::REGISTER,
-					'schema' => RawSourceResolver::SCHEMA,
-					'type' => SmsDispatchService::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => self::SOURCE_LIMIT,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-		if (is_array($results) === false) {
-			return null;
-		}
-
+		$query = ActiveSourceLookup::enabledQuery(sourceType: SmsDispatchService::SOURCE_TYPE, limit: self::SOURCE_LIMIT);
 		$found = null;
-		foreach ($results as $candidate) {
+		foreach (ActiveSourceLookup::resultsOf(matches: $this->objectService->findAll(config: $query)) as $candidate) {
 			if ($candidate instanceof ObjectEntity && $found === null && self::answersTo(source: $candidate, provider: $provider, token: $token) === true) {
 				$found = $candidate;
 			}

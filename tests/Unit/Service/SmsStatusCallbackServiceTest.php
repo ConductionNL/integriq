@@ -47,6 +47,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\Integriq\Service\Sms\CmComSmsProvider
  * @uses   \OCA\Integriq\Service\Sms\TwilioSmsProvider
  * @uses   \OCA\Integriq\Service\Sms\DeliveryResult
+ * @uses   \OCA\Integriq\Service\Security\ActiveSourceLookup
  * @uses   \OCA\Integriq\Service\Security\RawSourceResolver
  * @uses   \OCA\Integriq\Exception\SmsProviderException
  *
