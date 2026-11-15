@@ -1,0 +1,13 @@
+<ns0:AbonnementAanvraag xmlns:ns0="http://schemas.overheid.nl/GEB/AbonnementServiceProcessor/2014/02">
+  <BerichtLeverancier>
+    <OIN>OIN Nummer</OIN>
+  </BerichtLeverancier>
+  <VerzoekId>verzoekId</VerzoekId>
+  <BSNLijst>
+    <BSN>BSN_12345</BSN>
+    <BSN>BSN_22345</BSN>
+    <BSN>BSN_32345</BSN>
+    <BSN>BSN_42345</BSN>
+    <BSN>BSN_52345</BSN>
+  </BSNLijst>
+</ns0:AbonnementAanvraag>

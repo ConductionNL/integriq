@@ -1,0 +1,731 @@
+{
+    "no-grant": {
+        "trace": [],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Only the pre-authorized_code grant is supported",
+            "status": 400,
+            "error": "unsupported_grant_type"
+        },
+        "session": []
+    },
+    "other-grant": {
+        "trace": [],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Only the pre-authorized_code grant is supported",
+            "status": 400,
+            "error": "unsupported_grant_type"
+        },
+        "session": []
+    },
+    "no-code": {
+        "trace": [],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code is required",
+            "status": 400,
+            "error": "invalid_request"
+        },
+        "session": []
+    },
+    "empty-code": {
+        "trace": [],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code is required",
+            "status": 400,
+            "error": "invalid_request"
+        },
+        "session": []
+    },
+    "code-not-string": {
+        "trace": [],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code is required",
+            "status": 400,
+            "error": "invalid_request"
+        },
+        "session": []
+    },
+    "unknown-code": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "0caa88c257d7122268f6494539faedf6b1d213409ff0dd264107182f174ea14a"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Unknown pre-authorized_code",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "claimed": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code already used",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "revoked": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code already used",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "no-status": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code already used",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "expired": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code has expired",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "not-expired": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "claimed",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "expiresAt": "now+10min"
+                }
+            },
+            {
+                "save": "eudi_issuance_session",
+                "register": "integriq",
+                "uuidShape": "v4",
+                "object": {
+                    "offerId": "offer-1",
+                    "accessTokenHash": "len:64",
+                    "cNonce": "len:22",
+                    "cNonceExpiresAt": "now+5min",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "expiresAt": "now+10min"
+                }
+            }
+        ],
+        "outcome": {
+            "keys": [
+                "access_token",
+                "token_type",
+                "c_nonce",
+                "c_nonce_expires_in",
+                "expires_in"
+            ],
+            "token_type": "bearer",
+            "expires_in": 600,
+            "c_nonce_expires_in": 300,
+            "access_token": "len:43",
+            "c_nonce": "len:22"
+        },
+        "session": {
+            "tokenHashMatches": true,
+            "nonceMatches": true
+        }
+    },
+    "empty-expiry": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "claimed",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "expiresAt": ""
+                }
+            },
+            {
+                "save": "eudi_issuance_session",
+                "register": "integriq",
+                "uuidShape": "v4",
+                "object": {
+                    "offerId": "offer-1",
+                    "accessTokenHash": "len:64",
+                    "cNonce": "len:22",
+                    "cNonceExpiresAt": "now+5min",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "expiresAt": "now+10min"
+                }
+            }
+        ],
+        "outcome": {
+            "keys": [
+                "access_token",
+                "token_type",
+                "c_nonce",
+                "c_nonce_expires_in",
+                "expires_in"
+            ],
+            "token_type": "bearer",
+            "expires_in": 600,
+            "c_nonce_expires_in": 300,
+            "access_token": "len:43",
+            "c_nonce": "len:22"
+        },
+        "session": {
+            "tokenHashMatches": true,
+            "nonceMatches": true
+        }
+    },
+    "pin-locked": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Too many incorrect tx_code attempts",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "pin-last-attempt-wrong": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "created",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "txCodeRequired": true,
+                    "txCodeHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                    "txCodeFailedAttempts": 5
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Incorrect tx_code",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "pin-missing": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "created",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "txCodeRequired": true,
+                    "txCodeHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                    "txCodeFailedAttempts": 1
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Incorrect tx_code",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "pin-empty": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "created",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "txCodeRequired": true,
+                    "txCodeHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                    "txCodeFailedAttempts": 1
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Incorrect tx_code",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "pin-not-string": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "created",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "txCodeRequired": true,
+                    "txCodeHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                    "txCodeFailedAttempts": 1
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Incorrect tx_code",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "pin-empty-against-empty-hash": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "created",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "txCodeRequired": true,
+                    "txCodeHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "txCodeFailedAttempts": 1
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Incorrect tx_code",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "claimed-with-pin": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code already used",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "expired-with-pin": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code has expired",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "pin-required-request-says-not": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "created",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "txCodeRequired": true,
+                    "txCodeHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                    "txCodeFailedAttempts": 1
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Incorrect tx_code",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "pin-right": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "claimed",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "txCodeRequired": true,
+                    "txCodeHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                    "txCodeFailedAttempts": 4
+                }
+            },
+            {
+                "save": "eudi_issuance_session",
+                "register": "integriq",
+                "uuidShape": "v4",
+                "object": {
+                    "offerId": "offer-1",
+                    "accessTokenHash": "len:64",
+                    "cNonce": "len:22",
+                    "cNonceExpiresAt": "now+5min",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "expiresAt": "now+10min"
+                }
+            }
+        ],
+        "outcome": {
+            "keys": [
+                "access_token",
+                "token_type",
+                "c_nonce",
+                "c_nonce_expires_in",
+                "expires_in"
+            ],
+            "token_type": "bearer",
+            "expires_in": 600,
+            "c_nonce_expires_in": 300,
+            "access_token": "len:43",
+            "c_nonce": "len:22"
+        },
+        "session": {
+            "tokenHashMatches": true,
+            "nonceMatches": true
+        }
+    },
+    "pin-flag-not-true": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "claimed",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "txCodeRequired": "true",
+                    "txCodeHash": "x"
+                }
+            },
+            {
+                "save": "eudi_issuance_session",
+                "register": "integriq",
+                "uuidShape": "v4",
+                "object": {
+                    "offerId": "offer-1",
+                    "accessTokenHash": "len:64",
+                    "cNonce": "len:22",
+                    "cNonceExpiresAt": "now+5min",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "expiresAt": "now+10min"
+                }
+            }
+        ],
+        "outcome": {
+            "keys": [
+                "access_token",
+                "token_type",
+                "c_nonce",
+                "c_nonce_expires_in",
+                "expires_in"
+            ],
+            "token_type": "bearer",
+            "expires_in": 600,
+            "c_nonce_expires_in": 300,
+            "access_token": "len:43",
+            "c_nonce": "len:22"
+        },
+        "session": {
+            "tokenHashMatches": true,
+            "nonceMatches": true
+        }
+    },
+    "no-configuration-id": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "claimed",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": null,
+                    "consumerId": "consumer-1"
+                }
+            },
+            {
+                "save": "eudi_issuance_session",
+                "register": "integriq",
+                "uuidShape": "v4",
+                "object": {
+                    "offerId": "offer-1",
+                    "accessTokenHash": "len:64",
+                    "cNonce": "len:22",
+                    "cNonceExpiresAt": "now+5min",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": null,
+                    "expiresAt": "now+10min"
+                }
+            }
+        ],
+        "outcome": {
+            "keys": [
+                "access_token",
+                "token_type",
+                "c_nonce",
+                "c_nonce_expires_in",
+                "expires_in"
+            ],
+            "token_type": "bearer",
+            "expires_in": 600,
+            "c_nonce_expires_in": 300,
+            "access_token": "len:43",
+            "c_nonce": "len:22"
+        },
+        "session": {
+            "tokenHashMatches": true,
+            "nonceMatches": true
+        }
+    },
+    "plain": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "claimed",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1"
+                }
+            },
+            {
+                "save": "eudi_issuance_session",
+                "register": "integriq",
+                "uuidShape": "v4",
+                "object": {
+                    "offerId": "offer-1",
+                    "accessTokenHash": "len:64",
+                    "cNonce": "len:22",
+                    "cNonceExpiresAt": "now+5min",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "expiresAt": "now+10min"
+                }
+            }
+        ],
+        "outcome": {
+            "keys": [
+                "access_token",
+                "token_type",
+                "c_nonce",
+                "c_nonce_expires_in",
+                "expires_in"
+            ],
+            "token_type": "bearer",
+            "expires_in": 600,
+            "c_nonce_expires_in": 300,
+            "access_token": "len:43",
+            "c_nonce": "len:22"
+        },
+        "session": {
+            "tokenHashMatches": true,
+            "nonceMatches": true
+        }
+    }
+}

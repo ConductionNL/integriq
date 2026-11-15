@@ -19,6 +19,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#requirement-submissions-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-008
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -74,6 +77,26 @@ class IntakeRecordAuthorizationTest extends TestCase {
 					'create' => [IntakeGroups::VERDICTS_INTAKE],
 					'read' => [IntakeGroups::VERDICTS_HANDLERS],
 					'update' => [IntakeGroups::VERDICTS_INTAKE, IntakeGroups::VERDICTS_HANDLERS],
+					'delete' => [],
+				],
+			],
+			// digital-post-service-account-and-log-redaction (REQ-DPA-007): the
+			// digital post account stores the letter and its outbound log row.
+			'digitalPostMessage' => [
+				'digitalPostMessage',
+				[
+					'create' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'read' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'update' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'delete' => [],
+				],
+			],
+			'outbound_message' => [
+				'outbound_message',
+				[
+					'create' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'read' => [IntakeGroups::DIGITAL_POST_SENDERS],
+					'update' => [IntakeGroups::DIGITAL_POST_SENDERS],
 					'delete' => [],
 				],
 			],

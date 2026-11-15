@@ -1,0 +1,1218 @@
+{
+	"emptyCaseType": {
+		"reference": "",
+		"title": "",
+		"department": ""
+	},
+	"draftFromRow none": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow empty": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow idOnly": {
+		"result": {
+			"id": "a",
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow selfId": {
+		"result": {
+			"id": "b",
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow selfNull": {
+		"result": {
+			"id": "c",
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow uuid": {
+		"result": {
+			"id": "d",
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow idWins": {
+		"result": {
+			"id": "a",
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow emptyIds": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow zeroId": {
+		"result": {
+			"id": "z",
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow full": {
+		"result": {
+			"id": "e",
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen",
+			"activityId": "act",
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1",
+					"title": "T",
+					"department": "D"
+				},
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				},
+				{
+					"reference": "",
+					"title": "x",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "gecombineerd",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "gecombineerd"
+				},
+				{
+					"withImowId": "",
+					"strategy": "deelzaken"
+				},
+				{
+					"withImowId": "",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": false,
+			"note": "n"
+		}
+	},
+	"draftFromRow caseTypesNotArray": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow emptyCaseTypes": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow rulesNotArray": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow strategyOther": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow isActiveValues": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow isActiveNull": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow nonStrings": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromRow null": {
+		"threw": "TypeError"
+	},
+	"draftFromUnmapped none": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromUnmapped null": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromUnmapped empty": {
+		"result": {
+			"id": null,
+			"imowId": "",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromUnmapped full": {
+		"result": {
+			"id": null,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen",
+			"activityId": "a",
+			"activityName": "n",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftFromUnmapped padded": {
+		"result": {
+			"id": null,
+			"imowId": "x",
+			"activityId": "",
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "",
+					"title": "",
+					"department": ""
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"note": ""
+		}
+	},
+	"draftProblems valid": {
+		"result": []
+	},
+	"payloadFromDraft valid": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems activityIdOnly": {
+		"result": []
+	},
+	"payloadFromDraft activityIdOnly": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"activityId": "act-1"
+		}
+	},
+	"draftProblems noIds": {
+		"result": ["Fill in the imow-id or the activity id."]
+	},
+	"payloadFromDraft noIds": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true
+		}
+	},
+	"draftProblems nullIds": {
+		"result": ["Fill in the imow-id or the activity id."]
+	},
+	"payloadFromDraft nullIds": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true
+		}
+	},
+	"draftProblems badImow": {
+		"result": [
+			"The imow-id does not have the STAM form, for example nl.imow-gm0000.activiteit.Bouwen."
+		]
+	},
+	"payloadFromDraft badImow": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "not-stam"
+		}
+	},
+	"draftProblems badImowProvince": {
+		"result": [
+			"The imow-id does not have the STAM form, for example nl.imow-gm0000.activiteit.Bouwen."
+		]
+	},
+	"payloadFromDraft badImowProvince": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-xx0000.a.B"
+		}
+	},
+	"draftProblems longImowNumber": {
+		"result": [
+			"The imow-id does not have the STAM form, for example nl.imow-gm0000.activiteit.Bouwen."
+		]
+	},
+	"payloadFromDraft longImowNumber": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm1234567.a.B"
+		}
+	},
+	"draftProblems mnreImow": {
+		"result": []
+	},
+	"payloadFromDraft mnreImow": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-mnre12.a.B"
+		}
+	},
+	"draftProblems paddedImow": {
+		"result": []
+	},
+	"payloadFromDraft paddedImow": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems noName": {
+		"result": ["Fill in the activity name."]
+	},
+	"payloadFromDraft noName": {
+		"result": {
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems noCaseTypes": {
+		"result": ["Add at least one case type with a reference."]
+	},
+	"payloadFromDraft noCaseTypes": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems blankReferences": {
+		"result": ["Add at least one case type with a reference."]
+	},
+	"payloadFromDraft blankReferences": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems oneReference": {
+		"result": []
+	},
+	"payloadFromDraft oneReference": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-2",
+					"title": "T"
+				},
+				{
+					"reference": "zt-3",
+					"department": "D"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems badSamenloop": {
+		"result": ["Every samenloop rule needs the imow-id of the other activity."]
+	},
+	"payloadFromDraft badSamenloop": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "__undefined__"
+				},
+				{
+					"withImowId": "x",
+					"strategy": "__undefined__"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems paddedSamenloop": {
+		"result": []
+	},
+	"payloadFromDraft paddedSamenloop": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "gecombineerd"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems noSamenloop": {
+		"result": []
+	},
+	"payloadFromDraft noSamenloop": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems samenloopWithoutId": {
+		"result": ["Every samenloop rule needs the imow-id of the other activity."]
+	},
+	"payloadFromDraft samenloopWithoutId": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "",
+					"strategy": "__undefined__"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems everything": {
+		"result": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference.",
+			"Every samenloop rule needs the imow-id of the other activity."
+		]
+	},
+	"payloadFromDraft everything": {
+		"result": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "__undefined__",
+			"samenloopRules": [
+				{
+					"withImowId": "",
+					"strategy": "__undefined__"
+				}
+			],
+			"isActive": true
+		}
+	},
+	"draftProblems badImowAndName": {
+		"result": [
+			"The imow-id does not have the STAM form, for example nl.imow-gm0000.activiteit.Bouwen.",
+			"Fill in the activity name."
+		]
+	},
+	"payloadFromDraft badImowAndName": {
+		"result": {
+			"activityName": "",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "x"
+		}
+	},
+	"draftProblems inactive": {
+		"result": []
+	},
+	"payloadFromDraft inactive": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": false,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen",
+			"activityId": "a",
+			"note": "note"
+		}
+	},
+	"draftProblems activeUndefined": {
+		"result": []
+	},
+	"payloadFromDraft activeUndefined": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems activeZero": {
+		"result": []
+	},
+	"payloadFromDraft activeZero": {
+		"result": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1"
+				}
+			],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": true,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen"
+		}
+	},
+	"draftProblems noCaseTypeArray": {
+		"threw": "TypeError"
+	},
+	"payloadFromDraft noCaseTypeArray": {
+		"threw": "TypeError"
+	},
+	"draftProblems noRuleArray": {
+		"threw": "TypeError"
+	},
+	"payloadFromDraft noRuleArray": {
+		"threw": "TypeError"
+	},
+	"round trip none": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip empty": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip idOnly": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip selfId": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip selfNull": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip uuid": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip idWins": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip emptyIds": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip zeroId": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip full": {
+		"problems": [
+			"Every samenloop rule needs the imow-id of the other activity."
+		],
+		"payload": {
+			"activityName": "Bouwen",
+			"caseTypes": [
+				{
+					"reference": "zt-1",
+					"title": "T",
+					"department": "D"
+				}
+			],
+			"samenloopStrategy": "gecombineerd",
+			"samenloopRules": [
+				{
+					"withImowId": "nl.imow-gm0000.activiteit.Bouwen",
+					"strategy": "gecombineerd"
+				},
+				{
+					"withImowId": "",
+					"strategy": "deelzaken"
+				},
+				{
+					"withImowId": "",
+					"strategy": "deelzaken"
+				}
+			],
+			"isActive": false,
+			"imowId": "nl.imow-gm0000.activiteit.Bouwen",
+			"activityId": "act",
+			"note": "n"
+		}
+	},
+	"round trip caseTypesNotArray": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip emptyCaseTypes": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip rulesNotArray": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip strategyOther": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip isActiveValues": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip isActiveNull": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"round trip nonStrings": {
+		"problems": [
+			"Fill in the imow-id or the activity id.",
+			"Fill in the activity name.",
+			"Add at least one case type with a reference."
+		],
+		"payload": {
+			"activityName": "",
+			"caseTypes": [],
+			"samenloopStrategy": "deelzaken",
+			"samenloopRules": [],
+			"isActive": true
+		}
+	},
+	"refusalMessage none": "fallback",
+	"refusalMessage null": "fallback",
+	"refusalMessage noResponse": "fallback",
+	"refusalMessage noData": "fallback",
+	"refusalMessage message": "m",
+	"refusalMessage errorOnly": "e",
+	"refusalMessage emptyMessage": "fallback",
+	"refusalMessage stringData": "fallback"
+}

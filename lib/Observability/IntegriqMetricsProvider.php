@@ -3,6 +3,9 @@
 /**
  * Integriq AppHost Metrics Provider.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Escape-hatch metrics provider for the OpenRegister AppHost observability
  * engine (ADR-040 / ADR-006). The per-Source circuit breaker state
  * (`circuit_breaker_state{source="<name>"}`, REQ-PROM-011) cannot be
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -62,6 +62,41 @@ use Throwable;
  * @spec openspec/specs/prometheus-metrics/spec.md#requirement-per-api-product-latency-percentile-gauges-req-prom-013
  */
 class IntegriqMetricsProvider implements IMetricsProvider {
+	/**
+	 * The single-label grouped counters and gauges, keyed by metric name
+	 * (unprefixed), in emission order: the Prometheus type, the HELP text,
+	 * the OR schema title to read objects from, the object property to group
+	 * by, the label key to emit and the label value of the zero placeholder.
+	 *
+	 * @var array<string, array{type: string, help: string, schemaTitle: string, field: string, label: string, placeholder: string}>
+	 */
+	private const GROUPED_COUNT_METRICS = [
+		'sources_total' => [
+			'type' => 'gauge',
+			'help' => 'Total sources by type',
+			'schemaTitle' => 'Source',
+			'field' => 'type',
+			'label' => 'type',
+			'placeholder' => 'rest',
+		],
+		'calls_total' => [
+			'type' => 'counter',
+			'help' => 'Total API calls by status',
+			'schemaTitle' => 'CallLog',
+			'field' => 'statusCode',
+			'label' => 'status',
+			'placeholder' => '200',
+		],
+		'synchronization_runs_total' => [
+			'type' => 'counter',
+			'help' => 'Total synchronization log entries by result',
+			'schemaTitle' => 'SynchronizationLog',
+			'field' => 'result',
+			'label' => 'status',
+			'placeholder' => 'success',
+		],
+	];
+
 	/**
 	 * Constructor.
 	 *
@@ -152,35 +187,6 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 	}//end normalise()
 
 	/**
-	 * Resolve the id of the `source` schema by exact title match, via
-	 * `SchemaMapper::findAll()` (a signature every mapper implementation —
-	 * including this app's own test stubs — declares consistently, unlike
-	 * the slug-keyed `find()` overload).
-	 *
-	 * @return integer|null The schema id, or null when not found/unavailable.
-	 */
-	private function resolveSourceSchemaId(): ?int {
-		$schemaMapper = $this->getSchemaMapper();
-		if ($schemaMapper === null) {
-			return null;
-		}
-
-		foreach ($schemaMapper->findAll() as $schema) {
-			$data = $this->normalise(object: $schema);
-			if ((string)($data['title'] ?? '') === 'Source') {
-				$schemaId = ($data['id'] ?? null);
-				if ($schemaId === null) {
-					return null;
-				}
-
-				return (int)$schemaId;
-			}
-		}
-
-		return null;
-	}//end resolveSourceSchemaId()
-
-	/**
 	 * Resolve the ids of every register that carries the given schema id.
 	 *
 	 * @param integer $schemaId The schema id to look for.
@@ -196,31 +202,63 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 		$registerIds = [];
 		foreach ($registerMapper->findAll() as $register) {
 			$data = $this->normalise(object: $register);
-			$registerId = ($data['id'] ?? null);
-			$schemas = ($data['schemas'] ?? []);
-			if ($registerId === null || is_array($schemas) === false) {
-				continue;
+			if ($this->registerCarriesSchema(register: $data, schemaId: $schemaId) === true) {
+				$registerIds[] = (int)$data['id'];
 			}
-
-			foreach ($schemas as $schema) {
-				$candidateId = $schema;
-				if (is_array($schema) === true) {
-					$candidateId = ($schema['id'] ?? null);
-				}
-
-				if (is_numeric($candidateId) === true && (int)$candidateId === $schemaId) {
-					$registerIds[] = (int)$registerId;
-					break;
-				}
-			}
-		}//end foreach
+		}
 
 		return $registerIds;
 	}//end resolveRegisterIdsForSchema()
 
 	/**
+	 * Whether a register with an id lists the given schema id among its schemas.
+	 *
+	 * @param array<string, mixed> $register The register's own fields.
+	 * @param integer              $schemaId The schema id to look for.
+	 *
+	 * @return boolean True when the register has an id and carries the schema.
+	 */
+	private function registerCarriesSchema(array $register, int $schemaId): bool {
+		$schemas = ($register['schemas'] ?? []);
+		if (($register['id'] ?? null) === null || is_array($schemas) === false) {
+			return false;
+		}
+
+		foreach ($schemas as $schema) {
+			if ($this->schemaEntryId(schema: $schema) === $schemaId) {
+				return true;
+			}
+		}
+
+		return false;
+
+	}//end registerCarriesSchema()
+
+	/**
+	 * Read the numeric id of one entry of a register's schema list, which is
+	 * either the id itself or a schema array carrying it.
+	 *
+	 * @param mixed $schema One entry of the register's `schemas` list.
+	 *
+	 * @return integer|null The schema id, or null when the entry carries no numeric id.
+	 */
+	private function schemaEntryId(mixed $schema): ?int {
+		$candidateId = $schema;
+		if (is_array($schema) === true) {
+			$candidateId = ($schema['id'] ?? null);
+		}
+
+		if (is_numeric($candidateId) === false) {
+			return null;
+		}
+
+		return (int)$candidateId;
+
+	}//end schemaEntryId()
+
+	/**
 	 * Resolve the id of a schema by exact title match — the generic form of
-	 * {@see resolveSourceSchemaId()}, reused by the api-product-gateway
+	 * {@see resolveSchemaIdByTitle()}, reused by the api-product-gateway
 	 * percentile/error gauges below to resolve the `Api Product` and
 	 * `CallLog` schema ids.
 	 *
@@ -239,12 +277,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 		foreach ($schemaMapper->findAll() as $schema) {
 			$data = $this->normalise(object: $schema);
 			if ((string)($data['title'] ?? '') === $title) {
-				$schemaId = ($data['id'] ?? null);
-				if ($schemaId === null) {
-					return null;
-				}
-
-				return (int)$schemaId;
+				return $this->optionalId(id: ($data['id'] ?? null));
 			}
 		}
 
@@ -252,58 +285,24 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 	}//end resolveSchemaIdByTitle()
 
 	/**
-	 * Fetch every `api_product` object as plain field arrays.
+	 * Cast an object id to an integer, keeping a missing id missing.
 	 *
-	 * @return array<int, array<string, mixed>> The products' own fields.
+	 * @param mixed $id The id field value, or null.
 	 *
-	 * @throws Throwable When the underlying OR aggregation query fails.
-	 *
-	 * @spec openspec/specs/prometheus-metrics/spec.md#requirement-per-api-product-latency-percentile-gauges-req-prom-013
+	 * @return integer|null The id, or null when absent.
 	 */
-	private function fetchApiProducts(): array {
-		$objectService = $this->getObjectService();
-		if ($objectService === null) {
-			return [];
+	private function optionalId(mixed $id): ?int {
+		if ($id === null) {
+			return null;
 		}
 
-		$schemaId = $this->resolveSchemaIdByTitle(title: 'API Product');
-		if ($schemaId === null) {
-			return [];
-		}
+		return (int)$id;
 
-		$registerIds = $this->resolveRegisterIdsForSchema(schemaId: $schemaId);
-		if ($registerIds === []) {
-			return [];
-		}
-
-		$objects = [];
-		foreach ($registerIds as $registerId) {
-			$results = $objectService->searchObjects(
-				query: [
-					'@self' => [
-						'register' => $registerId,
-						'schema' => $schemaId,
-					],
-				],
-				_rbac: false,
-				_multitenancy: false,
-			);
-
-			if (is_array($results) === false) {
-				continue;
-			}
-
-			foreach ($results as $result) {
-				$objects[] = $this->normalise(object: $result);
-			}
-		}//end foreach
-
-		return $objects;
-	}//end fetchApiProducts()
+	}//end optionalId()
 
 	/**
-	 * Fetch every `call_log` object as plain field arrays, via the same
-	 * object-aggregation route {@see fetchSources()} uses. There is no
+	 * Fetch the inbound `call_log` objects as plain field arrays, via the same
+	 * object-aggregation route {@see fetchObjectsBySchemaTitle()} uses. There is no
 	 * query-level filter/sort/limit vocabulary confirmed available on
 	 * `searchObjects()` beyond `@self.register`/`@self.schema` (unlike the
 	 * DI-injected `ORObjectService::findAll(config:['filters'=>...])` used
@@ -323,47 +322,10 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 	 * @spec openspec/specs/prometheus-metrics/spec.md#requirement-per-api-product-latency-percentile-gauges-req-prom-013
 	 */
 	private function fetchInboundCallLogRows(): array {
-		$objectService = $this->getObjectService();
-		if ($objectService === null) {
-			return [];
-		}
-
-		$schemaId = $this->resolveSchemaIdByTitle(title: 'CallLog');
-		if ($schemaId === null) {
-			return [];
-		}
-
-		$registerIds = $this->resolveRegisterIdsForSchema(schemaId: $schemaId);
-		if ($registerIds === []) {
-			return [];
-		}
-
-		$objects = [];
-		foreach ($registerIds as $registerId) {
-			$results = $objectService->searchObjects(
-				query: [
-					'@self' => [
-						'register' => $registerId,
-						'schema' => $schemaId,
-					],
-				],
-				_rbac: false,
-				_multitenancy: false,
-			);
-
-			if (is_array($results) === false) {
-				continue;
-			}
-
-			foreach ($results as $result) {
-				$row = $this->normalise(object: $result);
-				if ((string)($row['direction'] ?? '') === 'inbound') {
-					$objects[] = $row;
-				}
-			}
-		}//end foreach
-
-		return $objects;
+		return array_filter(
+			$this->fetchObjectsBySchemaTitle(title: 'CallLog'),
+			static fn (array $row): bool => (string)($row['direction'] ?? '') === 'inbound'
+		);
 	}//end fetchInboundCallLogRows()
 
 	/**
@@ -407,7 +369,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 		$help = 'Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), from bounded per-product call_log windows';
 
 		try {
-			$products = $this->fetchApiProducts();
+			$products = $this->fetchObjectsBySchemaTitle(title: 'API Product');
 			$callLogRows = $this->fetchInboundCallLogRows();
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: api_product_latency_seconds query failed: ' . $e->getMessage());
@@ -415,11 +377,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 				name: 'api_product_latency_seconds',
 				type: 'gauge',
 				help: $help,
-				samples: [
-					['labels' => ['product' => '', 'quantile' => '0.5'], 'value' => 0],
-					['labels' => ['product' => '', 'quantile' => '0.95'], 'value' => 0],
-					['labels' => ['product' => '', 'quantile' => '0.99'], 'value' => 0],
-				]
+				samples: $this->latencyPlaceholderPoints()
 			);
 		}
 
@@ -429,13 +387,28 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 		}
 
 		if ($points === []) {
-			foreach (['0.5', '0.95', '0.99'] as $label) {
-				$points[] = ['labels' => ['product' => '', 'quantile' => $label], 'value' => 0];
-			}
+			$points = $this->latencyPlaceholderPoints();
 		}
 
 		return new MetricSample(name: 'api_product_latency_seconds', type: 'gauge', help: $help, samples: $points);
 	}//end apiProductLatencySample()
+
+	/**
+	 * The zero-valued p50/p95/p99 points emitted when no product reports latency.
+	 *
+	 * @return array<int, array{labels: array<string, string>, value: int}>
+	 *
+	 * @spec openspec/specs/prometheus-metrics/spec.md#requirement-per-api-product-latency-percentile-gauges-req-prom-013
+	 */
+	private function latencyPlaceholderPoints(): array {
+		$points = [];
+		foreach (['0.5', '0.95', '0.99'] as $label) {
+			$points[] = ['labels' => ['product' => '', 'quantile' => $label], 'value' => 0];
+		}
+
+		return $points;
+
+	}//end latencyPlaceholderPoints()
 
 	/**
 	 * Compute the three p50/p95/p99 sample points for a single product,
@@ -455,23 +428,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 		$uuid = (string)($product['uuid'] ?? '');
 		$slug = (string)($product['productSlug'] ?? $uuid);
 
-		$responseTimes = [];
-		foreach ($callLogRows as $row) {
-			if ((string)($row['product'] ?? '') === $uuid
-				&& isset($row['responseTime']) === true
-				&& is_numeric($row['responseTime']) === true
-			) {
-				$responseTimes[] = (float)$row['responseTime'];
-			}
-		}
-
-		sort($responseTimes);
-		// Bound to the most recent 1000 (design.md Decision 3) — the query
-		// itself is unbounded (see fetchInboundCallLogRows()), so this
-		// slices the tail of whatever was returned.
-		if (count($responseTimes) > 1000) {
-			$responseTimes = array_slice($responseTimes, -1000);
-		}
+		$responseTimes = $this->productResponseTimes(uuid: $uuid, callLogRows: $callLogRows);
 
 		$points = [];
 		foreach (['0.5' => 0.5, '0.95' => 0.95, '0.99' => 0.99] as $label => $fraction) {
@@ -483,6 +440,54 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 
 		return $points;
 	}//end productLatencyPoints()
+
+	/**
+	 * Collect one product's numeric response times, sorted ascending and
+	 * bounded to the most recent 1000.
+	 *
+	 * @param string                           $uuid        The product's uuid.
+	 * @param array<int, array<string, mixed>> $callLogRows Every fetched inbound call_log row.
+	 *
+	 * @return array<int, float> The sorted, bounded response times in milliseconds.
+	 *
+	 * @spec openspec/specs/prometheus-metrics/spec.md#requirement-per-api-product-latency-percentile-gauges-req-prom-013
+	 */
+	private function productResponseTimes(string $uuid, array $callLogRows): array {
+		$responseTimes = [];
+		foreach ($callLogRows as $row) {
+			if ((string)($row['product'] ?? '') === $uuid
+				&& isset($row['responseTime']) === true
+				&& is_numeric($row['responseTime']) === true
+			) {
+				$responseTimes[] = (float)$row['responseTime'];
+			}
+		}
+
+		sort($responseTimes);
+
+		return $this->boundToMostRecent(responseTimes: $responseTimes);
+
+	}//end productResponseTimes()
+
+	/**
+	 * Bound response times to the most recent 1000 (design.md Decision 3) —
+	 * the query itself is unbounded (see fetchInboundCallLogRows()), so this
+	 * slices the tail of whatever was returned.
+	 *
+	 * @param array<int, float> $responseTimes The sorted response times.
+	 *
+	 * @return array<int, float> At most the last 1000 of them.
+	 *
+	 * @spec openspec/specs/prometheus-metrics/spec.md#requirement-per-api-product-latency-percentile-gauges-req-prom-013
+	 */
+	private function boundToMostRecent(array $responseTimes): array {
+		if (count($responseTimes) > 1000) {
+			return array_slice($responseTimes, -1000);
+		}
+
+		return $responseTimes;
+
+	}//end boundToMostRecent()
 
 	/**
 	 * Produce the `api_product_errors_total{product}` gauge
@@ -505,7 +510,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 		$help = 'Total inbound error (statusCode>=400) requests per API Product';
 
 		try {
-			$products = $this->fetchApiProducts();
+			$products = $this->fetchObjectsBySchemaTitle(title: 'API Product');
 			$callLogRows = $this->fetchInboundCallLogRows();
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: api_product_errors_total query failed: ' . $e->getMessage());
@@ -519,21 +524,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 
 		$points = [];
 		foreach ($products as $product) {
-			$uuid = (string)($product['uuid'] ?? '');
-			$slug = (string)($product['productSlug'] ?? $uuid);
-
-			$errorCount = 0;
-			foreach ($callLogRows as $row) {
-				if ((string)($row['product'] ?? '') !== $uuid) {
-					continue;
-				}
-
-				if ((int)($row['statusCode'] ?? 0) >= 400) {
-					$errorCount++;
-				}
-			}
-
-			$points[] = ['labels' => ['product' => $slug], 'value' => $errorCount];
+			$points[] = $this->productErrorPoint(product: $product, callLogRows: $callLogRows);
 		}
 
 		if ($points === []) {
@@ -544,54 +535,33 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 	}//end apiProductErrorsSample()
 
 	/**
-	 * Fetch every `source` object as plain field arrays, via OpenRegister
-	 * object aggregation (ADR-022 — no raw SQL against integriq's
-	 * storage table).
+	 * Count one product's inbound error rows (statusCode >= 400) as a sample point.
 	 *
-	 * @return array<int, array<string, mixed>> The sources' own fields.
+	 * @param array<string, mixed>             $product     One api_product's own fields.
+	 * @param array<int, array<string, mixed>> $callLogRows Every fetched inbound call_log row.
 	 *
-	 * @throws Throwable When the underlying OR aggregation query fails.
+	 * @return array{labels: array<string, string>, value: int}
+	 *
+	 * @spec openspec/specs/prometheus-metrics/spec.md#requirement-per-api-product-request-and-error-gauges-req-prom-012
 	 */
-	private function fetchSources(): array {
-		$objectService = $this->getObjectService();
-		if ($objectService === null) {
-			return [];
-		}
+	private function productErrorPoint(array $product, array $callLogRows): array {
+		$uuid = (string)($product['uuid'] ?? '');
+		$slug = (string)($product['productSlug'] ?? $uuid);
 
-		$schemaId = $this->resolveSourceSchemaId();
-		if ($schemaId === null) {
-			return [];
-		}
-
-		$registerIds = $this->resolveRegisterIdsForSchema(schemaId: $schemaId);
-		if ($registerIds === []) {
-			return [];
-		}
-
-		$objects = [];
-		foreach ($registerIds as $registerId) {
-			$results = $objectService->searchObjects(
-				query: [
-					'@self' => [
-						'register' => $registerId,
-						'schema' => $schemaId,
-					],
-				],
-				_rbac: false,
-				_multitenancy: false,
-			);
-
-			if (is_array($results) === false) {
+		$errorCount = 0;
+		foreach ($callLogRows as $row) {
+			if ((string)($row['product'] ?? '') !== $uuid) {
 				continue;
 			}
 
-			foreach ($results as $result) {
-				$objects[] = $this->normalise(object: $result);
+			if ((int)($row['statusCode'] ?? 0) >= 400) {
+				$errorCount++;
 			}
-		}//end foreach
+		}
 
-		return $objects;
-	}//end fetchSources()
+		return ['labels' => ['product' => $slug], 'value' => $errorCount];
+
+	}//end productErrorPoint()
 
 	/**
 	 * Produce the `circuit_breaker_state{source="<name>"}` gauge (REQ-PROM-011).
@@ -608,7 +578,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 		$help = 'Per-source circuit breaker state (1=open, 0=closed)';
 
 		try {
-			$sources = $this->fetchSources();
+			$sources = $this->fetchObjectsBySchemaTitle(title: 'Source');
 		} catch (Throwable $e) {
 			return new MetricSample(
 				name: 'circuit_breaker_state',
@@ -620,18 +590,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 
 		$points = [];
 		foreach ($sources as $source) {
-			$name = (string)($source['name'] ?? '');
-			$state = (string)($source['circuitBreakerState'] ?? 'closed');
-
-			$value = 0;
-			if ($state === 'open') {
-				$value = 1;
-			}
-
-			$points[] = [
-				'labels' => ['source' => $name],
-				'value' => $value,
-			];
+			$points[] = $this->circuitBreakerPoint(source: $source);
 		}
 
 		if ($points === []) {
@@ -640,6 +599,31 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 
 		return new MetricSample(name: 'circuit_breaker_state', type: 'gauge', help: $help, samples: $points);
 	}//end circuitBreakerStateSample()
+
+	/**
+	 * One source's circuit breaker sample point: 1 when open, 0 otherwise.
+	 *
+	 * @param array<string, mixed> $source One Source's own fields.
+	 *
+	 * @return array{labels: array<string, string>, value: int}
+	 *
+	 * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
+	 */
+	private function circuitBreakerPoint(array $source): array {
+		$name = (string)($source['name'] ?? '');
+		$state = (string)($source['circuitBreakerState'] ?? 'closed');
+
+		$value = 0;
+		if ($state === 'open') {
+			$value = 1;
+		}
+
+		return [
+			'labels' => ['source' => $name],
+			'value' => $value,
+		];
+
+	}//end circuitBreakerPoint()
 
 	/**
 	 * Fetch every object of the schema with the given title, as plain field
@@ -651,7 +635,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 	 *
 	 * @throws Throwable When the underlying OR aggregation query fails.
 	 *
-	 * @spec exclude Shared OR-aggregation plumbing for the grouped counters below.
+	 * @spec exclude Shared OR-aggregation plumbing for every gauge and counter below.
 	 */
 	private function fetchObjectsBySchemaTitle(string $title): array {
 		$objectService = $this->getObjectService();
@@ -664,35 +648,99 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 			return [];
 		}
 
-		$registerIds = $this->resolveRegisterIdsForSchema(schemaId: $schemaId);
-		if ($registerIds === []) {
+		$objects = [];
+		foreach ($this->resolveRegisterIdsForSchema(schemaId: $schemaId) as $registerId) {
+			$scope = [
+				'register' => $registerId,
+				'schema' => $schemaId,
+			];
+			array_push($objects, ...$this->searchScopedObjects(objectService: $objectService, scope: $scope));
+		}
+
+		return $objects;
+	}//end fetchObjectsBySchemaTitle()
+
+	/**
+	 * Search one register/schema pair in system context and normalise the hits.
+	 *
+	 * @param object               $objectService The OR ObjectService.
+	 * @param array<string, mixed> $scope         The `@self` register and schema filter.
+	 *
+	 * @return array<int, array<string, mixed>> The objects' own fields.
+	 *
+	 * @throws Throwable When the underlying OR aggregation query fails.
+	 *
+	 * @spec exclude Shared OR-aggregation plumbing for every gauge and counter below.
+	 */
+	private function searchScopedObjects(object $objectService, array $scope): array {
+		// Unscoped: metrics count objects across every organisation, as the system.
+		$results = $objectService->searchObjects(
+			query: ['@self' => $scope],
+			_rbac: false,
+			_multitenancy: false,
+		);
+
+		if (is_array($results) === false) {
 			return [];
 		}
 
 		$objects = [];
-		foreach ($registerIds as $registerId) {
-			$results = $objectService->searchObjects(
-				query: [
-					'@self' => [
-						'register' => $registerId,
-						'schema' => $schemaId,
-					],
-				],
-				_rbac: false,
-				_multitenancy: false,
-			);
+		foreach ($results as $result) {
+			$objects[] = $this->normalise(object: $result);
+		}
 
-			if (is_array($results) === false) {
+		return $objects;
+
+	}//end searchScopedObjects()
+
+	/**
+	 * Read the objects a grouped metric counts, logging a failed read and
+	 * treating it as no objects.
+	 *
+	 * @param string $name The metric name, a key of GROUPED_COUNT_METRICS.
+	 *
+	 * @return array<int, array<string, mixed>> The objects' own fields.
+	 *
+	 * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-004-sources-gauge-by-type
+	 */
+	private function readGroupedRows(string $name): array {
+		$schemaTitle = self::GROUPED_COUNT_METRICS[$name]['schemaTitle'];
+		try {
+			return $this->fetchObjectsBySchemaTitle(title: $schemaTitle);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: sprintf('[integriq\\Metrics] "%s" could not read %s objects: %s', $name, $schemaTitle, $e->getMessage()),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
+
+	}//end readGroupedRows()
+
+	/**
+	 * Count the rows per non-empty value of one property, in first-seen order.
+	 *
+	 * @param array<int, array<string, mixed>> $rows  The objects' own fields.
+	 * @param string                           $field The property to group by.
+	 *
+	 * @return array<string|int, int> Row count per property value.
+	 *
+	 * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-004-sources-gauge-by-type
+	 */
+	private function countByField(array $rows, string $field): array {
+		$counts = [];
+		foreach ($rows as $row) {
+			$value = (string)($row[$field] ?? '');
+			if ($value === '') {
 				continue;
 			}
 
-			foreach ($results as $result) {
-				$objects[] = $this->normalise(object: $result);
-			}
-		}//end foreach
+			$counts[$value] = (($counts[$value] ?? 0) + 1);
+		}
 
-		return $objects;
-	}//end fetchObjectsBySchemaTitle()
+		return $counts;
+
+	}//end countByField()
 
 	/**
 	 * Build a single-label grouped counter/gauge from OR objects, honouring
@@ -720,62 +768,31 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 	 * differently against a series that is missing versus one that is present
 	 * and zero, which is exactly why the spec calls for it.
 	 *
-	 * @param string $name The metric name (unprefixed).
-	 * @param string $type Prometheus metric type (gauge/counter).
-	 * @param string $help The HELP text.
-	 * @param string $schemaTitle The OR schema title to read objects from.
-	 * @param string $field The object property to group by.
-	 * @param string $label The Prometheus label key to emit.
-	 * @param string $placeholder The label value for the zero placeholder.
+	 * @param string $name The metric name, a key of GROUPED_COUNT_METRICS.
 	 *
 	 * @return MetricSample The grouped sample set (never empty).
 	 *
 	 * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-004-sources-gauge-by-type
 	 */
-	private function groupedCountSample(
-		string $name,
-		string $type,
-		string $help,
-		string $schemaTitle,
-		string $field,
-		string $label,
-		string $placeholder,
-	): MetricSample {
-		try {
-			$rows = $this->fetchObjectsBySchemaTitle(title: $schemaTitle);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: sprintf('[integriq\\Metrics] "%s" could not read %s objects: %s', $name, $schemaTitle, $e->getMessage()),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			$rows = [];
-		}
-
-		$counts = [];
-		foreach ($rows as $row) {
-			$value = (string)($row[$field] ?? '');
-			if ($value === '') {
-				continue;
-			}
-
-			$counts[$value] = (($counts[$value] ?? 0) + 1);
-		}
+	private function groupedCountSample(string $name): MetricSample {
+		$metric = self::GROUPED_COUNT_METRICS[$name];
+		$counts = $this->countByField(rows: $this->readGroupedRows(name: $name), field: $metric['field']);
 
 		// Spec: with no rows the family MUST still expose one zero-valued
 		// series rather than disappear entirely.
 		if ($counts === []) {
-			$counts[$placeholder] = 0;
+			$counts[$metric['placeholder']] = 0;
 		}
 
 		$points = [];
 		foreach ($counts as $value => $count) {
 			$points[] = [
-				'labels' => [$label => (string)$value],
+				'labels' => [$metric['label'] => (string)$value],
 				'value' => $count,
 			];
 		}
 
-		return new MetricSample(name: $name, type: $type, help: $help, samples: $points);
+		return new MetricSample(name: $name, type: $metric['type'], help: $metric['help'], samples: $points);
 	}//end groupedCountSample()
 
 	/**
@@ -786,38 +803,16 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 	 * @spec openspec/specs/prometheus-metrics/spec.md#requirement-circuit-breaker-state-gauge-req-prom-011
 	 */
 	public function metrics(): array {
-		return [
+		$samples = [
 			$this->circuitBreakerStateSample(),
 			$this->apiProductLatencySample(),
 			$this->apiProductErrorsSample(),
-			$this->groupedCountSample(
-				name: 'sources_total',
-				type: 'gauge',
-				help: 'Total sources by type',
-				schemaTitle: 'Source',
-				field: 'type',
-				label: 'type',
-				placeholder: 'rest'
-			),
-			$this->groupedCountSample(
-				name: 'calls_total',
-				type: 'counter',
-				help: 'Total API calls by status',
-				schemaTitle: 'CallLog',
-				field: 'statusCode',
-				label: 'status',
-				placeholder: '200'
-			),
-			$this->groupedCountSample(
-				name: 'synchronization_runs_total',
-				type: 'counter',
-				help: 'Total synchronization log entries by result',
-				schemaTitle: 'SynchronizationLog',
-				field: 'result',
-				label: 'status',
-				placeholder: 'success'
-			),
 		];
+		foreach (array_keys(self::GROUPED_COUNT_METRICS) as $name) {
+			$samples[] = $this->groupedCountSample(name: $name);
+		}
+
+		return $samples;
 
 	}//end metrics()
 }//end class

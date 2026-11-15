@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "sioncronuithe",
         "A signing secret is configured (hidden).": "Tá rún sínithe cumraithe (i bhfolach).",
         "Copied to clipboard": "Cóipeáilte chuig an ngearrthaisce",
         "Copy": "Cóipeáil",

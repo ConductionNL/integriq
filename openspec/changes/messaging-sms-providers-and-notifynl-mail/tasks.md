@@ -8,8 +8,8 @@ Kind: code. Size M. Rows `integriq:msg-sms` and `integriq:nl-notifynl`.
 - **acceptance_criteria**:
   - GIVEN provider `twillio` WHEN a message is sent THEN it is stored `failed` naming the value
   - GIVEN no provider value WHEN a message is sent THEN the log binding runs
-- [ ] Implement
-- [ ] Test (PHPUnit on `resolveProvider()` against the real registry)
+- [x] Implement
+- [x] Test (PHPUnit on `resolveProvider()` against the real registry)
 
 ### Task 2: The CM.com binding
 - **spec_ref**: openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
@@ -17,24 +17,24 @@ Kind: code. Size M. Rows `integriq:msg-sms` and `integriq:nl-notifynl`.
 - **acceptance_criteria**:
   - GIVEN a CM.com source with a brokered product token WHEN a message is sent THEN one `POST /message` leaves through the broker and the reference is stored
   - GIVEN no `credentialRef` WHEN a message is sent THEN nothing leaves and the reason names the credential
-- [ ] Implement
-- [ ] Test (PHPUnit with a stubbed `BrokeredCallService`)
+- [x] Implement
+- [x] Test (PHPUnit with a stubbed `BrokeredCallService`)
 
 ### Task 3: The MessageBird binding
 - **spec_ref**: openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 - **files**: `lib/Service/Sms/MessageBirdSmsProvider.php`
 - **acceptance_criteria**:
   - GIVEN a MessageBird source WHEN a message is sent and then polled THEN the send and the status read both go through the broker and the status is mapped
-- [ ] Implement
-- [ ] Test (PHPUnit with a stubbed `BrokeredCallService`)
+- [x] Implement
+- [x] Test (PHPUnit with a stubbed `BrokeredCallService`)
 
 ### Task 4: The Twilio binding
 - **spec_ref**: openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 - **files**: `lib/Service/Sms/TwilioSmsProvider.php`
 - **acceptance_criteria**:
   - GIVEN a Twilio source with an account SID and a brokered Basic value WHEN a message is sent THEN it posts to the account's `Messages.json` and stores the SID
-- [ ] Implement
-- [ ] Test (PHPUnit with a stubbed `BrokeredCallService`)
+- [x] Implement
+- [x] Test (PHPUnit with a stubbed `BrokeredCallService`)
 
 ### Task 5: Source choice and the provider picker
 - **spec_ref**: openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
@@ -69,8 +69,12 @@ Kind: code. Size M. Rows `integriq:msg-sms` and `integriq:nl-notifynl`.
 - **files**: `lib/Settings/integriq_mock_register.json`
 - **acceptance_criteria**:
   - GIVEN demo data WHEN the SMS page opens THEN one message per new provider is listed in the states sent, delivered and failed
-- [ ] Implement
-- [ ] Test (`tests/validate-register.js`)
+- [x] Implement
+- [x] Test (`tests/validate-register.js`)
+
+## Build notes
+
+Tasks 1 to 4 and 8 are built. The registry is `SmsProviderRegistry`; a provider value no binding answers to resolves to `UnknownSmsProvider`, which refuses both calls naming the value, so `attemptSend()` stores the message `failed` with that reason. No `Application.php` change was needed: the registry and the three bindings autowire, and `SmsDispatchService` takes the registry as an optional last argument. CM.com has no status read, so its `fetchStatus()` refuses and names the callback; it does not return a guessed status. Tasks 5, 6 and 7 (source choice and picker, vendor callbacks, NotifyNL e-mail) are open.
 
 ## Verification
 

@@ -156,12 +156,12 @@ class ObjectenWiringTest extends TestCase {
 	}//end testEveryFacadeServiceIsRegistered()
 
 	/**
-	 * The app's register() calls the wiring; without the call the factories exist and nothing uses them.
+	 * The Service registrar calls the wiring; without the call the factories exist and nothing uses them.
 	 *
 	 * @return void
 	 */
 	public function testTheApplicationRegistersTheWiring(): void {
-		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/AppInfo/Application.php');
+		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/Service/ServiceBindings.php');
 
 		$this->assertStringContainsString('ObjectenWiring::register(context: $context)', $source);
 	}//end testTheApplicationRegistersTheWiring()
@@ -312,6 +312,8 @@ class ObjectenWiringTest extends TestCase {
 			}
 		}
 
+		// Each method is routed twice: under /api/ and under the versioned /api/v1/.
+		$methods = array_values(array_unique($methods));
 		$this->assertCount(10, $methods);
 		foreach ($methods as $method) {
 			$attributes = (new \ReflectionMethod(ObjectenApiController::class, $method))->getAttributes(AnonRateLimit::class);
@@ -510,7 +512,7 @@ class ObjectenWiringTest extends TestCase {
 						'register' => 'meldingen',
 						'schema' => 'melding',
 					]]],
-					ObjectenOpenRegisterAccess::TOKEN_SCHEMA => ['results' => [[
+					ObjectenOpenRegisterAccess::CREDENTIAL_SCHEMA => ['results' => [[
 						'@self' => ['id' => 'token-1'],
 						'name' => 'Leverancier meldingen',
 						'credential' => 'cred-1',

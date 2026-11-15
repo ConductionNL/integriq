@@ -3,6 +3,9 @@
 /**
  * Operator-gated removal of the vestigial `source.authenticationConfig` (ocon#232).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * ─────────────────────────────────────────────────────────────────────────────
  * THIS CLASS DELETES CREDENTIAL DATA. THE GATING IS THE POINT.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -48,9 +51,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -71,7 +71,7 @@ use Throwable;
  *
  * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
  */
-class AuthenticationConfigRemover {
+class AuthenticationConfigRemover implements AuthenticationConfigRemoverInterface {
 
 	/**
 	 * Outcome: the value was cleared and the save persisted.
@@ -236,6 +236,7 @@ class AuthenticationConfigRemover {
 				schema: InlineSecretMigrationPlanner::SCHEMA,
 				uuid: $uuid,
 				_rbac: false,
+				// Unscoped: a repair step removing legacy authentication config, run as the system.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
@@ -283,6 +284,7 @@ class AuthenticationConfigRemover {
 			register: InlineSecretMigrationPlanner::REGISTER,
 			schema: InlineSecretMigrationPlanner::SCHEMA,
 			_rbac: false,
+			// Unscoped: a repair step reads the raw stored object, run as the system.
 			_multitenancy: false,
 			_render: false
 		);

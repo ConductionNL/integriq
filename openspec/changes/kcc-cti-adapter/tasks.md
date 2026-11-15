@@ -1,7 +1,7 @@
 # Tasks: kcc-cti-adapter
 
-> Tasks 1 and 2 are done. Task 3, the contact moment on request and the
-> 30-day retention, is open. Task 4, the source form and the docs, is open.
+> Tasks 1, 2 and 3 are done, the caller search binding included. Task 4, the
+> source form and the docs, is open.
 >
 > Two things found while building, recorded rather than worked around:
 >
@@ -58,7 +58,23 @@
 - [x] `CallerLookup`, `CallerDirectory`, `CallContextService`: resolve the number to a partij and read the open cases
 - [x] Test the event
 - [x] Test the lookup, probed with numbers differing only by their prefix
-- [ ] A binding that implements `CallerSearchInterface`. Until one exists, every caller reads as unknown, which is true and visible.
+- [x] A binding that implements `CallerSearchInterface`. Until one exists, every caller reads as unknown, which is true and visible.
+- **note on the binding**: `KlantinteractiesClient` implements the search
+  (`GET /digitaleadressen?adres=<e164>`, then each providing `partij`, which
+  carries the addresses it provided; case references from the party's
+  klantcontacten by the REQ-003 rule, newest first). The container binds
+  `CallerSearchInterface` to `ConfiguredCallerSearch`, which reads the KISS
+  source the CTI source names in `configuration.callerLookupSource`, in
+  system context like the CTI source itself, and asks it only when it is an
+  enabled `rest` source. It never falls back to "the first active KISS
+  source": in system context that could be another organisation's
+  directory. Klantinteracties holds no case status, so the references are the
+  cases the party contacted about; filtering them on open is the case
+  system's to do. The `adres` filter and `hadBetrokkene__wasPartij__uuid` are
+  assumed API shape, like the rest of the client; `CallerLookup` still
+  decides the match exactly, so a backend that ignores a filter matches
+  nobody wrongly. Picking `callerLookupSource` on the source page belongs to
+  Task 4.
 - **note**: the search seam is `CallerSearchInterface`, kept OFF
   `KlantinteractiesProviderInterface` deliberately. Adding a method there would
   force the log sandbox and the REST client to answer a question neither was
@@ -80,9 +96,32 @@
 
 ### Task 3: Contact moment on request, retention
 - **spec_ref**: `openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007`
-- **files**: `lib/Service/Kiss/CallContextService.php`, `lib/Settings/integriq_register.json` (`callEvent` log with 30-day retention)
-- [ ] Implement
-- [ ] Test
+- **files**: `lib/Service/Kiss/CallEventLog.php`, `lib/Service/Kiss/CtiEventIntake.php`, `lib/Service/KissSyncService.php`, `lib/Controller/KissController.php`, `lib/Exception/CallEventNotFoundException.php`, `lib/Settings/register.d/cti-call-events.json` (`call_event` log with 30-day retention), `tests/Unit/Service/Kiss/ContactMomentForCallTest.php`
+- [x] Implement
+- [x] Test
+- **note**: the files line named `CallContextService` and the base register.
+  The log is its own class, `CallEventLog`, because the context service only
+  reads, and the schema went into an ADR-037 fragment, not the base register.
+- **note on what is stored where**: every accepted event is written to
+  `call_event` BEFORE it is dispatched, so a panel that records the contact
+  moment the instant it sees `ended` finds the call. The schema declares
+  `x-openregister-archival.retention.default = P30D` and no rule, and the
+  authorization block is the lockdown shape (admin and owner only), because a
+  row holds a phone number. The log is written and read in system context.
+- **note on the push**: `POST /api/kiss/klantcontacten` takes `callId` and,
+  optionally, `callSourceId`. Integriq then records the contact moment on
+  `kanaal = telefoon` (whatever channel the panel posted), takes
+  `plaatsgevondenOp` from the call unless the panel sent one, and links the
+  case as before. The VNG Klantinteracties klantcontact has NO duration field,
+  so the duration (and the call) live on the local `kiss_klantcontact` mirror
+  and are not sent on the wire: sending a field the API does not define is the
+  failure KissSyncService already documents. A second push for the same call
+  answers with the first contact moment and creates nothing. A callId with no
+  ended event, or one callId ended on two sources without `callSourceId`, is
+  refused with 404 `unknown_call` before anything reaches KISS.
+- **note**: the sweep itself is OpenRegister's `ArchivalRetentionTask`; the
+  unit test pins the declaration with a fixed clock. That a row is really gone
+  after 30 days is a live check (Still owed).
 
 ### Task 4: Source form, i18n, docs
 - CTI provider picker and field mapping on the source page; Dutch and English strings; docs with screenshots.

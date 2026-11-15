@@ -22,18 +22,21 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Outbound;
 
 use InvalidArgumentException;
-use OCA\Integriq\Exception\CallDispatchException;
 use OCA\Integriq\Outbound\BodyRedactor;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\CallDispatcherInterface;
+use OCA\Integriq\Outbound\Call\CallDispatchException;
 use OCA\Integriq\Outbound\Call\CallRecorder;
 use OCA\Integriq\Outbound\Call\CallReplayService;
 use OCA\Integriq\Outbound\Call\MappingVersionService;
 use OCA\Integriq\Outbound\Call\PreCheckService;
 use OCA\Integriq\Outbound\Call\VerdictService;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClient;
+use OCP\IAppConfig;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -102,6 +105,13 @@ class RecordingDispatcher implements CallDispatcherInterface {
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
  */
 class CallReplayServiceTest extends TestCase {
+
+	/**
+	 * The golden hand-fired calls, taken before fire() was split.
+	 *
+	 * @var string
+	 */
+	private const GOLDEN_FIRED = '[{"result":{"call":"recorded","kind":"hand-fired","succeeded":true,"sent":true,"statusCode":200,"detail":"OK"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":200,"headers":[],"durationMs":12,"detail":"OK"},"statusCode":200,"statusMessage":"OK","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":false,"sent":true,"statusCode":199,"detail":"OK"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":199,"headers":[],"durationMs":12,"detail":"OK"},"statusCode":199,"statusMessage":"OK","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":true,"sent":true,"statusCode":299,"detail":"OK"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":299,"headers":[],"durationMs":12,"detail":"OK"},"statusCode":299,"statusMessage":"OK","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":false,"sent":true,"statusCode":300,"detail":"Service Unavailable"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":300,"headers":[],"durationMs":12,"detail":"Service Unavailable"},"statusCode":300,"statusMessage":"Service Unavailable","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":false,"sent":false,"detail":"no route to host"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":[],"statusCode":0,"statusMessage":"no route to host","durationMs":0,"kind":"hand-fired","firedBy":"beheerder"},"sent":0},{"result":{"kind":"dry-run","succeeded":true,"sent":false,"request":{"method":"POST","endpoint":"\\/notificaties","body":{"kanaal":"zaken"}},"detail":"Dry run: this is the request that would be sent. Nothing was sent."},"record":null,"sent":0},{"result":{"kind":"dry-run","succeeded":true,"sent":false,"request":{"method":"POST","endpoint":"\\/notificaties","body":{"kanaal":"zaken"}},"detail":"Dry run: this is the request that would be sent. Nothing was sent."},"record":null,"sent":0}]';
 
 	/**
 	 * The OR object service double.
@@ -183,7 +193,9 @@ class CallReplayServiceTest extends TestCase {
 			}
 		);
 
-		$this->recorder = new CallRecorder($this->objectService, new BodyRedactor());
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueInt')->willReturnArgument(2);
+		$this->recorder = new CallRecorder($this->objectService, new BodyRedactor(), new BodyCapturePolicy($appConfig), new SensitiveFieldRegistry());
 
 	}//end setUp()
 
@@ -249,16 +261,66 @@ class CallReplayServiceTest extends TestCase {
 					'headers' => ['Authorization' => 'Bearer abcdef1234567890'],
 					'body' => 'apikey: sk-live-0123456789',
 				],
-				'statusCode' => 200,
+				'statusCode' => 500,
 			]
 		);
 
 		$record = $this->records[(string)$entity->getUuid()];
 
 		$this->assertSame(BodyRedactor::PLACEHOLDER, $record['request']['headers']['Authorization']);
-		$this->assertStringNotContainsString('sk-live-0123456789', $record['request']['body']);
+		$this->assertSame(BodyRedactor::PLACEHOLDER, $record['replayRequest']['headers']['Authorization']);
+		$this->assertStringNotContainsString('sk-live-0123456789', json_encode($record));
 
 	}//end testACredentialIsRedactedBeforeTheWrite()
+
+	/**
+	 * A session header, a Set-Cookie and the tokens an upstream issued never
+	 * reach the stored response, while the stored request a replay sends keeps
+	 * its session header and body intact.
+	 *
+	 * @return void
+	 */
+	public function testSessionHeadersAndIssuedTokensAreRedactedBeforeTheWrite(): void {
+		// An open investigation window, so the bodies are stored and can be checked.
+		$source = '4b1c1c1e-1111-4111-8111-111111111111';
+		$this->records[$source] = ['name' => 'oauth-partner', 'bodyCaptureUntil' => (new \DateTimeImmutable('+1 hour'))->format(\DATE_ATOM)];
+
+		$entity = $this->recorder->record(
+			[
+				'target' => $source,
+				'request' => [
+					'method' => 'POST',
+					'headers' => ['X-Session' => 's1', 'Content-Type' => 'application/json'],
+					'body' => '{"access_token":"t"}',
+				],
+				'response' => [
+					'headers' => ['Set-Cookie' => ['sid=1'], 'X-Session-Id' => 'live-session-42'],
+					'body' => '{"access_token":"abc123xyz","id_token":"eyJ.a.b","refresh_token":"r-1","meta":{}}',
+				],
+				'statusCode' => 500,
+			]
+		);
+
+		$uuid = (string)$entity->getUuid();
+		$record = $this->records[$uuid];
+
+		// The stored response masks them.
+		$this->assertSame([BodyRedactor::PLACEHOLDER], $record['response']['headers']['Set-Cookie']);
+		$this->assertSame(BodyRedactor::PLACEHOLDER, $record['response']['headers']['X-Session-Id']);
+		$this->assertStringContainsString('"meta":{}', $record['response']['body']);
+		foreach (['sid=1', 'live-session-42', 'abc123xyz', 'eyJ.a.b', 'r-1'] as $secret) {
+			$this->assertStringNotContainsString($secret, json_encode($record['response']), $secret);
+		}
+
+		// The stored request is what a replay sends, so its session header and body go out intact.
+		$dispatcher = new RecordingDispatcher(200);
+		$this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertCount(1, $dispatcher->sent);
+		$this->assertSame('s1', $dispatcher->sent[0]['request']['headers']['X-Session']);
+		$this->assertSame('{"access_token":"t"}', $dispatcher->sent[0]['request']['body']);
+
+	}//end testSessionHeadersAndIssuedTokensAreRedactedBeforeTheWrite()
 
 	/**
 	 * A replay appends an attempt and leaves the first one readable.
@@ -283,6 +345,92 @@ class CallReplayServiceTest extends TestCase {
 	}//end testAReplayAppendsAndNeverOverwrites()
 
 	/**
+	 * A call outside an investigation window keeps no body, and a failure keeps its request for a replay.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function testARecordOutsideAWindowKeepsOnlyTheReplayRequest(): void {
+		$record = $this->records[$this->failedCall()];
+
+		$this->assertArrayNotHasKey('body', $record['request']);
+		$this->assertArrayNotHasKey('body', $record['response']);
+		$this->assertFalse($record['bodyCaptured']);
+		$this->assertSame('<Lk01/>', $record['replayRequest']['body']);
+		$this->assertArrayHasKey('bodyExpiresAt', $record);
+
+	}//end testARecordOutsideAWindowKeepsOnlyTheReplayRequest()
+
+	/**
+	 * A call to a source with an open window keeps both bodies.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	public function testARecordInsideAWindowKeepsBothBodies(): void {
+		$source = '4b1c1c1e-1111-4111-8111-111111111111';
+		// An hour ahead: a window beyond the instance maximum (72 h) counts as closed.
+		$this->records[$source] = ['name' => 'stuf-partner', 'bodyCaptureUntil' => (new \DateTimeImmutable('+1 hour'))->format(\DATE_ATOM)];
+
+		$uuid = $this->failedCall([], ['target' => $source]);
+		$record = $this->records[$uuid];
+
+		$this->assertTrue($record['bodyCaptured']);
+		$this->assertSame('<Lk01/>', $record['request']['body']);
+		$this->assertSame('<Fo01/>', $record['response']['body']);
+
+	}//end testARecordInsideAWindowKeepsBothBodies()
+
+	/**
+	 * A replay sends the request the failure kept, and a replay that succeeds removes it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function testASuccessfulReplayRemovesTheReplayRequest(): void {
+		$uuid = $this->failedCall();
+		$dispatcher = new RecordingDispatcher(200);
+
+		$this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertSame('<Lk01/>', $dispatcher->sent[0]['request']['body']);
+		$this->assertArrayNotHasKey('replayRequest', $this->records[$uuid]);
+
+	}//end testASuccessfulReplayRemovesTheReplayRequest()
+
+	/**
+	 * A replay that fails again keeps the request for the next try.
+	 *
+	 * @return void
+	 */
+	public function testAFailedReplayKeepsTheReplayRequest(): void {
+		$uuid = $this->failedCall(['maxAttempts' => 5]);
+
+		$this->service(new RecordingDispatcher(503))->replay($uuid, 'beheerder');
+
+		$this->assertSame('<Lk01/>', $this->records[$uuid]['replayRequest']['body']);
+
+	}//end testAFailedReplayKeepsTheReplayRequest()
+
+	/**
+	 * The preview shows the stored request, never the replay request.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewDoesNotShowTheReplayRequest(): void {
+		$uuid = $this->failedCall();
+
+		$preview = $this->service(new RecordingDispatcher(200))->preview($uuid);
+
+		$this->assertSame('POST', $preview['request']['method']);
+		$this->assertArrayNotHasKey('body', $preview['request']);
+
+	}//end testThePreviewDoesNotShowTheReplayRequest()
+
+	/**
 	 * A dry run shows the request and writes nothing at all.
 	 *
 	 * @return void
@@ -301,6 +449,74 @@ class CallReplayServiceTest extends TestCase {
 		$this->assertSame($before, $this->records, 'a dry run writes no record and no attempt');
 
 	}//end testADryRunChangesNothing()
+
+	/**
+	 * A record whose bodies were stripped has no request left to replay: nothing is sent and nothing is recorded (iq-f4).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function testARecordWhoseBodiesWereStrippedIsNotReplayed(): void {
+		$uuid = $this->failedCall();
+		unset($this->records[$uuid]['replayRequest'], $this->records[$uuid]['bodyExpiresAt']);
+		$this->records[$uuid]['bodyCaptured'] = false;
+		$this->records[$uuid]['bodyExpiredAt'] = '2026-10-10T12:00:00+00:00';
+		$before = $this->records;
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertFalse($result['sent']);
+		$this->assertFalse($result['succeeded']);
+		$this->assertStringContainsString('no longer kept', $result['detail']);
+		$this->assertSame([], $dispatcher->sent, 'the dispatcher is never called');
+		$this->assertSame($before, $this->records, 'no attempt is recorded');
+	}//end testARecordWhoseBodiesWereStrippedIsNotReplayed()
+
+	/**
+	 * A call recorded without bodies (a withheld record: url and method only) is not replayed either, singly or in bulk.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+	 */
+	public function testAWithheldRecordIsNotReplayedInBulkEither(): void {
+		$withheld = $this->failedCall();
+		unset($this->records[$withheld]['replayRequest']);
+		$this->records[$withheld]['request'] = ['url' => 'https://partner.example/stuf', 'method' => 'POST'];
+		$this->records[$withheld]['bodyCaptured'] = false;
+		$kept = $this->failedCall();
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replayAll([$withheld, $kept], 'beheerder');
+
+		$this->assertFalse($result['items'][0]['sent']);
+		$this->assertFalse($result['items'][0]['succeeded']);
+		$this->assertTrue($result['items'][1]['sent'], 'a call that kept its replay request still goes out');
+		$this->assertCount(1, $dispatcher->sent);
+		$this->assertSame('<Lk01/>', $dispatcher->sent[0]['request']['body']);
+		$this->assertSame(1, $result['succeeded']);
+		$this->assertSame(1, $result['failed']);
+	}//end testAWithheldRecordIsNotReplayedInBulkEither()
+
+	/**
+	 * A GET with no kept request body is still replayed: there was no body to lose.
+	 *
+	 * @return void
+	 */
+	public function testAGetWithoutAKeptBodyIsStillReplayed(): void {
+		$uuid = $this->failedCall();
+		unset($this->records[$uuid]['replayRequest']);
+		$this->records[$uuid]['request'] = ['method' => 'GET', 'endpoint' => '/zaken'];
+		$this->records[$uuid]['bodyCaptured'] = false;
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertTrue($result['sent']);
+		$this->assertCount(1, $dispatcher->sent);
+	}//end testAGetWithoutAKeptBodyIsStillReplayed()
 
 	/**
 	 * A bulk replay reports each item, and skips none.
@@ -395,8 +611,9 @@ class CallReplayServiceTest extends TestCase {
 			'snapshot' => ['slug' => 'zaak-naar-stuf', 'version' => '3', 'rules' => ['then']],
 		];
 
-		$uuid = $this->failedCall([], ['mapping' => 'zaak-naar-stuf', 'mappingVersion' => '3']);
-		$service = $this->service(new RecordingDispatcher(200));
+		// The replays fail again, so the record keeps the request the next replay sends.
+		$uuid = $this->failedCall(['maxAttempts' => 5], ['mapping' => 'zaak-naar-stuf', 'mappingVersion' => '3']);
+		$service = $this->service(new RecordingDispatcher(503));
 
 		$preview = $service->preview($uuid);
 		$this->assertSame('3', $preview['versions']['recorded']);
@@ -551,6 +768,94 @@ class CallReplayServiceTest extends TestCase {
 	}//end testAnUnrecognisedAnswerIsNoAnswer()
 
 	/**
+	 * Drop clock readings and generated ids, which differ per run.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed
+	 */
+	private function stableValue(mixed $value): mixed {
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		$out = [];
+		foreach ($value as $key => $item) {
+			if (is_string($key) === true && preg_match('/At$|^at$|time|^uuid$|^call$|^originId$|durationMs|expires/i', $key) === 1) {
+				$out[$key] = ($item === null ? null : '(set)');
+				continue;
+			}
+
+			$out[$key] = $this->stableValue($item);
+		}
+
+		return $out;
+	}//end stableValue()
+
+	/**
+	 * Every replay outcome matches the golden file recorded on the code before
+	 * replay() was split: the result, the attempts written, what was sent and
+	 * whether the call was dead-lettered.
+	 *
+	 * Regenerate with CALL_REPLAY_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryReplayOutcomeMatchesTheGoldenFile(): void {
+		$cases = [
+			'ok-200' => [200, null, [], []],
+			'ok-299' => [299, null, [], []],
+			'redirect-300' => [300, null, ['maxAttempts' => 6], []],
+			'informational-199' => [199, null, ['maxAttempts' => 6], []],
+			'unavailable-exhausted' => [503, null, ['maxAttempts' => 2], []],
+			'unavailable-attempts-left' => [503, null, ['maxAttempts' => 6], []],
+			'dispatch-fails-exhausted' => [200, 'no route to host', ['maxAttempts' => 2], []],
+			'dispatch-fails-attempts-left' => [200, 'no route to host', ['maxAttempts' => 6], []],
+			'dry-run' => [200, null, [], ['dryRun' => true]],
+			'dry-run-truthy-not-true' => [200, null, [], ['dryRun' => 1]],
+			'wanted-version-int' => [200, null, [], ['mappingVersion' => 3]],
+			'stripped-bodies' => [200, null, [], [], true],
+			'stripped-bodies-dry-run' => [200, null, [], ['dryRun' => true], true],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => $case) {
+			$this->records = [];
+			$uuid = $this->failedCall($case[2]);
+			if (($case[4] ?? false) === true) {
+				unset($this->records[$uuid]['replayRequest'], $this->records[$uuid]['bodyExpiresAt']);
+				$this->records[$uuid]['bodyCaptured'] = false;
+			}
+
+			$dispatcher = new RecordingDispatcher($case[0], $case[1]);
+			$result = $this->service($dispatcher)->replay($uuid, 'beheerder', $case[3]);
+
+			$actual[$name] = $this->stableValue(
+				[
+					'result' => $result,
+					'callIsUuid' => ($result['call'] === $uuid),
+					'attempts' => ($this->records[$uuid]['attempts'] ?? []),
+					'deadLettered' => ($this->records[$uuid]['deadLettered'] ?? null),
+					'deadLetterRecords' => count(array_filter($this->records, static fn (array $record): bool => (($record['phase'] ?? '') === 'outbound-call'))),
+					'sent' => $dispatcher->sent,
+				]
+			);
+		}
+
+		$golden = __DIR__ . '/../../fixtures/outbound/call-replay-outcomes.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (getenv('CALL_REPLAY_GOLDEN') === '1') {
+			if (is_dir(dirname($golden)) === false) {
+				mkdir(dirname($golden), 0777, true);
+			}
+
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryReplayOutcomeMatchesTheGoldenFile()
+
+	/**
 	 * A replay service over the doubles.
 	 *
 	 * @param CallDispatcherInterface $dispatcher The dispatcher to use.
@@ -595,5 +900,33 @@ class CallReplayServiceTest extends TestCase {
 		return (string)$entity->getUuid();
 
 	}//end failedCall()
+
+
+	/**
+	 * GOLDEN: a hand-fired call as a dry run, answered at the 2xx boundaries,
+	 * and failed in dispatch: the outcome and what was recorded. The new record's
+	 * uuid shows only as the record it names. Pinned before fire() was split.
+	 *
+	 * @return void
+	 */
+	public function testGoldenHandFiredCalls(): void {
+		$request = ['method' => 'POST', 'endpoint' => '/notificaties', 'body' => ['kanaal' => 'zaken']];
+		$outcomes = [];
+		foreach ([[200, null, false], [199, null, false], [299, null, false], [300, null, false], [200, 'no route to host', false], [200, null, true], [500, 'x', true]] as [$status, $throw, $dryRun]) {
+			$dispatcher = new RecordingDispatcher($status, $throw);
+			$result = $this->service($dispatcher)->fire('notificaties-partner', $request, 'beheerder', $dryRun);
+			$record = null;
+			if (isset($result['call']) === true) {
+				$stored = $this->records[$result['call']];
+				$record = array_intersect_key($stored, array_flip(['target', 'request', 'response', 'statusCode', 'statusMessage', 'durationMs', 'kind', 'firedBy']));
+				$result['call'] = 'recorded';
+			}
+
+			$outcomes[] = ['result' => $result, 'record' => $record, 'sent' => count($dispatcher->sent)];
+		}
+
+		$this->assertSame(self::GOLDEN_FIRED, json_encode($outcomes));
+
+	}//end testGoldenHandFiredCalls()
 
 }//end class

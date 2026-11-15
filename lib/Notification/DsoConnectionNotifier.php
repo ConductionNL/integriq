@@ -28,10 +28,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Notification;
 
 use InvalidArgumentException;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
-use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
@@ -52,12 +52,14 @@ class DsoConnectionNotifier implements INotifier {
 	 *
 	 * @param IFactory      $l10nFactory  Localisation.
 	 * @param IURLGenerator $urlGenerator Icon and settings link.
+	 * @param WebhookProfilesInterface $webhookProfiles The fixed webhook profiles.
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function __construct(
 		private readonly IFactory $l10nFactory,
 		private readonly IURLGenerator $urlGenerator,
+		private readonly WebhookProfilesInterface $webhookProfiles,
 	) {
 	}//end __construct()
 
@@ -69,7 +71,7 @@ class DsoConnectionNotifier implements INotifier {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function getID(): string {
-		return Application::APP_ID . '_dso_connection';
+		return AppIdentity::APP_ID . '_dso_connection';
 	}//end getID()
 
 	/**
@@ -80,7 +82,7 @@ class DsoConnectionNotifier implements INotifier {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function getName(): string {
-		return $this->l10nFactory->get(Application::APP_ID)->t('DSO connection');
+		return $this->l10nFactory->get(AppIdentity::APP_ID)->t('DSO connection');
 	}//end getName()
 
 	/**
@@ -96,11 +98,11 @@ class DsoConnectionNotifier implements INotifier {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
-		if ($notification->getApp() !== Application::APP_ID || $notification->getSubject() !== DsoConnectionAlerts::SUBJECT) {
+		if ($notification->getApp() !== AppIdentity::APP_ID || $notification->getSubject() !== PortalConnectionAlertsInterface::SUBJECT) {
 			throw $this->unknownNotification();
 		}
 
-		$l = $this->l10nFactory->get(Application::APP_ID, $languageCode);
+		$l = $this->l10nFactory->get(AppIdentity::APP_ID, $languageCode);
 		$reason = (string)($notification->getSubjectParameters()['reason'] ?? '');
 		$channel = (string)($notification->getSubjectParameters()['channel'] ?? DsoConnectionUnavailableException::CHANNEL_DSO);
 
@@ -109,7 +111,11 @@ class DsoConnectionNotifier implements INotifier {
 			return $this->finish(notification: $notification, subject: $subject);
 		}
 
-		$webhook = WebhookProfiles::byChannel(channel: $channel);
+		if ($channel === DsoConnectionUnavailableException::CHANNEL_DIGITAL_POST) {
+			return $this->finish(notification: $notification, subject: $this->digitalPostSubject(l: $l, reason: $reason));
+		}
+
+		$webhook = $this->webhookProfiles->forChannel(channel: $channel);
 		if ($webhook !== null) {
 			$subject = $this->webhookSubject(l: $l, label: $webhook->label, reason: $reason);
 			return $this->finish(notification: $notification, subject: $subject);
@@ -119,9 +125,11 @@ class DsoConnectionNotifier implements INotifier {
 			'no_connection', 'ambiguous_connection' => $l->t('DSO-LV pushes are refused: no DSO connection is configured.'),
 			'no_account', 'account_unknown', 'account_disabled' => $l->t('DSO-LV pushes are refused: the DSO connection has no usable account.'),
 			'account_lacks_rights', 'rights_unverifiable' => $l->t('DSO-LV pushes are refused: the DSO connection account cannot store verzoeken.'),
-			DsoConnectionAlerts::REASON_NOT_STORED => $l->t('A DSO verzoek could not be stored. DSO-LV will deliver it again.'),
-			DsoConnectionAlerts::REASON_JOB_ACCOUNT => $l->t('DSO bijlagen were not downloaded: the account that stored the verzoek is no longer usable.'),
-			DsoConnectionAlerts::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the DSO intake acts as.'),
+			PortalConnectionAlertsInterface::REASON_NOT_STORED => $l->t('A DSO verzoek could not be stored. DSO-LV will deliver it again.'),
+			PortalConnectionAlertsInterface::REASON_JOB_ACCOUNT => $l->t(
+				'DSO bijlagen were not downloaded: the account that stored the verzoek is no longer usable.'
+			),
+			PortalConnectionAlertsInterface::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the DSO intake acts as.'),
 			default => $l->t('The DSO connection needs attention.'),
 		};
 
@@ -149,14 +157,34 @@ class DsoConnectionNotifier implements INotifier {
 			'account_lacks_rights', 'rights_unverifiable' => $l->t(
 				'Open Formulieren submissions are refused: the Open Formulieren connection account cannot store submissions.'
 			),
-			DsoConnectionAlerts::REASON_SUBMISSION_NOT_STORED => $l->t(
+			PortalConnectionAlertsInterface::REASON_SUBMISSION_NOT_STORED => $l->t(
 				'An Open Formulieren submission could not be stored. Open Formulieren will deliver it again.'
 			),
-			DsoConnectionAlerts::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the Open Formulieren intake acts as.'),
+			PortalConnectionAlertsInterface::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the Open Formulieren intake acts as.'),
 			default => $l->t('The Open Formulieren connection needs attention.'),
 		};
 
 	}//end openFormulierenSubject()
+
+	/**
+	 * The text of a digital post account alert.
+	 *
+	 * @param IL10N  $l      The localisation.
+	 * @param string $reason The reason.
+	 *
+	 * @return string The parsed subject.
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#scenario-a-missing-or-disabled-account-refuses-the-send-out-loud
+	 */
+	private function digitalPostSubject(IL10N $l, string $reason): string {
+		return match ($reason) {
+			'no_connection', 'ambiguous_connection', 'no_account' => $l->t('Digital post is not sent: no digital post account is set.'),
+			'account_unknown', 'account_disabled' => $l->t('Digital post is not sent: the digital post account is missing or disabled.'),
+			'account_lacks_rights', 'rights_unverifiable' => $l->t('Digital post is not sent: the digital post account cannot store letters.'),
+			default => $l->t('The digital post account needs attention.'),
+		};
+
+	}//end digitalPostSubject()
 
 	/**
 	 * The subject of an alert of a signed webhook on the consumer model.
@@ -174,8 +202,11 @@ class DsoConnectionNotifier implements INotifier {
 			'no_connection', 'ambiguous_connection' => $l->t('%1$s deliveries are refused: no %1$s connection is configured.', [$label]),
 			'no_account', 'account_unknown', 'account_disabled' => $l->t('%1$s deliveries are refused: the %1$s connection has no usable account.', [$label]),
 			'account_lacks_rights', 'rights_unverifiable' => $l->t('%1$s deliveries are refused: the %1$s connection account cannot store them.', [$label]),
-			DsoConnectionAlerts::REASON_DELIVERY_NOT_STORED => $l->t('A %s delivery could not be stored. The sender will deliver it again.', [$label]),
-			DsoConnectionAlerts::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the %s webhook acts as.', [$label]),
+			PortalConnectionAlertsInterface::REASON_DELIVERY_NOT_STORED => $l->t(
+				'A %s delivery could not be stored. The sender will deliver it again.',
+				[$label]
+			),
+			PortalConnectionAlertsInterface::REASON_CHOOSE_ACCOUNT => $l->t('Choose the account the %s webhook acts as.', [$label]),
 			default => $l->t('The %s connection needs attention.', [$label]),
 		};
 
@@ -191,10 +222,10 @@ class DsoConnectionNotifier implements INotifier {
 	 */
 	private function finish(INotification $notification, string $subject): INotification {
 		$notification->setParsedSubject($subject);
-		$notification->setLink($this->urlGenerator->linkToRouteAbsolute('settings.AdminSettings.index', ['section' => Application::APP_ID]));
+		$notification->setLink($this->urlGenerator->linkToRouteAbsolute('settings.AdminSettings.index', ['section' => AppIdentity::APP_ID]));
 		$notification->setIcon(
 			$this->urlGenerator->getAbsoluteURL(
-				$this->urlGenerator->imagePath(appName: Application::APP_ID, file: 'app-dark.svg')
+				$this->urlGenerator->imagePath(appName: AppIdentity::APP_ID, file: 'app-dark.svg')
 			)
 		);
 

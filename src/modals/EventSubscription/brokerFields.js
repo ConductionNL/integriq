@@ -83,11 +83,44 @@ export function contentModesFor(option) {
 function compact(object) {
 	const out = {}
 	for (const [key, value] of Object.entries(object)) {
-		if (value === undefined || value === null) continue
-		if (typeof value === 'string' && value.trim() === '') continue
+		if (isBlank(value)) continue
 		out[key] = typeof value === 'string' ? value.trim() : value
 	}
 	return out
+}
+
+/**
+ * Whether a value is missing, null or only whitespace.
+ *
+ * @param {unknown} value The value.
+ * @return {boolean} True when the value is blank.
+ */
+function isBlank(value) {
+	if (value === undefined || value === null) return true
+	return typeof value === 'string' && value.trim() === ''
+}
+
+/**
+ * A value when it is an object, otherwise an empty object.
+ *
+ * @param {unknown} value The value.
+ * @return {object} The object.
+ */
+function objectOrEmpty(value) {
+	return value && typeof value === 'object' ? value : {}
+}
+
+/**
+ * The content mode an action keeps: its own when the broker offers it, the
+ * broker's first mode otherwise.
+ *
+ * @param {string|undefined} contentMode The action's content mode.
+ * @param {object|null}      option      The picked broker option.
+ * @return {string} The content mode.
+ */
+function contentModeFor(contentMode, option) {
+	const modes = contentModesFor(option)
+	return contentMode && modes.includes(contentMode) ? contentMode : modes[0]
 }
 
 /**
@@ -103,7 +136,7 @@ function compact(object) {
  * @spec openspec/specs/events-cloudevents/spec.md#requirement-the-subscription-form-offers-broker-as-a-delivery-action-req-ebsc-002
  */
 export function buildBrokerAction(current, patch, options) {
-	const base = current && typeof current === 'object' ? current : {}
+	const base = objectOrEmpty(current)
 	const next = {
 		brokerId: base.brokerId,
 		topic: base.topic,
@@ -117,10 +150,7 @@ export function buildBrokerAction(current, patch, options) {
 	if (!showsRoutingKey(next.brokerId)) {
 		delete next.routingKey
 	}
-	const modes = contentModesFor(option)
-	if (!next.contentMode || !modes.includes(next.contentMode)) {
-		next.contentMode = modes[0]
-	}
+	next.contentMode = contentModeFor(next.contentMode, option)
 	return { kind: 'broker', ...compact(next) }
 }
 
@@ -132,8 +162,7 @@ export function buildBrokerAction(current, patch, options) {
  * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
  */
 export function readBrokerConnection(formData) {
-	const broker = formData?.protocolSettings?.broker
-	return broker && typeof broker === 'object' ? broker : {}
+	return objectOrEmpty(formData?.protocolSettings?.broker)
 }
 
 /**
@@ -150,12 +179,8 @@ export function readBrokerConnection(formData) {
  * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
  */
 export function buildBrokerSettings(protocolSettings, patch, brokerId) {
-	const settings =
-		protocolSettings && typeof protocolSettings === 'object'
-			? protocolSettings
-			: {}
-	const current =
-		settings.broker && typeof settings.broker === 'object' ? settings.broker : {}
+	const settings = objectOrEmpty(protocolSettings)
+	const current = objectOrEmpty(settings.broker)
 	const next = {
 		baseUrl: current.baseUrl,
 		vhost: current.vhost,
@@ -166,7 +191,7 @@ export function buildBrokerSettings(protocolSettings, patch, brokerId) {
 	if (brokerId !== RABBITMQ_BROKER_ID) {
 		delete next.vhost
 	}
-	if (!next.credentialRef || !next.credentialRef.credentialId) {
+	if (!next.credentialRef?.credentialId) {
 		delete next.credentialRef
 	}
 	return { ...settings, broker: compact(next) }

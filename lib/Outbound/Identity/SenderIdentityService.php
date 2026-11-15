@@ -43,7 +43,7 @@ use Throwable;
  *
  * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md
  */
-class SenderIdentityService {
+class SenderIdentityService implements SenderIdentityServiceInterface {
 
 	/**
 	 * The schema one sender identity is stored under.
@@ -102,13 +102,6 @@ class SenderIdentityService {
 	 * @var string
 	 */
 	public const QUOTING_NONE = 'none';
-
-	/**
-	 * Quote only the message being replied to.
-	 *
-	 * @var string
-	 */
-	public const QUOTING_LAST = 'last-message';
 
 	/**
 	 * Quote the whole case history.
@@ -337,6 +330,7 @@ class SenderIdentityService {
 	 */
 	private function systemContextEntity(string $identityId): ?ObjectEntity {
 		try {
+			// Unscoped: the named system-context read of a sender identity (see the method docblock).
 			$entity = $this->objectService->find(
 				id: $identityId,
 				register: MessageRecorder::REGISTER,

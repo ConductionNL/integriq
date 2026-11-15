@@ -1,0 +1,356 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`webhook connection row save golden > saves as recorded 1`] = `
+[
+  {
+    "account": null,
+    "accountError": "",
+    "answer": "ok",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "",
+        },
+      ],
+      [
+        "success",
+        "Open Formulieren connection saved.",
+      ],
+      [
+        "emit",
+        "saved",
+        {
+          "id": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "account": null,
+    "accountError": "",
+    "answer": "ok with warnings",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "",
+        },
+      ],
+      [
+        "success",
+        "Open Formulieren connection saved.",
+      ],
+      [
+        "warning",
+        "Secret is short",
+      ],
+      [
+        "warning",
+        "Header unusual",
+      ],
+      [
+        "emit",
+        "saved",
+        {
+          "id": 2,
+        },
+      ],
+    ],
+  },
+  {
+    "account": null,
+    "accountError": "Unknown account",
+    "answer": "field error",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "whsec",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "",
+        },
+      ],
+      [
+        "error",
+        "Account missing Try again",
+      ],
+    ],
+  },
+  {
+    "account": null,
+    "accountError": "",
+    "answer": "errors not a list",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "whsec",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save the Open Formulieren connection.",
+      ],
+    ],
+  },
+  {
+    "account": null,
+    "accountError": "",
+    "answer": "no body",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "whsec",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save the Open Formulieren connection.",
+      ],
+    ],
+  },
+  {
+    "account": null,
+    "accountError": "",
+    "answer": "network",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "whsec",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save the Open Formulieren connection.",
+      ],
+    ],
+  },
+  {
+    "account": {
+      "id": "svc",
+      "user": "svc",
+    },
+    "accountError": "",
+    "answer": "ok",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "svc",
+        },
+      ],
+      [
+        "success",
+        "Open Formulieren connection saved.",
+      ],
+      [
+        "emit",
+        "saved",
+        {
+          "id": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "account": {
+      "id": "svc",
+      "user": "svc",
+    },
+    "accountError": "",
+    "answer": "ok with warnings",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "svc",
+        },
+      ],
+      [
+        "success",
+        "Open Formulieren connection saved.",
+      ],
+      [
+        "warning",
+        "Secret is short",
+      ],
+      [
+        "warning",
+        "Header unusual",
+      ],
+      [
+        "emit",
+        "saved",
+        {
+          "id": 2,
+        },
+      ],
+    ],
+  },
+  {
+    "account": {
+      "id": "svc",
+      "user": "svc",
+    },
+    "accountError": "Unknown account",
+    "answer": "field error",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "whsec",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "svc",
+        },
+      ],
+      [
+        "error",
+        "Account missing Try again",
+      ],
+    ],
+  },
+  {
+    "account": {
+      "id": "svc",
+      "user": "svc",
+    },
+    "accountError": "",
+    "answer": "errors not a list",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "whsec",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "svc",
+        },
+      ],
+      [
+        "error",
+        "Failed to save the Open Formulieren connection.",
+      ],
+    ],
+  },
+  {
+    "account": {
+      "id": "svc",
+      "user": "svc",
+    },
+    "accountError": "",
+    "answer": "no body",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "whsec",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "svc",
+        },
+      ],
+      [
+        "error",
+        "Failed to save the Open Formulieren connection.",
+      ],
+    ],
+  },
+  {
+    "account": {
+      "id": "svc",
+      "user": "svc",
+    },
+    "accountError": "",
+    "answer": "network",
+    "saving": false,
+    "savingDuring": true,
+    "secret": "whsec",
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/admin/webhook-connections/{type}",
+        {
+          "header": "Stripe-Signature",
+          "scheme": "stripe",
+          "secret": "whsec",
+          "userId": "svc",
+        },
+      ],
+      [
+        "error",
+        "Failed to save the Open Formulieren connection.",
+      ],
+    ],
+  },
+]
+`;

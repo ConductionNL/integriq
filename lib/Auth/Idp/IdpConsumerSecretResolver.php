@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Auth\Idp;
 
-use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\BrokeredCallServiceInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -103,7 +103,7 @@ class IdpConsumerSecretResolver {
 		try {
 			// Positional: the broker is only known as an object with this
 			// method, so its parameter names cannot be checked statically.
-			$secret = $broker->resolveInjectable($reference, BrokeredCallService::APP_ID, null, $organisation);
+			$secret = $broker->resolveInjectable($reference, BrokeredCallServiceInterface::APP_ID, null, $organisation);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				'Integriq idp-broker: the credential broker refused the exchange secret of consumer '

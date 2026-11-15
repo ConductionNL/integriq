@@ -16,7 +16,8 @@
  */
 
 import { expect, test } from '@playwright/test'
-import { APP_BASE } from './spec-coverage/_helpers.ts'
+import { withRequestToken } from './support/requestToken.ts'
+import { searchStore } from './support/store.ts'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
@@ -38,7 +39,9 @@ test('a vendor source without a credential reference cannot be activated', async
 				providerId: 'smartdocuments',
 				baseUrl: 'https://vendor.invalid/v1',
 				mockMode: false,
-				authentication: { credentialRef: '' },
+				// No `authentication` block at all: the source schema types
+				// `credentialRef` as an object and refuses an empty block, so the
+				// absence is the only way to store a source without one.
 			},
 		},
 	})
@@ -48,6 +51,7 @@ test('a vendor source without a credential reference cannot be activated', async
 
 	const activated = await request.post(
 		`${API_BASE}/document-generation/sources/${sourceId}/activate`,
+		{ failOnStatusCode: false, headers: await withRequestToken(request) },
 	)
 
 	expect(
@@ -75,7 +79,6 @@ test('a mock-mode source lists the vendor templates, and stores none of them', a
 				providerId: 'xential',
 				baseUrl: 'https://vendor.invalid',
 				mockMode: true,
-				authentication: { credentialRef: '' },
 			},
 		},
 	})
@@ -85,6 +88,7 @@ test('a mock-mode source lists the vendor templates, and stores none of them', a
 
 	const listed = await request.get(
 		`${API_BASE}/document-generation/sources/${sourceId}/templates`,
+		{ headers: await withRequestToken(request) },
 	)
 	expect(listed.status(), 'list the vendor templates').toBe(200)
 	const templates = (await listed.json()).templates ?? []
@@ -109,8 +113,9 @@ test('a mock-mode source lists the vendor templates, and stores none of them', a
 test('the catalog carries both vendors, dormant', async ({ page }) => {
 	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-catalog-lists-both-vendors-dormant
 	// @e2e openspec/specs/document-generation-vendor-adapter/spec.md#scenario-the-catalog-lists-both-vendors-dormant
-	await page.goto(`${APP_BASE}/catalog`, { waitUntil: 'domcontentloaded' })
-
+	// The Store pages its 85 items, so each vendor is searched for.
+	await searchStore(page, 'SmartDocuments')
 	await expect(page.getByText('SmartDocuments').first()).toBeVisible()
+	await searchStore(page, 'Xential')
 	await expect(page.getByText('Xential').first()).toBeVisible()
 })

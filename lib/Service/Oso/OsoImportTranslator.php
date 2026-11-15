@@ -76,6 +76,37 @@ class OsoImportTranslator {
 	public function translate(string $xml): array {
 		$root = $this->parseXml(xml: $xml);
 
+		$sourceSchoolBrin = $this->sourceSchoolBrin(root: $root);
+		$body             = $root->body ?? new SimpleXMLElement('<body/>');
+		$learnerEckId     = $this->learnerEckId(body: $body);
+		$categories       = $this->categories(body: $body);
+		$attachmentRefs   = $this->attachmentRefs(body: $body);
+
+		$draftProfile = $this->draftProfile(body: $body);
+		if ($draftProfile !== null) {
+			$draftProfile['eckId']    = $learnerEckId;
+			$draftProfile['schoolId'] = $sourceSchoolBrin;
+		}
+
+		return [
+			'sourceSchoolBrin' => $sourceSchoolBrin,
+			'learnerEckId' => $learnerEckId,
+			'categories' => $categories,
+			'draftProfile' => $draftProfile,
+			'attachmentRefs' => $attachmentRefs,
+		];
+	}//end translate()
+
+	/**
+	 * The sending school's BRIN, refused when absent.
+	 *
+	 * @param SimpleXMLElement $root The dossier root.
+	 *
+	 * @return string The BRIN.
+	 *
+	 * @throws OsoTranslationException When the BRIN is missing.
+	 */
+	private function sourceSchoolBrin(SimpleXMLElement $root): string {
 		$sourceSchoolBrin = trim((string)($root->stuurgegevens->afzenderBrin ?? ''));
 		if ($sourceSchoolBrin === '') {
 			throw new OsoTranslationException(
@@ -83,7 +114,19 @@ class OsoImportTranslator {
 			);
 		}
 
-		$body = $root->body ?? new SimpleXMLElement('<body/>');
+		return $sourceSchoolBrin;
+	}//end sourceSchoolBrin()
+
+	/**
+	 * The learner's ECK iD, refused when absent.
+	 *
+	 * @param SimpleXMLElement $body The dossier's `<body>` element.
+	 *
+	 * @return string The ECK iD.
+	 *
+	 * @throws OsoTranslationException When the ECK iD is missing.
+	 */
+	private function learnerEckId(SimpleXMLElement $body): string {
 		$learnerEckId = trim((string)($body->leerlingEckId ?? ''));
 		if ($learnerEckId === '') {
 			throw new OsoTranslationException(
@@ -91,6 +134,17 @@ class OsoImportTranslator {
 			);
 		}
 
+		return $learnerEckId;
+	}//end learnerEckId()
+
+	/**
+	 * The dossier's categories: name, whether included, and their data.
+	 *
+	 * @param SimpleXMLElement $body The dossier's `<body>` element.
+	 *
+	 * @return array<int, array{category: string, included: bool, data: array}> The categories.
+	 */
+	private function categories(SimpleXMLElement $body): array {
 		$categories = [];
 		if (isset($body->categories->category) === true) {
 			foreach ($body->categories->category as $category) {
@@ -102,6 +156,17 @@ class OsoImportTranslator {
 			}
 		}
 
+		return $categories;
+	}//end categories()
+
+	/**
+	 * The dossier's attachment references.
+	 *
+	 * @param SimpleXMLElement $body The dossier's `<body>` element.
+	 *
+	 * @return array<int, string> The references.
+	 */
+	private function attachmentRefs(SimpleXMLElement $body): array {
 		$attachmentRefs = [];
 		if (isset($body->attachmentRefs->ref) === true) {
 			foreach ($body->attachmentRefs->ref as $ref) {
@@ -109,26 +174,28 @@ class OsoImportTranslator {
 			}
 		}
 
-		$draftProfile = null;
+		return $attachmentRefs;
+	}//end attachmentRefs()
+
+	/**
+	 * The learner's name and birth date for a draft profile, or null without a given name.
+	 *
+	 * @param SimpleXMLElement $body The dossier's `<body>` element.
+	 *
+	 * @return array{givenName: string, familyName: string|null, birthDate: string|null}|null The draft, without eckId and schoolId.
+	 */
+	private function draftProfile(SimpleXMLElement $body): ?array {
 		$givenName = $this->nullableText(body: $body, field: 'voornamen');
-		if ($givenName !== null) {
-			$draftProfile = [
-				'givenName' => $givenName,
-				'familyName' => $this->nullableText(body: $body, field: 'achternaam'),
-				'birthDate' => $this->nullableText(body: $body, field: 'geboortedatum'),
-				'eckId' => $learnerEckId,
-				'schoolId' => $sourceSchoolBrin,
-			];
+		if ($givenName === null) {
+			return null;
 		}
 
 		return [
-			'sourceSchoolBrin' => $sourceSchoolBrin,
-			'learnerEckId' => $learnerEckId,
-			'categories' => $categories,
-			'draftProfile' => $draftProfile,
-			'attachmentRefs' => $attachmentRefs,
+			'givenName' => $givenName,
+			'familyName' => $this->nullableText(body: $body, field: 'achternaam'),
+			'birthDate' => $this->nullableText(body: $body, field: 'geboortedatum'),
 		];
-	}//end translate()
+	}//end draftProfile()
 
 	/**
 	 * Read an optional body field, returning null instead of an empty string

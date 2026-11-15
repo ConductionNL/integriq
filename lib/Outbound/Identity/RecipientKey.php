@@ -31,33 +31,16 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Outbound\Identity;
 
-use OCA\Integriq\Service\Sms\PhoneNumberValidator;
+use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
 use OCP\IAppConfig;
 use OCP\Security\ISecureRandom;
 
 /**
  * Normalises a recipient per channel.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) -- PhoneNumberValidator is the one pure phone
- * normaliser in integriq (ADR-011); it is a static helper by design.
- *
  * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-a-digital-post-recipient-is-never-stored-as-a-plain-bsn-req-ooa-008
  */
-class RecipientKey {
-
-	/**
-	 * Email.
-	 *
-	 * @var string
-	 */
-	public const CHANNEL_EMAIL = 'email';
-
-	/**
-	 * SMS.
-	 *
-	 * @var string
-	 */
-	public const CHANNEL_SMS = 'sms';
+class RecipientKey implements RecipientKeyInterface {
 
 	/**
 	 * WhatsApp.
@@ -74,20 +57,6 @@ class RecipientKey {
 	public const CHANNEL_DIGITAL_POST = 'digital-post';
 
 	/**
-	 * A messaging gateway keyed on a phone number.
-	 *
-	 * @var string
-	 */
-	public const CHANNEL_MESSAGING = 'messaging';
-
-	/**
-	 * Microsoft Teams.
-	 *
-	 * @var string
-	 */
-	public const CHANNEL_TEAMS = 'teams';
-
-	/**
 	 * The channels whose recipient is a phone number.
 	 *
 	 * @var array<int,string>
@@ -102,31 +71,48 @@ class RecipientKey {
 	public const BSN_PREFIX = 'bsn:';
 
 	/**
+	 * The prefix of a hashed key that is not a BSN: an erased address in the log.
+	 *
+	 * @var string
+	 */
+	public const HASH_PREFIX = 'h:';
+
+	/**
 	 * The app-config key holding the BSN hashing secret.
 	 *
 	 * @var string
 	 */
-	public const CONFIG_SECRET = 'outbound.recipient_key_secret';
+	public const HASHING_CONFIG_NAME = 'outbound.recipient_key_secret';
 
 	/**
-	 * The secret, once read. A sensitive app-config value is decrypted on
-	 * every read, which made a batch of 500 cost 300 ms; one read per request
-	 * is enough.
+	 * The former name of HASHING_CONFIG_NAME.
 	 *
-	 * @var string|null
+	 * @var string
+	 *
+	 * @deprecated Use HASHING_CONFIG_NAME.
 	 */
-	private ?string $secretCache = null;
+	public const CONFIG_SECRET = self::HASHING_CONFIG_NAME;
+
+	/**
+	 * The hashing secret, read once per instance.
+	 *
+	 * @var AppSecret
+	 */
+	private readonly AppSecret $secret;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Holds the hashing secret.
 	 * @param ISecureRandom $random Mints the secret the first time one is needed.
+	 * @param PhoneNumberNormaliserInterface $phoneNumbers Normalises a phone number to E.164.
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly ISecureRandom $random,
+		IAppConfig $appConfig,
+		ISecureRandom $random,
+		private readonly PhoneNumberNormaliserInterface $phoneNumbers,
 	) {
+		$this->secret = new AppSecret(appConfig: $appConfig, random: $random, configKey: self::HASHING_CONFIG_NAME);
 
 	}//end __construct()
 
@@ -156,7 +142,7 @@ class RecipientKey {
 		}
 
 		if (in_array($channel, self::PHONE_CHANNELS, true) === true) {
-			return PhoneNumberValidator::toE164(rawNumber: $address);
+			return $this->phoneNumbers->toE164(rawNumber: $address);
 		}
 
 		if ($channel === self::CHANNEL_DIGITAL_POST) {
@@ -186,6 +172,28 @@ class RecipientKey {
 	}//end hashBsn()
 
 	/**
+	 * The hashed form of a recipient key, for a log entry that may no longer name the address.
+	 *
+	 * A key that is already a hash (a BSN, or an earlier redaction) is returned as is,
+	 * so every entry of one person carries the same key.
+	 *
+	 * @param string $key The normalised key.
+	 *
+	 * @return string `h:` plus the HMAC, or the key when it is already hashed or empty.
+	 *
+	 * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/outbound-opt-out-authority/spec.md#requirement-an-erasure-redacts-the-earlier-log-entries-req-ooa-013
+	 */
+	public function hashKey(string $key): string {
+		$key = trim($key);
+		if ($key === '' || str_starts_with($key, self::BSN_PREFIX) === true || str_starts_with($key, self::HASH_PREFIX) === true) {
+			return $key;
+		}
+
+		return self::HASH_PREFIX . hash_hmac('sha256', $key, $this->secret());
+
+	}//end hashKey()
+
+	/**
 	 * An email address, or null when it is not one.
 	 *
 	 * @param string $address The address.
@@ -208,8 +216,6 @@ class RecipientKey {
 	 * @param string $address The address.
 	 *
 	 * @return string The key.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) -- see the class comment.
 	 */
 	private function guess(string $address): string {
 		if (str_contains($address, '@') === true) {
@@ -217,7 +223,7 @@ class RecipientKey {
 		}
 
 		if (preg_match('/^(\+|00|0)[\d\s().-]{6,}$/', $address) === 1) {
-			$e164 = PhoneNumberValidator::toE164(rawNumber: $address);
+			$e164 = $this->phoneNumbers->toE164(rawNumber: $address);
 			if ($e164 !== null) {
 				return $e164;
 			}
@@ -233,21 +239,7 @@ class RecipientKey {
 	 * @return string The secret.
 	 */
 	private function secret(): string {
-		if ($this->secretCache !== null) {
-			return $this->secretCache;
-		}
-
-		$secret = $this->appConfig->getValueString('integriq', self::CONFIG_SECRET, '');
-		if (trim($secret) !== '') {
-			$this->secretCache = $secret;
-			return $secret;
-		}
-
-		$secret = $this->random->generate(64, ISecureRandom::CHAR_ALPHANUMERIC);
-		$this->appConfig->setValueString('integriq', self::CONFIG_SECRET, $secret, false, true);
-		$this->secretCache = $secret;
-
-		return $secret;
+		return $this->secret->value();
 
 	}//end secret()
 

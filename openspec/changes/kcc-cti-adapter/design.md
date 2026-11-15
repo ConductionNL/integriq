@@ -40,6 +40,13 @@ On `ended`, when the agent's panel asks (it calls the REQ-004 push endpoint
 with the `callId`), integriq creates a klantcontact with `kanaal = telefoon`
 and the call duration. Integriq never creates one unasked.
 
+As built: every accepted event is written to a `call_event` row (system
+context, admin and owner only, 30-day retention) before it is dispatched.
+The push finds the ended row by `callId` (plus `callSourceId` when one callId
+ended on two sources). The duration lives on the local `kiss_klantcontact`
+mirror, because the Klantinteracties klantcontact has no field for it. A
+second push for the same call returns the first contact moment.
+
 ## Risks
 - A PBX that posts the same event twice. `callId` plus `kind` is idempotent.
 - Phone numbers are personal data. Stored on the `callEvent` log for 30

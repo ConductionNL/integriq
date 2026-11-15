@@ -13,6 +13,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -20,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\EventListener;
 
 use OCA\Integriq\EventListener\DsoStamConsumerListener;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCA\Integriq\Tests\Helpers\DsoConnectionWorld;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -67,7 +71,8 @@ class DsoStamConsumerListenerTest extends TestCase {
 			registerMapper: $registerMapper,
 			schemaMapper: $schemaMapper,
 			l10n: $l10n,
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			webhookProfiles: new WebhookProfiles()
 		);
 	}//end listener()
 

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema elementFormDefault="qualified" targetNamespace="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/Types/2009/01"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://schemas.rdw.nl/GEB/BerichtenboxValidatieService/Types/2009/01">
+	<xs:import schemaLocation="http://rdw64825.ot.tld:9002/BerichtenboxValidatieService?xsd=xsd3"
+		namespace="http://schemas.rdw.nl/GEB/Shared/Types/2009/01" />
+	<xs:complexType name="ValidateAbonnementenAanvraag">
+		<xs:sequence>
+			<xs:element name="berichtleverancierCode" nillable="true" type="xs:string" />
+			<xs:element name="berichtTypeCode" nillable="true" type="xs:string" />
+			<xs:element name="klanten" nillable="true" type="q1:ArrayOfKlant" xmlns:q1="http://schemas.rdw.nl/GEB/Shared/Types/2009/01" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="ValidateAbonnementenAanvraag" nillable="true" type="tns:ValidateAbonnementenAanvraag" />
+	<xs:complexType name="ArrayOfAbonnement">
+		<xs:sequence>
+			<xs:element minOccurs="0" maxOccurs="unbounded" name="Abonnement" nillable="true" type="tns:Abonnement" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="ArrayOfAbonnement" nillable="true" type="tns:ArrayOfAbonnement" />
+	<xs:complexType name="Abonnement">
+		<xs:sequence>
+			<xs:element name="klant" nillable="true" type="q2:Klant" xmlns:q2="http://schemas.rdw.nl/GEB/Shared/Types/2009/01" />
+			<xs:element name="isBerichtSturen" type="xs:boolean" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="Abonnement" nillable="true" type="tns:Abonnement" />
+</xs:schema>

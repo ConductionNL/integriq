@@ -3,6 +3,9 @@
 /**
  * The rules half of the synchronization → flow migration.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * WHY THIS IS ITS OWN CLASS. `SynchronizationFlowGenerator` had reached its
  * phpmd class-complexity budget once already — the `payloadFrom` support tipped
  * it from 49 to 54 against a threshold of 50, and moving the semantic refusals
@@ -29,9 +32,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
@@ -41,7 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\Flow\FetchFileNode;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use OCP\IL10N;
 
 /**
@@ -76,12 +76,12 @@ class SynchronizationActionRules {
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizations Resolves a rule by id.
+	 * @param SynchronizationLookupInterface $synchronizations Resolves a rule by id.
 	 * @param IL10N $l10n Translations, so a refusal reads as a sentence.
 	 * @param SynchronizationSemanticRefusals $semantic The meaning-level refusals, fronted here.
 	 */
 	public function __construct(
-		private readonly SynchronizationService $synchronizations,
+		private readonly SynchronizationLookupInterface $synchronizations,
 		private readonly IL10N $l10n,
 		private readonly SynchronizationSemanticRefusals $semantic,
 	) {
@@ -217,7 +217,7 @@ class SynchronizationActionRules {
 		foreach ($rules as $index => $rule) {
 			$nodes[] = [
 				'id' => 'fetch-file-' . ($index + 1),
-				'type' => FetchFileNode::NODE_ID,
+				'type' => FlowNodeIds::FETCH_FILE,
 				'config' => [
 					'rule' => $rule['id'],
 					'objectIdPath' => self::SYNCED_ID,

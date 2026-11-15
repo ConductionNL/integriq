@@ -1,0 +1,343 @@
+{
+    "no identity": {
+        "calls": [
+            {
+                "log": [
+                    "warning",
+                    "registry-subscription.request.incomplete",
+                    {
+                        "request": [
+                            "registry",
+                            "schema"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "result": null
+    },
+    "no registry": {
+        "calls": [
+            {
+                "log": [
+                    "warning",
+                    "registry-subscription.request.incomplete",
+                    {
+                        "request": [
+                            "identity"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "result": null
+    },
+    "unknown registry": {
+        "calls": [
+            {
+                "log": [
+                    "warning",
+                    "registry-subscription.request.unknown-registry",
+                    {
+                        "registry": "kvk"
+                    }
+                ]
+            }
+        ],
+        "result": null
+    },
+    "active with schema": {
+        "calls": [
+            {
+                "subscribe": "111"
+            },
+            {
+                "roster.add": [
+                    "brp",
+                    "111",
+                    "ref-111"
+                ]
+            },
+            {
+                "roster.addTarget": [
+                    "brp",
+                    "111",
+                    "slug-12"
+                ]
+            },
+            {
+                "postUpdate": [
+                    "brp",
+                    {
+                        "identity": "111",
+                        "properties": [],
+                        "eventReference": "ref-111",
+                        "subscriptionState": "active",
+                        "error": ""
+                    }
+                ]
+            }
+        ],
+        "result": {
+            "state": "active",
+            "identity": "111",
+            "error": "",
+            "reference": "ref-111"
+        }
+    },
+    "aliases": {
+        "calls": [
+            {
+                "subscribe": "222"
+            },
+            {
+                "roster.add": [
+                    "brp",
+                    "222",
+                    "ref-222"
+                ]
+            },
+            {
+                "roster.addTarget": [
+                    "brp",
+                    "222",
+                    "blank"
+                ]
+            },
+            {
+                "postUpdate": [
+                    "brp",
+                    {
+                        "identity": "222",
+                        "properties": [],
+                        "eventReference": "ref-222",
+                        "subscriptionState": "active",
+                        "error": ""
+                    }
+                ]
+            }
+        ],
+        "result": {
+            "state": "active",
+            "identity": "222",
+            "error": "",
+            "reference": "ref-222"
+        }
+    },
+    "schema find throws": {
+        "calls": [
+            {
+                "subscribe": "333"
+            },
+            {
+                "roster.add": [
+                    "brp",
+                    "333",
+                    "ref-333"
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "registry-subscription.request.schema-unresolved",
+                    {
+                        "schema": "boom",
+                        "error": "schema store down"
+                    }
+                ]
+            },
+            {
+                "roster.addTarget": [
+                    "brp",
+                    "333",
+                    "boom"
+                ]
+            },
+            {
+                "postUpdate": [
+                    "brp",
+                    {
+                        "identity": "333",
+                        "properties": [],
+                        "eventReference": "ref-333",
+                        "subscriptionState": "active",
+                        "error": ""
+                    }
+                ]
+            }
+        ],
+        "result": {
+            "state": "active",
+            "identity": "333",
+            "error": "",
+            "reference": "ref-333"
+        }
+    },
+    "schema not found": {
+        "calls": [
+            {
+                "subscribe": "444"
+            },
+            {
+                "roster.add": [
+                    "brp",
+                    "444",
+                    "ref-444"
+                ]
+            },
+            {
+                "roster.addTarget": [
+                    "brp",
+                    "444",
+                    "missing"
+                ]
+            },
+            {
+                "postUpdate": [
+                    "brp",
+                    {
+                        "identity": "444",
+                        "properties": [],
+                        "eventReference": "ref-444",
+                        "subscriptionState": "active",
+                        "error": ""
+                    }
+                ]
+            }
+        ],
+        "result": {
+            "state": "active",
+            "identity": "444",
+            "error": "",
+            "reference": "ref-444"
+        }
+    },
+    "active without schema": {
+        "calls": [
+            {
+                "subscribe": "555"
+            },
+            {
+                "roster.add": [
+                    "brp",
+                    "555",
+                    "ref-555"
+                ]
+            },
+            {
+                "postUpdate": [
+                    "brp",
+                    {
+                        "identity": "555",
+                        "properties": [],
+                        "eventReference": "ref-555",
+                        "subscriptionState": "active",
+                        "error": ""
+                    }
+                ]
+            }
+        ],
+        "result": {
+            "state": "active",
+            "identity": "555",
+            "error": "",
+            "reference": "ref-555"
+        }
+    },
+    "failed with schema": {
+        "calls": [
+            {
+                "subscribe": "bad-666"
+            },
+            {
+                "postUpdate": [
+                    "brp",
+                    {
+                        "identity": "bad-666",
+                        "properties": [],
+                        "eventReference": "",
+                        "subscriptionState": "failed",
+                        "error": "refused by registry"
+                    }
+                ]
+            }
+        ],
+        "result": {
+            "state": "failed",
+            "identity": "bad-666",
+            "error": "refused by registry",
+            "reference": ""
+        }
+    },
+    "no mapper": {
+        "calls": [
+            {
+                "subscribe": "777"
+            },
+            {
+                "roster.add": [
+                    "brp",
+                    "777",
+                    "ref-777"
+                ]
+            },
+            {
+                "roster.addTarget": [
+                    "brp",
+                    "777",
+                    "12"
+                ]
+            },
+            {
+                "postUpdate": [
+                    "brp",
+                    {
+                        "identity": "777",
+                        "properties": [],
+                        "eventReference": "ref-777",
+                        "subscriptionState": "active",
+                        "error": ""
+                    }
+                ]
+            }
+        ],
+        "result": {
+            "state": "active",
+            "identity": "777",
+            "error": "",
+            "reference": "ref-777"
+        }
+    },
+    "both keys": {
+        "calls": [
+            {
+                "subscribe": "888"
+            },
+            {
+                "roster.add": [
+                    "brp",
+                    "888",
+                    "ref-888"
+                ]
+            },
+            {
+                "postUpdate": [
+                    "brp",
+                    {
+                        "identity": "888",
+                        "properties": [],
+                        "eventReference": "ref-888",
+                        "subscriptionState": "active",
+                        "error": ""
+                    }
+                ]
+            }
+        ],
+        "result": {
+            "state": "active",
+            "identity": "888",
+            "error": "",
+            "reference": "ref-888"
+        }
+    }
+}

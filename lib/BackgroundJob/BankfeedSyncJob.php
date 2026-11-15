@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\BankfeedSyncService;
+use OCA\Integriq\Service\BankfeedSyncServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -59,14 +59,14 @@ class BankfeedSyncJob extends TimedJob {
 	 * BankfeedSyncJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param BankfeedSyncService $syncService The bankfeed sync service.
+	 * @param BankfeedSyncServiceInterface $syncService The bankfeed sync service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 *
 	 * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly BankfeedSyncService $syncService,
+		private readonly BankfeedSyncServiceInterface $syncService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

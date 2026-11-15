@@ -1,0 +1,67 @@
+{
+    "validateConfig": {
+        "good": {
+            "ok": "valid"
+        },
+        "missing channel": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping is missing mandatory contract field \"channel\"."
+        },
+        "unknown field": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping declares unknown target field \"requester\" (only title/summary/channel/priority may be mapped at this layer; \"source\" is engine-filled and \"requester\" is unsupported \u2014 see design.md)."
+        },
+        "numeric field": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping declares unknown target field \"0\" (only title/summary/channel/priority may be mapped at this layer; \"source\" is engine-filled and \"requester\" is unsupported \u2014 see design.md)."
+        },
+        "entry not an object": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping entry \"summary\" MUST be an object, got string."
+        },
+        "unknown type": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping entry \"channel\" declares unknown expression type \"regex\" (must be one of: from, const, template)."
+        },
+        "no type": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping entry \"channel\" declares unknown expression type \"\" (must be one of: from, const, template)."
+        },
+        "value not a string": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping entry \"channel\" MUST declare a string \"value\"."
+        },
+        "no value": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping entry \"channel\" MUST declare a string \"value\"."
+        }
+    },
+    "map": {
+        "good": {
+            "ok": {
+                "mappedTitle": "Melding Jan over Dorpsstraat",
+                "mappedSummary": "Losse stoeptegel",
+                "mappedChannel": "web",
+                "mappedPriority": "2"
+            }
+        },
+        "from absent": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping field \"summary\" references submitted key \"omschrijving\" which is absent from this submission \u2014 refusing to leak the literal key name as the resolved value."
+        },
+        "template placeholders absent": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping field \"title\" template references placeholder(s) \"naam\", \"adres.straat\" which are absent from this submission \u2014 refusing to leak the unexpanded template as the resolved value."
+        },
+        "null submitted value": {
+            "ok": {
+                "mappedSummary": "",
+                "mappedTitle": "[]"
+            }
+        },
+        "template without placeholders": {
+            "ok": {
+                "mappedTitle": "Vast {{ niet-geldig }}"
+            }
+        },
+        "bad entry": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping entry \"title\" declares unknown expression type \"\" (must be one of: from, const, template)."
+        },
+        "unknown type": {
+            "refused": "OCA\\Integriq\\Service\\OpenFormulieren\\MappingResolutionException: Form mapping entry \"title\" declares unknown expression type \"eval\" (must be one of: from, const, template)."
+        },
+        "empty mapping": {
+            "ok": []
+        }
+    }
+}

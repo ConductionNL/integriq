@@ -1,0 +1,257 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`EventDeliveriesPage > lists a failure as recorded 1`] = `
+{
+  "during": true,
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/integriq/api/events/dead-letter",
+      {
+        "params": {
+          "status": "failed,abandoned",
+        },
+      },
+    ],
+    [
+      "/index.php/apps/integriq/api/events/dead-letter",
+      {
+        "params": {
+          "status": "discarded",
+          "subscriptionId": "f1",
+        },
+      },
+    ],
+  ],
+  "rows": [],
+  "selectedDuring": [],
+  "toasts": [
+    [
+      "error",
+      "Failed to load event deliveries",
+    ],
+    [
+      "error",
+      "Failed to load event deliveries",
+    ],
+  ],
+}
+`;
+
+exports[`EventDeliveriesPage > lists no results as recorded 1`] = `
+{
+  "during": true,
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/integriq/api/events/dead-letter",
+      {
+        "params": {
+          "status": "failed,abandoned",
+        },
+      },
+    ],
+    [
+      "/index.php/apps/integriq/api/events/dead-letter",
+      {
+        "params": {
+          "status": "discarded",
+          "subscriptionId": "f1",
+        },
+      },
+    ],
+  ],
+  "rows": [],
+  "selectedDuring": [],
+  "toasts": [],
+}
+`;
+
+exports[`EventDeliveriesPage > lists rows as recorded 1`] = `
+{
+  "during": true,
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/integriq/api/events/dead-letter",
+      {
+        "params": {
+          "status": "failed,abandoned",
+        },
+      },
+    ],
+    [
+      "/index.php/apps/integriq/api/events/dead-letter",
+      {
+        "params": {
+          "status": "discarded",
+          "subscriptionId": "f1",
+        },
+      },
+    ],
+  ],
+  "rows": [
+    {
+      "uuid": "a",
+    },
+  ],
+  "selectedDuring": [],
+  "toasts": [],
+}
+`;
+
+exports[`EventDeliveriesPage > opens and closes the detail of a row 1`] = `
+[
+  {
+    "message": null,
+    "open": false,
+  },
+  [
+    {
+      "message": {
+        "uuid": "a",
+      },
+      "open": true,
+    },
+    {
+      "message": {
+        "uuid": "a",
+      },
+      "open": true,
+    },
+  ],
+  {
+    "message": null,
+    "open": false,
+  },
+  1,
+]
+`;
+
+exports[`SyncDeadLetterPage > lists a failure as recorded 1`] = `
+{
+  "during": true,
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/integriq/api/sync-dead-letter",
+      {
+        "params": {
+          "status": "failed",
+        },
+      },
+    ],
+    [
+      "/index.php/apps/integriq/api/sync-dead-letter",
+      {
+        "params": {
+          "status": "discarded",
+          "synchronizationId": "f1",
+        },
+      },
+    ],
+  ],
+  "rows": [],
+  "selectedDuring": [],
+  "toasts": [
+    [
+      "error",
+      "Failed to load sync dead letters",
+    ],
+    [
+      "error",
+      "Failed to load sync dead letters",
+    ],
+  ],
+}
+`;
+
+exports[`SyncDeadLetterPage > lists no results as recorded 1`] = `
+{
+  "during": true,
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/integriq/api/sync-dead-letter",
+      {
+        "params": {
+          "status": "failed",
+        },
+      },
+    ],
+    [
+      "/index.php/apps/integriq/api/sync-dead-letter",
+      {
+        "params": {
+          "status": "discarded",
+          "synchronizationId": "f1",
+        },
+      },
+    ],
+  ],
+  "rows": [],
+  "selectedDuring": [],
+  "toasts": [],
+}
+`;
+
+exports[`SyncDeadLetterPage > lists rows as recorded 1`] = `
+{
+  "during": true,
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/integriq/api/sync-dead-letter",
+      {
+        "params": {
+          "status": "failed",
+        },
+      },
+    ],
+    [
+      "/index.php/apps/integriq/api/sync-dead-letter",
+      {
+        "params": {
+          "status": "discarded",
+          "synchronizationId": "f1",
+        },
+      },
+    ],
+  ],
+  "rows": [
+    {
+      "uuid": "a",
+    },
+  ],
+  "selectedDuring": [],
+  "toasts": [],
+}
+`;
+
+exports[`SyncDeadLetterPage > opens and closes the detail of a row 1`] = `
+[
+  {
+    "entry": null,
+    "open": false,
+  },
+  [
+    {
+      "entry": {
+        "uuid": "a",
+      },
+      "open": true,
+    },
+    {
+      "entry": {
+        "uuid": "a",
+      },
+      "open": true,
+    },
+  ],
+  {
+    "entry": null,
+    "open": false,
+  },
+  1,
+]
+`;

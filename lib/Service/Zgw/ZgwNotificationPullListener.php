@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Zgw;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -126,7 +126,7 @@ class ZgwNotificationPullListener {
 			return null;
 		}
 
-		$bindings = json_decode($this->appConfig->getValueString(Application::APP_ID, ZgwSetInstaller::BINDINGS_KEY, '{}'), true);
+		$bindings = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, ZgwSetInstaller::BINDINGS_KEY, '{}'), true);
 		if (is_array($bindings) === false || in_array($set, $bindings, true) === false) {
 			return null;
 		}

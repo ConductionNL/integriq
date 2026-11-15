@@ -31,9 +31,11 @@ use OCA\Integriq\Service\Kiss\CallContextService;
 use OCA\Integriq\Service\Kiss\CallerDirectory;
 use OCA\Integriq\Service\Kiss\CallerLookup;
 use OCA\Integriq\Service\Kiss\CallEventDeduplicator;
+use OCA\Integriq\Service\Kiss\CallEventLog;
 use OCA\Integriq\Service\Kiss\CtiEventIntake;
 use OCA\Integriq\Service\Kiss\CtiProviderInterface;
 use OCA\Integriq\Service\Kiss\CtiSourceResolver;
+use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\ICache;
@@ -104,7 +106,10 @@ class CtiEventIntakeTest extends TestCase {
 				logger: $this->createMock(originalClassName: LoggerInterface::class)
 			),
 			dispatcher: $dispatcher,
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			callEvents: new CallEventLog(
+				objectService: $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock()
+			)
 		);
 
 	}//end intake()

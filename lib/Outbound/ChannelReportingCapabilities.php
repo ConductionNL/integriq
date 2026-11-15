@@ -47,7 +47,9 @@ class ChannelReportingCapabilities {
 		'sms' => ['delivery' => true, 'read' => false],
 		'notifynl' => ['delivery' => true, 'read' => false],
 		'digitalPost' => ['delivery' => true, 'read' => true],
-		'berichtenbox' => ['delivery' => true, 'read' => true],
+		// Logius reports whether a letter was placed, never whether it was read
+		// (Technische Aansluithandleiding MijnOverheid Berichtenbox 1.6.4, section 2).
+		'berichtenbox' => ['delivery' => true, 'read' => false],
 		'messaging' => ['delivery' => true, 'read' => true],
 		'peppol' => ['delivery' => true, 'read' => false],
 		'webhook' => ['delivery' => true, 'read' => false],

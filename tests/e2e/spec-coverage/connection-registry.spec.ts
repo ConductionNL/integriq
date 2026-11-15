@@ -36,11 +36,13 @@ test.describe('App connections overview (connection-registry)', () => {
 			'Last checked',
 			'Settings',
 		]) {
+			// By the header's own text, not its accessible name: each header
+			// now also carries a "Filter <column>" button, so the name reads
+			// "App Filter App".
 			await expect(
 				page
-					.getByRole('columnheader', {
-						name: new RegExp(`^\\s*${column}\\s*$`, 'i'),
-					})
+					.getByRole('columnheader')
+					.filter({ has: page.getByText(column, { exact: true }) })
 					.first(),
 				`column "${column}" must render`,
 			).toBeVisible({ timeout: 15_000 })

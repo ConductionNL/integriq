@@ -40,7 +40,7 @@ use OCP\IRequest;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
  */
-class ZgwVersionNegotiationService {
+class ZgwVersionNegotiationService implements ApiVersionNegotiationInterface {
 
 	/**
 	 * The fleet's current, canonical ZGW shape — the default when no

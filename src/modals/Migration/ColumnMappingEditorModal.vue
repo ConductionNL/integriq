@@ -150,6 +150,34 @@ import {
 
 const API = '/apps/integriq/api/migration-sources'
 
+/**
+ * The row `confirm` stores: the stored row's server-managed keys ride along,
+ * and a value the draft cleared is dropped rather than kept from the old row.
+ *
+ * @param {object|null} item The stored row, or null for a new mapping.
+ * @param {object} payload The stored payload of the draft.
+ * @return {object} The row to store.
+ */
+function savedRow(item, payload) {
+	const saved = { ...(item || {}), ...payload }
+	for (const key of ['kind', 'targetSchema', 'identifierColumn']) {
+		if (!(key in payload)) {
+			delete saved[key]
+		}
+	}
+	return saved
+}
+
+/**
+ * The reason shown when storing the mapping failed.
+ *
+ * @param {object} error The rejection of the store.
+ * @return {string} The reason.
+ */
+function saveFailureReason(error) {
+	return error?.message || t('integriq', 'The mapping could not be saved.')
+}
+
 export default {
 	name: 'ColumnMappingEditorModal',
 
@@ -386,47 +414,68 @@ export default {
 			this.saving = true
 			this.saveErrors = []
 			try {
-				try {
-					await axios.post(
-						generateUrl(`${API}/column-mapping/validate`),
-						validateRequest(
-							this.draft,
-							this.selectedSchema?.schema || null,
-						),
-					)
-				} catch (error) {
-					const errors = error?.response?.data?.errors
-					this.saveErrors =
-						Array.isArray(errors) && errors.length > 0
-							? errors.map(String)
-							: [t('integriq', 'The mapping could not be checked.')]
-					return
-				}
-
-				const payload = storedPayload(this.draft)
-				// The row's server-managed keys ride along; a value the draft
-				// cleared is dropped rather than kept from the old row.
-				const saved = { ...(this.item || {}), ...payload }
-				for (const key of ['kind', 'targetSchema', 'identifierColumn']) {
-					if (!(key in payload)) {
-						delete saved[key]
-					}
-				}
-				await this.confirm(saved)
-				showSuccess(
-					t('integriq', 'Saved as version {version}.', {
-						version: payload.version,
-					}),
-				)
-				this.close?.()
+				this.saveErrors = await this.saveCheckedMapping()
 			} catch (error) {
-				this.saveErrors = [
-					error?.message
-						|| t('integriq', 'The mapping could not be saved.'),
-				]
+				this.saveErrors = [saveFailureReason(error)]
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * Check the draft and store it when the check passes.
+		 *
+		 * @return {Promise<Array<string>>} The reasons the check refused it; empty once stored.
+		 *
+		 * @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
+		 */
+		async saveCheckedMapping() {
+			const errors = await this.mappingCheckErrors()
+			if (errors.length === 0) {
+				await this.storeMapping()
+			}
+			return errors
+		},
+
+		/**
+		 * Have the server check the draft against the picked schema.
+		 *
+		 * @return {Promise<Array<string>>} The reasons it was refused; empty when it passed.
+		 *
+		 * @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
+		 */
+		async mappingCheckErrors() {
+			try {
+				await axios.post(
+					generateUrl(`${API}/column-mapping/validate`),
+					validateRequest(this.draft, this.selectedSchema?.schema || null),
+				)
+				return []
+			} catch (error) {
+				const errors = error?.response?.data?.errors
+				return Array.isArray(errors) && errors.length > 0
+					? errors.map(String)
+					: [t('integriq', 'The mapping could not be checked.')]
+			}
+		},
+
+		/**
+		 * Store the checked draft through the slot's `confirm`, toast the new
+		 * version and close.
+		 *
+		 * @return {Promise<void>} Resolves once the row is stored.
+		 *
+		 * @spec openspec/specs/migration-sources/spec.md#scenario-a-mapping-onto-a-field-that-does-not-exist-is-refused-at-save
+		 */
+		async storeMapping() {
+			const payload = storedPayload(this.draft)
+			await this.confirm(savedRow(this.item, payload))
+			showSuccess(
+				t('integriq', 'Saved as version {version}.', {
+					version: payload.version,
+				}),
+			)
+			this.close?.()
 		},
 	},
 }

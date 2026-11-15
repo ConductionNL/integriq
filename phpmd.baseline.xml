@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <phpmd-baseline>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Action/EventAction.php" method="run"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Action/EventAction.php" method="run"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Action/SynchronizationAction.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Job/EventAction.php" method="run"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Job/EventAction.php" method="run"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Job/SynchronizationAction.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Adapters/Pdok/PdokGeocodingClientHttp.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Adapters/Pdok/PdokWfsClientHttp.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Adapters/Pdok/PdokWmsClientHttp.php"/>
@@ -44,7 +44,6 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/SynchronizationsController.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/TablesBridgeController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/UserController.php"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/UserController.php" method="login"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Directory/DirectoryEntry.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Directory/DirectorySnapshot.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Directory/DirectorySource.php"/>
@@ -65,7 +64,6 @@
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Flow/ContractSweepNode.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Flow/FetchFileNode.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Flow/FlowConfigGuard.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Flow/FlowConfigGuard.php" method="endpointEscapeCode"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Flow/FlowNodeListener.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Flow/SourceCallNode.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Flow/SourceCallNode.php"/>
@@ -89,7 +87,7 @@
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Gateway/GatewayRegistry.php"/>
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Gateway/GatewayRegistry.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Gateway/SourceGatewayTransport.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Http/XMLResponse.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/XMLResponse.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/Adapter/FormSubmissionAdapter.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/Adapter/MessagingChannelAdapter.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Intake/Adapter/TeamsChannelAdapter.php"/>
@@ -329,8 +327,6 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="updateTargetOpenRegister"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="updateTargetOpenRegister"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="replaceRelatedOriginIds"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="updateContractsForSubObjects"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="updateContractsForSubObjects"/>
@@ -347,7 +343,6 @@
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="writeObjectToTarget"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="processExtendInputRule"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="processExtendInputRule"/>
-  <violation rule="PHPMD\Rule\CleanCode\IfStatementAssignment" file="lib/Service/SynchronizationService.php" method="saveFetchedFile"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="saveFetchedFile"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="saveFetchedFile"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="saveFetchedFile"/>

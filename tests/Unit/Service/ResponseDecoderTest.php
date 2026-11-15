@@ -13,6 +13,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -24,7 +27,7 @@ use OCA\Integriq\Service\ResponseDecoder;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @spec openspec/changes/sources-github-publiccode/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+ * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
  */
 class ResponseDecoderTest extends TestCase {
 
@@ -249,6 +252,20 @@ class ResponseDecoderTest extends TestCase {
 		$this->assertNull(ResponseDecoder::headerValue(headers: $headers, name: 'Retry-After'));
 
 	}//end testHeaderValueIgnoresCase()
+
+	/**
+	 * The Content-Type lookup takes the first value of a list, ignores case and
+	 * answers null when the header is absent.
+	 *
+	 * @return void
+	 */
+	public function testContentTypeReadsTheHeaderMap(): void {
+		$this->assertSame('text/yaml', $this->decoder->contentType(headers: ['content-type' => ['text/yaml', 'text/plain']]));
+		$this->assertSame('application/json', $this->decoder->contentType(headers: ['Content-Type' => 'application/json']));
+		$this->assertNull($this->decoder->contentType(headers: ['Accept' => 'application/json']));
+		$this->assertNull($this->decoder->contentType(headers: ['Content-Type' => []]));
+
+	}//end testContentTypeReadsTheHeaderMap()
 
 	/**
 	 * Read a test fixture.

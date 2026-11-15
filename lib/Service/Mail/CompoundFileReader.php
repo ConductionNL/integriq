@@ -28,8 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Mail;
 
-use OCA\Integriq\Exception\MessageParseException;
-
 /**
  * Reads streams and storages out of a compound file.
  *
@@ -71,6 +69,22 @@ final class CompoundFileReader {
 	 * @var int
 	 */
 	public const TYPE_ROOT = 5;
+
+	/**
+	 * The entry recorded for a directory slot that is not a storage,
+	 * stream or root.
+	 *
+	 * @var array<string,mixed>
+	 */
+	private const UNUSED_ENTRY = [
+		'name' => '',
+		'type' => 0,
+		'size' => 0,
+		'start' => self::END_OF_CHAIN,
+		'child' => -1,
+		'left' => -1,
+		'right' => -1,
+	];
 
 	/**
 	 * Bytes per sector.
@@ -275,42 +289,83 @@ final class CompoundFileReader {
 	 * @return void
 	 */
 	private function readFat(): void {
-		$fatSectors = [];
-		for ($index = 0; $index < 109; $index++) {
-			$sector = $this->uint32(offset: (76 + ($index * 4)));
-			if ($sector === self::END_OF_CHAIN || $sector === 0xFFFFFFFF) {
-				continue;
-			}
-
-			$fatSectors[] = $sector;
+		$fatSectors = array_merge($this->sectorIdsAt(base: 76, count: 109), $this->difatSectorIds());
+		foreach ($fatSectors as $fatSector) {
+			$this->appendFatSector(fatSector: $fatSector);
 		}
 
+	}//end readFat()
+
+	/**
+	 * The FAT sector ids listed in the DIFAT sector chain beyond the header's 109.
+	 *
+	 * @return array<int, int> The sector ids, in chain order.
+	 */
+	private function difatSectorIds(): array {
+		$sectorIds = [];
 		$difatSector = $this->uint32(offset: 68);
 		$perSector = (int)(($this->sectorSize / 4) - 1);
 		$guard = 1024;
-		while ($difatSector !== self::END_OF_CHAIN && $difatSector !== 0xFFFFFFFF && $guard > 0) {
+		while ($this->isSectorId(sector: $difatSector) === true && $guard > 0) {
 			$base = (($difatSector + 1) * $this->sectorSize);
-			for ($index = 0; $index < $perSector; $index++) {
-				$sector = $this->uint32(offset: ($base + ($index * 4)));
-				if ($sector === self::END_OF_CHAIN || $sector === 0xFFFFFFFF) {
-					continue;
-				}
-
-				$fatSectors[] = $sector;
-			}
-
+			$sectorIds = array_merge($sectorIds, $this->sectorIdsAt(base: $base, count: $perSector));
 			$difatSector = $this->uint32(offset: ($base + ($perSector * 4)));
 			$guard--;
 		}
 
-		foreach ($fatSectors as $fatSector) {
-			$base = (($fatSector + 1) * $this->sectorSize);
-			for ($index = 0; $index < ($this->sectorSize / 4); $index++) {
-				$this->fat[] = $this->uint32(offset: ($base + ($index * 4)));
+		return $sectorIds;
+
+	}//end difatSectorIds()
+
+	/**
+	 * The sector ids in a run of 32-bit entries, skipping end-of-chain and free entries.
+	 *
+	 * @param int $base  The offset of the first entry.
+	 * @param int $count The number of entries.
+	 *
+	 * @return array<int, int> The sector ids.
+	 */
+	private function sectorIdsAt(int $base, int $count): array {
+		$sectorIds = [];
+		for ($index = 0; $index < $count; $index++) {
+			$sector = $this->uint32(offset: ($base + ($index * 4)));
+			if ($this->isSectorId(sector: $sector) === false) {
+				continue;
 			}
+
+			$sectorIds[] = $sector;
 		}
 
-	}//end readFat()
+		return $sectorIds;
+
+	}//end sectorIdsAt()
+
+	/**
+	 * Whether a DIFAT entry names a sector rather than end-of-chain or a free slot.
+	 *
+	 * @param int $sector The entry.
+	 *
+	 * @return bool True for a sector id.
+	 */
+	private function isSectorId(int $sector): bool {
+		return ($sector !== self::END_OF_CHAIN && $sector !== 0xFFFFFFFF);
+
+	}//end isSectorId()
+
+	/**
+	 * Append one FAT sector's entries to the file allocation table.
+	 *
+	 * @param int $fatSector The FAT sector id.
+	 *
+	 * @return void
+	 */
+	private function appendFatSector(int $fatSector): void {
+		$base = (($fatSector + 1) * $this->sectorSize);
+		for ($index = 0; $index < ($this->sectorSize / 4); $index++) {
+			$this->fat[] = $this->uint32(offset: ($base + ($index * 4)));
+		}
+
+	}//end appendFatSector()
 
 	/**
 	 * Build the mini file allocation table.
@@ -348,41 +403,7 @@ final class CompoundFileReader {
 		$raw = $this->readChain(start: $this->uint32(offset: 48), size: PHP_INT_MAX, table: $this->fat, sectorSize: $this->sectorSize, container: null);
 		$count = (int)floor(strlen($raw) / 128);
 		for ($index = 0; $index < $count; $index++) {
-			$base = ($index * 128);
-			$nameLength = (int)(unpack('v', substr($raw, ($base + 64), 2))[1] ?? 0);
-			$name = '';
-			if ($nameLength > 2) {
-				$utf16 = substr($raw, $base, ($nameLength - 2));
-				$converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', $utf16);
-				$name = $converted;
-				if ($converted === false) {
-					$name = '';
-				}
-			}
-
-			$type = ord(substr($raw, ($base + 66), 1));
-			if ($type !== self::TYPE_STORAGE && $type !== self::TYPE_STREAM && $type !== self::TYPE_ROOT) {
-				$this->entries[$index] = [
-					'name' => '',
-					'type' => 0,
-					'size' => 0,
-					'start' => self::END_OF_CHAIN,
-					'child' => -1,
-					'left' => -1,
-					'right' => -1,
-				];
-				continue;
-			}
-
-			$this->entries[$index] = [
-				'name' => $name,
-				'type' => $type,
-				'size' => (int)(unpack('V', substr($raw, ($base + 120), 4))[1] ?? 0),
-				'start' => (int)(unpack('V', substr($raw, ($base + 116), 4))[1] ?? self::END_OF_CHAIN),
-				'left' => $this->directoryId(raw: $raw, offset: ($base + 68)),
-				'right' => $this->directoryId(raw: $raw, offset: ($base + 72)),
-				'child' => $this->directoryId(raw: $raw, offset: ($base + 76)),
-			];
+			$this->entries[$index] = $this->directoryEntry(raw: $raw, base: ($index * 128));
 		}
 
 		if (isset($this->entries[0]) === false || $this->entries[0]['type'] !== self::TYPE_ROOT) {
@@ -390,6 +411,56 @@ final class CompoundFileReader {
 		}
 
 	}//end readDirectory()
+
+	/**
+	 * Read one 128-byte directory entry; a slot that is not a storage,
+	 * stream or root reads as the unused entry.
+	 *
+	 * @param string $raw  The directory bytes.
+	 * @param int    $base Where the entry starts.
+	 *
+	 * @return array<string,mixed> The entry.
+	 */
+	private function directoryEntry(string $raw, int $base): array {
+		$type = ord(substr($raw, ($base + 66), 1));
+		if (in_array($type, [self::TYPE_STORAGE, self::TYPE_STREAM, self::TYPE_ROOT], true) === false) {
+			return self::UNUSED_ENTRY;
+		}
+
+		return [
+			'name' => $this->entryName(raw: $raw, base: $base),
+			'type' => $type,
+			'size' => (int)(unpack('V', substr($raw, ($base + 120), 4))[1] ?? 0),
+			'start' => (int)(unpack('V', substr($raw, ($base + 116), 4))[1] ?? self::END_OF_CHAIN),
+			'left' => $this->directoryId(raw: $raw, offset: ($base + 68)),
+			'right' => $this->directoryId(raw: $raw, offset: ($base + 72)),
+			'child' => $this->directoryId(raw: $raw, offset: ($base + 76)),
+		];
+
+	}//end directoryEntry()
+
+	/**
+	 * Read a directory entry's UTF-16 name, without its terminator.
+	 *
+	 * @param string $raw  The directory bytes.
+	 * @param int    $base Where the entry starts.
+	 *
+	 * @return string The name, or '' when it is empty or does not convert.
+	 */
+	private function entryName(string $raw, int $base): string {
+		$nameLength = (int)(unpack('v', substr($raw, ($base + 64), 2))[1] ?? 0);
+		if ($nameLength <= 2) {
+			return '';
+		}
+
+		$converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', substr($raw, $base, ($nameLength - 2)));
+		if ($converted === false) {
+			return '';
+		}
+
+		return $converted;
+
+	}//end entryName()
 
 	/**
 	 * Read a directory id, mapping the "none" marker to -1.

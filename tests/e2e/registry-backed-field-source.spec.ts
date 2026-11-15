@@ -21,6 +21,7 @@
  */
 
 import { expect, test } from '@playwright/test'
+import { anonymousRequest } from './support/anonymous.ts'
 
 const API_BASE = '/index.php/apps/integriq/api/property-sources'
 
@@ -107,13 +108,11 @@ test.describe('registry-backed property sources', () => {
 	})
 
 	// @e2e registry-field-source::an-administrator-resyncs-the-classification-plan
-	test('the resync route refuses a request that carries no session', async ({
-		playwright,
-	}) => {
+	test('the resync route refuses a request that carries no session', async () => {
 		// A fresh context, so the admin storageState from globalSetup cannot
 		// leak into this probe. This is the least privileged principal that
 		// reaches the route at all.
-		const anonymous = await playwright.request.newContext()
+		const anonymous = await anonymousRequest()
 		try {
 			const resp = await anonymous.post(`${API_BASE}/classificatie/resync`, {
 				failOnStatusCode: false,

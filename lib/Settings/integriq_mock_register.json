@@ -26,7 +26,7 @@
         "slug": "source",
         "title": "Source",
         "icon": "Cloud",
-        "version": "1.4.0",
+        "version": "1.5.0",
         "summary": "An outbound integration target (HTTP API, database, or service)",
         "description": "A Source is the integration counterpart for inbound or outbound data exchange. It defines the connection (location, auth, headers) and operational state (rate limits, retention, last-call timestamps). One half of the Source/Synchronization/Contract triad: see local ADR-005.",
         "required": [
@@ -214,11 +214,23 @@
                         "minLength": 1,
                         "title": "Credential Name",
                         "description": "Name of the broker credential to use. Convenience form; resolved to a credentialId at call time and a 409 when it is ambiguous (0 or >1 owned matches)."
+                      },
+                      "provider": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Provider",
+                        "description": "With `perUser: true`: the broker provider slug whose per-user OAuth 2.0 account each call uses (sources-per-user-oauth). The call runs with the signed-in user's own personal credential at this provider, never a shared one; a call without a signed-in user is refused."
+                      },
+                      "perUser": {
+                        "type": "boolean",
+                        "const": true,
+                        "title": "Each user's own account",
+                        "description": "Set together with `provider`, and with nothing else, to call with each signed-in user's own account at that provider."
                       }
                     },
                     "additionalProperties": false,
                     "minProperties": 1,
-                    "maxProperties": 1
+                    "maxProperties": 2
                   }
                 }
               }
@@ -1660,7 +1672,7 @@
         "slug": "synchronization",
         "title": "Synchronization",
         "icon": "Sync",
-        "version": "1.2.0",
+        "version": "1.2.1",
         "summary": "A bidirectional or unidirectional sync between two systems",
         "description": "A Synchronization is one half of the Source/Sync/Contract triad (see local ADR-005). It defines what to sync (sourceId/targetId), how to compare (sourceHashMapping), and per-pass state (currentPage, last-checked timestamps). The `sourceId`/`targetId` fields have an overloaded format documented inline.",
         "required": [
@@ -1748,6 +1760,11 @@
             "description": "Pagination cursor for in-flight sync passes",
             "default": 1,
             "title": "Current Page"
+          },
+          "currentPageVersion": {
+            "type": "string",
+            "description": "The version (ETag, or Last-Modified with Content-Length) of the JSONL file the current batch cycle reads; empty when the source sends neither. A later batch that finds another version starts the cycle again at batch 1.",
+            "title": "Current Page Version"
           },
           "syncMode": {
             "type": "string",
@@ -4065,7 +4082,19 @@
         "slug": "digitalPostMessage",
         "title": "Digital Post Message",
         "icon": "EmailOutline",
-        "version": "1.0.0",
+        "version": "1.2.0",
+        "authorization": {
+          "create": [
+            "digitale-post-verzenders"
+          ],
+          "read": [
+            "digitale-post-verzenders"
+          ],
+          "update": [
+            "digitale-post-verzenders"
+          ],
+          "delete": []
+        },
         "summary": "Audit and lifecycle record for one letter sent through a configured digital post source",
         "description": "A Digital Post Message tracks one letter a fleet app asked integriq to send, from queued through the provider's acceptance to whatever became of it. A failed send keeps the message and its attachments, so the letter can be retried rather than rewritten. See openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-a-send-is-a-typed-command-with-a-tracked-message-req-dpa-002.",
         "required": [
@@ -4143,6 +4172,41 @@
             "type": "string",
             "description": "Caller-generated id, echoed on every status change",
             "title": "Correlation ID"
+          },
+          "category": {
+            "type": "string",
+            "description": "The letter's category (besluit, case-update, statutory, service), as the sending app gave it",
+            "title": "Category"
+          },
+          "caseRef": {
+            "type": "string",
+            "description": "The case the letter belongs to, when the sending app named one",
+            "title": "Case Reference"
+          },
+          "batchId": {
+            "type": "string",
+            "description": "Berichtenbox: the BatchID GUID of the GLOBE-R-BV-Request batch that carried the letter",
+            "title": "Batch Id"
+          },
+          "transportMessageId": {
+            "type": "string",
+            "description": "Berichtenbox: the ebMS message id the adapter sent the batch under",
+            "title": "Transport Message Id"
+          },
+          "berichtType": {
+            "type": "string",
+            "description": "Berichtenbox: the BerichtType code the letter was sent under",
+            "title": "Bericht Type"
+          },
+          "resultCode": {
+            "type": "string",
+            "description": "Berichtenbox: the VerwerkingsCode Logius answered, for example Verwerkt or NietActiefOfGeabonneerd",
+            "title": "Result Code"
+          },
+          "resultStage": {
+            "type": "string",
+            "description": "Berichtenbox: the Stadium Logius answered with the code",
+            "title": "Result Stage"
           },
           "providerReference": {
             "type": "string",
@@ -4444,9 +4508,9 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.5.0",
-        "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
-        "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff: OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
+        "version": "1.7.0",
+        "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping; the case system makes the case",
+        "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped | failed, isolated per verzoek. Integriq declares no case handoff: the case system (dossiq) reads the mapped verzoek and makes one case on the case type in mappedCaseTypes. handed_off survives only on records from the retired manual handoff. See openspec/changes/retire-dso-case-handoff.",
         "authorization": {
           "create": [
             "dso-intake"
@@ -4720,6 +4784,12 @@
                         "type": "string",
                         "description": "The department that handles this case type",
                         "title": "Department"
+                      },
+                      "variant": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "description": "The route (variant) of this case type the case takes, as the matched mapping row gives it",
+                        "title": "Variant"
                       }
                     }
                   }
@@ -4774,36 +4844,6 @@
             "title": "Activity unmapped"
           }
         },
-        "x-openregister-handoff": [
-          {
-            "id": "verzoek-to-case",
-            "targetSemanticType": "https://openregister.app/ns#Case",
-            "trigger": "manual",
-            "mapping": {
-              "title": {
-                "from": "mappedTitle"
-              },
-              "summary": {
-                "from": "mappedSummary"
-              },
-              "channel": {
-                "from": "mappedChannel"
-              },
-              "source": {
-                "provenance": true
-              },
-              "priority": {
-                "from": "mappedPriority"
-              }
-            },
-            "whenUnavailable": "queue",
-            "onSuccess": {
-              "set": {
-                "status": "handed_off"
-              }
-            }
-          }
-        ],
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
@@ -5023,7 +5063,19 @@
         "slug": "outbound_message",
         "title": "Outbound Message",
         "icon": "SendOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
+        "authorization": {
+          "create": [
+            "digitale-post-verzenders"
+          ],
+          "read": [
+            "digitale-post-verzenders"
+          ],
+          "update": [
+            "digitale-post-verzenders"
+          ],
+          "delete": []
+        },
         "summary": "One message the product sent to a person, per recipient and per step",
         "description": "An Outbound Message records what was sent, to whom, on which channel, and the point at which it failed. The record is per recipient because the failure is: three people on one ontvangstbevestiging can have three outcomes. The body is redacted before it is stored and readable only behind its own action (outbound.read-body), distinct from seeing that a message was sent. A forward is its own linked record, never an edit to the original, because Awb 2:3 asks for provability. See openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md.",
         "required": [
@@ -9289,61 +9341,65 @@
         "@self": {
           "register": "integriq",
           "schema": "intake_routing_rule",
-          "slug": "intake-routing-rule-voorbeeld-name-1-1"
+          "slug": "intake-routing-rule-teams-meldingen-naar-algemene-vraag"
         },
-        "name": "Voorbeeld Name 1",
-        "channelId": "Voorbeeld Channelid 1",
-        "targetSchema": "Voorbeeld Targetschema 1",
-        "description": "Voorbeeld Description 1",
-        "condition": {
-          "field": "Voorbeeld Field 1",
-          "operator": "equals",
-          "value": "Voorbeeld Value 1"
+        "name": "Teams meldingen naar algemene vraag",
+        "channelId": "teams",
+        "targetSchema": "case",
+        "description": "Elk Teams-bericht opent een zaak met de tekst van het bericht als titel en omschrijving.",
+        "condition": {},
+        "fieldMapping": {
+          "title": "text",
+          "description": "text"
         },
-        "fieldMapping": {},
-        "locationField": "Voorbeeld Locationfield 1",
-        "order": 1,
+        "locationField": "",
+        "order": 10,
         "isEnabled": true
       },
       {
         "@self": {
           "register": "integriq",
           "schema": "intake_routing_rule",
-          "slug": "intake-routing-rule-voorbeeld-name-2-2"
+          "slug": "intake-routing-rule-openbare-ruimte-straatverlichting"
         },
-        "name": "Voorbeeld Name 2",
-        "channelId": "Voorbeeld Channelid 2",
-        "targetSchema": "Voorbeeld Targetschema 2",
-        "description": "Voorbeeld Description 2",
+        "name": "Openbare ruimte straatverlichting",
+        "channelId": "public-space-report",
+        "targetSchema": "case",
+        "description": "Een melding over een lantaarnpaal opent een zaak met de omschrijving van de melder.",
         "condition": {
-          "field": "Voorbeeld Field 2",
+          "field": "text",
           "operator": "contains",
-          "value": "Voorbeeld Value 2"
+          "value": "lantaarnpaal"
         },
-        "fieldMapping": {},
-        "locationField": "Voorbeeld Locationfield 2",
-        "order": 2,
-        "isEnabled": false
+        "fieldMapping": {
+          "title": "fields.category",
+          "description": "text"
+        },
+        "locationField": "",
+        "order": 10,
+        "isEnabled": true
       },
       {
         "@self": {
           "register": "integriq",
           "schema": "intake_routing_rule",
-          "slug": "intake-routing-rule-voorbeeld-name-3-3"
+          "slug": "intake-routing-rule-formulier-bezwaar"
         },
-        "name": "Voorbeeld Name 3",
-        "channelId": "Voorbeeld Channelid 3",
-        "targetSchema": "Voorbeeld Targetschema 3",
-        "description": "Voorbeeld Description 3",
+        "name": "Formulier bezwaar",
+        "channelId": "form-submission",
+        "targetSchema": "case",
+        "description": "Een ingezonden bezwaarformulier opent een zaak. Uitgeschakeld, zodat de demo ook een uitgeschakelde regel laat zien.",
         "condition": {
-          "field": "Voorbeeld Field 3",
-          "operator": "exists",
-          "value": "Voorbeeld Value 3"
+          "field": "fields.formType",
+          "operator": "equals",
+          "value": "bezwaar"
         },
-        "fieldMapping": {},
-        "locationField": "Voorbeeld Locationfield 3",
-        "order": 3,
-        "isEnabled": true
+        "fieldMapping": {
+          "description": "text"
+        },
+        "locationField": "",
+        "order": 20,
+        "isEnabled": false
       },
       {
         "@self": {
@@ -11259,6 +11315,69 @@
       {
         "@self": {
           "register": "integriq",
+          "schema": "sms_message",
+          "slug": "sms-message-cmcom-sent"
+        },
+        "recipientMsisdn": "+31612345671",
+        "status": "sent",
+        "objectUri": "",
+        "sourceApp": "pipelinq",
+        "templateId": "",
+        "provider": "cmcom",
+        "providerMessageId": "4f3c2a1e9b8d7c6a5f4e3d2c1b0a9f8e",
+        "detail": "Accepted by CM.com",
+        "attempts": [
+          {
+            "at": "2026-03-04T09:00:00+00:00",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "sms_message",
+          "slug": "sms-message-messagebird-delivered"
+        },
+        "recipientMsisdn": "+31612345672",
+        "status": "delivered",
+        "objectUri": "",
+        "sourceApp": "pipelinq",
+        "templateId": "",
+        "provider": "messagebird",
+        "providerMessageId": "b7e2c0a4f1d94e8a9c3b5d6e7f8a9b0c",
+        "detail": "MessageBird status: delivered",
+        "attempts": [
+          {
+            "at": "2026-03-04T10:15:00+00:00",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "sms_message",
+          "slug": "sms-message-twilio-failed"
+        },
+        "recipientMsisdn": "+31612345673",
+        "status": "failed",
+        "objectUri": "",
+        "sourceApp": "pipelinq",
+        "templateId": "",
+        "provider": "twilio",
+        "providerMessageId": "",
+        "detail": "Twilio responded with HTTP 401.",
+        "attempts": [
+          {
+            "at": "2026-03-04T11:30:00+00:00",
+            "error": "Twilio responded with HTTP 401."
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
           "schema": "source",
           "slug": "source-voorbeeld-name-1-1"
         },
@@ -12490,6 +12609,219 @@
         ],
         "isActive": true,
         "note": "Demo row. Gemeentecode 0000 is not a CBS gemeentecode, so this row never matches a real verzoek. Replace it with the activities your gemeente receives."
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "call_event",
+          "slug": "call-event-demo-ringing"
+        },
+        "callId": "demo-call-0001",
+        "kind": "ringing",
+        "callerNumber": "+31201234567",
+        "sourceId": "demo-cti-source",
+        "agentId": "demo-agent",
+        "at": "2026-03-01T09:00:00+00:00",
+        "durationSeconds": 0
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "call_event",
+          "slug": "call-event-demo-answered"
+        },
+        "callId": "demo-call-0001",
+        "kind": "answered",
+        "callerNumber": "+31201234567",
+        "sourceId": "demo-cti-source",
+        "agentId": "demo-agent",
+        "at": "2026-03-01T09:00:08+00:00",
+        "durationSeconds": 0
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "call_event",
+          "slug": "call-event-demo-ended"
+        },
+        "callId": "demo-call-0001",
+        "kind": "ended",
+        "callerNumber": "+31201234567",
+        "sourceId": "demo-cti-source",
+        "agentId": "demo-agent",
+        "at": "2026-03-01T09:04:20+00:00",
+        "durationSeconds": 252
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "demo-sharepoint-publications-source"
+        },
+        "slug": "demo-sharepoint-publications-source",
+        "name": "SharePoint publications (Gereed (demo))",
+        "description": "Microsoft Graph for the SharePoint library folder whose subfolders become draft publications. The secret stays in the credential broker; this source holds only a reference to it. Demo: points at no real tenant and is disabled; the canned Graph answer below shows the folder listing it reads (two dossiers).",
+        "type": "api",
+        "location": "https://graph.microsoft.com/v1.0",
+        "isEnabled": false,
+        "configuration": {
+          "authentication": {
+            "credentialRef": {
+              "credentialId": "5d3a0000-0000-4000-8000-000000000001"
+            }
+          },
+          "headers": {
+            "Accept": "application/json"
+          },
+          "siteId": "example.sharepoint.com,demo-site,demo-web",
+          "driveId": "b!woo-dossiers",
+          "folderId": "01GEREED",
+          "mock": true,
+          "mockResponse": {
+            "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#drives('b!woo-dossiers')/items('01GEREED')/children",
+            "value": [
+              {
+                "id": "01WOO2026014",
+                "name": "Woo-2026-014",
+                "webUrl": "https://example.sharepoint.com/sites/woo-verzoeken/Dossiers/Gereed/Woo-2026-014",
+                "folder": {
+                  "childCount": 2
+                },
+                "parentReference": {
+                  "driveId": "b!woo-dossiers",
+                  "id": "01GEREED",
+                  "path": "/drives/b!woo-dossiers/root:/Gereed"
+                },
+                "listItem": {
+                  "fields": {
+                    "Title": "Besluit op het Woo-verzoek over de herinrichting van het Stationsplein",
+                    "Summary": "Besluit en inventarislijst bij het verzoek van 3 september 2026.",
+                    "Description": "Openbaarmaking van de stukken over de herinrichting.",
+                    "publicatiedatum": "2026-10-01T00:00:00Z"
+                  }
+                }
+              },
+              {
+                "id": "01WOO2026015",
+                "name": "Woo-2026-015",
+                "webUrl": "https://example.sharepoint.com/sites/woo-verzoeken/Dossiers/Gereed/Woo-2026-015",
+                "folder": {
+                  "childCount": 1
+                },
+                "parentReference": {
+                  "driveId": "b!woo-dossiers",
+                  "id": "01GEREED",
+                  "path": "/drives/b!woo-dossiers/root:/Gereed"
+                },
+                "listItem": {
+                  "fields": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "demo-sharepoint-folder-to-publication"
+        },
+        "slug": "demo-sharepoint-folder-to-publication",
+        "name": "SharePoint folder to publication (Gereed (demo))",
+        "description": "One dossier folder to one draft publication: the title column, else the folder name; summary and description from their columns when filled; the chosen catalogue; the folder's web address as its source; every file in the folder as an attachment. No publication date: an editor publishes.",
+        "version": "1.0.0",
+        "passThrough": false,
+        "mapping": {
+          "title": "{{ listItem.fields.Title|default(name) }}",
+          "summary": "{{ listItem.fields.Summary|default('') }}",
+          "description": "{{ listItem.fields.Description|default('') }}",
+          "catalog": "demo-woo-catalogus",
+          "source": "{{ webUrl|default('') }}",
+          "attachments": "[{% for doc in documents.value|default([]) %}{% if doc.file is defined %}{% if not loop.first %},{% endif %}{\"filename\": {{ doc.name|json_encode|raw }}, \"endpoint\": {{ ('/drives/' ~ (doc.parentReference.driveId|default(parentReference.driveId|default(''))) ~ '/items/' ~ doc.id ~ '/content')|json_encode|raw }}}{% endif %}{% endfor %}]"
+        },
+        "unset": [],
+        "cast": {
+          "summary": "unsetIfValue==",
+          "description": "unsetIfValue==",
+          "source": "unsetIfValue==",
+          "attachments": "jsonToArray"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "demo-sharepoint-publication-documents"
+        },
+        "slug": "demo-sharepoint-publication-documents",
+        "name": "Attach SharePoint documents (Gereed (demo))",
+        "description": "Fetches every file of a dossier folder through the Graph source and attaches it to the publication object. It runs inside the synchronization, so a cron run keeps the files; nothing is written to anyone's Files folder.",
+        "version": "1.0.0",
+        "action": "create",
+        "timing": "after",
+        "conditions": {
+          "==": [
+            1,
+            1
+          ]
+        },
+        "type": "fetch_file",
+        "configuration": {
+          "fetch_file": {
+            "source": "demo-sharepoint-publications-source",
+            "filePath": "attachments",
+            "method": "GET",
+            "sourceConfiguration": []
+          }
+        },
+        "order": 0
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "demo-sharepoint-publications-pull"
+        },
+        "slug": "demo-sharepoint-publications-pull",
+        "name": "SharePoint to publications (Gereed (demo))",
+        "description": "Lists the subfolders of one SharePoint library folder and writes each as a draft publication with its files.",
+        "version": "1.0.0",
+        "sourceId": "demo-sharepoint-publications-source",
+        "sourceType": "api",
+        "sourceTargetMapping": "demo-sharepoint-folder-to-publication",
+        "sourceConfig": {
+          "endpoint": "/drives/b%21woo-dossiers/items/01GEREED/children",
+          "query": {
+            "$expand": "listItem($expand=fields)"
+          },
+          "resultsPosition": "value",
+          "idPosition": "id",
+          "usesPagination": "true",
+          "paginationMode": "nextLink",
+          "requiresApproval": true,
+          "extraDataConfigs": [
+            {
+              "staticEndpoint": "/drives/b%21woo-dossiers/items/{{ originId }}/children",
+              "keyToSetExtraData": "documents",
+              "mergeExtraData": "true"
+            }
+          ]
+        },
+        "conditions": [
+          {
+            "!!": [
+              {
+                "var": "folder"
+              }
+            ]
+          }
+        ],
+        "actions": [
+          "demo-sharepoint-publication-documents"
+        ],
+        "targetId": "publication/publication",
+        "targetType": "register/schema"
       }
     ]
   }

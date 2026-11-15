@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Exception\KissProviderException;
+use OCA\Integriq\Service\Kiss\CallEventLog;
 use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
 use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
 use OCA\Integriq\Service\KissSyncService;
@@ -152,7 +153,8 @@ class KissSyncServiceTest extends TestCase {
 			$this->restProvider,
 			$this->l,
 			$this->logger,
-			new RawSourceResolver($this->objectService, $this->logger)
+			new RawSourceResolver($this->objectService, $this->logger),
+			new CallEventLog($this->objectService)
 		);
 
 	}//end setUp()

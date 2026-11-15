@@ -39,17 +39,9 @@ export function buildAuthenticationConfiguration({
 	groups,
 	apiKeys = [],
 }) {
-	const authentication = {
-		type,
-		users,
-		groups,
-	}
+	const authentication = { type, users, groups }
 
-	// A "complete new key" has both a non-empty apiKey string AND a selected user id.
-	// Incomplete rows (the empty seed row, or a half-filled row) are not new keys.
-	const enteredKeys = (apiKeys || [])
-		.filter((key) => key.apiKey && key.user?.id)
-		.map((key) => ({ [key.apiKey]: key.user.id }))
+	const enteredKeys = completeKeys(apiKeys)
 
 	// LOAD-BEARING OMIT: only attach `keys` when the operator actually entered new ones.
 	// When empty, leaving `keys` off the payload lets openregister#463 preserve the stored
@@ -59,4 +51,19 @@ export function buildAuthenticationConfiguration({
 	}
 
 	return authentication
+}
+
+/**
+ * The complete new keys among the apiKeys UI rows, as `{ apiKey: userId }` entries.
+ *
+ * A "complete new key" has both a non-empty apiKey string AND a selected user id.
+ * Incomplete rows (the empty seed row, or a half-filled row) are not new keys.
+ *
+ * @param {Array<object>|null} apiKeys apiKeys UI rows, shape `[{ apiKey, user: { id } }]`.
+ * @return {Array<object>} The complete keys, in row order.
+ */
+function completeKeys(apiKeys) {
+	return (apiKeys || [])
+		.filter((key) => key.apiKey && key.user?.id)
+		.map((key) => ({ [key.apiKey]: key.user.id }))
 }

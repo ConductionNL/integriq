@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\KissController;
+use OCA\Integriq\Exception\CallEventNotFoundException;
 use OCA\Integriq\Exception\KissProviderException;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\KissSyncService;
@@ -213,4 +214,87 @@ class KissControllerTest extends TestCase {
 		$this->assertSame('kiss_push_failed', $response->getData()['error']);
 
 	}//end testCreateKlantcontactMapsProviderFailureTo502()
+	/**
+	 * A push naming a call carries the callId and its source to the service,
+	 * and needs no channel: a call is recorded on the phone channel.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactForACallPassesTheCallThrough(): void {
+		$this->request->method('getParams')->willReturn(
+			['onderwerp' => 'Vraag', 'callId' => '42', 'callSourceId' => 'pbx-1', 'caseReference' => 'case-uuid-1']
+		);
+
+		$this->syncService->expects($this->once())
+			->method('pushCustomerContact')
+			->with(
+				$this->callback(
+					static function (array $input): bool {
+						return $input['callId'] === '42'
+							&& $input['callSourceId'] === 'pbx-1'
+							&& $input['channel'] === 'telefoon'
+							&& $input['caseReference'] === 'case-uuid-1';
+					}
+				)
+			)
+			->willReturn(['id' => 'kiss-id-1', 'localUuid' => 'local-uuid-1']);
+
+		$response = $this->controller->createCustomerContact();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+
+	}//end testCreateKlantcontactForACallPassesTheCallThrough()
+
+	/**
+	 * A call with no single ended event answers 404, not a KISS failure.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactForAnUnknownCallIs404(): void {
+		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'callId' => '44']);
+
+		$this->syncService->method('pushCustomerContact')->willThrowException(
+			new CallEventNotFoundException(message: 'No single ended call with this callId.')
+		);
+
+		$response = $this->controller->createCustomerContact();
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame('unknown_call', $response->getData()['error']);
+
+	}//end testCreateKlantcontactForAnUnknownCallIs404()
+
+	/**
+	 * A user the action matrix refuses gets the refusal, and nothing is read or pushed.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactIsRefusedWithoutTheAction(): void {
+		$this->actionAuth->expects($this->once())
+			->method('requireAction')
+			->with($this->anything(), 'kiss.push')
+			->willThrowException(new \OCP\AppFramework\OCS\OCSForbiddenException("Action 'kiss.push' requires admin rights"));
+		$this->request->expects($this->never())->method('getParams');
+		$this->syncService->expects($this->never())->method('pushCustomerContact');
+
+		$this->expectException(\OCP\AppFramework\OCS\OCSForbiddenException::class);
+		$this->controller->createCustomerContact();
+
+	}//end testCreateKlantcontactIsRefusedWithoutTheAction()
+
+	/**
+	 * A provider failure without a configured source is a 503; the warning is logged with the message.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactFailureEnvelopesAreExact(): void {
+		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'channel' => 'mail']);
+		$this->syncService->method('pushCustomerContact')->willThrowException(new \OCA\Integriq\Exception\KissProviderException('No active KISS source configured'));
+
+		$response = $this->controller->createCustomerContact();
+
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame(['error' => 'not_configured', 'message' => 'No active KISS source configured'], $response->getData());
+
+	}//end testCreateKlantcontactFailureEnvelopesAreExact()
 }//end class

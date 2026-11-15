@@ -30,10 +30,10 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\UwlrEduVProviderException;
 use OCA\Integriq\Exception\UwlrEduVTranslationException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\UwlrEduVService;
-use OCA\Integriq\Service\Intake\WebhookGate;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\UwlrEduVServiceInterface;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -46,7 +46,6 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Four push/sync endpoints + one shared signed acknowledgement/retour receiver.
@@ -63,20 +62,20 @@ class UwlrEduVController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param UwlrEduVService $uwlrEduVService Send/sync/retour orchestration logic.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param UwlrEduVServiceInterface $uwlrEduVService Send/sync/retour orchestration logic.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push/sync endpoints).
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly UwlrEduVService $uwlrEduVService,
-		private readonly WebhookGate $gate,
+		private readonly UwlrEduVServiceInterface $uwlrEduVService,
+		private readonly WebhookGateInterface $gate,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -231,6 +230,10 @@ class UwlrEduVController extends Controller {
 	 *
 	 * @return JSONResponse `{received: true}` on success, 401 on signature failure.
 	 *
+	 * @contract tests/Unit/Controller/XmlWebhooksConsumerTest.php — signed delivery stored as the
+	 *           connection's account, 503 without an account, 401 on a wrong signature
+	 *           (data provider `webhooks()`, which calls the method by name)
+	 *
 	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-an-unsigned-retour-is-rejected-before-processing
 	 * @spec openspec/changes/uwlr-eduv-retour-on-the-consumer-model/specs/uwlr-eduv-adapter/spec.md#requirement-the-retour-acts-as-the-uwlr-and-edu-v-connections-account-req-020
 	 */
@@ -324,26 +327,9 @@ class UwlrEduVController extends Controller {
 	 * @spec openspec/changes/uwlr-eduv-retour-on-the-consumer-model/specs/uwlr-eduv-adapter/spec.md#requirement-the-retour-acts-as-the-uwlr-and-edu-v-connections-account-req-020
 	 */
 	private function handleSignedInbound(callable $handler): JSONResponse {
-		$rawBody = $this->getRawContent();
+		$receipt = new SignedWebhookReceipt(gate: $this->gate, request: $this->request, profile: WebhookProfilesInterface::UWLR_EDUV);
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::UWLR_EDUV, rawBody: $rawBody, request: $this->request);
-		if ($identity instanceof JSONResponse) {
-			return $identity;
-		}
-
-		try {
-			$this->gate->deliver(
-				identity: $identity,
-				operation: function () use ($handler, $rawBody): void {
-					$handler($rawBody);
-				}
-			);
-		} catch (Throwable $exception) {
-			// The account's write was refused: answer 503 so the UWLR/Edu-V partner delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::UWLR_EDUV, reason: $exception->getMessage());
-		}//end try
-
-		return new JSONResponse(['received' => true]);
+		return $receipt->receive(rawBody: $this->getRawContent(), handler: $handler);
 	}//end handleSignedInbound()
 
 	/**
@@ -352,11 +338,6 @@ class UwlrEduVController extends Controller {
 	 * @return string The raw request body.
 	 */
 	private function getRawContent(): string {
-		$content = file_get_contents(filename: 'php://input');
-		if ($content === false) {
-			return '';
-		}
-
-		return $content;
+		return (new RawRequestBody())->read();
 	}//end getRawContent()
 }//end class

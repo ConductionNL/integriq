@@ -1,0 +1,57 @@
+{
+  "$comment": "ADR-037 register fragment (outbound-call-log-investigation-window, Woo row 13.23, decision D5). Merges an investigation window onto `source` (bodyCaptureUntil, bodyCaptureReason, bodyCaptureBy; set by BodyCaptureController, admin only) and the body lifecycle onto `call_log` (bodyCaptured, bodyExpiresAt, bodyExpiredAt, replayRequest). Outgoing call bodies are stored only while the window is open (lib/Outbound/Call/BodyCapturePolicy.php); LogCleanUpTask strips them past bodyExpiresAt and keeps the record. Does NOT edit lib/Settings/integriq_register.json.",
+  "components": {
+    "schemas": {
+      "source": {
+        "version": "1.7.0",
+        "properties": {
+          "bodyCaptureUntil": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Investigation window until",
+            "description": "Calls to this source store their request and response bodies until this moment. After it, they do not"
+          },
+          "bodyCaptureReason": {
+            "type": "string",
+            "title": "Investigation reason",
+            "description": "Why an administrator opened the investigation window",
+            "maxLength": 500
+          },
+          "bodyCaptureBy": {
+            "type": "string",
+            "title": "Investigation opened by",
+            "description": "The administrator who last opened or closed the investigation window"
+          }
+        }
+      },
+      "call_log": {
+        "version": "1.2.0",
+        "properties": {
+          "bodyCaptured": {
+            "type": "boolean",
+            "title": "Bodies stored",
+            "description": "Whether this record holds the request and response bodies",
+            "default": false
+          },
+          "bodyExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Bodies expire at",
+            "description": "When the cleanup job removes the bodies and the replay request. The record stays"
+          },
+          "bodyExpiredAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Bodies removed at",
+            "description": "When the cleanup job removed the bodies"
+          },
+          "replayRequest": {
+            "type": "object",
+            "title": "Replay request",
+            "description": "The request a failed call sent, secrets redacted, kept so the call can be replayed. Readable only with the replay permission"
+          }
+        }
+      }
+    }
+  }
+}

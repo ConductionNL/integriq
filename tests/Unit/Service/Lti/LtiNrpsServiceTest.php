@@ -16,6 +16,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-nrps-inbound-roster-read-platform-role-via-the-adr-008-registerschema-dispatch-and-outbound-roster-pull-tool-role-req-lti-009
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -30,7 +33,8 @@ use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\AuthenticationService;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Tests\Helpers\OpenRegisterCredentials;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Lti\LtiAgsService;
@@ -83,13 +87,13 @@ class LtiNrpsServiceTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * @return AuthorizationService
+	 * @return OpenRegisterCredentialBridge
 	 */
-	private function makeAuthorizationService(): AuthorizationService {
+	private function makeAuthorizationService(): OpenRegisterCredentialBridge {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn(new ArrayCache());
 
-		return new AuthorizationService(
+		return OpenRegisterCredentials::bridge(
 			$this->createMock(IUserManager::class),
 			$this->createMock(IUserSession::class),
 			$this->createMock(ObjectService::class),

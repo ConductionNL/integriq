@@ -43,7 +43,7 @@ namespace OCA\Integriq\Service;
  *
  * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
  */
-final class RetentionDefaults {
+final class RetentionDefaults implements RetentionDefaultsInterface {
 
 	/**
 	 * Successful call, job and synchronization logs: one hour.
@@ -51,13 +51,6 @@ final class RetentionDefaults {
 	 * @var int
 	 */
 	public const SUCCESS_LOG = 3600000;
-
-	/**
-	 * Call logs: 30 days.
-	 *
-	 * @var int
-	 */
-	public const CALL_LOG = 2592000000;
 
 	/**
 	 * Event messages: 7 days.
@@ -90,6 +83,14 @@ final class RetentionDefaults {
 	public const SYNC_LOG = 2592000000;
 
 	/**
+	 * Execution traces: 30 days, the default the `execution_trace` schema
+	 * declares (`x-openregister-archival.retention.default` P30D).
+	 *
+	 * @var int
+	 */
+	public const EXECUTION_TRACE = 2592000000;
+
+	/**
 	 * The defaults keyed by the `retention` JSON's own keys, in the order the settings read returns them.
 	 *
 	 * @var array<string,int>
@@ -101,5 +102,6 @@ final class RetentionDefaults {
 		'jobLogRetention' => self::JOB_LOG,
 		'syncContractLogRetention' => self::SYNC_CONTRACT_LOG,
 		'syncLogRetention' => self::SYNC_LOG,
+		'executionTraceRetention' => self::EXECUTION_TRACE,
 	];
 }//end class

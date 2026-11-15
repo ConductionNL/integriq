@@ -35,16 +35,23 @@ namespace OCA\Integriq\Outbound\Call;
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Service\Security\SecretRedactorInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use Throwable;
 
 /**
  * Writes and updates outbound call records.
  *
+ * `call_log` is admin-only in the register, so every read and write here runs
+ * with `_rbac: false`: the callers gate access (CallLogController with the
+ * call-log permissions), and the engine records calls for whoever triggered them.
+ *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+ * @spec openspec/specs/outbound-call-log/spec.md#requirement-call-records-are-readable-only-by-admins-and-through-integriqs-own-endpoints-req-ocd-012
  */
-class CallRecorder {
+class CallRecorder implements CallRecorderInterface {
 
 	/**
 	 * The schema one call record is stored under.
@@ -93,10 +100,14 @@ class CallRecorder {
 	 *
 	 * @param ORObjectService $objectService Persists the records.
 	 * @param BodyRedactor $redactor Redacts before the write, never after.
+	 * @param BodyCapturePolicy $bodyCapturePolicy Keeps bodies only inside a source's investigation window.
+	 * @param SecretRedactorInterface $sensitiveFields The header-name and issued-token rules CallService's call log uses.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly BodyRedactor $redactor,
+		private readonly BodyCapturePolicy $bodyCapturePolicy,
+		private readonly SecretRedactorInterface $sensitiveFields,
 	) {
 
 	}//end __construct()
@@ -126,8 +137,9 @@ class CallRecorder {
 			'target' => (string)($call['target'] ?? ''),
 			'traceId' => (string)($call['traceId'] ?? ''),
 			'direction' => 'outbound',
+			// The stored request is what a replay sends, so it keeps BodyRedactor's rules only.
 			'request' => $this->redactor->redactContext($this->asArray(value: ($call['request'] ?? []))),
-			'response' => $this->redactor->redactContext($this->asArray(value: ($call['response'] ?? []))),
+			'response' => $this->redactExchange(exchange: $this->asArray(value: ($call['response'] ?? []))),
 			'statusCode' => $statusCode,
 			'statusMessage' => (string)($call['statusMessage'] ?? ''),
 			'durationMs' => (int)($call['durationMs'] ?? 0),
@@ -156,10 +168,22 @@ class CallRecorder {
 			$record['source'] = $source;
 		}
 
+		// Bodies only inside the source's investigation window; a failure keeps
+		// its request for a replay (REQ-OCD-001, REQ-OCD-009).
+		$record = $this->bodyCapturePolicy->apply(
+			record: $record,
+			sourceData: $this->sourceData(uuid: $source),
+			logBody: false,
+			errorExpires: null
+		);
+
 		return $this->objectService->saveObject(
 			object: $record,
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
+			_rbac: false,
+			// Unscoped: system write of an outbound call record, made for whoever triggered the call.
+			_multitenancy: false,
 		);
 
 	}//end record()
@@ -175,6 +199,8 @@ class CallRecorder {
 	 *                                     `mappingVersion`, and optionally `request`/`response`.
 	 *
 	 * @return ObjectEntity The updated record.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
 	public function appendAttempt(string $uuid, array $attempt): ObjectEntity {
 		$record = $this->read(uuid: $uuid);
@@ -196,7 +222,18 @@ class CallRecorder {
 		];
 
 		if (isset($attempt['response']) === true) {
-			$record['response'] = $this->redactor->redactContext($this->asArray(value: $attempt['response']));
+			$response = $this->redactExchange(exchange: $this->asArray(value: $attempt['response']));
+			$sourceData = $this->sourceData(uuid: $this->sourceRef(call: $record));
+			if ($this->bodyCapturePolicy->isOpen(sourceData: $sourceData, now: $this->bodyCapturePolicy->now()) === false) {
+				unset($response['body']);
+			}
+
+			$record['response'] = $response;
+		}
+
+		// A replay that succeeded no longer needs the request it replayed (REQ-OCD-009).
+		if ($outcome === 'succeeded') {
+			unset($record['replayRequest']);
 		}
 
 		$record['statusCode'] = $statusCode;
@@ -233,10 +270,46 @@ class CallRecorder {
 	 * @throws DoesNotExistException When there is no such call.
 	 */
 	public function read(string $uuid): array {
+		// Unscoped: read by the forward and hold queues and the replay as the system; a user read goes through readInOrganisation().
+		return $this->readRecord(uuid: $uuid, multitenancy: false);
+
+	}//end read()
+
+	/**
+	 * Read one call record of the caller's organisation, for a user request.
+	 *
+	 * Another organisation's call answers exactly as an unknown one.
+	 *
+	 * @param string $uuid The record uuid.
+	 *
+	 * @return array<string,mixed> The record.
+	 *
+	 * @throws DoesNotExistException When there is no such call in the caller's organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	public function readInOrganisation(string $uuid): array {
+		return $this->readRecord(uuid: $uuid, multitenancy: true);
+
+	}//end readInOrganisation()
+
+	/**
+	 * Read one call record, with or without the organisation filter.
+	 *
+	 * @param string $uuid         The record uuid.
+	 * @param bool   $multitenancy Whether OpenRegister keeps the read to the caller's organisation.
+	 *
+	 * @return array<string,mixed> The record.
+	 *
+	 * @throws DoesNotExistException When there is no such call.
+	 */
+	private function readRecord(string $uuid, bool $multitenancy): array {
 		$entity = $this->objectService->find(
 			id: $uuid,
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
+			_rbac: false,
+			_multitenancy: $multitenancy,
 		);
 
 		if (($entity instanceof ObjectEntity) === false) {
@@ -250,7 +323,7 @@ class CallRecorder {
 
 		return $record;
 
-	}//end read()
+	}//end readRecord()
 
 	/**
 	 * The source relation for a call, when there is one.
@@ -280,6 +353,43 @@ class CallRecorder {
 	}//end sourceRef()
 
 	/**
+	 * The source a call went to, for its investigation window.
+	 *
+	 * A source that cannot be read has no window, so no body is kept.
+	 *
+	 * @param string|null $uuid The source uuid, or null when the call has none.
+	 *
+	 * @return array<string,mixed> The source, or an empty array.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	private function sourceData(?string $uuid): array {
+		if ($uuid === null) {
+			return [];
+		}
+
+		try {
+			$source = $this->objectService->find(
+				id: $uuid,
+				register: MessageRecorder::REGISTER,
+				schema: 'source',
+				_rbac: false,
+				// Unscoped: the source of a call the recorder already holds, read to describe it.
+				_multitenancy: false,
+			);
+		} catch (Throwable) {
+			return [];
+		}
+
+		if (($source instanceof ObjectEntity) === false) {
+			return [];
+		}
+
+		return $source->getObject();
+
+	}//end sourceData()
+
+	/**
 	 * Whether a status code counts as a success.
 	 *
 	 * @param int $statusCode The status code.
@@ -290,6 +400,45 @@ class CallRecorder {
 		return ($statusCode >= 200 && $statusCode < 300);
 
 	}//end isSuccess()
+
+	/**
+	 * Redact a response before it is stored: the BodyRedactor's rules, plus the
+	 * rules CallService's call log applies (a session-, token- or cookie-named
+	 * header, and the tokens an upstream issued in a JSON body). Never used for
+	 * the stored request: a replay sends that request, and a masked session
+	 * header or token would go out as the placeholder. Only the stored copy is
+	 * redacted; the caller keeps what it got.
+	 *
+	 * @param array<string,mixed> $exchange The response.
+	 *
+	 * @return array<string,mixed> The redacted copy.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+	 */
+	private function redactExchange(array $exchange): array {
+		if (is_string(($exchange['body'] ?? null)) === true) {
+			$exchange['body'] = $this->sensitiveFields->redactIssuedTokensInJson(body: $exchange['body']);
+		}
+
+		$redacted = $this->redactor->redactContext($exchange);
+		if (is_array(($redacted['headers'] ?? null)) === false) {
+			return $redacted;
+		}
+
+		foreach ($redacted['headers'] as $name => $value) {
+			if (is_string($name) === false || $this->sensitiveFields->isSensitiveHeaderName(name: $name) === false) {
+				continue;
+			}
+
+			$redacted['headers'][$name] = BodyRedactor::PLACEHOLDER;
+			if (is_array($value) === true) {
+				$redacted['headers'][$name] = array_fill(0, count($value), BodyRedactor::PLACEHOLDER);
+			}
+		}
+
+		return $redacted;
+
+	}//end redactExchange()
 
 	/**
 	 * Coerce a request or response bag to an array.
@@ -325,6 +474,9 @@ class CallRecorder {
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
 			uuid: $uuid,
+			_rbac: false,
+			// Unscoped: system write of an outbound call record.
+			_multitenancy: false,
 		);
 
 	}//end write()

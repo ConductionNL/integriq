@@ -29,8 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Service\ConnectionRegistryService;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCP\App\Events\AppDisableEvent;
 use OCP\App\Events\AppEnableEvent;
 use OCP\EventDispatcher\Event;
@@ -73,8 +73,8 @@ class ConnectionAppLifecycleListener implements IEventListener {
 	public function handle(Event $event): void {
 		if ($event instanceof AppEnableEvent) {
 			$appId = $event->getAppId();
-			$this->run(appId: $appId, operation: static function (ConnectionRegistryService $registry) use ($appId): void {
-				if ($appId === Application::APP_ID) {
+			$this->run(appId: $appId, operation: static function (ConnectionRegistryServiceInterface $registry) use ($appId): void {
+				if ($appId === AppIdentity::APP_ID) {
 					$registry->sync();
 					return;
 				}
@@ -86,7 +86,7 @@ class ConnectionAppLifecycleListener implements IEventListener {
 
 		if ($event instanceof AppDisableEvent) {
 			$appId = $event->getAppId();
-			$this->run(appId: $appId, operation: static function (ConnectionRegistryService $registry) use ($appId): void {
+			$this->run(appId: $appId, operation: static function (ConnectionRegistryServiceInterface $registry) use ($appId): void {
 				$registry->refresh(app: $appId);
 			});
 		}
@@ -102,7 +102,7 @@ class ConnectionAppLifecycleListener implements IEventListener {
 	 */
 	private function run(string $appId, callable $operation): void {
 		try {
-			$operation($this->container->get(ConnectionRegistryService::class));
+			$operation($this->container->get(ConnectionRegistryServiceInterface::class));
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Integriq could not update the connections of {declaringApp}: {reason}',

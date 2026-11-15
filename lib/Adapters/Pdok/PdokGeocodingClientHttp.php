@@ -8,7 +8,7 @@
  * the canonical PostalAddress shape documented in
  * `hydra/openspec/changes/shared-pdok-via-openconnector/design.md`.
  *
- * DI in {@see \OCA\Integriq\AppInfo\Application::register()} binds this
+ * DI in {@see \OCA\Integriq\Adapters\AdaptersRegistrar} binds this
  * class behind the `pdok.feature_flag === '1'` (or `'true'`) app-config flag;
  * while the flag is dormant the abstract resolves to
  * {@see PdokGeocodingClientMock} instead.
@@ -37,6 +37,7 @@ namespace OCA\Integriq\Adapters\Pdok;
 
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -101,18 +102,37 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 			]
 		);
 
-		$docs = (array)($payload['response']['docs'] ?? []);
-		$out = [];
-		foreach ($docs as $doc) {
-			if (is_array($doc) === false) {
-				continue;
-			}
+		return $this->normaliseDocs(payload: $payload);
+	}//end suggest()
 
-			$out[] = $this->normaliseDoc(doc: $doc);
+	/**
+	 * A search that answers null when the Locatieserver gave no answer.
+	 *
+	 * @param string $query The query; the Locatieserver's field syntax is allowed.
+	 * @param int $rows Maximum rows to return.
+	 *
+	 * @return array<int,array<string,mixed>>|null
+	 *
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 */
+	public function find(string $query, int $rows = 10): ?array {
+		$payload = $this->request(
+			path: 'suggest',
+			query: [
+				'q' => $query,
+				'rows' => max(1, min(50, $rows)),
+				'fl' => 'id,weergavenaam,straatnaam,huisnummer,postcode,woonplaatsnaam,'
+					. 'provincienaam,centroide_ll,nummeraanduiding_id,adresseerbaarobject_id',
+			]
+		);
+
+		$docs = ($payload['response']['docs'] ?? null);
+		if ($payload === null || is_array($docs) === false) {
+			return null;
 		}
 
-		return $out;
-	}//end suggest()
+		return $this->normaliseDocs(payload: $payload);
+	}//end find()
 
 	/**
 	 * Lookup a specific PDOK identifier.
@@ -159,17 +179,7 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 			]
 		);
 
-		$docs = (array)($payload['response']['docs'] ?? []);
-		$out = [];
-		foreach ($docs as $doc) {
-			if (is_array($doc) === false) {
-				continue;
-			}
-
-			$out[] = $this->normaliseDoc(doc: $doc);
-		}
-
-		return $out;
+		return $this->normaliseDocs(payload: $payload);
 	}//end reverse()
 
 	/**
@@ -190,18 +200,39 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 	 * @return array<string,mixed> Decoded JSON payload.
 	 */
 	private function get(string $path, array $query): array {
+		return ($this->request(path: $path, query: $query) ?? ['response' => ['docs' => []]]);
+	}//end get()
+
+	/**
+	 * Execute a GET request against the Locatieserver, null when it gave no usable answer.
+	 *
+	 * @param string $path Relative path under the base URI.
+	 * @param array<string,mixed> $query Query-string parameters.
+	 *
+	 * @return array<string,mixed>|null Decoded JSON payload, or null on a transport or decode failure.
+	 */
+	private function request(string $path, array $query): ?array {
 		$uri = $this->baseUri . ltrim($path, '/');
 
+		$response = $this->send(uri: $uri, query: $query);
+		if ($response === null) {
+			return null;
+		}
+
+		return $this->decode(uri: $uri, response: $response);
+	}//end request()
+
+	/**
+	 * Send the GET request, logging and answering null on a transport failure.
+	 *
+	 * @param string $uri The full request URI.
+	 * @param array<string,mixed> $query Query-string parameters.
+	 *
+	 * @return ResponseInterface|null The response, or null when it could not be fetched.
+	 */
+	private function send(string $uri, array $query): ?ResponseInterface {
 		try {
-			$response = $this->httpClient->request(
-				'GET',
-				$uri,
-				[
-					'query' => $query,
-					'timeout' => self::DEFAULT_TIMEOUT,
-					'headers' => ['Accept' => 'application/json'],
-				]
-			);
+			return $this->httpClient->request('GET', $uri, $this->requestOptions(query: $query));
 		} catch (GuzzleException $e) {
 			$this->logger->error(
 				'pdok-geocoding.http.transport',
@@ -211,9 +242,34 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 					'message' => $e->getMessage(),
 				]
 			);
-			return ['response' => ['docs' => []]];
+			return null;
 		}//end try
+	}//end send()
 
+	/**
+	 * The options of one Locatieserver request.
+	 *
+	 * @param array<string,mixed> $query Query-string parameters.
+	 *
+	 * @return array<string,mixed> The Guzzle options.
+	 */
+	private function requestOptions(array $query): array {
+		return [
+			'query' => $query,
+			'timeout' => self::DEFAULT_TIMEOUT,
+			'headers' => ['Accept' => 'application/json'],
+		];
+	}//end requestOptions()
+
+	/**
+	 * Decode the JSON body, logging and answering null when it is not a JSON object or list.
+	 *
+	 * @param string $uri The request URI, for the log line.
+	 * @param ResponseInterface $response The response.
+	 *
+	 * @return array<string,mixed>|null The decoded payload, or null.
+	 */
+	private function decode(string $uri, ResponseInterface $response): ?array {
 		$body = (string)$response->getBody();
 		$decoded = json_decode($body, true);
 
@@ -225,11 +281,32 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 					'bodySize' => strlen($body),
 				]
 			);
-			return ['response' => ['docs' => []]];
+			return null;
 		}
 
 		return $decoded;
-	}//end get()
+	}//end decode()
+
+	/**
+	 * Normalise every document in a Locatieserver answer, skipping entries that are not documents.
+	 *
+	 * @param array<string,mixed> $payload The decoded answer.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function normaliseDocs(array $payload): array {
+		$docs = (array)($payload['response']['docs'] ?? []);
+		$out = [];
+		foreach ($docs as $doc) {
+			if (is_array($doc) === false) {
+				continue;
+			}
+
+			$out[] = $this->normaliseDoc(doc: $doc);
+		}
+
+		return $out;
+	}//end normaliseDocs()
 
 	/**
 	 * Normalise a Locatieserver `docs[]` entry into the canonical PostalAddress shape.
@@ -241,33 +318,7 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 	private function normaliseDoc(array $doc): array {
 		$coords = $this->parseCentroidLl(raw: ($doc['centroide_ll'] ?? null));
 
-		$bagAddressId = null;
-		if (isset($doc['nummeraanduiding_id']) === true) {
-			$bagAddressId = (string)$doc['nummeraanduiding_id'];
-		}
-
-		$bagBuildingId = null;
-		if (isset($doc['adresseerbaarobject_id']) === true) {
-			$bagBuildingId = (string)$doc['adresseerbaarobject_id'];
-		}
-
-		$pdokId = null;
-		if (isset($doc['id']) === true) {
-			$pdokId = (string)$doc['id'];
-		}
-
-		$normalised = [
-			'displayName' => (string)($doc['weergavenaam'] ?? ''),
-			'streetAddress' => (string)($doc['straatnaam'] ?? ''),
-			'houseNumber' => (string)($doc['huisnummer'] ?? ''),
-			'postalCode' => (string)($doc['postcode'] ?? ''),
-			'addressLocality' => (string)($doc['woonplaatsnaam'] ?? ''),
-			'addressRegion' => (string)($doc['provincienaam'] ?? ''),
-			'bagAddressId' => $bagAddressId,
-			'bagBuildingId' => $bagBuildingId,
-			'pdokId' => $pdokId,
-			'source' => 'pdok',
-		];
+		$normalised = $this->addressFields(doc: $doc);
 
 		if ($coords !== null) {
 			$normalised['location'] = [
@@ -278,6 +329,44 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient {
 
 		return $normalised;
 	}//end normaliseDoc()
+
+	/**
+	 * The PostalAddress fields of a document, without its location.
+	 *
+	 * @param array<string,mixed> $doc Raw Locatieserver document.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function addressFields(array $doc): array {
+		return [
+			'displayName' => (string)($doc['weergavenaam'] ?? ''),
+			'streetAddress' => (string)($doc['straatnaam'] ?? ''),
+			'houseNumber' => (string)($doc['huisnummer'] ?? ''),
+			'postalCode' => (string)($doc['postcode'] ?? ''),
+			'addressLocality' => (string)($doc['woonplaatsnaam'] ?? ''),
+			'addressRegion' => (string)($doc['provincienaam'] ?? ''),
+			'bagAddressId' => $this->optionalId(doc: $doc, key: 'nummeraanduiding_id'),
+			'bagBuildingId' => $this->optionalId(doc: $doc, key: 'adresseerbaarobject_id'),
+			'pdokId' => $this->optionalId(doc: $doc, key: 'id'),
+			'source' => 'pdok',
+		];
+	}//end addressFields()
+
+	/**
+	 * An identifier of the document as a string, or null when it has none.
+	 *
+	 * @param array<string,mixed> $doc Raw Locatieserver document.
+	 * @param string $key The identifier's field.
+	 *
+	 * @return string|null The identifier.
+	 */
+	private function optionalId(array $doc, string $key): ?string {
+		if (isset($doc[$key]) === true) {
+			return (string)$doc[$key];
+		}
+
+		return null;
+	}//end optionalId()
 
 	/**
 	 * Parse the Locatieserver `centroide_ll` WKT POINT into `[lng, lat]` coords.

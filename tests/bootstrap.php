@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://openconnector.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -222,8 +225,16 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/Task.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\TaskActorRef') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/TaskActorRef.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\Task\\TaskService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Task/TaskService.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Event\\TaskTerminalEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
@@ -238,7 +249,7 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// development 8e001f4ec1 (hermiq-ai-tooling): the attribute, the opt-in
 		// interface, and the REAL scanner and validator, so the catalogue test
 		// reads IntegriqAgentTools the way OpenRegister does.
-		foreach (['Mcp/Attribute/McpTool', 'Mcp/IMcpScannableServices', 'Service/Mcp/McpAnnotationValidator', 'Mcp/AttributeToolScanner'] as $mcpStub) {
+		foreach (['Mcp/Attribute/McpTool', 'Mcp/IMcpScannableServices', 'Mcp/Service/Mcp/McpAnnotationValidator', 'Mcp/AttributeToolScanner'] as $mcpStub) {
 			$mcpClass = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $mcpStub);
 			if (class_exists($mcpClass) === false && interface_exists($mcpClass) === false) {
 				require_once $stubsDir . '/OCA/OpenRegister/' . $mcpStub . '.php';
@@ -252,6 +263,31 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// naming nothing about a missing stub.
 		if (class_exists('OCA\\OpenRegister\\Service\\SystemOperationContext') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/SystemOperationContext.php';
+		}
+
+		// gate 23: integriq's inbound credential checks run in OpenRegister's
+		// AuthorizationService. These are the REAL files, copied byte for byte
+		// from openregister development 75088d6237 (#4361 landed), so the
+		// tests verify real signed tokens against OpenRegister's own code and
+		// not against a double. ConsumerMapper is the one stand-in: a required
+		// constructor argument integriq never lets the service read. Order
+		// matters: interfaces and value classes before the service.
+		foreach (
+			[
+				'Exception/AuthenticationException',
+				'Db/ConsumerMapper',
+				'Service/Consumer/ConsumerSource',
+				'Service/Consumer/ResolvedConsumer',
+				'Service/Consumer/RsaJwsVerifier',
+				'Service/Consumer/JwtValidator',
+				'Service/Consumer/EndpointAllowList',
+				'Service/AuthorizationService',
+			] as $authStub
+		) {
+			$authClass = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $authStub);
+			if (class_exists($authClass) === false && interface_exists($authClass) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/' . $authStub . '.php';
+			}
 		}
 
 		// The abstract base is a copy of OpenRegister's: it implements the
@@ -287,6 +323,23 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/SchemaMapper.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Service\\File\\FileTarget') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileTarget.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\File\\FileTransfer') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileTransfer.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\File\\FileUpload') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileUpload.php';
+		}
+
+		// The event apps contribute mapping Twig functions on.
+		if (class_exists('OCA\\OpenRegister\\Service\\RegisterMappingFunctionsEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterMappingFunctionsEvent.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\FileService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/FileService.php';
 		}
@@ -320,6 +373,12 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// pre-existing, previously-unsurfaced gap.
 		if ($ncPresent === false && class_exists('OC\\AppFramework\\Http') === false) {
 			require_once $stubsDir . '/OC/AppFramework/Http.php';
+		}
+
+		// OC\AppFramework\DependencyInjection\DIContainer: the declared type of
+		// App::$container on NC 35, absent from nextcloud/ocp. Bare mode only.
+		if ($ncPresent === false && class_exists('OC\\AppFramework\\DependencyInjection\\DIContainer') === false) {
+			require_once $stubsDir . '/OC/AppFramework/DependencyInjection/DIContainer.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\OrganisationService') === false) {
@@ -431,16 +490,48 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletingEvent.php';
 		}
 
-		if (interface_exists('OCA\\OpenRegister\\Service\\Notification\\RecipientResolverInterface') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/RecipientResolverInterface.php';
+		if (class_exists('OCA\\OpenRegister\\Event\\ObjectLeavingEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectLeavingEvent.php';
 		}
 
-		// OpenRegister's scheduled-notification grammar, copied verbatim from
-		// openregister development (a5832f2498) so the register's scheduled
-		// rules are parsed and matched by the code that runs them live.
-		foreach (['ScheduledFilterGrammar', 'ScheduledFilterParser', 'ScheduledFilterEvaluator', 'ForcedChannelPolicy', 'NotificationAnnotationValidator'] as $notificationClass) {
-			if (class_exists('OCA\\OpenRegister\\Service\\Notification\\'.$notificationClass) === false) {
-				require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/'.$notificationClass.'.php';
+		if (interface_exists('OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Notifications/Service/Notification/RecipientResolverInterface.php';
+		}
+
+		// OpenRegister's scheduled-notification grammar and its annotation
+		// validator with the rule validators it delegates to, copied verbatim
+		// from openregister main (0f8e856049) so the register's scheduled
+		// rules are validated, parsed and matched by the code that runs them
+		// live. Interfaces first: the validator implements one.
+		if (interface_exists('OCA\\OpenRegister\\Service\\Notification\\ReferencedAddressNotifierInterface') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/ReferencedAddressNotifierInterface.php';
+		}
+
+		$notificationClasses = [
+			'NotificationAnnotationValidatorInterface',
+			'ScheduledFilterGrammar',
+			'ScheduledFilterPosition',
+			'ScheduledFilterClause',
+			'ScheduledFilterDates',
+			'ScheduledFilterParser',
+			'ScheduledFilterTarget',
+			'ScheduledFilterEvaluator',
+			'ForcedChannelPolicy',
+			'DeclaredTrigger',
+			'RecipientEntry',
+			'NotificationRuleContext',
+			'NotificationSchemaFacts',
+			'NotificationTriggerValidator',
+			'NotificationRecipientValidator',
+			'NotificationContentValidator',
+			'NotificationDigestValidator',
+			'NotificationTransportValidator',
+			'NotificationAnnotationValidator',
+		];
+		foreach ($notificationClasses as $notificationClass) {
+			$notificationFqcn = 'OCA\\OpenRegister\\Notifications\\Service\\Notification\\'.$notificationClass;
+			if (class_exists($notificationFqcn) === false && interface_exists($notificationFqcn) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/Notifications/Service/Notification/'.$notificationClass.'.php';
 			}
 		}
 
@@ -516,6 +607,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// must exist before they are parsed — exactly the compile-time
 		// reference the runtime `class_exists()` guard in Application.php
 		// exists to avoid resolving on an instance without a flow engine.
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowNodeCall') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowNodeCall.php';
+		}
+
 		if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowNode') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowNode.php';
 		}

@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\Task\TaskService as ORTaskService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
+use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -61,7 +62,7 @@ use Throwable;
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */
-class ApprovalService {
+class ApprovalService implements ApprovalServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding approval requests.
@@ -80,13 +81,6 @@ class ApprovalService {
 	public const SCHEMA = 'approval_request';
 
 	/**
-	 * Default suspension TTL (24 hours) when a rule/synchronization does not configure one.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_TTL_SECONDS = 86400;
-
-	/**
 	 * Request/response header names (lowercase) stripped from a persisted
 	 * snapshot before it is written — REQ-001's "sensitive headers" hard
 	 * requirement (design.md Security Considerations).
@@ -94,6 +88,14 @@ class ApprovalService {
 	 * @var array<int, string>
 	 */
 	private const STRIPPED_HEADERS = ['authorization', 'proxy-authorization', 'cookie', 'x-api-key'];
+
+	/**
+	 * The shared task mirroring each approval request (hitl-on-shared-tasks).
+	 *
+	 * @var ApprovalTaskMirror
+	 */
+	private readonly ApprovalTaskMirror $taskMirror;
+
 
 	/**
 	 * Constructor.
@@ -112,6 +114,8 @@ class ApprovalService {
 	 *                                        (hitl-on-shared-tasks D-1). Nullable + defaulted for the same
 	 *                                        positional-test reason; absent, no mirror exists and the approval
 	 *                                        flow is unchanged.
+	 * @param IL10N|null $l10n Translates the mirror's title and description (hitl-on-shared-tasks 2.4).
+	 *                         Absent, the mirror carries the English text.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -121,8 +125,10 @@ class ApprovalService {
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
 		private readonly ?ExecutionTraceService $executionTraceService = null,
-		private readonly ?ORTaskService $taskService = null,
+		?ORTaskService $taskService = null,
+		?IL10N $l10n = null,
 	) {
+		$this->taskMirror = new ApprovalTaskMirror(taskService: $taskService, l10n: $l10n, logger: $logger);
 	}//end __construct()
 
 	/**
@@ -167,6 +173,11 @@ class ApprovalService {
 			// SAME trace instead of creating a disconnected one.
 			$snapshot['traceId'] = $trace->getTraceId();
 			$snapshot['traceSteps'] = $trace->getSteps();
+			if ($trace->getInboundOtelTraceId() !== null) {
+				// The caller's W3C trace survives the suspension (REQ-OTEL-004).
+				$snapshot['otelTraceId'] = $trace->getInboundOtelTraceId();
+				$snapshot['parentSpanId'] = $trace->getParentSpanId();
+			}
 		}
 
 		$record = $this->objectService->saveObject(
@@ -202,15 +213,15 @@ class ApprovalService {
 			}
 		}
 
-		$record = $this->mirrorIntoSharedTask(approvalRequest: $record);
-		$this->notifyApprovers(approvalRequest: $record);
+		$record = $this->announce(approvalRequest: $record);
 
 		return $record;
 	}//end suspend()
 
 	/**
 	 * Hand a just-created, pending approval_request to its approvers: mirror
-	 * it into one shared task, then notify the approver group. Every suspend
+	 * it into one shared task offered to the approver group, or notify the
+	 * group directly when there is no offered mirror. Every suspend
 	 * path ends here; {@see SynchronizationApprovalGate} calls it for the
 	 * synchronization gate.
 	 *
@@ -222,6 +233,15 @@ class ApprovalService {
 	 */
 	public function announce(ObjectEntity $approvalRequest): ObjectEntity {
 		$record = $this->mirrorIntoSharedTask(approvalRequest: $approvalRequest);
+
+		// Offered to the approver pool, the mirror is announced by
+		// OpenRegister's own pool notification; the imperative dispatch
+		// only runs when that did not happen, so approvers are never left
+		// unnotified (hitl-on-shared-tasks 2.3).
+		if ($this->taskMirror->offer(data: $record->getObject()) === true) {
+			return $record;
+		}
+
 		$this->notifyApprovers(approvalRequest: $record);
 
 		return $record;
@@ -276,8 +296,7 @@ class ApprovalService {
 			schema: self::SCHEMA
 		);
 
-		$record = $this->mirrorIntoSharedTask(approvalRequest: $record);
-		$this->notifyApprovers(approvalRequest: $record);
+		$record = $this->announce(approvalRequest: $record);
 
 		return $record;
 	}//end suspendForFlow()
@@ -288,7 +307,7 @@ class ApprovalService {
 	 * `approval_request` carrying `engineRunUuid`/`signalNodeId` instead of
 	 * `flowRunId`/`resumeStepOrder`, and notify the configured approver
 	 * group. The engine run resumes through
-	 * `FlowRunSignalService::signalAs()` (delivered by
+	 * `FlowRunSignalService::answerByUuid()` (delivered by
 	 * `ApprovalsController`), never through a FlowToken rehydration — the
 	 * engine holds the run's own state, so `snapshot` stays empty and this
 	 * record remains purely the human-decision system of record
@@ -350,8 +369,7 @@ class ApprovalService {
 			schema: self::SCHEMA
 		);
 
-		$record = $this->mirrorIntoSharedTask(approvalRequest: $record);
-		$this->notifyApprovers(approvalRequest: $record);
+		$record = $this->announce(approvalRequest: $record);
 
 		return $record;
 	}//end suspendForEngineRun()
@@ -404,8 +422,7 @@ class ApprovalService {
 			schema: self::SCHEMA
 		);
 
-		$record = $this->mirrorIntoSharedTask(approvalRequest: $record);
-		$this->notifyApprovers(approvalRequest: $record);
+		$record = $this->announce(approvalRequest: $record);
 
 		return $record;
 	}//end suspendForSubscription()
@@ -480,28 +497,51 @@ class ApprovalService {
 			return null;
 		}
 
-		return new ExecutionTraceContext(
+		$trace = new ExecutionTraceContext(
 			entryPoint: 'endpoint',
 			traceId: $snapshot['traceId'],
 			priorSteps: ($snapshot['traceSteps'] ?? [])
 		);
+		if (is_string($snapshot['otelTraceId'] ?? null) === true && $snapshot['otelTraceId'] !== '') {
+			$trace->setOtelTraceId(otelTraceId: $snapshot['otelTraceId']);
+		}
+
+		if (is_string($snapshot['parentSpanId'] ?? null) === true && preg_match('/^[0-9a-f]{16}$/', $snapshot['parentSpanId']) === 1) {
+			$trace->setParentSpanId(parentSpanId: $snapshot['parentSpanId']);
+		}
+
+		return $trace;
 
 	}//end rehydrateTraceContext()
 
 	/**
 	 * Find an approval_request by id.
 	 *
-	 * @param string $id The approval_request uuid.
+	 * Within the caller's organisation by default: a request of another
+	 * organisation answers 404. `$asSystem` reads across organisations, for a
+	 * path that runs without a user or re-reads a request already found in scope.
+	 *
+	 * @param string $id       The approval_request uuid.
+	 * @param bool   $asSystem Whether to read without the organisation filter.
 	 *
 	 * @return ObjectEntity
 	 *
 	 * @throws ApprovalStateException (404) When no such request exists.
 	 *
 	 * @spec openspec/changes/archive/2026-07-15-hitl-approval-rule-action/design.md#api-design
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
-	public function find(string $id): ObjectEntity {
+	public function find(string $id, bool $asSystem = false): ObjectEntity {
 		try {
-			return $this->objectService->find(id: $id, register: self::REGISTER, schema: self::SCHEMA, _rbac: false, _multitenancy: false);
+			// RBAC stays off: the caller's integriq action check is the gate for
+			// these objects. The organisation filter is off only for a system read.
+			return $this->objectService->find(
+				id: $id,
+				register: self::REGISTER,
+				schema: self::SCHEMA,
+				_rbac: false,
+				_multitenancy: ($asSystem === false)
+			);
 			// Throwable alone: DoesNotExistException is a Throwable, so naming it
 			// separately caught nothing extra.
 		} catch (Throwable $e) {
@@ -603,7 +643,7 @@ class ApprovalService {
 			uuid: $approvalRequest->getUuid()
 		);
 
-		$this->closeSharedTask(data: $data, outcome: 'transition:approved', actorUid: $approver->getUID());
+		$this->taskMirror->close(data: $data, outcome: 'transition:approved', actorUid: $approver->getUID());
 
 		return $saved;
 	}//end completeApproval()
@@ -657,7 +697,7 @@ class ApprovalService {
 			$mirrorOutcome = 'dead_letter';
 		}
 
-		$this->closeSharedTask(data: $data, outcome: $mirrorOutcome, actorUid: $approver->getUID());
+		$this->taskMirror->close(data: $data, outcome: $mirrorOutcome, actorUid: $approver->getUID());
 
 		return $saved;
 	}//end reject()
@@ -696,28 +736,83 @@ class ApprovalService {
 				continue;
 			}
 
-			$onTimeout = (string)($data['onTimeout'] ?? 'error');
-
-			$data['status'] = 'expired';
-			if ($onTimeout === 'dead_letter') {
-				$data['status'] = 'dead_letter';
+			if ($this->sharedSweepOwns(data: $data) === true) {
+				continue;
 			}
 
-			$this->objectService->saveObject(
-				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $approvalRequest->getUuid()
-			);
+			$saved = $this->expireRecord(approvalRequest: $approvalRequest);
 
 			$swept++;
-			if ($onTimeout === 'dead_letter') {
+			if (($saved->getObject()['status'] ?? '') === 'dead_letter') {
 				$deadLettered++;
 			}
 		}//end foreach
 
 		return ['swept' => $swept, 'deadLettered' => $deadLettered];
 	}//end sweepExpired()
+
+	/**
+	 * Resolve a pending record whose mirror OpenRegister's timer sweep
+	 * closed: expired, or dead-lettered when `onTimeout` says so, exactly
+	 * as the local sweep would (hitl-on-shared-tasks 2.1).
+	 *
+	 * @param ObjectEntity $approvalRequest The pending approval_request.
+	 *
+	 * @return ObjectEntity The resolved record.
+	 *
+	 * @spec openspec/specs/hitl-on-shared-tasks/spec.md#requirement-the-shared-sweep-owns-the-mirrors-expiry
+	 */
+	public function expireFromSharedTask(ObjectEntity $approvalRequest): ObjectEntity {
+		return $this->expireRecord(approvalRequest: $approvalRequest);
+
+	}//end expireFromSharedTask()
+
+	/**
+	 * Whether OpenRegister's timer sweep owns this row's expiry: the row is
+	 * mirrored, its `onTimeout` travelled with the mirror, and the mirror is
+	 * still open. Pre-seam rows, rows whose behaviour stayed app-local and
+	 * rows whose mirror ended without a decision (cancelled, terminated)
+	 * remain the local sweep's, so none of them stays pending forever.
+	 *
+	 * @param array $data The approval_request object data.
+	 *
+	 * @return bool True when the local sweep must leave the row alone.
+	 *
+	 * @spec openspec/specs/hitl-on-shared-tasks/spec.md#requirement-the-shared-sweep-owns-the-mirrors-expiry
+	 */
+	private function sharedSweepOwns(array $data): bool {
+		$taskUuid = (string)($data['taskUuid'] ?? '');
+
+		return $taskUuid !== ''
+			&& $this->taskMirror->isShared(behaviour: (string)($data['onTimeout'] ?? '')) === true
+			&& $this->taskMirror->isOpen(taskUuid: $taskUuid) === true;
+
+	}//end sharedSweepOwns()
+
+	/**
+	 * Mark a pending record expired, or dead-lettered when `onTimeout` says so.
+	 *
+	 * @param ObjectEntity $approvalRequest The pending approval_request.
+	 *
+	 * @return ObjectEntity The saved record.
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	private function expireRecord(ObjectEntity $approvalRequest): ObjectEntity {
+		$data = $approvalRequest->getObject();
+		$data['status'] = 'expired';
+		if ((string)($data['onTimeout'] ?? 'error') === 'dead_letter') {
+			$data['status'] = 'dead_letter';
+		}
+
+		return $this->objectService->saveObject(
+			object: $data,
+			register: self::REGISTER,
+			schema: self::SCHEMA,
+			uuid: $approvalRequest->getUuid()
+		);
+
+	}//end expireRecord()
 
 	/**
 	 * List approval_request rows visible to the given user: every row for
@@ -841,27 +936,18 @@ class ApprovalService {
 	 *
 	 * @return ObjectEntity The record, carrying `taskUuid` when the mirror was created.
 	 *
-	 * @spec openspec/changes/hitl-on-shared-tasks/specs/hitl-on-shared-tasks/spec.md#requirement-every-suspension-mirrors-one-shared-task
+	 * @spec openspec/specs/hitl-on-shared-tasks/spec.md#requirement-every-suspension-mirrors-one-shared-task
 	 */
 	private function mirrorIntoSharedTask(ObjectEntity $approvalRequest): ObjectEntity {
-		if ($this->taskService === null) {
+		$data = $approvalRequest->getObject();
+		$taskUuid = $this->taskMirror->create(data: $data, approvalRequestId: (string)$approvalRequest->getUuid());
+		if ($taskUuid === null) {
 			return $approvalRequest;
 		}
 
-		$data = $approvalRequest->getObject();
-		$actor = (string)($data['requesterUserId'] ?? '');
-		if ($actor === '') {
-			$actor = 'integriq';
-		}
+		$data['taskUuid'] = $taskUuid;
 
 		try {
-			$task = $this->taskService->import(
-				data: $this->sharedTaskData(data: $data, approvalRequestId: (string)$approvalRequest->getUuid()),
-				actor: $actor
-			);
-
-			$data['taskUuid'] = (string)$task->getUuid();
-
 			return $this->objectService->saveObject(
 				object: $data,
 				register: self::REGISTER,
@@ -870,103 +956,13 @@ class ApprovalService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'ApprovalService: could not mirror the approval into the shared task service: ' . $e->getMessage(),
+				'ApprovalService: could not link the shared task to the approval request: ' . $e->getMessage(),
 				['approvalRequest' => $approvalRequest->getUuid()]
 			);
 
 			return $approvalRequest;
 		}
 	}//end mirrorIntoSharedTask()
-
-	/**
-	 * The shared-task payload a pending approval_request mirrors to.
-	 *
-	 * `onTimeout`/`onReject` travel only when they are in the shared
-	 * vocabulary (`skip`|`error`|`dead_letter`); anything else stays an
-	 * app-local behaviour and the mirror carries none.
-	 *
-	 * @param array $data The approval_request object data.
-	 * @param string $approvalRequestId The record uuid the task links back to.
-	 *
-	 * @return array<string, mixed> The task creation payload.
-	 *
-	 * @spec openspec/changes/hitl-on-shared-tasks/specs/hitl-on-shared-tasks/spec.md#requirement-every-suspension-mirrors-one-shared-task
-	 */
-	private function sharedTaskData(array $data, string $approvalRequestId): array {
-		$payload = [
-			'state' => 'enabled',
-			'title' => 'Approval request',
-			'description' => 'Approve or reject this request in Integriq. Your decision resumes the suspended run.',
-			'performerType' => 'user',
-			'appId' => 'integriq',
-			'metadata' => [
-				'kind' => 'approval_request',
-				'approvalRequestId' => $approvalRequestId,
-			],
-		];
-
-		if ((string)($data['approverGroup'] ?? '') !== '') {
-			$payload['candidateGroups'] = [(string)$data['approverGroup']];
-		}
-
-		if ((string)($data['requesterUserId'] ?? '') !== '') {
-			$payload['requester'] = (string)$data['requesterUserId'];
-		}
-
-		if ((string)($data['expiresAt'] ?? '') !== '') {
-			$payload['expiresAt'] = (string)$data['expiresAt'];
-			$onTimeout = (string)($data['onTimeout'] ?? '');
-			if (in_array($onTimeout, ['skip', 'error', 'dead_letter'], true) === true) {
-				$payload['onTimeout'] = $onTimeout;
-			}
-		}
-
-		$onReject = (string)($data['onReject'] ?? '');
-		if (in_array($onReject, ['skip', 'error', 'dead_letter'], true) === true) {
-			$payload['onReject'] = $onReject;
-		}
-
-		return $payload;
-	}//end sharedTaskData()
-
-	/**
-	 * Close the mirrored shared task after a decision resolved the record
-	 * (hitl-on-shared-tasks D-4), through the shared outcome path: the
-	 * decision was already authorized by this service's own two-layer model,
-	 * and the mirror has no assignee for a completion check to pass.
-	 *
-	 * A missing mirror (`taskUuid` absent: pre-seam rows, or a failed
-	 * mirror) and a mirror already closed by the shared sweep are both
-	 * fine; any failure is logged and swallowed (D-5).
-	 *
-	 * @param array $data The resolved approval_request object data.
-	 * @param string $outcome The shared outcome (`transition:approved`, `transition:rejected` or `dead_letter`).
-	 * @param string $actorUid The deciding user's uid, recorded as the source.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/hitl-on-shared-tasks/specs/hitl-on-shared-tasks/spec.md#requirement-a-decision-closes-the-mirrored-task
-	 */
-	private function closeSharedTask(array $data, string $outcome, string $actorUid): void {
-		$taskUuid = (string)($data['taskUuid'] ?? '');
-		if ($this->taskService === null || $taskUuid === '') {
-			return;
-		}
-
-		try {
-			$this->taskService->applyTimerOutcome(
-				uuid: $taskUuid,
-				outcome: $outcome,
-				source: 'integriq:' . $actorUid,
-				reason: sprintf("Approval request resolved as '%s'.", (string)($data['status'] ?? ''))
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'ApprovalService: could not close the mirrored shared task: ' . $e->getMessage(),
-				['taskUuid' => $taskUuid]
-			);
-		}
-	}//end closeSharedTask()
 
 	/**
 	 * Strip sensitive headers (at minimum `Authorization`) from a FlowToken

@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
-use OCA\Integriq\Service\ConnectionRegistryService;
+use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
@@ -75,7 +75,7 @@ class ConnectionStatusReportedListener implements IEventListener {
 		}
 
 		try {
-			$this->container->get(ConnectionRegistryService::class)->report(
+			$this->container->get(ConnectionRegistryServiceInterface::class)->report(
 				app: $event->app,
 				key: $event->key,
 				status: $event->status,

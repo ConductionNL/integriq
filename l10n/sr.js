@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "синхронизације",
         "A signing secret is configured (hidden).": "Тајна за потписивање је конфигурисана (скривена).",
         "Copied to clipboard": "Копирано у оставу",
         "Copy": "Копирај",

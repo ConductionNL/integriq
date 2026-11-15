@@ -26,9 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Outbound\Call\CallRecorder;
-use OCA\Integriq\Outbound\Call\CallReplayService;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Outbound\Call\CallRecorderInterface;
+use OCA\Integriq\Outbound\Call\CallReplayServiceInterface;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -68,18 +68,18 @@ class CallLogController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal.
-	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
-	 * @param CallRecorder $recorder Reads the call records.
-	 * @param CallReplayService $replayService Replays, dry runs and hand-fires.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
+	 * @param CallRecorderInterface $recorder Reads the call records.
+	 * @param CallReplayServiceInterface $replayService Replays, dry runs and hand-fires.
 	 * @param IL10N $l Translations.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
-		private readonly CallRecorder $recorder,
-		private readonly CallReplayService $replayService,
+		private readonly ActionAuthServiceInterface $actionAuth,
+		private readonly CallRecorderInterface $recorder,
+		private readonly CallReplayServiceInterface $replayService,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -109,9 +109,18 @@ class CallLogController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: self::ACTION_READ);
 
 		try {
-			$call = $this->recorder->read($id);
+			$call = $this->recorder->readInOrganisation(uuid: $id);
 		} catch (DoesNotExistException) {
 			return new JSONResponse(['error' => $this->l->t('No such call.')], Http::STATUS_NOT_FOUND);
+		}
+
+		// The request a failure keeps for its replay is readable only with the
+		// replay permission, and only for a call captured inside an
+		// investigation window (REQ-OCD-009).
+		$mayReadReplayRequest = ($this->actionAuth->can(user: $user, action: self::ACTION_REPLAY) === true
+			&& ($call['bodyCaptured'] ?? false) === true);
+		if ($mayReadReplayRequest === false) {
+			unset($call['replayRequest']);
 		}
 
 		return new JSONResponse(['id' => $id, 'call' => $call]);
@@ -141,6 +150,7 @@ class CallLogController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: self::ACTION_READ);
 
 		try {
+			$this->recorder->readInOrganisation(uuid: $id);
 			$preview = $this->replayService->preview($id);
 		} catch (DoesNotExistException) {
 			return new JSONResponse(['error' => $this->l->t('No such call.')], Http::STATUS_NOT_FOUND);
@@ -188,6 +198,11 @@ class CallLogController extends Controller {
 		];
 
 		try {
+			// Another organisation's call answers as an unknown one, before anything replays.
+			foreach ($ids as $callId) {
+				$this->recorder->readInOrganisation(uuid: (string)$callId);
+			}
+
 			$result = $this->replayService->replayAll(array_map('strval', $ids), $user->getUID(), $options);
 		} catch (DoesNotExistException) {
 			return new JSONResponse(['error' => $this->l->t('No such call.')], Http::STATUS_NOT_FOUND);

@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\UwlrEduVService;
+use OCA\Integriq\Service\UwlrEduVServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -56,12 +56,12 @@ class UwlrEduVRetryJob extends TimedJob {
 	 * UwlrEduVRetryJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param UwlrEduVService $uwlrEduVService The UWLR/Edu-V service.
+	 * @param UwlrEduVServiceInterface $uwlrEduVService The UWLR/Edu-V service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly UwlrEduVService $uwlrEduVService,
+		private readonly UwlrEduVServiceInterface $uwlrEduVService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

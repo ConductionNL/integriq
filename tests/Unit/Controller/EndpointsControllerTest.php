@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\EndpointsController;
-use OCA\Integriq\Service\AuthorizationService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EndpointCacheService;
 use OCA\Integriq\Service\EndpointCorsPolicy;
 use OCA\Integriq\Service\EndpointService;
@@ -81,7 +81,7 @@ class EndpointsControllerTest extends TestCase {
 			'integriq',
 			$request,
 			$this->createMock(EndpointService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$this->createMock(ObjectService::class),
 			$this->createMock(EndpointCacheService::class),
 			$this->createMock(LoggerInterface::class),
@@ -233,7 +233,7 @@ class EndpointsControllerTest extends TestCase {
 		// AuthorizationService::corsAfterController() reads Response::getHeaders(),
 		// which needs a live \OC server; this double does what it does for a
 		// credential-free answer: echo the caller's origin.
-		$authorization = $this->createMock(AuthorizationService::class);
+		$authorization = $this->createMock(OpenRegisterCredentialBridge::class);
 		$authorization->method('corsAfterController')->willReturnCallback(
 			function (IRequest $request, Response $response) use ($server) {
 				if (isset($server['HTTP_ORIGIN']) === true) {
@@ -341,7 +341,7 @@ class EndpointsControllerTest extends TestCase {
 			'integriq',
 			$request,
 			$this->createMock(EndpointService::class),
-			$this->createMock(AuthorizationService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
 			$this->createMock(ObjectService::class),
 			$this->createMock(EndpointCacheService::class),
 			$this->createMock(LoggerInterface::class),

@@ -1,7 +1,7 @@
 # connector-catalog Specification
 
 ## Purpose
-The Store: one card per adapter integriq ships, per seeded source and per template in the connector template library, with its category, standards, tier and status, and an Enable or Instantiate action. Templates are listed without being installed; a source exists only after Instantiate. Placeholders and duplicates are not counted.
+The Marketplace: one card per adapter integriq ships, per seeded source and per template in the connector template library, with its category, standards, tier and status, and an Enable or Instantiate action. Templates are listed without being installed; a source exists only after Instantiate. Placeholders and duplicates are not counted.
 
 ## Requirements
 
@@ -78,18 +78,18 @@ The system MUST assemble catalog entries from exactly one service, `CatalogRegis
 ### Requirement: The Store lists templates it does not install (REQ-CCX-001)
 
 The catalogue registry MUST list every template in
-`lib/Settings/connector-templates/` as a Store card, and the register import
+`lib/Settings/connector-templates/` as a Marketplace card, and the register import
 MUST NOT create a `source` object for any of them. Instantiating a template
-from the Store MUST create one `source` from that template's payload.
+from the Marketplace MUST create one `source` from that template's payload.
 
 #### Scenario: a fresh install has no template sources
 - GIVEN a fresh install with the template library present
 - WHEN an administrator opens the Sources page
-- THEN no source from the library is listed, and the Store shows the library's cards
+- THEN no source from the library is listed, and the Marketplace shows the library's cards
 - e2e: `tests/e2e/connector-catalogue.spec.ts`
 
 #### Scenario: an administrator instantiates a Salesforce template
-- GIVEN the Salesforce card in the Store
+- GIVEN the Salesforce card in the Marketplace
 - WHEN an administrator chooses Instantiate
 - THEN one Salesforce source exists with the template's base URL and auth scheme, and no secret
 - e2e: `tests/e2e/connector-catalogue.spec.ts`
@@ -103,7 +103,7 @@ curated template or a recorded reason in the back-office README.
 
 #### Scenario: a buyer finds the GWS connector and its standard
 - GIVEN a municipality evaluating integriq against the Stein requirements
-- WHEN an administrator searches the Store for GWS
+- WHEN an administrator searches the Marketplace for GWS
 - THEN either a card names Centric GWS with the standard it is reached over, or the back-office README states why no template exists
 - e2e: `tests/e2e/connector-catalogue.spec.ts`
 
@@ -119,11 +119,11 @@ Generated templates MUST be produced from a committed snapshot of the
 APIs.guru OpenAPI directory, only for entries on
 `lib/Settings/connector-templates/saas/allow-list.json`. Each MUST carry
 `tier: generated` and the snapshot date, MUST name the auth scheme and MUST
-NOT carry a credential. The Store card MUST say the template is generated.
+NOT carry a credential. The Marketplace card MUST say the template is generated.
 
 #### Scenario: Google Sheets, Salesforce and Slack are in the Store
 - GIVEN the first allow-list
-- WHEN an administrator opens the Store
+- WHEN an administrator opens the Marketplace
 - THEN Google Sheets and Slack are listed, each marked generated with its snapshot date, and Salesforce is listed as a checked template, because the directory's only Salesforce entry is Einstein Vision and Language, not the CRM API
 - e2e: `tests/e2e/connector-catalogue.spec.ts`
 
@@ -135,13 +135,13 @@ NOT carry a credential. The Store card MUST say the template is generated.
 
 ### Requirement: The Store counts only real connectors, once each (REQ-CCX-004)
 
-The Store MUST NOT list a source whose slug starts with `environment-`, and
+The Marketplace MUST NOT list a source whose slug starts with `environment-`, and
 MUST list a system that has both an adapter and a template once, as the
-adapter. Every card MUST carry its tier, and the Store MUST offer a filter per
+adapter. Every card MUST carry its tier, and the Marketplace MUST offer a filter per
 template tier, so the count per tier is the filtered count.
 
 #### Scenario: placeholders are gone from the count
 - GIVEN a fresh install
-- WHEN an administrator opens the Store
+- WHEN an administrator opens the Marketplace
 - THEN no card names `environment-local-source` or `environment-acceptance-source`, and SmartDocuments and Xential appear once each
 - e2e: `tests/e2e/connector-catalogue.spec.ts`

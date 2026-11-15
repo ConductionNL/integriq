@@ -29,9 +29,9 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Exception\PaymentProviderException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\PaymentIntentService;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\PaymentIntentServiceInterface;
+use OCA\Integriq\Service\WebhookSignatureServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -59,20 +59,20 @@ class PaymentsController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param PaymentIntentService $paymentIntentService Create + webhook business logic.
-	 * @param WebhookSignatureService $signatureService HMAC verification for the inbound webhook.
+	 * @param PaymentIntentServiceInterface $paymentIntentService Create + webhook business logic.
+	 * @param WebhookSignatureServiceInterface $signatureService HMAC verification for the inbound webhook.
 	 * @param IUserSession $userSession The user session (create endpoint).
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PaymentIntentService $paymentIntentService,
-		private readonly WebhookSignatureService $signatureService,
+		private readonly PaymentIntentServiceInterface $paymentIntentService,
+		private readonly WebhookSignatureServiceInterface $signatureService,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -118,6 +118,48 @@ class PaymentsController extends Controller {
 	}//end create()
 
 	/**
+	 * GET /api/payments/sources/{slug}/terminals — the point-of-sale terminals
+	 * of a payment source, for an administrator registering a device.
+	 *
+	 * Gated by the same `payments.create` action as payment creation (a user
+	 * without it gets 403). An unknown source answers 404, a provider failure
+	 * 502; a binding without point-of-sale terminals answers an empty list.
+	 *
+	 * @param string $slug The payment source slug.
+	 *
+	 * @return JSONResponse `{terminals: [{terminalId, label, status}]}`.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function terminals(string $slug): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: 'payments.create');
+
+		try {
+			$terminals = $this->paymentIntentService->listTerminals(sourceSlug: $slug);
+		} catch (PaymentProviderException $exception) {
+			$this->logger->warning('[PaymentsController] terminal list failed: ' . $exception->getMessage());
+			return new JSONResponse(
+				['error' => 'payment_provider_unavailable', 'message' => $exception->getMessage()],
+				Http::STATUS_BAD_GATEWAY
+			);
+		}
+
+		if ($terminals === null) {
+			return new JSONResponse(['error' => 'not_found', 'message' => $this->l->t('Payment source not found')], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse(['terminals' => $terminals]);
+
+	}//end terminals()
+
+	/**
 	 * Receive a provider payment-status webhook.
 	 *
 	 * Gated by the payment source's `configuration.webhookSignature` (HMAC,
@@ -152,7 +194,7 @@ class PaymentsController extends Controller {
 		$scheme = ($webhookConfig['scheme'] ?? 'openconnector');
 		$secret = (string)($webhookConfig['secret'] ?? '');
 		$headerName = ($webhookConfig['header'] ?? 'X-OpenConnector-Signature');
-		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
+		$tolerance = (int)($webhookConfig['toleranceSeconds'] ?? WebhookSignatureServiceInterface::DEFAULT_TOLERANCE_SECONDS);
 
 		$headerValue = (string)$this->request->getHeader($headerName);
 

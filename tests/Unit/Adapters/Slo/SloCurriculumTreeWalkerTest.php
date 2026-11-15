@@ -15,6 +15,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-the-tree-walk-follows-the-set-profile-req-005
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -24,10 +27,10 @@ namespace OCA\Integriq\Tests\Unit\Adapters\Slo;
 use OCA\Integriq\Adapters\Slo\JsonTagReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
+use OCA\Integriq\Adapters\Slo\SloCurriculumException;
 use OCA\Integriq\Adapters\Slo\SloCurriculumNodeReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistry;
 use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalker;
-use OCA\Integriq\Exception\SloCurriculumException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -307,4 +310,38 @@ class SloCurriculumTreeWalkerTest extends TestCase {
 		$this->expectException(SloCurriculumException::class);
 		$this->walker()->fetchTree($client, 'x');
 	}//end testNonObjectAnswersThrow()
+	/**
+	 * A reference that names no uuid is counted malformed and never looked up.
+	 *
+	 * @return void
+	 */
+	public function testAReferenceWithoutAUuidIsMalformedAndNotFetched(): void {
+		$client = $this->createMock(SloCurriculumClient::class);
+		$client->expects($this->never())->method('fetch');
+
+		$result = $this->walker()->walk(
+			[['uuid' => 'root', 'title' => 'root', 'D' => [['@type' => 'D'], ['@type' => 'D', 'uuid' => 'd2', 'title' => 'kept']]]],
+			['levels' => ['D'], 'leafTypes' => [], 'leafNiveauFilter' => [], 'fields' => []],
+			$client,
+			false
+		);
+
+		$this->assertSame(['d2'], array_column($result['nodes'], 'sloUuid'));
+		$this->assertSame(1, $result['stats']['malformed']);
+		$this->assertSame(0, $result['stats']['expansions']);
+	}//end testAReferenceWithoutAUuidIsMalformedAndNotFetched()
+
+	/**
+	 * A collection route answered with a scalar is refused, naming the path.
+	 *
+	 * @return void
+	 */
+	public function testAScalarJsonAnswerThrows(): void {
+		$client = $this->createMock(SloCurriculumClient::class);
+		$client->method('fetch')->willReturn('42');
+
+		$this->expectException(SloCurriculumException::class);
+		$this->expectExceptionMessage('SLO answered kerndoel/ with a scalar instead of a list or an object.');
+		$this->walker()->fetchJson($client, 'kerndoel/');
+	}//end testAScalarJsonAnswerThrows()
 }//end class

@@ -3,6 +3,9 @@
 /**
  * Integriq — PKIoverheid signing-material resolver (broker, fail-closed).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * WS-Security message signing needs the PKIoverheid client certificate and its
  * private key IN-PROCESS. Per REQ-DK-005 / ADR-007 that key material MUST be
  * resolved through the OpenRegister credential broker via a `certificateRef` and
@@ -46,7 +49,7 @@ use Psr\Container\ContainerInterface;
  *
  * @spec openspec/specs/digikoppeling-adapter/spec.md
  */
-class PkiOverheidCredentialResolver {
+class PkiOverheidCredentialResolver implements PkiOverheidCredentialResolverInterface {
 
 	/**
 	 * FQCN of the OpenRegister credential broker (resolved lazily).

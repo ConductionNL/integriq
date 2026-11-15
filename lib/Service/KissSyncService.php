@@ -32,10 +32,13 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use OCA\Integriq\Exception\CallEventNotFoundException;
 use OCA\Integriq\Exception\KissProviderException;
+use OCA\Integriq\Service\Kiss\CallEventLog;
 use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
 use OCA\Integriq\Service\Kiss\KlantinteractiesProviderInterface;
 use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -51,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
-class KissSyncService {
+class KissSyncService implements KissSyncServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding KISS sources and klantcontact records.
@@ -120,6 +123,7 @@ class KissSyncService {
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
+	 * @param CallEventLog $callEvents The call event log a contact moment for a call is recorded from.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -128,6 +132,7 @@ class KissSyncService {
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
+		private readonly CallEventLog $callEvents,
 	) {
 
 	}//end __construct()
@@ -256,19 +261,77 @@ class KissSyncService {
 	 * @param array $input The push payload: `onderwerp`, `kanaal`, `tekst`, `plaatsgevondenOp`,
 	 *                     `indicatieContactGelukt`, `taal`, `betrokkene` (optional),
 	 *                     `sourceApp`, `caseReference` (optional), `caseObjectType` (optional,
-	 *                     default `zaak`).
+	 *                     default `zaak`), `callId` and `callSourceId` (optional: record
+	 *                     the contact moment for that ended CTI call).
 	 *
 	 * @return array{id: string, localUuid: string} The KISS-assigned klantcontact id and local record uuid.
 	 *
 	 * @throws KissProviderException When no active KISS source is configured, or KISS rejects the request.
+	 * @throws CallEventNotFoundException When `callId` names no single ended call.
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	public function pushCustomerContact(array $input): array {
+		// A contact moment for a call: refused before anything reaches KISS
+		// when the call has not ended, and answered with the first contact
+		// moment when the agent's panel posts it twice.
+		$call = null;
+		if ((string) ($input['callId'] ?? '') !== '') {
+			$call = $this->callEvents->findEnded(
+				callId: (string) $input['callId'],
+				sourceId: (string) ($input['callSourceId'] ?? '')
+			);
+			$recorded = $this->findByCall(call: $call);
+			if ($recorded !== null) {
+				return ['id' => (string) ($recorded->getObject()['kissId'] ?? ''), 'localUuid' => (string) $recorded->getUuid()];
+			}
+
+			$input = $this->callInput(input: $input, call: $call);
+		}
+
 		$source = $this->resolveActiveSource();
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
 
+		$payload = $this->wirePayload(input: $input);
+		$kissId = $provider->createCustomerContact(sourceConfiguration: $configuration, payload: $payload);
+
+		$onderwerpobjecten = $this->caseObjects(input: $input);
+		foreach ($onderwerpobjecten as $onderwerpobject) {
+			$provider->linkOnderwerpobject(
+				sourceConfiguration: $configuration,
+				customerContactId: $kissId,
+				caseReference: $onderwerpobject['onderwerpobjectidentificator']['objectId'],
+				caseObjectType: $onderwerpobject['onderwerpobjectidentificator']['codeObjecttype']
+			);
+		}
+
+		$sourceApp = null;
+		if (isset($input['sourceApp']) === true) {
+			$sourceApp = (string)$input['sourceApp'];
+		}
+
+		$item = $this->mirrorItem(payload: $payload, involvedParty: ($input['involvedParty'] ?? null));
+		$item['uuid'] = $kissId;
+		$item['onderwerpobjecten'] = $onderwerpobjecten;
+		$item += $this->callFields(call: $call);
+
+		$saved = $this->upsertCustomerContact(item: $item, direction: 'pushed', sourceApp: $sourceApp);
+
+		return ['id' => $kissId, 'localUuid' => $saved->getUuid()];
+	}//end pushCustomerContact()
+
+	/**
+	 * The JSON body of POST /klantcontacten for a push payload.
+	 *
+	 * @param array $input The push payload.
+	 *
+	 * @return array The klantcontact in wire shape.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	private function wirePayload(array $input): array {
 		// WIRE SHAPE, not internal shape. KlantinteractiesClient posts this array
 		// verbatim as the JSON body of POST /klantcontacten — there is no mapping
 		// layer behind it — so these keys ARE the VNG Klantinteracties field
@@ -294,50 +357,147 @@ class KissSyncService {
 			$payload['involvedParty'] = $involvedParty;
 		}
 
-		$kissId = $provider->createCustomerContact(sourceConfiguration: $configuration, payload: $payload);
+		return $payload;
 
+	}//end wirePayload()
+
+	/**
+	 * The onderwerpobjecten a push links: the case it names, if any.
+	 *
+	 * @param array $input The push payload.
+	 *
+	 * @return array<int, array{onderwerpobjectidentificator: array{objectId: string, codeObjecttype: string}}>
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	private function caseObjects(array $input): array {
 		$caseReference = (string)($input['caseReference'] ?? '');
-		$caseObjectType = (string)($input['caseObjectType'] ?? KlantinteractiesClient::DEFAULT_CASE_OBJECT_TYPE);
-		$onderwerpobjecten = [];
-		if ($caseReference !== '') {
-			$provider->linkOnderwerpobject(
-				sourceConfiguration: $configuration,
-				customerContactId: $kissId,
-				caseReference: $caseReference,
-				caseObjectType: $caseObjectType
-			);
-			$onderwerpobjecten[] = [
+		if ($caseReference === '') {
+			return [];
+		}
+
+		return [
+			[
 				'onderwerpobjectidentificator' => [
 					'objectId' => $caseReference,
-					'codeObjecttype' => $caseObjectType,
+					'codeObjecttype' => (string)($input['caseObjectType'] ?? KlantinteractiesClient::DEFAULT_CASE_OBJECT_TYPE),
 				],
-			];
-		}
+			],
+		];
 
-		$sourceApp = null;
-		if (isset($input['sourceApp']) === true) {
-			$sourceApp = (string)$input['sourceApp'];
-		}
+	}//end caseObjects()
 
+	/**
+	 * The local mirror item of a pushed klantcontact, without its KISS id,
+	 * onderwerpobjecten and call fields.
+	 *
+	 * @param array $payload       The klantcontact in wire shape.
+	 * @param mixed $involvedParty The involved party the push named, if any.
+	 *
+	 * @return array The mirror item in wire shape.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
+	 */
+	private function mirrorItem(array $payload, mixed $involvedParty): array {
 		// $payload is WIRE shape, and upsertCustomerContact() reads wire names, so
 		// the mirror item built here has to speak the same language — `betrokkenen`,
 		// not `involvedParties`, or the locally mirrored push loses its parties
 		// while the pulled copy of the same contact keeps them.
 		$item = $payload;
 		unset($item['involvedParty']);
-		$item['uuid'] = $kissId;
 		$item['registratiedatum'] = (new DateTime())->format('c');
 		$item['betrokkenen'] = [];
 		if ($involvedParty !== null) {
 			$item['betrokkenen'] = [$involvedParty];
 		}
 
-		$item['onderwerpobjecten'] = $onderwerpobjecten;
+		return $item;
 
-		$saved = $this->upsertCustomerContact(item: $item, direction: 'pushed', sourceApp: $sourceApp);
+	}//end mirrorItem()
 
-		return ['id' => $kissId, 'localUuid' => $saved->getUuid()];
-	}//end pushCustomerContact()
+	/**
+	 * The call fields of a contact moment recorded from a call.
+	 *
+	 * Not wire fields: the Klantinteracties klantcontact has no duration, so
+	 * these live on the local mirror only.
+	 *
+	 * @param array|null $call The ended call event, or null for a push without a call.
+	 *
+	 * @return array The call fields, empty without a call.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 */
+	private function callFields(?array $call): array {
+		if ($call === null) {
+			return [];
+		}
+
+		return [
+			'callId' => (string) $call['callId'],
+			'callSourceId' => (string) $call['sourceId'],
+			'durationSeconds' => max(0, (int) ($call['durationSeconds'] ?? 0)),
+		];
+
+	}//end callFields()
+
+	/**
+	 * The push input for a contact moment recorded from a call.
+	 *
+	 * A call is recorded on the phone channel, whatever the panel posted, and
+	 * took place when the PBX says, unless the panel says otherwise.
+	 *
+	 * @param array $input The push payload.
+	 * @param array $call  The ended call event.
+	 *
+	 * @return array The push payload for that call.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 */
+	private function callInput(array $input, array $call): array {
+		$input['channel'] = 'telefoon';
+		unset($input['kanaal']);
+		if ((string) ($input['occurredOn'] ?? '') === '' && (string) ($call['at'] ?? '') !== '') {
+			$input['occurredOn'] = (string) $call['at'];
+		}
+
+		return $input;
+
+	}//end callInput()
+
+	/**
+	 * The contact moment already recorded for a call, if any.
+	 *
+	 * @param array $call The ended call event.
+	 *
+	 * @return ObjectEntity|null The local mirror, or null.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 */
+	private function findByCall(array $call): ?ObjectEntity {
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_KLANTCONTACT,
+					'callId' => (string) $call['callId'],
+					'callSourceId' => (string) $call['sourceId'],
+				],
+				'limit' => 1,
+			]
+		);
+		$results = ($matches['results'] ?? $matches);
+		foreach ((array) $results as $result) {
+			$object = $result->getObject();
+			if ((string) ($object['callId'] ?? '') === (string) $call['callId']
+				&& (string) ($object['callSourceId'] ?? '') === (string) $call['sourceId']
+			) {
+				return $result;
+			}
+		}
+
+		return null;
+
+	}//end findByCall()
 
 	/**
 	 * Resolve the single active KISS source (`type=kiss`, `isEnabled=true`).
@@ -349,27 +509,16 @@ class KissSyncService {
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new KissProviderException(
 				message: 'No active KISS source is configured (register "openconnector", schema "source", '
 					. 'type "kiss", isEnabled=true). Configure one before using the KISS bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**
@@ -442,6 +591,11 @@ class KissSyncService {
 			'sourceApp' => $sourceApp,
 			'syncedAt' => (new DateTime())->format('c'),
 		];
+		foreach (['callId', 'callSourceId', 'durationSeconds'] as $callField) {
+			if (array_key_exists($callField, $item) === true) {
+				$record[$callField] = $item[$callField];
+			}
+		}
 
 		$existing = $this->findByKissId(kissId: $kissId);
 		if ($existing !== null) {

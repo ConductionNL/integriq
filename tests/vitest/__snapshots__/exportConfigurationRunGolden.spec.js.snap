@@ -1,0 +1,201 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`configuration export golden > exports as recorded 1`] = `
+[
+  {
+    "answer": "ok",
+    "errorMessage": "",
+    "exporting": false,
+    "exportingDuring": false,
+    "files": [],
+    "linksLeft": 0,
+    "selected": null,
+    "trace": [],
+  },
+  {
+    "answer": "empty body",
+    "errorMessage": "",
+    "exporting": false,
+    "exportingDuring": false,
+    "files": [],
+    "linksLeft": 0,
+    "selected": null,
+    "trace": [],
+  },
+  {
+    "answer": "server error",
+    "errorMessage": "",
+    "exporting": false,
+    "exportingDuring": false,
+    "files": [],
+    "linksLeft": 0,
+    "selected": null,
+    "trace": [],
+  },
+  {
+    "answer": "network",
+    "errorMessage": "",
+    "exporting": false,
+    "exportingDuring": false,
+    "files": [],
+    "linksLeft": 0,
+    "selected": null,
+    "trace": [],
+  },
+  {
+    "answer": "bare",
+    "errorMessage": "",
+    "exporting": false,
+    "exportingDuring": false,
+    "files": [],
+    "linksLeft": 0,
+    "selected": null,
+    "trace": [],
+  },
+  {
+    "answer": "ok",
+    "errorMessage": "",
+    "exporting": false,
+    "exportingDuring": true,
+    "files": [
+      "{
+  "configuration": {
+    "title": "Zaken"
+  },
+  "secrets": "[redacted]"
+}",
+    ],
+    "linksLeft": 0,
+    "selected": {
+      "id": "cfg-1",
+      "label": "Zaken",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/configurations/cfg-1/export",
+      ],
+      [
+        "createObjectURL",
+        "blob:1",
+        "application/json",
+      ],
+      [
+        "click",
+        "blob:1",
+        "configuration-cfg-1.json",
+        true,
+      ],
+      [
+        "revokeObjectURL",
+        "blob:1",
+        false,
+      ],
+      [
+        "success",
+        "Configuration exported",
+      ],
+      [
+        "close",
+      ],
+    ],
+  },
+  {
+    "answer": "empty body",
+    "errorMessage": "",
+    "exporting": false,
+    "exportingDuring": true,
+    "files": [
+      "null",
+    ],
+    "linksLeft": 0,
+    "selected": {
+      "id": "cfg-1",
+      "label": "Zaken",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/configurations/cfg-1/export",
+      ],
+      [
+        "createObjectURL",
+        "blob:2",
+        "application/json",
+      ],
+      [
+        "click",
+        "blob:2",
+        "configuration-cfg-1.json",
+        true,
+      ],
+      [
+        "revokeObjectURL",
+        "blob:2",
+        false,
+      ],
+      [
+        "success",
+        "Configuration exported",
+      ],
+      [
+        "close",
+      ],
+    ],
+  },
+  {
+    "answer": "server error",
+    "errorMessage": "Export failed: not allowed",
+    "exporting": false,
+    "exportingDuring": true,
+    "files": [],
+    "linksLeft": 0,
+    "selected": {
+      "id": "cfg-1",
+      "label": "Zaken",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/configurations/cfg-1/export",
+      ],
+    ],
+  },
+  {
+    "answer": "network",
+    "errorMessage": "Export failed: Network Error",
+    "exporting": false,
+    "exportingDuring": true,
+    "files": [],
+    "linksLeft": 0,
+    "selected": {
+      "id": "cfg-1",
+      "label": "Zaken",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/configurations/cfg-1/export",
+      ],
+    ],
+  },
+  {
+    "answer": "bare",
+    "errorMessage": "Export failed",
+    "exporting": false,
+    "exportingDuring": true,
+    "files": [],
+    "linksLeft": 0,
+    "selected": {
+      "id": "cfg-1",
+      "label": "Zaken",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/configurations/cfg-1/export",
+      ],
+    ],
+  },
+]
+`;

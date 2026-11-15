@@ -37,42 +37,22 @@
 			</div>
 		</div>
 
-		<div
+		<DeadLetterBulkBar
 			v-if="selected.length"
-			class="syncDeadLetters__bulk"
-			data-testid="bulk-bar">
-			<span>{{
-				t('integriq', '{count} selected', { count: selected.length })
-			}}</span>
-			<template v-if="bulkConfirm">
-				<span>{{
-					bulkConfirm === 'replay'
-						? t('integriq', 'Replay {count} items now?', {
-								count: selected.length,
-							})
-						: t('integriq', 'Discard {count} items?', {
-								count: selected.length,
-							})
-				}}</span>
-				<NcButton variant="primary" :disabled="busy" @click="commitBulk">
-					{{ t('integriq', 'Confirm') }}
-				</NcButton>
-				<NcButton :disabled="busy" @click="bulkConfirm = null">
-					{{ t('integriq', 'Cancel') }}
-				</NcButton>
-			</template>
-			<template v-else>
-				<NcButton
-					variant="primary"
-					:disabled="busy"
-					@click="bulkConfirm = 'replay'">
-					{{ t('integriq', 'Replay selected') }}
-				</NcButton>
-				<NcButton :disabled="busy" @click="bulkConfirm = 'discard'">
-					{{ t('integriq', 'Discard selected') }}
-				</NcButton>
-			</template>
-		</div>
+			block="syncDeadLetters"
+			:count="selected.length"
+			:confirming="bulkConfirm"
+			:busy="busy"
+			:replayPrompt="
+				t('integriq', 'Replay {count} items now?', {
+					count: selected.length,
+				})
+			"
+			:discardPrompt="
+				t('integriq', 'Discard {count} items?', { count: selected.length })
+			"
+			@confirm="(verb) => (bulkConfirm = verb)"
+			@commit="commitBulk" />
 
 		<NcLoadingIcon v-if="loading" :size="32" class="syncDeadLetters__loading" />
 
@@ -143,10 +123,7 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -154,12 +131,16 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import DeadLetterBulkBar from '../../components/DeadLetterBulkBar.vue'
 import SyncDeadLetterDetailModal from '../../modals/Synchronization/SyncDeadLetterDetailModal.vue'
+import bulkSelection from '../../mixins/bulkSelection.js'
+import deadLetterList from '../../mixins/deadLetterList.js'
 
 export default {
 	name: 'SyncDeadLetterPage',
 
 	components: {
+		DeadLetterBulkBar,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
@@ -168,141 +149,80 @@ export default {
 		SyncDeadLetterDetailModal,
 	},
 
+	mixins: [bulkSelection, deadLetterList],
+
 	data() {
 		return {
-			rows: [],
-			loading: false,
 			statusFilter: 'failed',
 			synchronizationFilter: '',
 			statusOptions: ['failed', 'replayed', 'discarded'],
-			selected: [],
 			detail: { open: false, entry: null },
-			bulkConfirm: null,
-			busy: false,
-			reloadTimer: null,
 		}
-	},
-
-	mounted() {
-		this.reload()
 	},
 
 	methods: {
 		t,
-		isSelected(row) {
-			return this.selected.includes(row.uuid || row.id)
-		},
 
 		/**
-		 * Toggle a row in the bulk-selection set.
-		 *
-		 * @param {object} row Dead-letter entry row.
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
-		 */
-		toggleSelect(row) {
-			const id = row.uuid || row.id
-			if (this.selected.includes(id)) {
-				this.selected = this.selected.filter((x) => x !== id)
-			} else {
-				this.selected = [...this.selected, id]
-			}
-		},
-
-		/**
-		 * Open the per-entry detail modal.
-		 *
-		 * @param {object} row Dead-letter entry row.
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
-		 */
-		openDetail(row) {
-			this.detail = { open: true, entry: row }
-		},
-
-		/**
-		 * Close the detail modal.
-		 *
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
-		 */
-		closeDetail() {
-			this.detail = { open: false, entry: null }
-		},
-
-		/**
-		 * Debounced reload used by the synchronization filter field.
-		 *
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
-		 */
-		reloadDebounced() {
-			clearTimeout(this.reloadTimer)
-			this.reloadTimer = setTimeout(() => this.reload(), 400)
-		},
-
-		/**
-		 * Fetch the sync dead-letter listing from the admin-only endpoint.
-		 *
+		 * @return {string} The list endpoint.
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
 		 */
-		async reload() {
-			this.loading = true
-			this.selected = []
-			try {
-				const params = { status: this.statusFilter }
-				if (this.synchronizationFilter) {
-					params.synchronizationId = this.synchronizationFilter
-				}
-				const res = await axios.get(
-					generateUrl('/apps/integriq/api/sync-dead-letter'),
-					{ params },
-				)
-				this.rows = res.data?.results || []
-			} catch (err) {
-				showError(t('integriq', 'Failed to load sync dead letters'))
-				this.rows = []
-			} finally {
-				this.loading = false
-			}
+		listPath() {
+			return '/apps/integriq/api/sync-dead-letter'
 		},
 
 		/**
-		 * Apply the confirmed bulk verb (replay/discard) to the selected ids.
+		 * @return {string} The detail modal prop that carries the row.
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
+		 */
+		detailKey() {
+			return 'entry'
+		},
+
+		/**
+		 * The query of the current filters.
 		 *
+		 * @return {object} The list parameters.
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
+		 */
+		listParams() {
+			const params = { status: this.statusFilter }
+			if (this.synchronizationFilter) {
+				params.synchronizationId = this.synchronizationFilter
+			}
+			return params
+		},
+
+		/**
+		 * The toast when listing fails.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
+		 */
+		listFailedText() {
+			return t('integriq', 'Failed to load sync dead letters')
+		},
+
+		/**
+		 * The path of the bulk endpoint for a verb.
+		 *
+		 * @param {string} verb The bulk verb, `replay` or `discard`.
+		 * @return {string} The path.
 		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-bulk-replay-and-discard-for-sync-item-dead-letters-req-dlr-011
 		 */
-		async commitBulk() {
-			const verb = this.bulkConfirm
-			if (!verb || !this.selected.length) {
-				return
-			}
-			this.busy = true
-			try {
-				const res = await axios.post(
-					generateUrl(`/apps/integriq/api/sync-dead-letter/${verb}`),
-					{ ids: this.selected },
-				)
-				const results = res.data?.results || {}
-				const ok = Object.values(results).filter((r) => r === 'ok').length
-				const failed = Object.keys(results).length - ok
-				if (failed > 0) {
-					showError(
-						t('integriq', '{ok} processed, {failed} failed', {
-							ok,
-							failed,
-						}),
-					)
-				} else {
-					showSuccess(t('integriq', '{ok} items processed', { ok }))
-				}
-				await this.reload()
-			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				showError(
-					t('integriq', 'Bulk action failed')
-						+ (detail ? `: ${detail}` : ''),
-				)
-			} finally {
-				this.busy = false
-				this.bulkConfirm = null
-			}
+		bulkUrl(verb) {
+			return `/apps/integriq/api/sync-dead-letter/${verb}`
+		},
+
+		/**
+		 * The toast after a bulk run without failures.
+		 *
+		 * @param {number} ok How many ids were processed.
+		 * @return {string} The toast text.
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-bulk-replay-and-discard-for-sync-item-dead-letters-req-dlr-011
+		 */
+		bulkSuccessText(ok) {
+			return t('integriq', '{ok} items processed', { ok })
 		},
 	},
 }

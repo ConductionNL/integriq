@@ -3,6 +3,9 @@
 /**
  * Integriq iStandaarden (iWMO/iJW) Client.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Thin REST binding for {@see IwmoIjwProviderInterface} against a
  * GGk/VECOZO-fronted iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0)
  * endpoint. Deliberately a hand-rolled HTTP client (Guzzle, already an app
@@ -52,9 +55,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
@@ -68,6 +68,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\IwmoIjwProviderException;
 use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\Mtls\ClientAuthenticationSchema;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
@@ -90,7 +91,7 @@ class IStandardsClient implements IwmoIjwProviderInterface {
 	 *
 	 * @var string
 	 */
-	private const DEFAULT_AUTH_SCHEME = 'Bearer';
+	private const DEFAULT_AUTH_SCHEME = ClientAuthenticationSchema::DEFAULT_SCHEME;
 
 	/**
 	 * Default berichten path (relative to `configuration.baseUrl`).
@@ -147,40 +148,13 @@ class IStandardsClient implements IwmoIjwProviderInterface {
 					'type' => 'string',
 					'description' => 'iStandaarden (GGk/VECOZO-fronted) endpoint base URL (no trailing slash)',
 				],
-				'authentication' => [
-					'type' => 'object',
-					'properties' => [
-						'mode' => [
-							'type' => 'string',
-							'enum' => ['token', 'mtls'],
-							'default' => 'token',
-							'description' => '`token` (default) sends a Bearer Authorization header from '
-								. '`encryptedToken`. `mtls` dispatches over a real mutual-TLS connection using '
-								. '`mtls.*` — closes the real GGk/VECOZO transport gap.',
-						],
-						'encryptedToken' => [
-							'type' => 'string',
-							'description' => 'Required when `mode=token` (the default). The iStandaarden API token, '
-								. 'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.',
-						],
-						'scheme' => [
-							'type' => 'string',
-							'description' => 'Authorization header scheme, used only when `mode=token`.',
-							'default' => self::DEFAULT_AUTH_SCHEME,
-						],
-						'mtls' => [
-							'type' => 'object',
-							'description' => 'Required when `mode=mtls`. Client certificate material, each field '
-								. 'individually encrypted at rest via OCP\\Security\\ICrypto.',
-							'properties' => [
-								'encryptedCertificate' => ['type' => 'string', 'description' => 'PEM client certificate.'],
-								'encryptedPrivateKey' => ['type' => 'string', 'description' => 'PEM private key.'],
-								'encryptedPassphrase' => ['type' => 'string', 'description' => 'Optional private key passphrase.'],
-								'encryptedCaBundle' => ['type' => 'string', 'description' => 'Optional PEM CA bundle to verify the peer against.'],
-							],
-						],
-					],
-				],
+				'authentication' => ClientAuthenticationSchema::tokenOrMtls(
+					modeDescription: '`token` (default) sends a Bearer Authorization header from '
+						. '`encryptedToken`. `mtls` dispatches over a real mutual-TLS connection using '
+						. '`mtls.*` — closes the real GGk/VECOZO transport gap.',
+					tokenDescription: 'Required when `mode=token` (the default). The iStandaarden API token, '
+						. 'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.'
+				),
 				'gemeentecode' => [
 					'type' => 'string',
 					'description' => 'Sending municipality code (stuurgegevens.zender.code default).',
@@ -202,60 +176,10 @@ class IStandardsClient implements IwmoIjwProviderInterface {
 	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header
 	 */
 	public function send(array $sourceConfiguration, string $berichttype, string $envelopeXml): string {
-		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
-		if ($baseUrl === '') {
-			throw new IwmoIjwProviderException(
-				message: $this->l->t('iStandaarden base URL missing') . ': `configuration.baseUrl` is required.'
-			);
-		}
+		$request = $this->berichtRequest(sourceConfiguration: $sourceConfiguration, berichttype: $berichttype);
+		$request->envelopeXml = $envelopeXml;
 
-		$authConfig = (array)($sourceConfiguration['authentication'] ?? []);
-		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
-
-		$headers = [
-			'Content-Type' => 'application/xml',
-			'Accept' => 'application/xml, application/json',
-			'X-Berichttype' => $berichttype,
-		];
-		if ($useMtls === false) {
-			// Token mode (default) — unchanged from before this change.
-			$headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
-		}
-
-		$requestOptions = [
-			'headers' => $headers,
-			'body' => $envelopeXml,
-			'http_errors' => false,
-		];
-
-		$url = $baseUrl . self::DEFAULT_PATH;
-
-		try {
-			$response = $this->dispatch(
-				useMtls: $useMtls,
-				authConfig: $authConfig,
-				url: $url,
-				requestOptions: $requestOptions
-			);
-		} catch (MtlsTransportException $exception) {
-			$this->logger->warning(
-				'[IStandardsClient] mTLS request failed',
-				['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
-			);
-			throw new IwmoIjwProviderException(
-				message: 'The iStandaarden mTLS request failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
-				previous: $exception
-			);
-		} catch (GuzzleException $exception) {
-			$this->logger->warning(
-				'[IStandardsClient] unexpected transport failure',
-				['exception' => $exception->getMessage()]
-			);
-			throw new IwmoIjwProviderException(
-				message: 'The iStandaarden request failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}//end try
+		$response = $this->post(request: $request);
 
 		$status = $response->getStatusCode();
 		$body = (string)$response->getBody();
@@ -267,14 +191,115 @@ class IStandardsClient implements IwmoIjwProviderInterface {
 	}//end send()
 
 	/**
+	 * The request for one bericht: posted to `<baseUrl>/berichten`, with the
+	 * Bearer header in token mode (the default) and none in mTLS mode.
+	 *
+	 * @param array  $sourceConfiguration The iWMO/iJW source's `configuration` object.
+	 * @param string $berichttype         The berichtcode being sent (e.g. `Wmo303`).
+	 *
+	 * @return BerichtRequest The request, without its envelope yet.
+	 *
+	 * @throws IwmoIjwProviderException When the base URL is missing or token mode has no usable credential.
+	 *
+	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-istandaardenclient-routes-through-the-mtls-transport-when-configured
+	 */
+	private function berichtRequest(array $sourceConfiguration, string $berichttype): BerichtRequest {
+		$request = new BerichtRequest(url: $this->baseUrl(sourceConfiguration: $sourceConfiguration) . self::DEFAULT_PATH);
+		$request->authConfig = (array)($sourceConfiguration['authentication'] ?? []);
+		$request->useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $request->authConfig);
+		$request->headers = [
+			'Content-Type' => 'application/xml',
+			'Accept' => 'application/xml, application/json',
+			'X-Berichttype' => $berichttype,
+		];
+		if ($request->useMtls === false) {
+			// Token mode (default) — unchanged from before this change.
+			$request->headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
+		}
+
+		return $request;
+	}//end berichtRequest()
+
+	/**
+	 * The source's base URL without a trailing slash.
+	 *
+	 * @param array $sourceConfiguration The iWMO/iJW source's `configuration` object.
+	 *
+	 * @return string The base URL.
+	 *
+	 * @throws IwmoIjwProviderException When it is missing.
+	 */
+	private function baseUrl(array $sourceConfiguration): string {
+		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
+		if ($baseUrl === '') {
+			throw new IwmoIjwProviderException(
+				message: $this->l->t('iStandaarden base URL missing') . ': `configuration.baseUrl` is required.'
+			);
+		}
+
+		return $baseUrl;
+	}//end baseUrl()
+
+	/**
+	 * Post a bericht, turning a transport failure into a logged IwmoIjwProviderException.
+	 *
+	 * @param BerichtRequest $request The bericht.
+	 *
+	 * @return ResponseInterface The response, whatever its status.
+	 *
+	 * @throws IwmoIjwProviderException When the mTLS or HTTP transport fails.
+	 */
+	private function post(BerichtRequest $request): ResponseInterface {
+		try {
+			return $this->dispatch(request: $request);
+		} catch (MtlsTransportException $exception) {
+			throw $this->mtlsFailure(exception: $exception);
+		} catch (GuzzleException $exception) {
+			throw $this->transportFailure(exception: $exception);
+		}
+	}//end post()
+
+	/**
+	 * Log an mTLS transport failure and describe it as a provider failure.
+	 *
+	 * @param MtlsTransportException $exception The transport failure.
+	 *
+	 * @return IwmoIjwProviderException The failure to raise.
+	 */
+	private function mtlsFailure(MtlsTransportException $exception): IwmoIjwProviderException {
+		$this->logger->warning(
+			'[IStandardsClient] mTLS request failed',
+			['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
+		);
+
+		return new IwmoIjwProviderException(
+			message: 'The iStandaarden mTLS request failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
+			previous: $exception
+		);
+	}//end mtlsFailure()
+
+	/**
+	 * Log an unexpected transport failure and describe it as a provider failure.
+	 *
+	 * @param GuzzleException $exception The transport failure.
+	 *
+	 * @return IwmoIjwProviderException The failure to raise.
+	 */
+	private function transportFailure(GuzzleException $exception): IwmoIjwProviderException {
+		$this->logger->warning('[IStandardsClient] unexpected transport failure', ['exception' => $exception->getMessage()]);
+
+		return new IwmoIjwProviderException(
+			message: 'The iStandaarden request failed unexpectedly: ' . $exception->getMessage(),
+			previous: $exception
+		);
+	}//end transportFailure()
+
+	/**
 	 * Dispatch the request over mTLS when configured, else over the existing
 	 * token-mode path (unchanged). Never falls back between the two: an mTLS
 	 * resolve/handshake failure propagates as {@see MtlsTransportException}.
 	 *
-	 * @param boolean $useMtls Whether `authentication.mode=mtls` is configured.
-	 * @param array $authConfig The source's `configuration.authentication` object.
-	 * @param string $url The absolute request URL.
-	 * @param array $requestOptions The Guzzle request options.
+	 * @param BerichtRequest $request The bericht.
 	 *
 	 * @return ResponseInterface The Guzzle response.
 	 *
@@ -283,13 +308,13 @@ class IStandardsClient implements IwmoIjwProviderInterface {
 	 *
 	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-istandaardenclient-routes-through-the-mtls-transport-when-configured
 	 */
-	private function dispatch(bool $useMtls, array $authConfig, string $url, array $requestOptions): ResponseInterface {
-		if ($useMtls === true) {
-			$bundle = $this->mtlsConfigResolver->resolve(authConfig: $authConfig);
-			return $this->mtlsTransport->request($this->httpClient, 'POST', $url, $requestOptions, $bundle);
+	private function dispatch(BerichtRequest $request): ResponseInterface {
+		if ($request->useMtls === true) {
+			$bundle = $this->mtlsConfigResolver->resolve(authConfig: $request->authConfig);
+			return $this->mtlsTransport->request($this->httpClient, 'POST', $request->url, $request->guzzleOptions(), $bundle);
 		}
 
-		return $this->httpClient->request('POST', $url, $requestOptions);
+		return $this->httpClient->request('POST', $request->url, $request->guzzleOptions());
 	}//end dispatch()
 
 	/**

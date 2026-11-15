@@ -313,6 +313,128 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 	}//end testDeleteAbonnementFailsSafelyOnRemote500()
 
 	/**
+	 * Stub the store with one abonnement and, unless null, one source.
+	 *
+	 * @param array<string, mixed>      $abonnement The abonnement's data.
+	 * @param array<string, mixed>|null $source     The source's data, or null for none.
+	 *
+	 * @return void
+	 */
+	private function stubAbonnementAndSource(array $abonnement, ?array $source): void {
+		$this->objectService->method('find')->willReturnCallback(
+			function (string $id, string $register, string $schema) use ($abonnement, $source) {
+				if ($schema === 'notificaties_abonnement' && $id === 'abon-1') {
+					return ObjectServiceMockBuilder::objectEntity($this, $abonnement, 'abon-1');
+				}
+
+				if ($schema === 'source' && $source !== null) {
+					return ObjectServiceMockBuilder::objectEntity($this, $source, 'source-1');
+				}
+
+				throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
+			}
+		);
+	}//end stubAbonnementAndSource()
+
+	/**
+	 * An update merges only the known keys, PATCHes the kanalen to the
+	 * abonnement's path under the source, and persists it active.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
+	 */
+	public function testUpdateAbonnementPatchesTheKanalenAndPersistsActive(): void {
+		$this->stubAbonnementAndSource(
+			['name' => 'oud', 'status' => 'error', 'lastError' => 'eerder', 'sourceId' => 'source-1', 'url' => 'https://notificaties.example/abonnement/uuid-1', 'kanalen' => []],
+			['location' => 'https://notificaties.example']
+		);
+		$kanalen = [['naam' => 'zaken', 'filters' => ['bronorganisatie' => '123']]];
+		$this->callService->expects($this->once())->method('call')
+			->with(
+				$this->anything(),
+				'/abonnement/uuid-1',
+				'PATCH',
+				['json' => ['kanalen' => $kanalen]]
+			)
+			->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200], 'call-log-1'));
+
+		$data = $this->service->updateAbonnement('abon-1', ['name' => 'nieuw', 'kanalen' => $kanalen, 'sourceId' => 'elders', 'url' => 'https://evil.example'])->getObject();
+
+		$this->assertSame('active', $data['status']);
+		$this->assertSame('', $data['lastError']);
+		$this->assertSame('nieuw', $data['name']);
+		$this->assertSame($kanalen, $data['kanalen']);
+		$this->assertSame('source-1', $data['sourceId'], 'only name, kanalen and the auth header settings are taken from the caller');
+		$this->assertSame('https://notificaties.example/abonnement/uuid-1', $data['url']);
+		$this->assertSame('abon-1', end($this->savedObjects)['uuid']);
+		$this->assertSame('notificaties_abonnement', end($this->savedObjects)['schema']);
+	}//end testUpdateAbonnementPatchesTheKanalenAndPersistsActive()
+
+	/**
+	 * A refused update is persisted as an error naming the status; a call that
+	 * throws records the exception's message.
+	 *
+	 * @return void
+	 */
+	public function testUpdateAbonnementRecordsARefusalOrAFailedCall(): void {
+		$this->stubAbonnementAndSource(
+			['status' => 'active', 'sourceId' => 'source-1', 'url' => 'https://notificaties.example/abonnement/uuid-1'],
+			['location' => 'https://notificaties.example']
+		);
+		$this->callService->method('call')->willReturnOnConsecutiveCalls(
+			ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 503], 'call-log-2'),
+			$this->throwException(new \RuntimeException('connection reset'))
+		);
+
+		$refused = $this->service->updateAbonnement('abon-1', ['kanalen' => []])->getObject();
+		$this->assertSame('error', $refused['status']);
+		$this->assertSame('Remote API returned status 503 during update', $refused['lastError']);
+
+		$failed = $this->service->updateAbonnement('abon-1', ['kanalen' => []])->getObject();
+		$this->assertSame('error', $failed['status']);
+		$this->assertSame('connection reset', $failed['lastError']);
+	}//end testUpdateAbonnementRecordsARefusalOrAFailedCall()
+
+	/**
+	 * Without its source the update calls nothing and is persisted as an error.
+	 *
+	 * @return void
+	 */
+	public function testUpdateAbonnementWithoutItsSourceCallsNothing(): void {
+		$this->stubAbonnementAndSource(['status' => 'active', 'sourceId' => 'source-9'], null);
+		$this->callService->expects($this->never())->method('call');
+
+		$data = $this->service->updateAbonnement('abon-1', ['name' => 'x'])->getObject();
+
+		$this->assertSame('error', $data['status']);
+		$this->assertSame('Source not found: source-9', $data['lastError']);
+	}//end testUpdateAbonnementWithoutItsSourceCallsNothing()
+
+	/**
+	 * A remote url outside the source's location is called as it is; an
+	 * abonnement without one is patched at the collection path.
+	 *
+	 * @return void
+	 */
+	public function testUpdateAbonnementAddressesTheRemoteUrl(): void {
+		$this->stubAbonnementAndSource(
+			['status' => 'active', 'sourceId' => 'source-1', 'url' => 'https://other.example/abonnement/uuid-2'],
+			['location' => 'https://notificaties.example']
+		);
+		$endpoints = [];
+		$this->callService->method('call')->willReturnCallback(
+			function ($source, string $endpoint) use (&$endpoints) {
+				$endpoints[] = $endpoint;
+				return ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 204], 'call-log-3');
+			}
+		);
+
+		$this->assertSame('active', $this->service->updateAbonnement('abon-1', [])->getObject()['status']);
+		$this->assertSame(['https://other.example/abonnement/uuid-2'], $endpoints);
+	}//end testUpdateAbonnementAddressesTheRemoteUrl()
+
+	/**
 	 * TC-9: deleting an abonnement removes its companion consumer.
 	 *
 	 * @return void

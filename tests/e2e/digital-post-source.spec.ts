@@ -68,7 +68,9 @@ test.describe('digital post source', () => {
 
 		// Activation is enabling the source. The refusal has to reach the
 		// operator rather than surfacing at the first letter.
-		const activate = await request.put(`${OR_BASE}/source/${id}`, {
+		// PATCH: only the flag changes. A PUT replaces the whole source and is
+		// refused for its missing `name` before the certificate is looked at.
+		const activate = await request.patch(`${OR_BASE}/source/${id}`, {
 			failOnStatusCode: false,
 			data: { isEnabled: true },
 		})
@@ -130,10 +132,16 @@ test.describe('digital post source', () => {
 		)
 
 		const text = JSON.stringify(entry).toLowerCase()
-		// The product, and both credentials it cannot work without.
-		expect(text).toContain('berichtenbox')
+		// REQ-DPA (berichtenbox-client): the product, the Digikoppeling
+		// interfaces and what a connection needs. The Logius interface has no
+		// OAuth, so the entry must not name it.
+		expect(text).toContain('mijnoverheid berichtenbox')
+		expect(text).toContain('digikoppeling ebms')
+		expect(text).toContain('wus')
 		expect(text).toContain('pkioverheid')
-		expect(text).toContain('oauth')
+		expect(text).toContain('ebms adapter')
+		expect(text).not.toContain('oauth')
+		expect(text).not.toContain('bbk 1.7')
 	})
 
 	// @e2e digital-post-adapter::the-catalog-entry-names-the-product-and-its-credentials

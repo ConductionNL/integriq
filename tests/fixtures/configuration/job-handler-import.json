@@ -1,0 +1,308 @@
+{
+    "all-known": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": {
+                        "synchronizationId": "sync-uuid-1",
+                        "endpointId": "ep-uuid-2",
+                        "sourceId": "src-uuid-3",
+                        "other": "sync-one"
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "all-known-json": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": {
+                        "synchronizationId": "sync-uuid-1",
+                        "endpointId": "ep-uuid-2",
+                        "sourceId": "src-uuid-3",
+                        "other": "sync-one"
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "sync-int-id": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": {
+                        "synchronizationId": 12
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "endpoint-only": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": {
+                        "endpointId": "zero"
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "endpoint-null-mapping": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": {
+                        "endpointId": "ep-null"
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "source-only": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": {
+                        "sourceId": "src-uuid-3"
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "unknown": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": {
+                        "synchronizationId": "x",
+                        "endpointId": "y",
+                        "sourceId": "z"
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "null-values": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": {
+                        "synchronizationId": null,
+                        "endpointId": null,
+                        "sourceId": null
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "int-values": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": {
+                        "synchronizationId": 12,
+                        "sourceId": 3
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "cross-kind": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": {
+                        "synchronizationId": "ep-two",
+                        "endpointId": "src-three",
+                        "sourceId": "sync-one"
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "empty-array": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": []
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "empty-json": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": []
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "json-list": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": [
+                        "sync-one"
+                    ]
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "json-scalar": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": "\"sync-one\""
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "json-number": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": "42"
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "invalid-json": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": "{not json"
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "int-arguments": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": 7
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "null-arguments": {
+        "saves": [
+            {
+                "object": {
+                    "arguments": null
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "no-arguments": {
+        "saves": [
+            {
+                "object": {
+                    "name": "x"
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "array-value": {
+        "throws": "TypeError",
+        "saves": []
+    },
+    "existing-slug": {
+        "saves": [
+            {
+                "object": {
+                    "slug": "job-nine",
+                    "arguments": {
+                        "sourceId": "src-uuid-3"
+                    }
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": "job-uuid-9"
+            }
+        ]
+    },
+    "new-slug": {
+        "saves": [
+            {
+                "object": {
+                    "slug": "brand-new"
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    },
+    "null-slug": {
+        "saves": [
+            {
+                "object": {
+                    "slug": null
+                },
+                "register": "integriq",
+                "schema": "job",
+                "uuid": null
+            }
+        ]
+    }
+}

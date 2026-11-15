@@ -85,6 +85,13 @@ class DsoConnectionUnavailableException extends Exception {
 	public const CHANNEL_OPEN_FORMULIEREN = 'openformulieren';
 
 	/**
+	 * The digital post service account (letters sent through integriq).
+	 *
+	 * @var string
+	 */
+	public const CHANNEL_DIGITAL_POST = 'digitalpost';
+
+	/**
 	 * Constructor.
 	 *
 	 * The same reasons serve every intake that runs as a consumer's account.

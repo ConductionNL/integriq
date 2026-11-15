@@ -28,12 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\WorkflowEngine;
 
-use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\EndpointServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use OCP\WorkflowEngine\IRuleMatcher;
 use OCP\WorkflowEngine\ISpecificOperation;
 use Psr\Log\LoggerInterface;
@@ -46,36 +44,24 @@ use UnexpectedValueException;
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operations-onevent-must-dispatch-to-endpointservicetriggerfromflow-req-003
  */
 class CallEndpointOperation implements ISpecificOperation {
+	use AdminFileOperationDefaults;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param EndpointService $endpointService Service that resolves and triggers endpoints.
+	 * @param EndpointServiceInterface $endpointService Service that resolves and triggers endpoints.
 	 * @param IL10N $l10n App-scoped translator for the operation's admin-UI copy.
 	 * @param IURLGenerator $urlGenerator Nextcloud URL generator, used for the operation icon.
 	 * @param LoggerInterface $logger Logger instance.
 	 */
 	public function __construct(
-		private readonly EndpointService $endpointService,
+		private readonly EndpointServiceInterface $endpointService,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-all-three-operations-must-be-admin-scoped-and-file-entity-scoped-only-req-005
-	 */
-	public function getEntityId(): string {
-		// Referenced only as a compile-time ::class string — see
-		// RunSynchronizationOperation::getEntityId() docblock for the
-		// no-autoload rationale.
-		return \OCA\WorkflowEngine\Entity\File::class;
-	}//end getEntityId()
 
 	/**
 	 * {@inheritDoc}
@@ -98,30 +84,6 @@ class CallEndpointOperation implements ISpecificOperation {
 	public function getDescription(): string {
 		return $this->l10n->t('Calls a configured Integriq endpoint when this rule matches.');
 	}//end getDescription()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
-	 */
-	public function getIcon(): string {
-		return $this->urlGenerator->imagePath(Application::APP_ID, 'app.svg');
-	}//end getIcon()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param int $scope The requested scope (`IManager::SCOPE_*`).
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-all-three-operations-must-be-admin-scoped-and-file-entity-scoped-only-req-005
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return $scope === IManager::SCOPE_ADMIN;
-	}//end isAvailableForScope()
 
 	/**
 	 * {@inheritDoc}
@@ -167,46 +129,71 @@ class CallEndpointOperation implements ISpecificOperation {
 	 */
 	public function onEvent(string $eventName, Event $event, IRuleMatcher $ruleMatcher): void {
 		foreach ($ruleMatcher->getFlows(false) as $flow) {
-			try {
-				$settings = $this->decodeSettings(operation: (string)($flow['operation'] ?? ''));
-				if ($settings === null) {
-					continue;
-				}
-
-				$endpointId = $settings['endpointId'];
-				$endpoint = $this->endpointService->getEndpointById($endpointId);
-				if ($endpoint === null) {
-					// A missing endpoint at onEvent() time means it was
-					// deleted after the rule was configured — log and skip
-					// rather than throw (design.md Decision 5).
-					$this->logger->warning(
-						'WorkflowEngine "Call endpoint" operation could not resolve endpoint: ' . $endpointId,
-						['eventName' => $eventName]
-					);
-					continue;
-				}
-
-				$parameters = [];
-				if (is_array(($settings['parameters'] ?? null)) === true) {
-					$parameters = $settings['parameters'];
-				}
-
-				$this->endpointService->triggerFromFlow(endpoint: $endpoint, parameters: $parameters);
-			} catch (Throwable $e) {
-				// Deliberately swallowed — one bad flow must not stop the
-				// remaining matched flows or propagate into the NC event
-				// dispatcher that invoked onEvent() (design.md Risk 1).
-				$this->logger->warning(
-					'WorkflowEngine "Call endpoint" operation dispatch failed: ' . $e->getMessage(),
-					[
-						'exception' => $e,
-						'eventName' => $eventName,
-					]
-				);
-			}//end try
-		}//end foreach
+			$this->runFlow(flow: $flow, eventName: $eventName);
+		}
 
 	}//end onEvent()
+
+	/**
+	 * Run one matched flow. Failures are deliberately swallowed — one bad
+	 * flow must not stop the remaining matched flows or propagate into the NC
+	 * event dispatcher that invoked onEvent() (design.md Risk 1).
+	 *
+	 * @param array  $flow      The matched flow.
+	 * @param string $eventName The event that matched it.
+	 *
+	 * @return void
+	 */
+	private function runFlow(array $flow, string $eventName): void {
+		try {
+			$settings = $this->decodeSettings(operation: (string)($flow['operation'] ?? ''));
+			if ($settings === null) {
+				return;
+			}
+
+			$this->callEndpoint(settings: $settings, eventName: $eventName);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'WorkflowEngine "Call endpoint" operation dispatch failed: ' . $e->getMessage(),
+				[
+					'exception' => $e,
+					'eventName' => $eventName,
+				]
+			);
+		}//end try
+
+	}//end runFlow()
+
+	/**
+	 * Call the configured endpoint with the configured parameters.
+	 *
+	 * A missing endpoint at onEvent() time means it was deleted after the rule
+	 * was configured — log and skip rather than throw (design.md Decision 5).
+	 *
+	 * @param array  $settings  The decoded operation settings.
+	 * @param string $eventName The event that matched the flow.
+	 *
+	 * @return void
+	 */
+	private function callEndpoint(array $settings, string $eventName): void {
+		$endpointId = $settings['endpointId'];
+		$endpoint = $this->endpointService->getEndpointById($endpointId);
+		if ($endpoint === null) {
+			$this->logger->warning(
+				'WorkflowEngine "Call endpoint" operation could not resolve endpoint: ' . $endpointId,
+				['eventName' => $eventName]
+			);
+			return;
+		}
+
+		$parameters = [];
+		if (is_array(($settings['parameters'] ?? null)) === true) {
+			$parameters = $settings['parameters'];
+		}
+
+		$this->endpointService->triggerFromFlow(endpoint: $endpoint, parameters: $parameters);
+
+	}//end callEndpoint()
 
 	/**
 	 * Decode a flow's raw `operation` JSON and extract its `endpointId`, defensively.
@@ -235,13 +222,8 @@ class CallEndpointOperation implements ISpecificOperation {
 	 *                    the JSON is malformed or `endpointId` is missing/empty/non-string.
 	 */
 	private function decodeSettings(string $operation): ?array {
-		try {
-			$settings = json_decode($operation, true, 512, JSON_THROW_ON_ERROR);
-		} catch (Throwable $e) {
-			return null;
-		}
-
-		if (is_array($settings) === false) {
+		$settings = $this->decodeOperationJson(operation: $operation);
+		if ($settings === null) {
 			return null;
 		}
 
