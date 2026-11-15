@@ -37,7 +37,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
  */
-class OtelSettings {
+class OtelSettings implements OtelSettingsInterface {
 
 	/**
 	 * The app id the settings are stored under.
@@ -45,13 +45,6 @@ class OtelSettings {
 	 * @var string
 	 */
 	private const APP_ID = 'integriq';
-
-	/**
-	 * The sampling ratio when an administrator set none (design "Risks").
-	 *
-	 * @var float
-	 */
-	public const DEFAULT_SAMPLING_RATIO = 0.1;
 
 	/**
 	 * The service name spans carry when an administrator set none.

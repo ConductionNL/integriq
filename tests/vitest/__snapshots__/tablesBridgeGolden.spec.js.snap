@@ -1,0 +1,214 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`columnTypeHint golden > renders every column shape as recorded 1`] = `
+[
+  [
+    null,
+    "unknown",
+  ],
+  [
+    undefined,
+    "unknown",
+  ],
+  [
+    {},
+    "unknown",
+  ],
+  [
+    {
+      "type": "",
+    },
+    "unknown",
+  ],
+  [
+    {
+      "type": "number",
+    },
+    "number",
+  ],
+  [
+    {
+      "constraints": {
+        "numberDecimals": 2,
+      },
+      "type": "number",
+    },
+    "number (2 decimals)",
+  ],
+  [
+    {
+      "constraints": {
+        "numberDecimals": 0,
+      },
+      "type": "number",
+    },
+    "number (0 decimals)",
+  ],
+  [
+    {
+      "constraints": {
+        "numberDecimals": null,
+      },
+      "type": "number",
+    },
+    "number",
+  ],
+  [
+    {
+      "constraints": "oops",
+      "type": "number",
+    },
+    "number",
+  ],
+  [
+    {
+      "type": "selection",
+    },
+    "selection",
+  ],
+  [
+    {
+      "constraints": {
+        "selectionOptions": [],
+      },
+      "type": "selection",
+    },
+    "selection",
+  ],
+  [
+    {
+      "constraints": {
+        "selectionOptions": "open",
+      },
+      "type": "selection",
+    },
+    "selection",
+  ],
+  [
+    {
+      "constraints": {
+        "selectionOptions": [
+          "paid",
+        ],
+      },
+      "type": "selection",
+    },
+    "selection: paid",
+  ],
+  [
+    {
+      "constraints": {
+        "selectionOptions": [
+          "open",
+          3,
+          null,
+        ],
+      },
+      "type": "selection",
+    },
+    "selection: open, 3, null",
+  ],
+  [
+    {
+      "type": "datetime",
+    },
+    "datetime",
+  ],
+  [
+    {
+      "subtype": "date",
+      "type": "datetime",
+    },
+    "datetime (date)",
+  ],
+  [
+    {
+      "subtype": "",
+      "type": "datetime",
+    },
+    "datetime",
+  ],
+  [
+    {
+      "subtype": 0,
+      "type": "datetime",
+    },
+    "datetime (0)",
+  ],
+  [
+    {
+      "type": "text",
+    },
+    "text",
+  ],
+  [
+    {
+      "constraints": {
+        "textMaxLength": 255,
+      },
+      "type": "text",
+    },
+    "text (max 255)",
+  ],
+  [
+    {
+      "constraints": {
+        "textMaxLength": undefined,
+      },
+      "type": "text",
+    },
+    "text",
+  ],
+  [
+    {
+      "type": "usergroup",
+    },
+    "usergroup (read-only — not writable)",
+  ],
+  [
+    {
+      "constraints": {
+        "numberDecimals": 1,
+      },
+      "type": "usergroup",
+    },
+    "usergroup (read-only — not writable)",
+  ],
+  [
+    {
+      "type": "link",
+    },
+    "link",
+  ],
+  [
+    {
+      "type": "constructor",
+    },
+    "constructor",
+  ],
+  [
+    {
+      "type": "toString",
+    },
+    "toString",
+  ],
+  [
+    {
+      "type": "__proto__",
+    },
+    "__proto__",
+  ],
+  [
+    {
+      "type": 7,
+    },
+    "7",
+  ],
+  [
+    {
+      "type": null,
+    },
+    "unknown",
+  ],
+]
+`;

@@ -244,6 +244,39 @@ class SpanMapperTest extends TestCase {
 	}//end testFormattedIdentifiersAndOpaqueTokensAreMaskedRouteWordsStay()
 
 	/**
+	 * A called URL without a host (relative, malformed or empty) exports no
+	 * url.full attribute at all, so nothing of its path reaches the collector;
+	 * the method and status code are still exported.
+	 *
+	 * @return void
+	 */
+	public function testAUrlWithoutAHostExportsNoUrlAttribute(): void {
+		$urls = ['/ingeschrevenpersonen/999993653', 'brp.example.org/ingeschrevenpersonen/999993653', 'http:///999993653', ''];
+
+		$trace = $this->trace();
+		$trace['steps'] = [];
+		foreach ($urls as $index => $url) {
+			$trace['steps'][] = [
+				'order' => ($index + 1), 'type' => 'call', 'name' => 'svc', 'status' => 'success', 'durationMs' => 1,
+				'input' => ['method' => 'delete', 'url' => $url], 'output' => ['statusCode' => 204],
+			];
+		}
+
+		$spans = $this->spans($trace);
+		foreach (array_keys($urls) as $index) {
+			$attrs = $this->attrs($spans[($index + 1)]);
+			$this->assertArrayNotHasKey('url.full', $attrs, (string)$index);
+			$this->assertSame('DELETE', $attrs['http.request.method']);
+			$this->assertSame('204', $attrs['http.response.status_code']);
+		}
+
+		$payload = json_encode((new SpanMapper(new TraceParent()))->map(trace: $trace, serviceName: 'integriq'));
+		$this->assertStringNotContainsString('999993653', $payload);
+		$this->assertStringNotContainsString('ingeschrevenpersonen', $payload);
+
+	}//end testAUrlWithoutAHostExportsNoUrlAttribute()
+
+	/**
 	 * Steps counted but not kept are the root's `integriq.steps.dropped`
 	 * attribute, not a span; a trace without micro times falls back to the
 	 * whole-second times.
@@ -310,4 +343,45 @@ class SpanMapperTest extends TestCase {
 		$this->assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $parent->newSpanId());
 
 	}//end testTraceParentAcceptsOnlyTheW3cShape()
+	/**
+	 * Every trace shape maps as the golden file recorded before map() was
+	 * split: the root span, every child span and the resource envelope.
+	 *
+	 * Regenerate with SPAN_MAPPER_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryTraceShapeMatchesTheGoldenFile(): void {
+		$full = $this->trace();
+		$cases = [
+			'full' => $full,
+			'own-otel-trace-id' => (['otelTraceId' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'] + $full),
+			'no-parent-span' => array_diff_key($full, ['parentSpanId' => true]),
+			'bad-parent-span' => (['parentSpanId' => 'XYZ'] + $full),
+			'iso-times-only' => array_diff_key($full, ['startedAtUs' => true, 'finishedAtUs' => true]),
+			'end-before-start' => (['finishedAtUs' => 1] + $full),
+			'step-without-time' => (['steps' => [['order' => 7, 'type' => 'rule', 'name' => 'x', 'status' => 'error', 'durationMs' => -4]]] + $full),
+			'truncated-and-junk-steps' => (['steps' => ['junk', ['status' => 'truncated', 'output' => ['droppedSteps' => 9]], ['order' => 1]]] + $full),
+			'empty' => [],
+			'endpoint-entry' => (['entryPoint' => 'endpoint', 'status' => 'success'] + $full),
+			'cron-entry' => (['entryPoint' => 'cron', 'status' => 'short_circuited'] + $full),
+		];
+
+		$actual = [];
+		foreach ($cases as $name => $trace) {
+			$actual[$name] = (new SpanMapper(new TraceParent()))->map(trace: $trace, serviceName: 'svc-' . $name);
+		}
+
+		$golden = __DIR__ . '/../../../fixtures/observability/span-mapper.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION)) . "\n";
+		if (getenv('SPAN_MAPPER_GOLDEN') === '1') {
+			if (is_dir(dirname($golden)) === false) {
+				mkdir(dirname($golden), 0777, true);
+			}
+
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryTraceShapeMatchesTheGoldenFile()
 }//end class

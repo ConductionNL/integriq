@@ -19,6 +19,9 @@
  * @link https://www.Integriq.nl
  *
  * @todo Remove this temporary listener once it lives in the software catalog application.
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\EventListener;

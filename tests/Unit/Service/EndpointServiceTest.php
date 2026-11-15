@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -20,6 +23,7 @@ use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\EndpointRuleDispatch;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\MappingService;
@@ -96,6 +100,13 @@ class EndpointServiceTest extends TestCase {
 	private $schemaMapper;
 
 	/**
+	 * The call engine double.
+	 *
+	 * @var CallService&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $callService;
+
+	/**
 	 * Set up test fixtures.
 	 *
 	 * @return void
@@ -107,6 +118,7 @@ class EndpointServiceTest extends TestCase {
 
 		$this->objectService = $this->createMock(ObjectService::class);
 		$callService = $this->createMock(CallService::class);
+		$this->callService = $callService;
 		$logger = $this->createMock(LoggerInterface::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 		$this->urlGenerator->method('getBaseUrl')->willReturn('https://example.org');
@@ -273,6 +285,45 @@ class EndpointServiceTest extends TestCase {
 	}//end testHandleRequestWithProxyTargetTypeReturnsResponse()
 
 	/**
+	 * An endpoint with targets is routed: when its only target's breaker is open
+	 * it answers 503 naming the group, and the call engine is never called.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
+	 */
+	public function testAnEndpointWithTargetsIsRoutedAndAnswers503WhenNoneIsHealthy(): void {
+		$down = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['location' => 'https://example.com', 'circuitBreakerState' => 'open', 'circuitBreakerOpenedAt' => time()],
+			'source-down'
+		);
+		$this->orObjectService->method('find')->willReturn($down);
+		$this->callService->expects($this->never())->method('call');
+
+		$endpointEntity = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'method' => 'GET',
+				'path' => '/api/routed',
+				'targetType' => 'api',
+				'targets' => [['source' => 'source-down', 'weight' => 1]],
+			],
+			'endpoint-routed'
+		);
+
+		$request = $this->createMock(\OCP\IRequest::class);
+		$request->method('getMethod')->willReturn('GET');
+		$request->method('getParams')->willReturn([]);
+		$request->method('getHeader')->willReturn('');
+
+		$response = $this->service->handleRequest($endpointEntity, $request, '/api/routed');
+
+		$this->assertSame(503, $response->getStatus());
+		$this->assertSame('', $response->getData()['group']);
+	}//end testAnEndpointWithTargetsIsRoutedAndAnswers503WhenNoneIsHealthy()
+
+	/**
 	 * Test that generateEndpointUrl returns a string (does not throw) for a valid schema mapper mock.
 	 *
 	 * @return void
@@ -297,6 +348,33 @@ class EndpointServiceTest extends TestCase {
 	}//end testGenerateEndpointUrlReturnsString()
 
 	/**
+	 * A rule pipeline run over the given rule, as dispatchEndpointRule() hands it to a rule processor.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity           $rule      The rule.
+	 * @param string|null                                $objectId  The object id.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity|null      $endpoint  The endpoint.
+	 * @param \OCA\Integriq\Service\Helper\FlowToken|null $flowToken The flow token.
+	 * @param string                                     $timing    The timing.
+	 *
+	 * @return EndpointRuleDispatch
+	 */
+	private function ruleRun(
+		\OCA\OpenRegister\Db\ObjectEntity $rule,
+		?string $objectId = null,
+		?\OCA\OpenRegister\Db\ObjectEntity $endpoint = null,
+		?\OCA\Integriq\Service\Helper\FlowToken $flowToken = null,
+		string $timing = 'before',
+	): EndpointRuleDispatch {
+		$run = new EndpointRuleDispatch();
+		$run->rule = $rule;
+		$run->objectId = $objectId;
+		$run->endpoint = ($endpoint ?? ObjectServiceMockBuilder::objectEntity($this, [], 'endpoint-1'));
+		$run->flowToken = $flowToken;
+		$run->timing = $timing;
+		return $run;
+	}//end ruleRun()
+
+	/**
 	 * Test that locking rules keep the OpenRegister lock payload shape.
 	 *
 	 * @return void
@@ -315,7 +393,7 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'processLockingRule');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->service, $rule, ['body' => []], 'object-uuid');
+		$result = $method->invoke($this->service, $this->ruleRun(rule: $rule, objectId: 'object-uuid'), ['body' => []]);
 
 		$this->assertSame(['locked' => true, 'process' => 'test-process'], $result['body']);
 	}//end testProcessLockingRuleReturnsLockPayloadArray()
@@ -339,7 +417,7 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'processLockingRule');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->service, $rule, ['body' => []], 'object-uuid');
+		$result = $method->invoke($this->service, $this->ruleRun(rule: $rule, objectId: 'object-uuid'), ['body' => []]);
 
 		$this->assertSame(['unlocked' => true], $result['body']);
 	}//end testProcessLockingRuleNormalisesUnlockBoolean()
@@ -363,7 +441,7 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'processApprovalRule');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->service, $rule, $endpoint, $flowToken, 'before');
+		$result = $method->invoke($this->service, $this->ruleRun(rule: $rule, endpoint: $endpoint, flowToken: $flowToken, timing: 'before'));
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
 		$this->assertSame(202, $result->getStatus());
@@ -390,7 +468,7 @@ class EndpointServiceTest extends TestCase {
 		$method->setAccessible(true);
 
 		$this->expectException(\Exception::class);
-		$method->invoke($this->service, $rule, $endpoint, $flowToken, 'after');
+		$method->invoke($this->service, $this->ruleRun(rule: $rule, endpoint: $endpoint, flowToken: $flowToken, timing: 'after'));
 	}//end testProcessApprovalRuleAfterThrows()
 
 	/**

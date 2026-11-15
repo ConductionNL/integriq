@@ -1,0 +1,295 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`JobFormFields > records edits, drafts and errors as recorded 1`] = `
+[
+  {
+    "drafts": {
+      "conf": "{"a":",
+    },
+    "errors": {
+      "conf": "Invalid JSON: Unexpected end of JSON input",
+    },
+    "raw": "{"a":",
+    "shown": "{"a":",
+    "writes": [],
+  },
+  {
+    "drafts": {
+      "conf": "{"a": 1}",
+    },
+    "errors": {
+      "conf": "",
+    },
+    "raw": "{"a": 1}",
+    "shown": "{"a": 1}",
+    "writes": [
+      [
+        "conf",
+        {
+          "a": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "drafts": {
+      "conf": "   ",
+    },
+    "errors": {
+      "conf": "",
+    },
+    "raw": "   ",
+    "shown": "   ",
+    "writes": [
+      [
+        "conf",
+        {
+          "a": 1,
+        },
+      ],
+      [
+        "conf",
+        null,
+      ],
+    ],
+  },
+  {
+    "drafts": {
+      "conf": " [1, 2] ",
+    },
+    "errors": {
+      "conf": "",
+    },
+    "raw": " [1, 2] ",
+    "shown": " [1, 2] ",
+    "writes": [
+      [
+        "conf",
+        {
+          "a": 1,
+        },
+      ],
+      [
+        "conf",
+        null,
+      ],
+      [
+        "conf",
+        [
+          1,
+          2,
+        ],
+      ],
+    ],
+  },
+  {
+    "drafts": {
+      "conf": "nope",
+    },
+    "errors": {
+      "conf": "Invalid JSON: Unexpected token 'o', "nope" is not valid JSON",
+    },
+    "raw": "nope",
+    "shown": "nope",
+    "writes": [
+      [
+        "conf",
+        {
+          "a": 1,
+        },
+      ],
+      [
+        "conf",
+        null,
+      ],
+      [
+        "conf",
+        [
+          1,
+          2,
+        ],
+      ],
+    ],
+  },
+  {
+    "drafts": {
+      "conf": "",
+    },
+    "errors": {
+      "conf": "",
+    },
+    "raw": "",
+    "shown": "",
+    "writes": [
+      [
+        "conf",
+        {
+          "a": 1,
+        },
+      ],
+      [
+        "conf",
+        null,
+      ],
+      [
+        "conf",
+        [
+          1,
+          2,
+        ],
+      ],
+      [
+        "conf",
+        null,
+      ],
+    ],
+  },
+]
+`;
+
+exports[`SourceFormFields > records edits, drafts and errors as recorded 1`] = `
+[
+  {
+    "drafts": {
+      "conf": "{"a":",
+    },
+    "errors": {
+      "conf": "Invalid JSON: Unexpected end of JSON input",
+    },
+    "raw": "{"a":",
+    "shown": "{"a":",
+    "writes": [],
+  },
+  {
+    "drafts": {
+      "conf": "{"a": 1}",
+    },
+    "errors": {
+      "conf": "",
+    },
+    "raw": "{"a": 1}",
+    "shown": "{"a": 1}",
+    "writes": [
+      [
+        "conf",
+        {
+          "a": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "drafts": {
+      "conf": "   ",
+    },
+    "errors": {
+      "conf": "",
+    },
+    "raw": "   ",
+    "shown": "   ",
+    "writes": [
+      [
+        "conf",
+        {
+          "a": 1,
+        },
+      ],
+      [
+        "conf",
+        null,
+      ],
+    ],
+  },
+  {
+    "drafts": {
+      "conf": " [1, 2] ",
+    },
+    "errors": {
+      "conf": "",
+    },
+    "raw": " [1, 2] ",
+    "shown": " [1, 2] ",
+    "writes": [
+      [
+        "conf",
+        {
+          "a": 1,
+        },
+      ],
+      [
+        "conf",
+        null,
+      ],
+      [
+        "conf",
+        [
+          1,
+          2,
+        ],
+      ],
+    ],
+  },
+  {
+    "drafts": {
+      "conf": "nope",
+    },
+    "errors": {
+      "conf": "Invalid JSON: Unexpected token 'o', "nope" is not valid JSON",
+    },
+    "raw": "nope",
+    "shown": "nope",
+    "writes": [
+      [
+        "conf",
+        {
+          "a": 1,
+        },
+      ],
+      [
+        "conf",
+        null,
+      ],
+      [
+        "conf",
+        [
+          1,
+          2,
+        ],
+      ],
+    ],
+  },
+  {
+    "drafts": {
+      "conf": "",
+    },
+    "errors": {
+      "conf": "",
+    },
+    "raw": "",
+    "shown": "",
+    "writes": [
+      [
+        "conf",
+        {
+          "a": 1,
+        },
+      ],
+      [
+        "conf",
+        null,
+      ],
+      [
+        "conf",
+        [
+          1,
+          2,
+        ],
+      ],
+      [
+        "conf",
+        null,
+      ],
+    ],
+  },
+]
+`;

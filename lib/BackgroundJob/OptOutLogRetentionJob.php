@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\Integriq\Db\OptOutLogMapper;
+use OCA\Integriq\Db\OptOutLogMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -51,12 +51,12 @@ class OptOutLogRetentionJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The clock.
-	 * @param OptOutLogMapper $log The log table.
+	 * @param OptOutLogMapperInterface $log The log table.
 	 * @param LoggerInterface $logger Records what was deleted.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly OptOutLogMapper $log,
+		private readonly OptOutLogMapperInterface $log,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

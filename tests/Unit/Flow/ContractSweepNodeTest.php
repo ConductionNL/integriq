@@ -18,18 +18,22 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Flow;
 
-use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Flow\ContractSweepNode;
+use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Flow\FlowNodeSupport;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -208,11 +212,11 @@ class ContractSweepNodeTest extends TestCase {
 			details: ['kind' => 'sweep']
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['uuid' => 'u-1']]],
 			['synchronization' => 'demo-sync', 'onError' => 'continue'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $out);
 		$this->assertArrayNotHasKey('sweep', $out[0]['json']);
@@ -245,7 +249,7 @@ class ContractSweepNodeTest extends TestCase {
 		];
 		$this->synchronizationService->deleteReturn = 2;
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[
 				['json' => ['uuid' => 'u-1']],
 				['json' => ['uuid' => 'u-2']],
@@ -254,7 +258,7 @@ class ContractSweepNodeTest extends TestCase {
 			],
 			['synchronization' => 'demo-sync', 'force' => true],
 			$this->context()
-		);
+		));
 
 		$received = $this->synchronizationService->received['deleteInvalidObjects'];
 		$this->assertSame(['u-1', 'u-2'], $received['synchronizedTargetIds']);
@@ -297,11 +301,11 @@ class ContractSweepNodeTest extends TestCase {
 		];
 		$this->synchronizationService->deleteReturn = 0;
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['uuid' => 'u-1']]],
 			['synchronization' => 'demo-sync', 'fetchComplete' => 'fetchInfo.complete'],
 			$this->context()
-		);
+		));
 
 		$received = $this->synchronizationService->received['deleteInvalidObjects'];
 		$this->assertFalse($received['fetchComplete']);
@@ -327,11 +331,11 @@ class ContractSweepNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/database gone/');
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[['json' => ['uuid' => 'u-1']]],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 	}//end testFailingSweepRaisesUnderStop()
 
@@ -341,7 +345,7 @@ class ContractSweepNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testEmptyInputSweepsNothing(): void {
-		$this->assertSame([], $this->node->execute([], ['synchronization' => 'demo-sync'], $this->context()));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall([], ['synchronization' => 'demo-sync'], $this->context())));
 		$this->assertArrayNotHasKey('deleteInvalidObjects', $this->synchronizationService->received);
 
 	}//end testEmptyInputSweepsNothing()

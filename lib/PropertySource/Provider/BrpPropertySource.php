@@ -95,17 +95,29 @@ class BrpPropertySource implements PropertySourceProviderInterface {
 			return [];
 		}
 
+		return [['identifier' => $query, 'label' => $this->labelOf(person: $person, query: $query)]];
+	}//end suggest()
+
+	/**
+	 * A person's name as a suggestion label: the full name, else the surname, else the number asked.
+	 *
+	 * @param array  $person The person.
+	 * @param string $query  The burgerservicenummer asked.
+	 *
+	 * @return string The label.
+	 */
+	private function labelOf(array $person, string $query): string {
 		$name = '';
 		if (is_array($person['naam'] ?? null) === true) {
 			$name = (string)($person['naam']['volledigeNaam'] ?? $person['naam']['geslachtsnaam'] ?? '');
 		}
 
 		if ($name === '') {
-			$name = $query;
+			return $query;
 		}
 
-		return [['identifier' => $query, 'label' => $name]];
-	}//end suggest()
+		return $name;
+	}//end labelOf()
 
 	/**
 	 * One authoritative read by the registry's own identifier.
@@ -128,24 +140,6 @@ class BrpPropertySource implements PropertySourceProviderInterface {
 	 * @spec openspec/changes/brp-relations-read/specs/registry-field-source/spec.md#requirement-brp-relations-are-read-only-where-the-source-says-the-municipality-may
 	 */
 	public function resolve(string $identifier, array $config = []): array {
-		$fields = self::DEFAULT_FIELDS;
-		if (is_array($config['fields'] ?? null) === true && $config['fields'] !== []) {
-			$fields = array_values(array_map('strval', $config['fields']));
-		}
-
-		// A person's partner, parents and children are read by BrpRelationReader
-		// alone, behind the source's own setting and outside the value cache. A
-		// property that declares them here does not get them.
-		$fields = array_values(
-			array_filter(
-				$fields,
-				static fn (string $field): bool => preg_match('/^(partners|ouders|kinderen)(\.|$)/', $field) !== 1
-			)
-		);
-		if ($fields === []) {
-			$fields = self::DEFAULT_FIELDS;
-		}
-
 		$body = $this->gateway->read(
 			self::ID,
 			(string)($config['source'] ?? self::SOURCE_SLUG),
@@ -154,27 +148,74 @@ class BrpPropertySource implements PropertySourceProviderInterface {
 			[
 				'type' => 'RaadpleegMetBurgerservicenummer',
 				'burgerservicenummer' => [$identifier],
-				'fields' => $fields,
+				'fields' => $this->fieldsFor(config: $config),
 			]
 		);
 
-		$person = null;
+		return $this->personIn(body: $body);
+	}//end resolve()
+
+	/**
+	 * The fields to ask the registry for: the property's own (or the defaults), without relations.
+	 *
+	 * A person's partner, parents and children are read by BrpRelationReader
+	 * alone, behind the source's own setting and outside the value cache. A
+	 * property that declares them here does not get them.
+	 *
+	 * @param array $config The property's config.
+	 *
+	 * @return list<string> The fields; the defaults when nothing else is left.
+	 */
+	private function fieldsFor(array $config): array {
+		$fields = array_values(
+			array_filter(
+				$this->requestedFields(config: $config),
+				static fn (string $field): bool => preg_match('/^(partners|ouders|kinderen)(\.|$)/', $field) !== 1
+			)
+		);
+		if ($fields === []) {
+			return self::DEFAULT_FIELDS;
+		}
+
+		return $fields;
+	}//end fieldsFor()
+
+	/**
+	 * The fields the property declares, or the defaults when it declares none.
+	 *
+	 * @param array $config The property's config.
+	 *
+	 * @return list<string> The fields, as strings.
+	 */
+	private function requestedFields(array $config): array {
+		if (is_array($config['fields'] ?? null) === true && $config['fields'] !== []) {
+			return array_values(array_map('strval', $config['fields']));
+		}
+
+		return self::DEFAULT_FIELDS;
+	}//end requestedFields()
+
+	/**
+	 * The person in a registry answer: its first record that is an object.
+	 *
+	 * @param array $body The registry's answer.
+	 *
+	 * @return array The person.
+	 *
+	 * @throws SourceUnreachableException When the answer holds no record.
+	 */
+	private function personIn(array $body): array {
 		foreach ((array)($body['personen'] ?? []) as $row) {
 			if (is_array($row) === true) {
-				$person = $row;
-				break;
+				return $row;
 			}
 		}
 
-		if ($person === null) {
-			throw new SourceUnreachableException(
-				providerId: self::ID,
-				message: 'The brp registry returned no record for the burgerservicenummer asked.'
-			);
-		}
-
-		return $person;
-	}//end resolve()
+		throw new SourceUnreachableException(
+			providerId: self::ID,
+			message: 'The brp registry returned no record for the burgerservicenummer asked.'
+		);
+	}//end personIn()
 
 	/**
 	 * What this binding keys on and how fresh it keeps a value.

@@ -1,0 +1,1132 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SynchronizationDetailPage > edits raw conditions as recorded 1`] = `
+[
+  [
+    "{"and":",
+    "{"and":",
+    "Invalid JSON: Unexpected end of JSON input",
+    {
+      "and": [],
+    },
+  ],
+  [
+    "{"or": []}",
+    "{"or": []}",
+    "",
+    {
+      "or": [],
+    },
+  ],
+  [
+    "   ",
+    "   ",
+    "",
+    {
+      "and": [],
+    },
+  ],
+  [
+    "nope",
+    "nope",
+    "Invalid JSON: Unexpected token 'o', "nope" is not valid JSON",
+    {
+      "and": [],
+    },
+  ],
+  [
+    "",
+    "",
+    "",
+    {
+      "and": [],
+    },
+  ],
+  [
+    null,
+    "",
+  ],
+]
+`;
+
+exports[`SynchronizationDetailPage > loads a failed fetch 1`] = `
+{
+  "after": {
+    "draft": null,
+    "formsEnabled": false,
+    "loadError": "boom",
+    "loading": false,
+    "original": null,
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "fetch",
+      "synchronization",
+      "sync-1",
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > loads a failed fetch without message 1`] = `
+{
+  "after": {
+    "draft": null,
+    "formsEnabled": false,
+    "loadError": "Failed to load synchronization",
+    "loading": false,
+    "original": null,
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "fetch",
+      "synchronization",
+      "sync-1",
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > loads a new record 1`] = `
+{
+  "after": {
+    "draft": {
+      "actions": [],
+      "conditions": {
+        "and": [],
+      },
+      "description": "",
+      "followUps": [],
+      "name": "",
+      "sourceConfig": {},
+      "sourceHashMapping": "",
+      "sourceId": "",
+      "sourceTargetMapping": "",
+      "sourceType": "api",
+      "syncMode": "full",
+      "targetConfig": {},
+      "targetId": "",
+      "targetSourceMapping": "",
+      "targetType": "register/schema",
+    },
+    "formsEnabled": false,
+    "loadError": "old",
+    "loading": false,
+    "original": {
+      "actions": [],
+      "conditions": {
+        "and": [],
+      },
+      "description": "",
+      "followUps": [],
+      "name": "",
+      "sourceConfig": {},
+      "sourceHashMapping": "",
+      "sourceId": "",
+      "sourceTargetMapping": "",
+      "sourceType": "api",
+      "syncMode": "full",
+      "targetConfig": {},
+      "targetId": "",
+      "targetSourceMapping": "",
+      "targetType": "register/schema",
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": false,
+  "trace": [],
+}
+`;
+
+exports[`SynchronizationDetailPage > loads a stored record 1`] = `
+{
+  "after": {
+    "draft": {
+      "actions": [],
+      "conditions": {
+        "and": [
+          {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        ],
+      },
+      "description": "d",
+      "followUps": [
+        "f1",
+      ],
+      "name": "Nightly",
+      "sourceConfig": {
+        "a": 1,
+      },
+      "sourceHashMapping": "",
+      "sourceId": "",
+      "sourceTargetMapping": "",
+      "sourceType": "api",
+      "syncMode": "full",
+      "targetConfig": {},
+      "targetId": "",
+      "targetSourceMapping": "",
+      "targetType": "register/schema",
+    },
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": {
+      "actions": "not-a-list",
+      "conditions": "{"==":[1,1]}",
+      "cursorWatermark": "w1",
+      "description": "d",
+      "extra": "kept",
+      "followUps": [
+        "f1",
+      ],
+      "id": "sync-1",
+      "name": "Nightly",
+      "sourceConfig": {
+        "a": 1,
+      },
+      "sourceType": "api",
+      "syncMode": null,
+      "targetConfig": [
+        1,
+      ],
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "fetch",
+      "synchronization",
+      "sync-1",
+    ],
+    [
+      "subscribe",
+      "synchronization",
+      "sync-1",
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > loads nothing found 1`] = `
+{
+  "after": {
+    "draft": null,
+    "formsEnabled": false,
+    "loadError": "Failed to load synchronization",
+    "loading": false,
+    "original": null,
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "fetch",
+      "synchronization",
+      "sync-1",
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > loads nothing found with a store error 1`] = `
+{
+  "after": {
+    "draft": null,
+    "formsEnabled": false,
+    "loadError": "gone",
+    "loading": false,
+    "original": null,
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "fetch",
+      "synchronization",
+      "sync-1",
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > normalises a full record 1`] = `
+{
+  "actions": [],
+  "conditions": {
+    "and": [
+      {
+        "==": [
+          1,
+          1,
+        ],
+      },
+    ],
+  },
+  "description": "d",
+  "followUps": [
+    "f1",
+  ],
+  "name": "Nightly",
+  "sourceConfig": {
+    "a": 1,
+  },
+  "sourceHashMapping": "",
+  "sourceId": "",
+  "sourceTargetMapping": "",
+  "sourceType": "api",
+  "syncMode": "full",
+  "targetConfig": {},
+  "targetId": "",
+  "targetSourceMapping": "",
+  "targetType": "register/schema",
+}
+`;
+
+exports[`SynchronizationDetailPage > normalises conditions as a list 1`] = `
+{
+  "actions": [],
+  "conditions": {
+    "and": [
+      {
+        "==": [
+          1,
+          1,
+        ],
+      },
+    ],
+  },
+  "description": "",
+  "followUps": [],
+  "name": "",
+  "sourceConfig": {},
+  "sourceHashMapping": "",
+  "sourceId": "",
+  "sourceTargetMapping": "",
+  "sourceType": "api",
+  "syncMode": "full",
+  "targetConfig": {},
+  "targetId": "",
+  "targetSourceMapping": "",
+  "targetType": "register/schema",
+}
+`;
+
+exports[`SynchronizationDetailPage > normalises conditions as an object 1`] = `
+{
+  "actions": [],
+  "conditions": {
+    "or": [],
+  },
+  "description": "",
+  "followUps": [],
+  "name": "",
+  "sourceConfig": {},
+  "sourceHashMapping": "",
+  "sourceId": "",
+  "sourceTargetMapping": "",
+  "sourceType": "api",
+  "syncMode": "full",
+  "targetConfig": {},
+  "targetId": "",
+  "targetSourceMapping": "",
+  "targetType": "register/schema",
+}
+`;
+
+exports[`SynchronizationDetailPage > normalises null 1`] = `
+{
+  "actions": [],
+  "conditions": {
+    "and": [],
+  },
+  "description": "",
+  "followUps": [],
+  "name": "",
+  "sourceConfig": {},
+  "sourceHashMapping": "",
+  "sourceId": "",
+  "sourceTargetMapping": "",
+  "sourceType": "api",
+  "syncMode": "full",
+  "targetConfig": {},
+  "targetId": "",
+  "targetSourceMapping": "",
+  "targetType": "register/schema",
+}
+`;
+
+exports[`SynchronizationDetailPage > normalises nulls everywhere 1`] = `
+{
+  "actions": [],
+  "conditions": {
+    "and": [],
+  },
+  "description": "",
+  "followUps": [],
+  "name": "",
+  "sourceConfig": {},
+  "sourceHashMapping": "",
+  "sourceId": "",
+  "sourceTargetMapping": "",
+  "sourceType": "api",
+  "syncMode": "full",
+  "targetConfig": {},
+  "targetId": "",
+  "targetSourceMapping": "",
+  "targetType": "register/schema",
+}
+`;
+
+exports[`SynchronizationDetailPage > normalises objects given as lists 1`] = `
+{
+  "actions": [],
+  "conditions": {
+    "and": [],
+  },
+  "description": "",
+  "followUps": [],
+  "name": "",
+  "sourceConfig": {},
+  "sourceHashMapping": "",
+  "sourceId": "",
+  "sourceTargetMapping": "",
+  "sourceType": "api",
+  "syncMode": "full",
+  "targetConfig": {},
+  "targetId": "",
+  "targetSourceMapping": "",
+  "targetType": "register/schema",
+}
+`;
+
+exports[`SynchronizationDetailPage > normalises undefined 1`] = `
+{
+  "actions": [],
+  "conditions": {
+    "and": [],
+  },
+  "description": "",
+  "followUps": [],
+  "name": "",
+  "sourceConfig": {},
+  "sourceHashMapping": "",
+  "sourceId": "",
+  "sourceTargetMapping": "",
+  "sourceType": "api",
+  "syncMode": "full",
+  "targetConfig": {},
+  "targetId": "",
+  "targetSourceMapping": "",
+  "targetType": "register/schema",
+}
+`;
+
+exports[`SynchronizationDetailPage > resets the cursor with a bare failure 1`] = `
+{
+  "after": {
+    "draft": null,
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": {
+      "cursorWatermark": "w1",
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "post",
+      "/index.php/apps/integriq/api/synchronizations/sync-1/reset-cursor",
+    ],
+    [
+      "error",
+      "Failed to reset cursor",
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > resets the cursor with a cleared watermark 1`] = `
+{
+  "after": {
+    "draft": null,
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": {
+      "cursorWatermark": "",
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "post",
+      "/index.php/apps/integriq/api/synchronizations/sync-1/reset-cursor",
+    ],
+    [
+      "success",
+      "Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.",
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > resets the cursor with a server error 1`] = `
+{
+  "after": {
+    "draft": null,
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": {
+      "cursorWatermark": "w1",
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "post",
+      "/index.php/apps/integriq/api/synchronizations/sync-1/reset-cursor",
+    ],
+    [
+      "error",
+      "srv",
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > resets the cursor with a transport error 1`] = `
+{
+  "after": {
+    "draft": null,
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": {
+      "cursorWatermark": "w1",
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "post",
+      "/index.php/apps/integriq/api/synchronizations/sync-1/reset-cursor",
+    ],
+    [
+      "error",
+      "net",
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > resets the cursor with an answer without a watermark 1`] = `
+{
+  "after": {
+    "draft": null,
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": null,
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "post",
+      "/index.php/apps/integriq/api/synchronizations/sync-1/reset-cursor",
+    ],
+    [
+      "success",
+      "Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.",
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > saves with a failed save 1`] = `
+{
+  "after": {
+    "draft": {
+      "actions": [],
+      "conditions": {
+        "and": [
+          {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        ],
+      },
+      "description": "d",
+      "followUps": [
+        "f1",
+      ],
+      "name": "Edited",
+      "sourceConfig": {
+        "a": 1,
+      },
+      "sourceHashMapping": "",
+      "sourceId": "",
+      "sourceTargetMapping": "",
+      "sourceType": "api",
+      "syncMode": "full",
+      "targetConfig": {},
+      "targetId": "",
+      "targetSourceMapping": "",
+      "targetType": "register/schema",
+    },
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": {
+      "extra": "kept",
+      "id": "sync-1",
+      "name": "Old",
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "boom",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "save",
+      [
+        "synchronization",
+        {
+          "actions": [],
+          "conditions": [
+            {
+              "and": [
+                {
+                  "==": [
+                    1,
+                    1,
+                  ],
+                },
+              ],
+            },
+          ],
+          "description": "d",
+          "extra": "kept",
+          "followUps": [
+            "f1",
+          ],
+          "id": "sync-1",
+          "name": "Edited",
+          "sourceConfig": {
+            "a": 1,
+          },
+          "sourceHashMapping": "",
+          "sourceId": "",
+          "sourceTargetMapping": "",
+          "sourceType": "api",
+          "syncMode": "full",
+          "targetConfig": {},
+          "targetId": "",
+          "targetSourceMapping": "",
+          "targetType": "register/schema",
+        },
+      ],
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > saves with a failed save without message 1`] = `
+{
+  "after": {
+    "draft": {
+      "actions": [],
+      "conditions": {
+        "and": [
+          {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        ],
+      },
+      "description": "d",
+      "followUps": [
+        "f1",
+      ],
+      "name": "Edited",
+      "sourceConfig": {
+        "a": 1,
+      },
+      "sourceHashMapping": "",
+      "sourceId": "",
+      "sourceTargetMapping": "",
+      "sourceType": "api",
+      "syncMode": "full",
+      "targetConfig": {},
+      "targetId": "",
+      "targetSourceMapping": "",
+      "targetType": "register/schema",
+    },
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": {
+      "extra": "kept",
+      "id": "sync-1",
+      "name": "Old",
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "Save failed",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "save",
+      [
+        "synchronization",
+        {
+          "actions": [],
+          "conditions": [
+            {
+              "and": [
+                {
+                  "==": [
+                    1,
+                    1,
+                  ],
+                },
+              ],
+            },
+          ],
+          "description": "d",
+          "extra": "kept",
+          "followUps": [
+            "f1",
+          ],
+          "id": "sync-1",
+          "name": "Edited",
+          "sourceConfig": {
+            "a": 1,
+          },
+          "sourceHashMapping": "",
+          "sourceId": "",
+          "sourceTargetMapping": "",
+          "sourceType": "api",
+          "syncMode": "full",
+          "targetConfig": {},
+          "targetId": "",
+          "targetSourceMapping": "",
+          "targetType": "register/schema",
+        },
+      ],
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > saves with a saved record 1`] = `
+{
+  "after": {
+    "draft": {
+      "actions": [],
+      "conditions": {
+        "and": [
+          {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        ],
+      },
+      "description": "d",
+      "followUps": [
+        "f1",
+      ],
+      "name": "Saved",
+      "sourceConfig": {
+        "a": 1,
+      },
+      "sourceHashMapping": "",
+      "sourceId": "",
+      "sourceTargetMapping": "",
+      "sourceType": "api",
+      "syncMode": "full",
+      "targetConfig": {},
+      "targetId": "",
+      "targetSourceMapping": "",
+      "targetType": "register/schema",
+    },
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": {
+      "actions": "not-a-list",
+      "conditions": "{"==":[1,1]}",
+      "cursorWatermark": "w1",
+      "description": "d",
+      "extra": "kept",
+      "followUps": [
+        "f1",
+      ],
+      "id": "sync-1",
+      "name": "Saved",
+      "sourceConfig": {
+        "a": 1,
+      },
+      "sourceType": "api",
+      "syncMode": null,
+      "targetConfig": [
+        1,
+      ],
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "save",
+      [
+        "synchronization",
+        {
+          "actions": [],
+          "conditions": [
+            {
+              "and": [
+                {
+                  "==": [
+                    1,
+                    1,
+                  ],
+                },
+              ],
+            },
+          ],
+          "description": "d",
+          "extra": "kept",
+          "followUps": [
+            "f1",
+          ],
+          "id": "sync-1",
+          "name": "Edited",
+          "sourceConfig": {
+            "a": 1,
+          },
+          "sourceHashMapping": "",
+          "sourceId": "",
+          "sourceTargetMapping": "",
+          "sourceType": "api",
+          "syncMode": "full",
+          "targetConfig": {},
+          "targetId": "",
+          "targetSourceMapping": "",
+          "targetType": "register/schema",
+        },
+      ],
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > saves with nothing saved 1`] = `
+{
+  "after": {
+    "draft": {
+      "actions": [],
+      "conditions": {
+        "and": [
+          {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        ],
+      },
+      "description": "d",
+      "followUps": [
+        "f1",
+      ],
+      "name": "Edited",
+      "sourceConfig": {
+        "a": 1,
+      },
+      "sourceHashMapping": "",
+      "sourceId": "",
+      "sourceTargetMapping": "",
+      "sourceType": "api",
+      "syncMode": "full",
+      "targetConfig": {},
+      "targetId": "",
+      "targetSourceMapping": "",
+      "targetType": "register/schema",
+    },
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": {
+      "extra": "kept",
+      "id": "sync-1",
+      "name": "Old",
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "Save failed",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "save",
+      [
+        "synchronization",
+        {
+          "actions": [],
+          "conditions": [
+            {
+              "and": [
+                {
+                  "==": [
+                    1,
+                    1,
+                  ],
+                },
+              ],
+            },
+          ],
+          "description": "d",
+          "extra": "kept",
+          "followUps": [
+            "f1",
+          ],
+          "id": "sync-1",
+          "name": "Edited",
+          "sourceConfig": {
+            "a": 1,
+          },
+          "sourceHashMapping": "",
+          "sourceId": "",
+          "sourceTargetMapping": "",
+          "sourceType": "api",
+          "syncMode": "full",
+          "targetConfig": {},
+          "targetId": "",
+          "targetSourceMapping": "",
+          "targetType": "register/schema",
+        },
+      ],
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > saves with nothing saved with a store error 1`] = `
+{
+  "after": {
+    "draft": {
+      "actions": [],
+      "conditions": {
+        "and": [
+          {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        ],
+      },
+      "description": "d",
+      "followUps": [
+        "f1",
+      ],
+      "name": "Edited",
+      "sourceConfig": {
+        "a": 1,
+      },
+      "sourceHashMapping": "",
+      "sourceId": "",
+      "sourceTargetMapping": "",
+      "sourceType": "api",
+      "syncMode": "full",
+      "targetConfig": {},
+      "targetId": "",
+      "targetSourceMapping": "",
+      "targetType": "register/schema",
+    },
+    "formsEnabled": false,
+    "loadError": "",
+    "loading": false,
+    "original": {
+      "extra": "kept",
+      "id": "sync-1",
+      "name": "Old",
+    },
+    "rawConditions": false,
+    "rawConditionsDraft": "",
+    "rawConditionsError": "",
+    "resettingCursor": false,
+    "saveError": "invalid",
+    "saving": false,
+    "tablesEnabled": false,
+  },
+  "during": true,
+  "trace": [
+    [
+      "save",
+      [
+        "synchronization",
+        {
+          "actions": [],
+          "conditions": [
+            {
+              "and": [
+                {
+                  "==": [
+                    1,
+                    1,
+                  ],
+                },
+              ],
+            },
+          ],
+          "description": "d",
+          "extra": "kept",
+          "followUps": [
+            "f1",
+          ],
+          "id": "sync-1",
+          "name": "Edited",
+          "sourceConfig": {
+            "a": 1,
+          },
+          "sourceHashMapping": "",
+          "sourceId": "",
+          "sourceTargetMapping": "",
+          "sourceType": "api",
+          "syncMode": "full",
+          "targetConfig": {},
+          "targetId": "",
+          "targetSourceMapping": "",
+          "targetType": "register/schema",
+        },
+      ],
+    ],
+  ],
+}
+`;
+
+exports[`SynchronizationDetailPage > starts with the recorded data 1`] = `
+{
+  "draft": null,
+  "formsEnabled": false,
+  "loadError": "",
+  "loading": false,
+  "original": null,
+  "rawConditions": false,
+  "rawConditionsDraft": "",
+  "rawConditionsError": "",
+  "resettingCursor": false,
+  "saveError": "",
+  "saving": false,
+  "tablesEnabled": false,
+}
+`;

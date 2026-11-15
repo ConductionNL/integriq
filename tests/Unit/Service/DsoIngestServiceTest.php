@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\BackgroundJob\AttachmentFetchJobScheduler;
 use OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
@@ -221,7 +222,7 @@ class DsoIngestServiceTest extends TestCase {
 			restProvider: $this->restProvider,
 			logger: $this->createMock(LoggerInterface::class),
 			rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class)),
-			jobList: $this->jobList,
+			attachmentFetches: new AttachmentFetchJobScheduler($this->jobList),
 			activityMapper: new DsoActivityMapper(new DsoActivityTable($objectService))
 		);
 

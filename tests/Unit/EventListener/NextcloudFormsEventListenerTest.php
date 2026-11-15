@@ -101,4 +101,43 @@ class NextcloudFormsEventListenerTest extends TestCase {
 		$listener = new NextcloudFormsEventListener($eventService, $this->createMock(LoggerInterface::class));
 		$listener->handle(new FormSubmittedEvent($form, $submission));
 	}//end testSkipsWhenNoActiveSubscriptions()
+
+	/**
+	 * A submission sends exactly this payload, and a failure is logged with
+	 * the event's class and never thrown.
+	 *
+	 * @return void
+	 */
+	public function testThePayloadAndTheLoggedFailure(): void {
+		$form = new Form(id: 12, title: 'Feedback');
+		$submission = new Submission(id: 99, formId: 12, userId: 'bob');
+		$event = new FormSubmittedEvent($form, $submission);
+		$sent = [];
+		$failure = new \RuntimeException('store down');
+		$eventService = $this->createMock(EventService::class);
+		$eventService->method('hasActiveSubscriptions')->willReturn(true);
+		$eventService->method('handleNextcloudEvent')->willReturnCallback(function (string $type, array $payload) use (&$sent, $failure): array {
+			$sent[] = [$type, $payload];
+			if (count($sent) === 2) {
+				throw $failure;
+			}
+
+			return [];
+		});
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('error')
+			->with('Failed to process Nextcloud Forms submission event: store down', ['exception' => $failure, 'event' => FormSubmittedEvent::class]);
+		$listener = new NextcloudFormsEventListener($eventService, $logger);
+
+		$listener->handle($event);
+		$listener->handle($event);
+
+		$expected = [
+			'source' => '/nextcloud/forms',
+			'subject' => '12',
+			'data' => ['formId' => '12', 'formTitle' => 'Feedback', 'submission' => $submission->read()],
+		];
+		$this->assertSame([['com.nextcloud.forms.submission.created', $expected], ['com.nextcloud.forms.submission.created', $expected]], $sent);
+
+	}//end testThePayloadAndTheLoggedFailure()
 }//end class

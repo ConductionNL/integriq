@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
  *
  * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-upgrade-moves-the-source-trust-into-the-consumer
  */
-class WebhookTrustMigrator {
+class WebhookTrustMigrator implements WebhookTrustMigratorInterface {
 
 	/**
 	 * The schema that held the trust before.
@@ -142,6 +142,7 @@ class WebhookTrustMigrator {
 				],
 			],
 			_rbac: false,
+			// Unscoped: a migration reads the legacy webhook trust, run as the system.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -206,6 +207,7 @@ class WebhookTrustMigrator {
 			register: DsoConnection::REGISTER,
 			schema: self::SCHEMA_SOURCE,
 			_rbac: false,
+			// Unscoped: a migration reads the raw stored source, run as the system.
 			_multitenancy: false,
 			_render: false
 		);

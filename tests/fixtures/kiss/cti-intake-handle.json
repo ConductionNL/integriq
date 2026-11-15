@@ -1,0 +1,471 @@
+{
+    "accepted": {
+        "accepted": 3,
+        "calls": [
+            {
+                "normalize": [
+                    {
+                        "provider": "webhook",
+                        "kissUrl": "https://kiss.example.test"
+                    },
+                    {
+                        "events": [
+                            {
+                                "kind": "ringing",
+                                "callId": "c-1",
+                                "callerNumber": "+31612345678",
+                                "agentId": "a-1",
+                                "at": "2026-01-01T10:00:00Z"
+                            },
+                            {
+                                "kind": "ringing",
+                                "callId": "c-1",
+                                "callerNumber": "+31612345678"
+                            },
+                            {
+                                "kind": "ended",
+                                "callId": "c-1",
+                                "durationSeconds": "42"
+                            },
+                            "not an event",
+                            []
+                        ]
+                    }
+                ]
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "c-1",
+                    "ringing"
+                ]
+            },
+            {
+                "context": [
+                    "+31612345678",
+                    {
+                        "provider": "webhook",
+                        "kissUrl": "https://kiss.example.test"
+                    }
+                ]
+            },
+            {
+                "record": {
+                    "kind": "ringing",
+                    "callId": "c-1",
+                    "callerNumber": "+31612345678",
+                    "caller": {
+                        "name": "Jan"
+                    },
+                    "openCases": [
+                        "Z-1"
+                    ],
+                    "agentId": "a-1",
+                    "sourceId": "cti-1",
+                    "at": "2026-01-01T10:00:00Z",
+                    "durationSeconds": 0
+                }
+            },
+            {
+                "dispatch": "OCA\\Integriq\\Event\\CallEvent"
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "c-1",
+                    "ringing"
+                ]
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "c-1",
+                    "ended"
+                ]
+            },
+            {
+                "context": [
+                    "",
+                    {
+                        "provider": "webhook",
+                        "kissUrl": "https://kiss.example.test"
+                    }
+                ]
+            },
+            {
+                "record": {
+                    "kind": "ended",
+                    "callId": "c-1",
+                    "callerNumber": "",
+                    "caller": null,
+                    "openCases": [],
+                    "agentId": "",
+                    "sourceId": "cti-1",
+                    "at": "",
+                    "durationSeconds": 42
+                }
+            },
+            {
+                "dispatch": "OCA\\Integriq\\Event\\CallEvent"
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "",
+                    ""
+                ]
+            },
+            {
+                "context": [
+                    "",
+                    {
+                        "provider": "webhook",
+                        "kissUrl": "https://kiss.example.test"
+                    }
+                ]
+            },
+            {
+                "record": {
+                    "kind": "",
+                    "callId": "",
+                    "callerNumber": "",
+                    "caller": null,
+                    "openCases": [],
+                    "agentId": "",
+                    "sourceId": "cti-1",
+                    "at": "",
+                    "durationSeconds": 0
+                }
+            },
+            {
+                "dispatch": "OCA\\Integriq\\Event\\CallEvent"
+            }
+        ]
+    },
+    "no provider": {
+        "accepted": 0,
+        "calls": []
+    },
+    "log fails": {
+        "accepted": 3,
+        "calls": [
+            {
+                "normalize": [
+                    {
+                        "provider": "webhook",
+                        "kissUrl": "https://kiss.example.test"
+                    },
+                    {
+                        "events": [
+                            {
+                                "kind": "ringing",
+                                "callId": "c-1",
+                                "callerNumber": "+31612345678",
+                                "agentId": "a-1",
+                                "at": "2026-01-01T10:00:00Z"
+                            },
+                            {
+                                "kind": "ringing",
+                                "callId": "c-1",
+                                "callerNumber": "+31612345678"
+                            },
+                            {
+                                "kind": "ended",
+                                "callId": "c-1",
+                                "durationSeconds": "42"
+                            },
+                            "not an event",
+                            []
+                        ]
+                    }
+                ]
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "c-1",
+                    "ringing"
+                ]
+            },
+            {
+                "context": [
+                    "+31612345678",
+                    {
+                        "provider": "webhook",
+                        "kissUrl": "https://kiss.example.test"
+                    }
+                ]
+            },
+            {
+                "record": {
+                    "kind": "ringing",
+                    "callId": "c-1",
+                    "callerNumber": "+31612345678",
+                    "caller": {
+                        "name": "Jan"
+                    },
+                    "openCases": [
+                        "Z-1"
+                    ],
+                    "agentId": "a-1",
+                    "sourceId": "cti-1",
+                    "at": "2026-01-01T10:00:00Z",
+                    "durationSeconds": 0
+                }
+            },
+            {
+                "log": [
+                    "error",
+                    "[CtiEventIntake] could not log call event nl.conduction.integriq.call.ringing: log full",
+                    []
+                ]
+            },
+            {
+                "dispatch": "OCA\\Integriq\\Event\\CallEvent"
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "c-1",
+                    "ringing"
+                ]
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "c-1",
+                    "ended"
+                ]
+            },
+            {
+                "context": [
+                    "",
+                    {
+                        "provider": "webhook",
+                        "kissUrl": "https://kiss.example.test"
+                    }
+                ]
+            },
+            {
+                "record": {
+                    "kind": "ended",
+                    "callId": "c-1",
+                    "callerNumber": "",
+                    "caller": null,
+                    "openCases": [],
+                    "agentId": "",
+                    "sourceId": "cti-1",
+                    "at": "",
+                    "durationSeconds": 42
+                }
+            },
+            {
+                "log": [
+                    "error",
+                    "[CtiEventIntake] could not log call event nl.conduction.integriq.call.ended: log full",
+                    []
+                ]
+            },
+            {
+                "dispatch": "OCA\\Integriq\\Event\\CallEvent"
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "",
+                    ""
+                ]
+            },
+            {
+                "context": [
+                    "",
+                    {
+                        "provider": "webhook",
+                        "kissUrl": "https://kiss.example.test"
+                    }
+                ]
+            },
+            {
+                "record": {
+                    "kind": "",
+                    "callId": "",
+                    "callerNumber": "",
+                    "caller": null,
+                    "openCases": [],
+                    "agentId": "",
+                    "sourceId": "cti-1",
+                    "at": "",
+                    "durationSeconds": 0
+                }
+            },
+            {
+                "log": [
+                    "error",
+                    "[CtiEventIntake] could not log call event nl.conduction.integriq.call.: log full",
+                    []
+                ]
+            },
+            {
+                "dispatch": "OCA\\Integriq\\Event\\CallEvent"
+            }
+        ]
+    },
+    "listener fails": {
+        "accepted": 3,
+        "calls": [
+            {
+                "normalize": [
+                    [],
+                    {
+                        "events": [
+                            {
+                                "kind": "ringing",
+                                "callId": "c-1",
+                                "callerNumber": "+31612345678",
+                                "agentId": "a-1",
+                                "at": "2026-01-01T10:00:00Z"
+                            },
+                            {
+                                "kind": "ringing",
+                                "callId": "c-1",
+                                "callerNumber": "+31612345678"
+                            },
+                            {
+                                "kind": "ended",
+                                "callId": "c-1",
+                                "durationSeconds": "42"
+                            },
+                            "not an event",
+                            []
+                        ]
+                    }
+                ]
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "c-1",
+                    "ringing"
+                ]
+            },
+            {
+                "context": [
+                    "+31612345678",
+                    []
+                ]
+            },
+            {
+                "record": {
+                    "kind": "ringing",
+                    "callId": "c-1",
+                    "callerNumber": "+31612345678",
+                    "caller": {
+                        "name": "Jan"
+                    },
+                    "openCases": [
+                        "Z-1"
+                    ],
+                    "agentId": "a-1",
+                    "sourceId": "cti-1",
+                    "at": "2026-01-01T10:00:00Z",
+                    "durationSeconds": 0
+                }
+            },
+            {
+                "dispatch": "OCA\\Integriq\\Event\\CallEvent"
+            },
+            {
+                "log": [
+                    "error",
+                    "[CtiEventIntake] a listener threw on nl.conduction.integriq.call.ringing: listener broke",
+                    [
+                        "exception"
+                    ]
+                ]
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "c-1",
+                    "ringing"
+                ]
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "c-1",
+                    "ended"
+                ]
+            },
+            {
+                "context": [
+                    "",
+                    []
+                ]
+            },
+            {
+                "record": {
+                    "kind": "ended",
+                    "callId": "c-1",
+                    "callerNumber": "",
+                    "caller": null,
+                    "openCases": [],
+                    "agentId": "",
+                    "sourceId": "cti-1",
+                    "at": "",
+                    "durationSeconds": 42
+                }
+            },
+            {
+                "dispatch": "OCA\\Integriq\\Event\\CallEvent"
+            },
+            {
+                "log": [
+                    "error",
+                    "[CtiEventIntake] a listener threw on nl.conduction.integriq.call.ended: listener broke",
+                    [
+                        "exception"
+                    ]
+                ]
+            },
+            {
+                "claim": [
+                    "cti-1",
+                    "",
+                    ""
+                ]
+            },
+            {
+                "context": [
+                    "",
+                    []
+                ]
+            },
+            {
+                "record": {
+                    "kind": "",
+                    "callId": "",
+                    "callerNumber": "",
+                    "caller": null,
+                    "openCases": [],
+                    "agentId": "",
+                    "sourceId": "cti-1",
+                    "at": "",
+                    "durationSeconds": 0
+                }
+            },
+            {
+                "dispatch": "OCA\\Integriq\\Event\\CallEvent"
+            },
+            {
+                "log": [
+                    "error",
+                    "[CtiEventIntake] a listener threw on nl.conduction.integriq.call.: listener broke",
+                    [
+                        "exception"
+                    ]
+                ]
+            }
+        ]
+    }
+}

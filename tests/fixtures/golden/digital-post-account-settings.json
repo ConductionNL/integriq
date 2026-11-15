@@ -1,0 +1,277 @@
+{
+    "new account, no connection yet": {
+        "status": 200,
+        "data": {
+            "account": {
+                "state": "described",
+                "group": "digitale-post-verzenders"
+            },
+            "warnings": []
+        },
+        "calls": [
+            "findConsumer",
+            "account dp",
+            "isMember digitale-post-verzenders dp",
+            "enrol digitale-post-verzenders dp",
+            "missingRights dp",
+            "isAdmin dp",
+            "save null {\"name\":\"Digital post\",\"description\":\"The account every digital post letter is stored as.\",\"authorizationType\":\"digital-post\",\"userId\":\"dp\"}",
+            "describe"
+        ]
+    },
+    "padded uid is trimmed": {
+        "status": 200,
+        "data": {
+            "account": {
+                "state": "described",
+                "group": "digitale-post-verzenders"
+            },
+            "warnings": []
+        },
+        "calls": [
+            "findConsumer",
+            "account dp",
+            "isMember digitale-post-verzenders dp",
+            "enrol digitale-post-verzenders dp",
+            "missingRights dp",
+            "isAdmin dp",
+            "save null {\"name\":\"Digital post\",\"description\":\"The account every digital post letter is stored as.\",\"authorizationType\":\"digital-post\",\"userId\":\"dp\"}",
+            "describe"
+        ]
+    },
+    "cleared, previous withdrawn": {
+        "status": 200,
+        "data": {
+            "account": {
+                "state": "described",
+                "group": "digitale-post-verzenders"
+            },
+            "warnings": []
+        },
+        "calls": [
+            "findConsumer",
+            "save \"consumer-1\" {\"userId\":\"\",\"name\":\"Mine\",\"authorizationType\":\"digital-post\"}",
+            "withdraw digitale-post-verzenders old",
+            "describe"
+        ]
+    },
+    "cleared, nothing before": {
+        "status": 200,
+        "data": {
+            "account": {
+                "state": "described",
+                "group": "digitale-post-verzenders"
+            },
+            "warnings": []
+        },
+        "calls": [
+            "findConsumer",
+            "save null {\"name\":\"Digital post\",\"description\":\"The account every digital post letter is stored as.\",\"authorizationType\":\"digital-post\",\"userId\":\"\"}",
+            "describe"
+        ]
+    },
+    "same account again": {
+        "status": 200,
+        "data": {
+            "account": {
+                "state": "described",
+                "group": "digitale-post-verzenders"
+            },
+            "warnings": []
+        },
+        "calls": [
+            "findConsumer",
+            "account dp",
+            "isMember digitale-post-verzenders dp",
+            "enrol digitale-post-verzenders dp",
+            "missingRights dp",
+            "isAdmin dp",
+            "save \"consumer-1\" {\"userId\":\"dp\",\"authorizationType\":\"digital-post\"}",
+            "describe"
+        ]
+    },
+    "changed account": {
+        "status": 200,
+        "data": {
+            "account": {
+                "state": "described",
+                "group": "digitale-post-verzenders"
+            },
+            "warnings": []
+        },
+        "calls": [
+            "findConsumer",
+            "account dp",
+            "isMember digitale-post-verzenders dp",
+            "enrol digitale-post-verzenders dp",
+            "missingRights dp",
+            "isAdmin dp",
+            "save \"consumer-1\" {\"userId\":\"dp\",\"authorizationType\":\"digital-post\"}",
+            "withdraw digitale-post-verzenders old",
+            "describe"
+        ]
+    },
+    "two connections": {
+        "status": 409,
+        "data": {
+            "errors": [
+                "More than one digital post connection exists. Remove all but one on the Consumers page. []"
+            ]
+        },
+        "calls": [
+            "findConsumer"
+        ]
+    },
+    "unknown account": {
+        "status": 400,
+        "data": {
+            "errors": [
+                "Account %s does not exist. [\"dp\"]"
+            ],
+            "fieldErrors": {
+                "userId": "Account %s does not exist. [\"dp\"]"
+            }
+        },
+        "calls": [
+            "findConsumer",
+            "account dp"
+        ]
+    },
+    "disabled account": {
+        "status": 400,
+        "data": {
+            "errors": [
+                "Account %s is disabled. [\"dp\"]"
+            ],
+            "fieldErrors": {
+                "userId": "Account %s is disabled. [\"dp\"]"
+            }
+        },
+        "calls": [
+            "findConsumer",
+            "account dp"
+        ]
+    },
+    "lacks rights, new member withdrawn": {
+        "status": 400,
+        "data": {
+            "errors": [
+                "Account %1$s lacks the %2$s right on %3$s. [\"dp\",\"create, update\",\"digitalPostMessage\"]"
+            ],
+            "fieldErrors": {
+                "userId": "Account %1$s lacks the %2$s right on %3$s. [\"dp\",\"create, update\",\"digitalPostMessage\"]"
+            }
+        },
+        "calls": [
+            "findConsumer",
+            "account dp",
+            "isMember digitale-post-verzenders dp",
+            "enrol digitale-post-verzenders dp",
+            "missingRights dp",
+            "withdraw digitale-post-verzenders dp"
+        ]
+    },
+    "lacks rights, old member stays": {
+        "status": 400,
+        "data": {
+            "errors": [
+                "Account %1$s lacks the %2$s right on %3$s. [\"dp\",\"create\",\"digitalPostMessage\"]"
+            ],
+            "fieldErrors": {
+                "userId": "Account %1$s lacks the %2$s right on %3$s. [\"dp\",\"create\",\"digitalPostMessage\"]"
+            }
+        },
+        "calls": [
+            "findConsumer",
+            "account dp",
+            "isMember digitale-post-verzenders dp",
+            "enrol digitale-post-verzenders dp",
+            "missingRights dp"
+        ]
+    },
+    "rights unchecked": {
+        "status": 200,
+        "data": {
+            "account": {
+                "state": "described",
+                "group": "digitale-post-verzenders"
+            },
+            "warnings": [
+                "The rights of account %s could not be checked. Digital post is refused until they can be. [\"dp\"]"
+            ]
+        },
+        "calls": [
+            "findConsumer",
+            "account dp",
+            "isMember digitale-post-verzenders dp",
+            "enrol digitale-post-verzenders dp",
+            "missingRights dp",
+            "isAdmin dp",
+            "save null {\"name\":\"Digital post\",\"description\":\"The account every digital post letter is stored as.\",\"authorizationType\":\"digital-post\",\"userId\":\"dp\"}",
+            "describe"
+        ]
+    },
+    "administrator": {
+        "status": 200,
+        "data": {
+            "account": {
+                "state": "described",
+                "group": "digitale-post-verzenders"
+            },
+            "warnings": [
+                "Account %s is an administrator. A dedicated account keeps the audit trail readable. [\"dp\"]"
+            ]
+        },
+        "calls": [
+            "findConsumer",
+            "account dp",
+            "isMember digitale-post-verzenders dp",
+            "enrol digitale-post-verzenders dp",
+            "missingRights dp",
+            "isAdmin dp",
+            "save null {\"name\":\"Digital post\",\"description\":\"The account every digital post letter is stored as.\",\"authorizationType\":\"digital-post\",\"userId\":\"dp\"}",
+            "describe"
+        ]
+    },
+    "unchecked administrator": {
+        "status": 200,
+        "data": {
+            "account": {
+                "state": "described",
+                "group": "digitale-post-verzenders"
+            },
+            "warnings": [
+                "The rights of account %s could not be checked. Digital post is refused until they can be. [\"dp\"]",
+                "Account %s is an administrator. A dedicated account keeps the audit trail readable. [\"dp\"]"
+            ]
+        },
+        "calls": [
+            "findConsumer",
+            "account dp",
+            "isMember digitale-post-verzenders dp",
+            "enrol digitale-post-verzenders dp",
+            "missingRights dp",
+            "isAdmin dp",
+            "save null {\"name\":\"Digital post\",\"description\":\"The account every digital post letter is stored as.\",\"authorizationType\":\"digital-post\",\"userId\":\"dp\"}",
+            "describe"
+        ]
+    },
+    "save fails, previous kept": {
+        "status": 400,
+        "data": {
+            "errors": [
+                "The digital post connection was not saved: %s [\"store down\"]"
+            ]
+        },
+        "calls": [
+            "findConsumer",
+            "account dp",
+            "isMember digitale-post-verzenders dp",
+            "enrol digitale-post-verzenders dp",
+            "missingRights dp",
+            "isAdmin dp",
+            "save \"consumer-1\" {\"userId\":\"dp\",\"authorizationType\":\"digital-post\"}",
+            "log [DigitalPostAccountSettingsController] the digital post connection was not saved {\"exception\":\"store down\"}"
+        ]
+    }
+}

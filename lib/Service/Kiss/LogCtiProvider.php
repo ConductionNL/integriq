@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Kiss;
 
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -98,8 +99,8 @@ class LogCtiProvider implements CtiProviderInterface {
 	 */
 	public function verify(array $sourceConfiguration, array $headers, string $rawBody): bool {
 		$expected = (string) ($sourceConfiguration['sharedSecret'] ?? '');
-		if ($expected === '') {
-			// An unconfigured secret is not an open door.
+		if ($expected === '' || $expected === SensitiveFieldRegistry::PLACEHOLDER) {
+			// An unconfigured secret, or the public export placeholder, is not an open door.
 			return false;
 		}
 

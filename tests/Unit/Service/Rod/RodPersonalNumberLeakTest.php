@@ -29,6 +29,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Rod;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
 use OCA\Integriq\Exception\RodProviderException;
 use OCA\Integriq\Exception\RodTranslationException;
+use OCA\Integriq\Service\Exchange\ExchangeHandOff;
 use OCA\Integriq\Service\Exchange\ExchangeTargetDispatcher;
 use OCA\Integriq\Service\OsoService;
 use OCA\Integriq\Service\Rod\RodAcknowledgementTranslator;
@@ -275,13 +276,13 @@ final class RodPersonalNumberLeakTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		$outcome = $dispatcher->dispatch(
+		$outcome = $dispatcher->dispatch(new ExchangeHandOff(
 			'job-1',
 			'bron-rod',
 			'export',
 			['berichtsoort' => 'schooladvies'],
 			[['recordId' => 'rec-1', 'sourceKind' => 'school-advies', 'data' => $this->advies()]]
-		);
+		));
 
 		$this->assertSame('send-failed', $outcome['rejected'][0]['errorCode']);
 		$this->assertStringNotContainsString(self::NUMBER, (string) json_encode($outcome));

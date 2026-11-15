@@ -35,8 +35,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\ApprovalStateException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\ApprovalDecisionService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\ApprovalDecisionServiceInterface;
 use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -65,8 +65,8 @@ class ApprovalsController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
 	 * @param ApprovalServiceInterface $approvalService The approval state-machine + authorization service.
-	 * @param ApprovalDecisionService $decisionService Resumes or stops the suspended run after a decision.
-	 * @param ActionAuthService $actionAuth ADR-023 action-matrix (coarse) authorization gate.
+	 * @param ApprovalDecisionServiceInterface $decisionService Resumes or stops the suspended run after a decision.
+	 * @param ActionAuthServiceInterface $actionAuth ADR-023 action-matrix (coarse) authorization gate.
 	 * @param IUserSession $userSession The user session.
 	 * @param IL10N $l The localization service.
 	 */
@@ -74,8 +74,8 @@ class ApprovalsController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ApprovalServiceInterface $approvalService,
-		private readonly ApprovalDecisionService $decisionService,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ApprovalDecisionServiceInterface $decisionService,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 	) {
@@ -153,39 +153,14 @@ class ApprovalsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function approve(string $id): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'approval.approve');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		}
-
-		try {
-			$approvalRequest = $this->approvalService->find(id: $id);
-		} catch (ApprovalStateException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
-		}
-
-		// Per-object layer (design.md Decision 5): passing the app-wide
-		// matrix check above is not sufficient — the caller must also be in
-		// THIS request's configured approverGroup (or be an admin).
-		if ($this->approvalService->isAuthorizedApprover(approvalRequest: $approvalRequest, user: $user) === false) {
-			return new JSONResponse(['error' => $this->l->t('You are not a member of this request\'s approver group')], Http::STATUS_FORBIDDEN);
-		}
-
-		try {
-			$this->approvalService->assertActionable(approvalRequest: $approvalRequest);
-		} catch (ApprovalStateException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
+		$decision = $this->clearToDecide(id: $id, action: 'approval.approve');
+		if ($decision instanceof JSONResponse) {
+			return $decision;
 		}
 
 		return $this->decisionService->approve(
-			approvalRequest: $approvalRequest,
-			user: $user,
+			approvalRequest: $decision->approvalRequest,
+			user: $decision->user,
 			comment: $this->request->getParam('comment')
 		);
 
@@ -204,37 +179,15 @@ class ApprovalsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function reject(string $id): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'approval.reject');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		}
-
-		try {
-			$approvalRequest = $this->approvalService->find(id: $id);
-		} catch (ApprovalStateException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
-		}
-
-		if ($this->approvalService->isAuthorizedApprover(approvalRequest: $approvalRequest, user: $user) === false) {
-			return new JSONResponse(['error' => $this->l->t('You are not a member of this request\'s approver group')], Http::STATUS_FORBIDDEN);
-		}
-
-		try {
-			$this->approvalService->assertActionable(approvalRequest: $approvalRequest);
-		} catch (ApprovalStateException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
+		$decision = $this->clearToDecide(id: $id, action: 'approval.reject');
+		if ($decision instanceof JSONResponse) {
+			return $decision;
 		}
 
 		$comment = (string)$this->request->getParam('comment', '');
 
 		try {
-			$approvalRequest = $this->decisionService->reject(approvalRequest: $approvalRequest, user: $user, comment: $comment);
+			$approvalRequest = $this->decisionService->reject(approvalRequest: $decision->approvalRequest, user: $decision->user, comment: $comment);
 		} catch (ApprovalStateException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
 		}
@@ -251,6 +204,64 @@ class ApprovalsController extends Controller {
 		);
 
 	}//end reject()
+
+	/**
+	 * The two-layer authorization of a decision (design.md Decision 5): an
+	 * authenticated caller allowed the action app-wide, then a member of THIS
+	 * request's approver group, on a request that can still be decided.
+	 *
+	 * @param string $id     The approval_request id.
+	 * @param string $action The action-matrix entry, `approval.approve` or `approval.reject`.
+	 *
+	 * @return ApprovalDecision|JSONResponse The cleared caller and request, or the refusal.
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	private function clearToDecide(string $id, string $action): ApprovalDecision|JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		try {
+			$this->actionAuth->requireAction(user: $user, action: $action);
+			$approvalRequest = $this->approvalService->find(id: $id);
+		} catch (OCSForbiddenException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (ApprovalStateException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
+		}
+
+		return $this->actionableFor(decision: new ApprovalDecision(user: $user, approvalRequest: $approvalRequest));
+
+	}//end clearToDecide()
+
+	/**
+	 * The per-object layer and the state check of a decision.
+	 *
+	 * @param ApprovalDecision $decision The caller and the request, past the app-wide matrix.
+	 *
+	 * @return ApprovalDecision|JSONResponse The decision, or the refusal.
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	private function actionableFor(ApprovalDecision $decision): ApprovalDecision|JSONResponse {
+		// Per-object layer (design.md Decision 5): passing the app-wide
+		// matrix check above is not sufficient — the caller must also be in
+		// THIS request's configured approverGroup (or be an admin).
+		if ($this->approvalService->isAuthorizedApprover(approvalRequest: $decision->approvalRequest, user: $decision->user) === false) {
+			return new JSONResponse(['error' => $this->l->t('You are not a member of this request\'s approver group')], Http::STATUS_FORBIDDEN);
+		}
+
+		try {
+			$this->approvalService->assertActionable(approvalRequest: $decision->approvalRequest);
+		} catch (ApprovalStateException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
+		}
+
+		return $decision;
+
+	}//end actionableFor()
 
 	/**
 	 * Summarize an approval_request row for the list endpoint (design.md

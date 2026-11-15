@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -75,7 +78,7 @@ interface CallServiceInterface {
 	 *     inbound value cannot contribute a `/`, `?`, `#` or a control
 	 *     character to the path — only the authored literal can.
 	 *  2. The FINAL rendered value is put through
-	 *     {@see FlowConfigGuard::endpointEscapeCode()} — the app's single
+	 *     {@see \OCA\Integriq\Kernel\EndpointContainment::escapeCode()} — the app's single
 	 *     containment predicate, the same rules `SourceCallNode` applies to a
 	 *     rendered flow endpoint — plus an empty-segment check. An absolute
 	 *     URL, a scheme-relative `//host`, a `../` traversal or a control

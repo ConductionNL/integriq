@@ -37,7 +37,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-suppressions-and-overrides-are-logged-req-ooa-007
  */
-class OptOutLogMapper extends QBMapper {
+class OptOutLogMapper extends QBMapper implements OptOutLogMapperInterface {
 
 	/**
 	 * The table, unprefixed.

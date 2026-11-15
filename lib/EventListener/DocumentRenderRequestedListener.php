@@ -27,7 +27,7 @@ namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
 use OCA\Integriq\Exception\DocumentGenerationException;
-use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
+use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -47,13 +47,13 @@ class DocumentRenderRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param DocumentGenerationService $service The render service.
+	 * @param DocumentGenerationServiceInterface $service The render service.
 	 * @param LoggerInterface $logger Logger for credential-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly DocumentGenerationService $service,
+		private readonly DocumentGenerationServiceInterface $service,
 		private readonly LoggerInterface $logger,
 	) {
 

@@ -15,6 +15,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -151,5 +154,31 @@ class FlowTemplateTest extends TestCase {
 		$this->assertNull(FlowTemplate::lookup(path: '@item.id', json: $item));
 
 	}//end testWholeItemPlaceholderResolvesToTheRecord()
+
+	/**
+	 * A per-item reference reads the item's field with or without the `json.` prefix.
+	 *
+	 * @return void
+	 */
+	public function testRenderReferenceAcceptsBothItemPathForms(): void {
+		$item = ['channel' => 'linkedin'];
+
+		$this->assertSame('jobboard-linkedin', FlowTemplate::renderReference(template: 'jobboard-{{ json.channel }}', json: $item));
+		$this->assertSame('jobboard-linkedin', FlowTemplate::renderReference(template: 'jobboard-{{channel}}', json: $item));
+		$this->assertSame('jobboard-', FlowTemplate::renderReference(template: ' jobboard-{{ json.missing }} ', json: $item));
+
+	}//end testRenderReferenceAcceptsBothItemPathForms()
+
+	/**
+	 * A record with its own `json` field keeps it: the record's key wins over the alias.
+	 *
+	 * @return void
+	 */
+	public function testRenderReferenceKeepsARecordsOwnJsonField(): void {
+		$item = ['channel' => 'werk-nl', 'json' => ['channel' => 'indeed']];
+
+		$this->assertSame('jobboard-indeed', FlowTemplate::renderReference(template: 'jobboard-{{ json.channel }}', json: $item));
+
+	}//end testRenderReferenceKeepsARecordsOwnJsonField()
 
 }//end class

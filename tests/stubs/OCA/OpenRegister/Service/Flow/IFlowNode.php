@@ -12,6 +12,9 @@
  * @category Test
  * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -71,10 +74,8 @@ interface IFlowNode {
 	/**
 	 * Do the work: items in, items out.
 	 *
-	 * @param array $items
-	 * @param array $config
-	 * @param array $context
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 * @return array
 	 */
-	public function execute(array $items, array $config, array $context): array;
+	public function execute(FlowNodeCall $call): array;
 }

@@ -1,0 +1,26 @@
+{
+    "unavailable": {
+        "severity": "success",
+        "description": "The Berichtenbox needs OpenRegister, which is not available."
+    },
+    "no sources": {
+        "severity": "success",
+        "description": "No Berichtenbox source is configured."
+    },
+    "all well": {
+        "severity": "success",
+        "description": "Every Berichtenbox source has a usable certificate, and no letter waits for a result."
+    },
+    "one waiting": {
+        "severity": "warning",
+        "description": "1 Berichtenbox letter has waited more than 24 hours for a result from Logius. Its status stays sent; check the ebMS adapter and the Leveranciersportaal."
+    },
+    "many waiting and every certificate problem": {
+        "severity": "warning",
+        "description": "4 Berichtenbox letters have waited more than 24 hours for a result from Logius. Their status stays sent; check the ebMS adapter and the Leveranciersportaal. Berichtenbox source bb-1 has no PKIoverheid certificate. Upload it under Administration settings, Integriq. The PKIoverheid certificate of Berichtenbox source bb-2 expires on 2026-12-01. Upload its successor before then, or every letter is refused. The PKIoverheid certificate of Berichtenbox source bb-3 cannot be used (certificate-expired). Every letter is refused until a usable one is uploaded."
+    },
+    "certificate only": {
+        "severity": "warning",
+        "description": "The PKIoverheid certificate of Berichtenbox source bb-2 expires on 2026-12-01. Upload its successor before then, or every letter is refused."
+    }
+}

@@ -3,6 +3,9 @@
 /**
  * The contract of POST /api/outbound/identities/{id}/alignment
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * This endpoint is network facing and shipped without a contract test, which
  * gate 25 caught. Every branch it can take is an answer somebody acts on: a
  * caller who is not signed in, a caller who is signed in but not allowed to

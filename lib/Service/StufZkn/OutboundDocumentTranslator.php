@@ -79,15 +79,14 @@ class OutboundDocumentTranslator {
 
 		$request = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:genereerDocumentIdentificatie_Di02');
 		$body->appendChild($request);
-		$this->appendStuurgegevens(
-			document: $document,
-			parent: $request,
+		$header = new Stuurgegevens(
 			berichtcode: 'Di02',
-			referenceNumber: $referenceNumber,
+			referentienummer: $referenceNumber,
 			zender: $zender,
 			ontvanger: $ontvanger,
 			tail: ['functie' => 'genereerDocumentidentificatie']
 		);
+		$this->appendStuurgegevens(parent: $request, header: $header);
 
 		return ['referentienummer' => $referenceNumber, 'xml' => $this->render(document: $document)];
 	}//end identificationRequest()
@@ -123,13 +122,8 @@ class OutboundDocumentTranslator {
 	/**
 	 * Build the `voegZaakdocumentToe_Lk01` kennisgeving (`edcLk01`).
 	 *
-	 * @param array                                                $document              The mapped delivery (ZGW field names).
-	 * @param string                                               $documentId The identificatie from genereerDocumentIdentificatie.
-	 * @param string                                               $zaakIdentificatie     The case the document belongs to.
-	 * @param string                                               $documenttype          The case type's document type description (`dct.omschrijving`).
-	 * @param array{content:string,filename:string,mimeType:string} $file                  The file, sent inline.
-	 * @param array{organisatie:string,applicatie:string}          $zender                This bridge as sender.
-	 * @param array{organisatie:string,applicatie?:string}         $ontvanger             The case system.
+	 * @param CaseDocumentDelivery $delivery   The document, its case, its file and the two systems.
+	 * @param string               $documentId The identificatie from genereerDocumentIdentificatie.
 	 *
 	 * @return array{referentienummer: string, xml: string}
 	 *
@@ -137,43 +131,22 @@ class OutboundDocumentTranslator {
 	 *
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
 	 */
-	public function documentMessage(
-		array $document,
-		string $documentId,
-		string $zaakIdentificatie,
-		string $documenttype,
-		array $file,
-		array $zender,
-		array $ontvanger,
-	): array {
-		$required = [
-			'identificatie' => $documentId,
-			'zaakIdentificatie' => $zaakIdentificatie,
-			'documenttype' => $documenttype,
-			'titel' => trim((string)($document['titel'] ?? '')),
-		];
-		foreach ($required as $name => $value) {
-			if (trim($value) === '') {
-				throw new StufZknTranslationException(
-					message: 'A voegZaakdocumentToe message needs a ' . $name . '; refusing to send without one.'
-				);
-			}
-		}
+	public function documentMessage(CaseDocumentDelivery $delivery, string $documentId): array {
+		$fields = $this->edcFields(delivery: $delivery, documentId: $documentId);
 
 		$referenceNumber = 'ZDS-' . bin2hex(random_bytes(8));
 		[$xml, $body] = $this->envelope();
 
 		$lk01 = $xml->createElementNS(StufZknNamespaces::ZKN, 'zkn:edcLk01');
 		$body->appendChild($lk01);
-		$this->appendStuurgegevens(
-			document: $xml,
-			parent: $lk01,
+		$header = new Stuurgegevens(
 			berichtcode: 'Lk01',
-			referenceNumber: $referenceNumber,
-			zender: $zender,
-			ontvanger: $ontvanger,
+			referentienummer: $referenceNumber,
+			zender: $delivery->zender,
+			ontvanger: $delivery->ontvanger,
 			tail: ['entiteittype' => 'EDC']
 		);
+		$this->appendStuurgegevens(parent: $lk01, header: $header);
 
 		$parameters = $xml->createElementNS(StufZknNamespaces::ZKN, 'zkn:parameters');
 		$lk01->appendChild($parameters);
@@ -184,16 +157,49 @@ class OutboundDocumentTranslator {
 		$object->setAttributeNS(StufZknNamespaces::STUF, 'StUF:entiteittype', 'EDC');
 		$object->setAttributeNS(StufZknNamespaces::STUF, 'StUF:verwerkingssoort', 'T');
 		$lk01->appendChild($object);
+		foreach ($fields as $name => $value) {
+			$this->appendZknField(document: $xml, parent: $object, name: $name, value: $value);
+		}
 
-		// The EDC element order of the ZDS 1.2 zkn0310 entity schema.
-		$fields = [
+		$this->appendFileAndCase(object: $object, delivery: $delivery);
+
+		return ['referentienummer' => $referenceNumber, 'xml' => $this->render(document: $xml)];
+	}//end documentMessage()
+
+	/**
+	 * The EDC fields in the element order of the ZDS 1.2 zkn0310 entity schema.
+	 *
+	 * @param CaseDocumentDelivery $delivery   The document, its case, its file and the two systems.
+	 * @param string               $documentId The identificatie from genereerDocumentIdentificatie.
+	 *
+	 * @return array<string, string> Field name to value, '' for none.
+	 *
+	 * @throws StufZknTranslationException When a required value is missing.
+	 */
+	private function edcFields(CaseDocumentDelivery $delivery, string $documentId): array {
+		$document = $delivery->document;
+		$required = [
 			'identificatie' => $documentId,
-			'dct.omschrijving' => $documenttype,
+			'zaakIdentificatie' => $delivery->zaakIdentificatie,
+			'documenttype' => $delivery->documenttype,
+			'titel' => trim((string)($document['titel'] ?? '')),
+		];
+		foreach ($required as $name => $value) {
+			if (trim($value) === '') {
+				throw new StufZknTranslationException(
+					message: 'A voegZaakdocumentToe message needs a ' . $name . '; refusing to send without one.'
+				);
+			}
+		}
+
+		return [
+			'identificatie' => $documentId,
+			'dct.omschrijving' => $delivery->documenttype,
 			'creatiedatum' => $this->stufDate(value: (string)($document['creatiedatum'] ?? '')),
 			'ontvangstdatum' => $this->stufDate(value: (string)($document['ontvangstdatum'] ?? '')),
 			'titel' => $required['titel'],
 			'beschrijving' => (string)($document['beschrijving'] ?? ''),
-			'formaat' => (string)($document['formaat'] ?? $file['mimeType']),
+			'formaat' => (string)($document['formaat'] ?? $delivery->file['mimeType']),
 			'taal' => (string)($document['taal'] ?? ''),
 			'versie' => (string)($document['versie'] ?? ''),
 			'status' => (string)($document['status'] ?? ''),
@@ -202,9 +208,19 @@ class OutboundDocumentTranslator {
 			'auteur' => (string)($document['auteur'] ?? ''),
 			'link' => (string)($document['link'] ?? ''),
 		];
-		foreach ($fields as $name => $value) {
-			$this->appendZknField(document: $xml, parent: $object, name: $name, value: $value);
-		}
+	}//end edcFields()
+
+	/**
+	 * Append the inline file and the relation to the case to the EDC object.
+	 *
+	 * @param DOMElement           $object   The EDC object.
+	 * @param CaseDocumentDelivery $delivery The document, its case, its file and the two systems.
+	 *
+	 * @return void
+	 */
+	private function appendFileAndCase(DOMElement $object, CaseDocumentDelivery $delivery): void {
+		$xml  = $object->ownerDocument;
+		$file = $delivery->file;
 
 		$content = $xml->createElementNS(StufZknNamespaces::ZKN, 'zkn:inhoud', base64_encode($file['content']));
 		$content->setAttributeNS(StufZknNamespaces::STUF, 'StUF:bestandsnaam', $file['filename']);
@@ -219,10 +235,8 @@ class OutboundDocumentTranslator {
 		$case->setAttributeNS(StufZknNamespaces::STUF, 'StUF:entiteittype', 'ZAK');
 		$case->setAttributeNS(StufZknNamespaces::STUF, 'StUF:verwerkingssoort', 'I');
 		$relation->appendChild($case);
-		$this->appendText(document: $xml, parent: $case, name: 'zkn:identificatie', value: $zaakIdentificatie);
-
-		return ['referentienummer' => $referenceNumber, 'xml' => $this->render(document: $xml)];
-	}//end documentMessage()
+		$this->appendText(document: $xml, parent: $case, name: 'zkn:identificatie', value: $delivery->zaakIdentificatie);
+	}//end appendFileAndCase()
 
 	/**
 	 * A SOAP envelope with the StUF, zkn, xsi and xmime prefixes declared.
@@ -247,30 +261,36 @@ class OutboundDocumentTranslator {
 	/**
 	 * Append `stuurgegevens` (berichtcode, zender, ontvanger, referentienummer, tijdstipBericht, then the tail).
 	 *
-	 * @param DOMDocument          $document        The owning document.
-	 * @param DOMElement           $parent          The message element.
-	 * @param string               $berichtcode     Di02 or Lk01.
-	 * @param string               $referenceNumber The message's referentienummer.
-	 * @param array                $zender          `organisatie` and `applicatie` of this bridge.
-	 * @param array                $ontvanger       `organisatie` and optional `applicatie` of the case system.
-	 * @param array<string,string> $tail            Elements after tijdstipBericht (functie or entiteittype).
+	 * @param DOMElement    $parent The message element.
+	 * @param Stuurgegevens $header What the block carries.
 	 *
 	 * @return void
 	 */
-	private function appendStuurgegevens(
-		DOMDocument $document,
-		DOMElement $parent,
-		string $berichtcode,
-		string $referenceNumber,
-		array $zender,
-		array $ontvanger,
-		array $tail,
-	): void {
+	private function appendStuurgegevens(DOMElement $parent, Stuurgegevens $header): void {
+		$document      = $parent->ownerDocument;
 		$stuurgegevens = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:stuurgegevens');
 		$parent->appendChild($stuurgegevens);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:berichtcode', value: $berichtcode);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:berichtcode', value: $header->berichtcode);
+		$this->appendSystems(stuurgegevens: $stuurgegevens, header: $header);
 
-		foreach (['zender' => $zender, 'ontvanger' => $ontvanger] as $role => $system) {
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:referentienummer', value: $header->referentienummer);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:tijdstipBericht', value: (new DateTime())->format('YmdHis'));
+		foreach ($header->tail as $name => $value) {
+			$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:' . $name, value: $value);
+		}
+	}//end appendStuurgegevens()
+
+	/**
+	 * Append zender and ontvanger, each with the organisatie and applicatie it names.
+	 *
+	 * @param DOMElement    $stuurgegevens The stuurgegevens element.
+	 * @param Stuurgegevens $header        What the block carries.
+	 *
+	 * @return void
+	 */
+	private function appendSystems(DOMElement $stuurgegevens, Stuurgegevens $header): void {
+		$document = $stuurgegevens->ownerDocument;
+		foreach (['zender' => $header->zender, 'ontvanger' => $header->ontvanger] as $role => $system) {
 			$element = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:' . $role);
 			$stuurgegevens->appendChild($element);
 			foreach (['organisatie', 'applicatie'] as $part) {
@@ -280,13 +300,7 @@ class OutboundDocumentTranslator {
 				}
 			}
 		}
-
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:referentienummer', value: $referenceNumber);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:tijdstipBericht', value: (new DateTime())->format('YmdHis'));
-		foreach ($tail as $name => $value) {
-			$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:' . $name, value: $value);
-		}
-	}//end appendStuurgegevens()
+	}//end appendSystems()
 
 	/**
 	 * Append a zkn field, or an explicitly empty one (`StUF:noValue` + `xsi:nil`) when there is no value.

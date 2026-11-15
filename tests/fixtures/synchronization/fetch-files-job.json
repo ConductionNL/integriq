@@ -1,0 +1,90 @@
+{
+    "not an array": [
+        {
+            "log": [
+                "warning",
+                "[FetchFilesJob] dropped: argument was not an array",
+                []
+            ]
+        }
+    ],
+    "empty": [
+        {
+            "log": [
+                "warning",
+                "[FetchFilesJob] dropped: incomplete arguments (config/endpoint/objectId required)",
+                []
+            ]
+        }
+    ],
+    "config not an array": [
+        {
+            "log": [
+                "warning",
+                "[FetchFilesJob] dropped: incomplete arguments (config/endpoint/objectId required)",
+                []
+            ]
+        }
+    ],
+    "no endpoint": [
+        {
+            "log": [
+                "warning",
+                "[FetchFilesJob] dropped: incomplete arguments (config/endpoint/objectId required)",
+                []
+            ]
+        }
+    ],
+    "no object": [
+        {
+            "log": [
+                "warning",
+                "[FetchFilesJob] dropped: incomplete arguments (config/endpoint/objectId required)",
+                []
+            ]
+        }
+    ],
+    "complete": [
+        {
+            "fetch": [
+                {
+                    "a": 1
+                },
+                {
+                    "url": "https://x"
+                },
+                "42",
+                7
+            ]
+        }
+    ],
+    "no rule": [
+        {
+            "fetch": [
+                [],
+                "",
+                "o-1",
+                0
+            ]
+        }
+    ],
+    "fetch throws": [
+        {
+            "fetch": [
+                [],
+                "e",
+                "boom",
+                0
+            ]
+        },
+        {
+            "log": [
+                "error",
+                "[FetchFilesJob] deferred file fetch failed for object boom: source down",
+                [
+                    "exception"
+                ]
+            ]
+        }
+    ]
+}

@@ -3,6 +3,9 @@
 /**
  * Integriq Job → Flow migration generator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Task 3.3 of `flow-native-synchronization` ("Jobs → trigger-schedule flows"):
  * renders an existing Job entity into a GENERATED FLOW DOCUMENT whose start node
  * is `openregister.trigger-schedule`, followed by the one step that does what
@@ -67,9 +70,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -81,9 +81,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\AppInfo\Application;
+use InvalidArgumentException;
 use OCA\Integriq\Exception\EntityNotMigratableException;
-use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Kernel\FlowNodeIds;
+use OCA\Integriq\Service\Job\MovedJobClasses;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IUserManager;
@@ -107,28 +109,28 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 *
 	 * @var string
 	 */
-	private const ACTION_SYNCHRONIZATION = 'OCA\Integriq\Action\SynchronizationAction';
+	private const ACTION_SYNCHRONIZATION = 'OCA\Integriq\Service\Job\SynchronizationAction';
 
 	/**
 	 * The job action that runs a flow.
 	 *
 	 * @var string
 	 */
-	private const ACTION_FLOW = 'OCA\Integriq\Action\FlowAction';
+	private const ACTION_FLOW = 'OCA\Integriq\Service\Job\FlowAction';
 
 	/**
 	 * The job action that pings a source.
 	 *
 	 * @var string
 	 */
-	private const ACTION_PING = 'OCA\Integriq\Action\PingAction';
+	private const ACTION_PING = 'OCA\Integriq\Service\Job\PingAction';
 
 	/**
 	 * The job action that emits a CloudEvent.
 	 *
 	 * @var string
 	 */
-	private const ACTION_EVENT = 'OCA\Integriq\Action\EventAction';
+	private const ACTION_EVENT = 'OCA\Integriq\Service\Job\EventAction';
 
 	/**
 	 * The job arguments each supported action's node actually consumes.
@@ -166,6 +168,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @param IL10N $l10n Translations.
 	 * @param IAppConfig $appConfig Reads the configured acting account.
 	 * @param IUserManager $userManager Proves that account exists before a flow claims it.
+	 * @param JobCalendarSchedule|null $calendar Translates a calendar schedule into a cron expression.
 	 */
 	public function __construct(
 		private readonly MigrationEntityReader $reader,
@@ -174,6 +177,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 		private readonly IL10N $l10n,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserManager $userManager,
+		private readonly ?JobCalendarSchedule $calendar = null,
 	) {
 
 	}//end __construct()
@@ -186,7 +190,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	private function runAsUid(): string {
 		return trim(
 			$this->appConfig->getValueString(
-				app: Application::APP_ID,
+				app: AppIdentity::APP_ID,
 				key: self::RUN_AS_CONFIG_KEY,
 				default: ''
 			)
@@ -242,7 +246,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 		}
 
 		$reference = $this->subject->referenceOf(entity: $job);
-		$cron = (string)$this->cadence->cronFor(seconds: $this->intervalOf(job: $job));
+		$cron = $this->cronOf(job: $job);
 		$nodes = $this->nodesFor(job: $job, cron: $cron);
 
 		return [
@@ -362,19 +366,104 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function scheduleRefusals(array $job): array {
-		$reasons = [];
+		$cadence = $this->intervalRefusals(job: $job);
+		if ($this->calendar()->isCalendar(jobData: $job) === true) {
+			$cadence = $this->calendarRefusals(job: $job);
+		}
+
+		return array_merge(
+			$cadence,
+			$this->delayedStartRefusals(job: $job),
+			$this->singleRunRefusals(job: $job),
+			$this->runIdentityRefusals(job: $job)
+		);
+	}//end scheduleRefusals()
+
+	/**
+	 * Refusals about a calendar schedule a cron would have to say.
+	 *
+	 * A calendar with weekdays and whole times becomes `m h * * d`. Every other
+	 * field is refused by name and never rounded or dropped: a flow that ran on
+	 * the 31st instead of the last working day would be a different job.
+	 *
+	 * @param array $job The job's serialised record.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
+	 */
+	private function calendarRefusals(array $job): array {
+		try {
+			$fields = $this->calendar()->cronRefusals(calendar: $job['schedule'], serverZone: date_default_timezone_get());
+		} catch (InvalidArgumentException $e) {
+			return [$this->l10n->t('schedule: the calendar is not valid (%1$s).', [$e->getMessage()])];
+		}
+
+		return array_map(
+			fn (string $field): string => $this->l10n->t(
+				'%1$s: a five-field cron says weekdays and times of day in the server\'s time zone, with one '
+				. 'minute for all times; it cannot say this part of the calendar, and dropping it would change '
+				. 'when the job runs.',
+				[$field]
+			),
+			$fields
+		);
+	}//end calendarRefusals()
+
+	/**
+	 * The cron the generated flow runs on.
+	 *
+	 * @param array $job The job's serialised record, already free of refusals.
+	 *
+	 * @return string The five-field cron.
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
+	 */
+	private function cronOf(array $job): string {
+		if ($this->calendar()->isCalendar(jobData: $job) === true) {
+			return $this->calendar()->cronFor(calendar: $job['schedule']);
+		}
+
+		return (string)$this->cadence->cronFor(seconds: $this->intervalOf(job: $job));
+	}//end cronOf()
+
+	/**
+	 * The calendar calculator.
+	 *
+	 * @return JobCalendarSchedule The calculator.
+	 */
+	private function calendar(): JobCalendarSchedule {
+		return ($this->calendar ?? new JobCalendarSchedule());
+	}//end calendar()
+
+	/**
+	 * Refusals about the interval a schedule trigger would need as a cron.
+	 *
+	 * @param array $job The job's serialised record.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function intervalRefusals(array $job): array {
 		$interval = $this->intervalOf(job: $job);
 
 		if ($interval <= 0) {
-			$reasons[] = $this->l10n->t(
-				'interval "%1$s": a schedule trigger needs a cadence, and a job with no positive interval '
-				. 'has none to translate.',
-				[(string)($job['interval'] ?? '')]
-			);
+			return [
+				$this->l10n->t(
+					'interval "%1$s": a schedule trigger needs a cadence, and a job with no positive interval '
+					. 'has none to translate.',
+					[(string)($job['interval'] ?? '')]
+				),
+			];
 		}
 
-		if ($interval > 0 && $this->cadence->cronFor(seconds: $interval) === null) {
-			$reasons[] = $this->l10n->t(
+		if ($this->cadence->cronFor(seconds: $interval) !== null) {
+			return [];
+		}
+
+		return [
+			$this->l10n->t(
 				'interval %1$s seconds: a five-field cron is absolute wall-clock time, so only an interval '
 				. 'that divides the hour or the day evenly is the same cadence. The expressible intervals '
 				. 'are: %2$s. Rounding to the nearest one would change how often this job runs.',
@@ -382,34 +471,77 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 					(string)$interval,
 					implode(', ', array_map('strval', $this->cadence->expressibleIntervals())),
 				]
-			);
+			),
+		];
+	}//end intervalRefusals()
+
+	/**
+	 * The refusal for a delayed-start job, which a cron cannot bound.
+	 *
+	 * @param array $job The job's serialised record.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function delayedStartRefusals(array $job): array {
+		if (trim((string)($job['scheduleAfter'] ?? '')) === '') {
+			return [];
 		}
 
-		if (trim((string)($job['scheduleAfter'] ?? '')) !== '') {
-			$reasons[] = $this->l10n->t(
+		return [
+			$this->l10n->t(
 				'scheduleAfter "%1$s": a cron expression has no "not before" bound, so a delayed-start job '
 				. 'would begin firing on the next tick instead.',
 				[trim((string)$job['scheduleAfter'])]
-			);
+			),
+		];
+	}//end delayedStartRefusals()
+
+	/**
+	 * The refusal for a job that runs once, which a schedule trigger cannot do.
+	 *
+	 * @param array $job The job's serialised record.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function singleRunRefusals(array $job): array {
+		if ($this->isSingleRun(job: $job) === false) {
+			return [];
 		}
 
-		if ($this->isSingleRun(job: $job) === true) {
-			$reasons[] = $this->l10n->t(
+		return [
+			$this->l10n->t(
 				'singleRun: a schedule trigger fires for as long as the flow is enabled; there is no '
 				. '"run once and disable myself" in the cron vocabulary.'
-			);
+			),
+		];
+	}//end singleRunRefusals()
+
+	/**
+	 * The refusal for a job that runs as a user, which a generated flow cannot keep.
+	 *
+	 * @param array $job The job's serialised record.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function runIdentityRefusals(array $job): array {
+		if (trim((string)($job['userId'] ?? '')) === '') {
+			return [];
 		}
 
-		if (trim((string)($job['userId'] ?? '')) !== '') {
-			$reasons[] = $this->l10n->t(
+		return [
+			$this->l10n->t(
 				'userId "%1$s": a scheduled flow runs as its OWNER — the account that creates it — and a '
 				. 'generated document cannot set an owner, so the run identity would silently change.',
 				[trim((string)$job['userId'])]
-			);
-		}
-
-		return $reasons;
-	}//end scheduleRefusals()
+			),
+		];
+	}//end runIdentityRefusals()
 
 	/**
 	 * Refusals about WHAT the job does.
@@ -429,6 +561,57 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 			];
 		}
 
+		$unsupported = $this->unsupportedActionRefusals(jobClass: $jobClass);
+		if ($unsupported !== []) {
+			return $unsupported;
+		}
+
+		return array_merge(
+			$this->targetRefusals(job: $job, jobClass: $jobClass),
+			$this->argumentRefusals(job: $job, jobClass: $jobClass)
+		);
+
+	}//end actionRefusals()
+
+	/**
+	 * The refusal for an action no flow node stands in for: a ping, an event,
+	 * or any class without decomposed arguments.
+	 *
+	 * @param string $jobClass The normalised job action class.
+	 *
+	 * @return array<int, string> The refusal reasons; empty for a supported action.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function unsupportedActionRefusals(string $jobClass): array {
+		$nodeless = $this->nodelessActionRefusals(jobClass: $jobClass);
+		if ($nodeless !== []) {
+			return $nodeless;
+		}
+
+		if (isset(self::CONSUMED_ARGUMENTS[$jobClass]) === false) {
+			return [
+				$this->l10n->t(
+					'jobClass "%1$s": no flow node stands in for this action. Only "%2$s" and "%3$s" have '
+					. 'decomposed equivalents.',
+					[$jobClass, self::ACTION_SYNCHRONIZATION, self::ACTION_FLOW]
+				),
+			];
+		}
+
+		return [];
+	}//end unsupportedActionRefusals()
+
+	/**
+	 * The refusal for a ping or an event action, which no flow step reproduces.
+	 *
+	 * @param string $jobClass The normalised job action class.
+	 *
+	 * @return array<int, string> The refusal reasons; empty for any other action.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function nodelessActionRefusals(string $jobClass): array {
 		if ($jobClass === self::ACTION_PING) {
 			return [
 				$this->l10n->t(
@@ -450,22 +633,8 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 			];
 		}
 
-		if (isset(self::CONSUMED_ARGUMENTS[$jobClass]) === false) {
-			return [
-				$this->l10n->t(
-					'jobClass "%1$s": no flow node stands in for this action. Only "%2$s" and "%3$s" have '
-					. 'decomposed equivalents.',
-					[$jobClass, self::ACTION_SYNCHRONIZATION, self::ACTION_FLOW]
-				),
-			];
-		}
-
-		return array_merge(
-			$this->targetRefusals(job: $job, jobClass: $jobClass),
-			$this->argumentRefusals(job: $job, jobClass: $jobClass)
-		);
-
-	}//end actionRefusals()
+		return [];
+	}//end nodelessActionRefusals()
 
 	/**
 	 * Refusals about the thing the action is pointed at.
@@ -601,7 +770,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 
 		return [
 			'id' => 'run',
-			'type' => SynchronizationRunNode::NODE_ID,
+			'type' => FlowNodeIds::SYNCHRONIZATION_RUN,
 			'config' => $config,
 		];
 
@@ -617,21 +786,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function edgesFor(array $nodes): array {
-		$ids = array_map(static fn (array $node): string => (string)$node['id'], array_values($nodes));
-
-		$edges = [];
-		$total = count($ids);
-		for ($index = 0; $index < ($total - 1); $index++) {
-			$from = $ids[$index];
-			$to = $ids[($index + 1)];
-			$edges[] = [
-				'id' => $from . '-' . $to,
-				'from' => $from,
-				'to' => $to,
-			];
-		}
-
-		return $edges;
+		return PipelineEdges::chain(nodes: $nodes);
 	}//end edgesFor()
 
 	/**
@@ -646,6 +801,15 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function describe(array $job, string $reference, string $cron): string {
+		if ($this->calendar()->isCalendar(jobData: $job) === true) {
+			return $this->l10n->t(
+				'Generated from job "%1$s" (%2$s) by the flow-native-synchronization migration. It is disabled '
+				. 'until a human has reviewed it, and the job it was generated from is untouched — enable one or '
+				. 'the other, never both. The job\'s calendar became the cron "%3$s".',
+				[$this->subject->labelOf(entity: $job), $reference, $cron]
+			);
+		}
+
 		return $this->l10n->t(
 			'Generated from job "%1$s" (%2$s) by the flow-native-synchronization migration. It is disabled '
 			. 'until a human has reviewed it, and the job it was generated from is untouched — enable one or '
@@ -700,6 +864,10 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	/**
 	 * The job's action class, normalised to a leading-backslash-free name.
 	 *
+	 * An old name of a moved action is read as its current name: a job can
+	 * hold one until the repair step has rewritten it, or after OpenRegister
+	 * writes one back.
+	 *
 	 * @param array $job The job's serialised record.
 	 *
 	 * @return string The class name; empty when there is none.
@@ -707,7 +875,9 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function jobClassOf(array $job): string {
-		return ltrim(trim((string)($job['jobClass'] ?? '')), '\\');
+		$jobClass = ltrim(trim((string)($job['jobClass'] ?? '')), '\\');
+
+		return (MovedJobClasses::NEW_NAMES[$jobClass] ?? $jobClass);
 	}//end jobClassOf()
 
 	/**

@@ -91,36 +91,62 @@ class DigikoppelingBrokerResolver {
 		$available = $this->available();
 
 		if ($selected === '') {
-			$known = '(no brokers configured)';
-			if ($available !== []) {
-				$known = implode(', ', array_keys($available));
-			}
-
-			throw new BrokerConfigurationException(
-				sprintf(
-					'No Digikoppeling broker is selected. Set "%s" to one of: %s. Nothing was sent.',
-					self::SELECTED_KEY,
-					$known
-				)
-			);
+			throw $this->noneSelected(available: $available);
 		}
 
 		if (isset($available[$selected]) === false) {
-			$known = '(none)';
-			if ($available !== []) {
-				$known = implode(', ', array_keys($available));
-			}
-
-			throw new BrokerConfigurationException(
-				sprintf(
-					'The selected Digikoppeling broker "%s" is not configured. Configured brokers: %s. Nothing was sent.',
-					$selected,
-					$known
-				)
-			);
+			throw $this->selectedUnknown(selected: $selected, available: $available);
 		}
 
-		$broker = $available[$selected];
+		return $this->withEndpoint(selected: $selected, broker: $available[$selected]);
+	}//end resolve()
+
+	/**
+	 * The refusal for an instance that selected no broker.
+	 *
+	 * @param array<string,array<string,mixed>> $available The configured brokers.
+	 *
+	 * @return BrokerConfigurationException The refusal, naming the brokers to choose from.
+	 */
+	private function noneSelected(array $available): BrokerConfigurationException {
+		return new BrokerConfigurationException(
+			sprintf(
+				'No Digikoppeling broker is selected. Set "%s" to one of: %s. Nothing was sent.',
+				self::SELECTED_KEY,
+				$this->known(available: $available, none: '(no brokers configured)')
+			)
+		);
+	}//end noneSelected()
+
+	/**
+	 * The refusal for a selected broker that is not configured.
+	 *
+	 * @param string                            $selected  The selected broker.
+	 * @param array<string,array<string,mixed>> $available The configured brokers.
+	 *
+	 * @return BrokerConfigurationException The refusal.
+	 */
+	private function selectedUnknown(string $selected, array $available): BrokerConfigurationException {
+		return new BrokerConfigurationException(
+			sprintf(
+				'The selected Digikoppeling broker "%s" is not configured. Configured brokers: %s. Nothing was sent.',
+				$selected,
+				$this->known(available: $available, none: '(none)')
+			)
+		);
+	}//end selectedUnknown()
+
+	/**
+	 * The selected broker with its id, once it has an endpoint.
+	 *
+	 * @param string              $selected The selected broker.
+	 * @param array<string,mixed> $broker   Its configuration.
+	 *
+	 * @return array<string,mixed> `{id, endpoint, ...}`.
+	 *
+	 * @throws BrokerConfigurationException When it has no endpoint.
+	 */
+	private function withEndpoint(string $selected, array $broker): array {
 		if ((string)($broker['endpoint'] ?? '') === '') {
 			throw new BrokerConfigurationException(
 				sprintf('The Digikoppeling broker "%s" has no endpoint configured. Nothing was sent.', $selected)
@@ -128,7 +154,23 @@ class DigikoppelingBrokerResolver {
 		}
 
 		return (['id' => $selected] + $broker);
-	}//end resolve()
+	}//end withEndpoint()
+
+	/**
+	 * The configured broker ids for a refusal.
+	 *
+	 * @param array<string,array<string,mixed>> $available The configured brokers.
+	 * @param string                            $none      What to say when there are none.
+	 *
+	 * @return string The ids, comma separated.
+	 */
+	private function known(array $available, string $none): string {
+		if ($available === []) {
+			return $none;
+		}
+
+		return implode(', ', array_keys($available));
+	}//end known()
 
 	/**
 	 * Select a broker, keeping the previous choice in the audit trail.
@@ -143,47 +185,73 @@ class DigikoppelingBrokerResolver {
 	public function select(string $brokerId, string $userId = ''): array {
 		$available = $this->available();
 		if (isset($available[$brokerId]) === false) {
-			$known = '(none)';
-			if ($available !== []) {
-				$known = implode(', ', array_keys($available));
-			}
-
 			throw new BrokerConfigurationException(
-				sprintf(
-					'"%s" is not a configured Digikoppeling broker. Configured brokers: %s.',
-					$brokerId,
-					$known
-				)
+				sprintf('"%s" is not a configured Digikoppeling broker. Configured brokers: %s.', $brokerId, $this->known(available: $available, none: '(none)'))
 			);
 		}
 
 		$previous = $this->appConfig->getValueString(self::APP_ID, self::SELECTED_KEY, '');
-		$audit = $this->audit();
+		$audit = $this->recordSelection(previous: $previous, change: ['to' => $brokerId, 'by' => $userId]);
+		$this->logger->info('digikoppeling.broker.changed', ['from' => $previous, 'to' => $brokerId, 'by' => $userId]);
 
+		return $audit;
+	}//end select()
+
+	/**
+	 * Store the new selection and its line in the audit trail.
+	 *
+	 * @param string                       $previous The broker selected before, or empty.
+	 * @param array{to:string,by:string}   $change   The broker selected now and who chose it.
+	 *
+	 * @return array<int,array<string,mixed>> The audit trail after the change.
+	 */
+	private function recordSelection(string $previous, array $change): array {
+		$audit = $this->audit();
+		$audit[] = $this->auditLine(previous: $previous, change: $change);
+
+		$this->appConfig->setValueString(self::APP_ID, self::SELECTED_KEY, $change['to']);
+		$this->storeAudit(audit: $audit);
+
+		return $audit;
+	}//end recordSelection()
+
+	/**
+	 * One line of the audit trail: from (null when nothing was selected), to, by and when.
+	 *
+	 * @param string                     $previous The broker selected before, or empty.
+	 * @param array{to:string,by:string} $change   The broker selected now and who chose it.
+	 *
+	 * @return array<string,mixed> The line.
+	 */
+	private function auditLine(string $previous, array $change): array {
 		$from = $previous;
 		if ($from === '') {
 			$from = null;
 		}
 
-		$audit[] = [
+		return [
 			'from' => $from,
-			'to' => $brokerId,
-			'by' => $userId,
+			'to' => $change['to'],
+			'by' => $change['by'],
 			'at' => gmdate('c'),
 		];
+	}//end auditLine()
 
-		$this->appConfig->setValueString(self::APP_ID, self::SELECTED_KEY, $brokerId);
+	/**
+	 * Store the audit trail.
+	 *
+	 * @param array<int,array<string,mixed>> $audit The audit trail.
+	 *
+	 * @return void
+	 */
+	private function storeAudit(array $audit): void {
 		$encoded = json_encode($audit);
 		if ($encoded === false) {
 			$encoded = '[]';
 		}
 
 		$this->appConfig->setValueString(self::APP_ID, self::AUDIT_KEY, $encoded);
-
-		$this->logger->info('digikoppeling.broker.changed', ['from' => $previous, 'to' => $brokerId, 'by' => $userId]);
-
-		return $audit;
-	}//end select()
+	}//end storeAudit()
 
 	/**
 	 * Every broker change this instance has made.

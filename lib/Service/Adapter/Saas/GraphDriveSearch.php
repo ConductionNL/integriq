@@ -76,34 +76,43 @@ final class GraphDriveSearch {
 	/**
 	 * The `/search/query` body for drive items.
 	 *
-	 * @param string      $terms  The terms.
-	 * @param string|null $from   Start, Y-m-d.
-	 * @param string|null $to     End, Y-m-d.
-	 * @param int         $limit  At most this many hits.
-	 * @param string      $region The Graph search region an application grant needs.
+	 * @param DriveSearchQuery $query The terms, dates, limit and region.
 	 *
 	 * @return string The JSON body.
 	 *
 	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-microsoft-365-source-answers-a-document-search-across-files-mail-and-chat-req-dcc-008
 	 */
-	public function requestBody(string $terms, ?string $from, ?string $to, int $limit, string $region): string {
-		$query = trim($terms);
-		foreach (['>=' => $from, '<=' => $to] as $operator => $date) {
-			if ($date !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1) {
-				$query .= ' LastModifiedTime' . $operator . $date;
-			}
-		}
-
+	public function requestBody(DriveSearchQuery $query): string {
 		$request = [
 			'entityTypes' => ['driveItem'],
-			'query' => ['queryString' => $query],
+			'query' => ['queryString' => trim($query->terms) . $this->dateFilters(query: $query)],
 			'from' => 0,
-			'size' => $this->clamp(limit: $limit),
-			'region' => $region,
+			'size' => $this->clamp(limit: $query->limit),
+			'region' => $query->region,
 		];
 
 		return (string)json_encode(['requests' => [$request]]);
 	}//end requestBody()
+
+	/**
+	 * The LastModifiedTime filters for each Y-m-d bound; any other shape is left out.
+	 *
+	 * @param DriveSearchQuery $query The search.
+	 *
+	 * @return string The filters, each with a leading space.
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-microsoft-365-source-answers-a-document-search-across-files-mail-and-chat-req-dcc-008
+	 */
+	private function dateFilters(DriveSearchQuery $query): string {
+		$filters = '';
+		foreach (['>=' => $query->from, '<=' => $query->to] as $operator => $date) {
+			if ($date !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1) {
+				$filters .= ' LastModifiedTime' . $operator . $date;
+			}
+		}
+
+		return $filters;
+	}//end dateFilters()
 
 	/**
 	 * A brokered Graph answer as hits, the count of the rest, and notices.
