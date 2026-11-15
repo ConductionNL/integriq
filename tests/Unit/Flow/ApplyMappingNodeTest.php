@@ -28,6 +28,7 @@ use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Flow\FlowNodeSupport;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Service\MappingService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -381,6 +382,129 @@ class ApplyMappingNodeTest extends TestCase {
 		$this->assertSame([], $this->node->execute(new FlowNodeCall([], ['mapping' => 'demo-mapping'], $this->context())));
 
 	}//end testEmptyInputMapsNothing()
+
+	/**
+	 * A templated mapping maps each item with the mapping its record names, looked up once per name.
+	 *
+	 * @return void
+	 */
+	public function testTemplatedMappingPicksTheMappingPerItem(): void {
+		$this->givenOwner();
+		$mappings = $this->givenBoardMappings();
+
+		$looked = [];
+		$this->mappingService->method('findMapping')->willReturnCallback(
+			static function (string $reference) use ($mappings, &$looked): ?ObjectEntity {
+				$looked[] = $reference;
+
+				return ($mappings[$reference] ?? null);
+			}
+		);
+		$this->mappingService->expects($this->exactly(3))->method('executeMapping')->willReturnCallback(
+			static function ($mapping, array $input): array {
+				return ['board' => $mapping->getUuid(), 'title' => $input['title']];
+			}
+		);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[
+				['json' => ['channel' => 'werk-nl', 'title' => 'A']],
+				['json' => ['channel' => 'linkedin', 'title' => 'B']],
+				['json' => ['channel' => 'werk-nl', 'title' => 'C']],
+			],
+			['mapping' => 'jobboard-{{ json.channel }}'],
+			$this->context()
+		));
+
+		$this->assertSame(['jobboard-werk-nl', 'jobboard-linkedin'], $looked);
+		$this->assertSame(['board' => 'werk-nl-mapping', 'title' => 'A'], $out[0]['json']);
+		$this->assertSame(['board' => 'linkedin-mapping', 'title' => 'B'], $out[1]['json']);
+		$this->assertSame(['board' => 'werk-nl-mapping', 'title' => 'C'], $out[2]['json']);
+
+	}//end testTemplatedMappingPicksTheMappingPerItem()
+
+	/**
+	 * Under `continue`, an item whose board has no mapping fails alone and names it.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvedTemplatedMappingFailsOnlyItsItem(): void {
+		$this->givenOwner();
+		$mappings = $this->givenBoardMappings();
+		$this->mappingService->method('findMapping')->willReturnCallback(
+			static function (string $reference) use ($mappings): ?ObjectEntity {
+				return ($mappings[$reference] ?? null);
+			}
+		);
+		$this->mappingService->expects($this->once())->method('executeMapping')->willReturn(['mapped' => true]);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[['json' => ['channel' => 'indeed']], ['json' => ['channel' => 'linkedin']]],
+			['mapping' => 'jobboard-{{ json.channel }}', 'onError' => 'continue'],
+			$this->context()
+		));
+
+		$failed = $out[0]['json'][FlowNodeSupport::ERROR_KEY];
+		$this->assertSame('jobboard-indeed', $failed['mapping']);
+		$this->assertSame('No mapping configured: "jobboard-indeed". This item is not mapped.', $failed['message']);
+		$this->assertSame(['mapped' => true], $out[1]['json']);
+
+	}//end testUnresolvedTemplatedMappingFailsOnlyItsItem()
+
+	/**
+	 * Under `stop`, an unresolved per-item mapping raises with its name.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvedTemplatedMappingRaisesUnderStop(): void {
+		$this->givenOwner();
+		$this->mappingService->method('findMapping')->willReturn(null);
+		$this->mappingService->expects($this->never())->method('executeMapping');
+
+		$this->expectException(FlowNodeException::class);
+		$this->expectExceptionMessage('No mapping configured: "jobboard-indeed"');
+
+		$this->node->execute(new FlowNodeCall(
+			[['json' => ['channel' => 'indeed']]],
+			['mapping' => 'jobboard-{{ json.channel }}', 'onError' => 'stop'],
+			$this->context()
+		));
+
+	}//end testUnresolvedTemplatedMappingRaisesUnderStop()
+
+	/**
+	 * A plain mapping reference is passed through by name and never looked up first.
+	 *
+	 * @return void
+	 */
+	public function testPlainMappingReferenceIsPassedByName(): void {
+		$this->givenOwner();
+		$this->mappingService->expects($this->never())->method('findMapping');
+		$this->mappingService->expects($this->once())->method('executeMapping')
+			->with('demo-mapping', ['a' => 1])
+			->willReturn(['b' => 1]);
+
+		$out = $this->node->execute(new FlowNodeCall([['json' => ['a' => 1]]], ['mapping' => 'demo-mapping'], $this->context()));
+
+		$this->assertSame(['b' => 1], $out[0]['json']);
+
+	}//end testPlainMappingReferenceIsPassedByName()
+
+	/**
+	 * Two job board mappings keyed by their reference.
+	 *
+	 * @return array<string, ObjectEntity> The mappings.
+	 */
+	private function givenBoardMappings(): array {
+		$mappings = [];
+		foreach (['werk-nl', 'linkedin'] as $board) {
+			$mapping = new ObjectEntity();
+			$mapping->setUuid($board . '-mapping');
+			$mappings['jobboard-' . $board] = $mapping;
+		}
+
+		return $mappings;
+	}//end givenBoardMappings()
 
 	/**
 	 * A run context naming an owner and a step.

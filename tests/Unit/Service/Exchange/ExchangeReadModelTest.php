@@ -232,4 +232,19 @@ class ExchangeReadModelTest extends TestCase {
 		);
 
 	}//end testEveryReadIsBoundedAndFiltered()
+	/**
+	 * A job with no log lines has no last log line, rather than an empty one.
+	 *
+	 * @return void
+	 */
+	public function testAJobWithoutLogLinesHasNoLastLog(): void {
+		$this->rows['job_log'] = [];
+
+		$job = $this->model->getJob('learniq', 'job-1');
+
+		$this->assertNotNull($job);
+		$this->assertArrayHasKey('lastLog', $job);
+		$this->assertNull($job['lastLog']);
+
+	}//end testAJobWithoutLogLinesHasNoLastLog()
 }//end class
