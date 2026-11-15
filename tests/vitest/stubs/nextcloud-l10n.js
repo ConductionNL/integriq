@@ -23,3 +23,8 @@ export function translatePlural(app, singular, plural, count, vars) {
 
 export const t = translate
 export const n = translatePlural
+
+/** The reader's language: English, so names like `Intl.DisplayNames` gives are deterministic. */
+export function getLanguage() {
+	return 'en'
+}

@@ -33,7 +33,7 @@ Kind: code. Matrix rows `integriq:plt-cli` and `integriq:plt-git`.
   - GIVEN `--confirm` WHEN imported THEN `importConfiguration()` runs and the result prints
 - [x] Implement
 - [ ] Test (integration test against OpenRegister)
-      `lib/Command/Integration/ConfigImport.php`: reads the directory (only files the index lists, only at `<component>/<name>.json`), prints `ConfigurationImportPreviewServiceInterface::preview()` and writes nothing without `--confirm`; with it calls `ConfigurationServiceInterface::importConfiguration()`, the screen's path. Covered by PHPUnit with CommandTester and mocked services (`ConfigCommandsTest`, import half); the integration test against a live OpenRegister is left for a run with an instance.
+      `lib/Command/Integration/ConfigImport.php`: reads the directory (only files the index lists, only at `<component>/<name>.json`), prints `ConfigurationImportPreviewServiceInterface::preview()` and writes nothing without `--confirm`; with it calls `ConfigurationServiceInterface::importConfiguration()`, the screen's path. Covered by PHPUnit with CommandTester and mocked services (`ConfigCommandsTest`, import half); the integration test against a live OpenRegister is `tests/Integration/ConfigurationRoundTripTest.php::testAPreviewOnTheCleanInstanceWritesNothing` (preview on a clean instance, then the configuration is still absent there); it self-skips without two instances, so it is left unchecked until a run with them.
 
 ### Task 4: Round-trip test and docs
 - **spec_ref**: openspec/changes/platform-integrations-as-code/specs/integrations-as-code/spec.md#requirement-export-and-import-round-trip-without-drift-req-iac-004
@@ -41,9 +41,9 @@ Kind: code. Matrix rows `integriq:plt-cli` and `integriq:plt-git`.
 - **acceptance_criteria**:
   - GIVEN a seeded configuration WHEN exported, imported into a clean register and exported again THEN the directories are identical
   - GIVEN the docs page WHEN read THEN it shows the export, commit, review and confirmed import steps
-- [ ] Implement
+- [x] Implement
 - [ ] Test (the integration test; docs build)
-      Docs page written: `docs/administrators/configuration-in-git.md` (export, commit, review, preview, confirmed import), linked from `docs/SUMMARY.md`. The codec half of the round trip (split, join, split gives the same files) is asserted in `ConfigurationDirectoryCodecTest::testJoinGivesTheImportDocument`. Left unchecked: `tests/Integration/ConfigurationRoundTripTest.php` needs a seeded instance and a clean register, and the docs build was not run here.
+      `tests/Integration/ConfigurationRoundTripTest.php` drives the real `occ` commands of a seeded and a clean instance (`INTEGRIQ_IAC_SOURCE_OCC`, `INTEGRIQ_IAC_TARGET_OCC`, `INTEGRIQ_IAC_CONFIGURATION`, `INTEGRIQ_IAC_TARGET_CONFIGURATION`, `INTEGRIQ_IAC_WORKDIR`): two exports of the source are identical, a preview writes nothing, a confirmed import exports on the target to the same files (the index's `configuration` id is the one field allowed to differ). It self-skips when those are not set; its plumbing was checked against stand-in occ scripts (passes, and fails on a drifted file). Docs page written: `docs/administrators/configuration-in-git.md` (export, commit, review, preview, confirmed import), linked from `docs/SUMMARY.md`. The codec half of the round trip (split, join, split gives the same files) is asserted in `ConfigurationDirectoryCodecTest::testJoinGivesTheImportDocument`. Left unchecked: running the integration test needs a seeded instance and a clean one, and the docs build was not run here.
 
 ## Verification
 
