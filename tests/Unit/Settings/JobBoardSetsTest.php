@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Settings;
 
+use OCA\Integriq\Controller\XMLResponse;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
@@ -159,4 +160,64 @@ final class JobBoardSetsTest extends TestCase {
 		$this->assertSame('', $job['expirationdate']);
 		$this->assertSame('', $job['category']);
 	}//end testMissingOptionalVacancyFieldsLeaveTheFeedFieldsEmpty()
+
+	/**
+	 * The feed lists the published vacancy as one Indeed job under Indeed's
+	 * <source> root, rendered as the recorded feed (design D3).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-werknl-linkedin-and-indeed-are-job-board-templates-req-jbc-002
+	 */
+	public function testThePublishedVacancyIsRenderedAsTheRecordedIndeedFeed(): void {
+		$seeds = $this->seeds(board: 'indeed');
+		$job = $seeds['mapping']['jobboard-indeed'];
+		$job['mapping']['url'] = 'https://werken.example.nl/vacatures/{{ vacancyId }}';
+		$job['mapping']['company'] = 'Voorbeeldgemeente';
+		$job['mapping']['sourcename'] = 'Voorbeeldgemeente';
+		$feed = $seeds['mapping']['jobboard-indeed-feed'];
+		$feed['mapping']['publisher'] = 'Voorbeeldgemeente';
+		$feed['mapping']['publisherurl'] = 'https://werken.example.nl';
+
+		$service = new MappingService(
+			new ArrayLoader([]),
+			$this->createMock(CallService::class),
+			$this->createMock(FileService::class),
+			$this->createMock(ObjectService::class),
+			$this->createMock(ORObjectService::class),
+			$this->createMock(SynchronizationContractService::class),
+		);
+		$listed = ['results' => [$service->executeMapping(mapping: $job, input: $this->fixture(file: 'vacancy-vue-developer.json'))], 'count' => 1, 'page' => 1, 'pages' => 1];
+		$body = $service->executeMapping(mapping: $feed, input: $listed);
+
+		$xml = (new XMLResponse(data: $body))->render();
+
+		$this->assertSame((string)file_get_contents(dirname(__DIR__, 2) . '/fixtures/jobboards/indeed-feed.xml'), $xml);
+		$this->assertStringNotContainsString('administrationId', $xml);
+		$this->assertStringNotContainsString('ADM-001', $xml);
+	}//end testThePublishedVacancyIsRenderedAsTheRecordedIndeedFeed()
+
+	/**
+	 * The feed endpoint is anonymous only through its throttle, lists only
+	 * published vacancies offered to Indeed, and runs the job mapping before
+	 * the feed shape.
+	 *
+	 * @return void
+	 */
+	public function testTheFeedEndpointListsPublishedIndeedVacanciesOnly(): void {
+		$seeds = $this->seeds(board: 'indeed');
+		$endpoint = $seeds['endpoint']['jobboard-indeed-feed'];
+
+		$this->assertSame('GET', $endpoint['method']);
+		$this->assertSame('humaniq/Vacancy', $endpoint['targetId']);
+		$this->assertSame(['status' => 'gepubliceerd', 'channels' => 'indeed'], $endpoint['fixedFilters']);
+		$this->assertSame(['requestsPerWindow' => 60, 'windowSeconds' => 60], $endpoint['anonymousRateLimit']);
+		$this->assertSame(1, preg_match($endpoint['endpointRegex'], 'jobfeeds/indeed.xml'));
+		$this->assertSame(0, preg_match($endpoint['endpointRegex'], 'jobfeeds/indeed.xml/1'));
+		$this->assertSame(0, preg_match($endpoint['endpointRegex'], 'jobfeeds/linkedin.xml'));
+		$this->assertSame(['jobboard-indeed-feed-item', 'jobboard-indeed-feed-envelope'], $endpoint['rules']);
+		$this->assertSame('jobboard-indeed', $seeds['rule']['jobboard-indeed-feed-item']['configuration']['mapping']);
+		$this->assertSame(['mapping' => 'jobboard-indeed-feed', 'mapResults' => false], $seeds['rule']['jobboard-indeed-feed-envelope']['configuration']);
+		$this->assertLessThan($seeds['rule']['jobboard-indeed-feed-envelope']['order'], $seeds['rule']['jobboard-indeed-feed-item']['order']);
+	}//end testTheFeedEndpointListsPublishedIndeedVacanciesOnly()
 }//end class

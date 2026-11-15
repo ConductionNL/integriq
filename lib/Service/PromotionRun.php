@@ -80,6 +80,18 @@ final class PromotionRun {
 	public int $rebindCount = 0;
 
 	/**
+	 * Whether the promoter accepted failing test cases (REQ-IRT-005).
+	 * @var bool
+	 */
+	public bool $overrideFailingTests = false;
+
+	/**
+	 * How many test cases failed when the promotion was checked.
+	 * @var int
+	 */
+	public int $failedTestCount = 0;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $configurationId The configuration group id.
