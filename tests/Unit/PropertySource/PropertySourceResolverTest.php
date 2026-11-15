@@ -342,4 +342,39 @@ class PropertySourceResolverTest extends TestCase {
 			$read
 		);
 	}//end testTheCachedUnreachableAndSourceProvenanceIsExact()
+
+	/**
+	 * An unreachable source gives no suggestions and logs a warning naming the provider.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreachableSourceGivesNoSuggestionsAndLogsAWarning(): void {
+		$provider = $this->provider();
+		$provider->method('suggest')->willThrowException(new SourceUnreachableException('brp', 'down'));
+
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('createDistributed')->willReturn($this->cache);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')
+			->with('property-source.suggest.unreachable', ['provider' => 'brp']);
+
+		$resolver = new PropertySourceResolver(new PropertySourceRegistry([$provider]), $factory, $logger);
+
+		$this->assertSame([], $resolver->suggest('brp', 'de vri'));
+	}//end testAnUnreachableSourceGivesNoSuggestionsAndLogsAWarning()
+
+	/**
+	 * A suggestion without an identifier is refused and never reaches the source.
+	 *
+	 * @return void
+	 */
+	public function testASuggestionWithoutAnIdentifierIsRefused(): void {
+		$provider = $this->provider();
+		$provider->expects($this->never())->method('resolve');
+
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('A suggestion without an identifier cannot be stored as a value.');
+
+		$this->resolver($provider)->resolveSuggestion('brp', ['identifier' => '', 'label' => 'De Vries']);
+	}//end testASuggestionWithoutAnIdentifierIsRefused()
 }//end class
