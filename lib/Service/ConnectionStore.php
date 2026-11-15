@@ -260,6 +260,7 @@ class ConnectionStore implements ConnectionStoreInterface {
 		}
 
 		try {
+			// Unscoped: re-reads, unrendered, a source the caller already reached, from a check or event with no user.
 			$raw = $this->objectService->find(
 				id: $uuid,
 				register: self::REGISTER,
