@@ -28,14 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
-use OCA\Integriq\Auth\Idp\IdpMetadataService;
-use OCA\Integriq\Auth\Idp\IdpRegistration;
-use OCA\Integriq\Auth\Idp\IdpRegistrationService;
-use OCA\Integriq\Auth\Idp\IdpRegistrationTester;
-use OCA\Integriq\Auth\Idp\IdpSecretSeam;
+use OCA\Integriq\Auth\Idp\IdpRegistrationAdminInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -52,22 +46,14 @@ class IdpRegistrationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                   $appName       The app id.
-	 * @param IRequest                 $request       The request.
-	 * @param IdpRegistrationService   $registrations The registrations and their readiness.
-	 * @param IdpRegistrationTester    $tester        Runs a registration's checks.
-	 * @param IdpMetadataService       $metadata      Builds each registration's metadata address.
-	 * @param IdpBrokerConfigInterface $brokerConfig  The broker flag.
-	 * @param IAppManager              $appManager    Answers whether Keepiq is enabled.
+	 * @param string                        $appName The app id.
+	 * @param IRequest                      $request The request.
+	 * @param IdpRegistrationAdminInterface $admin   The registrations with their readiness, and their checks.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IdpRegistrationService $registrations,
-		private readonly IdpRegistrationTester $tester,
-		private readonly IdpMetadataService $metadata,
-		private readonly IdpBrokerConfigInterface $brokerConfig,
-		private readonly IAppManager $appManager,
+		private readonly IdpRegistrationAdminInterface $admin,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -83,15 +69,7 @@ class IdpRegistrationController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function index(): JSONResponse {
-		$rows = array_map(fn (IdpRegistration $registration): array => $this->row(registration: $registration), $this->registrations->all());
-
-		return new JSONResponse(
-			[
-				'brokerEnabled' => $this->brokerConfig->isEnabled(),
-				'keepiqAvailable' => $this->appManager->isEnabledForAnyone(IdpSecretSeam::KEEPIQ_APP_ID),
-				'registrations' => $rows,
-			]
-		);
+		return new JSONResponse($this->admin->overview());
 
 	}//end index()
 
@@ -106,38 +84,13 @@ class IdpRegistrationController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function test(string $id): JSONResponse {
-		foreach ($this->registrations->all() as $registration) {
-			if ($registration->id === $id) {
-				return new JSONResponse(['id' => $id, 'checks' => $this->tester->run(registration: $registration)]);
-			}
+		$checks = $this->admin->checks(id: $id);
+		if ($checks !== null) {
+			return new JSONResponse(['id' => $id, 'checks' => $checks]);
 		}
 
 		return new JSONResponse(['error' => 'No such registration.'], Http::STATUS_NOT_FOUND);
 
 	}//end test()
-
-	/**
-	 * One registration as the screen lists it: configuration and readiness, never a credential.
-	 *
-	 * @param IdpRegistration $registration The registration.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function row(IdpRegistration $registration): array {
-		$readiness = $this->registrations->readiness(registration: $registration)->toArray();
-
-		return [
-			'id' => $registration->id,
-			'label' => $registration->text(key: 'label'),
-			'organisation' => $registration->organisation(),
-			'provider' => $registration->provider(),
-			'kind' => $registration->kind(),
-			'enabled' => $registration->isEnabled(),
-			'status' => $readiness['status'],
-			'reasons' => $readiness['reasons'],
-			'metadataUrl' => $this->metadata->metadataUrl(registration: $registration),
-		];
-
-	}//end row()
 
 }//end class

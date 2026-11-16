@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Auth\Idp\IdpMetadataService;
+use OCA\Integriq\Auth\Idp\IdpPublication;
 use OCA\Integriq\Auth\Idp\IdpRegistration;
 use OCA\Integriq\Controller\IdpMetadataController;
 use OCA\Integriq\Exception\IdpMetadataUnavailableException;
@@ -45,6 +46,7 @@ use ReflectionProperty;
  * IdpMetadataController over a mocked metadata service.
  */
 #[CoversClass(IdpMetadataController::class)]
+#[CoversClass(IdpPublication::class)]
 #[UsesClass(IdpRegistration::class)]
 #[UsesClass(IdpMetadataUnavailableException::class)]
 class IdpMetadataControllerTest extends TestCase {
@@ -68,7 +70,7 @@ class IdpMetadataControllerTest extends TestCase {
 	 * @return IdpMetadataController
 	 */
 	private function controller(): IdpMetadataController {
-		return new IdpMetadataController(appName: 'integriq', request: $this->createMock(IRequest::class), metadata: $this->metadata);
+		return new IdpMetadataController(appName: 'integriq', request: $this->createMock(IRequest::class), publication: new IdpPublication(metadata: $this->metadata));
 
 	}//end controller()
 

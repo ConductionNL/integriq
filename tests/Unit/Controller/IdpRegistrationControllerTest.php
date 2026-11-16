@@ -25,6 +25,7 @@ use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
 use OCA\Integriq\Auth\Idp\IdpMetadataService;
 use OCA\Integriq\Auth\Idp\IdpReadiness;
 use OCA\Integriq\Auth\Idp\IdpRegistration;
+use OCA\Integriq\Auth\Idp\IdpRegistrationAdmin;
 use OCA\Integriq\Auth\Idp\IdpRegistrationService;
 use OCA\Integriq\Auth\Idp\IdpRegistrationTester;
 use OCA\Integriq\Controller\IdpRegistrationController;
@@ -42,6 +43,7 @@ use ReflectionMethod;
  * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-beheer-authenticatie-configures-the-registrations-req-idpc-008
  */
 #[CoversClass(IdpRegistrationController::class)]
+#[CoversClass(IdpRegistrationAdmin::class)]
 #[UsesClass(IdpRegistration::class)]
 #[UsesClass(IdpReadiness::class)]
 class IdpRegistrationControllerTest extends TestCase {
@@ -76,11 +78,13 @@ class IdpRegistrationControllerTest extends TestCase {
 		return new IdpRegistrationController(
 			appName: 'integriq',
 			request: $this->createMock(IRequest::class),
-			registrations: $this->registrations,
-			tester: $this->tester,
-			metadata: $metadata,
-			brokerConfig: $this->flag,
-			appManager: $this->apps
+			admin: new IdpRegistrationAdmin(
+				registrations: $this->registrations,
+				tester: $this->tester,
+				metadata: $metadata,
+				brokerConfig: $this->flag,
+				appManager: $this->apps
+			)
 		);
 	}
 

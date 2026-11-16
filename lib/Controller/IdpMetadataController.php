@@ -28,8 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Auth\Idp\IdpMetadataService;
-use OCA\Integriq\Auth\Idp\IdpRegistration;
+use OCA\Integriq\Auth\Idp\IdpPublicationInterface;
 use OCA\Integriq\Exception\IdpMetadataUnavailableException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -62,14 +61,14 @@ class IdpMetadataController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string             $appName  The app id.
-	 * @param IRequest           $request  The request.
-	 * @param IdpMetadataService $metadata Builds the documents.
+	 * @param string                  $appName     The app id.
+	 * @param IRequest                $request     The request.
+	 * @param IdpPublicationInterface $publication Finds the published registration and builds its documents.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IdpMetadataService $metadata,
+		private readonly IdpPublicationInterface $publication,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -91,28 +90,25 @@ class IdpMetadataController extends Controller {
 	#[AnonRateLimit(limit: 60, period: 60)]
 	#[BruteForceProtection(action: self::BRUTE_FORCE_ACTION)]
 	public function metadata(string $organisation, string $provider): Response {
-		$registration = $this->metadata->published(organisation: $organisation, provider: $provider);
-		if ($registration === null) {
-			return $this->notFound();
-		}
-
 		try {
-			if ($registration->kind() === IdpRegistration::KIND_SAML) {
-				return new DataDisplayResponse(
-					data: $this->metadata->samlMetadata(registration: $registration),
-					statusCode: Http::STATUS_OK,
-					headers: ['Content-Type' => self::SAML_METADATA_TYPE]
-				);
-			}
-
-			if ($registration->kind() === IdpRegistration::KIND_OIDC) {
-				return new JSONResponse(data: $this->metadata->oidcClient(registration: $registration));
-			}
+			$document = $this->publication->document(organisation: $organisation, provider: $provider);
 		} catch (IdpMetadataUnavailableException) {
 			return $this->unavailable();
 		}
 
-		return $this->notFound();
+		if ($document === null) {
+			return $this->notFound();
+		}
+
+		if ($document['type'] === IdpPublicationInterface::DOCUMENT_SAML) {
+			return new DataDisplayResponse(
+				data: $document['body'],
+				statusCode: Http::STATUS_OK,
+				headers: ['Content-Type' => self::SAML_METADATA_TYPE]
+			);
+		}
+
+		return new JSONResponse(data: $document['body']);
 
 	}//end metadata()
 
@@ -131,19 +127,17 @@ class IdpMetadataController extends Controller {
 	#[AnonRateLimit(limit: 60, period: 60)]
 	#[BruteForceProtection(action: self::BRUTE_FORCE_ACTION)]
 	public function jwks(string $organisation, string $provider): JSONResponse {
-		$registration = $this->metadata->published(organisation: $organisation, provider: $provider);
-		if ($registration === null
-			|| $registration->kind() !== IdpRegistration::KIND_OIDC
-			|| $registration->text(key: 'clientAuth') === 'client_secret_basic'
-		) {
-			return $this->notFound();
-		}
-
 		try {
-			return new JSONResponse(data: $this->metadata->jwks(registration: $registration));
+			$keys = $this->publication->jwks(organisation: $organisation, provider: $provider);
 		} catch (IdpMetadataUnavailableException) {
 			return $this->unavailable();
 		}
+
+		if ($keys === null) {
+			return $this->notFound();
+		}
+
+		return new JSONResponse(data: $keys);
 
 	}//end jwks()
 
