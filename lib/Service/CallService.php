@@ -1902,9 +1902,7 @@ class CallService implements CallServiceInterface {
 
 		// The time the call waited for its paced turn (REQ-RLPC-001). Left out
 		// for a call that did not wait, so unpaced sources log as before.
-		if ($pacedMs > 0) {
-			$callLogData['pacedMs'] = $pacedMs;
-		}
+		$callLogData += array_filter(['pacedMs' => $pacedMs]);
 
 		// Bodies are stored only inside the source's investigation window, or
 		// for a caller that passed logBody; a failure keeps its request for a
@@ -3077,14 +3075,9 @@ class CallService implements CallServiceInterface {
 	 */
 	private function guardSource(CallPreparation $run): bool {
 		// Pacing (phase 5b, paceCall()) runs inside the precondition guards, before the rate limit.
-		$live = $this->takePacingMode(run: $run);
 		$pacedMs = 0;
 		$earlyError = $this->guardCallPreconditions(
-			source: $run->source,
-			sourceData: $run->sourceData,
-			errorExpires: $run->errorExpires,
-			live: $live,
-			pacedMs: $pacedMs,
+			source: $run->source, sourceData: $run->sourceData, errorExpires: $run->errorExpires, live: $run->takePacingMode(), pacedMs: $pacedMs
 		);
 		$run->prepared['pacedMs'] = $pacedMs;
 		if ($earlyError === null) {
@@ -3095,33 +3088,12 @@ class CallService implements CallServiceInterface {
 	}//end guardSource()
 
 	/**
-	 * Phase 1c: whether the caller is live (a gateway request, or the
-	 * interactive test) or background work. It decides how long a paced call
-	 * may wait for its turn (REQ-RLPC-002). Pulled out of the config like the
-	 * retry policy, so it never reaches the request.
-	 *
-	 * @param CallPreparation $run The call being prepared.
-	 *
-	 * @return bool True for a live caller.
-	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
-	 */
-	private function takePacingMode(CallPreparation $run): bool {
-		$live = (($run->config['pacing'] ?? null) === 'live' || $run->request->persistLog === false);
-		unset($run->config['pacing']);
-		$run->prepared['config'] = $run->config;
-
-		return $live;
-	}//end takePacingMode()
-
-	/**
-	 * Phase 5b: take the call's turn from the source's pace and wait for it.
-	 *
-	 * Without a pacer, or for a source with neither a configured pace nor an
-	 * announced window, nothing happens. A refused turn is recorded as a 429
-	 * call log carrying `retryAfter`, the seconds until the call's turn, and
-	 * the call is not sent. After a wait the announced window is checked
-	 * again, as the reset may have passed while waiting.
+	 * Phase 5b: take the call's turn from the source's pace and wait for it
+	 * ({@see SourcePacer::turn()}); nothing happens without a pacer or for an
+	 * unpaced source. A refused turn is recorded as a 429 call log carrying
+	 * `retryAfter`, the seconds until the call's turn, and the call is not
+	 * sent. After a wait the announced window is checked again, as the reset
+	 * may have passed while waiting.
 	 *
 	 * @param ObjectEntity $source The source.
 	 * @param array $sourceData The mutable source data (a passed reset clears its counters).
@@ -3136,31 +3108,19 @@ class CallService implements CallServiceInterface {
 	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
 	 */
 	private function paceCall(ObjectEntity $source, array &$sourceData, ?\DateTime $errorExpires, bool $live): ObjectEntity|int {
-		if ($this->pacer === null || $this->pacer->isPaced(sourceData: $sourceData) === false) {
-			return 0;
-		}
-
-		$sourceKey = (string)($source->getUuid() ?? $source->getId());
-		$decision = $this->pacer->acquire(sourceKey: $sourceKey, sourceData: $sourceData, live: $live);
-		if ($decision->refused === true) {
+		$decision = $this->pacer?->turn(sourceKey: (string)($source->getUuid() ?? $source->getId()), sourceData: $sourceData, live: $live);
+		if ($decision?->refused === true) {
+			$extra = ['retryAfter' => $decision->retryAfterSeconds];
 			return $this->saveEarlyErrorLog(
-				source: $source,
-				statusCode: 429,
-				statusMessage: sprintf(
-					'This source is paced: the next call is due in %d seconds, longer than this call may wait.',
-					$decision->retryAfterSeconds
-				),
-				expires: $errorExpires,
-				extra: ['retryAfter' => $decision->retryAfterSeconds],
+				source: $source, statusCode: 429, statusMessage: $decision->refusalMessage(), expires: $errorExpires, extra: $extra
 			);
 		}
 
-		$this->pacer->wait(decision: $decision);
-		if ($decision->waitMicros > 0) {
+		if (($decision->waitMicros ?? 0) > 0) {
 			$this->checkAndResetRateLimit(source: $source, sourceData: $sourceData);
 		}
 
-		return $decision->waitMs();
+		return ($decision?->waitMs() ?? 0);
 	}//end paceCall()
 
 	/**

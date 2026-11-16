@@ -460,4 +460,43 @@ class SourcePacerTest extends TestCase {
 
 		$this->assertSame(1, (new PacingDecision(waitMicros: 1))->waitMs());
 	}//end testWaitSleepsOnlyForATurn()
+
+	/**
+	 * A turn on a paced source is taken and waited for; an unpaced source gets no decision and no wait.
+	 *
+	 * @return void
+	 */
+	public function testTurnWaitsForAPacedTurnAndSkipsAnUnpacedSource(): void {
+		$cache = $this->memcache();
+		$pacer = $this->pacer(cache: $cache);
+
+		$this->assertNull($pacer->turn(sourceKey: 'kvk', sourceData: [], live: false));
+		$this->assertSame([], $cache->values);
+
+		$source = ['pace' => ['maxCalls' => 2, 'perSeconds' => 1]];
+		$this->assertSame(0, $pacer->turn(sourceKey: 'kvk', sourceData: $source, live: false)?->waitMicros);
+		$second = $pacer->turn(sourceKey: 'kvk', sourceData: $source, live: false);
+		$this->assertSame(500000, $second?->waitMicros);
+		$this->assertSame(self::START + 500000, $this->clock->nowMicros());
+	}//end testTurnWaitsForAPacedTurnAndSkipsAnUnpacedSource()
+
+	/**
+	 * A refused turn is handed back without a wait, with the message its call log records.
+	 *
+	 * @return void
+	 */
+	public function testTurnDoesNotWaitForARefusal(): void {
+		$pacer = $this->pacer(cache: $this->memcache());
+		$source = ['pace' => ['maxCalls' => 1, 'perSeconds' => 5]];
+
+		$pacer->turn(sourceKey: 'kvk', sourceData: $source, live: true);
+		$refused = $pacer->turn(sourceKey: 'kvk', sourceData: $source, live: true);
+
+		$this->assertTrue($refused?->refused);
+		$this->assertSame(self::START, $this->clock->nowMicros());
+		$this->assertSame(
+			'This source is paced: the next call is due in 5 seconds, longer than this call may wait.',
+			$refused?->refusalMessage()
+		);
+	}//end testTurnDoesNotWaitForARefusal()
 }//end class

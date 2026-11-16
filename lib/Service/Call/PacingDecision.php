@@ -52,4 +52,18 @@ final class PacingDecision {
 	public function waitMs(): int {
 		return intdiv($this->waitMicros + 999, 1000);
 	}//end waitMs()
+
+	/**
+	 * The status message of a refused turn, recorded on its 429 call log.
+	 *
+	 * @return string The message.
+	 *
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 */
+	public function refusalMessage(): string {
+		return sprintf(
+			'This source is paced: the next call is due in %d seconds, longer than this call may wait.',
+			$this->retryAfterSeconds
+		);
+	}//end refusalMessage()
 }//end class
