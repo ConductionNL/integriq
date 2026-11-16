@@ -124,6 +124,13 @@
         "Target type": "Target Type",
         "Test": "Test",
         "Test mapping": "Test mapping",
+        "Test registration target": "Test registration target",
+        "The test maps the hand-over and stops before anything is sent or saved.": "The test maps the hand-over and stops before anything is sent or saved.",
+        "Hand-over (JSON, leave empty for the sample)": "Hand-over (JSON, leave empty for the sample)",
+        "Mapped body": "Mapped body",
+        "Refused ({code}): {message}": "Refused ({code}): {message}",
+        "The hand-over must be a JSON object.": "The hand-over must be a JSON object.",
+        "The test could not be run.": "The test could not be run.",
         "The PEM private key this identity signs with. Write only; it is never read back over the API. Being replaced by the credential reference below.": "The PEM private key this identity signs with. Write only; it is never read back over the API. Being replaced by the credential reference below.",
         "The specified schema could not be found.": "The specified schema could not be found.",
         "This instance has no digital post binding installed, so a letter cannot be sent from here yet.": "This instance has no digital post binding installed, so a letter cannot be sent from here yet.",
@@ -3817,14 +3824,7 @@
         "The residency could not be saved.": "The residency could not be saved.",
         "Where does {source} process the data integriq sends it? Record the country and the evidence for it.": "Where does {source} process the data integriq sends it? Record the country and the evidence for it.",
         "Zone": "Zone",
-        "this source": "this source",
-        "Test registration target": "Test registration target",
-        "The test maps the hand-over and stops before anything is sent or saved.": "The test maps the hand-over and stops before anything is sent or saved.",
-        "Hand-over (JSON, leave empty for the sample)": "Hand-over (JSON, leave empty for the sample)",
-        "Mapped body": "Mapped body",
-        "Refused ({code}): {message}": "Refused ({code}): {message}",
-        "The hand-over must be a JSON object.": "The hand-over must be a JSON object.",
-        "The test could not be run.": "The test could not be run."
+        "this source": "this source"
     },
     "plurals": {}
 }

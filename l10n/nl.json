@@ -731,6 +731,13 @@
         "Test": "Testen",
         "Test connection": "Verbinding testen",
         "Test mapping": "Mapping testen",
+        "Test registration target": "Registratiedoel testen",
+        "The test maps the hand-over and stops before anything is sent or saved.": "De test zet de overdracht om en stopt voordat er iets wordt verstuurd of opgeslagen.",
+        "Hand-over (JSON, leave empty for the sample)": "Overdracht (JSON, leeg laten voor het voorbeeld)",
+        "Mapped body": "Omgezette inhoud",
+        "Refused ({code}): {message}": "Geweigerd ({code}): {message}",
+        "The hand-over must be a JSON object.": "De overdracht moet een JSON-object zijn.",
+        "The test could not be run.": "De test kon niet worden uitgevoerd.",
         "Test mode": "Testmodus",
         "Testing mapping: {name}": "Mapping testen: {name}",
         "The \"%1$s\" field is not accepted: a flow step names a configured Source and a relative endpoint, never a URL, host, scheme or port.": "Het veld \"%1$s\" wordt niet geaccepteerd: een flowstap wijst een geconfigureerde bron en een relatief endpoint aan, nooit een URL, host, schema of poort.",
@@ -2548,14 +2555,7 @@
         "The residency could not be saved.": "Het vestigingsland kon niet worden opgeslagen.",
         "Where does {source} process the data integriq sends it? Record the country and the evidence for it.": "Waar verwerkt {source} de gegevens die integriq stuurt? Leg het land vast en het bewijs daarvoor.",
         "Zone": "Zone",
-        "this source": "deze bron",
-        "Test registration target": "Registratiedoel testen",
-        "The test maps the hand-over and stops before anything is sent or saved.": "De test zet de overdracht om en stopt voordat er iets wordt verstuurd of opgeslagen.",
-        "Hand-over (JSON, leave empty for the sample)": "Overdracht (JSON, leeg laten voor het voorbeeld)",
-        "Mapped body": "Omgezette inhoud",
-        "Refused ({code}): {message}": "Geweigerd ({code}): {message}",
-        "The hand-over must be a JSON object.": "De overdracht moet een JSON-object zijn.",
-        "The test could not be run.": "De test kon niet worden uitgevoerd."
+        "this source": "deze bron"
     },
     "plurals": {}
 }
