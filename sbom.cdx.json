@@ -27190,8 +27190,8 @@
     {
       "type": "library",
       "name": "vue-codemirror6",
-      "version": "1.6.2",
-      "bom-ref": "integriq@1.0.0|vue-codemirror6@1.6.2",
+      "version": "1.7.0",
+      "bom-ref": "integriq@1.0.0|vue-codemirror6@1.7.0",
       "licenses": [
         {
           "license": {
@@ -27199,15 +27199,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/vue-codemirror6@1.6.2",
+      "purl": "pkg:npm/vue-codemirror6@1.7.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/vue-codemirror6/-/vue-codemirror6-1.6.2.tgz",
+          "url": "https://registry.npmjs.org/vue-codemirror6/-/vue-codemirror6-1.7.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "53b5dd14229b2c3b821ab7c7f9b0856d66d23c1021105ac160b04eaed8a607fcaf32d9ac97069b6733b888baaeb40f1405bdfb490e81f82c23d509820ee1b19e"
+              "content": "38f5e824ddd2f0d0aaeb195de2bea8e48bb3570819278e9bee453a6c4abbbb04d090b5beb610bca17a766725b2f097d2551a14444c69691cea2b8715e7e201ea"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
