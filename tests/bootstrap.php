@@ -229,14 +229,6 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/TaskActorRef.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Task\\TaskService') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Task/TaskService.php';
-		}
-
-		if (class_exists('OCA\\OpenRegister\\Event\\TaskTerminalEvent') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
-		}
-
 		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRunStep') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/LockRunStep.php';
 		}
@@ -247,6 +239,14 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
 		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/UnlockRequest.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Task\\TaskService') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Task/TaskService.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Event\\TaskTerminalEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
