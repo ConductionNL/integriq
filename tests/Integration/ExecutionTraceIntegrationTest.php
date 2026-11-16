@@ -63,6 +63,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @spec openspec/specs/execution-trace/spec.md
@@ -94,7 +95,10 @@ class ExecutionTraceIntegrationTest extends TestCase {
 		// CallServiceTest::buildBrokeredCallService()'s own callback.
 		$objectService = $this->createMock(ORObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = ['object' => $object, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));

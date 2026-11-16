@@ -30,6 +30,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\SyncItemDeadLetterServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -171,8 +172,7 @@ class SyncDeadLetterController extends Controller {
 		try {
 			$entry = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'sync_item_dead_letter',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'sync_item_dead_letter'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
@@ -186,8 +186,7 @@ class SyncDeadLetterController extends Controller {
 			try {
 				$synchronization = $this->orObjectService->find(
 					id: (string)$synchronizationId,
-					register: 'integriq',
-					schema: 'synchronization',
+					options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization'),
 					_rbac: false
 				);
 				$syncData = $synchronization->getObject();

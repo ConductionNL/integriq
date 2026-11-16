@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Adapter\EndpointWorkspace;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -59,7 +60,12 @@ class WorkspaceSourceReader {
 	 */
 	public function configurationOf(string $id): ?array {
 		try {
-			$source = $this->objectService->find(id: $id, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
+			$source = $this->objectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException) {
 			return null;
 		}

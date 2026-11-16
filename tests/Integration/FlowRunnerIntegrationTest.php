@@ -40,6 +40,8 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * End-to-end (mocked-boundary) test for a 3-step flow.
@@ -100,7 +102,10 @@ class FlowRunnerIntegrationTest extends TestCase {
 		);
 
 		$orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) use (&$loggedEntries) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$loggedEntries) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($schema === 'flow_run_log') {
 					$loggedEntries[] = $object;
 				}
@@ -114,7 +119,9 @@ class FlowRunnerIntegrationTest extends TestCase {
 		);
 
 		$orObjectService->method('find')->willReturnCallback(
-			function (string $id, ?string $register = null, ?string $schema = null) {
+			function (string $id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				return ObjectServiceMockBuilder::objectEntity($this, ['name' => $id], $id);
 			}
 		);

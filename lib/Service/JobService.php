@@ -27,6 +27,7 @@ use DateTime;
 use DateTimeImmutable;
 use Exception;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJob;
@@ -251,9 +252,7 @@ class JobService implements JobServiceInterface {
 			$jobData['jobListId'] = null;
 			return $this->objectService->saveObject(
 				object: $jobData,
-				register: 'integriq',
-				schema: 'job',
-				uuid: $job->getUuid()
+				options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid())
 			);
 		}
 
@@ -277,9 +276,7 @@ class JobService implements JobServiceInterface {
 		// Save the job to the database.
 		return $this->objectService->saveObject(
 			object: $jobData,
-			register: 'integriq',
-			schema: 'job',
-			uuid: $job->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid())
 		);
 
 	}//end scheduleJob()
@@ -617,9 +614,7 @@ class JobService implements JobServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $jobData,
-			register: 'integriq',
-			schema: 'job',
-			uuid: $job->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid())
 		);
 
 		return $logEntry;
@@ -685,9 +680,7 @@ class JobService implements JobServiceInterface {
 	private function scheduleCalendarJob(ObjectEntity $job, array $jobData): void {
 		$this->objectService->saveObject(
 			object: $this->withCalendarNextRun(jobData: $jobData),
-			register: 'integriq',
-			schema: 'job',
-			uuid: $job->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid())
 		);
 	}//end scheduleCalendarJob()
 
@@ -1009,8 +1002,7 @@ class JobService implements JobServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $logObject,
-			register: 'integriq',
-			schema: 'job_log'
+			options: RegisterSave::options(register: 'integriq', schema: 'job_log')
 		);
 	}//end saveJobLog()
 

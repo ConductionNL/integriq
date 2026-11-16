@@ -28,6 +28,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Lookups by uuid and slug, raw re-reads, creation and deletion.
@@ -71,7 +72,13 @@ class ConnectionStoreSourceTest extends TestCase {
 	public function testFindRowReturnsTheRow(): void {
 		$objects = $this->objects(methods: ['find']);
 		$objects->expects($this->once())->method('find')
-			->with('r-1', 'integriq', 'app_connection', false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'r-1',
+				'register' => 'integriq',
+				'schema' => 'app_connection',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))
 			->willReturn($this->entity(uuid: 'r-1', data: ['app' => 'dossiq']));
 
 		$this->assertSame(
@@ -135,7 +142,14 @@ class ConnectionStoreSourceTest extends TestCase {
 		$raw = $this->entity(uuid: 's-1', data: ['secret' => 'kept']);
 		$objects = $this->objects(methods: ['find']);
 		$objects->expects($this->once())->method('find')
-			->with('s-1', 'integriq', 'source', false, false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 's-1',
+				'register' => 'integriq',
+				'schema' => 'source',
+				'_rbac' => false,
+				'_multitenancy' => false,
+				'_render' => false,
+			]))
 			->willReturn($raw);
 
 		$this->assertSame(
@@ -170,7 +184,11 @@ class ConnectionStoreSourceTest extends TestCase {
 		$created = $this->entity(uuid: 's-9', data: ['slug' => 'new']);
 		$objects = $this->objects(methods: ['saveObject']);
 		$objects->expects($this->once())->method('saveObject')
-			->with(['slug' => 'new'], 'integriq', 'source')
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['slug' => 'new'],
+				'register' => 'integriq',
+				'schema' => 'source',
+			]))
 			->willReturn($created);
 
 		$this->assertSame(expected: $created, actual: (new ConnectionStore(objectService: $objects))->createSource(['slug' => 'new']));
@@ -184,7 +202,11 @@ class ConnectionStoreSourceTest extends TestCase {
 	public function testDeleteRemovesTheRow(): void {
 		$objects = $this->objects(methods: ['deleteObject']);
 		$objects->expects($this->once())->method('deleteObject')
-			->with('r-1', 'integriq', 'app_connection')
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'r-1',
+				'register' => 'integriq',
+				'schema' => 'app_connection',
+			]))
 			->willReturn(true);
 
 		(new ConnectionStore(objectService: $objects))->delete('r-1');
