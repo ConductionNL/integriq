@@ -33,10 +33,9 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -141,7 +140,7 @@ class SyncItemDeadLetterService implements SyncItemDeadLetterServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $entry,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'sync_item_dead_letter'))
+			options: RegisterSave::options(register: 'integriq', schema: 'sync_item_dead_letter')
 		);
 
 	}//end recordFailure()
@@ -227,10 +226,7 @@ class SyncItemDeadLetterService implements SyncItemDeadLetterServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'sync_item_dead_letter'),
-				uuid: $entry->getUuid()
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'sync_item_dead_letter', uuid: $entry->getUuid())
 		);
 
 	}//end replayMessage()
@@ -268,10 +264,7 @@ class SyncItemDeadLetterService implements SyncItemDeadLetterServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'sync_item_dead_letter'),
-				uuid: $entry->getUuid()
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'sync_item_dead_letter', uuid: $entry->getUuid())
 		);
 
 	}//end discardMessage()

@@ -42,6 +42,7 @@ use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Service\CaseSystem\CaseSystemRefusal;
 use OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\MessageValidation\MessageValidationRefusedException;
 use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
 use OCA\Integriq\Service\Synchronization\ApiFetch;
@@ -971,10 +972,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $object,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization'),
-				uuid: $uuidValue
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'synchronization', uuid: $uuidValue)
 		);
 	}//end persistSynchronization()
 
@@ -1515,10 +1513,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization_contract'),
-				uuid: $uuidValue
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'synchronization_contract', uuid: $uuidValue)
 		);
 
 		return $saved->jsonSerialize();
@@ -1551,10 +1546,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$uuid = $object['uuid'];
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization_contract'),
-				uuid: $uuid
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'synchronization_contract', uuid: $uuid)
 		);
 
 		return $saved->jsonSerialize();
@@ -1600,10 +1592,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $merged,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization_contract'),
-				uuid: $uuidValue
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'synchronization_contract', uuid: $uuidValue)
 		);
 
 		return $saved->jsonSerialize();
@@ -5197,10 +5186,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 			$this->orObjectService->saveObject(
 				object: $objectData,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: $registerId, schema: $schemaId),
-					uuid: (string)$targetObject->getUuid()
-				)
+				options: RegisterSave::options(register: $registerId, schema: $schemaId, uuid: (string)$targetObject->getUuid())
 			);
 
 			$this->persistContract(
@@ -10996,7 +10982,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$object = $this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			options: RegisterSave::options(register: $register, schema: $schema)
 		)->jsonSerialize();
 
 		return $object;

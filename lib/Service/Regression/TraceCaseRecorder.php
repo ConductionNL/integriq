@@ -34,10 +34,9 @@ namespace OCA\Integriq\Service\Regression;
 
 use InvalidArgumentException;
 use OCA\Integriq\Service\ExecutionTraceService;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\RegressionSuiteService;
 use OCA\Integriq\Service\Security\RedactedValueFilter;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OutOfBoundsException;
 
@@ -99,7 +98,7 @@ class TraceCaseRecorder {
 
 		$saved = $this->objectService->saveObject(
 			object: $case,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: RegressionSuiteService::CASE_SCHEMA)),
+			options: RegisterSave::options(register: self::REGISTER, schema: RegressionSuiteService::CASE_SCHEMA),
 			_rbac: false,
 			_multitenancy: false
 		);

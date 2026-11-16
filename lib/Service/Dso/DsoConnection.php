@@ -40,11 +40,10 @@ namespace OCA\Integriq\Service\Dso;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -263,10 +262,7 @@ class DsoConnection implements PortalConnectionInterface {
 	public function saveConsumer(array $data, ?string $uuid): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_CONSUMER),
-				uuid: $uuid
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_CONSUMER, uuid: $uuid)
 		);
 
 	}//end saveConsumer()

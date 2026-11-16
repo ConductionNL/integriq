@@ -43,12 +43,11 @@ namespace OCA\Integriq\Service\Dso;
 use Exception;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Service\DsoIngestService;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\PayloadTooLargeException;
 use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
@@ -426,13 +425,7 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(
-						register: DsoIngestService::REGISTER,
-						schema: DsoIngestService::SCHEMA_VERZOEK
-					),
-				uuid: $request->getUuid()
-			)
+			options: RegisterSave::options(register: DsoIngestService::REGISTER, schema: DsoIngestService::SCHEMA_VERZOEK, uuid: $request->getUuid())
 		);
 	}//end saveAttachments()
 

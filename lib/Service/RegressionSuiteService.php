@@ -34,11 +34,10 @@ namespace OCA\Integriq\Service;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Regression\OutputComparator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Throwable;
 
@@ -132,7 +131,7 @@ class RegressionSuiteService {
 
 		$saved = $this->objectService->saveObject(
 			object: $run,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::RUN_SCHEMA)),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::RUN_SCHEMA),
 			_rbac: false
 		);
 

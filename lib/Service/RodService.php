@@ -37,6 +37,7 @@ use DateTime;
 use OCA\Integriq\Event\RodAcknowledgementReceivedEvent;
 use OCA\Integriq\Exception\RodProviderException;
 use OCA\Integriq\Exception\RodTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Rod\RodAcknowledgementTranslator;
 use OCA\Integriq\Service\Rod\RodEnvelopeTranslator;
 use OCA\Integriq\Service\Rod\RodPersonalNumberRedactor;
@@ -44,8 +45,6 @@ use OCA\Integriq\Service\Rod\RodProviderRegistry;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
@@ -178,7 +177,7 @@ class RodService implements RodServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $record,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($status === 'failed') {
@@ -243,7 +242,7 @@ class RodService implements RodServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($outbound === null) {
@@ -345,10 +344,7 @@ class RodService implements RodServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
-				uuid: $message->getUuid()
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 	}//end retryOne()

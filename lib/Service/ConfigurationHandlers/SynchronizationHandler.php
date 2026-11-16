@@ -24,10 +24,9 @@
 
 namespace OCA\Integriq\Service\ConfigurationHandlers;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
@@ -173,17 +172,14 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 			// Update existing synchronization.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization'),
-					uuid: $lookup['synchronization'][$slug]
-				)
+				options: RegisterSave::options(register: 'integriq', schema: 'synchronization', uuid: $lookup['synchronization'][$slug])
 			);
 		}
 
 		// Create new synchronization.
 		return $this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization'))
+			options: RegisterSave::options(register: 'integriq', schema: 'synchronization')
 		);
 	}//end import()
 

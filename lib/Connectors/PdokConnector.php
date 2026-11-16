@@ -31,9 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Connectors;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -702,8 +701,9 @@ class PdokConnector implements PdokConnectorInterface {
 		try {
 			$objectService->saveObject(
 				object: array_replace($doc, ['fetchedAt' => gmdate('Y-m-d\TH:i:s\Z')]),
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::OR_REGISTER, schema: self::OR_SCHEMA),
+				options: RegisterSave::options(
+					register: self::OR_REGISTER,
+					schema: self::OR_SCHEMA,
 					uuid: $this->storedUuid(objectService: $objectService, pdokId: (string)$doc['pdokId'])
 				),
 				_rbac: false,

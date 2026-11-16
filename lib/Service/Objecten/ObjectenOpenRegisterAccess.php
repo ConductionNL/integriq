@@ -47,9 +47,9 @@ namespace OCA\Integriq\Service\Objecten;
 
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -218,7 +218,7 @@ class ObjectenOpenRegisterAccess {
 			principal: $principal,
 			callback: fn (): mixed => $service->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $uuid)
+				options: RegisterSave::options(register: $register, schema: $schema, uuid: $uuid)
 			)
 		);
 

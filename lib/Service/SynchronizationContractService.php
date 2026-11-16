@@ -30,6 +30,7 @@
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
@@ -382,10 +383,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 		$uuid = $object['uuid'];
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
-				uuid: $uuid
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuid)
 		);
 
 		return $saved->jsonSerialize();
@@ -427,10 +425,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 
 		$saved = $this->orObjectService->saveObject(
 			object: $merged,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
-				uuid: $uuidParam
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuidParam)
 		);
 
 		return $saved->jsonSerialize();

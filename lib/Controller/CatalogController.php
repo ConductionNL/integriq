@@ -30,10 +30,9 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\CatalogRegistryServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -253,10 +252,7 @@ class CatalogController extends Controller {
 			$existingData['isEnabled'] = true;
 			$saved = $this->objectService->saveObject(
 				object: $existingData,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: 'integriq', schema: 'source'),
-					uuid: $existing->getUuid()
-				)
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $existing->getUuid())
 			);
 
 			return new JSONResponse(
@@ -278,7 +274,7 @@ class CatalogController extends Controller {
 		$seedPayload['isEnabled'] = true;
 		$created = $this->objectService->saveObject(
 			object: $seedPayload,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'source'))
+			options: RegisterSave::options(register: 'integriq', schema: 'source')
 		);
 
 		return new JSONResponse(

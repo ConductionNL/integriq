@@ -23,10 +23,9 @@
 
 namespace OCA\Integriq\Service\ConfigurationHandlers;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
@@ -234,17 +233,14 @@ class MappingHandler implements ConfigurationHandlerInterface {
 			// Update existing mapping.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: 'integriq', schema: 'mapping'),
-					uuid: $mappings['mapping']['slugToId'][$slug]
-				)
+				options: RegisterSave::options(register: 'integriq', schema: 'mapping', uuid: $mappings['mapping']['slugToId'][$slug])
 			);
 		}
 
 		// Create new mapping.
 		return $this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'mapping'))
+			options: RegisterSave::options(register: 'integriq', schema: 'mapping')
 		);
 	}//end import()
 

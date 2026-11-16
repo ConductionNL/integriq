@@ -34,6 +34,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\IwmoIjwProviderException;
 use OCA\Integriq\Exception\IwmoIjwTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\IwmoIjw\InboundReturnTranslator;
 use OCA\Integriq\Service\IwmoIjw\IStandardsClient;
 use OCA\Integriq\Service\IwmoIjw\IwmoIjwProviderInterface;
@@ -43,8 +44,6 @@ use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -180,7 +179,7 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $record,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($status === 'failed') {
@@ -249,7 +248,7 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($outbound === null || $caseReference === null || $caseRegister === null || $caseSchema === null) {
@@ -354,10 +353,7 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
-				uuid: $message->getUuid()
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 	}//end retryOne()
@@ -408,10 +404,7 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: $caseRegister, schema: $caseSchema),
-				uuid: $caseReference
-			)
+			options: RegisterSave::options(register: $caseRegister, schema: $caseSchema, uuid: $caseReference)
 		);
 
 	}//end updateLinkedCase()

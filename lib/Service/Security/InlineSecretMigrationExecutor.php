@@ -651,14 +651,9 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 		try {
 			$this->objectService->saveObject(
 				object: $candidate,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(
-							register: InlineSecretMigrationPlanner::REGISTER,
-							schema: InlineSecretMigrationPlanner::SCHEMA
-						),
-					uuid: $uuid
-				),
+				options: $this->migratedSourceOptions(uuid: $uuid),
 				_rbac: false,
+				// Unscoped: the inline secret migration runs as the system.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
@@ -950,4 +945,18 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 			'bucket' => $bucket,
 		];
 	}//end fieldRecord()
+
+	/**
+	 * Where a migrated source is saved: its register, schema and uuid.
+	 *
+	 * @param string $uuid The source's uuid.
+	 *
+	 * @return ObjectSaveOptions
+	 */
+	private function migratedSourceOptions(string $uuid): ObjectSaveOptions {
+		$target = new ObjectFindTarget(register: InlineSecretMigrationPlanner::REGISTER, schema: InlineSecretMigrationPlanner::SCHEMA);
+
+		return new ObjectSaveOptions(target: $target, uuid: $uuid);
+
+	}//end migratedSourceOptions()
 }//end class

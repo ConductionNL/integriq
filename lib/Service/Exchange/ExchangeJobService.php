@@ -28,11 +28,10 @@ namespace OCA\Integriq\Service\Exchange;
 use DateTime;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Job\ExchangeJobAction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -252,10 +251,7 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 			$existing = $this->findMapping(slug: $slug);
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MAPPING),
-					uuid: $existing?->getUuid()
-				),
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MAPPING, uuid: $existing?->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -362,10 +358,7 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 	public function saveJob(array $data, ?string $uuid = null): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_JOB),
-				uuid: $uuid
-			),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_JOB, uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);

@@ -26,10 +26,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Rule;
 
 use Exception;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -132,9 +132,7 @@ class CompositeFanoutRule implements CompositeFanoutRuleInterface {
 
 		$parentObject = $this->orObjectService->saveObject(
 			$parentBody,
-			new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: $parentConfig['register'], schema: $parentConfig['schema'])
-			)
+			RegisterSave::options(register: $parentConfig['register'], schema: $parentConfig['schema'])
 		);
 		$run->created[] = [
 			'register' => $parentConfig['register'],
@@ -190,7 +188,7 @@ class CompositeFanoutRule implements CompositeFanoutRuleInterface {
 		$register = $childConfig['register'] ?? $run->parentConfig['register'];
 		$childObject = $this->orObjectService->saveObject(
 			$childBody,
-			new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $childConfig['schema']))
+			RegisterSave::options(register: $register, schema: $childConfig['schema'])
 		);
 		$run->created[] = [
 			'register' => $register,

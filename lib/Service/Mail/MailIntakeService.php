@@ -29,9 +29,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Mail;
 
 use OCA\Integriq\Event\MessageReceivedEvent;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -138,7 +137,7 @@ class MailIntakeService implements MailIntakeServiceInterface {
 
 		$stored = $this->objectService->saveObject(
 			object: $payload,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$event = new MessageReceivedEvent(
@@ -159,10 +158,7 @@ class MailIntakeService implements MailIntakeServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $payload,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
-				uuid: (string)$stored->getUuid()
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: (string)$stored->getUuid())
 		);
 
 	}//end intake()

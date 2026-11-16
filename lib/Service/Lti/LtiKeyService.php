@@ -28,12 +28,11 @@ namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
 use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\PemKeyFile;
 use OCA\Integriq\Service\PemKeyFileRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Security\ICrypto;
@@ -368,10 +367,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 		$this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: $registrationType),
-				uuid: $registration->getUuid()
-			)
+			options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 		);
 
 		$this->logger->info(
@@ -430,10 +426,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 		$this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: $registrationType),
-				uuid: $registration->getUuid()
-			)
+			options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 		);
 
 		$this->logger->info(
@@ -483,10 +476,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: $registrationType),
-				uuid: $registration->getUuid()
-			)
+			options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 		);
 
 		$this->logger->info(
@@ -667,10 +657,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 					$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 					$this->orObjectService->saveObject(
 						object: $data,
-						options: new ObjectSaveOptions(
-							target: new ObjectFindTarget(register: 'integriq', schema: $registrationType),
-							uuid: $registration->getUuid()
-						)
+						options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 					);
 				}
 			}//end foreach

@@ -35,12 +35,11 @@ declare(strict_types=1);
 namespace OCA\Integriq\Repair;
 
 use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\SignedPayloadVerifierInterface;
 use OCA\Integriq\Service\SystemWrite;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -121,10 +120,7 @@ class MigrateDsoStamConnection implements IRepairStep {
 					'authorizationConfiguration' => $trust,
 					'userId' => '',
 				],
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(
-						register: PortalConnectionInterface::REGISTER,
-						schema: PortalConnectionInterface::SCHEMA_CONSUMER
-					))
+				options: RegisterSave::options(register: PortalConnectionInterface::REGISTER, schema: PortalConnectionInterface::SCHEMA_CONSUMER)
 			)
 		);
 

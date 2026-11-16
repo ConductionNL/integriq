@@ -29,10 +29,9 @@ namespace OCA\Integriq\Service\Event;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -86,10 +85,7 @@ class CloudEventReceiver {
 
 		$event = $this->objectService->saveObject(
 			object: $this->eventObject(cloudEvent: $cloudEvent),
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'event'),
-				uuid: $uuid
-			),
+			options: RegisterSave::options(register: 'integriq', schema: 'event', uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);

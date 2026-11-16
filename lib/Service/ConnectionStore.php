@@ -29,11 +29,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -175,10 +175,7 @@ class ConnectionStore implements ConnectionStoreInterface {
 		$saved = $this->asSystem(
 			operation: 			fn () => $this->objectService->saveObject(
 				object: $payload,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
-					uuid: $uuid
-				)
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuid)
 			)
 		);
 
@@ -298,7 +295,7 @@ class ConnectionStore implements ConnectionStoreInterface {
 		return $this->asSystem(
 			operation: 			fn () => $this->objectService->saveObject(
 				object: $payload,
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: 'source'))
+				options: RegisterSave::options(register: self::REGISTER, schema: 'source')
 			)
 		);
 	}//end createSource()
@@ -350,10 +347,7 @@ class ConnectionStore implements ConnectionStoreInterface {
 		$this->asSystem(
 			operation: fn () => $this->objectService->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: 'source'),
-					uuid: (string)$source->getUuid()
-				)
+				options: RegisterSave::options(register: self::REGISTER, schema: 'source', uuid: (string)$source->getUuid())
 			)
 		);
 	}//end saveSourceResidency()

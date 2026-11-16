@@ -30,9 +30,8 @@ namespace OCA\Integriq\Auth\Idp;
 
 use OCA\Integriq\Exception\IdpRegistrationConflictException;
 use OCA\Integriq\Exception\IdpSecretRefusedException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 
@@ -166,10 +165,7 @@ class IdpRegistrationService {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
-				uuid: $uuid
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuid)
 		);
 
 		return new IdpRegistration(id: (string)$saved->getUuid(), data: (array)$saved->getObject());

@@ -29,6 +29,7 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -1633,7 +1634,7 @@ class EndpointService implements EndpointServiceInterface {
 					'responseTime' => (int)round($durationMs),
 					'created' => (new DateTime())->format('c'),
 				] + $this->organisationSelf(object: $endpoint),
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'call_log')),
+				options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1670,7 +1671,7 @@ class EndpointService implements EndpointServiceInterface {
 					'direction' => 'inbound',
 					'created' => (new DateTime())->format('c'),
 				] + $this->organisationSelf(object: $consumer),
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'call_log')),
+				options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -3049,7 +3050,7 @@ class EndpointService implements EndpointServiceInterface {
 
 		$data['body'] = $this->orObjectService->saveObject(
 			object: $data['body'],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			options: RegisterSave::options(register: $register, schema: $schema)
 		);
 
 		return $data;
@@ -3425,10 +3426,7 @@ class EndpointService implements EndpointServiceInterface {
 		$object->setObject($data['body']);
 		$object = $this->objectService->getOpenRegisters()->saveObject(
 			object: $object,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
-				uuid: $object->getUuid()
-			)
+			options: RegisterSave::options(register: $object->getRegister(), schema: $object->getSchema(), uuid: $object->getUuid())
 		);
 		$this->objectService->getOpenRegisters()->clearCurrents();
 
@@ -4658,13 +4656,8 @@ class EndpointService implements EndpointServiceInterface {
 				}
 
 				try {
-					$object = $this->objectService->getOpenRegisters()->saveObject(
-						object: $formatted,
-						options: new ObjectSaveOptions(
-							target: new ObjectFindTarget(register: $registerId, schema: $schemaId),
-							uuid: $formatted['id']
-						)
-					);
+					$options = RegisterSave::options(register: $registerId, schema: $schemaId, uuid: $formatted['id']);
+					$object = $this->objectService->getOpenRegisters()->saveObject(object: $formatted, options: $options);
 					return $this->replaceInternalReferences(mapper: $openRegister, object: $object);
 				} catch (ValidationException $exception) {
 					return $this->objectService->getOpenRegisters()->handleValidationException($exception);
@@ -4699,10 +4692,8 @@ class EndpointService implements EndpointServiceInterface {
 		$saveObject = clone $dataDot;
 		$saveObject[$filePartLocation] = $filepartIds;
 
-		$openRegister->saveObject(
-			object: $saveObject->jsonSerialize(),
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $registerId, schema: $schemaId))
-		);
+		$target = new ObjectFindTarget(register: $registerId, schema: $schemaId);
+		$openRegister->saveObject(object: $saveObject->jsonSerialize(), options: new ObjectSaveOptions(target: $target));
 
 		return $dataDot->jsonSerialize();
 	}//end processFilePartRule()

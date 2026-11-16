@@ -44,8 +44,7 @@
 namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ISession;
 use OCP\IUserSession;
@@ -171,7 +170,7 @@ class SynchronizationContractLogService {
 		// which the append-only schema permits.
 		$saved = $this->orObjectService->saveObject(
 			object: $this->normalize(object: $log),
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA)
 		);
 
 		if ($uuid !== '') {

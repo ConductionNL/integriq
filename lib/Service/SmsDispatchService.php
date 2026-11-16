@@ -34,6 +34,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Sms\DeliveryResult;
@@ -44,8 +45,6 @@ use OCA\Integriq\Service\Sms\SmsProviderInterface;
 use OCA\Integriq\Service\Sms\SmsProviderRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -227,7 +226,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 				'detail' => $this->l->t('Message queued'),
 				'attempts' => [],
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$sent = $this->attemptSend(message: $message, provider: $provider, to: $e164, body: $body, options: $options);
@@ -279,10 +278,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
-					uuid: $message->getUuid()
-				)
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 			);
 
 			$this->emitDeliveryStatus(message: $saved);
@@ -295,10 +291,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
-					uuid: $message->getUuid()
-				)
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 			);
 
 			$this->logger->warning(
@@ -402,10 +395,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
-				uuid: $message->getUuid()
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 		$this->emitDeliveryStatus(message: $saved);

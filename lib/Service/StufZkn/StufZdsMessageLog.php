@@ -41,9 +41,8 @@ namespace OCA\Integriq\Service\StufZkn;
 
 use DateTime;
 use OCA\Integriq\Exception\StufZknProviderException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Throwable;
 
@@ -389,10 +388,7 @@ class StufZdsMessageLog {
 
 		$saved     = $this->objectService->saveObject(
 			object: $row,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
-				uuid: $uuid
-			),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);

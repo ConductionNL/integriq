@@ -37,6 +37,7 @@ use OCA\Integriq\Event\OsoAcknowledgementReceivedEvent;
 use OCA\Integriq\Event\OsoDossierReceivedEvent;
 use OCA\Integriq\Exception\OsoProviderException;
 use OCA\Integriq\Exception\OsoTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Oso\OsoAcknowledgementTranslator;
 use OCA\Integriq\Service\Oso\OsoExportEnvelopeTranslator;
 use OCA\Integriq\Service\Oso\OsoImportTranslator;
@@ -44,8 +45,6 @@ use OCA\Integriq\Service\Oso\OsoProviderRegistry;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
@@ -158,7 +157,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($status === 'failed') {
@@ -203,7 +202,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => null,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$this->eventDispatcher->dispatchTyped(
@@ -254,7 +253,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => null,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$this->eventDispatcher->dispatchTyped(
@@ -336,10 +335,7 @@ class OsoService implements OsoServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
-				uuid: $message->getUuid()
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 	}//end retryOne()

@@ -24,10 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Registration;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\SystemWrite;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -159,10 +158,7 @@ class RegistrationStore {
 			what: 'a registration record write',
 			operation: fn () => $this->objectService->saveObject(
 				object: $payload,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: self::RECORD_SCHEMA),
-					uuid: $uuid
-				)
+				options: RegisterSave::options(register: self::REGISTER, schema: self::RECORD_SCHEMA, uuid: $uuid)
 			)
 		);
 

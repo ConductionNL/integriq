@@ -41,10 +41,9 @@ use JWadhams\JsonLogic;
 use OCA\Integriq\Exception\FlowRunException;
 use OCA\Integriq\Service\Helper\FlowExecution;
 use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -200,10 +199,7 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 		$flowRunData['status'] = 'running';
 		$flowRun = $this->orObjectService->saveObject(
 			object: $flowRunData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN),
-				uuid: $flowRun->getUuid()
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN, uuid: $flowRun->getUuid())
 		);
 
 		return $this->executeFrom(execution: new FlowExecution(steps: $steps, flowToken: $flowToken, flowRun: $flowRun), startOrder: $resumeStepOrder);
@@ -698,7 +694,7 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 				'status' => 'running',
 				'startedAt' => (new DateTime())->format('c'),
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN)
 		);
 
 	}//end createFlowRun()
@@ -719,10 +715,7 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 
 		return $this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN),
-				uuid: $flowRun->getUuid()
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN, uuid: $flowRun->getUuid())
 		);
 
 	}//end suspendFlowRun()
@@ -747,10 +740,7 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 
 		return $this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN),
-				uuid: $flowRun->getUuid()
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN, uuid: $flowRun->getUuid())
 		);
 
 	}//end finalizeFlowRun()
@@ -794,7 +784,7 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $entry,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN_LOG))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN_LOG)
 		);
 
 	}//end appendLog()

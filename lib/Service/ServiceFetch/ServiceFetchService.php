@@ -33,11 +33,10 @@ use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\Integriq\Event\ServiceFetchRequestedEvent;
 use OCA\Integriq\Service\CallServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -293,10 +292,7 @@ class ServiceFetchService {
 
 			$this->objectService->saveObject(
 				object: $row,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: 'call_log'),
-					uuid: $uuid
-				),
+				options: RegisterSave::options(register: self::REGISTER, schema: 'call_log', uuid: $uuid),
 				_rbac: false,
 				_multitenancy: false
 			);

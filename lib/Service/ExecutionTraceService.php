@@ -33,12 +33,11 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Otel\TraceExportQueue;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -159,10 +158,7 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $payload,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
-				uuid: $trace->getTraceId()
-			),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $trace->getTraceId()),
 			_rbac: false,
 			_multitenancy: false
 		);

@@ -44,12 +44,11 @@ use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Event\ActionDelivery;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
@@ -664,7 +663,7 @@ class EventService implements EventServiceInterface {
 				'created' => (new DateTime())->format('c'),
 				'updated' => (new DateTime())->format('c'),
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'event_message')),
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -970,10 +969,7 @@ class EventService implements EventServiceInterface {
 		);
 		$this->objectService->saveObject(
 			object: $messageData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
-				uuid: $delivery->message->getUuid()
-			),
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $delivery->message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -1059,10 +1055,7 @@ class EventService implements EventServiceInterface {
 		$messageData['nextAttempt'] = (new DateTime())->modify('+' . (int)$held['retryAfter'] . ' seconds')->format('c');
 		$this->objectService->saveObject(
 			object: $messageData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
-				uuid: $message->getUuid()
-			),
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -1176,10 +1169,7 @@ class EventService implements EventServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $messageData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
-				uuid: $message->getUuid()
-			),
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2342,10 +2332,7 @@ class EventService implements EventServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $messageData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
-				uuid: $message->getUuid()
-			),
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2466,10 +2453,7 @@ class EventService implements EventServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $messageData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
-				uuid: $message->getUuid()
-			),
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2522,10 +2506,7 @@ class EventService implements EventServiceInterface {
 		// Attempts[] is deliberately preserved across the replay campaign.
 		$saved = $this->objectService->saveObject(
 			object: $messageData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
-				uuid: $message->getUuid()
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid())
 		);
 
 		// Re-enter the delivery machine immediately, through the SAME action
@@ -2637,10 +2618,7 @@ class EventService implements EventServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $messageData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
-				uuid: $message->getUuid()
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid())
 		);
 
 	}//end discardMessage()
@@ -2711,10 +2689,7 @@ class EventService implements EventServiceInterface {
 			$message->setObject($messageData);
 			$this->objectService->saveObject(
 				object: $messageData,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
-					uuid: $message->getUuid()
-				)
+				options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid())
 			);
 			$this->logger->warning(
 				'Abandoned event message "' . $message->getUuid() . '" after exhausting ' . $limit
@@ -2903,7 +2878,7 @@ class EventService implements EventServiceInterface {
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'event')),
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3059,7 +3034,7 @@ class EventService implements EventServiceInterface {
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'event')),
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3266,7 +3241,7 @@ class EventService implements EventServiceInterface {
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'event')),
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3307,7 +3282,7 @@ class EventService implements EventServiceInterface {
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			] + $this->organisationAttribute(object: $object),
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'event')),
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3354,7 +3329,7 @@ class EventService implements EventServiceInterface {
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			] + $this->organisationAttribute(object: $newObject),
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'event')),
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3395,7 +3370,7 @@ class EventService implements EventServiceInterface {
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			] + $this->organisationAttribute(object: $object),
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'event')),
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);

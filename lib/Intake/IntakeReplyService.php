@@ -33,10 +33,9 @@ use OCA\Integriq\Exception\IntakeChannelException;
 use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\Identity\RecipientKeyInterface;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -229,11 +228,9 @@ class IntakeReplyService implements IntakeReplyServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $object,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(
-						register: IntakeRoutingService::REGISTER,
-						schema: IntakeRoutingService::SCHEMA_MESSAGE
-					),
+			options: RegisterSave::options(
+				register: IntakeRoutingService::REGISTER,
+				schema: IntakeRoutingService::SCHEMA_MESSAGE,
 				uuid: (string)$stored->getUuid()
 			)
 		);

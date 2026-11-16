@@ -39,9 +39,8 @@ use OCA\Integriq\Service\Cardfeed\CardfeedProviderInterface;
 use OCA\Integriq\Service\Cardfeed\LogCardfeedProvider;
 use OCA\Integriq\Service\Cardfeed\RestCardfeedProvider;
 use OCA\Integriq\Service\Helper\RandomUuid;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -171,10 +170,7 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 
 			$this->objectService->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT),
-					uuid: $existing->getUuid()
-				)
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT, uuid: $existing->getUuid())
 			);
 
 			return [
@@ -195,7 +191,7 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 				'seenTransactionIds' => [],
 				'lifecycleState' => 'active',
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT)
 		);
 
 		return [
@@ -313,10 +309,7 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT),
-				uuid: $account->getUuid()
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT, uuid: $account->getUuid())
 		);
 
 		// Keep the in-memory entity in step for callers holding the reference.
@@ -417,7 +410,7 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 					'transactionCount' => count($pull['transactions']),
 					'transactions' => $pull['transactions'],
 				],
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_BATCH))
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_BATCH)
 			);
 
 			$this->eventService->emitCloudEvent(

@@ -31,6 +31,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\ZgwUnknownResourceException;
 use OCA\Integriq\Exception\ZgwVersionTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\ZgwVersion\CaseTranslator;
 use OCA\Integriq\Service\ZgwVersion\CaseTypeTranslator;
 use OCA\Integriq\Service\ZgwVersion\DecisionTranslator;
@@ -39,8 +40,6 @@ use OCA\Integriq\Service\ZgwVersion\ResultTranslator;
 use OCA\Integriq\Service\ZgwVersion\RolTranslator;
 use OCA\Integriq\Service\ZgwVersion\StatusTranslator;
 use OCA\Integriq\Service\ZgwVersion\ZgwResourceTranslatorInterface;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -290,7 +289,7 @@ class ZgwVersionTranslationService implements ZgwVersionTranslationServiceInterf
 				'error' => $error,
 				'translatedAt' => (new DateTime())->format('c'),
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_LOG))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_LOG)
 		);
 
 	}//end persistLog()

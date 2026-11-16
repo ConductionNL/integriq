@@ -29,6 +29,7 @@ use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Service\AsyncApiDocumentService;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\ProductPolicyService;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
@@ -38,7 +39,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -243,7 +243,7 @@ class ProductChannelsController extends Controller {
 		try {
 			$saved = $this->objects->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'event_subscription')),
+				options: RegisterSave::options(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -454,7 +454,7 @@ class ProductChannelsController extends Controller {
 		try {
 			$saved = $this->objects->saveObject(
 				object: $this->subscriptionFor(access: $access, style: 'pull'),
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'event_subscription')),
+				options: RegisterSave::options(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);

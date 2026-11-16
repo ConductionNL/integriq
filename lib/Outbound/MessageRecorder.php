@@ -32,10 +32,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Outbound;
 
 use DateTimeImmutable;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use RuntimeException;
@@ -176,7 +175,7 @@ class MessageRecorder {
 
 		return $this->objectService->saveObject(
 			object: $record,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA)
 		);
 
 	}//end start()
@@ -601,10 +600,7 @@ class MessageRecorder {
 	private function write(string $uuid, array $record): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $record,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
-				uuid: $uuid
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuid)
 		);
 
 	}//end write()

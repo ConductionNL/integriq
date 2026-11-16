@@ -32,12 +32,11 @@ namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use InvalidArgumentException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Zgw\ZgwNotificationPullListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
@@ -254,7 +253,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 				'authScheme' => (string)($config['authScheme'] ?? ''),
 				'status' => self::STATUS_PENDING,
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'notificaties_abonnement'))
+			options: RegisterSave::options(register: 'integriq', schema: 'notificaties_abonnement')
 		);
 
 	}//end persistPendingAbonnement()
@@ -270,10 +269,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 	private function persistAbonnement(array $data, string $id): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'notificaties_abonnement'),
-				uuid: $id
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'notificaties_abonnement', uuid: $id)
 		);
 
 	}//end persistAbonnement()
@@ -304,7 +300,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 				'authorizationType' => 'apiKey',
 				'authorizationConfiguration' => ['apiKey' => $secret],
 			],
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'consumer'))
+			options: RegisterSave::options(register: 'integriq', schema: 'consumer')
 		);
 
 		return ['consumerId' => $consumer->getUuid(), 'secret' => $secret];

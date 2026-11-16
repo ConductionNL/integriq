@@ -64,6 +64,7 @@ use OCA\Integriq\Service\Call\CallRequest;
 use OCA\Integriq\Service\Call\FinishedCall;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Residency\EgressResidencyPolicy;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
@@ -807,7 +808,7 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: the log carries the source's organisation (stamped above), not the caller's.
 		return $this->objectService->saveObject(
 			object: $object,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'call_log')),
+			options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -864,10 +865,7 @@ class CallService implements CallServiceInterface {
 			// state.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: 'integriq', schema: 'source'),
-					uuid: $source->getUuid()
-				),
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -2509,10 +2507,7 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: bookkeeping on a source the caller already reached in scope.
 		return $this->objectService->saveObject(
 			object: $sourceData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'source'),
-				uuid: $source->getUuid()
-			),
+			options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3755,10 +3750,7 @@ class CallService implements CallServiceInterface {
 			// back to its own admin-owned source config on behalf of any caller.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: 'integriq', schema: 'source'),
-					uuid: $source->getUuid()
-				),
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);

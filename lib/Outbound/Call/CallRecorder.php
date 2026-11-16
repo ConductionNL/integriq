@@ -35,11 +35,10 @@ namespace OCA\Integriq\Outbound\Call;
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\SecretRedactorInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
@@ -182,7 +181,7 @@ class CallRecorder implements CallRecorderInterface {
 
 		return $this->objectService->saveObject(
 			object: $record,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: MessageRecorder::REGISTER, schema: self::SCHEMA)),
+			options: RegisterSave::options(register: MessageRecorder::REGISTER, schema: self::SCHEMA),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -469,10 +468,7 @@ class CallRecorder implements CallRecorderInterface {
 	private function write(string $uuid, array $record): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $record,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: MessageRecorder::REGISTER, schema: self::SCHEMA),
-				uuid: $uuid
-			),
+			options: RegisterSave::options(register: MessageRecorder::REGISTER, schema: self::SCHEMA, uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);

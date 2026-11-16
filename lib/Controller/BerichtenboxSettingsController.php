@@ -24,10 +24,9 @@ use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxSettingsRefusal;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettingsInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -132,10 +131,7 @@ class BerichtenboxSettingsController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $applied['data'],
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: ConnectionStoreInterface::REGISTER, schema: 'source'),
-					uuid: $uuid
-				)
+				options: RegisterSave::options(register: ConnectionStoreInterface::REGISTER, schema: 'source', uuid: $uuid)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error('[BerichtenboxSettingsController] the Berichtenbox source was not saved', ['exception' => $e->getMessage()]);

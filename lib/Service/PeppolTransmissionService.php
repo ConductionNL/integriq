@@ -31,12 +31,11 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\Integriq\Exception\PeppolProviderException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Peppol\LogPeppolAccessPointProvider;
 use OCA\Integriq\Service\Peppol\PeppolAccessPointProviderInterface;
 use OCA\Integriq\Service\Peppol\RestPeppolAccessPointProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\FileService as ORFileService;
@@ -280,7 +279,7 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 					'detail' => $this->l->t('Transmission queued'),
 					'attempts' => [],
 				],
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION))
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION)
 			);
 		}//end if
 
@@ -328,10 +327,7 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION),
-					uuid: $transmission->getUuid()
-				)
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION, uuid: $transmission->getUuid())
 			);
 
 			$this->emitDeliveryStatus(transmission: $saved);
@@ -344,10 +340,7 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION),
-					uuid: $transmission->getUuid()
-				)
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION, uuid: $transmission->getUuid())
 			);
 
 			$this->logger->warning(
@@ -488,10 +481,7 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION),
-				uuid: $transmission->getUuid()
-			)
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION, uuid: $transmission->getUuid())
 		);
 
 		$this->emitDeliveryStatus(transmission: $saved);
@@ -696,10 +686,7 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 	private function saveInboundDocument(array $data, ?string $uuid): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_INBOUND_DOCUMENT),
-				uuid: $uuid
-			),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_INBOUND_DOCUMENT, uuid: $uuid),
 			_rbac: false
 		);
 	}//end saveInboundDocument()

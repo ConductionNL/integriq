@@ -28,10 +28,9 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\DocumentGenerationException;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -133,11 +132,9 @@ class DocumentGenerationController extends Controller {
 			$object['isEnabled'] = true;
 			$this->objectService->saveObject(
 				object: $object,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(
-							register: DocumentGenerationServiceInterface::REGISTER,
-							schema: DocumentGenerationServiceInterface::SCHEMA_SOURCE
-						),
+				options: RegisterSave::options(
+					register: DocumentGenerationServiceInterface::REGISTER,
+					schema: DocumentGenerationServiceInterface::SCHEMA_SOURCE,
 					uuid: $source->getUuid()
 				)
 			);

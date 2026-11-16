@@ -29,10 +29,9 @@ namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Service\Helper\RandomUuid;
 use DateTime;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -122,10 +121,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		return $this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_status_list'),
-				uuid: $uuid
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'eudi_status_list', uuid: $uuid)
 		);
 
 	}//end findOrCreateStatusList()
@@ -167,10 +163,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_status_list'),
-				uuid: $entity->getUuid()
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'eudi_status_list', uuid: $entity->getUuid())
 		);
 
 		return ['statusListId' => $entity->getUuid(), 'index' => $index];
@@ -211,10 +204,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_status_list'),
-				uuid: $entity->getUuid()
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'eudi_status_list', uuid: $entity->getUuid())
 		);
 
 		// Re-sign immediately so a verifier fetching the endpoint right
@@ -343,10 +333,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_status_list'),
-				uuid: $entity->getUuid()
-			)
+			options: RegisterSave::options(register: 'integriq', schema: 'eudi_status_list', uuid: $entity->getUuid())
 		);
 
 		return $token;

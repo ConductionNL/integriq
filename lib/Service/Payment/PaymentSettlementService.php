@@ -36,9 +36,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Payment;
 
 use OCA\Integriq\Service\CloudEventEmitterInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
@@ -168,7 +167,7 @@ class PaymentSettlementService {
 						'reportedAt' => gmdate('c', $this->time->getTime()),
 					]
 				),
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_SETTLEMENT)),
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_SETTLEMENT),
 				_rbac: false,
 				_multitenancy: false
 			);

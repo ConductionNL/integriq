@@ -39,12 +39,12 @@ use DateTime;
 use GuzzleHttp\Client;
 use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
 use OCA\Integriq\Service\OpenFormulieren\MappingResolutionException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\FileTarget;
@@ -200,7 +200,7 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 		if ($submission === null) {
 			$submission = $this->objectService->saveObject(
 				object: $record,
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION))
+				options: $this->submissionSaveOptions()
 			);
 		}
 
@@ -217,10 +217,7 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 					$submission->getObject(),
 					['status' => 'failed', 'errorDetail' => $exception->getMessage()]
 				),
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION),
-					uuid: $submission->getUuid()
-				)
+				options: $this->submissionSaveOptions(uuid: $submission->getUuid())
 			);
 		}//end try
 
@@ -236,10 +233,7 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 
 		return $this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION),
-				uuid: $submission->getUuid()
-			)
+			options: $this->submissionSaveOptions(uuid: $submission->getUuid())
 		);
 
 	}//end ingest()
@@ -547,10 +541,7 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 
 		$this->objectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION),
-				uuid: $submission->getUuid()
-			)
+			options: $this->submissionSaveOptions(uuid: $submission->getUuid())
 		);
 
 	}//end recordHandoffSuccess()
@@ -571,11 +562,20 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 				$submission->getObject(),
 				['status' => 'failed', 'errorDetail' => $message]
 			),
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION),
-				uuid: $submission->getUuid()
-			)
+			options: $this->submissionSaveOptions(uuid: $submission->getUuid())
 		);
 
 	}//end markFailed()
+
+	/**
+	 * Where a submission is saved: the submission schema, under its uuid.
+	 *
+	 * @param string|null $uuid The uuid of the object, or null for a new one.
+	 *
+	 * @return ObjectSaveOptions
+	 */
+	private function submissionSaveOptions(?string $uuid = null): ObjectSaveOptions {
+		return RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION, uuid: $uuid);
+
+	}//end submissionSaveOptions()
 }//end class

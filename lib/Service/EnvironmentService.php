@@ -30,10 +30,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use InvalidArgumentException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -109,7 +108,7 @@ class EnvironmentService implements EnvironmentServiceInterface {
 
 		return $this->orObjectService->saveObject(
 			object: $data,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA))
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA)
 		);
 	}//end create()
 
