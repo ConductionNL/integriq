@@ -26,7 +26,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Registration\RegistrationService;
-use OCA\Integriq\Service\Registration\RegistrationStore;
+use OCA\Integriq\Service\Registration\RegistrationStoreInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -48,15 +48,15 @@ class RegistrationTargetController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest            $request       The request.
-	 * @param RegistrationStore   $store         Reads the targets.
-	 * @param RegistrationService $registrations Runs the dry run.
+	 * @param IRequest                   $request       The request.
+	 * @param RegistrationStoreInterface $store         Reads the targets.
+	 * @param RegistrationService        $registrations Runs the dry run.
 	 *
 	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly RegistrationStore $store,
+		private readonly RegistrationStoreInterface $store,
 		private readonly RegistrationService $registrations,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
