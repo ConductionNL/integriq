@@ -82,9 +82,9 @@ namespace OCA\Pipelinq\Event {
 	}//end if
 }
 
-namespace OCA\Integriq\Tests\Unit\EventListener {
+namespace OCA\Integriq\Tests\Unit\Service\Security {
 
-	use OCA\Integriq\EventListener\ConnectionHandoverListener;
+	use OCA\Integriq\Service\Security\ConnectionHandoverListener;
 	use OCA\Integriq\Service\Security\ConnectionHandoverService;
 	use OCA\Pipelinq\Event\BrpConnectionHandoverEvent;
 	use OCP\EventDispatcher\Event;

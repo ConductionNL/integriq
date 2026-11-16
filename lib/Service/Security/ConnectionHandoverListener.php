@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * @category EventListener
- * @package  OCA\Integriq\EventListener
+ * @package  OCA\Integriq\Service\Security
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
@@ -20,9 +20,8 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\EventListener;
+namespace OCA\Integriq\Service\Security;
 
-use OCA\Integriq\Service\Security\ConnectionHandoverService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
