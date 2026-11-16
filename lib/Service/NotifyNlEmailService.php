@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\SmsProviderException;
-use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Outbound\MessageRecorderInterface;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
@@ -45,7 +45,7 @@ use Throwable;
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
  */
-class NotifyNlEmailService {
+class NotifyNlEmailService implements NotifyNlEmailServiceInterface {
 
 	/**
 	 * The outbound log channel a NotifyNL e-mail is recorded on.
@@ -61,19 +61,7 @@ class NotifyNlEmailService {
 	 */
 	public const OPT_OUT_CHANNEL = 'mail';
 
-	/**
-	 * Error code of an address that is not an e-mail address.
-	 *
-	 * @var string
-	 */
-	public const ERROR_INVALID_ADDRESS = 'invalid-address';
 
-	/**
-	 * Error code of a send without a template.
-	 *
-	 * @var string
-	 */
-	public const ERROR_MISSING_TEMPLATE = 'missing-template';
 
 	/**
 	 * The step a delivery failure NotifyNL reports is recorded in.
@@ -96,7 +84,7 @@ class NotifyNlEmailService {
 	 * @param RawSourceResolver         $rawSourceResolver Re-reads the source raw, its key intact.
 	 * @param RestNotifyNlProvider      $notifyNl          Sends the e-mail.
 	 * @param OutboundSendGateInterface $gate              Asks the opt-out list and keeps the log row.
-	 * @param MessageRecorder           $recorder          Reads and updates the log row on a callback.
+	 * @param MessageRecorderInterface  $recorder          Reads and updates the log row on a callback.
 	 * @param IL10N                     $l                 Words the refusals.
 	 * @param LoggerInterface           $logger            Logs a callback that names no row.
 	 */
@@ -105,7 +93,7 @@ class NotifyNlEmailService {
 		private readonly RawSourceResolver $rawSourceResolver,
 		private readonly RestNotifyNlProvider $notifyNl,
 		private readonly OutboundSendGateInterface $gate,
-		private readonly MessageRecorder $recorder,
+		private readonly MessageRecorderInterface $recorder,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {

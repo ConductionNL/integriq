@@ -30,8 +30,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
-use OCA\Integriq\Service\NotifyNlEmailService;
-use OCA\Integriq\Service\SmsDispatchService;
+use OCA\Integriq\Service\NotifyNlEmailServiceInterface;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
@@ -81,7 +80,7 @@ class NotifyNlController extends Controller {
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
-	 * @param NotifyNlEmailService $emailService Sends NotifyNL e-mail and applies its mail callbacks.
+	 * @param NotifyNlEmailServiceInterface $emailService Sends NotifyNL e-mail and applies its mail callbacks.
 	 */
 	public function __construct(
 		string $appName,
@@ -92,7 +91,7 @@ class NotifyNlController extends Controller {
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
-		private readonly NotifyNlEmailService $emailService,
+		private readonly NotifyNlEmailServiceInterface $emailService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -193,9 +192,9 @@ class NotifyNlController extends Controller {
 	 */
 	private function emailFailure(SmsProviderException $exception): JSONResponse {
 		$badRequest = [
-			NotifyNlEmailService::ERROR_INVALID_ADDRESS,
-			NotifyNlEmailService::ERROR_MISSING_TEMPLATE,
-			SmsDispatchService::ERROR_UNKNOWN_SOURCE,
+			NotifyNlEmailServiceInterface::ERROR_INVALID_ADDRESS,
+			NotifyNlEmailServiceInterface::ERROR_MISSING_TEMPLATE,
+			SmsDispatchServiceInterface::ERROR_UNKNOWN_SOURCE,
 		];
 		if (in_array($exception->getErrorCode(), $badRequest, true) === true) {
 			return new JSONResponse(
@@ -242,7 +241,7 @@ class NotifyNlController extends Controller {
 	 *                      source that is not an enabled SMS source, else 502.
 	 */
 	private function sendFailure(SmsProviderException $exception): JSONResponse {
-		if ($exception->getErrorCode() === SmsDispatchService::ERROR_UNKNOWN_SOURCE) {
+		if ($exception->getErrorCode() === SmsDispatchServiceInterface::ERROR_UNKNOWN_SOURCE) {
 			return new JSONResponse(
 				['error' => $exception->getErrorCode(), 'message' => $exception->getMessage()],
 				Http::STATUS_BAD_REQUEST

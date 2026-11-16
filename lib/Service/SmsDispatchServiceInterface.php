@@ -31,6 +31,21 @@ use OCA\OpenRegister\Db\ObjectEntity;
  * Public operations of {@see SmsDispatchService} that other components call.
  */
 interface SmsDispatchServiceInterface {
+
+	/**
+	 * `source.type` value identifying an SMS channel source.
+	 *
+	 * @var string
+	 */
+	public const SOURCE_TYPE = 'sms';
+
+	/**
+	 * Error code of a send naming a source that is not an enabled SMS source.
+	 *
+	 * @var string
+	 */
+	public const ERROR_UNKNOWN_SOURCE = 'unknown-source';
+
 	/**
 	 * Validate and send one SMS message: validates the recipient to E.164, dispatches
 	 * through the configured provider, and persists the resulting `sms_message` record.

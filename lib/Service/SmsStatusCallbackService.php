@@ -45,21 +45,9 @@ use Throwable;
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
  */
-class SmsStatusCallbackService {
+class SmsStatusCallbackService implements SmsStatusCallbackServiceInterface {
 
-	/**
-	 * Configuration key of a source's callback token.
-	 *
-	 * @var string
-	 */
-	public const TOKEN_KEY = 'statusCallbackToken';
 
-	/**
-	 * Configuration key of a source's encrypted callback signing key.
-	 *
-	 * @var string
-	 */
-	public const SIGNING_KEY = 'encryptedWebhookSigningKey';
 
 	/**
 	 * Most SMS sources one callback looks through for its token.

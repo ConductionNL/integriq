@@ -81,12 +81,6 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 */
 	public const SCHEMA_MESSAGE = 'sms_message';
 
-	/**
-	 * `source.type` value identifying an SMS channel source.
-	 *
-	 * @var string
-	 */
-	public const SOURCE_TYPE = 'sms';
 
 	/**
 	 * CloudEvent type emitted on every message status change.
@@ -95,12 +89,6 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 */
 	public const EVENT_TYPE_DELIVERY_STATUS = 'nl.conduction.sms.delivery.status';
 
-	/**
-	 * Error code of a send naming a source that is not an enabled SMS source.
-	 *
-	 * @var string
-	 */
-	public const ERROR_UNKNOWN_SOURCE = 'unknown-source';
 
 	/**
 	 * Every SMS binding by provider id.

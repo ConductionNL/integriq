@@ -30,7 +30,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\Sms\SmsStatusCallback;
-use OCA\Integriq\Service\SmsStatusCallbackService;
+use OCA\Integriq\Service\SmsStatusCallbackServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -59,13 +59,13 @@ class SmsStatusController extends Controller {
 	 *
 	 * @param string                   $appName   The app id.
 	 * @param IRequest                 $request   The request.
-	 * @param SmsStatusCallbackService $callbacks Finds the source and applies the callback.
+	 * @param SmsStatusCallbackServiceInterface $callbacks Finds the source and applies the callback.
 	 * @param LoggerInterface          $logger    Logs a refused callback, never its token or key.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SmsStatusCallbackService $callbacks,
+		private readonly SmsStatusCallbackServiceInterface $callbacks,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

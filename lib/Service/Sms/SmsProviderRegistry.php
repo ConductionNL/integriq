@@ -31,7 +31,7 @@ namespace OCA\Integriq\Service\Sms;
  *
  * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
  */
-class SmsProviderRegistry {
+class SmsProviderRegistry implements SmsProviderRegistryInterface {
 
 	/**
 	 * The bindings, keyed by provider id, log first.

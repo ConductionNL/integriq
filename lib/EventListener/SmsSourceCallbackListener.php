@@ -27,8 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\SmsDispatchService;
-use OCA\Integriq\Service\SmsStatusCallbackService;
+use OCA\Integriq\Service\SmsDispatchServiceInterface;
+use OCA\Integriq\Service\SmsStatusCallbackServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -111,7 +111,7 @@ class SmsSourceCallbackListener implements IEventListener {
 		[$entity, $old] = self::entities(event: $event);
 
 		$data = (array)$entity->getObject();
-		if (($data['type'] ?? null) !== SmsDispatchService::SOURCE_TYPE || $this->isSource(object: $entity) === false) {
+		if (($data['type'] ?? null) !== SmsDispatchServiceInterface::SOURCE_TYPE || $this->isSource(object: $entity) === false) {
 			return;
 		}
 
@@ -142,18 +142,18 @@ class SmsSourceCallbackListener implements IEventListener {
 	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function settled(array $configuration, array $stored): array {
-		$configuration[SmsStatusCallbackService::TOKEN_KEY] = self::tokenFor(configuration: $configuration, stored: $stored);
+		$configuration[SmsStatusCallbackServiceInterface::TOKEN_KEY] = self::tokenFor(configuration: $configuration, stored: $stored);
 
 		$plain = ($configuration[self::PLAIN_SIGNING_KEY] ?? null);
 		unset($configuration[self::PLAIN_SIGNING_KEY]);
 		if (is_string($plain) === true && trim($plain) !== '') {
-			$configuration[SmsStatusCallbackService::SIGNING_KEY] = $this->crypto->encrypt(trim($plain));
+			$configuration[SmsStatusCallbackServiceInterface::SIGNING_KEY] = $this->crypto->encrypt(trim($plain));
 			return $configuration;
 		}
 
-		$encrypted = ($stored[SmsStatusCallbackService::SIGNING_KEY] ?? null);
-		if (isset($configuration[SmsStatusCallbackService::SIGNING_KEY]) === false && is_string($encrypted) === true && $encrypted !== '') {
-			$configuration[SmsStatusCallbackService::SIGNING_KEY] = $encrypted;
+		$encrypted = ($stored[SmsStatusCallbackServiceInterface::SIGNING_KEY] ?? null);
+		if (isset($configuration[SmsStatusCallbackServiceInterface::SIGNING_KEY]) === false && is_string($encrypted) === true && $encrypted !== '') {
+			$configuration[SmsStatusCallbackServiceInterface::SIGNING_KEY] = $encrypted;
 		}
 
 		return $configuration;
@@ -203,7 +203,7 @@ class SmsSourceCallbackListener implements IEventListener {
 	 */
 	private static function tokenFor(array $configuration, array $stored): string {
 		foreach ([$configuration, $stored] as $candidate) {
-			$token = ($candidate[SmsStatusCallbackService::TOKEN_KEY] ?? null);
+			$token = ($candidate[SmsStatusCallbackServiceInterface::TOKEN_KEY] ?? null);
 			if (is_string($token) === true && preg_match('/^[A-Za-z0-9]{32,}$/', $token) === 1) {
 				return $token;
 			}

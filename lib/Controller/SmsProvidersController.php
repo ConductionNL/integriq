@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\Sms\SmsProviderRegistry;
+use OCA\Integriq\Service\Sms\SmsProviderRegistryInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -50,7 +50,7 @@ class SmsProvidersController extends Controller {
 	 *
 	 * @param string              $appName     The app id.
 	 * @param IRequest            $request     The request.
-	 * @param SmsProviderRegistry $registry    The SMS bindings this instance carries.
+	 * @param SmsProviderRegistryInterface $registry The SMS bindings this instance carries.
 	 * @param IUserSession        $userSession The session, for the authentication check.
 	 * @param IL10N               $l           Translations.
 	 *
@@ -59,7 +59,7 @@ class SmsProvidersController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SmsProviderRegistry $registry,
+		private readonly SmsProviderRegistryInterface $registry,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 	) {
