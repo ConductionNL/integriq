@@ -2034,6 +2034,101 @@
                 }
             }
         },
+        "/registration-targets/{slug}/test": {
+            "post": {
+                "operationId": "registration-targets-test",
+                "summary": "Dry run of one registration target",
+                "description": "Administrators only. Maps the given hand-over, or a sample one, for the target and answers the mapped body. Stops before the first write: no record is written, no file is read and no outside system is called. A refusal is answered with its code, like the registration command's own answer (form-submission-registration-targets, design D6).",
+                "tags": [
+                    "registration-targets"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "The target slug."
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "handover": {
+                                        "type": "object",
+                                        "description": "A hand-over of the submission; empty or absent maps the sample hand-over."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The mapped body, or a refusal with its code and retryable flag.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "dry": {
+                                            "type": "boolean"
+                                        },
+                                        "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                                "zgw",
+                                                "objects-api",
+                                                "stuf-zds",
+                                                "json"
+                                            ]
+                                        },
+                                        "mapped": {
+                                            "type": "object"
+                                        },
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "unknown-target",
+                                                "invalid-handover",
+                                                "mapping-failed",
+                                                "source-unavailable"
+                                            ]
+                                        },
+                                        "retryable": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
         "/connections/{id}/link": {
             "post": {
                 "operationId": "connections-link",

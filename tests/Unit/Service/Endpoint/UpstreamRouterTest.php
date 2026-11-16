@@ -32,6 +32,8 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Fake sources and a fake call engine: which source is called, how often, and what the call log records.
@@ -93,7 +95,9 @@ class UpstreamRouterTest extends TestCase {
 
 		$this->objects = $this->createMock(ORObjectService::class);
 		$this->objects->method('find')->willReturnCallback(
-			function (int|string $id, mixed $register = null, mixed $schema = null): ?ObjectEntity {
+			function (int|string $id, ?ObjectFindOptions $options = null): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'source') {
 					return ($this->sources[$id] ?? null);
 				}
@@ -106,7 +110,10 @@ class UpstreamRouterTest extends TestCase {
 			}
 		);
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (array $object, mixed $register = null, mixed $schema = null, ?string $uuid = null): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = ['uuid' => $uuid, 'schema' => $schema] + $object;
 				return self::entity(uuid: (string)$uuid, body: $object);
 			}

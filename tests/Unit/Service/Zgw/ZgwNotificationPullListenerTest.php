@@ -21,6 +21,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * The listener against the real seeded pull synchronizations and sources.
@@ -94,7 +95,9 @@ class ZgwNotificationPullListenerTest extends TestCase {
 	private function listener(): ZgwNotificationPullListener {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register=null, ?string $schema=null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($register !== 'integriq' || isset($this->seeds[$schema][$id]) === false) {
 					return null;
 				}

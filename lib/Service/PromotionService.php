@@ -37,6 +37,7 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use RuntimeException;
@@ -624,7 +625,10 @@ class PromotionService implements PromotionServiceInterface {
 			'callLogId' => ($callLogId ?? ''),
 		] + $tests;
 
-		return $this->orObjectService->saveObject(object: $payload, register: self::REGISTER, schema: self::AUDIT_SCHEMA);
+		return $this->orObjectService->saveObject(
+			object: $payload,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::AUDIT_SCHEMA)
+		);
 	}//end writeAudit()
 
 	/**

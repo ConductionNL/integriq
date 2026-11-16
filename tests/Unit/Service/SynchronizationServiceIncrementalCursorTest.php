@@ -42,6 +42,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Twig\Loader\ArrayLoader;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests REQ-016 (cursor-filtered fetch request) and REQ-017 (watermark
@@ -323,6 +324,7 @@ class SynchronizationServiceIncrementalCursorTest extends TestCase {
 		$captured = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, self::SYNC_ID);
 			}
@@ -380,6 +382,7 @@ class SynchronizationServiceIncrementalCursorTest extends TestCase {
 		$captured = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, self::SYNC_ID);
 			}
@@ -415,6 +418,7 @@ class SynchronizationServiceIncrementalCursorTest extends TestCase {
 		$captured = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, self::SYNC_ID);
 			}
@@ -596,6 +600,7 @@ class SynchronizationServiceIncrementalCursorTest extends TestCase {
 		$persisted = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$persisted) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				// Only the top-level Synchronization save (identified by its
 				// own uuid) is tracked here; per-object contract saves reuse
 				// this same stub but are irrelevant to the watermark assertion.

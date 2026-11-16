@@ -37,6 +37,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * A broker that mints and resolves organisation-scoped credentials, recording calls.
@@ -197,7 +198,7 @@ class InlineSecretMigrationExecutorBrokerTest extends TestCase {
 	 * @return mixed
 	 */
 	private function rawField(string $field): mixed {
-		$entity = $this->objectService->find(id: 'src-1', register: 'integriq', schema: 'source', _render: false);
+		$entity = $this->objectService->find(id: 'src-1', options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false));
 
 		return ($entity?->getObject()[$field] ?? null);
 

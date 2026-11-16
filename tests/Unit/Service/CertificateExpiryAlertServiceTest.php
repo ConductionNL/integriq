@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * One alert per source, threshold and certificate; renewal re-arms.
@@ -93,7 +94,10 @@ final class CertificateExpiryAlertServiceTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array $object, $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saves[] = [(string)$schema, $object, $uuid];
 				$id = ($uuid ?? 'alert-' . count($this->saves));
 				$entity = ObjectServiceMockBuilder::objectEntity($this, $object, $id);

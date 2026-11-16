@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * An object is found by its uuid or by its one slug, never by a guess.
@@ -68,7 +69,13 @@ class IntegrationObjectLookupTest extends TestCase {
 	public function testAUuidIsFoundDirectly(): void {
 		$found = new ObjectEntity();
 		$this->objects->expects($this->once())->method('find')
-			->with('6f1c', 'integriq', 'synchronization', false, false)->willReturn($found);
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => '6f1c',
+				'register' => 'integriq',
+				'schema' => 'synchronization',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))->willReturn($found);
 		$this->objects->expects($this->never())->method('findAll');
 
 		$this->assertSame($found, (new IntegrationObjectLookup($this->objects))->resolve('synchronization', ' 6f1c '));

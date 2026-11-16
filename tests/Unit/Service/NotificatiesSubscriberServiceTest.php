@@ -30,6 +30,9 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the ZGW Notificaties API abonnement lifecycle + notification
@@ -83,7 +86,10 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$id = ($uuid ?? ('generated-' . $schema . '-' . count($this->savedObjects)));
 				$this->savedObjects[] = ['schema' => $schema, 'object' => $object, 'uuid' => $id];
 
@@ -118,7 +124,9 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 	private function stubSourceFound(string $location = 'https://notificaties.example'): void {
 		$source = ObjectServiceMockBuilder::objectEntity($this, ['location' => $location], 'source-1');
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($source) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($source) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'source') {
 					return $source;
 				}
@@ -287,7 +295,9 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 			'abon-1'
 		);
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($abonnement) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($abonnement) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'notificaties_abonnement') {
 					return $abonnement;
 				}
@@ -322,7 +332,9 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 	 */
 	private function stubAbonnementAndSource(array $abonnement, ?array $source): void {
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($abonnement, $source) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($abonnement, $source) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'notificaties_abonnement' && $id === 'abon-1') {
 					return ObjectServiceMockBuilder::objectEntity($this, $abonnement, 'abon-1');
 				}
@@ -448,7 +460,9 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 			'abon-2'
 		);
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($abonnement) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($abonnement) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'notificaties_abonnement') {
 					return $abonnement;
 				}
@@ -463,7 +477,9 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 
 		$callLog = ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200], 'call-log-5');
 		$this->callService->method('call')->willReturn($callLog);
-		$this->objectService->expects($this->once())->method('deleteObject')->with($this->equalTo('consumer-1'));
+		$this->objectService->expects($this->once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => $this->equalTo('consumer-1'),
+			]));
 
 		$result = $this->service->deleteAbonnement('abon-2');
 		$data = $result->getObject();
@@ -486,7 +502,9 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 			'abon-3'
 		);
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($abonnement) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($abonnement) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'notificaties_abonnement') {
 					return $abonnement;
 				}

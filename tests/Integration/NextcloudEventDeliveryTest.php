@@ -49,6 +49,8 @@ use OCP\Http\Client\IResponse;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @spec openspec/changes/archive/2026-07-15-nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
@@ -100,7 +102,10 @@ class NextcloudEventDeliveryTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($schema !== 'event_message') {
 					return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'obj-uuid');
 				}
@@ -111,7 +116,9 @@ class NextcloudEventDeliveryTest extends TestCase {
 			}
 		);
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) {
+			function (string $id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'event_message' && isset($this->messages[$id]) === true) {
 					return ObjectServiceMockBuilder::objectEntity($this, $this->messages[$id], $id);
 				}

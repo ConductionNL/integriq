@@ -25,6 +25,7 @@ namespace OCA\Integriq\Controller;
 
 use Exception;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -480,9 +481,8 @@ class MappingsController extends Controller {
 		// schema?)`. Prior code passed the register slug as the first arg
 		// — a TypeError under the new signature, which surfaced as 500.
 		$saved = $openRegisters->saveObject(
-			object:   $object,
-			register: $register,
-			schema:   ($data['schema'] ?? 'mapping')
+			object: $object,
+			options: RegisterSave::options(register: $register, schema: $data['schema'] ?? 'mapping')
 		);
 
 		return new JSONResponse($saved->getObject());

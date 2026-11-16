@@ -87,6 +87,7 @@ import {
 	setSourceResidencyHandler,
 	testJobHandler,
 	testMappingModalHandler,
+	testRegistrationTargetHandler,
 	testSourceHandler,
 	testSynchronizationHandler,
 	viewLogsHandler,
@@ -122,6 +123,9 @@ export default {
 	// Webhook signing-secret manager (opens SubscriptionSigningModal via
 	// the modal bus). See openconnector-webhook-signing.
 	manageSigningHandler,
+	// Registration target dry run (form-submission-registration-targets D6):
+	// opens RegistrationTargetTestModal, which owns the POST.
+	testRegistrationTargetHandler,
 	// Query-aware navigation handler for "View logs" row actions on
 	// parent index pages (#837). Pushes `?<queryParam>=<rowId>` onto the
 	// destination *Logs route. Will be retired once nc-vue#330 lands a

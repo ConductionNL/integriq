@@ -42,6 +42,7 @@ use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Service\CaseSystem\CaseSystemRefusal;
 use OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\MessageValidation\MessageValidationRefusedException;
 use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
 use OCA\Integriq\Service\Synchronization\ApiFetch;
@@ -75,9 +76,17 @@ use OCA\Integriq\Service\Format\CsvCodec;
 use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -773,8 +782,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	private function findSynchronizationObject(string|int $id): ObjectEntity {
 		$object = $this->orObjectService->find(
 			id: (string)$id,
-			register: 'integriq',
-			schema: 'synchronization'
+			options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization')
 		);
 
 		if ($object === null) {
@@ -973,9 +981,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: 'synchronization',
-			uuid: $uuidValue
+			options: RegisterSave::options(register: 'integriq', schema: 'synchronization', uuid: $uuidValue)
 		);
 	}//end persistSynchronization()
 
@@ -1072,8 +1078,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return $this->orObjectService->find(
 			id: (string)$id,
-			register: 'integriq',
-			schema: 'synchronization_contract'
+			options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization_contract')
 		);
 	}//end findContractObject()
 
@@ -1517,9 +1522,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: 'synchronization_contract',
-			uuid: $uuidValue
+			options: RegisterSave::options(register: 'integriq', schema: 'synchronization_contract', uuid: $uuidValue)
 		);
 
 		return $saved->jsonSerialize();
@@ -1552,9 +1555,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$uuid = $object['uuid'];
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: 'synchronization_contract',
-			uuid: $uuid
+			options: RegisterSave::options(register: 'integriq', schema: 'synchronization_contract', uuid: $uuid)
 		);
 
 		return $saved->jsonSerialize();
@@ -1600,9 +1601,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $merged,
-			register: 'integriq',
-			schema: 'synchronization_contract',
-			uuid: $uuidValue
+			options: RegisterSave::options(register: 'integriq', schema: 'synchronization_contract', uuid: $uuidValue)
 		);
 
 		return $saved->jsonSerialize();
@@ -1632,8 +1631,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// schema back open. Neither is acceptable, so the engine reads as the system.
 		$object = $this->orObjectService->find(
 			id: (string)$id,
-			register: 'integriq',
-			schema: 'source',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2271,10 +2269,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			$this->orObjectService->saveObject(
 				object: $data,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				uuid: $object->getUuid(),
-				silent: true
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					uuid: $object->getUuid(),
+					policy: new SavePolicy(silent: true)
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -2342,8 +2341,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			$parentObject = $openRegisters->find(
 				id: $parentObjectId,
-				register: $parentRegister,
-				schema: $parentSchema
+				options: new ObjectFindOptions(register: $parentRegister, schema: $parentSchema)
 			);
 
 			return $parentObject?->jsonSerialize();
@@ -3675,8 +3673,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		if (empty($synchronization['sourceTargetMapping']) === false) {
 			$mapping = $this->orObjectService->find(
 				id: (string)$synchronization['sourceTargetMapping'],
-				register: 'integriq',
-				schema: 'mapping'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'mapping')
 			);
 		}
 
@@ -3768,7 +3765,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		try {
-			$target = $this->orObjectService->find(id: $targetId, register: $parts[0], schema: $parts[1]);
+			$target = $this->orObjectService->find(id: $targetId, options: new ObjectFindOptions(register: $parts[0], schema: $parts[1]));
 		} catch (\Throwable $exception) {
 			return null;
 		}
@@ -4705,8 +4702,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			try {
 				$sourceHashMapping = $this->orObjectService->find(
 					id: (string)$synchronization['sourceHashMapping'],
-					register: 'integriq',
-					schema: 'mapping'
+					options: new ObjectFindOptions(register: 'integriq', schema: 'mapping')
 				);
 			} catch (DoesNotExistException $exception) {
 				return new Exception($exception->getMessage());
@@ -5136,8 +5132,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// Unscoped: the engine re-reads the target its own run wrote, during a run that may have no user.
 			return $this->orObjectService->find(
 				id: (string)$targetId,
-				register: $run->registerId,
-				schema: $run->schemaId,
+				options: new ObjectFindOptions(register: $run->registerId, schema: $run->schemaId),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -5200,9 +5195,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 			$this->orObjectService->saveObject(
 				object: $objectData,
-				register: $registerId,
-				schema: $schemaId,
-				uuid: (string)$targetObject->getUuid()
+				options: RegisterSave::options(register: $registerId, schema: $schemaId, uuid: (string)$targetObject->getUuid())
 			);
 
 			$this->persistContract(
@@ -5644,8 +5637,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			return $this->orObjectService->find(
 				id: (string)$synchronization['sourceTargetMapping'],
-				register: 'integriq',
-				schema: 'mapping'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'mapping')
 			);
 		} catch (DoesNotExistException $exception) {
 			return new Exception($exception->getMessage());
@@ -5969,7 +5961,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// Orphan cleanup is handled by the fetch-file rule path
 		// (see SynchronizationService::fetchAndRegisterFileFromEndpoint).
 		if (isset($sourceConfig['subObjects']) === true) {
-			$targetObject = $this->orObjectService->renderEntity($target, ['all']);
+			$targetObject = $this->orObjectService->renderEntity(
+				entity: $target,
+				selection: new RenderSelection(extend: ['all'], filter: [], fields: [], unset: [])
+			);
 			$this->updateContractsForSubObjects(
 				subObjectsConfig: $sourceConfig['subObjects'],
 				synchronizationId: ($write->synchronization['id'] ?? null),
@@ -6008,12 +6003,15 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	private function writeTargetObject(OpenRegisterTargetWrite $write): mixed {
 		$objectService = $this->orObjectService;
 		$writeTarget = fn (): mixed => $objectService->saveObject(
-			register: $write->register,
-			schema: $write->schema,
 			object: $write->targetObject,
-			uuid: ($write->contract['targetId'] ?? null),
-			silent: (($write->sourceConfig['logs'] ?? true) === false),
-			_validation: (($write->sourceConfig['validation'] ?? true) !== false)
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $write->register, schema: $write->schema),
+				uuid: $write->contract['targetId'] ?? null,
+				policy: new SavePolicy(
+						silent: ($write->sourceConfig['logs'] ?? true) === false,
+						validation: ($write->sourceConfig['validation'] ?? true) !== false
+					)
+			)
 		);
 
 		if (($write->sourceConfig['events'] ?? true) === false) {
@@ -6044,7 +6042,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$targetId = (string)$write->contract['targetId'];
 			$permanent = ($action === DisappearancePolicy::PURGE);
 			SourceOwnedDeleteGuardListener::whileTheEngineDeletes(
-				delete: static fn () => $objectService->deleteObject(uuid: $targetId, permanent: $permanent)
+				delete: static fn () => $objectService->deleteObject(new ObjectDeletion(uuid: $targetId, permanent: $permanent))
 			);
 		}
 
@@ -6252,8 +6250,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// System read, unscoped: the engine reads the target its own contract points at, during a run that may have no user.
 		$targetObject = $this->orObjectService->find(
 			id: (string)$contract['targetId'],
-			register: $registerId,
-			schema: $schemaId,
+			options: new ObjectFindOptions(register: $registerId, schema: $schemaId),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -6551,11 +6548,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// dispatch — a layer below the flag — checks nothing else.
 		$writeBatch = fn (): array => $this->orObjectService->saveObjects(
 			objects: $rows,
-			register: $group['register'],
-			schema: $group['schema'],
-			validation: $group['validation'],
-			events: $group['events'],
-			_audit: $group['audit']
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $group['register'], schema: $group['schema']),
+				validation: $group['validation'],
+				events: $group['events'],
+				audit: $group['audit']
+			)
 		);
 
 		if ($group['events'] === false) {
@@ -10768,11 +10766,9 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// Unscoped: the engine reads the raw source of a synchronization it runs, during a run that may have no user.
 			$raw = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning('Raw source read failed; using the rendered source.', ['sourceId' => $id, 'exception' => $e->getMessage()]);
@@ -10938,13 +10934,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		try {
-			$data = $this->orObjectService->find(id: $originId, register: $sourceId[0], schema: $sourceId[1])->getObject();
+			$data = $this->orObjectService->find(
+				id: $originId,
+				options: new ObjectFindOptions(register: $sourceId[0], schema: $sourceId[1])
+			)->getObject();
 			$this->orObjectService->saveObject(
 				object: array_merge($data, $fields),
-				register: $sourceId[0],
-				schema: $sourceId[1],
-				uuid: $originId,
-				silent: true
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $sourceId[0], schema: $sourceId[1]),
+					uuid: $originId,
+					policy: new SavePolicy(silent: true)
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -11086,7 +11086,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$data = array_merge($object->getObject(), ['id' => $object->getId()], $data);
 		}
 
-		$object = $this->orObjectService->saveObject(register: $register, schema: $schema, object: $data)->jsonSerialize();
+		$object = $this->orObjectService->saveObject(
+			object: $data,
+			options: RegisterSave::options(register: $register, schema: $schema)
+		)->jsonSerialize();
 
 		return $object;
 	}//end processSaveObjectRule()
@@ -11127,7 +11130,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		) {
 			$object = $this->objectService->getOpenRegisters()->find(
 				id: $id,
-				_extend: $config['extend_input']['properties']
+				options: new ObjectFindOptions(extend: $config['extend_input']['properties'])
 			);
 			return $object->jsonSerialize();
 		}
@@ -11343,8 +11346,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// System read, unscoped: a synchronization resolves the rule it names, as the system (see the docblock).
 			$object = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'rule',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'rule'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -11432,8 +11434,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			$object = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'rule'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'rule')
 			);
 		} catch (Exception $e) {
 			return null;

@@ -35,6 +35,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * EventService::previewWebhookDelivery() resolves the request a webhook
@@ -115,7 +116,11 @@ class EventServicePreviewWebhookDeliveryTest extends TestCase {
 	 */
 	public function testAMissingSubscriptionPreviewsNoSink(): void {
 		$this->objectService->expects($this->once())->method('find')
-			->with('sub-gone', 'integriq', 'event_subscription')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'sub-gone',
+				'register' => 'integriq',
+				'schema' => 'event_subscription',
+			]))
 			->willReturn(null);
 		$message = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-gone'], 'msg-2');
 
@@ -143,7 +148,11 @@ class EventServicePreviewWebhookDeliveryTest extends TestCase {
 			],
 			'sub-1'
 		);
-		$this->objectService->method('find')->with('sub-1', 'integriq', 'event_subscription')->willReturn($subscription);
+		$this->objectService->method('find')->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'sub-1',
+				'register' => 'integriq',
+				'schema' => 'event_subscription',
+			]))->willReturn($subscription);
 		$message = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-1'], 'msg-3');
 
 		$preview = $this->service()->previewWebhookDelivery($message);
