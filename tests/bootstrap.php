@@ -218,6 +218,24 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
 		}
 
+		// OpenRegister's form submit path and destination validator, as on main
+		// (open-formulieren-submits-into-its-case). Schema first: FormDestination
+		// takes one.
+		$formStubs = [
+			'OCA\\OpenRegister\\Db\\Schema' => '/OCA/OpenRegister/Db/Schema.php',
+			'OCA\\OpenRegister\\Exception\\FormSubmitRefusedException' => '/OCA/OpenRegister/Exception/FormSubmitRefusedException.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmitter' => '/OCA/OpenRegister/Service/Form/FormSubmitter.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmission' => '/OCA/OpenRegister/Service/Form/FormSubmission.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormDestination' => '/OCA/OpenRegister/Service/Form/FormDestination.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormDestinationValidatorInterface' => '/OCA/OpenRegister/Service/Form/FormDestinationValidatorInterface.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmitServiceInterface' => '/OCA/OpenRegister/Service/Form/FormSubmitServiceInterface.php',
+		];
+		foreach ($formStubs as $formClass => $formFile) {
+			if (class_exists($formClass) === false && interface_exists($formClass) === false) {
+				require_once $stubsDir . $formFile;
+			}
+		}
+
 		// The shared task entity + service the HITL mirror writes through
 		// (hitl-on-shared-tasks). The entity must load before the service:
 		// the service's signatures reference it.
