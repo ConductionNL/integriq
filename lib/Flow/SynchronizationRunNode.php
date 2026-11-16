@@ -68,7 +68,7 @@ use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
@@ -90,7 +90,7 @@ use UnexpectedValueException;
  *   config and its fan-out can be wrong; splitting the class would move
  *   that branching, not remove it.
  */
-class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SynchronizationRunNodeInterface {
+class SynchronizationRunNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SynchronizationRunNodeInterface {
 	use FlowNodePaletteDefaults;
 
 	/**

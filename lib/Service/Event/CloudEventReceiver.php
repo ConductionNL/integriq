@@ -30,6 +30,9 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -83,12 +86,10 @@ class CloudEventReceiver {
 
 		$event = $this->objectService->saveObject(
 			object: $this->eventObject(cloudEvent: $cloudEvent),
-			register: 'integriq',
-			schema: 'event',
-			uuid: $uuid,
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API, and the sender was checked by the
-			// receiver's signature or credential before this runs.
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event'),
+				uuid: $uuid
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -127,7 +128,12 @@ class CloudEventReceiver {
 	private function alreadyReceived(string $uuid): bool {
 		try {
 			// Unscoped: the inbound receiver checks for a duplicate of the event it stores unscoped above.
-			return $this->objectService->find(id: $uuid, register: 'integriq', schema: 'event', _rbac: false, _multitenancy: false) !== null;
+			return $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event'),
+				_rbac: false,
+				_multitenancy: false
+			) !== null;
 		} catch (Throwable) {
 			return false;
 		}

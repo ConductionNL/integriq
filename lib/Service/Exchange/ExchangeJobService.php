@@ -30,6 +30,9 @@ use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Service\Job\ExchangeJobAction;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -249,11 +252,11 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 			$existing = $this->findMapping(slug: $slug);
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MAPPING,
-				uuid: $existing?->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MAPPING),
+					uuid: $existing?->getUuid()
+				),
 				_rbac: false,
-				// Unscoped: in-process listener, no user session (see the class note).
 				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
@@ -335,10 +338,8 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 		try {
 			return $this->objectService->find(
 				id: $jobId,
-				register: self::REGISTER,
-				schema: self::SCHEMA_JOB,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_JOB),
 				_rbac: false,
-				// Unscoped: exchange jobs are written by listeners and the runner without a session; read by id for them.
 				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
@@ -361,11 +362,11 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 	public function saveJob(array $data, ?string $uuid = null): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_JOB,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_JOB),
+				uuid: $uuid
+			),
 			_rbac: false,
-			// Unscoped: system write from a listener or the runner, no user session.
 			_multitenancy: false
 		);
 

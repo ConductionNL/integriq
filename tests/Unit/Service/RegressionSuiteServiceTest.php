@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The suite runner.
@@ -80,7 +81,9 @@ class RegressionSuiteServiceTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null): ObjectEntity {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->saves[] = [(string)$schema, $object];
 				$entity = new ObjectEntity();
 				$entity->setUuid('run-1');

@@ -29,6 +29,9 @@ use OCA\Integriq\Exception\DocumentGenerationException;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -130,9 +133,13 @@ class DocumentGenerationController extends Controller {
 			$object['isEnabled'] = true;
 			$this->objectService->saveObject(
 				object: $object,
-				register: DocumentGenerationServiceInterface::REGISTER,
-				schema: DocumentGenerationServiceInterface::SCHEMA_SOURCE,
-				uuid: $source->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: DocumentGenerationServiceInterface::REGISTER,
+							schema: DocumentGenerationServiceInterface::SCHEMA_SOURCE
+						),
+					uuid: $source->getUuid()
+				)
 			);
 
 			return new JSONResponse(['isEnabled' => true, 'providerId' => $provider->getProviderId()]);
@@ -205,8 +212,10 @@ class DocumentGenerationController extends Controller {
 	private function source(string $sourceId) {
 		$source = $this->objectService->find(
 			id: $sourceId,
-			register: DocumentGenerationServiceInterface::REGISTER,
-			schema: DocumentGenerationServiceInterface::SCHEMA_SOURCE
+			options: new ObjectFindOptions(
+				register: DocumentGenerationServiceInterface::REGISTER,
+				schema: DocumentGenerationServiceInterface::SCHEMA_SOURCE
+			)
 		);
 
 		if ($source === null) {

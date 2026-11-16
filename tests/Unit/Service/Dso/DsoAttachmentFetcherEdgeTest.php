@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use stdClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * What fetchPending() does when it cannot or need not download anything.
@@ -76,7 +77,10 @@ class DsoAttachmentFetcherEdgeTest extends TestCase {
 		$this->objectService = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
 		$this->objectService->method('find')->willReturnCallback(fn () => $this->stored);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saves[] = (array)$object;
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)$uuid);

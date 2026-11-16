@@ -32,6 +32,8 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -130,8 +132,7 @@ class VerdictService implements VerdictServiceInterface {
 				'payload' => $payload,
 				'receivedAt' => (new DateTimeImmutable())->format('c'),
 			],
-			register: MessageRecorder::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: MessageRecorder::REGISTER, schema: self::SCHEMA))
 		);
 
 	}//end record()

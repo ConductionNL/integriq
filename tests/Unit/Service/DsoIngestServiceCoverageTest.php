@@ -36,6 +36,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Covers the redelivery match, bijlage edge cases, getRequest() and
@@ -144,7 +145,10 @@ class DsoIngestServiceCoverageTest extends TestCase {
 	 */
 	private function recordSaves(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saves[] = [(array)$object, $schema, $uuid];
 				return $this->entity((array)$object, ($uuid ?? 'verzoek-new'));
 			}

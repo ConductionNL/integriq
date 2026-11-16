@@ -41,6 +41,9 @@ namespace OCA\Integriq\Service\StufZkn;
 
 use DateTime;
 use OCA\Integriq\Exception\StufZknProviderException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Throwable;
 
@@ -110,12 +113,13 @@ class StufZdsMessageLog {
 			try {
 				$found = $this->objectService->find(
 					id: $sourceId,
-					register: self::REGISTER,
-					schema: self::SCHEMA_SOURCE,
+					options: new ObjectFindOptions(
+						register: self::REGISTER,
+						schema: self::SCHEMA_SOURCE,
+						render: false
+					),
 					_rbac: false,
-					// Unscoped: the source of a StUF exchange, read by the outbound client and the inbound receivers without a user session.
-					_multitenancy: false,
-					_render: false
+					_multitenancy: false
 				);
 			} catch (Throwable $exception) {
 				$found = null;
@@ -352,12 +356,9 @@ class StufZdsMessageLog {
 		try {
 			$found = $this->objectService->find(
 				id: $messageId,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, render: false),
 				_rbac: false,
-				// Unscoped: a StUF message read for the receivers and the outbound client, no user session.
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $exception) {
 			return null;
@@ -388,11 +389,11 @@ class StufZdsMessageLog {
 
 		$saved     = $this->objectService->saveObject(
 			object: $row,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
+				uuid: $uuid
+			),
 			_rbac: false,
-			// Unscoped: system write of a StUF message log row, no user session.
 			_multitenancy: false
 		);
 		$row['id'] = (string)($saved->getUuid() ?? $uuid ?? '');

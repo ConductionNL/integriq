@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Security;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -140,9 +142,13 @@ class PlaceholderSecretRepair implements PlaceholderSecretRepairInterface {
 			// Unscoped: a repair step rewriting stored secrets, run as the system.
 			$this->objectService->saveObject(
 				object: $data,
-				register: InlineSecretMigrationPlannerInterface::REGISTER,
-				schema: $row['schema'],
-				uuid: $row['uuid'],
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: InlineSecretMigrationPlannerInterface::REGISTER,
+							schema: $row['schema']
+						),
+					uuid: $row['uuid']
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

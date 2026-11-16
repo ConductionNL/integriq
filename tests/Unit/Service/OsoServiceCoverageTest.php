@@ -36,6 +36,7 @@ use OCP\IL10N;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the transport, parse and retry failure paths of the OSO bridge.
@@ -128,7 +129,10 @@ class OsoServiceCoverageTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = ['object' => $object, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'saved'));
 			}

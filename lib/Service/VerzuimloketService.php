@@ -40,6 +40,8 @@ use OCA\Integriq\Service\Verzuimloket\VerzuimloketAcknowledgementTranslator;
 use OCA\Integriq\Service\Verzuimloket\VerzuimloketEnvelopeTranslator;
 use OCA\Integriq\Service\Verzuimloket\VerzuimloketProviderRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
@@ -163,7 +165,10 @@ class VerzuimloketService implements VerzuimloketServiceInterface {
 			$record['bsnHash'] = hash('sha256', (string)$payload['bsn']);
 		}
 
-		$this->objectService->saveObject(object: self::withoutNulls(record: $record), register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
+		$this->objectService->saveObject(
+			object: self::withoutNulls(record: $record),
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
+		);
 
 		if ($status === 'failed') {
 			throw new VerzuimloketProviderException(message: (string)$error);
@@ -232,8 +237,7 @@ class VerzuimloketService implements VerzuimloketServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			]),
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
 		);
 
 		if ($outbound === null) {
@@ -324,9 +328,10 @@ class VerzuimloketService implements VerzuimloketServiceInterface {
 
 		$this->objectService->saveObject(
 			object: self::withoutNulls(record: $data),
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
+				uuid: $message->getUuid()
+			)
 		);
 
 	}//end retryOne()

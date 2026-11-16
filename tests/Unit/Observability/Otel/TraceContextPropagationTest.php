@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for traceparent propagation.
@@ -156,7 +157,10 @@ class TraceContextPropagationTest extends TestCase {
 		$saves = [];
 		$objects = $this->createMock(ORObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			static function (array $object, mixed $register = null, mixed $schema = null, ?string $uuid = null) use (&$saves): ObjectEntity {
+			static function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saves): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$saves[] = ['uuid' => $uuid, 'object' => $object];
 
 				return new ObjectEntity();

@@ -41,6 +41,8 @@ use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -245,9 +247,10 @@ class KissSyncService implements KissSyncServiceInterface {
 
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_SOURCE,
-				uuid: $source->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_SOURCE),
+					uuid: $source->getUuid()
+				)
 			);
 		}
 
@@ -601,16 +604,16 @@ class KissSyncService implements KissSyncServiceInterface {
 		if ($existing !== null) {
 			return $this->objectService->saveObject(
 				object: $record,
-				register: self::REGISTER,
-				schema: self::SCHEMA_KLANTCONTACT,
-				uuid: $existing->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_KLANTCONTACT),
+					uuid: $existing->getUuid()
+				)
 			);
 		}
 
 		return $this->objectService->saveObject(
 			object: $record,
-			register: self::REGISTER,
-			schema: self::SCHEMA_KLANTCONTACT
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_KLANTCONTACT))
 		);
 
 	}//end upsertKlantcontact()

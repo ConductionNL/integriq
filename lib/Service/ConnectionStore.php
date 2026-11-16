@@ -30,6 +30,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -171,9 +175,10 @@ class ConnectionStore implements ConnectionStoreInterface {
 		$saved = $this->asSystem(
 			operation: 			fn () => $this->objectService->saveObject(
 				object: $payload,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $uuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+					uuid: $uuid
+				)
 			)
 		);
 
@@ -192,7 +197,9 @@ class ConnectionStore implements ConnectionStoreInterface {
 	 */
 	public function delete(string $uuid): void {
 		$this->asSystem(
-			operation: 			fn () => $this->objectService->deleteObject(uuid: $uuid, register: self::REGISTER, schema: self::SCHEMA)
+			operation: 			fn () => $this->objectService->deleteObject(
+				new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA))
+			)
 		);
 	}//end delete()
 
@@ -263,11 +270,9 @@ class ConnectionStore implements ConnectionStoreInterface {
 			// Unscoped: re-reads, unrendered, a source the caller already reached, from a check or event with no user.
 			$raw = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER,
-				schema: 'source',
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'source', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (\Throwable) {
 			return $source;
@@ -291,7 +296,10 @@ class ConnectionStore implements ConnectionStoreInterface {
 	 */
 	public function createSource(array $payload): ObjectEntity {
 		return $this->asSystem(
-			operation: 			fn () => $this->objectService->saveObject(object: $payload, register: self::REGISTER, schema: 'source')
+			operation: 			fn () => $this->objectService->saveObject(
+				object: $payload,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: 'source'))
+			)
 		);
 	}//end createSource()
 
@@ -309,11 +317,9 @@ class ConnectionStore implements ConnectionStoreInterface {
 			$raw = $this->asSystem(
 				operation: fn () => $this->objectService->find(
 					id: $uuid,
-					register: self::REGISTER,
-					schema: 'source',
+					options: new ObjectFindOptions(register: self::REGISTER, schema: 'source', render: false),
 					_rbac: false,
-					_multitenancy: false,
-					_render: false
+					_multitenancy: false
 				)
 			);
 		} catch (DoesNotExistException $e) {
@@ -344,9 +350,10 @@ class ConnectionStore implements ConnectionStoreInterface {
 		$this->asSystem(
 			operation: fn () => $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: 'source',
-				uuid: (string)$source->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: 'source'),
+					uuid: (string)$source->getUuid()
+				)
 			)
 		);
 	}//end saveSourceResidency()
@@ -407,8 +414,7 @@ class ConnectionStore implements ConnectionStoreInterface {
 			return $this->asSystem(
 			operation: 				fn () => $this->objectService->find(
 					id: $uuid,
-					register: self::REGISTER,
-					schema: $schema,
+					options: new ObjectFindOptions(register: self::REGISTER, schema: $schema),
 					_rbac: false,
 					_multitenancy: false
 				)

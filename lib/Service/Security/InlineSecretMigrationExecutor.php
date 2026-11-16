@@ -71,6 +71,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Security;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -648,11 +651,14 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 		try {
 			$this->objectService->saveObject(
 				object: $candidate,
-				register: InlineSecretMigrationPlanner::REGISTER,
-				schema: InlineSecretMigrationPlanner::SCHEMA,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: InlineSecretMigrationPlanner::REGISTER,
+							schema: InlineSecretMigrationPlanner::SCHEMA
+						),
+					uuid: $uuid
+				),
 				_rbac: false,
-				// Unscoped: the inline secret migration runs as the system.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
@@ -753,12 +759,13 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: InlineSecretMigrationPlanner::REGISTER,
-				schema: $this->currentSchema,
+				options: new ObjectFindOptions(
+					register: InlineSecretMigrationPlanner::REGISTER,
+					schema: $this->currentSchema,
+					render: false
+				),
 				_rbac: false,
-				// Unscoped: the inline secret migration reads the raw stored object, run as the system.
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

@@ -44,6 +44,8 @@ use OCA\Integriq\Service\Oso\OsoProviderRegistry;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
@@ -156,8 +158,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
 		);
 
 		if ($status === 'failed') {
@@ -202,8 +203,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => null,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
 		);
 
 		$this->eventDispatcher->dispatchTyped(
@@ -254,8 +254,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => null,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE))
 		);
 
 		$this->eventDispatcher->dispatchTyped(
@@ -337,9 +336,10 @@ class OsoService implements OsoServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
+				uuid: $message->getUuid()
+			)
 		);
 
 	}//end retryOne()

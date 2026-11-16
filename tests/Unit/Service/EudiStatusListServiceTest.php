@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for status-list bit assignment, revocation bit-flip idempotency,
@@ -55,6 +57,7 @@ class EudiStatusListServiceTest extends TestCase {
 
 		$objectService->method('find')->willReturnCallback(
 			function ($id, ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				if (isset($this->rows[$id]) === false) {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
 				}
@@ -87,7 +90,10 @@ class EudiStatusListServiceTest extends TestCase {
 		);
 
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($uuid === null) {
 					$uuid = bin2hex(random_bytes(8));
 				}

@@ -36,6 +36,7 @@ use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests the held-message half of the routing engine: files kept on hold,
@@ -124,7 +125,10 @@ class IntakeRerouteTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, mixed $register = null, mixed $schema = null, ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = [$object, $uuid];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'new-uuid');
 			}

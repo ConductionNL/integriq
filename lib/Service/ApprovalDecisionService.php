@@ -33,6 +33,7 @@ namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -330,8 +331,7 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 			// Unscoped: re-reads the synchronization named on an approval request the caller already reached in scope.
 			$synchronization = $this->orObjectService->find(
 				id: (string)$data['synchronizationId'],
-				register: 'integriq',
-				schema: 'synchronization',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization'),
 				_rbac: false,
 				_multitenancy: false
 			);

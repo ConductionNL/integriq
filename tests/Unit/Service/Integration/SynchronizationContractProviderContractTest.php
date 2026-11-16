@@ -39,6 +39,8 @@ use OCP\IServerContainer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * REQ-OCIP-001..005 on the shipped provider.
@@ -251,7 +253,9 @@ class SynchronizationContractProviderContractTest extends TestCase {
 			}
 		);
 		$objectService->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null) use ($syncStatus, &$finds) {
+			function ($id, ?ObjectFindOptions $options = null) use ($syncStatus, &$finds) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$finds[] = $schema;
 				if ($schema === 'synchronization') {
 					return ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Zaken API: read'], (string)$id);
@@ -460,6 +464,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		);
 		$objectService->method('find')->willReturnCallback(
 			function (...$args) use (&$queries) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$queries[] = ['find', $args];
 				$id = (string)($args['id'] ?? $args[0]);
 				if (str_starts_with($id, 'cccc') === true) {

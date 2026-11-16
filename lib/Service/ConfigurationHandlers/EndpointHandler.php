@@ -25,6 +25,8 @@ namespace OCA\Integriq\Service\ConfigurationHandlers;
 
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
@@ -306,13 +308,17 @@ class EndpointHandler implements ConfigurationHandlerInterface {
 		if ($slug !== null && isset($mappings['endpoint']['slugToId'][$slug]) === true) {
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'endpoint',
-				uuid: $mappings['endpoint']['slugToId'][$slug]
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'endpoint'),
+					uuid: $mappings['endpoint']['slugToId'][$slug]
+				)
 			);
 		}
 
-		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'endpoint');
+		return $this->orObjectService->saveObject(
+			object: $data,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'endpoint'))
+		);
 	}//end saveEndpoint()
 
 	/**

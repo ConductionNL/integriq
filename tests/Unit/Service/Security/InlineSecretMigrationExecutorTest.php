@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Records every log call so a test can assert no secret was ever handed to it.
@@ -388,7 +389,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 	 * @return mixed
 	 */
 	private function rawField(string $uuid, string $field): mixed {
-		$entity = $this->objectService->find(id: $uuid, register: 'integriq', schema: 'source', _render: false);
+		$entity = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false));
 		$object = ($entity?->getObject() ?? []);
 		if (array_key_exists($field, $object) === false) {
 			return '__absent__';
@@ -406,7 +407,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 	 * @return mixed
 	 */
 	private function rawRef(string $uuid, string $field): mixed {
-		$entity = $this->objectService->find(id: $uuid, register: 'integriq', schema: 'source', _render: false);
+		$entity = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false));
 		return ($entity?->getObject()['configuration']['authentication'][$field] ?? '__absent__');
 	}//end rawRef()
 
@@ -766,9 +767,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 
 		$entity = $this->objectService->find(
 			id: 'identity-1',
-			register: 'integriq',
-			schema: 'sender_identity',
-			_render: false
+			options: new ObjectFindOptions(register: 'integriq', schema: 'sender_identity', render: false)
 		);
 		$object = ($entity?->getObject() ?? []);
 
@@ -805,9 +804,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 
 		$entity = $this->objectService->find(
 			id: 'identity-1',
-			register: 'integriq',
-			schema: 'sender_identity',
-			_render: false
+			options: new ObjectFindOptions(register: 'integriq', schema: 'sender_identity', render: false)
 		);
 		$object = ($entity?->getObject() ?? []);
 
@@ -851,9 +848,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 
 		$entity = $this->objectService->find(
 			id: 'identity-1',
-			register: 'integriq',
-			schema: 'sender_identity',
-			_render: false
+			options: new ObjectFindOptions(register: 'integriq', schema: 'sender_identity', render: false)
 		);
 		$object = ($entity?->getObject() ?? []);
 

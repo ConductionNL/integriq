@@ -47,6 +47,9 @@ namespace OCA\Integriq\Service\Objecten;
 
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\EventService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -213,7 +216,10 @@ class ObjectenOpenRegisterAccess {
 
 		$stored = $this->runAs(
 			principal: $principal,
-			callback: fn (): mixed => $service->saveObject(object: $data, register: $register, schema: $schema, uuid: $uuid)
+			callback: fn (): mixed => $service->saveObject(
+				object: $data,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $uuid)
+			)
 		);
 
 		return ($this->rows(found: [$stored])[0] ?? $data);
@@ -236,7 +242,9 @@ class ObjectenOpenRegisterAccess {
 
 		$deleted = $this->runAs(
 			principal: $principal,
-			callback: fn (): mixed => $service->deleteObject(uuid: $uuid, register: $register, schema: $schema)
+			callback: fn (): mixed => $service->deleteObject(
+				new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: $register, schema: $schema))
+			)
 		);
 
 		if ($deleted === false) {

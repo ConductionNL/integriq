@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\RegisterResolverService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -176,10 +178,9 @@ class RuleService {
 					'type' => 'api',
 					'isEnabled' => true,
 				],
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'source')),
 				_rbac: false,
-				_multitenancy: false,
+				_multitenancy: false
 			);
 		}
 

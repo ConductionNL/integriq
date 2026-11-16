@@ -24,6 +24,10 @@ use InvalidArgumentException;
 use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -153,14 +157,15 @@ class OwnershipController extends Controller {
 				// Written onto the object before it goes, so the statement
 				// survives in the audit trail rather than only in a log line.
 				$this->objectService->saveObject(
-					object: ([LocalDeleteGuardInterface::OVERRIDE_KEY => $override] + $this->readObject(id: $id, register: $register, schema: $schema)),
-					register: $register,
-					schema: $schema,
-					uuid: $id
+					object: [LocalDeleteGuardInterface::OVERRIDE_KEY => $override] + $this->readObject(id: $id, register: $register, schema: $schema),
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $register, schema: $schema),
+						uuid: $id
+					)
 				);
 			}
 
-			$this->objectService->deleteObject(uuid: $id, register: $register, schema: $schema);
+			$this->objectService->deleteObject(new ObjectDeletion(uuid: $id, target: new ObjectFindTarget(register: $register, schema: $schema)));
 		} catch (Throwable $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
@@ -220,7 +225,7 @@ class OwnershipController extends Controller {
 	 */
 	private function readObject(string $id, string $register, string $schema): array {
 		try {
-			$entity = $this->objectService->find(id: $id, register: $register, schema: $schema);
+			$entity = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: $register, schema: $schema));
 		} catch (Throwable $e) {
 			return [];
 		}

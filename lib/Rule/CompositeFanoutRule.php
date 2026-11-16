@@ -27,6 +27,9 @@ namespace OCA\Integriq\Rule;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -129,8 +132,10 @@ class CompositeFanoutRule implements CompositeFanoutRuleInterface {
 
 		$parentObject = $this->orObjectService->saveObject(
 			$parentBody,
-			$parentConfig['register'],
-			$parentConfig['schema']
+			new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $parentConfig['schema']),
+				extend: $parentConfig['register']
+			)
 		);
 		$run->created[] = [
 			'register' => $parentConfig['register'],
@@ -184,7 +189,10 @@ class CompositeFanoutRule implements CompositeFanoutRuleInterface {
 		}
 
 		$register = $childConfig['register'] ?? $run->parentConfig['register'];
-		$childObject = $this->orObjectService->saveObject($childBody, $register, $childConfig['schema']);
+		$childObject = $this->orObjectService->saveObject(
+			$childBody,
+			new ObjectSaveOptions(target: new ObjectFindTarget(register: $childConfig['schema']), extend: $register)
+		);
 		$run->created[] = [
 			'register' => $register,
 			'schema' => $childConfig['schema'],
@@ -208,7 +216,9 @@ class CompositeFanoutRule implements CompositeFanoutRuleInterface {
 	private function rollback(array $created): void {
 		foreach (array_reverse($created) as $entry) {
 			try {
-				$this->orObjectService->deleteObject($entry['uuid'], $entry['register'], $entry['schema']);
+				$this->orObjectService->deleteObject(
+					new ObjectDeletion(uuid: $entry['uuid'], target: new ObjectFindTarget(register: $entry['register'], schema: $entry['schema']))
+				);
 			} catch (Exception $exception) {
 				$reference = $entry['register'] . '/' . $entry['schema'] . '/' . $entry['uuid'];
 				$this->logger->error(

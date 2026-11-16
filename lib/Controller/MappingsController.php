@@ -31,6 +31,8 @@ use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Contract\RegisterSlugResolution;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -456,9 +458,8 @@ class MappingsController extends Controller {
 		// schema?)`. Prior code passed the register slug as the first arg
 		// — a TypeError under the new signature, which surfaced as 500.
 		$saved = $openRegisters->saveObject(
-			object:   $object,
-			register: $register,
-			schema:   ($data['schema'] ?? 'mapping')
+			object: $object,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $data['schema'] ?? 'mapping'))
 		);
 
 		return new JSONResponse($saved->getObject());

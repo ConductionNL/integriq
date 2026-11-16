@@ -36,6 +36,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * The detail view of a tool registration shows the six values the tool's
@@ -216,7 +217,9 @@ class LtiPlatformDetailsServiceTest extends TestCase {
 	private function makeService(): LtiPlatformDetailsService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null): ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null): ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->assertSame('lti_tool', $schema, 'only a tool registration is read');
 				if (isset($this->tools[(string)$id]) === false) {
 					throw new DoesNotExistException('no such tool');

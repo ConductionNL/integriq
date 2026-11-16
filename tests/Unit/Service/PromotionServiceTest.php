@@ -29,6 +29,7 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests local export delegation, credentialRef scan/rebind (reference-only,
@@ -468,6 +469,7 @@ class PromotionServiceTest extends TestCase {
 			$objects = ObjectServiceMockBuilder::make($this);
 			$objects->method('saveObject')->willReturnCallback(
 				function (...$args) use (&$seen) {
+					$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 					$payload = $args[0];
 					$payload['startedAt'] = isset($payload['startedAt']);
 					$payload['completedAt'] = isset($payload['completedAt']);

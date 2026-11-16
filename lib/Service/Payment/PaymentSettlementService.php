@@ -37,6 +37,8 @@ namespace OCA\Integriq\Service\Payment;
 
 use OCA\Integriq\Service\CloudEventEmitterInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
@@ -166,10 +168,7 @@ class PaymentSettlementService {
 						'reportedAt' => gmdate('c', $this->time->getTime()),
 					]
 				),
-				register: self::REGISTER,
-				schema: self::SCHEMA_SETTLEMENT,
-				// System context: the pull runs as a background job, and
-				// payment_settlement is locked to administrators.
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_SETTLEMENT)),
 				_rbac: false,
 				_multitenancy: false
 			);

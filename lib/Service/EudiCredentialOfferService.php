@@ -41,6 +41,9 @@ use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use OCA\Integriq\Exception\EudiIssuanceException;
 use OCA\Integriq\Service\Helper\RandomUuid;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Http\Client\IClientService;
@@ -283,9 +286,10 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 
 		$this->orObjectService->saveObject(
 			object: $row,
-			register: 'integriq',
-			schema: 'eudi_credential_offer',
-			uuid: $uuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_credential_offer'),
+				uuid: $uuid
+			)
 		);
 
 		// Hold the plaintext code for exactly one dereference at resolution
@@ -327,10 +331,8 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		try {
 			$entity = $this->orObjectService->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: 'eudi_credential_offer',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_credential_offer'),
 				_rbac: false,
-				// Unscoped: a wallet (no session) resolves its offer by the uuid in the offer link.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -367,9 +369,10 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		$data['offerFetchedAt'] = (new DateTime())->format('c');
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'eudi_credential_offer',
-			uuid: $uuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_credential_offer'),
+				uuid: $uuid
+			)
 		);
 
 		$grant = ['pre-authorized_code' => $code];
@@ -448,9 +451,10 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		$offerData['status'] = 'claimed';
 		$this->orObjectService->saveObject(
 			object: $offerData,
-			register: 'integriq',
-			schema: 'eudi_credential_offer',
-			uuid: $entity->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_credential_offer'),
+				uuid: $entity->getUuid()
+			)
 		);
 
 		return $this->openIssuanceSession(session: $session);
@@ -557,9 +561,10 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		$offerData['txCodeFailedAttempts'] = ($attempts + 1);
 		$this->orObjectService->saveObject(
 			object: $offerData,
-			register: 'integriq',
-			schema: 'eudi_credential_offer',
-			uuid: $offer->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_credential_offer'),
+				uuid: $offer->getUuid()
+			)
 		);
 
 		throw new EudiIssuanceException(message: 'Incorrect tx_code', httpStatus: 400, errorCode: 'invalid_grant');
@@ -595,9 +600,10 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 				'credentialConfigurationId' => $session['credentialConfigurationId'],
 				'expiresAt' => $sessionExpires->format('c'),
 			],
-			register: 'integriq',
-			schema: 'eudi_issuance_session',
-			uuid: $sessionUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_issuance_session'),
+				uuid: $sessionUuid
+			)
 		);
 
 		return [
@@ -737,10 +743,8 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		try {
 			$offerEntity = $this->orObjectService->find(
 				id: $offerId,
-				register: 'integriq',
-				schema: 'eudi_credential_offer',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_credential_offer'),
 				_rbac: false,
-				// Unscoped: credential issuance for a wallet authenticated by its bearer token, no session.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -776,9 +780,10 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		$sessionData['consumedAt'] = (new DateTime())->format('c');
 		$this->orObjectService->saveObject(
 			object: $sessionData,
-			register: 'integriq',
-			schema: 'eudi_issuance_session',
-			uuid: $session->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_issuance_session'),
+				uuid: $session->getUuid()
+			)
 		);
 
 		return ['format' => $format, 'credential' => $credential];
@@ -866,10 +871,8 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		try {
 			$entity = $this->orObjectService->find(
 				id: $offerUuid,
-				register: 'integriq',
-				schema: 'eudi_credential_offer',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_credential_offer'),
 				_rbac: false,
-				// Unscoped: a consumer app authenticated by its own credentials revokes its offer; the consumer is checked against the offer here.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -895,9 +898,10 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		$data['revokedAt'] = (new DateTime())->format('c');
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'eudi_credential_offer',
-			uuid: $entity->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_credential_offer'),
+				uuid: $entity->getUuid()
+			)
 		);
 
 		if ($bitFlipped === true) {

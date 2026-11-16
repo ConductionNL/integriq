@@ -35,6 +35,9 @@ use OCA\Integriq\Event\ServiceFetchRequestedEvent;
 use OCA\Integriq\Service\CallServiceInterface;
 use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -278,18 +281,23 @@ class ServiceFetchService {
 
 		try {
 			// Unscoped: system write marking the call log of a service fetch.
-			$stored = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: 'call_log', _rbac: false, _multitenancy: false);
+			$stored = $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'call_log'),
+				_rbac: false,
+				_multitenancy: false
+			);
 			$row = $stored->getObject();
 			$row['context'] = ['app' => (string)$request['app'], 'fetch' => (string)($fetch['slug'] ?? '')];
 			$row = (new ServiceFetchRedactor())->redact(row: $row, values: $this->valuesToRedact(inputs: $request['inputs']));
 
 			$this->objectService->saveObject(
 				object: $row,
-				register: self::REGISTER,
-				schema: 'call_log',
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: 'call_log'),
+					uuid: $uuid
+				),
 				_rbac: false,
-				// Unscoped: system write marking the call log of a service fetch.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {

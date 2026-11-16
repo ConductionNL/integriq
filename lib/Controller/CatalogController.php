@@ -31,6 +31,9 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\CatalogRegistryServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -250,9 +253,10 @@ class CatalogController extends Controller {
 			$existingData['isEnabled'] = true;
 			$saved = $this->objectService->saveObject(
 				object: $existingData,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $existing->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'source'),
+					uuid: $existing->getUuid()
+				)
 			);
 
 			return new JSONResponse(
@@ -274,8 +278,7 @@ class CatalogController extends Controller {
 		$seedPayload['isEnabled'] = true;
 		$created = $this->objectService->saveObject(
 			object: $seedPayload,
-			register: 'integriq',
-			schema: 'source'
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'source'))
 		);
 
 		return new JSONResponse(
@@ -300,7 +303,7 @@ class CatalogController extends Controller {
 	 */
 	private function findCatalogItem(string $id): ?ObjectEntity {
 		try {
-			return $this->objectService->find(id: $id, register: 'integriq', schema: 'catalog_item');
+			return $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'catalog_item'));
 		} catch (DoesNotExistException $e) {
 			return null;
 		}

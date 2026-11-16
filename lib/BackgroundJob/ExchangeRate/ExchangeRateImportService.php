@@ -29,6 +29,9 @@ namespace OCA\Integriq\BackgroundJob\ExchangeRate;
 
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
@@ -187,8 +190,7 @@ class ExchangeRateImportService {
 						'rate'         => $rate,
 						'source'       => self::RATE_SOURCE,
 					],
-					register: self::REGISTER,
-					schema: self::SCHEMA,
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)),
 					_rbac: false,
 					_multitenancy: false
 				);
@@ -216,8 +218,7 @@ class ExchangeRateImportService {
 			// System path: the daily cron import keeps one instance-wide rate table.
 			$entity = $this->objectService->find(
 				id: self::SOURCE_SLUG,
-				register: self::REGISTER,
-				schema: 'source',
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'source'),
 				_rbac: false,
 				_multitenancy: false
 			);

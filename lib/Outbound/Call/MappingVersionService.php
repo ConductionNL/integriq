@@ -36,6 +36,8 @@ namespace OCA\Integriq\Outbound\Call;
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -93,8 +95,7 @@ class MappingVersionService {
 				'snapshot' => $mapping,
 				'recordedAt' => (new DateTimeImmutable())->format('c'),
 			],
-			register: MessageRecorder::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: MessageRecorder::REGISTER, schema: self::SCHEMA))
 		);
 
 		return $version;

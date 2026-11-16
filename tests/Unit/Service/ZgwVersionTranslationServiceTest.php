@@ -34,6 +34,7 @@ use OCA\Integriq\Service\ZgwVersionNegotiationService;
 use OCA\Integriq\Service\ZgwVersionTranslationService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for resource+version resolution, translator dispatch, passthrough,
@@ -219,6 +220,7 @@ class ZgwVersionTranslationServiceTest extends TestCase {
 		$saved = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$saved) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$record = $args[0];
 				$record['translatedAt'] = (isset($record['translatedAt']) === true);
 				$saved[] = $record;

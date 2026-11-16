@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -402,12 +404,12 @@ class ConnectionAlertService implements ConnectionAlertServiceInterface {
 		try {
 			$this->objectService->saveObject(
 				object: $alert,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+					uuid: $uuid
+				),
 				_rbac: false,
-				// Unscoped: system write of an alert raised by the connection monitor.
-				_multitenancy: false,
+				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
 			$this->logger->warning(

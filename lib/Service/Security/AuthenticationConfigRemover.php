@@ -62,6 +62,9 @@ namespace OCA\Integriq\Service\Security;
 
 use LogicException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -232,11 +235,14 @@ class AuthenticationConfigRemover implements AuthenticationConfigRemoverInterfac
 
 			$this->objectService->saveObject(
 				object: $data,
-				register: InlineSecretMigrationPlanner::REGISTER,
-				schema: InlineSecretMigrationPlanner::SCHEMA,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: InlineSecretMigrationPlanner::REGISTER,
+							schema: InlineSecretMigrationPlanner::SCHEMA
+						),
+					uuid: $uuid
+				),
 				_rbac: false,
-				// Unscoped: a repair step removing legacy authentication config, run as the system.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
@@ -281,12 +287,13 @@ class AuthenticationConfigRemover implements AuthenticationConfigRemoverInterfac
 	private function readRawEntity(string $uuid): ?ObjectEntity {
 		$entity = $this->objectService->find(
 			id: $uuid,
-			register: InlineSecretMigrationPlanner::REGISTER,
-			schema: InlineSecretMigrationPlanner::SCHEMA,
+			options: new ObjectFindOptions(
+				register: InlineSecretMigrationPlanner::REGISTER,
+				schema: InlineSecretMigrationPlanner::SCHEMA,
+				render: false
+			),
 			_rbac: false,
-			// Unscoped: a repair step reads the raw stored object, run as the system.
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 
 		if ($entity instanceof ObjectEntity === false) {

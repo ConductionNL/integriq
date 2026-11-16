@@ -45,6 +45,8 @@ namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\EntityNotMigratableException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -139,9 +141,13 @@ class FlowGraphMigrationService implements FlowGraphMigrationServiceInterface {
 				$data['edges'] = $graph['edges'];
 				$this->orObjectService->saveObject(
 					object: $data,
-					register: FlowRunnerService::REGISTER,
-					schema: FlowRunnerService::SCHEMA_FLOW,
-					uuid: (string)$flow->getUuid()
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: FlowRunnerService::REGISTER,
+								schema: FlowRunnerService::SCHEMA_FLOW
+							),
+						uuid: (string)$flow->getUuid()
+					)
 				);
 			}
 
@@ -196,9 +202,13 @@ class FlowGraphMigrationService implements FlowGraphMigrationServiceInterface {
 				unset($data['nodes'], $data['edges']);
 				$this->orObjectService->saveObject(
 					object: $data,
-					register: FlowRunnerService::REGISTER,
-					schema: FlowRunnerService::SCHEMA_FLOW,
-					uuid: (string)$flow->getUuid()
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: FlowRunnerService::REGISTER,
+								schema: FlowRunnerService::SCHEMA_FLOW
+							),
+						uuid: (string)$flow->getUuid()
+					)
 				);
 			}
 

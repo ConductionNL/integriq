@@ -34,6 +34,9 @@ use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\Identity\RecipientKeyInterface;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -175,8 +178,10 @@ class IntakeReplyService implements IntakeReplyServiceInterface {
 		try {
 			$stored = $this->objectService->find(
 				id: $messageUuid,
-				register: IntakeRoutingService::REGISTER,
-				schema: IntakeRoutingService::SCHEMA_MESSAGE,
+				options: new ObjectFindOptions(
+					register: IntakeRoutingService::REGISTER,
+					schema: IntakeRoutingService::SCHEMA_MESSAGE
+				)
 			);
 		} catch (DoesNotExistException) {
 			throw new IntakeChannelException(message: 'No inbound message "' . $messageUuid . '".');
@@ -224,9 +229,13 @@ class IntakeReplyService implements IntakeReplyServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $object,
-			register: IntakeRoutingService::REGISTER,
-			schema: IntakeRoutingService::SCHEMA_MESSAGE,
-			uuid: (string)$stored->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(
+						register: IntakeRoutingService::REGISTER,
+						schema: IntakeRoutingService::SCHEMA_MESSAGE
+					),
+				uuid: (string)$stored->getUuid()
+			)
 		);
 
 	}//end record()

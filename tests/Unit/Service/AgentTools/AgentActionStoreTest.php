@@ -24,6 +24,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\Integriq\Service\AgentTools\AgentActionStore
@@ -47,7 +49,10 @@ class AgentActionStoreTest extends TestCase {
 				'agent_action'
 			)
 			->willReturnCallback(
-				function (array $object, string $register, string $schema, ?string $uuid, bool $_rbac, bool $_multitenancy) use ($saved) {
+				function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($saved) {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
+					$uuid = $options->uuid;
 					$this->assertNull(actual: $uuid);
 					$this->assertFalse(condition: $_rbac);
 					$this->assertFalse(condition: $_multitenancy);
@@ -72,7 +77,9 @@ class AgentActionStoreTest extends TestCase {
 		$objects->expects($this->once())
 			->method('find')
 			->willReturnCallback(
-				function ($id, ?string $register, ?string $schema, bool $_rbac, bool $_multitenancy) use ($entity) {
+				function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) use ($entity) {
+					$register = $options?->register;
+					$schema = $options?->schema;
 					$this->assertSame(
 						expected: ['uuid-1', 'integriq', 'agent_action', false, false],
 						actual: [$id, $register, $schema, $_rbac, $_multitenancy]

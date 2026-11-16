@@ -32,6 +32,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Steps, read receipts, retry attempts and the record's normalisation.
@@ -82,6 +83,7 @@ final class MessageRecorderLifecycleTest extends TestCase {
 		$this->objectService = $this->createMock(ORObjectService::class);
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) {
+				$rest = LegacyObjectArgs::flatten(args: $rest);
 				$this->stored = $object;
 				$this->savedUuids[] = ($rest['uuid'] ?? $rest[2] ?? null);
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'message-uuid');

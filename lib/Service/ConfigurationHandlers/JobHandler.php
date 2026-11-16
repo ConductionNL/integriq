@@ -25,6 +25,8 @@ namespace OCA\Integriq\Service\ConfigurationHandlers;
 
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
@@ -213,13 +215,17 @@ class JobHandler implements ConfigurationHandlerInterface {
 		if ($slug !== null && isset($mappings['job']['slugToId'][$slug]) === true) {
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'job',
-				uuid: $mappings['job']['slugToId'][$slug]
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'job'),
+					uuid: $mappings['job']['slugToId'][$slug]
+				)
 			);
 		}
 
-		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'job');
+		return $this->orObjectService->saveObject(
+			object: $data,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'job'))
+		);
 	}//end saveJob()
 
 	/**

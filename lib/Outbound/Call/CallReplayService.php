@@ -36,6 +36,8 @@ namespace OCA\Integriq\Outbound\Call;
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Throwable;
 
@@ -533,8 +535,7 @@ class CallReplayService implements CallReplayServiceInterface {
 					],
 				],
 			],
-			register: MessageRecorder::REGISTER,
-			schema: self::SCHEMA_DEAD_LETTER,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: MessageRecorder::REGISTER, schema: self::SCHEMA_DEAD_LETTER))
 		);
 
 		$deadLetterUuid = '';

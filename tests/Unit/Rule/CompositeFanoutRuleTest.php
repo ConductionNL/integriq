@@ -24,6 +24,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the dialect-agnostic composite transactional fan-out rule.
@@ -161,7 +163,9 @@ class CompositeFanoutRuleTest extends TestCase {
 		$captured = [];
 		$orObjectService->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register, $schema) use (&$captured, $parentObject, $involvedPartyObject, $adresObject) {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$captured, $parentObject, $involvedPartyObject, $adresObject) {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
 					$captured[] = $object;
 					return match (count($captured)) {
 						1 => $parentObject,
@@ -278,7 +282,9 @@ class CompositeFanoutRuleTest extends TestCase {
 			$counter = 0;
 			$service = $this->createMock(ORObjectService::class);
 			$service->method('saveObject')->willReturnCallback(
-				function ($object, $register = null, $schema = null) use (&$calls, &$counter): ObjectEntity {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$calls, &$counter): ObjectEntity {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
 					$calls[] = ['save', $object, $register, $schema];
 					if ($schema === 'boom') {
 						throw new Exception('write refused');
@@ -290,6 +296,7 @@ class CompositeFanoutRuleTest extends TestCase {
 			);
 			$service->method('deleteObject')->willReturnCallback(
 				function (...$args) use (&$calls, $body) {
+					$args = LegacyObjectArgs::positional(method: 'deleteObject', args: $args);
 					$calls[] = ['delete', $args];
 					if (isset($body['deletefails']) === true) {
 						throw new Exception('delete refused');

@@ -31,6 +31,7 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Lookup filters, not-found answers and the deployment's registration type.
@@ -137,7 +138,7 @@ class LtiRegistrationLookupsTest extends TestCase {
 		$statuses = ['tool-a' => ['status' => 'suspended'], 'tool-b' => []];
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->method('find')->willReturnCallback(
-			fn (string $id, string $register, string $schema, bool $rbac, bool $multitenancy) => ObjectServiceMockBuilder::objectEntity($this, $statuses[$id], $id)
+			fn (string $id, ?ObjectFindOptions $options = null) => ObjectServiceMockBuilder::objectEntity($this, $statuses[$id], $id)
 		);
 		$resolver = new LtiRegistrationResolverService($objectService, new NullLogger());
 
