@@ -26,8 +26,8 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Event\ConnectionCallRequestedEvent;
 use OCA\Integriq\EventListener\ConnectionCallRequestedListener;
+use OCA\Integriq\EventListener\ConnectionCallService;
 use OCA\Integriq\Service\CallServiceInterface;
-use OCA\Integriq\Service\ConnectionCallService;
 use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\Event;
@@ -39,7 +39,7 @@ use RuntimeException;
 /**
  * Unit tests for the connection call command.
  *
- * @covers \OCA\Integriq\Service\ConnectionCallService
+ * @covers \OCA\Integriq\EventListener\ConnectionCallService
  * @covers \OCA\Integriq\EventListener\ConnectionCallRequestedListener
  * @covers \OCA\Integriq\Event\ConnectionCallRequestedEvent
  *

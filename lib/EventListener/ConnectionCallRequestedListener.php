@@ -27,7 +27,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\ConnectionCallRequestedEvent;
-use OCA\Integriq\Service\ConnectionCallService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;

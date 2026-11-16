@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service;
+namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient;
 use OCA\OpenRegister\Db\ObjectEntity;

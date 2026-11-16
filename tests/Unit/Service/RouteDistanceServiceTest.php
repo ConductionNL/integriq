@@ -26,11 +26,11 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient;
 use OCA\Integriq\Event\RouteDistanceRequestedEvent;
+use OCA\Integriq\EventListener\ConnectionCallService;
 use OCA\Integriq\EventListener\RouteDistanceRequestedListener;
+use OCA\Integriq\EventListener\RouteDistanceService;
 use OCA\Integriq\Service\CallServiceInterface;
-use OCA\Integriq\Service\ConnectionCallService;
 use OCA\Integriq\Service\ConnectionStoreInterface;
-use OCA\Integriq\Service\RouteDistanceService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -40,10 +40,10 @@ use Psr\Log\NullLogger;
 /**
  * Unit tests for the route distance command.
  *
- * @covers \OCA\Integriq\Service\RouteDistanceService
+ * @covers \OCA\Integriq\EventListener\RouteDistanceService
  * @covers \OCA\Integriq\EventListener\RouteDistanceRequestedListener
  * @covers \OCA\Integriq\Event\RouteDistanceRequestedEvent
- * @uses   \OCA\Integriq\Service\ConnectionCallService
+ * @uses   \OCA\Integriq\EventListener\ConnectionCallService
  *
  * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
  */

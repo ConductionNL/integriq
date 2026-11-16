@@ -26,8 +26,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service;
+namespace OCA\Integriq\EventListener;
 
+use OCA\Integriq\Service\CallServiceInterface;
+use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 use Throwable;

@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (sources-route-distance-and-rdw-lookup D3). Seeds the DORMANT `route-planner-openrouteservice` source that OCA\\Integriq\\Service\\RouteDistanceService asks for the road distance between two postcodes (GET /v2/directions/{profile}?start=lon,lat&end=lon,lat). configuration.routeProvider 'openrouteservice' selects that request shape. To go live: create a credential named openrouteservice for your OpenRouteService API key (sent as the Authorization header), link the app's route planner connection to this source, and enable it.",
+  "$comment": "ADR-037 register fragment (sources-route-distance-and-rdw-lookup D3). Seeds the DORMANT `route-planner-openrouteservice` source that OCA\\Integriq\\EventListener\\RouteDistanceService asks for the road distance between two postcodes (GET /v2/directions/{profile}?start=lon,lat&end=lon,lat). configuration.routeProvider 'openrouteservice' selects that request shape. To go live: create a credential named openrouteservice for your OpenRouteService API key (sent as the Authorization header), link the app's route planner connection to this source, and enable it.",
   "components": {
     "objects": [
       {

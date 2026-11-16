@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\RouteDistanceRequestedEvent;
-use OCA\Integriq\Service\RouteDistanceService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;

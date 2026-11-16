@@ -16,7 +16,7 @@ Kind: code. Size M. Halves for humaniq `expenses-travel-calculation` and `people
 
 ### Task 2: Route distance
 - **spec_ref**: `openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002`
-- **files**: `lib/Event/RouteDistanceRequestedEvent.php`, `lib/EventListener/RouteDistanceRequestedListener.php`, `lib/Service/RouteDistanceService.php`
+- **files**: `lib/Event/RouteDistanceRequestedEvent.php`, `lib/EventListener/RouteDistanceRequestedListener.php`, `lib/EventListener/RouteDistanceService.php`
 - **acceptance_criteria**:
   - GIVEN the PDOK mock and a recorded planner answer WHEN 2611 AB to 3011 AD by car is asked THEN the answer is 15.8 km with the provider named
   - GIVEN a postcode PDOK cannot place WHEN asked THEN the refusal is `unknown-postcode` naming it
