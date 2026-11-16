@@ -116,7 +116,7 @@ class SynchronizationServicePurgeTest extends TestCase {
 		);
 		$orObjectService->method('deleteObject')->willReturnCallback(
 			function (...$args) use ($refuseUuid): bool {
-				$args = LegacyObjectArgs::flatten(args: $args);
+				$args = LegacyObjectArgs::positional(method: 'deleteObject', args: $args);
 				// By position: 0 is the uuid, 7 is `permanent` (openregister 98a3469c0f).
 				$args = ['uuid' => $args[0], 'permanent' => ($args[7] ?? false)];
 				if ($refuseUuid !== null && $args['uuid'] === $refuseUuid) {

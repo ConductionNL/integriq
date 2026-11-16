@@ -38,6 +38,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 
 /**
  * Tests for the shared-task mirror seam.
@@ -270,9 +271,11 @@ class ApprovalServiceSharedTaskTest extends TestCase {
 		$this->taskService->expects($this->once())->method('applyTimerOutcome')
 			->with(
 				$this->equalTo('task-9'),
-				$this->equalTo('transition:approved'),
-				$this->equalTo('integriq:alice'),
-				$this->stringContains('approved')
+				$this->callback(
+					fn (TimerOutcome $outcome): bool => $this->equalTo('transition:approved')->evaluate($outcome->outcome, '', true) === true
+						&& $this->equalTo('integriq:alice')->evaluate($outcome->trigger->source, '', true) === true
+						&& $this->stringContains('approved')->evaluate($outcome->trigger->reason, '', true) === true
+				)
 			)
 			->willReturn($this->task('task-9'));
 
@@ -294,9 +297,11 @@ class ApprovalServiceSharedTaskTest extends TestCase {
 		$this->taskService->expects($this->once())->method('applyTimerOutcome')
 			->with(
 				$this->equalTo('task-9'),
-				$this->equalTo('dead_letter'),
-				$this->equalTo('integriq:alice'),
-				$this->anything()
+				$this->callback(
+					fn (TimerOutcome $outcome): bool => $this->equalTo('dead_letter')->evaluate($outcome->outcome, '', true) === true
+						&& $this->equalTo('integriq:alice')->evaluate($outcome->trigger->source, '', true) === true
+						&& $this->anything()->evaluate($outcome->trigger->reason, '', true) === true
+				)
 			)
 			->willReturn($this->task('task-9'));
 
@@ -317,9 +322,11 @@ class ApprovalServiceSharedTaskTest extends TestCase {
 		$this->taskService->expects($this->once())->method('applyTimerOutcome')
 			->with(
 				$this->equalTo('task-9'),
-				$this->equalTo('transition:rejected'),
-				$this->anything(),
-				$this->anything()
+				$this->callback(
+					fn (TimerOutcome $outcome): bool => $this->equalTo('transition:rejected')->evaluate($outcome->outcome, '', true) === true
+						&& $this->anything()->evaluate($outcome->trigger->source, '', true) === true
+						&& $this->anything()->evaluate($outcome->trigger->reason, '', true) === true
+				)
 			)
 			->willReturn($this->task('task-9'));
 

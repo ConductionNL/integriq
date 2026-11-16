@@ -83,9 +83,9 @@ final class MessageRecorderLifecycleTest extends TestCase {
 		$this->objectService = $this->createMock(ORObjectService::class);
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) {
-				$rest = LegacyObjectArgs::flatten(args: $rest);
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]);
 				$this->stored = $object;
-				$this->savedUuids[] = ($rest['uuid'] ?? $rest[2] ?? null);
+				$this->savedUuids[] = $args[3];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'message-uuid');
 			}
 		);

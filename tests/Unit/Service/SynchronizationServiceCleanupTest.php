@@ -163,9 +163,8 @@ class SynchronizationServiceCleanupTest extends TestCase {
 	 * @return array<string, int>
 	 */
 	private function findParamPositions(): array {
-		$rm = new ReflectionMethod(ORObjectService::class, 'find');
 		$positions = [];
-		foreach ($rm->getParameters() as $i => $p) {
+		foreach (LegacyObjectArgs::parameters(class: ORObjectService::class, method: 'find') as $i => $p) {
 			$positions[$p->getName()] = $i;
 		}
 

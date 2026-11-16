@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * The write-through cache stores each PDOK record once, keyed by pdokId.
@@ -179,9 +180,8 @@ class PdokWriteThroughTest extends TestCase {
 		$this->expectExceptionMessage('Unknown named parameter $uniqueOn');
 
 		$this->objectService->saveObject(
-			register: 'integriq',
-			schema: 'addresses',
 			object: ['pdokId' => 'adr-1'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'addresses')),
 			uniqueOn: ['pdokId'],
 		);
 
