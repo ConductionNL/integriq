@@ -7,5 +7,6 @@
   - Test: unit tests for 201, 422 and the idempotent repeat; a control asserting no staging object is written
 - [x] 1.3 Audit log of payload hash, time and outcome
 - [ ] 1.4 `occ integriq:openformulieren:drain`; remove the staging schema and `handoff()` path at zero pending
+  - Drain built (`OpenFormulierenDrain`, `SubmissionDrain`); the removal waits for a drain that reports zero pending on the live instances.
 - [ ] 1.5 DSO mapping check at save time
 - [ ] 2.1 `composer check:strict`, `npm run lint`, `openspec validate open-formulieren-submits-into-its-case --strict`

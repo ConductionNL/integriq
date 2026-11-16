@@ -109,7 +109,7 @@ class InMemoryObjects extends ObjectService {
 		return ['results' => $rows, 'total' => count($rows)];
 	}
 
-	public function saveObject($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, bool $_validation=true): ObjectEntity {
+	public function saveObject($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, bool $_validation=true, ?\OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions $options=null): ObjectEntity {
 		if ($uuid === null) {
 			$this->next++;
 			$uuid = sprintf('00000000-0000-4000-8000-%012d', $this->next);

@@ -114,6 +114,7 @@ class LockdownSimulatingObjectService extends OrObjectService {
 		bool $_multitenancy = true,
 		bool $silent = false,
 		bool $_validation = true,
+		?\OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions $options = null,
 	): ObjectEntity {
 		if ($_rbac === true && in_array((string)$schema, self::LOCKED, true) === true) {
 			throw new RuntimeException('Permission denied: create/update on ' . $schema);

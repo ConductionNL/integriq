@@ -406,6 +406,7 @@ class PdokConnectorTest extends TestCase {
 						bool $_multitenancy = true,
 						bool $silent = false,
 						bool $_validation = true,
+						?\OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions $options = null,
 					): ObjectEntity {
 						$this->calls[] = ['or.saveObject', ['register' => $register, 'schema' => $schema, 'object' => $object, 'uuid' => $uuid, '_rbac' => $_rbac, '_multitenancy' => $_multitenancy]];
 						if (($this->case['saveFails'] ?? false) === true) {

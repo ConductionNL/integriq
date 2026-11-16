@@ -183,6 +183,7 @@ class MigrationSimulatingObjectService extends OrObjectService {
 		bool $_multitenancy = true,
 		bool $silent = false,
 		bool $_validation = true,
+		?\OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions $options = null,
 	): ObjectEntity {
 		$data = $object;
 		if ($object instanceof ObjectEntity === true) {

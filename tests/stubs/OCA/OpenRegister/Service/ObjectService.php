@@ -195,6 +195,7 @@ class ObjectService {
 	 * @param string|null $uuid
 	 * @param bool $_rbac Apply RBAC checks when true.
 	 * @param bool $_multitenancy Apply multitenancy scoping when true.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions|null $options openregister main's form of register, schema and uuid; callers migrated to main pass it by name.
 	 * @return ObjectEntity
 	 */
 	public function saveObject(
@@ -206,6 +207,7 @@ class ObjectService {
 		bool $_multitenancy = true,
 		bool $silent = false,
 		bool $_validation = true,
+		?\OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions $options = null,
 	): ObjectEntity {
 		return new ObjectEntity();
 	}
