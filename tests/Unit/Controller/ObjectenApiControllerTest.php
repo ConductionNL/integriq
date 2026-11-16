@@ -42,7 +42,6 @@ use OCA\Integriq\Service\Objecten\ObjecttypeRegistry;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Covers the contract of every route in ObjectenApiController.
@@ -193,7 +192,7 @@ class ObjectenApiControllerTest extends TestCase {
 			'createObject' => $controller->createObject(),
 			'replaceObject' => $controller->replaceObject(uuid: 'm-1'),
 			'updateObject' => $controller->updateObject(uuid: 'm-1'),
-			'deleteObject' => $controller->deleteObject(new ObjectDeletion(uuid: 'm-1')),
+			'deleteObject' => $controller->deleteObject(uuid: 'm-1'),
 		];
 
 		foreach ($answers as $route => $response) {
@@ -294,7 +293,7 @@ class ObjectenApiControllerTest extends TestCase {
 	public function testADeleteRemovesTheObject(): void {
 		$controller = $this->controller(request: $this->request(authorization: 'Token the-key', type: 'aaa'));
 
-		$this->assertSame(204, $controller->deleteObject(new ObjectDeletion(uuid: 'm-1'))->getStatus());
+		$this->assertSame(204, $controller->deleteObject(uuid: 'm-1')->getStatus());
 		$this->assertSame('m-1', $this->written[0]['deleted']);
 	}//end testADeleteRemovesTheObject()
 
@@ -311,7 +310,7 @@ class ObjectenApiControllerTest extends TestCase {
 	public function testADeleteOfAUuidThisObjecttypeDoesNotHoldIsRefused(): void {
 		$controller = $this->controller(request: $this->request(authorization: 'Token the-key', type: 'aaa'));
 
-		$this->assertSame(404, $controller->deleteObject(new ObjectDeletion(uuid: 'k-1'))->getStatus());
+		$this->assertSame(404, $controller->deleteObject(uuid: 'k-1')->getStatus());
 		$this->assertSame([], $this->written, 'nothing was deleted for a uuid this objecttype does not hold');
 	}//end testADeleteOfAUuidThisObjecttypeDoesNotHoldIsRefused()
 

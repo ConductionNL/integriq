@@ -34,6 +34,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every branch of getAllObjectsFromApi(), recorded against a golden file:
@@ -123,7 +124,8 @@ class SynchronizationGetAllObjectsFromApiTest extends TestCase {
 			}
 		);
 		$or->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function (...$legacyArgs) {
+				[$object, $register, $schema, $uuid] = LegacyObjectArgs::positional(method: 'saveObject', args: $legacyArgs);
 				$this->log[] = ['or.saveObject', $object, $register, $schema, $uuid];
 				return new ObjectEntity();
 			}

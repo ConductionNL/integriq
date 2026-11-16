@@ -35,6 +35,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every branch of updateTargetOpenRegister(), recorded against a golden file:
@@ -91,7 +92,8 @@ class SynchronizationUpdateTargetTest extends TestCase {
 
 		$openRegisters = $builder->getMock();
 		$openRegisters->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true) {
+			function (...$legacyArgs) {
+				[$object, $register, $schema, $uuid, $_rbac, $_multitenancy, $silent, $_validation] = LegacyObjectArgs::positional(method: 'saveObject', args: $legacyArgs);
 				$this->log[] = ['or.saveObject', $object, $register, $schema, $uuid, $silent, $_validation];
 				if (($this->case['save'] ?? '') === 'throws') {
 					throw new RuntimeException('save failed');
@@ -107,7 +109,8 @@ class SynchronizationUpdateTargetTest extends TestCase {
 			}
 		);
 		$openRegisters->method('deleteObject')->willReturnCallback(
-			function (?string $uuid = null, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false, mixed $currentUser = null, bool $permanent = false) {
+			function (...$legacyArgs) {
+				[$uuid, $register, $schema, $_rbac, $_multitenancy, $_retentionSweep, $currentUser, $permanent] = LegacyObjectArgs::positional(method: 'deleteObject', args: $legacyArgs);
 				$this->log[] = ['or.deleteObject', $uuid, $permanent];
 				if (($this->case['delete'] ?? '') === 'throws') {
 					throw new RuntimeException('delete refused');
