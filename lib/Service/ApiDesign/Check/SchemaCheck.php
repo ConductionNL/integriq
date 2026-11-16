@@ -101,25 +101,41 @@ class SchemaCheck implements RuleCheckInterface {
 				return sprintf('schema keyword "%s" is not supported', $keyword);
 			}
 
-			$children = match ($keyword) {
-				'properties' => (array) $value,
-				'anyOf' => (array) $value,
-				default => [],
-			};
-			foreach ($children as $child) {
-				$found = 'schema members are objects';
-				if (is_array($child) === true) {
-					$found = self::unsupported(schema: $child);
-				}
-
-				if ($found !== null) {
-					return $found;
-				}
+			$found = self::unsupportedChild(keyword: (string) $keyword, value: $value);
+			if ($found !== null) {
+				return $found;
 			}
 		}
 
 		return null;
 	}//end unsupported()
+
+	/**
+	 * The first unsupported keyword in the member schemas of `properties` or `anyOf`, or null.
+	 *
+	 * @param string $keyword The keyword.
+	 * @param mixed  $value   Its value.
+	 *
+	 * @return string|null
+	 */
+	private static function unsupportedChild(string $keyword, mixed $value): ?string {
+		if ($keyword !== 'properties' && $keyword !== 'anyOf') {
+			return null;
+		}
+
+		foreach ((array) $value as $child) {
+			if (is_array($child) === false) {
+				return 'schema members are objects';
+			}
+
+			$found = self::unsupported(schema: $child);
+			if ($found !== null) {
+				return $found;
+			}
+		}
+
+		return null;
+	}//end unsupportedChild()
 
 	/**
 	 * Why a value fails a schema, or null.
@@ -209,19 +225,32 @@ class SchemaCheck implements RuleCheckInterface {
 			}
 		}
 
+		return self::propertiesFailure(value: $value, schema: $schema, path: $path);
+	}//end memberFailure()
+
+	/**
+	 * Why a present member fails its schema under `properties`, or null.
+	 *
+	 * @param array<mixed, mixed>  $value  The object.
+	 * @param array<string, mixed> $schema The schema.
+	 * @param string               $path   Where the object sits under the checked node.
+	 *
+	 * @return string|null
+	 */
+	private static function propertiesFailure(array $value, array $schema, string $path): ?string {
 		foreach ((array) ($schema['properties'] ?? []) as $member => $memberSchema) {
-			$failure = null;
-			if (array_key_exists($member, $value) === true) {
-				$failure = self::validate(value: $value[$member], schema: (array) $memberSchema, path: $path.'/'.$member);
+			if (array_key_exists($member, $value) === false) {
+				continue;
 			}
 
+			$failure = self::validate(value: $value[$member], schema: (array) $memberSchema, path: $path.'/'.$member);
 			if ($failure !== null) {
 				return $failure;
 			}
 		}
 
 		return null;
-	}//end memberFailure()
+	}//end propertiesFailure()
 
 	/**
 	 * Why a value matches none of the schema's `anyOf` options, or null.

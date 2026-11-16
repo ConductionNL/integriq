@@ -103,15 +103,24 @@ class PatternCheck implements RuleCheckInterface {
 		}
 
 		foreach (['match', 'notMatch'] as $option) {
-			if (isset($options[$option]) === true
-				&& (is_string($options[$option]) === false || @preg_match(self::regex(pattern: $options[$option]), '') === false)
-			) {
+			if (isset($options[$option]) === true && self::isValidPattern(pattern: $options[$option]) === false) {
 				return sprintf('pattern %s is not a valid regular expression', $option);
 			}
 		}
 
 		return null;
 	}//end invalidOptions()
+
+	/**
+	 * Whether an option is a text that compiles as a regular expression.
+	 *
+	 * @param mixed $pattern The option.
+	 *
+	 * @return bool
+	 */
+	private static function isValidPattern(mixed $pattern): bool {
+		return is_string($pattern) === true && @preg_match(self::regex(pattern: $pattern), '') !== false;
+	}//end isValidPattern()
 
 	/**
 	 * A PCRE for a Spectral pattern.

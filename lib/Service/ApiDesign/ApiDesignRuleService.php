@@ -534,9 +534,20 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 			return [true, $node['key'], $node['pointer']];
 		}
 
-		$value   = $node['value'];
-		$pointer = $node['pointer'];
-		foreach (explode('.', (string) $field) as $member) {
+		return self::memberPath(value: $node['value'], pointer: $node['pointer'], path: (string) $field);
+	}//end field()
+
+	/**
+	 * The value a dotted member path names under a value.
+	 *
+	 * @param mixed  $value   The value.
+	 * @param string $pointer The value's pointer.
+	 * @param string $path    The dotted member path.
+	 *
+	 * @return array{0: bool, 1: mixed, 2: string} Present, value and its pointer.
+	 */
+	private static function memberPath(mixed $value, string $pointer, string $path): array {
+		foreach (explode('.', $path) as $member) {
 			if (is_array($value) === false || array_key_exists($member, $value) === false) {
 				return [false, null, $pointer];
 			}
@@ -546,7 +557,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 		}
 
 		return [true, $value, $pointer];
-	}//end field()
+	}//end memberPath()
 
 	/**
 	 * A finding's message: the rule's own, with `{{error}}`, `{{value}}` and
@@ -615,16 +626,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 
 		$ref = $node['$ref'] ?? null;
 		if (is_string($ref) === true && str_starts_with($ref, '#/') === true) {
-			if ($depth >= self::MAX_REF_DEPTH || in_array($ref, $chain, true) === true) {
-				return $node;
-			}
-
-			[$found, $target] = self::resolvePointer(root: $root, ref: $ref);
-			if ($found === false) {
-				return $node;
-			}
-
-			return self::inline(node: $target, root: $root, depth: $depth + 1, chain: [...$chain, $ref]);
+			return self::inlineRef(node: $node, ref: $ref, root: $root, depth: $depth, chain: $chain);
 		}
 
 		foreach ($node as $key => $child) {
@@ -633,6 +635,31 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 
 		return $node;
 	}//end inline()
+
+	/**
+	 * A local reference node replaced by its inlined target, or left as written when
+	 * it loops, runs deeper than the limit or points nowhere.
+	 *
+	 * @param array<mixed, mixed>  $node  The reference node.
+	 * @param string               $ref   Its `#/...` reference.
+	 * @param array<string, mixed> $root  The whole document.
+	 * @param int                  $depth How many references deep.
+	 * @param list<string>         $chain The references followed to get here.
+	 *
+	 * @return mixed
+	 */
+	private static function inlineRef(array $node, string $ref, array $root, int $depth, array $chain): mixed {
+		if ($depth >= self::MAX_REF_DEPTH || in_array($ref, $chain, true) === true) {
+			return $node;
+		}
+
+		[$found, $target] = self::resolvePointer(root: $root, ref: $ref);
+		if ($found === false) {
+			return $node;
+		}
+
+		return self::inline(node: $target, root: $root, depth: $depth + 1, chain: [...$chain, $ref]);
+	}//end inlineRef()
 
 	/**
 	 * The value a local `#/...` reference points at.

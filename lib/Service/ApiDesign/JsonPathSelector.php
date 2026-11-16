@@ -44,6 +44,20 @@ use InvalidArgumentException;
 class JsonPathSelector {
 
 	/**
+	 * The selector steps, in the order they are tried: pattern, token type, the token field
+	 * the match fills (or null) and the match group that fills it.
+	 *
+	 * @var list<array{0: string, 1: string, 2: string|null, 3: int}>
+	 */
+	private const STEPS = [
+		['/^\.\.([A-Za-z0-9_\-\$@]+)/', 'descend', 'name', 1],
+		['/^(?:\.\*|\[\*\])/', 'wildcard', null, 0],
+		['/^\.([A-Za-z0-9_\-\$@]+)/', 'child', 'name', 1],
+		['/^\[([\'"])(.*?)\1\]/', 'child', 'name', 2],
+		['/^\[\?\((.*?)\)\]/', 'filter', 'filter', 1],
+	];
+
+	/**
 	 * Select the nodes an expression names.
 	 *
 	 * @param array<mixed> $document   The decoded document.
@@ -96,26 +110,41 @@ class JsonPathSelector {
 		$offset = 0;
 		$length = strlen($expression);
 		while ($offset < $length) {
-			$rest = substr($expression, $offset);
-			if (preg_match('/^\.\.([A-Za-z0-9_\-\$@]+)/', $rest, $match) === 1) {
-				$tokens[] = ['type' => 'descend', 'name' => $match[1]];
-			} else if (preg_match('/^(?:\.\*|\[\*\])/', $rest, $match) === 1) {
-				$tokens[] = ['type' => 'wildcard'];
-			} else if (preg_match('/^\.([A-Za-z0-9_\-\$@]+)/', $rest, $match) === 1) {
-				$tokens[] = ['type' => 'child', 'name' => $match[1]];
-			} else if (preg_match('/^\[([\'"])(.*?)\1\]/', $rest, $match) === 1) {
-				$tokens[] = ['type' => 'child', 'name' => $match[2]];
-			} else if (preg_match('/^\[\?\((.*?)\)\]/', $rest, $match) === 1) {
-				$tokens[] = ['type' => 'filter', 'filter' => $match[1]];
-			} else {
-				throw new InvalidArgumentException(sprintf('Unsupported selector step at "%s"', $rest));
-			}
-
-			$offset += strlen($match[0]);
-		}//end while
+			[$token, $consumed] = self::nextToken(rest: substr($expression, $offset));
+			$tokens[] = $token;
+			$offset  += $consumed;
+		}
 
 		return $tokens;
 	}//end tokens()
+
+	/**
+	 * The step at the start of the rest of an expression, and how many characters it takes.
+	 *
+	 * Each pattern is tried in order: `..name`, `.*` or `[*]`, `.name`, `['name']`, `[?(filter)]`.
+	 *
+	 * @param string $rest The rest of the expression.
+	 *
+	 * @return array{0: array{type: string, name?: string, filter?: string}, 1: int}
+	 *
+	 * @throws InvalidArgumentException On an unsupported step.
+	 */
+	private static function nextToken(string $rest): array {
+		foreach (self::STEPS as [$pattern, $type, $field, $group]) {
+			if (preg_match($pattern, $rest, $match) !== 1) {
+				continue;
+			}
+
+			$token = ['type' => $type];
+			if ($field !== null) {
+				$token[$field] = $match[$group];
+			}
+
+			return [$token, strlen($match[0])];
+		}
+
+		throw new InvalidArgumentException(sprintf('Unsupported selector step at "%s"', $rest));
+	}//end nextToken()
 
 	/**
 	 * Apply one step to the current nodes.

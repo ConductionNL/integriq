@@ -60,16 +60,39 @@ class LengthCheck implements RuleCheckInterface {
 			return null;
 		}
 
-		$length = match (true) {
+		$length = self::lengthOf(value: $value);
+		if ($length === null) {
+			return 'has no length';
+		}
+
+		return self::boundFailure(length: $length, options: $options);
+	}//end check()
+
+	/**
+	 * The length of a text, the size of a list, or a number itself; null for anything else.
+	 *
+	 * @param mixed $value The selected value.
+	 *
+	 * @return int|float|null
+	 */
+	private static function lengthOf(mixed $value): int|float|null {
+		return match (true) {
 			is_string($value) => mb_strlen($value),
 			is_array($value) => count($value),
 			is_int($value), is_float($value) => $value,
 			default => null,
 		};
-		if ($length === null) {
-			return 'has no length';
-		}
+	}//end lengthOf()
 
+	/**
+	 * Why a length falls outside the rule's `min` and `max`, or null.
+	 *
+	 * @param int|float            $length  The length.
+	 * @param array<string, mixed> $options The rule's `functionOptions`.
+	 *
+	 * @return string|null
+	 */
+	private static function boundFailure(int|float $length, array $options): ?string {
 		if (isset($options['min']) === true && $length < $options['min']) {
 			return sprintf('is shorter than %s', $options['min']);
 		}
@@ -79,7 +102,7 @@ class LengthCheck implements RuleCheckInterface {
 		}
 
 		return null;
-	}//end check()
+	}//end boundFailure()
 
 	/**
 	 * Why a rule's options are unusable, or null when they are fine.
@@ -97,10 +120,21 @@ class LengthCheck implements RuleCheckInterface {
 			return 'length needs min or max';
 		}
 
-		if (($min !== null && is_numeric($min) === false) || ($max !== null && is_numeric($max) === false)) {
+		if (self::isNumberOrAbsent(value: $min) === false || self::isNumberOrAbsent(value: $max) === false) {
 			return 'length min and max are numbers';
 		}
 
 		return null;
 	}//end invalidOptions()
+
+	/**
+	 * Whether an option is absent or numeric.
+	 *
+	 * @param mixed $value The option.
+	 *
+	 * @return bool
+	 */
+	private static function isNumberOrAbsent(mixed $value): bool {
+		return $value === null || is_numeric($value) === true;
+	}//end isNumberOrAbsent()
 }//end class
