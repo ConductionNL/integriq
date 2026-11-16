@@ -3127,10 +3127,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/polyfill-intl-normalizer-1.42.0.0",
+      "bom-ref": "symfony/polyfill-intl-normalizer-1.43.0.0",
       "type": "library",
       "name": "polyfill-intl-normalizer",
-      "version": "v1.42.0",
+      "version": "v1.43.0",
       "group": "symfony",
       "description": "Symfony polyfill for intl's Normalizer class and related functions",
       "author": "Nicolas Grekas, Symfony Community",
@@ -3141,17 +3141,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/polyfill-intl-normalizer@v1.42.0",
+      "purl": "pkg:composer/symfony/polyfill-intl-normalizer@v1.43.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/polyfill-intl-normalizer/zipball/aa20edea75bd9c48cfecc8360922e5a6e5c44502",
-          "comment": "dist reference: aa20edea75bd9c48cfecc8360922e5a6e5c44502"
+          "url": "https://api.github.com/repos/symfony/polyfill-intl-normalizer/zipball/ebd57ccc7edb93d632e184efbe7693d2517bab3b",
+          "comment": "dist reference: ebd57ccc7edb93d632e184efbe7693d2517bab3b"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/polyfill-intl-normalizer.git",
-          "comment": "source reference: aa20edea75bd9c48cfecc8360922e5a6e5c44502"
+          "comment": "source reference: ebd57ccc7edb93d632e184efbe7693d2517bab3b"
         },
         {
           "type": "website",
@@ -3160,18 +3160,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/polyfill-intl-normalizer/tree/v1.42.0",
+          "url": "https://github.com/symfony/polyfill-intl-normalizer/tree/v1.43.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "aa20edea75bd9c48cfecc8360922e5a6e5c44502"
+          "value": "ebd57ccc7edb93d632e184efbe7693d2517bab3b"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "aa20edea75bd9c48cfecc8360922e5a6e5c44502"
+          "value": "ebd57ccc7edb93d632e184efbe7693d2517bab3b"
         },
         {
           "name": "cdx:composer:package:type",
@@ -28532,7 +28532,7 @@
       "ref": "symfony/polyfill-intl-grapheme-1.41.0.0"
     },
     {
-      "ref": "symfony/polyfill-intl-normalizer-1.42.0.0"
+      "ref": "symfony/polyfill-intl-normalizer-1.43.0.0"
     },
     {
       "ref": "symfony/polyfill-mbstring-1.43.3.0"
@@ -28562,7 +28562,7 @@
         "symfony/deprecation-contracts-3.8.1.0",
         "symfony/polyfill-ctype-1.37.0.0",
         "symfony/polyfill-intl-grapheme-1.41.0.0",
-        "symfony/polyfill-intl-normalizer-1.42.0.0",
+        "symfony/polyfill-intl-normalizer-1.43.0.0",
         "symfony/polyfill-mbstring-1.43.3.0"
       ]
     },
