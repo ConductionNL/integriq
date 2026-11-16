@@ -252,4 +252,56 @@ class ListResyncServiceTest extends TestCase {
 		$this->assertSame($service->lastReport('classificatie')['served'], 2);
 
 	}//end testAFailedResyncKeepsThePreviousTimestamp()
+
+	/**
+	 * A stored list that is not a JSON array is served as an empty list.
+	 *
+	 * @return void
+	 */
+	public function testAStoredListThatIsNotAnArrayIsServedAsEmpty(): void {
+		$this->config[ListResyncService::LIST_KEY_PREFIX . 'classificatie'] = '"not a list"';
+
+		$this->assertSame([], $this->service($this->provider())->currentList('classificatie'));
+	}//end testAStoredListThatIsNotAnArrayIsServedAsEmpty()
+
+	/**
+	 * A fetched list JSON cannot encode is stored as an empty list, while the
+	 * report still counts what was fetched.
+	 *
+	 * @return void
+	 */
+	public function testAFetchedListThatCannotBeEncodedIsStoredAsAnEmptyList(): void {
+		$provider = $this->provider();
+		$provider->method('suggest')->willReturn([['identifier' => '1.1', 'label' => 'Bestuur', 'weight' => INF]]);
+
+		$service = $this->service($provider);
+		$report  = $service->resync('classificatie');
+
+		$this->assertSame('[]', $this->config[ListResyncService::LIST_KEY_PREFIX . 'classificatie']);
+		$this->assertSame([], $service->currentList('classificatie'));
+		$this->assertTrue($report['succeeded']);
+		$this->assertSame(1, $report['served']);
+		$this->assertSame(1, $report['changed']);
+	}//end testAFetchedListThatCannotBeEncodedIsStoredAsAnEmptyList()
+
+	/**
+	 * A report JSON cannot encode is stored as an empty object, which reads
+	 * back as the never-resynced report; the caller still gets the report.
+	 *
+	 * @return void
+	 */
+	public function testAReportThatCannotBeEncodedIsStoredAsAnEmptyObject(): void {
+		$provider = $this->provider();
+		$provider->method('suggest')->willThrowException(
+			new SourceUnreachableException('classificatie', "broken \xB1\x31 bytes")
+		);
+
+		$service = $this->service($provider);
+		$report  = $service->resync('classificatie');
+
+		$this->assertFalse($report['succeeded']);
+		$this->assertSame("broken \xB1\x31 bytes", $report['message']);
+		$this->assertSame('{}', $this->config[ListResyncService::REPORT_KEY_PREFIX . 'classificatie']);
+		$this->assertSame([], $service->lastReport('classificatie'));
+	}//end testAReportThatCannotBeEncodedIsStoredAsAnEmptyObject()
 }//end class
