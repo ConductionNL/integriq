@@ -127,7 +127,7 @@ class DashboardDatasourceResolveGoldenTest extends TestCase {
 		$objects = $this->createMock(OrObjectService::class);
 		$objects->method('find')->willReturnCallback(
 			function (...$args): ObjectEntity {
-				$args = LegacyObjectArgs::flatten(args: $args);
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$this->trace[] = ['find' => $args];
 				$id = (string)($args['id'] ?? $args[0]);
 				if ($id === 'src-denied') {

@@ -444,7 +444,7 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 		$orObjects = $this->createMock(ORObjectService::class);
 		$orObjects->method('find')->willReturnCallback(
 			function ($id, ...$rest) use ($sourceConfiguration) {
-				$rest = LegacyObjectArgs::flatten(args: $rest);
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				$this->record('source.find', [$id, ($rest['schema'] ?? null)]);
 				if ($this->answer('source.find') === 'missing') {
 					throw new DoesNotExistException('no source');

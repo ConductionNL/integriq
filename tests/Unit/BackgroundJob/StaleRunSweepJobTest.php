@@ -27,7 +27,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\Integriq\Tests\Support\LegacyObjectArgs;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the abandoned synchronisation-run sweep.
@@ -282,12 +281,8 @@ final class StaleRunSweepJobTest extends TestCase {
 				}
 			);
 			$objects->method('saveObject')->willReturnCallback(
-				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $multitenancy = true, bool $silent = true) use (&$saved) {
-					$register = $options->extend;
-					$schema = $options->target->register;
-					$uuid = $options->target->schema;
-					$rbac = $options->uuid ?? true;
-					$validation = $options->policy->silent ?? true;
+				function (...$legacyArgs) use (&$saved) {
+					[$object, $register, $schema, $uuid, $rbac, $multitenancy, $silent, $validation] = LegacyObjectArgs::positional(method: 'saveObject', args: $legacyArgs);
 					if ($uuid === 'save-fails') {
 						throw new \RuntimeException('write refused');
 					}
