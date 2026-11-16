@@ -153,7 +153,12 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	private function routeApproval(ApprovalDecisionRun $run): JSONResponse {
 		return match ($this->resumeKind(data: $run->data)) {
 			'endpointId' => $this->approveEndpointSuspension(run: $run),
-			'synchronizationId' => $this->approveSynchronizationGate(approvalRequest: $run->approvalRequest, data: $run->data, user: $run->user, comment: $run->comment),
+			'synchronizationId' => $this->approveSynchronizationGate(
+				approvalRequest: $run->approvalRequest,
+				data: $run->data,
+				user: $run->user,
+				comment: $run->comment
+			),
 			'flowRunId' => $this->approveFlowSuspension(run: $run),
 			'engineRunUuid' => $this->approveEngineSuspension(run: $run),
 			default => $this->refuseMalformed(run: $run),

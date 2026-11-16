@@ -90,7 +90,12 @@ use UnexpectedValueException;
  *   config and its fan-out can be wrong; splitting the class would move
  *   that branching, not remove it.
  */
-class SynchronizationRunNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SynchronizationRunNodeInterface {
+class SynchronizationRunNode implements
+	ICallFlowNode,
+	IFlowNodeConfigKeys,
+	IFlowNodeConfigForm,
+	IFlowNodeLogActions,
+	SynchronizationRunNodeInterface {
 	use FlowNodePaletteDefaults;
 
 	/**
