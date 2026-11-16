@@ -30,6 +30,7 @@ use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * An OpenRegister object service that behaves like the lockdown for a caller
@@ -107,15 +108,15 @@ class LockdownSimulatingObjectService extends OrObjectService {
 	 */
 	public function saveObject(
 		$object,
-		?string $register = null,
-		?string $schema = null,
-		?string $uuid = null,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
-		?\OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions $options = null,
+		bool $_multitenancy = true
 	): ObjectEntity {
+		$register = $options->target->register;
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+		$silent = $options->policy->silent ?? false;
+		$_validation = $options->policy->validation ?? true;
 		if ($_rbac === true && in_array((string)$schema, self::LOCKED, true) === true) {
 			throw new RuntimeException('Permission denied: create/update on ' . $schema);
 		}

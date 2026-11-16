@@ -1,7 +1,6 @@
 <?php
 
 /**
- * Stub: a copy of the class on openregister main, for unit tests without the app.
  * OpenRegister ObjectSaveOptions
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -18,6 +17,7 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Kernel\Contracts\Value;
  *
  * No strict_types: callers pass request values through it as they did to saveObject().
  *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class ObjectSaveOptions {
 
@@ -46,6 +47,7 @@ final class ObjectSaveOptions {
 	 * @psalm-param   array<array-key, mixed>|null $extend
 	 * @psalm-param   array<array-key, mixed>|null $uploadedFiles
 	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectFindTarget $target=new ObjectFindTarget(),

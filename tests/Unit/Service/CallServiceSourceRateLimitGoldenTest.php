@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every rate-limit state and header set sourceRateLimit() tells apart,
@@ -110,6 +111,7 @@ class CallServiceSourceRateLimitGoldenTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
 			function (...$args) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				// Only the object: the positions of the other arguments follow the loaded OpenRegister class.
 				$this->saved[] = $args[0];
 				return new ObjectEntity();

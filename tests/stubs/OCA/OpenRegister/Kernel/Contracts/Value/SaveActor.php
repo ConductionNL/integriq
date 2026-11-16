@@ -1,7 +1,6 @@
 <?php
 
 /**
- * Stub: a copy of the class on openregister main, for unit tests without the app.
  * OpenRegister SaveActor
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -18,6 +17,7 @@
  *
  * @link https://www.OpenRegister.app
  *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
@@ -27,6 +27,7 @@ use OCP\IUser;
 /**
  * On whose behalf one object save is written, and who owns a row it creates.
  *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class SaveActor {
 
@@ -46,6 +47,7 @@ final class SaveActor {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Attributed writes are the default.
 	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly ?IUser $currentUser=null,

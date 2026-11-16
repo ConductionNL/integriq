@@ -30,6 +30,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests REQ-019: the reset-cursor action clears the stored watermark only.
@@ -112,6 +113,7 @@ class SynchronizationServiceResetCursorTest extends TestCase {
 		$captured = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, self::SYNC_ID);
 			}

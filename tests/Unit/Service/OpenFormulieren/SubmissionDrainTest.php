@@ -63,7 +63,7 @@ class SubmissionDrainTest extends TestCase {
 			]
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null, $rbac = true, $tenancy = true, $silent = false, $validation = true, $options = null): ObjectEntity {
+			function ($object, ?ObjectSaveOptions $options = null, $rbac = true, $tenancy = true): ObjectEntity {
 				$this->saved[] = ['object' => $object, 'options' => $options];
 				return new ObjectEntity();
 			}

@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * @covers \OCA\Integriq\Service\Job\PingAction
@@ -97,7 +98,13 @@ class PingActionTest extends TestCase {
 		$source = new ObjectEntity();
 		$this->objects->expects($this->once())
 			->method('find')
-			->with(id: 'src-1', register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => 'src-1',
+					'register' => 'integriq',
+					'schema' => 'source',
+					'_rbac' => false,
+					'_multitenancy' => false,
+				]))
 			->willReturn($source);
 
 		$callLog = $this->createMock(ObjectEntity::class);

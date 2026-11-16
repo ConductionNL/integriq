@@ -64,11 +64,18 @@ use OCA\Integriq\Service\Call\CallRequest;
 use OCA\Integriq\Service\Call\FinishedCall;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Residency\EgressResidencyPolicy;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
 use OCA\Integriq\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -801,8 +808,7 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: the log carries the source's organisation (stamped above), not the caller's.
 		return $this->objectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: 'call_log',
+			options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -859,9 +865,7 @@ class CallService implements CallServiceInterface {
 			// state.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $source->getUuid(),
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1932,12 +1936,12 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: the log carries the source's organisation, not the caller's, and a run may have no user.
 		$callLog = $this->objectService->saveObject(
 			object: $callLogData,
-			register: 'integriq',
-			schema: 'call_log',
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+				policy: new SavePolicy(silent: true, validation: false)
+			),
 			_rbac: false,
-			_multitenancy: false,
-			silent: true,
-			_validation: false
+			_multitenancy: false
 		);
 
 		// Set full response (with body) on the returned entity for processing.
@@ -2019,13 +2023,12 @@ class CallService implements CallServiceInterface {
 			// System write, unscoped: buffered logs carry their source's organisation, not the caller's.
 			$this->objectService->saveObjects(
 				objects: $batch,
-				register: 'integriq',
-				schema: 'call_log',
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: 'integriq', schema: 'call_log'),
+					audit: false
+				),
 				_rbac: false,
-				_multitenancy: false,
-				validation: false,
-				events: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
 			$this->logger->error(
@@ -2504,9 +2507,7 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: bookkeeping on a source the caller already reached in scope.
 		return $this->objectService->saveObject(
 			object: $sourceData,
-			register: 'integriq',
-			schema: 'source',
-			uuid: $source->getUuid(),
+			options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2872,11 +2873,9 @@ class CallService implements CallServiceInterface {
 			// System read, unscoped: re-reads the source already in hand, so a run without a user still dispatches.
 			$raw = $this->objectService->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
 			// A raw re-read failure must never break an outbound call that
@@ -3751,9 +3750,7 @@ class CallService implements CallServiceInterface {
 			// back to its own admin-owned source config on behalf of any caller.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $source->getUuid(),
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);

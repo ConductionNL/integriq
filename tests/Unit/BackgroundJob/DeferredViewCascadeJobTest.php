@@ -24,12 +24,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The deferred half of the view-delete cascade.
@@ -203,8 +205,8 @@ class DeferredViewCascadeJobTest extends TestCase {
 		);
 
 		$openRegister->method('deleteObject')->willReturnCallback(
-			function (?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
-				$this->trace[] = 'deleteObject:' . $uuid . '@' . $register . '/' . $schema;
+			function (ObjectDeletion $deletion): bool {
+				$this->trace[] = 'deleteObject:' . $deletion->uuid . '@' . $deletion->target->register . '/' . $deletion->target->schema;
 
 				return true;
 			}
@@ -405,8 +407,8 @@ class DeferredViewCascadeJobTest extends TestCase {
 			}
 		);
 		$openRegister->method('deleteObject')->willReturnCallback(
-			function (?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
-				$this->trace[] = 'deleteObject:' . $uuid . '@' . $register . '/' . $schema;
+			function (ObjectDeletion $deletion): bool {
+				$this->trace[] = 'deleteObject:' . $deletion->uuid . '@' . $deletion->target->register . '/' . $deletion->target->schema;
 
 				return true;
 			}
@@ -458,7 +460,8 @@ class DeferredViewCascadeJobTest extends TestCase {
 		$openRegister = $this->createMock(ObjectService::class);
 		$openRegister->method('findAll')->willReturn([$this->row('ev-bad'), $this->row('ev-good')]);
 		$openRegister->method('deleteObject')->willReturnCallback(
-			function (?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
+			function (...$legacyArgs): bool {
+				[$uuid, $register, $schema] = LegacyObjectArgs::positional(method: 'deleteObject', args: $legacyArgs);
 				if ($uuid === 'ev-bad') {
 					throw new \RuntimeException('row is locked');
 				}
@@ -597,7 +600,8 @@ class DeferredViewCascadeJobTest extends TestCase {
 		$openRegister = $this->createMock(ObjectService::class);
 		$openRegister->method('findAll')->willReturn([$this->row('ev-1')]);
 		$openRegister->method('deleteObject')->willReturnCallback(
-			function (?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
+			function (...$legacyArgs): bool {
+				[$uuid, $register, $schema] = LegacyObjectArgs::positional(method: 'deleteObject', args: $legacyArgs);
 				$this->trace[] = 'deleteObject:' . $uuid;
 
 				return true;
