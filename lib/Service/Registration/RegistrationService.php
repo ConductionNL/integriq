@@ -240,26 +240,7 @@ class RegistrationService {
 		}
 
 		try {
-			$found = null;
-			if ($target !== '') {
-				$found = $this->store->findTarget(slug: $target);
-			}
-
-			if ($found === null) {
-				throw new RegistrationRefusal(
-					reason: RegistrationRefusal::UNKNOWN_TARGET,
-					retryable: false,
-					message: 'There is no registration target ' . $target . '.'
-				);
-			}
-
-			self::checkHandover(handover: $handover);
-			$mapped = $this->mapped(target: $found, handover: $handover);
-			$kind   = (string)($found['kind'] ?? '');
-			$leg    = ($this->legs[$kind] ?? null);
-			if ($leg instanceof RegistrationBodyCheck) {
-				$leg->checkBody(target: $found, mapped: $mapped);
-			}
+			return $this->dryMap(target: $target, handover: $handover);
 		} catch (RegistrationRefusal $refusal) {
 			return ['dry' => true] + $refusal->toAnswer();
 		} catch (Throwable $e) {
@@ -271,9 +252,44 @@ class RegistrationService {
 			);
 			return ['dry' => true] + $refusal->toAnswer();
 		}//end try
+	}//end dryRun()
+
+	/**
+	 * Look the target up, check and map the hand-over, and let a leg check the body; nothing is written.
+	 *
+	 * @param string              $target   The target slug.
+	 * @param array<string,mixed> $handover The hand-over to map.
+	 *
+	 * @return array<string,mixed> `ok`, `dry`, `kind` and the `mapped` body.
+	 *
+	 * @throws RegistrationRefusal When the target is unknown or the hand-over cannot be mapped.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
+	 */
+	private function dryMap(string $target, array $handover): array {
+		$found = null;
+		if ($target !== '') {
+			$found = $this->store->findTarget(slug: $target);
+		}
+
+		if ($found === null) {
+			throw new RegistrationRefusal(
+				reason: RegistrationRefusal::UNKNOWN_TARGET,
+				retryable: false,
+				message: 'There is no registration target ' . $target . '.'
+			);
+		}
+
+		self::checkHandover(handover: $handover);
+		$mapped = $this->mapped(target: $found, handover: $handover);
+		$kind   = (string)($found['kind'] ?? '');
+		$leg    = ($this->legs[$kind] ?? null);
+		if ($leg instanceof RegistrationBodyCheck) {
+			$leg->checkBody(target: $found, mapped: $mapped);
+		}
 
 		return ['ok' => true, 'dry' => true, 'kind' => $kind, 'mapped' => $mapped];
-	}//end dryRun()
+	}//end dryMap()
 
 	/**
 	 * The target, when it exists, is enabled and allows the app.

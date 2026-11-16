@@ -232,38 +232,67 @@ class StufZdsRegistrationLeg implements RegistrationLeg {
 		try {
 			foreach ($files as $entry) {
 				$step = 'document:' . (int)($entry['file']['fileId'] ?? 0);
-				if (in_array($step, $done, true) === true || $this->documents === null || $this->sources === null || $this->files === null) {
+				if (in_array($step, $done, true) === true || $this->canSendDocuments() === false) {
 					continue;
 				}
 
-				$read  = $this->files->read(app: (string)($handover['app'] ?? ''), file: $entry['file']);
-				$titel = $read['name'];
-				if ($entry['pdf'] === true) {
-					$titel = (string)($handover['form']['title'] ?? $read['name']);
-				}
-
-				try {
-					$sent = $this->documents->deliver(
-						source: $this->sources->source(sourceId: $source),
-						document: ['titel' => $titel, 'formaat' => $read['mimeType'], 'auteur' => (string)($handover['app'] ?? 'integriq')],
-						file: ['content' => $read['content'], 'filename' => $read['name'], 'mimeType' => $read['mimeType']],
-						zaakIdentificatie: $zaak,
-						documenttype: trim((string)$target['stufZds']['documenttypeCode'])
-					);
-				} catch (StufZknTranslationException $e) {
-					throw new RegistrationRefusal(reason: RegistrationRefusal::MAPPING_FAILED, retryable: false, message: $e->getMessage());
-				} catch (StufZknProviderException $e) {
-					throw new RegistrationRefusal(reason: RegistrationRefusal::OUTSIDE_REFUSED, retryable: false, message: $e->getMessage());
-				}
-
+				$sent    = $this->deliverDocument(source: $source, target: $target, zaak: $zaak, entry: $entry, handover: $handover);
 				$steps[] = ['step' => $step, 'identificatie' => $sent['identificatie'], 'referentienummer' => $sent['referentienummer']];
-			}//end foreach
+			}
 		} catch (RegistrationRefusal $refusal) {
 			throw $refusal->withSteps(steps: $steps);
 		}//end try
 
 		return $steps;
 	}//end addDocuments()
+
+	/**
+	 * Whether this leg has what it needs to send documents.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
+	 */
+	private function canSendDocuments(): bool {
+		return $this->documents !== null && $this->sources !== null && $this->files !== null;
+	}//end canSendDocuments()
+
+	/**
+	 * Read one file as the calling app and send it as a document of the zaak.
+	 *
+	 * @param string              $source   The StUF-ZKN source id.
+	 * @param array<string,mixed> $target   The target.
+	 * @param string              $zaak     The zaak identificatie.
+	 * @param array<string,mixed> $entry    The file entry (`file`, `pdf`).
+	 * @param array<string,mixed> $handover The hand-over.
+	 *
+	 * @return array<string,mixed> The document client's answer.
+	 *
+	 * @throws RegistrationRefusal mapping-failed or outside-refused.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
+	 */
+	private function deliverDocument(string $source, array $target, string $zaak, array $entry, array $handover): array {
+		$read  = $this->files->read(app: (string)($handover['app'] ?? ''), file: $entry['file']);
+		$titel = $read['name'];
+		if ($entry['pdf'] === true) {
+			$titel = (string)($handover['form']['title'] ?? $read['name']);
+		}
+
+		try {
+			return $this->documents->deliver(
+				source: $this->sources->source(sourceId: $source),
+				document: ['titel' => $titel, 'formaat' => $read['mimeType'], 'auteur' => (string)($handover['app'] ?? 'integriq')],
+				file: ['content' => $read['content'], 'filename' => $read['name'], 'mimeType' => $read['mimeType']],
+				zaakIdentificatie: $zaak,
+				documenttype: trim((string)$target['stufZds']['documenttypeCode'])
+			);
+		} catch (StufZknTranslationException $e) {
+			throw new RegistrationRefusal(reason: RegistrationRefusal::MAPPING_FAILED, retryable: false, message: $e->getMessage());
+		} catch (StufZknProviderException $e) {
+			throw new RegistrationRefusal(reason: RegistrationRefusal::OUTSIDE_REFUSED, retryable: false, message: $e->getMessage());
+		}
+	}//end deliverDocument()
 
 	/**
 	 * The StUF-ZKN source and zaaktype of the target, refused when this leg cannot serve them.
@@ -347,6 +376,19 @@ class StufZdsRegistrationLeg implements RegistrationLeg {
 			return $result;
 		}
 
+		throw self::refusalFor(result: $result);
+	}//end send()
+
+	/**
+	 * The refusal for a case client's answer that named no zaak.
+	 *
+	 * @param array<string,mixed> $result The case client's result.
+	 *
+	 * @return RegistrationRefusal source-unavailable (retryable) or outside-refused.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
+	 */
+	private static function refusalFor(array $result): RegistrationRefusal {
 		$fout    = (array)($result['fout'] ?? []);
 		$message = trim((string)($fout['omschrijving'] ?? '') . ' ' . (string)($fout['details'] ?? ''));
 		if ($result['success'] === true) {
@@ -354,13 +396,13 @@ class StufZdsRegistrationLeg implements RegistrationLeg {
 		}
 
 		if (($result['retrying'] ?? false) === true || ($fout['code'] ?? '') === 'CIRCUIT_OPEN') {
-			throw new RegistrationRefusal(reason: RegistrationRefusal::SOURCE_UNAVAILABLE, retryable: true, message: $message);
+			return new RegistrationRefusal(reason: RegistrationRefusal::SOURCE_UNAVAILABLE, retryable: true, message: $message);
 		}
 
-		throw new RegistrationRefusal(
+		return new RegistrationRefusal(
 			reason: RegistrationRefusal::OUTSIDE_REFUSED,
 			retryable: false,
 			message: trim((string)($fout['code'] ?? '') . ': ' . $message, ': ')
 		);
-	}//end send()
+	}//end refusalFor()
 }//end class

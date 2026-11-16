@@ -132,14 +132,7 @@ class RegistrationFiles {
 			return $this->accounts[$app];
 		}
 
-		$userIds = [];
-		foreach ($this->consumers->findConsumers(authorizationType: self::AUTHORIZATION_TYPE) as $consumer) {
-			$data = $consumer->getObject();
-			if (strtolower((string)($data['name'] ?? '')) === strtolower($app)) {
-				$userIds[] = (string)($data['userId'] ?? '');
-			}
-		}
-
+		$userIds = $this->consumerUserIds(app: $app);
 		if (count($userIds) !== 1) {
 			throw new RegistrationRefusal(
 				reason: RegistrationRefusal::SOURCE_UNAVAILABLE,
@@ -148,9 +141,48 @@ class RegistrationFiles {
 			);
 		}
 
+		$this->accounts[$app] = $this->enabledAccount(userId: $userIds[0], app: $app);
+
+		return $this->accounts[$app];
+	}//end account()
+
+	/**
+	 * The user ids of the consumers of this authorization type that name the app.
+	 *
+	 * @param string $app The calling app.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
+	 */
+	private function consumerUserIds(string $app): array {
+		$userIds = [];
+		foreach ($this->consumers->findConsumers(authorizationType: self::AUTHORIZATION_TYPE) as $consumer) {
+			$data = $consumer->getObject();
+			if (strtolower((string)($data['name'] ?? '')) === strtolower($app)) {
+				$userIds[] = (string)($data['userId'] ?? '');
+			}
+		}
+
+		return $userIds;
+	}//end consumerUserIds()
+
+	/**
+	 * The service account by user id, refused when it does not exist or is disabled.
+	 *
+	 * @param string $userId The consumer's user id.
+	 * @param string $app    The calling app.
+	 *
+	 * @return IUser
+	 *
+	 * @throws RegistrationRefusal When the account is unusable.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
+	 */
+	private function enabledAccount(string $userId, string $app): IUser {
 		$account = null;
-		if ($userIds[0] !== '') {
-			$account = $this->userManager->get($userIds[0]);
+		if ($userId !== '') {
+			$account = $this->userManager->get($userId);
 		}
 
 		if ($account === null || $account->isEnabled() === false) {
@@ -161,8 +193,6 @@ class RegistrationFiles {
 			);
 		}
 
-		$this->accounts[$app] = $account;
-
 		return $account;
-	}//end account()
+	}//end enabledAccount()
 }//end class

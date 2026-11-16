@@ -103,22 +103,56 @@ final class ZgwCaseLookup {
 		];
 		for ($page = 0; $page < self::PAGES && $address !== ''; $page++) {
 			$answer = $this->get(source: $settings['zaken'], address: $address, options: $options);
-			foreach ((array)($answer['results'] ?? []) as $case) {
-				if (is_array($case) === true && self::carriesReference(case: $case, reference: $reference, bron: $bron) === true) {
-					return ['step' => 'zaak', 'url' => (string)$case['url'], 'reference' => (string)($case['identificatie'] ?? ''), 'found' => true];
-				}
+			$found  = self::caseIn(results: (array)($answer['results'] ?? []), reference: $reference, bron: $bron);
+			if ($found !== null) {
+				return $found;
 			}
 
-			$address = '';
-			if (is_string($answer['next'] ?? null) === true) {
-				// The next link carries the query itself.
-				$address = $answer['next'];
-				$options = ['headers' => self::CRS];
-			}
+			// The next link carries the query itself.
+			$address = self::nextAddress(answer: $answer);
+			$options = ['headers' => self::CRS];
 		}
 
 		return null;
 	}//end existingCase()
+
+	/**
+	 * The zaak step for the first listed case that carries the submission reference.
+	 *
+	 * @param array<int|string,mixed> $results   The cases of one page.
+	 * @param string                  $reference The submission reference.
+	 * @param string                  $bron      The app that handed the submission over.
+	 *
+	 * @return array{step:string,url:string,reference:string,found:true}|null The zaak step, or null when no case carries it.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
+	 */
+	private static function caseIn(array $results, string $reference, string $bron): ?array {
+		foreach ($results as $case) {
+			if (is_array($case) === true && self::carriesReference(case: $case, reference: $reference, bron: $bron) === true) {
+				return ['step' => 'zaak', 'url' => (string)$case['url'], 'reference' => (string)($case['identificatie'] ?? ''), 'found' => true];
+			}
+		}
+
+		return null;
+	}//end caseIn()
+
+	/**
+	 * The address of the next page, or '' when there is none.
+	 *
+	 * @param array<string,mixed> $answer One page of the case list.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
+	 */
+	private static function nextAddress(array $answer): string {
+		if (is_string($answer['next'] ?? null) === true) {
+			return $answer['next'];
+		}
+
+		return '';
+	}//end nextAddress()
 
 	/**
 	 * The first start date an earlier case of this submission can have: the day it was submitted.
