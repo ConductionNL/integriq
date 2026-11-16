@@ -29,12 +29,16 @@ use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Service\AsyncApiDocumentService;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\ProductPolicyService;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -237,14 +241,17 @@ class ProductChannelsController extends Controller {
 	 */
 	private function savePushSubscription(array $data): ?array {
 		try {
-			$saved = $this->objects->saveObject(object: $data, register: 'integriq', schema: 'event_subscription', _rbac: false, _multitenancy: false);
+			$saved = $this->objects->saveObject(
+				object: $data,
+				options: RegisterSave::options(register: 'integriq', schema: 'event_subscription'),
+				_rbac: false,
+				_multitenancy: false
+			);
 			$stored = $this->objects->find(
 				id: (string)$saved->getUuid(),
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $exception) {
 			$this->logger->warning('integriq: a product channel push subscription could not be saved: ' . $exception->getMessage());
@@ -288,7 +295,11 @@ class ProductChannelsController extends Controller {
 		}
 
 		try {
-			$this->objects->deleteObject(uuid: $id, register: 'integriq', schema: 'event_subscription', _rbac: false, _multitenancy: false);
+			$this->objects->deleteObject(
+				new ObjectDeletion(uuid: $id, target: new ObjectFindTarget(register: 'integriq', schema: 'event_subscription')),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $exception) {
 			$this->logger->warning('integriq: a product channel push subscription could not be deleted: ' . $exception->getMessage());
 			return $this->unavailable();
@@ -443,8 +454,7 @@ class ProductChannelsController extends Controller {
 		try {
 			$saved = $this->objects->saveObject(
 				object: $this->subscriptionFor(access: $access, style: 'pull'),
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: RegisterSave::options(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);

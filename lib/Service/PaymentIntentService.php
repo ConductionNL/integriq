@@ -35,10 +35,12 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\PaymentProviderException;
 use OCA\Integriq\Exception\PaymentSourceMissingException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Payment\LogPaymentProvider;
 use OCA\Integriq\Service\Payment\MolliePaymentProvider;
 use OCA\Integriq\Service\Payment\PaymentProviderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -172,12 +174,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 				'createdAt' => $now,
 				'updatedAt' => $now,
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_PAYMENT_INTENT,
-			// System context: `payment_intent` is locked to admins and owners
-			// (99-payment-intent-lockdown.json), and a `payments.create` holder
-			// need not be an admin. The ADR-023 action check in
-			// PaymentsController::create() is the gate for this write.
+			options: $this->intentSaveOptions(),
 			_rbac: false
 		);
 
@@ -249,11 +246,8 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 			// latest native status, no outcome change, no event (REQ-LPP-004).
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_PAYMENT_INTENT,
-				uuid: $record->getUuid(),
+				options: $this->intentSaveOptions(uuid: $record->getUuid()),
 				_rbac: false,
-				// Unscoped: the payment provider's webhook carries no user session.
 				_multitenancy: false
 			);
 			return ['result' => 'noop', 'outcome' => null];
@@ -265,11 +259,8 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 			// not re-emit.
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_PAYMENT_INTENT,
-				uuid: $record->getUuid(),
+				options: $this->intentSaveOptions(uuid: $record->getUuid()),
 				_rbac: false,
-				// Unscoped: the payment provider's webhook carries no user session.
 				_multitenancy: false
 			);
 			return ['result' => 'noop', 'outcome' => $outcome];
@@ -278,11 +269,8 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 		$data['lastOutcome'] = $outcome;
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_PAYMENT_INTENT,
-			uuid: $record->getUuid(),
+			options: $this->intentSaveOptions(uuid: $record->getUuid()),
 			_rbac: false,
-			// Unscoped: the payment provider's webhook carries no user session.
 			_multitenancy: false
 		);
 
@@ -501,4 +489,16 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 		);
 
 	}//end emitStatusEvent()
+
+	/**
+	 * Where a payment intent is saved: the intent schema, under its uuid.
+	 *
+	 * @param string|null $uuid The uuid of the object, or null for a new one.
+	 *
+	 * @return ObjectSaveOptions
+	 */
+	private function intentSaveOptions(?string $uuid = null): ObjectSaveOptions {
+		return RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_PAYMENT_INTENT, uuid: $uuid);
+
+	}//end intentSaveOptions()
 }//end class

@@ -37,6 +37,7 @@ use DateTime;
 use OCA\Integriq\Event\RodAcknowledgementReceivedEvent;
 use OCA\Integriq\Exception\RodProviderException;
 use OCA\Integriq\Exception\RodTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Rod\RodAcknowledgementTranslator;
 use OCA\Integriq\Service\Rod\RodEnvelopeTranslator;
 use OCA\Integriq\Service\Rod\RodPersonalNumberRedactor;
@@ -174,7 +175,10 @@ class RodService implements RodServiceInterface {
 		// either type (burgerservicenummer or onderwijsnummer), never the raw value.
 		$record['bsnHash'] = hash('sha256', $number);
 
-		$this->objectService->saveObject(object: $record, register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
+		$this->objectService->saveObject(
+			object: $record,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+		);
 
 		if ($status === 'failed') {
 			throw new RodProviderException(message: (string)$error);
@@ -238,8 +242,7 @@ class RodService implements RodServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($outbound === null) {
@@ -341,9 +344,7 @@ class RodService implements RodServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 	}//end retryOne()

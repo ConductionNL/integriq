@@ -31,8 +31,10 @@ describe('actionSections', () => {
 	it('makes one section per area, ordered by area and then by action', () => {
 		const sections = actionSections(
 			['sms.status', 'stuf-zkn.push', 'sms.send', 'kiss.push'],
-			{ 'sms.status': 'Notifications', 'sms.send': 'Notifications', 'stuf-zkn.push': 'Adapters', 'kiss.push': 'Adapters' },
-			{ 'sms.send': 'Send a text message', 'sms.status': 'Read a text message status', 'stuf-zkn.push': 'Push through the StUF-ZKN bridge', 'kiss.push': 'Push to KISS' },
+			{
+				areas: { 'sms.status': 'Notifications', 'sms.send': 'Notifications', 'stuf-zkn.push': 'Adapters', 'kiss.push': 'Adapters' },
+				labels: { 'sms.send': 'Send a text message', 'sms.status': 'Read a text message status', 'stuf-zkn.push': 'Push through the StUF-ZKN bridge', 'kiss.push': 'Push to KISS' },
+			},
 		)
 
 		expect(sections).toEqual([
@@ -42,7 +44,7 @@ describe('actionSections', () => {
 	})
 
 	it('puts an action without an area last and labels an action without a label by its name', () => {
-		const sections = actionSections(['old.action', 'job.run'], { 'job.run': 'Jobs' }, null)
+		const sections = actionSections(['old.action', 'job.run'], { areas: { 'job.run': 'Jobs' }, labels: null })
 
 		expect(sections).toEqual([
 			{ area: 'Jobs', actions: [{ name: 'job.run', label: 'job.run' }] },
@@ -51,7 +53,7 @@ describe('actionSections', () => {
 	})
 
 	it('reads missing areas and labels as none', () => {
-		expect(actionSections(['a.b'], undefined, 'no')).toEqual([{ area: '', actions: [{ name: 'a.b', label: 'a.b' }] }])
+		expect(actionSections(['a.b'], { areas: undefined, labels: 'no' })).toEqual([{ area: '', actions: [{ name: 'a.b', label: 'a.b' }] }])
 	})
 })
 

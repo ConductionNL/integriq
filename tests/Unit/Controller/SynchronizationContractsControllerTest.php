@@ -32,6 +32,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Wire-contract tests for POST /api/synchronization-contracts/{id}/activate and
@@ -249,6 +250,7 @@ class SynchronizationContractsControllerTest extends TestCase {
 		$captured = [];
 		$this->orObjectService->method('find')->willReturnCallback(
 			function (...$args) use (&$captured) {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$captured = $args;
 				return ObjectServiceMockBuilder::objectEntity($this, ['status' => 'inactive'], 'contract-1');
 			}

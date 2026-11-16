@@ -31,6 +31,7 @@ namespace OCA\Integriq\Service;
 use Adbar\Dot;
 use Exception;
 use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistryInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -176,10 +177,9 @@ class RuleService {
 					'type' => 'api',
 					'isEnabled' => true,
 				],
-				register: 'integriq',
-				schema: 'source',
+				options: RegisterSave::options(register: 'integriq', schema: 'source'),
 				_rbac: false,
-				_multitenancy: false,
+				_multitenancy: false
 			);
 		}
 

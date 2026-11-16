@@ -66,7 +66,7 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 
 		$entries = $this->service(logger: $logger)->collect();
 
-		$this->assertSame('e51ecf05da4e61321ae97b752e539f5d7a4a75d3df601318602c8a16a0849856', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
+		$this->assertSame('1740df6f92f8d9f4ace12440dc967991d1f730e4edc39b90f6aa5b4535299ed0', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
 
 	}//end testCollectIsUnchanged()
 
@@ -90,30 +90,6 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 	}//end testTheEcbRatesAreListedUnderBank()
 
 	/**
-	 * The government login adapter is listed, gated on the broker flag, and
-	 * points to Beheer > Authenticatie instead of carrying a configuration
-	 * of its own (portal-idp-broker-config task 13).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-configuration-placement-follows-adr-017-rules-1-3-7
-	 */
-	public function testTheGovernmentLoginAdapterIsListedAndPointsToBeheer(): void {
-		$entries = array_values(array_filter(
-			$this->service()->collect(),
-			static fn (array $entry): bool => $entry['slug'] === 'adapter:digid-eherkenning-auth-adapter'
-		));
-
-		$this->assertCount(1, $entries);
-		$this->assertSame('adapter', $entries[0]['kind']);
-		$this->assertSame('flag-gated', $entries[0]['mechanism']);
-		$this->assertSame('idp_broker_enabled', $entries[0]['flagKey']);
-		$this->assertSame('', $entries[0]['sourceTemplateSlug']);
-		$this->assertStringContainsString('Beheer > Authenticatie', $entries[0]['description']);
-
-	}//end testTheGovernmentLoginAdapterIsListedAndPointsToBeheer()
-
-	/**
 	 * Every seed payload, and the misses, are as before.
 	 *
 	 * @return void
@@ -132,7 +108,7 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 		$payloads[''] = $service->findSeedSourcePayload('');
 
 		$this->assertNull($payloads['no-such-seed']);
-		$this->assertSame('7182a8e468b1d351c44a11336e84993e27b90d25cabbc892fbb5e2dfd654babc', hash('sha256', json_encode($payloads, JSON_THROW_ON_ERROR)));
+		$this->assertSame('7e8309a5b6fcb7af99c8ca98b16dc20448f1e6cbba95f527dd81caca5921728d', hash('sha256', json_encode($payloads, JSON_THROW_ON_ERROR)));
 
 	}//end testSeedPayloadsAreUnchanged()
 

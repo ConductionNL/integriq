@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Settings;
 
 use OCA\Integriq\Controller\XMLResponse;
+use OCA\Integriq\Service\Call\FeedSource;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
@@ -118,6 +119,21 @@ final class JobBoardSetsTest extends TestCase {
 		$this->assertSame(202, $answer['elements'][0]['status']);
 		$this->assertStringStartsWith('urn:li:simpleJobPostingTask:', $answer['elements'][0]['id']);
 	}//end testTheLinkedInTemplateIsDormantWithItsSecretInTheBroker()
+
+	/**
+	 * The Indeed template is a dormant feed source: a call to it sends nothing and answers "published in feed".
+	 *
+	 * @return void
+	 */
+	public function testTheIndeedTemplateIsADormantFeedSource(): void {
+		$source = $this->seeds(board: 'indeed')['source']['jobboard-indeed'];
+
+		$this->assertFalse($source['isEnabled']);
+		$this->assertSame(FeedSource::SOURCE_TYPE, $source['type']);
+		$this->assertSame('none', $source['auth']);
+		$this->assertStringContainsString('jobfeeds/indeed.xml', $source['description']);
+		$this->assertStringContainsString('register that URL with Indeed', $source['description']);
+	}//end testTheIndeedTemplateIsADormantFeedSource()
 
 	/**
 	 * With the employer and vacancy page filled, the vacancy becomes the recorded Indeed feed job, without applicant data.

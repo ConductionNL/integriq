@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Security;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -140,9 +141,7 @@ class PlaceholderSecretRepair implements PlaceholderSecretRepairInterface {
 			// Unscoped: a repair step rewriting stored secrets, run as the system.
 			$this->objectService->saveObject(
 				object: $data,
-				register: InlineSecretMigrationPlannerInterface::REGISTER,
-				schema: $row['schema'],
-				uuid: $row['uuid'],
+				options: RegisterSave::options(register: InlineSecretMigrationPlannerInterface::REGISTER, schema: $row['schema'], uuid: $row['uuid']),
 				_rbac: false,
 				_multitenancy: false
 			);

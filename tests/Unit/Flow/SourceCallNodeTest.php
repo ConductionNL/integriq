@@ -47,6 +47,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the governed outbound-call flow node.
@@ -920,6 +921,7 @@ class SourceCallNodeTest extends TestCase {
 		$looked = [];
 		$this->objectService->method('find')->willReturnCallback(
 			static function (...$arguments) use ($sources, &$looked): ?ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'find', args: $arguments);
 				$looked[] = $arguments[0];
 
 				return ($sources[$arguments[0]] ?? null);
@@ -963,6 +965,7 @@ class SourceCallNodeTest extends TestCase {
 		$sources = $this->givenBoardSources();
 		$this->objectService->method('find')->willReturnCallback(
 			static function (...$arguments) use ($sources): ?ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'find', args: $arguments);
 				return ($sources[$arguments[0]] ?? null);
 			}
 		);
@@ -1004,6 +1007,7 @@ class SourceCallNodeTest extends TestCase {
 		$sources = $this->givenBoardSources();
 		$this->objectService->method('find')->willReturnCallback(
 			static function (...$arguments) use ($sources): ?ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'find', args: $arguments);
 				return ($sources[$arguments[0]] ?? null);
 			}
 		);
