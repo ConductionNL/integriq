@@ -4,7 +4,7 @@
  * Unit tests for MappingOutput and the ArrayToXml writer it shares with XMLResponse.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Util
+ * @package  OCA\Integriq\Tests\Unit\Service\Format
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,10 +20,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Util;
+namespace OCA\Integriq\Tests\Unit\Service\Format;
 
-use OCA\Integriq\Util\ArrayToXml;
-use OCA\Integriq\Util\MappingOutput;
+use OCA\Integriq\Service\Format\ArrayToXml;
+use OCA\Integriq\Service\Format\MappingOutput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -33,8 +33,9 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(MappingOutput::class)]
 #[UsesClass(ArrayToXml::class)]
+#[UsesClass(XmlElementBuilder::class)]
 #[UsesClass(\OCA\Integriq\Controller\XMLResponse::class)]
-#[UsesClass(\OCA\Integriq\Util\CsvCodec::class)]
+#[UsesClass(\OCA\Integriq\Service\Format\CsvCodec::class)]
 class MappingOutputTest extends TestCase {
 
 	/**

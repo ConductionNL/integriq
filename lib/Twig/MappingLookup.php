@@ -33,6 +33,7 @@ namespace OCA\Integriq\Twig;
 
 use Adbar\Dot;
 use OCA\Integriq\Service\SourceMappingServiceInterface;
+use OCA\Integriq\Service\LookupAllowlist;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 

@@ -28,7 +28,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Settings\IntegriqAdmin;
-use OCA\Integriq\Twig\LookupAllowlist;
+use OCA\Integriq\Service\LookupAllowlist;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;

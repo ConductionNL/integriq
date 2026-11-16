@@ -10,8 +10,8 @@
  * Stored in app config like the expression-source allowlist; every entry
  * names who added it and when. The list starts empty.
  *
- * @category Twig
- * @package  OCA\Integriq\Twig
+ * @category Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,7 +27,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Twig;
+namespace OCA\Integriq\Service;
 
 use DateTimeImmutable;
 use OCP\IAppConfig;

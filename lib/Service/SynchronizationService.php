@@ -71,7 +71,7 @@ use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
-use OCA\Integriq\Util\CsvCodec;
+use OCA\Integriq\Service\Format\CsvCodec;
 use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;

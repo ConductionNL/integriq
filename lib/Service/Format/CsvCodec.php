@@ -13,8 +13,8 @@
  * register through PhpSpreadsheet and are bound to a schema; they cannot take
  * a mapping payload, which is why this codec exists beside them.
  *
- * @category Util
- * @package  OCA\Integriq\Util
+ * @category Service
+ * @package  OCA\Integriq\Service\Format
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -32,7 +32,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Util;
+namespace OCA\Integriq\Service\Format;
 
 use InvalidArgumentException;
 

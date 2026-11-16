@@ -28,7 +28,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
-use OCA\Integriq\Util\MappingOutput;
+use OCA\Integriq\Service\Format\MappingOutput;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -40,9 +40,10 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\Integriq\Service\SynchronizationService
- * @uses   \OCA\Integriq\Util\MappingOutput
- * @uses   \OCA\Integriq\Util\ArrayToXml
- * @uses   \OCA\Integriq\Util\CsvCodec
+ * @uses   \OCA\Integriq\Service\Format\MappingOutput
+ * @uses   \OCA\Integriq\Service\Format\ArrayToXml
+ * @uses   \OCA\Integriq\Service\Format\XmlElementBuilder
+ * @uses   \OCA\Integriq\Service\Format\CsvCodec
  */
 class SynchronizationTargetOutputFormatTest extends TestCase {
 

@@ -23,7 +23,7 @@
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Util\ArrayToXml;
+use OCA\Integriq\Service\Format\ArrayToXml;
 use OCP\AppFramework\Http\Response;
 
 /**

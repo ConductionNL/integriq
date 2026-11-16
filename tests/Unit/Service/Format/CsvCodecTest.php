@@ -4,7 +4,7 @@
  * Unit tests for CsvCodec.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Util
+ * @package  OCA\Integriq\Tests\Unit\Service\Format
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,16 +18,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Util;
+namespace OCA\Integriq\Tests\Unit\Service\Format;
 
 use InvalidArgumentException;
-use OCA\Integriq\Util\CsvCodec;
+use OCA\Integriq\Service\Format\CsvCodec;
 use PHPUnit\Framework\TestCase;
 
 /**
  * CSV decode and encode.
  *
- * @covers \OCA\Integriq\Util\CsvCodec
+ * @covers \OCA\Integriq\Service\Format\CsvCodec
  *
  * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
  */

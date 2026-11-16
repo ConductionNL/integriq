@@ -26,7 +26,7 @@ use OCA\Integriq\Controller\MappingsController;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SourceMappingService;
-use OCA\Integriq\Util\MappingOutput;
+use OCA\Integriq\Service\Format\MappingOutput;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -37,8 +37,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\Integriq\Controller\MappingsController
- * @uses   \OCA\Integriq\Util\MappingOutput
- * @uses   \OCA\Integriq\Util\ArrayToXml
+ * @uses   \OCA\Integriq\Service\Format\MappingOutput
+ * @uses   \OCA\Integriq\Service\Format\ArrayToXml
+ * @uses   \OCA\Integriq\Service\Format\XmlElementBuilder
  */
 class MappingsControllerRenderedOutputTest extends TestCase {
 

@@ -9,8 +9,8 @@
  * at the edge, when the result is shown in a test or sent to a target
  * (mapping-formats-and-lookups D1).
  *
- * @category Util
- * @package  OCA\Integriq\Util
+ * @category Service
+ * @package  OCA\Integriq\Service\Format
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Util;
+namespace OCA\Integriq\Service\Format;
 
 /**
  * A mapping result in its declared output format.
