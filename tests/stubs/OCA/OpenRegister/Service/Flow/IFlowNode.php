@@ -3,6 +3,9 @@
 /**
  * A node type contributed to the flow palette by an app.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Deliberately shaped after `OCP\WorkflowEngine\IOperation`: the metadata half
  * (display name, description, icon, scope) is the same set of questions, asked
  * the same way, so an author moving between Nextcloud Flow and an OpenRegister
@@ -38,9 +41,6 @@
  * The two systems then compose rather than compete: a Nextcloud Flow rule can
  * start an OpenRegister flow, and an OpenRegister flow can do what Nextcloud
  * Flow cannot — branch, join, loop, and carry data between steps.
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Flow
