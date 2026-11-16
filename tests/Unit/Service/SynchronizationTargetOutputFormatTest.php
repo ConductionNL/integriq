@@ -31,6 +31,7 @@ use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Format\MappingOutput;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -80,7 +81,7 @@ class SynchronizationTargetOutputFormatTest extends TestCase {
 	private function service(): SynchronizationService {
 		$or = $this->createMock(ORObjectService::class);
 		$or->method('find')->willReturnCallback(
-			static function ($id, ?string $register = null, ?string $schema = null) {
+			static function ($id, ?ObjectFindOptions $options = null) {
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)$id);
 				$entity->setObject(['uuid' => (string)$id, 'name' => 'Target', 'location' => 'https://api.example.invalid/v1']);
