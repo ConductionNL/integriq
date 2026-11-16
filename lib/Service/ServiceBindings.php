@@ -33,6 +33,8 @@ use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSetInterface;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\CitrixDaasAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\EndpointWorkspaceListing;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\EndpointWorkspaceListingInterface;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\IntuneAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\JamfProAdapter;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
@@ -390,6 +392,7 @@ final class ServiceBindings {
 		ProductPolicyServiceInterface::class => ProductPolicyService::class,
 		ListenerSchemaResolverInterface::class => ListenerSchemaResolver::class,
 		RegistrationStoreInterface::class => RegistrationStore::class,
+		EndpointWorkspaceListingInterface::class => EndpointWorkspaceListing::class,
 	];
 
 	/**

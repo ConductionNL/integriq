@@ -132,6 +132,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\ProductPolicyServiceInterface, OCA\\Integriq\\Service\\ProductPolicyService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\ListenerSchemaResolverInterface, OCA\\Integriq\\Service\\ListenerSchemaResolver)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Registration\\RegistrationStoreInterface, OCA\\Integriq\\Service\\Registration\\RegistrationStore)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\Adapter\\EndpointWorkspace\\EndpointWorkspaceListingInterface, OCA\\Integriq\\Service\\Adapter\\EndpointWorkspace\\EndpointWorkspaceListing)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Security\\EgressGuardInterface, OCA\\Integriq\\Service\\Security\\EgressGuard)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Security\\SecretRedactorInterface, OCA\\Integriq\\Service\\Security\\SensitiveFieldRegistry)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\SecurityServiceInterface, OCA\\Integriq\\Service\\SecurityService)",

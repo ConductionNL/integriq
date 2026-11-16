@@ -28,6 +28,8 @@ use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSetInterface;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\EndpointWorkspaceListing;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\EndpointWorkspaceListingInterface;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
@@ -487,6 +489,7 @@ class ServiceRegistrarTest extends TestCase {
 		ProductPolicyServiceInterface::class => ProductPolicyService::class,
 		ListenerSchemaResolverInterface::class => ListenerSchemaResolver::class,
 		RegistrationStoreInterface::class => RegistrationStore::class,
+		EndpointWorkspaceListingInterface::class => EndpointWorkspaceListing::class,
 		EgressGuardInterface::class => EgressGuard::class,
 		SecretRedactorInterface::class => SensitiveFieldRegistry::class,
 		SecurityServiceInterface::class => SecurityService::class,
