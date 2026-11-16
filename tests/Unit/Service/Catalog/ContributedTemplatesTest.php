@@ -31,6 +31,7 @@ use OCA\Integriq\Service\Catalog\ContributedTemplates;
 use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
+use OCA\Integriq\Service\Extension\ExtensionInventory;
 use OCA\Integriq\Service\Payment\PaymentProviderRegistry;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\ObjectService;
@@ -46,8 +47,10 @@ use Symfony\Component\Console\Tester\CommandTester;
  * @uses   \OCA\Integriq\Service\Catalog\ConnectorTemplateLibrary
  * @uses   \OCA\Integriq\Service\Extension\ConnectorExtensionCollector
  * @uses   \OCA\Integriq\Event\RegisterConnectorExtensionsEvent
+ * @uses   \OCA\Integriq\Service\Extension\ConnectorExtensionsCollectEvent
  * @uses   \OCA\Integriq\Service\CatalogRegistryService
  * @uses   \OCA\Integriq\Command\ExtensionsList
+ * @uses   \OCA\Integriq\Service\Extension\ExtensionInventory
  */
 final class ContributedTemplatesTest extends TestCase {
 
@@ -150,11 +153,13 @@ final class ContributedTemplatesTest extends TestCase {
 	public function testTheCommandListsTheTemplates(): void {
 		$collector = $this->collector();
 		$command = new ExtensionsList(
-			$collector,
 			$this->createMock(IntakeChannelRegistry::class),
-			$this->createMock(DigitalPostProviderRegistry::class),
-			$this->createMock(PaymentProviderRegistry::class),
-			new ContributedTemplates($collector, self::BUILT_IN)
+			new ExtensionInventory(
+				$collector,
+				$this->createMock(DigitalPostProviderRegistry::class),
+				$this->createMock(PaymentProviderRegistry::class),
+				new ContributedTemplates($collector, self::BUILT_IN)
+			)
 		);
 		$tester = new CommandTester($command);
 

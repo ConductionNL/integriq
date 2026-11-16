@@ -41,15 +41,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
  */
-class ConnectorExtensionCollector {
-
-	/**
-	 * The seam names, as the record and the command show them.
-	 */
-	public const SEAM_INTAKE_CHANNEL = 'intake channel';
-	public const SEAM_DIGITAL_POST = 'digital post provider';
-	public const SEAM_PAYMENT = 'payment provider';
-	public const SEAM_TEMPLATES = 'connector templates';
+class ConnectorExtensionCollector implements ConnectorExtensionsInterface {
 
 	/**
 	 * The answered event, once dispatched.

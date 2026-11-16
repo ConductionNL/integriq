@@ -26,6 +26,7 @@ use OCA\Integriq\Intake\IntakeChannelAdapterInterface;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
+use OCA\Integriq\Service\Extension\ExtensionInventory;
 use OCA\Integriq\Service\Payment\PaymentProviderInterface;
 use OCA\Integriq\Service\Payment\PaymentProviderRegistry;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -39,7 +40,9 @@ use Symfony\Component\Console\Tester\CommandTester;
  *
  * @covers \OCA\Integriq\Command\ExtensionsList
  * @uses   \OCA\Integriq\Service\Extension\ConnectorExtensionCollector
+ * @uses   \OCA\Integriq\Service\Extension\ExtensionInventory
  * @uses   \OCA\Integriq\Event\RegisterConnectorExtensionsEvent
+ * @uses   \OCA\Integriq\Service\Extension\ConnectorExtensionsCollectEvent
  * @uses   \OCA\Integriq\Intake\IntakeChannelRegistry
  * @uses   \OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry
  * @uses   \OCA\Integriq\Service\Payment\PaymentProviderRegistry
@@ -67,10 +70,12 @@ class ExtensionsListTest extends TestCase {
 
 		return new CommandTester(
 			new ExtensionsList(
-				collector: $collector,
 				intake: new IntakeChannelRegistry(logger: $logger, adapters: [$teams], extensions: $collector),
-				digitalPost: new DigitalPostProviderRegistry(providers: [], extensions: $collector),
-				payments: new PaymentProviderRegistry(providers: [], extensions: $collector)
+				inventory: new ExtensionInventory(
+					collector: $collector,
+					digitalPost: new DigitalPostProviderRegistry(providers: [], extensions: $collector),
+					payments: new PaymentProviderRegistry(providers: [], extensions: $collector)
+				)
 			)
 		);
 	}//end tester()

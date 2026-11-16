@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\Integriq\Service\Payment\PaymentProviderRegistry
  * @uses   \OCA\Integriq\Service\Extension\ConnectorExtensionCollector
  * @uses   \OCA\Integriq\Event\RegisterConnectorExtensionsEvent
+ * @uses   \OCA\Integriq\Service\Extension\ConnectorExtensionsCollectEvent
  *
  * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
  */

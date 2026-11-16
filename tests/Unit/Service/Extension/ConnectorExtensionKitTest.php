@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
  * refuses and logs one that claims a built-in's id.
  *
  * @covers \OCA\Integriq\Event\RegisterConnectorExtensionsEvent
+ * @covers \OCA\Integriq\Service\Extension\ConnectorExtensionsCollectEvent
  * @covers \OCA\Integriq\Service\Extension\ConnectorExtensionCollector
  * @covers \OCA\Integriq\Intake\IntakeChannelRegistry
  * @covers \OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry

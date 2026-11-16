@@ -29,7 +29,7 @@ use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
 use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
 use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
 use OCA\Integriq\Intake\Adapter\TeamsChannelAdapter;
-use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
+use OCA\Integriq\Service\Extension\ConnectorExtensionsInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -79,7 +79,7 @@ final class IntakeBindings {
 						$c->get(PublicSpaceReportAdapter::class),
 						$c->get(TeamsChannelAdapter::class),
 					],
-					extensions: $c->get(ConnectorExtensionCollector::class)
+					extensions: $c->get(ConnectorExtensionsInterface::class)
 				);
 			}
 		);

@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Intake;
 
 use OCA\Integriq\Exception\IntakeChannelException;
-use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
+use OCA\Integriq\Service\Extension\ConnectorExtensionsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -64,14 +64,14 @@ class IntakeChannelRegistry implements IntakeChannelRegistryInterface {
 	 *
 	 * @param LoggerInterface $logger Records a refused collision.
 	 * @param array<int,IntakeChannelAdapterInterface> $adapters The adapters registered at boot.
-	 * @param ConnectorExtensionCollector|null $extensions Asks the extension apps for theirs, on first use.
+	 * @param ConnectorExtensionsInterface|null $extensions Asks the extension apps for theirs, on first use.
 	 *
 	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
 		array $adapters = [],
-		private readonly ?ConnectorExtensionCollector $extensions = null,
+		private readonly ?ConnectorExtensionsInterface $extensions = null,
 	) {
 		foreach ($adapters as $adapter) {
 			$this->register(adapter: $adapter);
@@ -115,7 +115,7 @@ class IntakeChannelRegistry implements IntakeChannelRegistryInterface {
 			$channelId = $adapter->getChannelId();
 			if (isset($this->adapters[$channelId]) === true) {
 				$this->extensions->refused(
-					seam: ConnectorExtensionCollector::SEAM_INTAKE_CHANNEL,
+					seam: ConnectorExtensionsInterface::SEAM_INTAKE_CHANNEL,
 					id: $channelId,
 					appId: $contribution['appId'],
 					item: $adapter,
@@ -127,7 +127,7 @@ class IntakeChannelRegistry implements IntakeChannelRegistryInterface {
 			$this->adapters[$channelId] = $adapter;
 			$this->appIds[$channelId]   = $contribution['appId'];
 			$this->extensions->accepted(
-				seam: ConnectorExtensionCollector::SEAM_INTAKE_CHANNEL,
+				seam: ConnectorExtensionsInterface::SEAM_INTAKE_CHANNEL,
 				id: $channelId,
 				appId: $contribution['appId'],
 				item: $adapter
