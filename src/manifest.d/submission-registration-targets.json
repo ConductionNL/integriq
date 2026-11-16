@@ -27,7 +27,7 @@
         },
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
-          { "id": "test", "label": "Test", "icon": "PlayOutline", "handler": "testRegistrationTargetHandler" }
+          { "id": "test", "label": "Test", "icon": "CheckCircleOutline", "handler": "testRegistrationTargetHandler" }
         ],
         "documentationUrl": "https://integriq.conduction.nl"
       }

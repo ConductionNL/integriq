@@ -163,6 +163,7 @@ OC.L10N.register(
         "Target type": "Target Type",
         "Test": "Test",
         "Test mapping": "Test mapping",
+        "Registration targets": "Registration targets",
         "Test registration target": "Test registration target",
         "The test maps the hand-over and stops before anything is sent or saved.": "The test maps the hand-over and stops before anything is sent or saved.",
         "Hand-over (JSON, leave empty for the sample)": "Hand-over (JSON, leave empty for the sample)",

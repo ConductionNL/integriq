@@ -788,6 +788,7 @@ OC.L10N.register(
         "Test": "Testen",
         "Test connection": "Verbinding testen",
         "Test mapping": "Mapping testen",
+        "Registration targets": "Registratiedoelen",
         "Test registration target": "Registratiedoel testen",
         "The test maps the hand-over and stops before anything is sent or saved.": "De test zet de overdracht om en stopt voordat er iets wordt verstuurd of opgeslagen.",
         "Hand-over (JSON, leave empty for the sample)": "Overdracht (JSON, leeg laten voor het voorbeeld)",
