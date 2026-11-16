@@ -127,7 +127,7 @@ describe('brokerFields golden', () => {
 					golden.check(
 						`settings/${settingsName}/${patchName}/${brokerId}`,
 						outcome(() =>
-							buildBrokerSettings(settings, patch, brokerId),
+							buildBrokerSettings(settings, { patch, brokerId }),
 						),
 					)
 				}
