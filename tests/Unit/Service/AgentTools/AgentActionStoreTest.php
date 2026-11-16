@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
@@ -43,11 +44,11 @@ class AgentActionStoreTest extends TestCase {
 		$objects = $this->createMock(originalClassName: ObjectService::class);
 		$objects->expects($this->once())
 			->method('saveObject')
-			->with(
-				['tool' => 'send', 'status' => 'proposed'],
-				'integriq',
-				'agent_action'
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => ['tool' => 'send', 'status' => 'proposed'],
+					'register' => 'integriq',
+					'schema' => 'agent_action',
+				]))
 			->willReturnCallback(
 				function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($saved) {
 					$register = $options->target->register;

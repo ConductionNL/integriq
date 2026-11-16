@@ -126,13 +126,13 @@ class ZgwVersionTranslationServiceTest extends TestCase {
 	public function testSameVersionIsPassthroughAndSkipsTranslator(): void {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->callback(
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->anything(),
+					'register' => $this->anything(),
+					'schema' => $this->callback(
 					static fn (string $schema): bool => $schema === ZgwVersionTranslationService::SCHEMA_LOG
-				)
-			);
+				),
+				]));
 
 		$payload = $this->conformantStatusPayload();
 		$translated = $this->service->translate(

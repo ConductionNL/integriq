@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
@@ -187,16 +188,16 @@ final class SynchronizationRunProgressServiceCoverageTest extends TestCase {
 		$entity->setUuid(self::RUN_UUID);
 		$this->objects->expects($this->exactly(2))
 			->method('saveObject')
-			->with(
-				$this->callback(static fn (array $object): bool => $object['synchronizationId'] === 'sync-9'),
-				'integriq',
-				'synchronization_run',
-				$this->logicalOr($this->isNull(), $this->identicalTo(self::RUN_UUID)),
-				false,
-				false,
-				true,
-				false
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->callback(static fn (array $object): bool => $object['synchronizationId'] === 'sync-9'),
+					'register' => 'integriq',
+					'schema' => 'synchronization_run',
+					'uuid' => $this->logicalOr($this->isNull(), $this->identicalTo(self::RUN_UUID)),
+					'_rbac' => false,
+					'_multitenancy' => false,
+					'silent' => true,
+					'_validation' => false,
+				]))
 			->willReturn($entity);
 
 		$service = $this->makeService();

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for payment creation + the verified-webhook status lifecycle.
@@ -454,7 +455,9 @@ class PaymentIntentServiceTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn(['results' => [$source], 'total' => 1]);
 		$this->mollieProvider->method('createPayment')->willReturn(['providerPaymentId' => 'tr_pos0001', 'paymentStatus' => 'open', 'checkoutUrl' => '', 'extras' => []]);
 		$this->objectService->expects($this->once())->method('saveObject')
-			->with($this->callback(fn (array $object): bool => $object['terminalId'] === 'term_example0001' && $object['method'] === 'pointofsale' && $object['checkoutUrl'] === ''))
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => $this->callback(fn (array $object): bool => $object['terminalId'] === 'term_example0001' && $object['method'] === 'pointofsale' && $object['checkoutUrl'] === ''),
+			]))
 			->willReturn($this->entity([], 'pi-pos'));
 
 		$result = $this->service->createPayment(payload: array_merge($this->payload(), ['method' => 'pointofsale', 'terminalId' => 'term_example0001']));

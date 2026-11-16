@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * A service whose broker class counts as loadable (or not) by flag, while the
@@ -145,7 +146,11 @@ class SenderIdentityServiceEdgeTest extends TestCase {
 	public function testAnUnknownIdentityIdIsRefused(): void {
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('ghost', MessageRecorder::REGISTER, 'sender_identity')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => 'ghost',
+					'register' => MessageRecorder::REGISTER,
+					'schema' => 'sender_identity',
+				]))
 			->willThrowException(new DoesNotExistException('gone'));
 		$this->objectService->expects($this->never())->method('findAll');
 
@@ -245,7 +250,14 @@ class SenderIdentityServiceEdgeTest extends TestCase {
 	public function testTheBrokerIsResolvedFromTheContainerWithTheOrganisation(): void {
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('identity-1', MessageRecorder::REGISTER, 'sender_identity', false, false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => 'identity-1',
+					'register' => MessageRecorder::REGISTER,
+					'schema' => 'sender_identity',
+					'_rbac' => false,
+					'_multitenancy' => false,
+					'_render' => false,
+				]))
 			->willReturn($this->identityRow(object: [], organisation: ' org-7 '));
 
 		$broker = new class {

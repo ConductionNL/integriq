@@ -39,8 +39,8 @@ use OCP\IServerContainer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
-use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * REQ-OCIP-001..005 on the shipped provider.
@@ -198,7 +198,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		);
 		$provider = $this->provider('true', $this->recordingObjectService([$contract], $seen));
 
-		$rows = $provider->list('some-register', 'some-schema', 'object-7');
+		$rows = $provider->list(new ObjectRef(register: 'some-register', schema: 'some-schema', id: 'object-7'));
 
 		$this->assertSame('integriq', $seen['register']);
 		$this->assertSame('synchronization_contract', $seen['schema']);
@@ -278,7 +278,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$contract = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'zgw-zaken', 'targetId' => 'object-7'], 'contract-1');
 		$provider = $this->provider('true', $this->writeBackObjectService([$contract], 'conflict'));
 
-		$rows = $provider->list('cases', 'case', 'object-7');
+		$rows = $provider->list(new ObjectRef(register: 'cases', schema: 'case', id: 'object-7'));
 
 		$this->assertCount(1, $rows);
 		$this->assertTrue($rows[0]['writeBackConflict']);
@@ -294,7 +294,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$contract = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'zgw-zaken', 'targetId' => 'object-7'], 'contract-1');
 		$provider = $this->provider('true', $this->writeBackObjectService([$contract], 'synced'));
 
-		$this->assertFalse($provider->list('cases', 'case', 'object-7')[0]['writeBackConflict']);
+		$this->assertFalse($provider->list(new ObjectRef(register: 'cases', schema: 'case', id: 'object-7'))[0]['writeBackConflict']);
 
 	}//end testAnAcceptedWriteBackShowsNoConflict()
 
@@ -307,7 +307,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$finds = [];
 		$provider = $this->provider('true', $this->writeBackObjectService([], 'conflict', $finds));
 
-		$this->assertSame([], $provider->list('cases', 'case', 'object-8'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'cases', schema: 'case', id: 'object-8')));
 		$this->assertSame([], $finds);
 
 	}//end testAnUnsyncedObjectIsNotReadForAConflict()
@@ -323,7 +323,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$seen = [];
 		$provider = $this->provider('true', $this->recordingObjectService([$contract], $seen));
 
-		$rows = $provider->list('some-register', 'some-schema', 'object-7');
+		$rows = $provider->list(new ObjectRef(register: 'some-register', schema: 'some-schema', id: 'object-7'));
 
 		$this->assertFalse($rows[0]['writeBackConflict']);
 
@@ -339,7 +339,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$seen = [];
 		$provider = $this->provider('true', $this->recordingObjectService([], $seen));
 
-		$provider->list('r', 's', 'object-7', ['_limit' => 10, '_page' => 3]);
+		$provider->list(new ObjectRef(register: 'r', schema: 's', id: 'object-7'), ['_limit' => 10, '_page' => 3]);
 
 		$this->assertSame(10, $seen['config']['limit']);
 		$this->assertSame(20, $seen['config']['offset']);
@@ -355,7 +355,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$seen = [];
 		$provider = $this->provider('true', $this->recordingObjectService([], $seen));
 
-		$this->assertSame([], $provider->list('r', 's', 'object-8'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'object-8')));
 
 	}//end testAnObjectNoSynchronizationWroteGetsAnEmptyList()
 
@@ -370,7 +370,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$provider = $this->provider('false', $objectService);
 
 		$this->assertFalse($provider->isEnabled());
-		$this->assertSame([], $provider->list('r', 's', 'object-7'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'object-7')));
 		$health = $provider->health();
 		$this->assertSame('unavailable', $health['status']);
 		$this->assertNotEmpty($health['message']);
@@ -463,10 +463,11 @@ class SynchronizationContractProviderContractTest extends TestCase {
 			}
 		);
 		$objectService->method('find')->willReturnCallback(
-			function (...$args) use (&$queries) {
-				$args = LegacyObjectArgs::flatten(args: $args);
-				$queries[] = ['find', $args];
-				$id = (string)($args['id'] ?? $args[0]);
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) use (&$queries) {
+				$options ??= new ObjectFindOptions();
+				// Recorded in the golden file's layout: id, register, schema, rbac, multitenancy, render, audit, extend.
+				$queries[] = ['find', [$id, $options->register, $options->schema, $_rbac, $_multitenancy, $options->render, $options->audit, $options->extend]];
+				$id = (string)$id;
 				if (str_starts_with($id, 'cccc') === true) {
 					throw new \RuntimeException('gone');
 				}
@@ -478,7 +479,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 
 		$lists = [];
 		foreach ([[], ['_limit' => '5', '_page' => '3'], ['_page' => 0], ['_limit' => 0]] as $filters) {
-			$lists[] = $provider->list('some-register', 'some-schema', 'object-7', $filters);
+			$lists[] = $provider->list(new ObjectRef(register: 'some-register', schema: 'some-schema', id: 'object-7'), $filters);
 		}
 
 		$this->assertSame(self::GOLDEN_ROWS, json_encode(['lists' => $lists, 'queries' => $queries]));

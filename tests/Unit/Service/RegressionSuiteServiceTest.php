@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
@@ -152,7 +153,9 @@ class RegressionSuiteServiceTest extends TestCase {
 		];
 		$synchronization = new ObjectEntity();
 		$synchronization->setObject(['sourceTargetMapping' => 'zaak-mapping', 'sourceId' => 'live-source']);
-		$this->objectService->expects($this->once())->method('find')->with('sync-1')->willReturn($synchronization);
+		$this->objectService->expects($this->once())->method('find')->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'sync-1',
+			]))->willReturn($synchronization);
 		$this->mappings->expects($this->once())->method('executeMapping')->with('zaak-mapping', ['id' => 7])->willReturn(['identificatie' => '7']);
 		$run = $this->service()->run(subjectType: 'synchronization', subjectId: 'sync-1', userId: 'alice');
 

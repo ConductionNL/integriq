@@ -30,6 +30,7 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
@@ -476,7 +477,9 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 
 		$callLog = ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200], 'call-log-5');
 		$this->callService->method('call')->willReturn($callLog);
-		$this->objectService->expects($this->once())->method('deleteObject')->with($this->equalTo('consumer-1'));
+		$this->objectService->expects($this->once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => $this->equalTo('consumer-1'),
+			]));
 
 		$result = $this->service->deleteAbonnement('abon-2');
 		$data = $result->getObject();

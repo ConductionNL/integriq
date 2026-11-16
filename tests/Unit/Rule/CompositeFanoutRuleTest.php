@@ -121,7 +121,11 @@ class CompositeFanoutRuleTest extends TestCase {
 		// Rollback must delete exactly the one object that was created (the parent).
 		$orObjectService->expects($this->once())
 			->method('deleteObject')
-			->with('parent-uuid', 'pipelinq', 'ticket')
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+					'uuid' => 'parent-uuid',
+					'register' => 'pipelinq',
+					'schema' => 'ticket',
+				]))
 			->willReturn(true);
 
 		$rule = $this->makeRule(
@@ -211,7 +215,11 @@ class CompositeFanoutRuleTest extends TestCase {
 
 		$parentObject = $this->makeObject('parent-uuid', []);
 		$orObjectService->expects($this->once())->method('saveObject')->willReturn($parentObject);
-		$orObjectService->expects($this->once())->method('deleteObject')->with('parent-uuid', 'pipelinq', 'ticket')->willReturn(true);
+		$orObjectService->expects($this->once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'parent-uuid',
+				'register' => 'pipelinq',
+				'schema' => 'ticket',
+			]))->willReturn(true);
 
 		$rule = $this->makeRule(
 			[

@@ -30,17 +30,17 @@ interface ReleaseObjectSignatures {
 	/**
 	 * @return mixed
 	 */
-	public function find(int|string $id, ?array $_extend = [], bool $files = false, mixed $register = null, mixed $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true, bool $_audit = true): mixed;
+	public function find(mixed $id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true, bool $_audit = true, ?array $_extend = []): mixed;
 
 	/**
 	 * @return mixed
 	 */
-	public function findSilent(string $id, ?array $_extend = [], bool $files = false, mixed $register = null, mixed $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true, bool $_audit = true): mixed;
+	public function findSilent(mixed $id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true, bool $_audit = true, ?array $_extend = []): mixed;
 
 	/**
 	 * @return mixed
 	 */
-	public function saveObject(mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, mixed $currentUser = null, bool $failIfExists = false, bool $_unowned = false, bool $_dedupOverride = false, ?string $_owner = null): mixed;
+	public function saveObject(mixed $object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true): mixed;
 
 	/**
 	 * @return mixed

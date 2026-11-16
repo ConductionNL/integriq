@@ -384,8 +384,8 @@ class PromotionServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->callback(
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->callback(
 					static function (array $payload): bool {
 						return ($payload['outcome'] ?? null) === 'success'
 							&& ($payload['callLogId'] ?? null) === 'calllog-77'
@@ -395,9 +395,9 @@ class PromotionServiceTest extends TestCase {
 							&& !array_key_exists('entities', $payload['previewSummary']);
 					}
 				),
-				'integriq',
-				'promotion_audit'
-			)
+					'register' => 'integriq',
+					'schema' => 'promotion_audit',
+				]))
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'audit-1'));
 
 		$result = $this->service->promote('cfg-1', 'acceptance', [], 'operator-uid');
@@ -510,17 +510,17 @@ class PromotionServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->callback(
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->callback(
 					static function (array $payload): bool {
 						return ($payload['outcome'] ?? null) === 'failed'
 							&& ($payload['previewSummary'] ?? ['x']) === []
 							&& ($payload['callLogId'] ?? null) === 'calllog-404';
 					}
 				),
-				'integriq',
-				'promotion_audit'
-			)
+					'register' => 'integriq',
+					'schema' => 'promotion_audit',
+				]))
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'audit-2'));
 
 		$this->expectException(RuntimeException::class);

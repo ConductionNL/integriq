@@ -29,6 +29,7 @@ use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
@@ -187,7 +188,9 @@ class MaterializeCatalogItemsTest extends TestCase {
 			}
 		);
 		$orObjectService->expects($this->once())->method('deleteObject')
-			->with($this->callback(static fn ($uuid): bool => $uuid === 'stale-uuid'));
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => $this->callback(static fn ($uuid): bool => $uuid === 'stale-uuid'),
+			]));
 
 		$this->makeStep($this->makeRegistryService($entries), $orObjectService)->run($this->makeOutput());
 

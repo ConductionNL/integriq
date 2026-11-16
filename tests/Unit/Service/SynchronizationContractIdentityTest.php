@@ -119,12 +119,12 @@ class SynchronizationContractIdentityTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->anything(),
-				$this->equalTo('integriq'),
-				$this->equalTo('synchronization_contract'),
-				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->anything(),
+					'register' => $this->equalTo('integriq'),
+					'schema' => $this->equalTo('synchronization_contract'),
+					'uuid' => $this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33'),
+				]))
 			->willReturn($saved);
 
 		$this->service->persist(contract: [
@@ -154,12 +154,12 @@ class SynchronizationContractIdentityTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->anything(),
-				$this->equalTo('integriq'),
-				$this->equalTo('synchronization_contract'),
-				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->anything(),
+					'register' => $this->equalTo('integriq'),
+					'schema' => $this->equalTo('synchronization_contract'),
+					'uuid' => $this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33'),
+				]))
 			->willReturn($saved);
 
 		$this->service->persist(

@@ -24,6 +24,7 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
@@ -64,11 +65,11 @@ class SynchronizationContractServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(
-				$this->equalTo('c-1'),
-				$this->equalTo('integriq'),
-				$this->equalTo('synchronization_contract')
-			)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => $this->equalTo('c-1'),
+					'register' => $this->equalTo('integriq'),
+					'schema' => $this->equalTo('synchronization_contract'),
+				]))
 			->willReturn($entity);
 
 		$result = $this->service->findObject('c-1');

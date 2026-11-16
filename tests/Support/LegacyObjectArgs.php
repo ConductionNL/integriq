@@ -46,9 +46,9 @@ final class LegacyObjectArgs {
 	 * The release's default per position, for the positions that have one.
 	 */
 	private const DEFAULTS = [
-		'find' => [1 => [], 2 => false, 3 => null, 4 => null, 5 => true, 6 => true, 7 => true, 8 => true],
-		'findSilent' => [1 => [], 2 => false, 3 => null, 4 => null, 5 => true, 6 => true, 7 => true, 8 => true],
-		'saveObject' => [1 => [], 2 => null, 3 => null, 4 => null, 5 => true, 6 => true, 7 => false, 8 => true, 9 => null, 10 => null, 11 => false, 12 => false, 13 => false, 14 => null],
+		'find' => [1 => null, 2 => null, 3 => true, 4 => true, 5 => true, 6 => true, 7 => []],
+		'findSilent' => [1 => null, 2 => null, 3 => true, 4 => true, 5 => true, 6 => true, 7 => []],
+		'saveObject' => [1 => null, 2 => null, 3 => null, 4 => true, 5 => true, 6 => false, 7 => true],
 		'deleteObject' => [1 => null, 2 => null, 3 => true, 4 => true, 5 => false, 6 => null, 7 => false],
 		'patchObject' => [2 => null, 3 => null, 4 => true, 5 => true, 6 => null],
 	];
@@ -57,9 +57,9 @@ final class LegacyObjectArgs {
 	 * The release's parameter names, in order.
 	 */
 	private const RELEASE = [
-		'find' => ['id', '_extend', 'files', 'register', 'schema', '_rbac', '_multitenancy', '_render', '_audit'],
-		'findSilent' => ['id', '_extend', 'files', 'register', 'schema', '_rbac', '_multitenancy', '_render', '_audit'],
-		'saveObject' => ['object', 'extend', 'register', 'schema', 'uuid', '_rbac', '_multitenancy', 'silent', '_validation', 'uploadedFiles', 'currentUser', 'failIfExists', '_unowned', '_dedupOverride', '_owner'],
+		'find' => ['id', 'register', 'schema', '_rbac', '_multitenancy', '_render', '_audit', '_extend'],
+		'findSilent' => ['id', 'register', 'schema', '_rbac', '_multitenancy', '_render', '_audit', '_extend'],
+		'saveObject' => ['object', 'register', 'schema', 'uuid', '_rbac', '_multitenancy', 'silent', '_validation'],
 		'deleteObject' => ['uuid', 'register', 'schema', '_rbac', '_multitenancy', '_retentionSweep', 'currentUser', 'permanent'],
 		'patchObject' => ['objectId', 'data', 'register', 'schema', '_rbac', '_multitenancy', 'currentUser'],
 	];
@@ -122,15 +122,14 @@ final class LegacyObjectArgs {
 		$second = ($args[1] ?? null);
 		if ($method === 'find' || $method === 'findSilent') {
 			$o = ($second instanceof ObjectFindOptions) ? $second : new ObjectFindOptions();
-			return [$first, $o->extend, $o->files, $o->register, $o->schema, ($args[2] ?? true), ($args[3] ?? true), $o->render, $o->audit];
+			return [$first, $o->register, $o->schema, ($args[2] ?? true), ($args[3] ?? true), $o->render, $o->audit, $o->extend];
 		}
 
 		if ($method === 'saveObject') {
 			$o = ($second instanceof ObjectSaveOptions) ? $second : new ObjectSaveOptions();
 			return [
-				$first, $o->extend, $o->target->register, $o->target->schema, $o->uuid, ($args[2] ?? true), ($args[3] ?? true),
-				$o->policy->silent, $o->policy->validation, $o->uploadedFiles, $o->actor->currentUser, $o->policy->failIfExists,
-				$o->actor->unowned, $o->policy->dedupOverride, $o->actor->owner,
+				$first, $o->target->register, $o->target->schema, $o->uuid, ($args[2] ?? true), ($args[3] ?? true),
+				$o->policy->silent, $o->policy->validation,
 			];
 		}
 
