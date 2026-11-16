@@ -24,6 +24,10 @@ namespace OCA\Integriq\Service\ApiDesign;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -110,7 +114,7 @@ class ApiDesignFindingStore {
 		$result = $this->keptWaivers(of: ['productId' => $productId, 'version' => $version], fresh: $fresh);
 		foreach ($fresh as $finding) {
 			$object = self::openFinding(finding: $finding, context: ['product' => $productId, 'productVersion' => $version, 'checkedAt' => $checkedAt]);
-			$saved  = $this->objectService->saveObject(object: $object, register: self::REGISTER, schema: self::FINDING_SCHEMA);
+			$saved  = $this->objectService->saveObject(object: $object, options: new ObjectSaveOptions(target: self::findingTarget()));
 			$result[] = $object + ['id' => (string)$saved->getUuid()];
 		}
 
@@ -140,7 +144,7 @@ class ApiDesignFindingStore {
 				continue;
 			}
 
-			$this->objectService->deleteObject(uuid: (string)$entity->getUuid(), register: self::REGISTER, schema: self::FINDING_SCHEMA);
+			$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: (string)$entity->getUuid(), target: self::findingTarget()));
 		}
 
 		return $kept;
@@ -193,7 +197,7 @@ class ApiDesignFindingStore {
 			throw new InvalidArgumentException(message: 'A waiver needs a reason.');
 		}
 
-		$entity = $this->objectService->find(id: $findingId, register: self::REGISTER, schema: self::FINDING_SCHEMA);
+		$entity = $this->objectService->find(id: $findingId, options: new ObjectFindOptions(register: self::REGISTER, schema: self::FINDING_SCHEMA));
 		if ($entity instanceof ObjectEntity === false) {
 			throw new InvalidArgumentException(message: 'There is no such finding.');
 		}
@@ -207,7 +211,7 @@ class ApiDesignFindingStore {
 		$data['waivedBy'] = $userId;
 		$data['waiveReason'] = $reason;
 		$data['waivedAt'] = $waivedAt;
-		$this->objectService->saveObject(object: $data, register: self::REGISTER, schema: self::FINDING_SCHEMA, uuid: $findingId);
+		$this->objectService->saveObject(object: $data, options: new ObjectSaveOptions(target: self::findingTarget(), uuid: $findingId));
 
 		return $data + ['id' => $findingId];
 
@@ -275,4 +279,16 @@ class ApiDesignFindingStore {
 		return (string)($finding['ruleset'] ?? '') . "\n" . (string)($finding['ruleId'] ?? '') . "\n" . (string)($finding['path'] ?? '');
 
 	}//end matchKey()
+
+	/**
+	 * The register and schema a finding is saved, found and deleted in.
+	 *
+	 * @return ObjectFindTarget
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 */
+	private static function findingTarget(): ObjectFindTarget {
+		return new ObjectFindTarget(register: self::REGISTER, schema: self::FINDING_SCHEMA);
+
+	}//end findingTarget()
 }//end class

@@ -24,6 +24,7 @@ use OCA\Integriq\Service\ApiDesign\ApiDesignFindingStore;
 use OCA\Integriq\Service\ApiDesign\ApiDesignRuleServiceInterface;
 use OCA\Integriq\Service\ApiDesign\ApiProductDesignCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -191,7 +192,7 @@ class ApiProductDesignCheckTest extends TestCase {
 			->with(self::callback(static fn (array $findings): bool => count($findings) === 1 && $findings[0]['ruleId'] === '/core/a'))
 			->willReturnArgument(0);
 
-		$product = $this->objects->find(id: 'p1', schema: 'api_product');
+		$product = $this->objects->find(id: 'p1', options: new ObjectFindOptions(schema: 'api_product'));
 		$blocking = $this->check(publisher: $this->publisher)->blockingFindings(product: $product);
 
 		self::assertSame('/core/a', $blocking[0]['ruleId']);

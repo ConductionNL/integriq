@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\ApiDesign;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IURLGenerator;
@@ -86,7 +87,8 @@ class ApiProductDesignCheck {
 	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	public function checkProduct(string $productId): array {
-		$product = $this->objectService->find(id: $productId, register: ApiDesignFindingStore::REGISTER, schema: 'api_product');
+		$options = new ObjectFindOptions(register: ApiDesignFindingStore::REGISTER, schema: 'api_product');
+		$product = $this->objectService->find(id: $productId, options: $options);
 		if ($product instanceof ObjectEntity === false) {
 			throw new RuntimeException(message: 'There is no such API product.');
 		}

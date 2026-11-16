@@ -19,6 +19,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\ApiDesign;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -69,30 +72,21 @@ class InMemoryDesignObjectService extends OrObjectService {
 	}//end put()
 
 	/**
-	 * Find one object.
+	 * Find one object, the way openregister main's find() takes it.
 	 *
-	 * @param mixed       $id            The uuid.
-	 * @param string|null $register      The register.
-	 * @param string|null $schema        The schema.
-	 * @param bool        $_rbac         Unused.
-	 * @param bool        $_multitenancy Unused.
-	 * @param bool        $_render       Unused.
-	 * @param bool        $_audit        Unused.
-	 * @param array|null  $_extend       Unused.
+	 * Variadic so it overrides both the pure-unit stub's old signature and
+	 * openregister main's; any call that does not pass an ObjectFindOptions as
+	 * `options` (such as the removed `register:`/`schema:` named arguments)
+	 * fails the test.
+	 *
+	 * @param mixed $id   The uuid.
+	 * @param mixed $args `options` (ObjectFindOptions), then the access flags.
 	 *
 	 * @return ObjectEntity|null
 	 */
-	public function find(
-		$id,
-		?string $register = null,
-		?string $schema = null,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $_render = true,
-		bool $_audit = true,
-		?array $_extend = [],
-	): ?ObjectEntity {
-		$data = ($this->objects[(string)$schema][(string)$id] ?? null);
+	public function find($id, mixed ...$args): ?ObjectEntity {
+		$options = self::argument(args: $args, name: 'options', class: ObjectFindOptions::class);
+		$data    = ($this->objects[(string)$options->schema][(string)$id] ?? null);
 		if ($data === null) {
 			return null;
 		}
@@ -122,31 +116,17 @@ class InMemoryDesignObjectService extends OrObjectService {
 	}//end findAll()
 
 	/**
-	 * Save an object, minting a uuid when none is given.
+	 * Save an object, minting a uuid when the options give none.
 	 *
-	 * @param mixed       $object        The data.
-	 * @param string|null $register      The register.
-	 * @param string|null $schema        The schema.
-	 * @param string|null $uuid          The uuid.
-	 * @param bool        $_rbac         Unused.
-	 * @param bool        $_multitenancy Unused.
-	 * @param bool        $silent        Unused.
-	 * @param bool        $_validation   Unused.
+	 * @param mixed $object The data.
+	 * @param mixed $args   `options` (ObjectSaveOptions), then the access flags.
 	 *
 	 * @return ObjectEntity
 	 */
-	public function saveObject(
-		$object,
-		?string $register = null,
-		?string $schema = null,
-		?string $uuid = null,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
-	): ObjectEntity {
-		$uuid = ($uuid ?? 'obj-' . $this->next++);
-		$this->objects[(string)$schema][$uuid] = (array)$object;
+	public function saveObject($object, mixed ...$args): ObjectEntity {
+		$options = self::argument(args: $args, name: 'options', class: ObjectSaveOptions::class);
+		$uuid    = ($options->uuid ?? 'obj-' . $this->next++);
+		$this->objects[(string)$options->target->schema][$uuid] = (array)$object;
 
 		return self::entity(uuid: $uuid, data: (array)$object);
 
@@ -155,33 +135,39 @@ class InMemoryDesignObjectService extends OrObjectService {
 	/**
 	 * Delete an object.
 	 *
-	 * @param string|null     $uuid            The uuid.
-	 * @param string|int|null $register        The register.
-	 * @param string|int|null $schema          The schema.
-	 * @param bool            $_rbac           Unused.
-	 * @param bool            $_multitenancy   Unused.
-	 * @param bool            $_retentionSweep Unused.
-	 * @param mixed           $currentUser     Unused.
-	 * @param bool            $permanent       Unused.
+	 * @param mixed $args `deletion` (ObjectDeletion), then the access flags.
 	 *
 	 * @return bool
 	 */
-	public function deleteObject(
-		?string $uuid = null,
-		string|int|null $register = null,
-		string|int|null $schema = null,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $_retentionSweep = false,
-		mixed $currentUser = null,
-		bool $permanent = false,
-	): bool {
-		unset($this->objects[(string)$schema][(string)$uuid]);
-		$this->deleted[] = (string)$uuid;
+	public function deleteObject(mixed ...$args): bool {
+		$deletion = self::argument(args: $args, name: 'deletion', class: ObjectDeletion::class);
+		unset($this->objects[(string)$deletion->target->schema][$deletion->uuid]);
+		$this->deleted[] = $deletion->uuid;
 
 		return true;
 
 	}//end deleteObject()
+
+	/**
+	 * The named (or first) argument, which must be of openregister main's value class.
+	 *
+	 * @param array<int|string, mixed> $args  The call's arguments after the first.
+	 * @param string                   $name  The parameter name on openregister main.
+	 * @param class-string<T>          $class The value class.
+	 *
+	 * @return T
+	 *
+	 * @template T of object
+	 */
+	private static function argument(array $args, string $name, string $class): object {
+		$value = ($args[$name] ?? $args[0] ?? null);
+		if ($value instanceof $class === false) {
+			throw new \LogicException(message: "Expected {$name} to be {$class}, as on openregister main.");
+		}
+
+		return $value;
+
+	}//end argument()
 
 	/**
 	 * An entity for data.
