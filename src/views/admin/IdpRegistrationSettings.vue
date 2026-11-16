@@ -46,12 +46,12 @@
 			<table class="idp-registrations" data-testid="idp-registrations-table">
 				<thead>
 					<tr>
-						<th>{{ t('integriq', 'Organisation') }}</th>
-						<th>{{ t('integriq', 'Provider') }}</th>
-						<th>{{ t('integriq', 'Protocol') }}</th>
-						<th>{{ t('integriq', 'Status') }}</th>
-						<th>{{ t('integriq', 'Metadata URL') }}</th>
-						<th>{{ t('integriq', 'Actions') }}</th>
+						<th scope="col">{{ t('integriq', 'Organisation') }}</th>
+						<th scope="col">{{ t('integriq', 'Provider') }}</th>
+						<th scope="col">{{ t('integriq', 'Protocol') }}</th>
+						<th scope="col">{{ t('integriq', 'Status') }}</th>
+						<th scope="col">{{ t('integriq', 'Metadata URL') }}</th>
+						<th scope="col">{{ t('integriq', 'Actions') }}</th>
 					</tr>
 				</thead>
 				<tbody>
