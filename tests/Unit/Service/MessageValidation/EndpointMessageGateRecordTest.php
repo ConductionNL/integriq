@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * EndpointMessageGate::record() adds findings to the call log row as the call
@@ -72,7 +74,9 @@ class EndpointMessageGateRecordTest extends TestCase {
 	private function record(?array $stored): void {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null) use ($stored): ?ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null) use ($stored): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($stored === null || $schema !== 'call_log' || (string)$id !== self::UUID) {
 					return null;
 				}
@@ -84,7 +88,10 @@ class EndpointMessageGateRecordTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object = [], ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->assertSame('call_log', $schema);
 				$this->assertSame(self::UUID, $uuid);
 				$this->written = $object;

@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Helpers;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -42,8 +43,7 @@ class ForeignOrganisation {
 	public static function find(ObjectEntity $object): callable {
 		return static function (
 			$id,
-			?string $register = null,
-			?string $schema = null,
+			?ObjectFindOptions $options = null,
 			bool $_rbac = true,
 			bool $_multitenancy = true
 		) use ($object): ObjectEntity {

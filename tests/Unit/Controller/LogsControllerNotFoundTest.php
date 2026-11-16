@@ -33,6 +33,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * OpenRegister's `find()` does not only return null for a miss — it throws
@@ -180,7 +181,9 @@ class LogsControllerNotFoundTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('deleteObject')
-			->with('uuid-1');
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+					'uuid' => 'uuid-1',
+				]));
 
 		$response = $this->controller()->destroy('log-1');
 

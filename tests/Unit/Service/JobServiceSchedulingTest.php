@@ -44,6 +44,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Unit tests for scheduling jobs and finding their job-list id.
@@ -70,7 +71,7 @@ class JobServiceSchedulingTest extends TestCase {
 		$this->jobList = $this->createMock(IJobList::class);
 		$this->objects = $this->createMock(ORObjectService::class);
 		$this->objects->method('saveObject')->willReturnCallback(
-			fn (array $object, string $register, string $schema, ?string $uuid = null): ObjectEntity => $this->job($uuid ?? '', $object)
+			fn (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity => $this->job(($options->uuid) ?? '', $object)
 		);
 	}//end setUp()
 

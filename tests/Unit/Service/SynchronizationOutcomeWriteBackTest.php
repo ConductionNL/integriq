@@ -25,6 +25,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The real write path (updateTarget, writeObjectToTarget) over a mocked transport and OpenRegister.
@@ -112,7 +113,8 @@ class SynchronizationOutcomeWriteBackTest extends TestCase {
 		);
 		$or->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 		$or->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false) {
+			function (...$legacyArgs) {
+				[$object, $register, $schema, $uuid, $_rbac, $_multitenancy, $silent] = LegacyObjectArgs::positional(method: 'saveObject', args: $legacyArgs);
 				$this->saves[] = ['object' => $object, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid, 'silent' => $silent];
 				return new ObjectEntity();
 			}

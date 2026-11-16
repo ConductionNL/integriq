@@ -64,7 +64,7 @@ use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
@@ -86,7 +86,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
  */
-class ApprovalRequestNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
+class ApprovalRequestNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
 	use FlowNodePaletteDefaults;
 
 	/**

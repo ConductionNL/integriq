@@ -37,6 +37,7 @@ namespace OCA\Integriq\Service\Kiss;
 
 use OCA\Integriq\Service\KissSyncService;
 use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Throwable;
 
@@ -150,8 +151,10 @@ class ConfiguredCallerSearch implements CallerSearchInterface {
 			// Unscoped: a CTI call event resolves the source its CTI source names, as the system with no user session.
 			$entity = $this->objectService->find(
 				id: $sourceId,
-				register: RawSourceResolver::REGISTER,
-				schema: RawSourceResolver::SCHEMA,
+				options: new ObjectFindOptions(
+					register: RawSourceResolver::REGISTER,
+					schema: RawSourceResolver::SCHEMA
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

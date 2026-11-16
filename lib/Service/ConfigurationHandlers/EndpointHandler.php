@@ -23,6 +23,7 @@
 
 namespace OCA\Integriq\Service\ConfigurationHandlers;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -306,13 +307,14 @@ class EndpointHandler implements ConfigurationHandlerInterface {
 		if ($slug !== null && isset($mappings['endpoint']['slugToId'][$slug]) === true) {
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'endpoint',
-				uuid: $mappings['endpoint']['slugToId'][$slug]
+				options: RegisterSave::options(register: 'integriq', schema: 'endpoint', uuid: $mappings['endpoint']['slugToId'][$slug])
 			);
 		}
 
-		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'endpoint');
+		return $this->orObjectService->saveObject(
+			object: $data,
+			options: RegisterSave::options(register: 'integriq', schema: 'endpoint')
+		);
 	}//end saveEndpoint()
 
 	/**

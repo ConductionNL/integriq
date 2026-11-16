@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Unit tests for PdokConnector — normalisation, cache behaviour, breaker logic.
@@ -399,14 +400,15 @@ class PdokConnectorTest extends TestCase {
 					 */
 					public function saveObject(
 						$object,
-						?string $register = null,
-						?string $schema = null,
-						?string $uuid = null,
+						ObjectSaveOptions $options = new ObjectSaveOptions(),
 						bool $_rbac = true,
-						bool $_multitenancy = true,
-						bool $silent = false,
-						bool $_validation = true,
+						bool $_multitenancy = true
 					): ObjectEntity {
+						$register = $options->target->register;
+						$schema = $options->target->schema;
+						$uuid = $options->uuid;
+						$silent = $options->policy->silent ?? false;
+						$_validation = $options->policy->validation ?? true;
 						$this->calls[] = ['or.saveObject', ['register' => $register, 'schema' => $schema, 'object' => $object, 'uuid' => $uuid, '_rbac' => $_rbac, '_multitenancy' => $_multitenancy]];
 						if (($this->case['saveFails'] ?? false) === true) {
 							throw new \RuntimeException('register refused');

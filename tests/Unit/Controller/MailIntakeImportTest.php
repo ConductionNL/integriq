@@ -35,6 +35,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Pins import() from the source id to the 201 answer.
@@ -74,6 +75,7 @@ class MailIntakeImportTest extends TestCase {
 		$objects = ObjectServiceMockBuilder::make($this);
 		$objects->method('find')->willReturnCallback(
 			function (...$args) use ($configuration): ObjectEntity {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$this->lookups[] = $args[0];
 				return ObjectServiceMockBuilder::objectEntity($this, ['type' => 'Mailbox', 'configuration' => $configuration], 'src-uuid');
 			}
