@@ -1,0 +1,3 @@
+{"event_id":"ad49ccc82d0165d50a42a7861a4ee8a7"}
+{"type":"event","content_type":"application/json","length":442}
+{"event_id":"ad49ccc82d0165d50a42a7861a4ee8a7","timestamp":1760000000,"platform":"php","level":"error","logger":"openregister","tags":{"app":"openregister","request_id":"req-1"},"exception":{"values":[{"type":"OCA\\OpenRegister\\Exception\\ValidationException","value":"Saving failed: The object does not match its schema","stacktrace":{"frames":[{"filename":"/var/www/html/apps/openregister/lib/Service/ObjectService.php","lineno":412}]}}]}}

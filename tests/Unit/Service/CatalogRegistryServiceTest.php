@@ -209,6 +209,22 @@ class CatalogRegistryServiceTest extends TestCase {
 	}//end testSeedEntriesAreMockSeededWithCategoryOverride()
 
 	/**
+	 * The RDW vehicle register and the two route planners are listed in their categories.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
+	 */
+	public function testRouteAndVehicleTemplatesAreListedInTheirCategories(): void {
+		$bySlug = array_column($this->makeService()->collect(), null, 'slug');
+
+		$this->assertSame('Government registers', $bySlug['source-template:rdw-open-data']['category']);
+		$this->assertSame('Geo / Maps', $bySlug['source-template:route-planner-openrouteservice']['category']);
+		$this->assertSame('Geo / Maps', $bySlug['source-template:route-planner-tomtom']['category']);
+		$this->assertSame('route-planner-tomtom', $bySlug['source-template:route-planner-tomtom']['sourceTemplateSlug']);
+	}//end testRouteAndVehicleTemplatesAreListedInTheirCategories()
+
+	/**
 	 * The three service desk templates show under Service management.
 	 *
 	 * @return void
