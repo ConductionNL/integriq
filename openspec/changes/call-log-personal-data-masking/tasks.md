@@ -8,5 +8,5 @@ Kind: code. Matrix row `integriq:obs-redact`.
 - **acceptance_criteria**:
   - GIVEN a JSON or XML body with a BSN and a name WHEN it is logged THEN both are masked and the sent body is unchanged
   - GIVEN an added field name WHEN a body with that field is logged THEN it is masked
-- [ ] Implement
-- [ ] Test (PHPUnit)
+- [x] Implement
+- [x] Test (PHPUnit)

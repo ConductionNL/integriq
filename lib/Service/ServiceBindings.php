@@ -28,6 +28,8 @@ namespace OCA\Integriq\Service;
 use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
 use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Format\ArrayToXml;
+use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
@@ -212,6 +214,8 @@ use OCA\Integriq\Service\ServiceFetch\ServiceFetchService;
 use OCA\Integriq\Service\ServiceFetch\ServiceFetchServiceInterface;
 use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
 use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
+use OCA\Integriq\Service\Sms\SmsProviderRegistryInterface;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClient;
@@ -294,6 +298,9 @@ final class ServiceBindings {
 		IwmoIjwSyncServiceInterface::class => IwmoIjwSyncService::class,
 		StufZdsOutboundInterface::class => StufZdsOutbound::class,
 		SmsDispatchServiceInterface::class => SmsDispatchService::class,
+		NotifyNlEmailServiceInterface::class => NotifyNlEmailService::class,
+		SmsStatusCallbackServiceInterface::class => SmsStatusCallbackService::class,
+		SmsProviderRegistryInterface::class => SmsProviderRegistry::class,
 		StufProviderReceiverInterface::class => StufProviderReceiver::class,
 		DigitalPostServiceInterface::class => DigitalPostService::class,
 		ExchangeRejectionServiceInterface::class => ExchangeRejectionService::class,
@@ -437,6 +444,8 @@ final class ServiceBindings {
 		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
 		PhoneNumberNormaliserInterface::class => E164PhoneNumberNormaliser::class,
 		CloudEventEmitterInterface::class => EventService::class,
+		LookupAllowlistInterface::class => LookupAllowlist::class,
+		XmlEncoderInterface::class => ArrayToXml::class,
 	];
 	/**
 	 * Register the contract aliases on the app's registration context.

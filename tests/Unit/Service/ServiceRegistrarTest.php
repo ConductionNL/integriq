@@ -144,6 +144,8 @@ use OCA\Integriq\Service\FlowGraphMigrationService;
 use OCA\Integriq\Service\FlowGraphMigrationServiceInterface;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\FlowRunnerServiceInterface;
+use OCA\Integriq\Service\Format\ArrayToXml;
+use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Forms\FormsSyncAdapterInterface;
 use OCA\Integriq\Service\FscCallService;
@@ -174,6 +176,8 @@ use OCA\Integriq\Service\Kiss\CtiEventIntake;
 use OCA\Integriq\Service\Kiss\CtiEventIntakeInterface;
 use OCA\Integriq\Service\ListenerSchemaResolver;
 use OCA\Integriq\Service\ListenerSchemaResolverInterface;
+use OCA\Integriq\Service\LookupAllowlist;
+use OCA\Integriq\Service\LookupAllowlistInterface;
 use OCA\Integriq\Service\Lti\LtiAgsService;
 use OCA\Integriq\Service\Lti\LtiAgsServiceInterface;
 use OCA\Integriq\Service\Lti\LtiKeyService;
@@ -305,6 +309,12 @@ use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
 use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
 use OCA\Integriq\Service\SmsDispatchService;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
+use OCA\Integriq\Service\NotifyNlEmailService;
+use OCA\Integriq\Service\NotifyNlEmailServiceInterface;
+use OCA\Integriq\Service\SmsStatusCallbackService;
+use OCA\Integriq\Service\SmsStatusCallbackServiceInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
+use OCA\Integriq\Service\Sms\SmsProviderRegistryInterface;
 use OCA\Integriq\Service\SoftwareCatalogueService;
 use OCA\Integriq\Service\SoftwareCatalogueServiceInterface;
 use OCA\Integriq\Service\SourceDestructionService;
@@ -398,6 +408,9 @@ class ServiceRegistrarTest extends TestCase {
 		IwmoIjwSyncServiceInterface::class => IwmoIjwSyncService::class,
 		StufZdsOutboundInterface::class => StufZdsOutbound::class,
 		SmsDispatchServiceInterface::class => SmsDispatchService::class,
+		NotifyNlEmailServiceInterface::class => NotifyNlEmailService::class,
+		SmsStatusCallbackServiceInterface::class => SmsStatusCallbackService::class,
+		SmsProviderRegistryInterface::class => SmsProviderRegistry::class,
 		StufProviderReceiverInterface::class => StufProviderReceiver::class,
 		DigitalPostServiceInterface::class => DigitalPostService::class,
 		ExchangeRejectionServiceInterface::class => ExchangeRejectionService::class,
@@ -525,6 +538,8 @@ class ServiceRegistrarTest extends TestCase {
 		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
 		PhoneNumberNormaliserInterface::class => E164PhoneNumberNormaliser::class,
 		CloudEventEmitterInterface::class => EventService::class,
+		LookupAllowlistInterface::class => LookupAllowlist::class,
+		XmlEncoderInterface::class => ArrayToXml::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 

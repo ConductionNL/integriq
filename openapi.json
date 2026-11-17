@@ -96,6 +96,10 @@
             "description": "Describes the digital post bindings this instance carries"
         },
         {
+            "name": "sms-providers",
+            "description": "Describes the SMS bindings this instance carries"
+        },
+        {
             "name": "directory-sync",
             "description": "Admin-only REST surface for directory connections and their runs"
         },
@@ -154,6 +158,10 @@
         {
             "name": "expression-source",
             "description": "Reads and edits the environment allowlist, and lists the registered sources"
+        },
+        {
+            "name": "mapping-lookup",
+            "description": "The register schemas a mapping's lookup() may read."
         },
         {
             "name": "flows",
@@ -254,6 +262,10 @@
         {
             "name": "peppol",
             "description": "Peppol participant lookup + signed inbound receive webhook"
+        },
+        {
+            "name": "personal-data-settings",
+            "description": "Reads and sets the app setting `personal_data_fields`, admin only"
         },
         {
             "name": "product-subscriptions",
@@ -494,6 +506,81 @@
                         }
                     }
                 ]
+            }
+        },
+        "/admin/personal-data-fields": {
+            "get": {
+                "operationId": "personal-data-settings-get-config",
+                "summary": "The default personal data fields and the ones an administrator added",
+                "description": "The default personal data fields and the ones an administrator added. Their values are masked in logged bodies.",
+                "tags": [
+                    "personal-data-settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{defaults, added}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "personal-data-settings-set-config",
+                "summary": "Replace the added personal data field names",
+                "description": "Replace the added personal data field names; an empty list removes every addition. The default list always applies.",
+                "tags": [
+                    "personal-data-settings"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "fields": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`{defaults, added}`, or 400 naming a value that is not a field name.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    }
+                }
             }
         },
         "/admin/connection-alert-group": {
@@ -939,6 +1026,151 @@
                         }
                     }
                 ]
+            }
+        },
+        "/admin/mapping-lookups": {
+            "get": {
+                "operationId": "mapping-lookup-index",
+                "summary": "The schemas a mapping may look up in",
+                "description": "The schemas a mapping may look up in. Instance administrators only.",
+                "tags": [
+                    "mapping-lookup"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "mapping-lookup-add",
+                "summary": "Add a schema to the lookup allowlist",
+                "description": "Add a schema to the lookup allowlist. Instance administrators only.",
+                "tags": [
+                    "mapping-lookup"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "schema"
+                                ],
+                                "properties": {
+                                    "schema": {
+                                        "type": "string",
+                                        "description": "The schema, as register/schema."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/admin/mapping-lookups/{register}/{schema}": {
+            "delete": {
+                "operationId": "mapping-lookup-remove",
+                "summary": "Remove a schema from the lookup allowlist",
+                "description": "Remove a schema from the lookup allowlist. Instance administrators only.",
+                "tags": [
+                    "mapping-lookup"
+                ],
+                "parameters": [
+                    {
+                        "name": "register",
+                        "in": "path",
+                        "required": true,
+                        "description": "The register.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "schema",
+                        "in": "path",
+                        "required": true,
+                        "description": "The schema.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
             }
         },
         "/admin/open-formulieren-connection": {
@@ -2173,6 +2405,37 @@
                 "responses": {
                     "200": {
                         "description": "The provider descriptions.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/sms/providers": {
+            "get": {
+                "operationId": "sms-providers-providers",
+                "summary": "Every SMS binding on this instance, with its name and the configuration it needs",
+                "description": "Every SMS binding on this instance, with its name and the configuration it needs.",
+                "tags": [
+                    "sms-providers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{providers: [{providerId, name, configSchema}]}`.",
                         "headers": {
                             "API-Version": {
                                 "$ref": "#/components/headers/API-Version"
@@ -6004,6 +6267,46 @@
                 "responses": {
                     "200": {
                         "description": "The created `sms_message` record, a 400/502 error envelope, or 409 with \t *                      `error` set to the decision code when the opt-out list refused the send.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "502": {
+                        "$ref": "#/components/responses/Problem502"
+                    }
+                }
+            }
+        },
+        "/notifynl/emails": {
+            "post": {
+                "operationId": "notify-nl-send-email",
+                "summary": "Send one e-mail through NotifyNL",
+                "description": "Send one e-mail through NotifyNL, recorded in the outbound message log on channel notifynl with NotifyNL's id. Body: {to, templateId, personalisation, sourceApp, objectUri, category, caseRef, sourceSlug}. An address with no domain is refused 400 before anything is sent or recorded.",
+                "tags": [
+                    "notify-nl"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{id, reference, status}`: the outbound message, NotifyNL's id and `sent`.",
                         "headers": {
                             "API-Version": {
                                 "$ref": "#/components/headers/API-Version"
