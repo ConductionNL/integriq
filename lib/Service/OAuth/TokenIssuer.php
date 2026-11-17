@@ -35,6 +35,7 @@ use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
+use Exception;
 use RuntimeException;
 
 /**
@@ -225,12 +226,18 @@ class TokenIssuer {
 			return null;
 		}
 
-		$object = $this->objectService->find(
-			id: $clientId,
-			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
-			_rbac: false,
-			_multitenancy: false
-		);
+		try {
+			$object = $this->objectService->find(
+				id: $clientId,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Exception) {
+			// OpenRegister throws when no object has this id: an unknown client.
+			return null;
+		}
+
 		if (($object instanceof ObjectEntity) === false) {
 			return null;
 		}

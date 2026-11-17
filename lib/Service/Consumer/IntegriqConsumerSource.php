@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Consumer;
 
+use Exception;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\OAuth\IssuerKeyService;
 use OCA\Integriq\Service\OAuth\TokenIssuer;
@@ -169,12 +170,18 @@ class IntegriqConsumerSource implements ConsumerSource {
 			return null;
 		}
 
-		$object = $this->objectService->find(
-			id: $subject,
-			options: new ObjectFindOptions(register: 'integriq', schema: 'consumer'),
-			_rbac: false,
-			_multitenancy: false
-		);
+		try {
+			$object = $this->objectService->find(
+				id: $subject,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'consumer'),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Exception) {
+			// OpenRegister throws when no object has this id: not a known consumer.
+			return null;
+		}
+
 		if (($object instanceof ObjectEntity) === false) {
 			return null;
 		}

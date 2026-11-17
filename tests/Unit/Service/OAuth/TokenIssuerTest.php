@@ -148,7 +148,8 @@ final class TokenIssuerTest extends TestCase {
 		$this->objects = $this->createMock(ObjectService::class);
 		$this->objects->method('find')->willReturnCallback(function (string|int $id): ?ObjectEntity {
 			if (isset($this->consumers[$id]) === false) {
-				return null;
+				// As OpenRegister does: find() throws for an id no object has.
+				throw new \OCP\AppFramework\Db\DoesNotExistException(msg: 'Object not found');
 			}
 
 			$entity = $this->createMock(ObjectEntity::class);
@@ -245,6 +246,7 @@ final class TokenIssuerTest extends TestCase {
 		}
 
 		$this->assertNull($this->issuer->setClientSecret(consumerId: 'c-apikey'));
+		$this->assertNull(actual: $this->issuer->setClientSecret(consumerId: 'c-gone'));
 	}//end testRefusals()
 
 	/**
@@ -290,5 +292,8 @@ final class TokenIssuerTest extends TestCase {
 
 		$source->presentToken(header: ['alg' => 'RS256'], payload: ['iss' => 'https://cloud.example.nl/apps/integriq', 'sub' => 'c-apikey']);
 		$this->assertNull($source->findByIssuer(issuer: 'https://cloud.example.nl/apps/integriq'));
+
+		$source->presentToken(header: ['alg' => 'RS256'], payload: ['iss' => 'https://cloud.example.nl/apps/integriq', 'sub' => 'c-gone']);
+		$this->assertNull(actual: $source->findByIssuer(issuer: 'https://cloud.example.nl/apps/integriq'));
 	}//end testIntegriqAcceptsItsOwnToken()
 }//end class
