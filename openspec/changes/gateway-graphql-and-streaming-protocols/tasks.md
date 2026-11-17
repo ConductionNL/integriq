@@ -21,16 +21,20 @@ Kind: code. Size M. Rows `integriq:gw-graphql`, `integriq:gw-protocols`.
 - **files**: `lib/Service/Endpoint/GraphqlProxyHandler.php`, the call log page filters, the endpoint editor, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN calls of two operations WHEN the administrator filters the call log by operation name THEN only that operation's calls show
-- [ ] Implement
+- [x] Implement
+  - `operationLimits` on the endpoint (an operation name to `{requestsPerWindow, windowSeconds}`), counted per endpoint, operation and consumer (or client address) by `GraphqlOperationLimiter` with the limiter consumer rate limits use; past it a GraphQL error with 429 before the source is called. The Endpoint logs page has a GraphQL operation filter (options read from the logged operation names) and an Operation column; the endpoint editor shows the GraphQL fields for a graphql endpoint and the stream fields for a stream endpoint. Strings in `l10n/en.json`, `l10n/nl.json` and the browser catalogues. Seed: `graphql/example` (no source chosen, so it answers nothing) and `ws/meldingen`.
 - [ ] Test (PHPUnit; Playwright for the filter)
+  - PHPUnit done: `tests/Unit/Service/Endpoint/GraphqlOperationLimiterTest.php`. Playwright written, `tests/e2e/graphql-call-log.spec.ts` (filter through the address and through the control); left unticked until it has run against a live instance.
 
 ### Task 3: The connection authorization route and the stream endpoint type
 - **spec_ref**: `openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-web-server-or-broker-asks-integriq-who-may-connect-req-gqlp-002`
 - **files**: `lib/Controller/GatewayAuthorizeController.php`, `appinfo/routes.php`, `lib/Settings/integriq_register.json` (endpoint `stream` fields)
 - **acceptance_criteria**:
   - GIVEN a stream endpoint for websocket WHEN the server asks with a valid key THEN it gets 200 with the consumer uuid, and with a wrong server secret it gets 401
-- [ ] Implement
+- [x] Implement
+  - `GET|POST /api/gateway/authorize` (`GatewayAuthorizeController`, public, called by the server): GET for nginx `auth_request`, POST for a broker plugin. `GatewayConnectionAuthorizer` checks the server secret first (`GatewayServerSecret`: app config holds only a credential broker id, `gateway_authorize_credential`, and its organisation; nothing configured refuses every call), resolves the client's key or `Bearer` JWT to a consumer, finds the `stream` endpoint whose `streamProtocol` and `streamRoute` cover the path or MQTT topic (`StreamRouteMatcher`), checks `allowedConsumers` and `requiredScopes`, applies `connectionRateLimit`, writes one call log row with `protocol` and `connectionId`, and answers 200 with `X-Integriq-Consumer`, 401 or 429. Endpoint `stream` fields and call log fields in `lib/Settings/register.d/gateway-graphql-and-streaming-protocols.json`; the route in `openapi.json`.
 - [ ] Test (PHPUnit; Newman for the route)
+  - PHPUnit done: `StreamRouteMatcherTest`, `GatewayServerSecretTest`, `GatewayConnectionAuthorizerTest`, `GatewayAuthorizeControllerTest`. Newman written: folder 18 of `tests/postman/integriq.postman_collection.json` (the refusals that need no configured secret); left unticked until it has run.
 
 ### Task 4: Server and broker configurations, tested
 - **spec_ref**: `openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-websocket-grpc-and-mqtt-traffic-reaches-the-upstream-through-a-documented-server-req-gqlp-003`
@@ -38,6 +42,7 @@ Kind: code. Size M. Rows `integriq:gw-graphql`, `integriq:gw-protocols`.
 - **acceptance_criteria**:
   - GIVEN the nginx configuration WHEN a WebSocket client connects with and without a key THEN only the keyed client connects and the call log shows one connection
 - [ ] Implement
+  - Not built in this pass: the configurations are only worth shipping once walked against a real nginx and Mosquitto, which this build had no access to. The route they call is built (task 3).
 - [ ] Test (walked once against nginx and Mosquitto in the dev compose, result recorded in the PR)
 
 ## Verification
