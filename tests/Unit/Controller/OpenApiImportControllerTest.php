@@ -30,6 +30,7 @@ use OCA\Integriq\Service\OpenApi\OpenApiImportService;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -185,7 +186,8 @@ class OpenApiImportControllerTest extends TestCase {
 	public function testAnImportAnswers201(): void {
 		$saved = [];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (array $object, mixed $register = null, mixed $schema = null) use (&$saved): ObjectEntity {
+			function (array $object, ?ObjectSaveOptions $options = null) use (&$saved): ObjectEntity {
+				$schema = $options?->target->schema;
 				$saved[] = (string) $schema;
 				$entity = new ObjectEntity();
 				$entity->setUuid($schema.'-'.count($saved));

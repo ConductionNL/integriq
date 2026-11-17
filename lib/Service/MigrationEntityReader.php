@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Throwable;
@@ -98,10 +99,10 @@ final class MigrationEntityReader {
 		}
 
 		try {
+			// Unscoped: a migration reads the stored entity as the system.
 			$entity = $this->objectService->find(
 				id: $trimmed,
-				register: self::REGISTER,
-				schema: $schema,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: $schema),
 				_rbac: false,
 				_multitenancy: false
 			);

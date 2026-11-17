@@ -33,6 +33,7 @@ use OCA\Integriq\Service\OpenApi\OpenApiImportService;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Http\Client\IClient;
@@ -96,7 +97,8 @@ class OpenApiImportServiceTest extends TestCase {
 			}
 		);
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (array $object, mixed $register = null, mixed $schema = null): ObjectEntity {
+			function (array $object, ?ObjectSaveOptions $options = null): ObjectEntity {
+				$schema = $options?->target->schema;
 				$this->saved[] = [(string) $schema, $object];
 				$entity = new ObjectEntity();
 				$entity->setUuid($schema.'-uuid-'.count($this->saved));

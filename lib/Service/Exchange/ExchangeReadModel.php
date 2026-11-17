@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Exchange;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -116,8 +117,10 @@ class ExchangeReadModel implements ExchangeReadModelInterface {
 		try {
 			$job = $this->objectService->find(
 				id: $jobId,
-				register: ExchangeJobService::REGISTER,
-				schema: ExchangeJobService::SCHEMA_JOB,
+				options: new ObjectFindOptions(
+					register: ExchangeJobService::REGISTER,
+					schema: ExchangeJobService::SCHEMA_JOB
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -387,6 +390,7 @@ class ExchangeReadModel implements ExchangeReadModelInterface {
 		$matches = $this->objectService->findAll(
 			config: ['filters' => $filters, 'limit' => $limit, 'offset' => $offset],
 			_rbac: false,
+			// Unscoped: jobs are written without a session; the filters hold it to the owning app, ExchangeController authorises.
 			_multitenancy: false
 		);
 

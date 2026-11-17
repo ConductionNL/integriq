@@ -36,7 +36,7 @@ use OCA\Integriq\Service\MessageValidation\JsonSchemaChecker;
  *
  * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
  */
-class JsonRegistrationLeg implements RegistrationLeg {
+class JsonRegistrationLeg implements RegistrationLeg, RegistrationBodyCheck {
 
 	/**
 	 * The step name of the POST.
@@ -109,6 +109,22 @@ class JsonRegistrationLeg implements RegistrationLeg {
 
 		return ['externalReference' => $reference, 'externalUrl' => $url, 'steps' => $steps];
 	}//end register()
+
+	/**
+	 * Refuse a mapped body that does not match the target's JSON Schema, without posting it.
+	 *
+	 * @param array<string,mixed> $target The registration target.
+	 * @param array<string,mixed> $mapped The mapped body.
+	 *
+	 * @return void
+	 *
+	 * @throws RegistrationRefusal mapping-failed.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
+	 */
+	public function checkBody(array $target, array $mapped): void {
+		$this->checkSchema(schema: (((array)($target['json'] ?? []))['schema'] ?? null), mapped: $mapped);
+	}//end checkBody()
 
 	/**
 	 * The POST an earlier hand-over already made, if any.

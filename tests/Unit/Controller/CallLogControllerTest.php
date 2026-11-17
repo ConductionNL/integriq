@@ -55,7 +55,7 @@ class CallLogControllerTest extends TestCase {
 		);
 
 		$recorder = $this->createMock(CallRecorder::class);
-		$recorder->method('read')->willReturn($call);
+		$recorder->method('readInOrganisation')->willReturn($call);
 
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);

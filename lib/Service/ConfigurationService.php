@@ -1038,7 +1038,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * Collect the source, or the register and schema, one side of an endpoint or synchronization points at.
 	 *
 	 * @param array $ids  The ids collected so far, by kind.
-	 * @param array $side The side's `type` ('api' or 'register/schema') and `id` (a source id, or `{register}/{schema}`).
+	 * @param array $side The side's `type` ('api', 'a2a' or 'register/schema') and `id` (a source id, or `{register}/{schema}`).
 	 *
 	 * @return array The ids with the side's source, or register and schema, added.
 	 *
@@ -1047,7 +1047,8 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	private function collectSideExportIds(array $ids, array $side): array {
 		$type = $side['type'];
 		$id = $side['id'];
-		if ($type === 'api') {
+		// An `a2a` endpoint targets a source too (gateway-a2a-agent-card).
+		if ($type === 'api' || $type === 'a2a') {
 			$ids['source'][] = $id;
 		}
 

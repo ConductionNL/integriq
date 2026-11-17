@@ -35,6 +35,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * An unparsable start time and a resume continuation still persist one trace;
@@ -204,7 +205,9 @@ class ExecutionTraceServiceCoverageTest extends TestCase {
 		$this->objects->expects($this->exactly(2))
 			->method('find')
 			->willReturnCallback(
-				function (string $id, $register, $schema, $rbac = true, $multitenancy = true) use ($job): ObjectEntity {
+				function (string $id, ?ObjectFindOptions $options = null, bool $rbac = true, bool $multitenancy = true) use ($job): ObjectEntity {
+					$register = $options?->register;
+					$schema = $options?->schema;
 					if ($id === 'orig-1') {
 						return $this->original(entryPoint: 'job', entryPointId: 'job-1');
 					}

@@ -95,7 +95,7 @@ class ActivityOverviewBehaviourTest extends TestCase {
 
 	/**
 	 * The latest verzoeken of the integriq register are read once, newest
-	 * first, without RBAC or multitenancy.
+	 * first, without RBAC and within the caller's organisation.
 	 *
 	 * @return void
 	 */
@@ -112,7 +112,7 @@ class ActivityOverviewBehaviourTest extends TestCase {
 			$this->calls[0]['config']
 		);
 		$this->assertFalse($this->calls[0]['_rbac']);
-		$this->assertFalse($this->calls[0]['_multitenancy']);
+		$this->assertTrue($this->calls[0]['_multitenancy']);
 	}//end testTheVerzoekenAreReadOnceAsAnEngineRead()
 
 	/**

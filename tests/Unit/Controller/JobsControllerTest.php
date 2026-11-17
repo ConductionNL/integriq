@@ -35,6 +35,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Manual job run and test run: authentication, the action check, the lookup and the result codes.
@@ -202,7 +203,13 @@ class JobsControllerTest extends TestCase {
 	public function testUnknownJobIsNotFound(string $method, string $action): void {
 		$this->signIn();
 		$this->objects->expects($this->once())->method('find')
-			->with('job-9', 'integriq', 'job', false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'job-9',
+				'register' => 'integriq',
+				'schema' => 'job',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))
 			->willThrowException(new DoesNotExistException('no job'));
 		$this->jobs->expects($this->never())->method('executeJob');
 

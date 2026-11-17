@@ -29,6 +29,7 @@ use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\EndpointTargetResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use stdClass;
@@ -505,7 +506,12 @@ class OpenApiPublishService {
 		if (array_key_exists($sourceId, $this->sources) === false) {
 			$this->sources[$sourceId] = null;
 			try {
-				$source = $this->objects->find(id: $sourceId, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
+				$source = $this->objects->find(
+					id: $sourceId,
+					options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+					_rbac: false,
+					_multitenancy: false
+				);
 				if ($source instanceof ObjectEntity) {
 					$this->sources[$sourceId] = $source->getObject();
 				}

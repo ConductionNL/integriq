@@ -31,6 +31,7 @@ use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\OpenApi\OpenApiPublishService;
 use OCA\Integriq\Service\ProductPolicyService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
@@ -152,7 +153,12 @@ class GatewayOpenApiController extends Controller {
 	 */
 	private function productOf(string $id): ?ObjectEntity {
 		try {
-			$product = $this->objects->find(id: $id, register: 'integriq', schema: 'api_product', _rbac: false, _multitenancy: false);
+			$product = $this->objects->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'api_product'),
+				_rbac: false,
+				_multitenancy: false
+			);
 			if ($product instanceof ObjectEntity) {
 				return $product;
 			}

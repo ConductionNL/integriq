@@ -29,6 +29,7 @@ use OCA\Integriq\Service\EndpointTargetResolver;
 use OCA\Integriq\Service\OpenApi\OpenApiDocumentNormaliser;
 use OCA\Integriq\Service\OpenApi\OpenApiPublishService;
 use OCA\Integriq\Service\ProductPolicyService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -119,7 +120,8 @@ class GatewayOpenApiControllerTest extends TestCase {
 			}
 		);
 		$this->objects->method('find')->willReturnCallback(
-			function (mixed $id, mixed $register = null, mixed $schema = null): ObjectEntity {
+			function (mixed $id, ?ObjectFindOptions $options = null): ObjectEntity {
+				$schema = $options?->schema;
 				foreach (($this->rows[$schema] ?? []) as $row) {
 					if ($row['uuid'] === $id) {
 						return self::entity(row: $row);

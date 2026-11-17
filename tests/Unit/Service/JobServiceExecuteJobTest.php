@@ -33,6 +33,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Pins the job log, the job timeline and the trace that executeJob writes.
@@ -91,6 +92,7 @@ class JobServiceExecuteJobTest extends TestCase {
 		$this->objectService = ObjectServiceMockBuilder::make($this);
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$this->saved[$args[2]][] = $args[0];
 				return ObjectServiceMockBuilder::objectEntity($this, $args[0], 'saved-' . $args[2]);
 			}
