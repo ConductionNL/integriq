@@ -39,7 +39,7 @@ Kind: code. Matrix row `integriq:obs-otel`.
   - GIVEN an active trace WHEN CallService dispatches THEN the request carries `traceparent`
 - [x] Implement. `TraceParent`; `EndpointService::mintEndpointTrace()`; `CallService::withTraceParent()` on `call()` and `callAsync()`, the call step records the span id it sent.
 - [x] Test. `TraceContextPropagationTest` (inbound valid and invalid, outbound header and span id, own header left alone), `SpanMapperTest::testTraceParentAcceptsOnlyTheW3cShape`.
-- [ ] Newman for the inbound header (not run: needs a live instance; recipe in STATE "Still owed").
+- [x] Inbound header against a live instance (live pass 2026-11-17, as requests rather than a Newman item): an endpoint called with a valid `traceparent` stores its trace with `otelTraceId` and `parentSpanId` from the header; an invalid header stores a trace with neither. Traces were stored at all only after execution_trace's microsecond fields got bigint columns.
 
 ### Task 5: Admin settings
 - **spec_ref**: openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
