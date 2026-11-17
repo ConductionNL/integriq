@@ -51,6 +51,7 @@ use Psr\Container\ContainerInterface;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Verifies that the registered factories wire every seam (REQ-OAF-002..005).
@@ -529,6 +530,7 @@ class ObjectenWiringTest extends TestCase {
 		);
 		$service->method('saveObject')->willReturnCallback(
 			function (...$arguments): ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
 				$this->saved[] = [
 					'register' => $arguments[1],
 					'schema' => $arguments[2],

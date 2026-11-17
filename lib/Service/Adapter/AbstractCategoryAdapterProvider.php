@@ -139,6 +139,9 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
 	 * @param string $path Vendor-relative path (never a full URL — the broker host-locks).
 	 * @param array<string, string> $headers Optional extra request headers.
 	 * @param string|null $body Optional raw request body.
+	 * @param string|null $credentialId The credential to use instead of the configured one, for a
+	 *                                  setup screen that lets an administrator pick it; the broker's
+	 *                                  owner, allowed-app and host guards still decide.
 	 *
 	 * @return array{status: int, headers: array<string, mixed>, body: string}|null The
 	 *                                                                              upstream response, or null when no credential is configured yet
@@ -146,9 +149,15 @@ abstract class AbstractCategoryAdapterProvider extends AbstractIntegrationProvid
 	 *
 	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-1
 	 */
-	protected function brokeredRequest(string $method, string $path, array $headers = [], ?string $body = null): ?array {
-		$credentialId = $this->getCredentialId();
-		if ($credentialId === null) {
+	protected function brokeredRequest(
+		string $method,
+		string $path,
+		array $headers = [],
+		?string $body = null,
+		?string $credentialId = null,
+	): ?array {
+		$credentialId = ($credentialId ?? $this->getCredentialId());
+		if ($credentialId === null || $credentialId === '') {
 			return null;
 		}
 

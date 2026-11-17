@@ -29,6 +29,7 @@ use OCA\Integriq\Service\Payment\MolliePaymentProvider;
 use OCA\Integriq\Service\PaymentIntentService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
@@ -217,7 +218,7 @@ class PaymentIntentServiceReviewTest extends TestCase {
 		);
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('pi-9', 'integriq', 'payment_intent', false, false)
+			->with('pi-9', $this->equalTo(new ObjectFindOptions(register: 'integriq', schema: 'payment_intent')), false, false)
 			->willReturn($record);
 		$this->stubFindAll(source: $source, record: $record);
 

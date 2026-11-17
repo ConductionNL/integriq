@@ -116,4 +116,18 @@ interface PaymentIntentServiceInterface {
 	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	public function checkProvider(array $configuration): array;
+
+	/**
+	 * The point-of-sale terminals of a payment source.
+	 *
+	 * @param string $sourceSlug The payment source slug.
+	 *
+	 * @return list<array{terminalId: string, label: string, status: string}>|null The terminals, or null
+	 *                                                                              when no source has that slug.
+	 *
+	 * @throws PaymentProviderException When the provider errors.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function listTerminals(string $sourceSlug): ?array;
 }

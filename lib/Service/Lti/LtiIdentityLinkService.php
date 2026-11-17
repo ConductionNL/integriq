@@ -30,7 +30,9 @@ namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
 use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
@@ -166,6 +168,7 @@ class LtiIdentityLinkService {
 				],
 			],
 			_rbac: false,
+			// Unscoped: runs after a cryptographically validated launch, before any Nextcloud user is known.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -191,8 +194,7 @@ class LtiIdentityLinkService {
 		try {
 			$platform = $this->orObjectService->find(
 				id: $ltiPlatformId,
-				register: 'integriq',
-				schema: 'lti_platform',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'lti_platform'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -288,8 +290,7 @@ class LtiIdentityLinkService {
 		try {
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'lti_identity_link',
+				options: RegisterSave::options(register: 'integriq', schema: 'lti_identity_link'),
 				_rbac: false,
 				_multitenancy: false
 			);

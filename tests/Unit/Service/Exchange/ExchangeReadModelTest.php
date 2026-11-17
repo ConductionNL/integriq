@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * REQ-007 and REQ-008 scenarios.
@@ -88,6 +89,7 @@ class ExchangeReadModelTest extends TestCase {
 		);
 		$objects->method('find')->willReturnCallback(
 			function ($id, ...$rest): ObjectEntity {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				foreach ($this->rows['job'] ?? [] as $row) {
 					if ($row->getUuid() === $id) {
 						return $row;
@@ -232,4 +234,19 @@ class ExchangeReadModelTest extends TestCase {
 		);
 
 	}//end testEveryReadIsBoundedAndFiltered()
+	/**
+	 * A job with no log lines has no last log line, rather than an empty one.
+	 *
+	 * @return void
+	 */
+	public function testAJobWithoutLogLinesHasNoLastLog(): void {
+		$this->rows['job_log'] = [];
+
+		$job = $this->model->getJob('learniq', 'job-1');
+
+		$this->assertNotNull($job);
+		$this->assertArrayHasKey('lastLog', $job);
+		$this->assertNull($job['lastLog']);
+
+	}//end testAJobWithoutLogLinesHasNoLastLog()
 }//end class

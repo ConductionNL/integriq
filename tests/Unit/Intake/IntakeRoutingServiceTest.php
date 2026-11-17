@@ -26,6 +26,7 @@ use OCA\Integriq\Exception\IntakeRoutingException;
 use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
 use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
 use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
+use OCA\Integriq\Intake\HeldMessageFiles;
 use OCA\Integriq\Intake\InboundMessage;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Intake\IntakeChannelSourceResolver;
@@ -154,6 +155,7 @@ class IntakeRoutingServiceTest extends TestCase {
 			$this->eventDispatcher,
 			$this->schemaMapper,
 			$this->createMock(LoggerInterface::class),
+			$this->keptAsIs(),
 		);
 
 	}//end setUp()
@@ -654,7 +656,7 @@ class IntakeRoutingServiceTest extends TestCase {
 				'Integriq intake: a failed message could not be captured either.',
 				['channel' => 'messaging', 'reason' => 'register is read-only']
 			);
-		$service = new IntakeRoutingService($objectService, $this->eventDispatcher, $this->schemaMapper, $logger);
+		$service = new IntakeRoutingService($objectService, $this->eventDispatcher, $this->schemaMapper, $logger, $this->keptAsIs());
 		$message = $this->chat('kapot');
 
 		$result = $service->routeBatch([$message]);
@@ -745,5 +747,17 @@ class IntakeRoutingServiceTest extends TestCase {
 		$this->assertArrayNotHasKey('onderwerp', $payload);
 
 	}//end testAMappedSourceTheMessageLacksWritesNoField()
+
+	/**
+	 * A held-files double that keeps the payload as it is.
+	 *
+	 * @return HeldMessageFiles
+	 */
+	private function keptAsIs(): HeldMessageFiles {
+		$heldFiles = $this->createMock(HeldMessageFiles::class);
+		$heldFiles->method('keep')->willReturnArgument(2);
+
+		return $heldFiles;
+	}//end keptAsIs()
 
 }//end class

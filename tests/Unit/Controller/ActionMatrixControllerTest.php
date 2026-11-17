@@ -140,6 +140,27 @@ class ActionMatrixControllerTest extends TestCase {
 	}//end testGetMatrixWithNothingStoredListsTheSeed()
 
 	/**
+	 * Every seeded action comes with its label and its area for the screen.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+	 */
+	public function testGetMatrixGivesEachSeededActionALabelAndAnArea(): void {
+		$this->actionAuth->method('getMatrix')->willReturn([]);
+		$this->groupManager->method('search')->willReturn([]);
+
+		$data = $this->controller()->getMatrix()->getData();
+
+		$this->assertSame('Push through the StUF-ZKN bridge', $data['labels']['stuf-zkn.push']);
+		$this->assertSame('Adapters', $data['areas']['stuf-zkn.push']);
+		$this->assertSame('Send a text message', $data['labels']['sms.send']);
+		$this->assertSame('Notifications', $data['areas']['sms.send']);
+		$this->assertEqualsCanonicalizing($this->seedKeys(), array_keys($data['labels']));
+		$this->assertEqualsCanonicalizing($this->seedKeys(), array_keys($data['areas']));
+	}//end testGetMatrixGivesEachSeededActionALabelAndAnArea()
+
+	/**
 	 * The write stores the posted matrix and answers with the stored one.
 	 *
 	 * @return void
