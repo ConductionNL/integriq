@@ -159,7 +159,8 @@ class SharedApprovalTaskListener implements IEventListener {
 	 * @return void
 	 */
 	private function resolveMirror(Task $task, string $approvalRequestId): void {
-		$record = $this->approvalService->find(id: $approvalRequestId);
+		// System read: a task event resolves the request its mirror names, outside any user's organisation.
+		$record = $this->approvalService->find(id: $approvalRequestId, asSystem: true);
 		if ($this->isPendingOn(record: $record, task: $task) === true) {
 			$this->resolve(record: $record, task: $task);
 		}

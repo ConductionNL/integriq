@@ -34,6 +34,13 @@ interface WebhookProfilesInterface {
 	public const INTAKE_CHANNEL_PREFIX = 'intake-channel-';
 
 	/**
+	 * The consumer type prefix of a CloudEvents receiver; the source id follows.
+	 *
+	 * @var string
+	 */
+	public const CLOUDEVENTS_SOURCE_PREFIX = 'cloudevents-source-';
+
+	/**
 	 * The consumer types the controllers name. A string, so a controller needs no static call.
 	 *
 	 * @var string

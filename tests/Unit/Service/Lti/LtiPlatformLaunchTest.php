@@ -50,6 +50,8 @@ use OCP\IUserSession;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The platform launch runs the LTI 1.3 third-party-initiated login: the event
@@ -629,7 +631,9 @@ class LtiPlatformLaunchTest extends TestCase {
 			}
 		);
 		$objectService->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null): ?ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->assertSame('synchronization', $schema, 'a contract names a synchronization');
 				if (isset($this->synchronizations[(string)$id]) === false) {
 					return null;
@@ -764,7 +768,10 @@ class LtiPlatformLaunchTest extends TestCase {
 			fn ($id): ObjectEntity => $this->entity(uuid: (string)$id, data: $this->registrations[$id])
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->registrations[$uuid] = $object;
 				return $this->entity(uuid: (string)$uuid, data: $object);
 			}

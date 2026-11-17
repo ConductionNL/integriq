@@ -1,0 +1,15 @@
+{
+	"_comment": "ADR-037 register fragment: payment-settlement-lockdown (openspec/changes/messaging-payment-command-settlements-and-point-of-sale, task 3). A settlement lists every payment, refund and chargeback of a payout, so it is closed like payment_intent (99-payment-intent-lockdown.json): a NON-EMPTY block whose four rule lists are EMPTY denies to everyone except the `admin` group and the owner of an object. PaymentSettlementService reads and writes in system context (`_rbac: false`) from the daily background job, which has no session. `destroy` is deliberately not listed, for the reason 99-payment-intent-lockdown.json gives.",
+	"components": {
+		"schemas": {
+			"payment_settlement": {
+				"authorization": {
+					"create": [],
+					"read": [],
+					"update": [],
+					"delete": []
+				}
+			}
+		}
+	}
+}

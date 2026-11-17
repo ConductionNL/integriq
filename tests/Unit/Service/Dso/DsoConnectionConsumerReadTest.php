@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use stdClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * DsoConnection::findConsumers() and its raw re-read.
@@ -114,7 +115,10 @@ class DsoConnectionConsumerReadTest extends TestCase {
 	private function listing(array $listed, callable $answer, bool $wrap = true): void {
 		$this->objectService->method('findAll')->willReturn($wrap === true ? ['results' => $listed] : $listed);
 		$this->objectService->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true) use ($answer): ?ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) use ($answer): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
+				$_render = $options?->render ?? true;
 				$this->finds[] = ['id' => $id, 'register' => $register, 'schema' => $schema, '_rbac' => $_rbac, '_multitenancy' => $_multitenancy, '_render' => $_render];
 				return $answer((string)$id);
 			}

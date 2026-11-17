@@ -29,6 +29,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The dead-letter list's status, synchronization and time filters, the detail with its synchronization, and discarding.
@@ -131,6 +132,7 @@ final class SyncDeadLetterControllerDetailTest extends TestCase {
 	 */
 	public function testShowIncludesTheSynchronization(): void {
 		$this->objects->method('find')->willReturnCallback(function (...$args) {
+			$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 			if ($args[0] === 'dl-1') {
 				return ObjectServiceMockBuilder::objectEntity($this, ['id' => 'dl-1', 'synchronization' => 's-1'], 'dl-1');
 			}
@@ -151,6 +153,7 @@ final class SyncDeadLetterControllerDetailTest extends TestCase {
 	 */
 	public function testShowWithoutAKnownSynchronization(): void {
 		$this->objects->method('find')->willReturnCallback(function (...$args) {
+			$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 			return match ($args[0]) {
 				'dl-1' => ObjectServiceMockBuilder::objectEntity($this, ['synchronization' => ''], 'dl-1'),
 				'dl-2' => ObjectServiceMockBuilder::objectEntity($this, ['synchronization' => 's-gone'], 'dl-2'),

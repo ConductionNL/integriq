@@ -25,6 +25,7 @@ namespace OCA\Integriq\Tests\Unit\Outbound\Identity;
 use OCA\Integriq\Outbound\Identity\HoldQueue;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -75,10 +76,10 @@ class HoldQueueReviewTest extends TestCase {
 		parent::setUp();
 		$this->objectService = $this->createMock(ORObjectService::class);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, string $uuid): ObjectEntity {
-				$this->assertSame(MessageRecorder::REGISTER, $register);
-				$this->assertSame(MessageRecorder::SCHEMA, $schema);
-				$this->written[] = ['uuid' => $uuid, 'object' => $object];
+			function (array $object, ObjectSaveOptions $options): ObjectEntity {
+				$this->assertSame(MessageRecorder::REGISTER, $options->target->register);
+				$this->assertSame(MessageRecorder::SCHEMA, $options->target->schema);
+				$this->written[] = ['uuid' => $options->uuid, 'object' => $object];
 				return new ObjectEntity();
 			}
 		);

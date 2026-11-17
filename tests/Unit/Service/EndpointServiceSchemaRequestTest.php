@@ -416,7 +416,8 @@ class EndpointServiceSchemaRequestTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPutMissingMandatoryFieldsAnswersBadRequest(): void {
-		$this->mapper->expects($this->never())->method('updateFromArray');
+		$this->mapper->expects($this->never())->method('replaceFromArray');
+		$this->mapper->expects($this->never())->method('patchFromArray');
 
 		$response = $this->handle(['putPatchSemantics' => true], ['method' => 'PUT', 'parameters' => ['name' => 'n', 'kind' => null], 'path' => 'things/obj-1']);
 
@@ -434,8 +435,8 @@ class EndpointServiceSchemaRequestTest extends TestCase {
 		$updated = $this->entity(['id' => 'obj-1', 'name' => 'put']);
 		$this->mappingService->method('getMapping')->willReturn($this->createMock(\OCA\OpenRegister\Db\Mapping::class));
 		$this->mappingService->method('executeMapping')->willReturn(['mapped' => true]);
-		$this->mapper->expects($this->once())->method('updateFromArray')
-			->with('obj-1', ['name' => 'put', 'kind' => 'k'], true, false)
+		$this->mapper->expects($this->once())->method('replaceFromArray')
+			->with('obj-1', ['name' => 'put', 'kind' => 'k'])
 			->willReturn($updated);
 
 		$response = $this->handle(
@@ -455,7 +456,7 @@ class EndpointServiceSchemaRequestTest extends TestCase {
 	 */
 	public function testAPutWithoutSemanticsSkipsTheMandatoryCheck(): void {
 		$updated = $this->entity(['id' => 'obj-1']);
-		$this->mapper->expects($this->once())->method('updateFromArray')->with('obj-1', [], true, false)->willReturn($updated);
+		$this->mapper->expects($this->once())->method('replaceFromArray')->with('obj-1', [])->willReturn($updated);
 
 		$this->assertSame(200, $this->handle([], ['method' => 'PUT', 'path' => 'things/obj-1'])->getStatus());
 	}//end testAPutWithoutSemanticsSkipsTheMandatoryCheck()
@@ -467,7 +468,7 @@ class EndpointServiceSchemaRequestTest extends TestCase {
 	 */
 	public function testAPatchUpdatesAsAPatch(): void {
 		$updated = $this->entity(['id' => 'obj-1', 'name' => 'p']);
-		$this->mapper->expects($this->once())->method('updateFromArray')->with('obj-1', ['name' => 'p'], true, true)->willReturn($updated);
+		$this->mapper->expects($this->once())->method('patchFromArray')->with('obj-1', ['name' => 'p'])->willReturn($updated);
 
 		$response = $this->handle(['putPatchSemantics' => true], ['method' => 'PATCH', 'parameters' => ['name' => 'p'], 'path' => 'things/obj-1']);
 

@@ -44,6 +44,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * TC-11 — one bad sync item does not abort the pass.
@@ -84,7 +85,10 @@ class SynchronizationItemIsolationTest extends TestCase {
 	private function buildServiceReturningObjects(array $objectList): SynchronizationService {
 		$this->orObjectService = ObjectServiceMockBuilder::make($this);
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$entity = new ObjectEntity();
 				$entity->setUuid($uuid ?? 'saved-synchronization');
 				$entity->setObject(is_array($object) === true ? $object : []);

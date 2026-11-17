@@ -54,10 +54,12 @@ class WusProfileService implements SignedSoapProfileInterface {
 	 *
 	 * @param WsSecuritySigner $signer WS-Security X.509 signer/verifier.
 	 * @param PkiOverheidCredentialResolver $resolver PKIoverheid signing-material resolver (broker, fail-closed).
+	 * @param WsSecurityEncryptor $encryptor WS-Security body encryption for partners that demand it.
 	 */
 	public function __construct(
 		private readonly WsSecuritySigner $signer,
 		private readonly PkiOverheidCredentialResolver $resolver,
+		private readonly WsSecurityEncryptor $encryptor = new WsSecurityEncryptor(),
 	) {
 	}//end __construct()
 
@@ -114,6 +116,55 @@ class WusProfileService implements SignedSoapProfileInterface {
 
 		return $responseXml;
 	}//end verifyResponse()
+
+	/**
+	 * Build a signed WUS request whose Body is then encrypted for the partner.
+	 *
+	 * Signs first, then encrypts the Body content for the partner certificate
+	 * (XML Encryption, AES-256-GCM with an RSA-OAEP wrapped key), so the
+	 * partner decrypts before it verifies the signature.
+	 *
+	 * @param string $certificateRef        The broker credentialRef for the PKIoverheid certificate.
+	 * @param string $stufBodyXml           The StUF/ZGW message body XML.
+	 * @param string $partnerCertificatePem The partner's X.509 certificate (PEM) held on the source.
+	 *
+	 * @return string The signed and encrypted SOAP request envelope.
+	 *
+	 * @throws DigikoppelingException Fail-closed when signing material is unavailable, or signing or encryption fails.
+	 *
+	 * @spec openspec/changes/sources-ws-security-encryption/specs/digikoppeling-adapter/spec.md#requirement-a-soap-source-encrypts-its-body-and-decrypts-the-answer-req-wse-001
+	 */
+	public function buildSignedEncryptedRequest(string $certificateRef, string $stufBodyXml, string $partnerCertificatePem): string {
+		$signed = $this->buildSignedRequest(certificateRef: $certificateRef, stufBodyXml: $stufBodyXml);
+
+		return $this->encryptor->encrypt(soapEnvelopeXml: $signed, partnerCertificatePem: $partnerCertificatePem);
+	}//end buildSignedEncryptedRequest()
+
+	/**
+	 * Decrypt an encrypted WUS response with the organisation's key, then verify its signature.
+	 *
+	 * An answer that is not encrypted is verified as it is. One that cannot be
+	 * decrypted fails the call with the reason and is never passed on.
+	 *
+	 * @param string      $certificateRef         The broker credentialRef whose private key decrypts the answer.
+	 * @param string      $responseXml            The SOAP response envelope.
+	 * @param string|null $expectedCertificatePem Optional certificate to pin the responder to.
+	 *
+	 * @return string The decrypted, verified response XML.
+	 *
+	 * @throws DigikoppelingException When the key is unavailable, decryption fails, or the signature does not verify.
+	 *
+	 * @spec openspec/changes/sources-ws-security-encryption/specs/digikoppeling-adapter/spec.md#requirement-a-soap-source-encrypts-its-body-and-decrypts-the-answer-req-wse-001
+	 */
+	public function decryptAndVerifyResponse(string $certificateRef, string $responseXml, ?string $expectedCertificatePem = null): string {
+		$decrypted = $responseXml;
+		if ($this->encryptor->isEncrypted(soapEnvelopeXml: $responseXml) === true) {
+			$material = $this->resolver->resolveSigningMaterial(certificateRef: $certificateRef);
+			$decrypted = $this->encryptor->decrypt(soapEnvelopeXml: $responseXml, privateKeyPem: $material['privateKeyPem']);
+		}
+
+		return $this->verifyResponse(responseXml: $decrypted, expectedCertificatePem: $expectedCertificatePem);
+	}//end decryptAndVerifyResponse()
 
 	/**
 	 * Wrap a message body in a minimal SOAP 1.1 envelope.

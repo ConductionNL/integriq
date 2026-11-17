@@ -34,6 +34,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Sms\DeliveryResult;
@@ -41,7 +42,9 @@ use OCA\Integriq\Service\Sms\LogSmsProvider;
 use OCA\Integriq\Service\Sms\PhoneNumberValidator;
 use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
 use OCA\Integriq\Service\Sms\SmsProviderInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -95,6 +98,13 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	public const EVENT_TYPE_DELIVERY_STATUS = 'nl.conduction.sms.delivery.status';
 
 	/**
+	 * Every SMS binding by provider id.
+	 *
+	 * @var SmsProviderRegistry
+	 */
+	private readonly SmsProviderRegistry $providers;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService OR object service for source/message persistence.
@@ -105,6 +115,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
 	 * @param OutboundSendGateInterface $gate Asks the opt-out list, adds the unsubscribe text, keeps the log row.
+	 * @param SmsProviderRegistry|null $providers Every SMS binding by provider id; log and NotifyNL only when not given.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -115,7 +126,9 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
 		private readonly OutboundSendGateInterface $gate,
+		?SmsProviderRegistry $providers = null,
 	) {
+		$this->providers = ($providers ?? new SmsProviderRegistry(logProvider: $logProvider, notifyNl: $notifyNlProvider));
 
 	}//end __construct()
 
@@ -213,8 +226,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 				'detail' => $this->l->t('Message queued'),
 				'attempts' => [],
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$sent = $this->attemptSend(message: $message, provider: $provider, to: $e164, body: $body, options: $options);
@@ -266,9 +278,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
-				uuid: $message->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 			);
 
 			$this->emitDeliveryStatus(message: $saved);
@@ -281,9 +291,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
-				uuid: $message->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 			);
 
 			$this->logger->warning(
@@ -309,7 +317,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
 	 */
 	public function pollStatus(string $uuid): ObjectEntity {
-		$message = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
+		$message = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_MESSAGE));
 		if ($message instanceof ObjectEntity === false) {
 			throw new SmsProviderException(message: 'No sms_message found for uuid "' . $uuid . '".');
 		}
@@ -387,9 +395,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 		$this->emitDeliveryStatus(message: $saved);
@@ -399,19 +405,28 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	/**
 	 * Select the provider binding named by `configuration.provider` (default `log`).
 	 *
+	 * A value no binding answers to resolves to a binding that refuses every
+	 * call naming that value, so the message is stored `failed` instead of
+	 * reported sent through the log binding.
+	 *
 	 * @param array $configuration The SMS source's `configuration` object.
 	 *
 	 * @return SmsProviderInterface The resolved provider binding.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
 	 */
 	public function resolveProvider(array $configuration): SmsProviderInterface {
-		$provider = ($configuration['provider'] ?? $this->logProvider->getProviderId());
-		if ($provider === $this->notifyNlProvider->getProviderId()) {
-			return $this->notifyNlProvider;
+		$provider = ($configuration['provider'] ?? null);
+		if (is_scalar($provider) === true) {
+			$provider = (string)$provider;
 		}
 
-		return $this->logProvider;
+		if (is_string($provider) === false) {
+			$provider = null;
+		}
+
+		return $this->providers->resolve(providerId: $provider);
 	}//end resolveProvider()
 
 	/**

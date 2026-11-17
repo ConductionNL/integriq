@@ -68,9 +68,13 @@ class ActionMatrixController extends Controller {
 	 * the keys declared in the seed file, so the admin sees every declared
 	 * action even before any customization.
 	 *
-	 * @return JSONResponse The matrix, action keys, and group IDs.
+	 * The seed's `labels` and `areas` (action name to text) come with them, so
+	 * the screen can show one section per area and a label per action.
+	 *
+	 * @return JSONResponse The matrix, action keys, group IDs, labels and areas.
 	 *
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
+	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getMatrix(): JSONResponse {
@@ -90,11 +94,15 @@ class ActionMatrixController extends Controller {
 			$groups[] = $group->getGID();
 		}
 
+		$seed = $this->readSeed();
+
 		return new JSONResponse(
 			[
 				'matrix' => $matrix,
 				'actions' => $actionKeys,
 				'groups' => $groups,
+				'labels' => $this->seedTexts(seed: $seed, member: 'labels'),
+				'areas' => $this->seedTexts(seed: $seed, member: 'areas'),
 			]
 		);
 
@@ -135,6 +143,54 @@ class ActionMatrixController extends Controller {
 	 * @return array<int, string>
 	 */
 	private function seedActionKeys(): array {
+		$actions = ($this->readSeed()['actions'] ?? null);
+		if (is_array($actions) === false) {
+			return [];
+		}
+
+		$keys = [];
+		foreach (array_keys($actions) as $key) {
+			if (is_string($key) === true) {
+				$keys[] = $key;
+			}
+		}
+
+		return $keys;
+	}//end seedActionKeys()
+
+	/**
+	 * A seed member that maps action names to text, such as `labels` or `areas`.
+	 * Entries that are not text are left out.
+	 *
+	 * @param array<string, mixed> $seed   The decoded seed.
+	 * @param string               $member The member.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+	 */
+	private function seedTexts(array $seed, string $member): array {
+		$texts = ($seed[$member] ?? null);
+		if (is_array($texts) === false) {
+			return [];
+		}
+
+		$result = [];
+		foreach ($texts as $action => $text) {
+			if (is_string($action) === true && is_string($text) === true && $text !== '') {
+				$result[$action] = $text;
+			}
+		}
+
+		return $result;
+	}//end seedTexts()
+
+	/**
+	 * The decoded seed file; empty when it is missing or unreadable.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function readSeed(): array {
 		if (file_exists(self::SEED_PATH) === false) {
 			return [];
 		}
@@ -150,18 +206,10 @@ class ActionMatrixController extends Controller {
 			return [];
 		}
 
-		$actions = ($parsed['actions'] ?? null);
-		if (is_array($actions) === false) {
+		if (is_array($parsed) === false) {
 			return [];
 		}
 
-		$keys = [];
-		foreach (array_keys($actions) as $key) {
-			if (is_string($key) === true) {
-				$keys[] = $key;
-			}
-		}
-
-		return $keys;
-	}//end seedActionKeys()
+		return $parsed;
+	}//end readSeed()
 }//end class

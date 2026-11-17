@@ -61,7 +61,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Security;
 
 use LogicException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -232,10 +235,9 @@ class AuthenticationConfigRemover implements AuthenticationConfigRemoverInterfac
 
 			$this->objectService->saveObject(
 				object: $data,
-				register: InlineSecretMigrationPlanner::REGISTER,
-				schema: InlineSecretMigrationPlanner::SCHEMA,
-				uuid: $uuid,
+				options: $this->sourceSaveOptions(uuid: $uuid),
 				_rbac: false,
+				// Unscoped: a repair step removing legacy authentication config, run as the system.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
@@ -280,11 +282,13 @@ class AuthenticationConfigRemover implements AuthenticationConfigRemoverInterfac
 	private function readRawEntity(string $uuid): ?ObjectEntity {
 		$entity = $this->objectService->find(
 			id: $uuid,
-			register: InlineSecretMigrationPlanner::REGISTER,
-			schema: InlineSecretMigrationPlanner::SCHEMA,
+			options: new ObjectFindOptions(
+				register: InlineSecretMigrationPlanner::REGISTER,
+				schema: InlineSecretMigrationPlanner::SCHEMA,
+				render: false
+			),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 
 		if ($entity instanceof ObjectEntity === false) {
@@ -314,4 +318,16 @@ class AuthenticationConfigRemover implements AuthenticationConfigRemoverInterfac
 			'reason' => $reason,
 		];
 	}//end outcome()
+
+	/**
+	 * Where a cleared source is saved: its register, schema and uuid.
+	 *
+	 * @param string $uuid The source's uuid.
+	 *
+	 * @return ObjectSaveOptions
+	 */
+	private function sourceSaveOptions(string $uuid): ObjectSaveOptions {
+		return RegisterSave::options(register: InlineSecretMigrationPlanner::REGISTER, schema: InlineSecretMigrationPlanner::SCHEMA, uuid: $uuid);
+
+	}//end sourceSaveOptions()
 }//end class

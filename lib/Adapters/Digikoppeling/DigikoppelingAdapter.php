@@ -151,6 +151,18 @@ final class DigikoppelingAdapter extends CatalogueAdapter {
 			'certificateRef' => $this->certificateSetting(
 				description: 'Broker credentialRef for the PKIoverheid certificate + key. Never stored here (ADR-007).'
 			),
+			// WS-Security encryption of the SOAP body for the partner (sources-ws-security-encryption, REQ-WSE-001).
+			'encryption' => [
+				'type' => 'boolean',
+				'default' => false,
+				'title' => 'WS-Security encryption',
+				'description' => 'Encrypt the SOAP body for the partner certificate after signing, and decrypt encrypted answers with the organisation key.',
+			],
+			'partnerCertificate' => [
+				'type' => 'string',
+				'title' => 'Partner certificate',
+				'description' => 'The partner\'s public X.509 certificate (PEM) the SOAP body is encrypted for. Required when encryption is on.',
+			],
 			'reliableMessaging' => [
 				'type' => 'object',
 				'title' => 'Reliable messaging (ebMS2)',
