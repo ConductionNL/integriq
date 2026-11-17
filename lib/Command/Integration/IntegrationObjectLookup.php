@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Command\Integration;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Throwable;
 
@@ -80,10 +81,8 @@ class IntegrationObjectLookup {
 		try {
 			$found = $this->objectService->find(
 				id: $reference,
-				register: self::REGISTER,
-				schema: $schema,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: $schema),
 				_rbac: false,
-				// Unscoped: an occ command, run by the operator without a user session.
 				_multitenancy: false
 			);
 			if ($found instanceof ObjectEntity) {

@@ -28,6 +28,10 @@ use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\ObjectService;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 
 /**
  * Reads integriq's `consumer` schema objects for OpenRegister's AuthorizationService.
@@ -338,7 +342,12 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 * @return void
 	 */
 	private function writeLastUsed(string $uuid, int $index, mixed $credentialId, mixed $lastUsedAt): void {
-		$raw  = $this->objectService->find(id: $uuid, register: 'integriq', schema: 'consumer', _rbac: false, _multitenancy: false, _render: false);
+		$raw  = $this->objectService->find(
+			id: $uuid,
+			options: new ObjectFindOptions(register: 'integriq', schema: 'consumer', render: false),
+			_rbac: false,
+			_multitenancy: false
+		);
 		$data = $raw?->getObject();
 		if (is_array($data) === false || (($data[ConsumerCredentials::FIELD][$index]['id'] ?? null) !== $credentialId)) {
 			return;
@@ -347,12 +356,13 @@ class IntegriqConsumerSource implements ConsumerSource {
 		$data[ConsumerCredentials::FIELD][$index]['lastUsedAt'] = $lastUsedAt;
 		$this->objectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'consumer',
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'consumer'),
+				uuid: $uuid,
+				policy: new SavePolicy(silent: true)
+			),
 			_rbac: false,
-			_multitenancy: false,
-			silent: true
+			_multitenancy: false
 		);
 	}//end writeLastUsed()
 
@@ -383,6 +393,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 * @return ObjectEntity[]
 	 */
 	private function consumers(array $filters): array {
+		// Unscoped: OpenRegister's credential check resolves the calling consumer before any user is known.
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => array_merge(['register' => 'integriq', 'schema' => 'consumer'], $filters),

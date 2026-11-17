@@ -26,6 +26,9 @@ use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Hashes `authorizationConfiguration.apiKey` into a first `credentials` entry
@@ -295,7 +298,12 @@ class HashConsumerApiKeys implements IRepairStep {
 	 * @return array<string, mixed>|null
 	 */
 	private function rawData(object $objectService, string $uuid): ?array {
-		$entity = $objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA, _rbac: false, _multitenancy: false, _render: false);
+		$entity = $objectService->find(
+			id: $uuid,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA, render: false),
+			_rbac: false,
+			_multitenancy: false
+		);
 		if (is_object($entity) === false || method_exists($entity, 'getObject') === false) {
 			return null;
 		}
@@ -320,9 +328,7 @@ class HashConsumerApiKeys implements IRepairStep {
 	private function save(object $objectService, string $uuid, array $data): void {
 		$objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA), uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);

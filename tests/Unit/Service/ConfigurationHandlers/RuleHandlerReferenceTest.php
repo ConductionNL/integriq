@@ -24,6 +24,7 @@ use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Pins which configuration keys are translated in each direction, the
@@ -137,6 +138,7 @@ class RuleHandlerReferenceTest extends TestCase {
 		$objects = ObjectServiceMockBuilder::make($this);
 		$objects->method('saveObject')->willReturnCallback(
 			static function (...$args) use (&$saved): ObjectEntity {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$saved = $args['object'] ?? $args[0];
 				return new ObjectEntity();
 			}

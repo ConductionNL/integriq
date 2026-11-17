@@ -36,6 +36,7 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * POST /api/endpoints/{id}/cache/clear, gated by the ADR-023 action `endpoint.cache.clear`.
@@ -98,7 +99,7 @@ class EndpointResponseCacheController extends Controller {
 		try {
 			// The action decides who may clear; the endpoint schema is admin-only,
 			// so the read runs past RBAC but stays inside the caller's organisation.
-			$endpoint = $this->objects->find(id: $id, register: 'integriq', schema: 'endpoint', _rbac: false);
+			$endpoint = $this->objects->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'endpoint'), _rbac: false);
 		} catch (Throwable) {
 			$endpoint = null;
 		}

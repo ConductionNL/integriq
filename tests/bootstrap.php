@@ -170,6 +170,7 @@ foreach (['RegisterSlugResolution', 'RegisterSlugResolverInterface'] as $contrac
 // classes are defined regardless of lookup-cache state.
 if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 	$stubsDir = __DIR__ . '/stubs';
+	$autoloader->addPsr4('OCA\\OpenRegister\\', $stubsDir . '/OCA/OpenRegister/');
 	if (is_dir($stubsDir) === true) {
 		// Doctrine\DBAL stubs — required by OCP\DB\QueryBuilder\IQueryBuilder
 		// and OCP\DB\QueryBuilder\IExpressionBuilder which reference constants
@@ -235,6 +236,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
 		if (class_exists('OCA\\OpenRegister\\Event\\TaskTerminalEvent') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\RenderSelection') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/RenderSelection.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {

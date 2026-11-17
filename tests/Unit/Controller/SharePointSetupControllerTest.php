@@ -22,6 +22,8 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\SharePointSetupController;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
+use OCA\Integriq\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -87,7 +89,13 @@ class SharePointSetupControllerTest extends TestCase {
 			static fn (string $key, mixed $default = null): mixed => ($query[$key] ?? $default)
 		);
 
-		return new SharePointSetupController(request: $request, adapter: $adapter);
+		return new SharePointSetupController(
+			request: $request,
+			adapter: $adapter,
+			set: new SharePointPublicationSet(),
+			configuration: $this->createMock(ConfigurationServiceInterface::class),
+			logger: $this->createMock(LoggerInterface::class)
+		);
 	}//end controller()
 
 	/**

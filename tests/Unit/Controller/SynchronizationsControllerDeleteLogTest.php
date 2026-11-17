@@ -31,6 +31,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * `DELETE /api/synchronizations/logs/{id}` — the wire contract.
@@ -112,7 +113,8 @@ class SynchronizationsControllerDeleteLogTest extends TestCase {
 		$this->orObjectService->expects($this->once())
 			->method('deleteObject')
 			->willReturnCallback(
-				function (string $uuid) use (&$deleted): bool {
+				function (ObjectDeletion $deletion) use (&$deleted): bool {
+					$uuid = $deletion->uuid;
 					$deleted = $uuid;
 					return true;
 				}

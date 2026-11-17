@@ -21,6 +21,8 @@ use OCP\IAppConfig;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Two keys at once, an expired key, the throttled last used write, and the
@@ -191,14 +193,21 @@ final class IntegriqConsumerSourceCredentialsTest extends TestCase {
 			}
 		);
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true) use ($entity, $rawOverride): ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) use ($entity, $rawOverride): ObjectEntity {
+				$register = $options?->register;
+				$schema   = $options?->schema;
+				$_render  = ($options?->render ?? true);
 				$this->assertFalse($_render);
 				$this->assertSame(['integriq', 'consumer'], [$register, $schema]);
 				return $entity((string)$id, ($rawOverride ?? $this->stored[$id]));
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$register = $options->target->register;
+				$schema   = $options->target->schema;
+				$uuid     = $options->uuid;
+				$silent   = $options->policy->silent;
 				if ($this->saveFails === true) {
 					throw new RuntimeException('database down');
 				}

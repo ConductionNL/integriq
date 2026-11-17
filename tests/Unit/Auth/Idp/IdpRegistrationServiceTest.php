@@ -38,6 +38,7 @@ use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\Integriq\Auth\Idp\IdpRegistrationService
@@ -162,7 +163,10 @@ class IdpRegistrationServiceTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array $object, mixed $register = null, mixed $schema = null, mixed $uuid = null): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = $object;
 				return $this->object((string)($uuid ?? 'new-uuid'), $object);
 			}
@@ -404,4 +408,50 @@ class IdpRegistrationServiceTest extends TestCase {
 		$this->expectException(IdpAssertionException::class);
 		$registry->forRegistration(organisation: 'gemeente-x', provider: 'facebook');
 	}//end testTheRegistryWithoutRegistrations()
+	/**
+	 * A string map drops values that are not scalars and is empty for a non-object;
+	 * a credentials property that is not an object reads as no credential.
+	 *
+	 * @return void
+	 */
+	public function testAStringMapKeepsScalarsOnly(): void {
+		$registration = new IdpRegistration(
+			id: 'reg-3',
+			data: [
+				'assuranceMapping' => ['urn:a' => 'substantieel', 'urn:b' => ['hoog'], 7 => 3, 'urn:c' => null, 'urn:d' => true],
+				'attributes' => 'urn:a=substantieel',
+				'credentials' => ['signing' => ['cred-1'], 'salt' => ' cred-salt '],
+			]
+		);
+
+		$this->assertSame(['urn:a' => 'substantieel', '7' => '3', 'urn:d' => '1'], $registration->stringMap(key: 'assuranceMapping'));
+		$this->assertSame([], $registration->stringMap(key: 'attributes'));
+		$this->assertSame([], $registration->stringMap(key: 'absent'));
+		$this->assertSame('', $registration->credential(role: 'signing'));
+		$this->assertSame('cred-salt', $registration->credential(role: 'salt'));
+		$this->assertSame('', (new IdpRegistration(id: 'reg-4', data: ['credentials' => 'cred-1']))->credential(role: 'salt'));
+	}//end testAStringMapKeepsScalarsOnly()
+
+
+	/**
+	 * A search hit that is not an OpenRegister object is skipped, the real one kept.
+	 *
+	 * @return void
+	 */
+	public function testAHitThatIsNotAnObjectIsSkipped(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->expects($this->once())->method('findAll')->willReturn([self::oidc(), 'reg-x', $this->object('reg-1', self::oidc())]);
+
+		$service = new IdpRegistrationService(
+			$objects,
+			$this->createMock(IdpSecretSeam::class),
+			$this->createMock(IdpBrokerConfigInterface::class),
+			$this->createMock(IAppManager::class)
+		);
+
+		$found = $service->findAll(organisation: 'gemeente-x', provider: 'digid');
+		$this->assertCount(1, $found);
+		$this->assertSame('reg-1', $found[0]->id);
+	}//end testAHitThatIsNotAnObjectIsSkipped()
+
 }//end class

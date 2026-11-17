@@ -28,6 +28,8 @@ use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\Integriq\Controller\ConsumerCredentialsController
@@ -242,7 +244,10 @@ final class ConsumerCredentialsControllerTest extends TestCase {
 
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true): ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$register = $options?->register;
+				$schema   = $options?->schema;
+				$_render  = ($options?->render ?? true);
 				$this->assertSame(['integriq', 'consumer', false, false], [$register, $schema, $_rbac, $_render]);
 				if (isset($this->stored[$id]) === false) {
 					throw new DoesNotExistException('no');
@@ -254,7 +259,10 @@ final class ConsumerCredentialsControllerTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$register = $options->target->register;
+				$schema   = $options->target->schema;
+				$uuid     = $options->uuid;
 				if ($this->saveFails === true) {
 					throw new RuntimeException('down');
 				}

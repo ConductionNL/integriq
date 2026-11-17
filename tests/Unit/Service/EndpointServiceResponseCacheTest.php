@@ -60,6 +60,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The response cache on the source request path of EndpointService.
@@ -132,7 +133,8 @@ class EndpointServiceResponseCacheTest extends TestCase {
 		$this->objects = ObjectServiceMockBuilder::make($this);
 		$this->objects->method('find')->willReturn($source);
 		$this->objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null) use ($source): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use ($source): ObjectEntity {
+				$schema = $options->target->schema;
 				$this->logs[] = ['schema' => $schema, 'object' => $object];
 				return $source;
 			}

@@ -37,6 +37,9 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * A consumer's credentials: the list without hashes, a generated key shown
@@ -399,11 +402,9 @@ class ConsumerCredentialsController extends Controller {
 		try {
 			$consumer = $this->objectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'consumer',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'consumer', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (DoesNotExistException) {
 			return null;
@@ -428,9 +429,7 @@ class ConsumerCredentialsController extends Controller {
 		try {
 			$this->objectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'consumer',
-				uuid: $consumer->getUuid(),
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'consumer'), uuid: $consumer->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);

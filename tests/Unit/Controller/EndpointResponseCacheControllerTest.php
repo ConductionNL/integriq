@@ -39,6 +39,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Who may clear an endpoint's cache, and what is cleared.
@@ -147,7 +148,7 @@ class EndpointResponseCacheControllerTest extends TestCase {
 	 */
 	public function testAPermittedClearEmptiesThatEndpointsCache(): void {
 		$this->objects->expects($this->once())->method('find')
-			->with('endpoint-slug', 'integriq', 'endpoint', false)
+			->with('endpoint-slug', new ObjectFindOptions(register: 'integriq', schema: 'endpoint'), false)
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Adressen'], 'endpoint-uuid'));
 		$this->cache->expects($this->once())->method('clear')->with('endpoint-uuid');
 

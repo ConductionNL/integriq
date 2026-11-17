@@ -24,6 +24,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Hash first, then null the plaintext; a failure halfway keeps the consumer working.
@@ -176,7 +178,10 @@ final class HashConsumerApiKeysTest extends TestCase {
 			}
 		);
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true): ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$register = $options?->register;
+				$schema   = $options?->schema;
+				$_render  = ($options?->render ?? true);
 				$this->assertFalse($_render);
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)$id);
@@ -185,7 +190,10 @@ final class HashConsumerApiKeysTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$register = $options->target->register;
+				$schema   = $options->target->schema;
+				$uuid     = $options->uuid;
 				$this->saveCount++;
 				if ($this->saveCount === $this->failingSave) {
 					throw new RuntimeException('database down');

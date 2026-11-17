@@ -34,6 +34,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\CallEventNotFoundException;
 use OCA\Integriq\Exception\KissProviderException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Kiss\CallEventLog;
 use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
 use OCA\Integriq\Service\Kiss\KlantinteractiesProviderInterface;
@@ -245,9 +246,7 @@ class KissSyncService implements KissSyncServiceInterface {
 
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_SOURCE,
-				uuid: $source->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_SOURCE, uuid: $source->getUuid())
 			);
 		}
 
@@ -601,16 +600,13 @@ class KissSyncService implements KissSyncServiceInterface {
 		if ($existing !== null) {
 			return $this->objectService->saveObject(
 				object: $record,
-				register: self::REGISTER,
-				schema: self::SCHEMA_KLANTCONTACT,
-				uuid: $existing->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_KLANTCONTACT, uuid: $existing->getUuid())
 			);
 		}
 
 		return $this->objectService->saveObject(
 			object: $record,
-			register: self::REGISTER,
-			schema: self::SCHEMA_KLANTCONTACT
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_KLANTCONTACT)
 		);
 
 	}//end upsertKlantcontact()
