@@ -10,8 +10,11 @@ Kind: code. Size M. Rows `integriq:gw-graphql`, `integriq:gw-protocols`.
 - **acceptance_criteria**:
   - GIVEN an allowlist of two operations WHEN a consumer sends a third THEN it gets 403 with a GraphQL error and the source is not called
   - GIVEN maxDepth 8 WHEN a query nests 12 deep THEN it is refused before the source
-- [ ] Implement
-- [ ] Test (PHPUnit with fixture queries including aliases and fragments)
+- [x] Implement
+  - `GraphqlProxyHandler` (allowlist, `maxDepth`, introspection for administrators unless `introspection` is on, GET carries queries only, batches refused) over `GraphqlDocumentReader`, a lexer and parser of the executable grammar that reads the operation, its depth with fragments expanded and its root fields. `EndpointService` proxies a `graphql` endpoint like an `api` one after the check, and writes `graphqlOperationType` and `graphqlOperationName` onto the stored call log. Fields in `lib/Settings/register.d/gateway-graphql-and-streaming-protocols.json`.
+  - Not `webonyx/graphql-php`: adding a dependency needs a `composer.lock` update, which this build may not commit. The reader parses (no pattern over the text, as D1 asks) and refuses what it cannot read; swapping in webonyx later changes only `GraphqlDocumentReader`.
+- [x] Test (PHPUnit with fixture queries including aliases and fragments)
+  - `tests/Unit/Service/Endpoint/GraphqlDocumentReaderTest.php`, `GraphqlProxyHandlerTest.php`.
 
 ### Task 2: Operation logging and per-operation limits
 - **spec_ref**: `openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001`

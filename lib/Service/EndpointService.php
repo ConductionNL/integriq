@@ -34,6 +34,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
@@ -47,6 +48,8 @@ use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
 use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
+use OCA\Integriq\Service\Endpoint\GraphqlOperation;
+use OCA\Integriq\Service\Endpoint\GraphqlProxyHandler;
 use OCA\Integriq\Service\Endpoint\UpstreamRequest;
 use OCA\Integriq\Service\Endpoint\UpstreamRouter;
 use OCA\Integriq\Service\Endpoint\UpstreamSelector;
@@ -72,9 +75,11 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IRequestId;
 use OCP\IURLGenerator;
+use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -942,9 +947,10 @@ class EndpointService implements EndpointServiceInterface {
 	 * @return bool True when the endpoint proxies to a source.
 	 *
 	 * @spec openspec/changes/gateway-a2a-agent-card/specs/endpoint-runtime/spec.md#requirement-an-a2a-agents-card-points-at-the-gateway-req-a2a-001
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
 	 */
 	private function isSourceTarget(string $targetType): bool {
-		return ($targetType === 'api' || $targetType === A2aAgentCardRewriter::TARGET_TYPE);
+		return in_array($targetType, ['api', A2aAgentCardRewriter::TARGET_TYPE, GraphqlProxyHandler::TARGET_TYPE], true);
 	}//end isSourceTarget()
 
 	/**
@@ -2659,6 +2665,23 @@ class EndpointService implements EndpointServiceInterface {
 		$headers = $this->getHeaders(server: $_SERVER);
 		$rawBody = $this->getRawContent();
 
+		// A graphql endpoint reads the operation and refuses it here, before
+		// any source is loaded or called (gateway-graphql-and-streaming-protocols REQ-GQLP-001).
+		$graphql = null;
+		if (($endpointData['targetType'] ?? '') === GraphqlProxyHandler::TARGET_TYPE) {
+			$graphql = (new GraphqlProxyHandler())->check(
+				endpointData: $endpointData,
+				method: $request->getMethod(),
+				parameters: $request->getParams(),
+				rawBody: $rawBody,
+				contentType: (string)$request->getHeader('Content-Type'),
+				isAdmin: $this->callerIsAdmin()
+			);
+			if ($graphql instanceof JSONResponse === true) {
+				return $graphql;
+			}
+		}
+
 		// Fetch the source entity by targetId.
 		//
 		// System context (ocon#147): the `source` schema is admin-only now. An Endpoint is
@@ -2752,6 +2775,9 @@ class EndpointService implements EndpointServiceInterface {
 		}//end if
 
 		$callLogData = $callLog->getObject();
+		if ($graphql instanceof GraphqlOperation === true) {
+			$this->recordGraphqlOperation(callLog: $callLog, operation: $graphql);
+		}
 
 		// REQ-MSV-002: the proxied answer is checked against the endpoint's
 		// answer schema. Mode refuse answers 502, the fault being upstream.
@@ -2782,6 +2808,72 @@ class EndpointService implements EndpointServiceInterface {
 
 		return new JSONResponse($answer, $callLogData['statusCode'] ?? 200);
 	}//end handleSourceRequest()
+
+	/**
+	 * Whether the signed-in caller is an administrator, who may introspect a graphql endpoint.
+	 *
+	 * @return bool True for an administrator; false for a consumer or when it cannot be told.
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function callerIsAdmin(): bool {
+		try {
+			$user = $this->containerInterface->get(IUserSession::class)->getUser();
+			return $user !== null && $this->containerInterface->get(IGroupManager::class)->isAdmin($user->getUID()) === true;
+		} catch (\Throwable) {
+			return false;
+		}
+	}//end callerIsAdmin()
+
+	/**
+	 * Write the operation of a proxied GraphQL call onto its stored call log.
+	 *
+	 * Adds the two fields to the row the call stored, after its body capture
+	 * and redaction, in system context; a failed write is logged and never
+	 * changes the answer.
+	 *
+	 * @param ObjectEntity     $callLog   The call's log entry.
+	 * @param GraphqlOperation $operation The operation it ran.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function recordGraphqlOperation(ObjectEntity $callLog, GraphqlOperation $operation): void {
+		$uuid = (string)$callLog->getUuid();
+		if ($uuid === '') {
+			return;
+		}
+
+		try {
+			// System context: the call log is admin-only, and the gateway caller may be anonymous.
+			$stored = $this->orObjectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'call_log'),
+				_rbac: false,
+				_multitenancy: false
+			);
+			if ($stored === null) {
+				return;
+			}
+
+			$this->orObjectService->saveObject(
+				object: array_merge(
+					$stored->getObject(),
+					['graphqlOperationType' => $operation->type, 'graphqlOperationName' => ($operation->name ?? '')]
+				),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+					uuid: $uuid,
+					policy: new SavePolicy(silent: true, validation: false)
+				),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning('integriq: could not record the GraphQL operation on call log ' . $uuid . ': ' . $e->getMessage());
+		}//end try
+	}//end recordGraphqlOperation()
 
 	/**
 	 * Point an A2A agent card at the gateway when the call asked for one.
