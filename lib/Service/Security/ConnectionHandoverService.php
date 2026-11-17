@@ -31,7 +31,11 @@ namespace OCA\Integriq\Service\Security;
 
 use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -111,6 +115,20 @@ class ConnectionHandoverService {
 	 * @var string
 	 */
 	private const SCHEMA = 'source';
+
+	/**
+	 * The register the credential broker keeps its credential objects in.
+	 *
+	 * @var string
+	 */
+	private const BROKER_REGISTER = 'credential-broker';
+
+	/**
+	 * The schema of a brokered credential object.
+	 *
+	 * @var string
+	 */
+	private const BROKER_SCHEMA = 'brokeredcredential';
 
 	/**
 	 * References minted and verified in this run, by part, waiting for the save.
@@ -385,6 +403,21 @@ class ConnectionHandoverService {
 	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function mintCredential(object $broker, array $mint): string {
+		if (self::hasValueMint(broker: $broker) === true) {
+			// OpenRegister main: the mint takes the credential and its options as value objects.
+			$credential = $broker->mintCredential(
+				new CredentialMint(name: $mint['label'], provider: $mint['provider'], owner: $mint['owner']),
+				new CredentialMintOptions(
+					allowedApps: [InlineSecretMigrationExecutor::APP_ID],
+					secret: $mint['secret'],
+					scope: InlineSecretMigrationExecutor::SCOPE_ORGANISATION,
+					organisation: $mint['organisation']
+				)
+			);
+
+			return self::credentialIdOf(credential: $credential);
+		}
+
 		// Positional: the broker is a duck-typed cross-app class.
 		$credential = $broker->mint(
 			$mint['label'],
@@ -399,6 +432,22 @@ class ConnectionHandoverService {
 		return self::credentialIdOf(credential: $credential);
 
 	}//end mintCredential()
+
+	/**
+	 * Whether the broker mints through OpenRegister main's value-object API.
+	 *
+	 * @param object $broker The credential broker.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private static function hasValueMint(object $broker): bool {
+		return method_exists($broker, 'mintCredential') === true
+			&& class_exists(CredentialMint::class) === true
+			&& class_exists(CredentialMintOptions::class) === true;
+
+	}//end hasValueMint()
 
 	/**
 	 * The uuid of a minted credential, or '' when the broker returned no entity.
@@ -458,11 +507,60 @@ class ConnectionHandoverService {
 			foreach ($pending as $part) {
 				$answer[$part] = self::FAILED;
 			}
+
+			// The source holds no reference to what was minted for it, so the
+			// credentials go too: none stays behind in keepiq unreferenced.
+			$this->revokeMinted(data: $data, pending: $pending);
 		}
 
 		return $answer;
 
 	}//end save()
+
+	/**
+	 * Remove the credentials minted for the pending secret parts of a save that failed.
+	 *
+	 * Best effort: a removal that fails is logged without any secret, and the
+	 * credential is then unreferenced and never resolved for this source.
+	 *
+	 * @param array<string, mixed> $data    The filled source data, holding the references.
+	 * @param list<string>         $pending The parts written into $data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private function revokeMinted(array $data, array $pending): void {
+		foreach ($pending as $part) {
+			if (isset(self::SECRET_PARTS[$part]) === false) {
+				continue;
+			}
+
+			$reference    = $this->paths->get(data: $data, path: self::SECRET_PARTS[$part][0]);
+			$credentialId = '';
+			if (is_array($reference) === true && is_array($reference['credentialRef'] ?? null) === true) {
+				$credentialId = (string)($reference['credentialRef']['credentialId'] ?? '');
+			}
+
+			if ($credentialId === '') {
+				continue;
+			}
+
+			try {
+				$this->objectService->deleteObject(
+					deletion: new ObjectDeletion(
+						uuid: $credentialId,
+						target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+					),
+					_rbac: false,
+					_multitenancy: false
+				);
+			} catch (Throwable $e) {
+				$this->logFailure(step: 'revoke', part: $part, e: $e);
+			}
+		}
+
+	}//end revokeMinted()
 
 	/**
 	 * The source with the given slug, read raw so secrets already set are visible.
@@ -494,7 +592,11 @@ class ConnectionHandoverService {
 	}//end findSource()
 
 	/**
-	 * The first found item that is the source with this slug, read raw when possible.
+	 * The first found item that is the source with this slug, read raw.
+	 *
+	 * Only the raw read is used: the rendered item hides write-only fields, so
+	 * filling and saving it could replace a secret the source already holds.
+	 * When the raw read fails the source is treated as not found.
 	 *
 	 * @param iterable<mixed> $items The found items.
 	 * @param string          $slug  The slug.
@@ -506,7 +608,7 @@ class ConnectionHandoverService {
 	private function firstWithSlug(iterable $items, string $slug): ?ObjectEntity {
 		foreach ($items as $item) {
 			if (self::isSourceWithSlug(item: $item, slug: $slug) === true) {
-				return $this->readRaw(uuid: (string)$item->getUuid()) ?? $item;
+				return $this->readRaw(uuid: (string)$item->getUuid());
 			}
 		}
 
@@ -582,7 +684,7 @@ class ConnectionHandoverService {
 	}//end broker()
 
 	/**
-	 * Whether a container entry is an object offering mint and resolveInjectable.
+	 * Whether a container entry is an object offering a mint (mint or mintCredential) and resolveInjectable.
 	 *
 	 * @param mixed $broker The container entry.
 	 *
@@ -592,7 +694,7 @@ class ConnectionHandoverService {
 	 */
 	private static function canMintAndVerify(mixed $broker): bool {
 		return is_object($broker) === true
-			&& method_exists($broker, 'mint') === true
+			&& (method_exists($broker, 'mint') === true || self::hasValueMint(broker: $broker) === true)
 			&& method_exists($broker, 'resolveInjectable') === true;
 
 	}//end canMintAndVerify()

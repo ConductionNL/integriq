@@ -26,6 +26,8 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
 use OCA\Integriq\Service\Security\NestedValuePath;
 use OCA\Integriq\Tests\Helpers\MigrationSimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -135,6 +137,72 @@ class HandoverBrokerDouble {
 }//end class
 
 /**
+ * A credential broker as OpenRegister main ships it: mintCredential with value objects, no mint().
+ */
+class HandoverValueMintBrokerDouble {
+
+	/**
+	 * Secrets by credential id.
+	 *
+	 * @var array<string, string>
+	 */
+	public array $store = [];
+
+	/**
+	 * Every mint, without its secret.
+	 *
+	 * @var list<array<string, mixed>>
+	 */
+	public array $mints = [];
+
+	/**
+	 * Mint a credential.
+	 *
+	 * @param CredentialMint        $mint    The credential.
+	 * @param CredentialMintOptions $options The options and secret.
+	 *
+	 * @return ObjectEntity
+	 */
+	public function mintCredential(CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
+		$id = 'vcred-' . (count($this->store) + 1);
+		$this->store[$id] = (string)$options->secret();
+		$this->mints[] = [
+			'name' => $mint->name,
+			'provider' => $mint->provider,
+			'owner' => $mint->owner,
+			'apps' => $options->allowedApps,
+			'scope' => $options->scope,
+			'organisation' => $options->organisation,
+		];
+		$entity = new ObjectEntity();
+		$entity->setUuid($id);
+
+		return $entity;
+
+	}//end mintCredential()
+
+	/**
+	 * Resolve a credential.
+	 *
+	 * @param string      $credentialId         The credential id.
+	 * @param string      $appId                The app id.
+	 * @param string|null $actingUserId         The acting user.
+	 * @param string|null $actingOrganisationId The acting organisation.
+	 *
+	 * @return string|null
+	 */
+	public function resolveInjectable(
+		string $credentialId,
+		string $appId,
+		?string $actingUserId = null,
+		?string $actingOrganisationId = null,
+	): ?string {
+		return ($this->store[$credentialId] ?? null);
+
+	}//end resolveInjectable()
+}//end class
+
+/**
  * A logger that keeps every message and context.
  */
 class HandoverRecordingLogger extends AbstractLogger {
@@ -217,14 +285,15 @@ class ConnectionHandoverServiceTest extends TestCase {
 	/**
 	 * The service with the broker in its container (or a container without it).
 	 *
-	 * @param bool $withBroker Whether the container has the broker.
+	 * @param bool        $withBroker Whether the container has the broker.
+	 * @param object|null $broker     The broker to hand out instead of the default double.
 	 *
 	 * @return ConnectionHandoverService
 	 */
-	private function service(bool $withBroker = true): ConnectionHandoverService {
+	private function service(bool $withBroker = true, ?object $broker = null): ConnectionHandoverService {
 		$container = $this->createMock(ContainerInterface::class);
 		if ($withBroker === true) {
-			$container->method('get')->with(InlineSecretMigrationExecutor::BROKER_CLASS)->willReturn($this->broker);
+			$container->method('get')->with(InlineSecretMigrationExecutor::BROKER_CLASS)->willReturn($broker ?? $this->broker);
 		} else {
 			$container->method('get')->willThrowException(new RuntimeException('no broker'));
 		}
@@ -480,8 +549,72 @@ class ConnectionHandoverServiceTest extends TestCase {
 		);
 
 		self::assertSame(['baseUrl' => 'conflict', 'clientId' => 'failed', 'clientSecret' => 'failed'], $answer);
+		self::assertCount(1, $this->broker->mints);
+		self::assertSame(
+			[['uuid' => 'cred-1', 'register' => 'credential-broker', 'schema' => 'brokeredcredential']],
+			$this->objects->deletions,
+			'The credential minted for the failed save is removed again.'
+		);
 
 	}//end testAFailedSaveFailsEveryPendingPart()
+
+	/**
+	 * A save that succeeds removes no credential.
+	 *
+	 * @return void
+	 */
+	public function testASuccessfulSaveRemovesNoCredential(): void {
+		$this->seedEmptySource();
+
+		$answer = $this->service()->takeOver(sourceSlug: 'brp-haalcentraal', settings: ['clientSecret' => 'abc']);
+
+		self::assertSame(['clientSecret' => 'taken'], $answer);
+		self::assertSame([], $this->objects->deletions);
+
+	}//end testASuccessfulSaveRemovesNoCredential()
+
+	/**
+	 * When the source cannot be read raw nothing is taken, minted or saved:
+	 * the rendered source hides the secrets it holds.
+	 *
+	 * @return void
+	 */
+	public function testWithoutARawReadNothingIsTaken(): void {
+		$this->seedEmptySource();
+		$this->objects->stored['src-brp']['object']['configuration']['authentication']['client_secret'] = ['credentialRef' => ['credentialId' => 'held']];
+		$this->objects->failRawRead = true;
+
+		$answer = $this->service()->takeOver(
+			sourceSlug: 'brp-haalcentraal',
+			settings: ['clientId' => 'c', 'clientSecret' => 'abc']
+		);
+
+		self::assertSame(['clientId' => 'failed', 'clientSecret' => 'failed'], $answer);
+		self::assertSame([], $this->broker->mints);
+		self::assertSame([], $this->objects->saves);
+		self::assertSame(['credentialRef' => ['credentialId' => 'held']], $this->stored()['configuration']['authentication']['client_secret']);
+
+	}//end testWithoutARawReadNothingIsTaken()
+
+	/**
+	 * A broker with OpenRegister main's mintCredential mints through value objects.
+	 *
+	 * @return void
+	 */
+	public function testABrokerWithTheValueMintIsUsed(): void {
+		$this->seedEmptySource();
+		$broker = new HandoverValueMintBrokerDouble();
+
+		$answer = $this->service(broker: $broker)->takeOver(sourceSlug: 'brp-haalcentraal', settings: ['clientSecret' => 'abc']);
+
+		self::assertSame(['clientSecret' => 'taken'], $answer);
+		self::assertSame(
+			[['name' => 'BRP HaalCentraal Personen — clientSecret', 'provider' => $broker->mints[0]['provider'], 'owner' => 'admin', 'apps' => [InlineSecretMigrationExecutor::APP_ID], 'scope' => InlineSecretMigrationExecutor::SCOPE_ORGANISATION, 'organisation' => 'org-1']],
+			$broker->mints
+		);
+		self::assertSame(['credentialRef' => ['credentialId' => 'vcred-1']], $this->stored()['configuration']['authentication']['client_secret']);
+
+	}//end testABrokerWithTheValueMintIsUsed()
 
 	/**
 	 * An unknown source fails every given part; empty and unknown parts are not answered.
