@@ -40,7 +40,7 @@ use DOMDocument;
 use DOMElement;
 use DOMXPath;
 use GuzzleHttp\Client;
-use OCA\Integriq\Adapters\Digikoppeling\WusProfileService;
+use OCA\Integriq\Adapters\Digikoppeling\SignedSoapProfileInterface;
 use OCA\Integriq\Exception\DigikoppelingException;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\MtlsConfigurationException;
@@ -92,14 +92,14 @@ class WusDigipoortProvider implements DigipoortProviderInterface {
 	 * Constructor.
 	 *
 	 * @param Client                        $httpClient    The HTTP client the mTLS transport dispatches on.
-	 * @param WusProfileService             $wusProfile    Signs requests and verifies answers (WS-Security).
+	 * @param SignedSoapProfileInterface    $wusProfile    Signs requests and verifies answers (WS-Security).
 	 * @param MtlsConfigResolverInterface   $mtlsResolver  Resolves the client certificate for two-way TLS.
 	 * @param MtlsTransportServiceInterface $mtlsTransport Sends with the client certificate attached.
 	 * @param EgressGuardInterface          $egressGuard   Refuses an endpoint the instance may not call.
 	 */
 	public function __construct(
 		private readonly Client $httpClient,
-		private readonly WusProfileService $wusProfile,
+		private readonly SignedSoapProfileInterface $wusProfile,
 		private readonly MtlsConfigResolverInterface $mtlsResolver,
 		private readonly MtlsTransportServiceInterface $mtlsTransport,
 		private readonly EgressGuardInterface $egressGuard,
