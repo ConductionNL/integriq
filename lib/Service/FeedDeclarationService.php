@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Feed\FeedDeclarationShape;
 use OCA\Integriq\Service\Feed\FeedDeclarationValidator;
 use OCA\Integriq\Service\Feed\FeedSchemaFieldsInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -423,7 +424,7 @@ class FeedDeclarationService {
 			return [];
 		}
 
-		$data = json_decode((string)file_get_contents($file), true);
+		$data = FeedDeclarationShape::normalize(data: json_decode((string)file_get_contents($file), true));
 		$errors = $this->declarationErrors(app: $app, data: $data);
 		if ($errors !== []) {
 			$summary['refused'][$app] = implode('; ', $errors);

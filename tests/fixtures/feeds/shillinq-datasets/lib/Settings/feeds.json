@@ -1,0 +1,98 @@
+{
+  "_meta": {
+    "spdx-license": "EUPL-1.2",
+    "spdx-copyright": "2026 Conduction B.V.",
+    "change": "reporting-data-delivery",
+    "adr": "ADR-091 decision 4: an HTTP surface that authenticates its caller other than by a Nextcloud session belongs to integriq; the app declares what it needs and integriq serves it",
+    "description": "Read-only datasets shillinq offers to an outside data warehouse or BI tool. integriq serves them with its own credentials; every dataset is bound to exactly one administration per credential, and FeedDeclarationValidator refuses a dataset without that binding."
+  },
+  "app": "shillinq",
+  "version": "1.0.0",
+  "datasets": [
+    {
+      "key": "ledger-lines",
+      "title": "Posted ledger lines",
+      "register": "shillinq",
+      "schema": "GLLine",
+      "filter": {
+        "countsInResult": true
+      },
+      "binding": {
+        "administrationId": "credential.administrationId"
+      },
+      "fields": [
+        "transactionId",
+        "lineNumber",
+        "accountNumber",
+        "accountClass",
+        "periodId",
+        "costCenterCode",
+        "costCarrierCode",
+        "projectCode",
+        "subLedgerType",
+        "subLedgerRef",
+        "side",
+        "amount",
+        "signedAmount",
+        "currency",
+        "description"
+      ],
+      "pageSize": 1000
+    },
+    {
+      "key": "accounts",
+      "title": "Chart of accounts",
+      "register": "shillinq",
+      "schema": "Account",
+      "filter": {},
+      "binding": {
+        "administrationId": "credential.administrationId"
+      },
+      "fields": [
+        "accountNumber",
+        "name",
+        "accountType",
+        "parentAccountNumber",
+        "rgsCode"
+      ],
+      "pageSize": 1000
+    },
+    {
+      "key": "periods",
+      "title": "Fiscal periods",
+      "register": "shillinq",
+      "schema": "FiscalPeriod",
+      "filter": {},
+      "binding": {
+        "administrationId": "credential.administrationId"
+      },
+      "fields": [
+        "periodId",
+        "name",
+        "fiscalYear",
+        "startDate",
+        "endDate",
+        "state"
+      ],
+      "pageSize": 500
+    },
+    {
+      "key": "relations",
+      "title": "Relations",
+      "register": "shillinq",
+      "schema": "Payee",
+      "filter": {},
+      "binding": {
+        "administrationId": "credential.administrationId"
+      },
+      "fields": [
+        "name",
+        "payeeType",
+        "vendorNumber",
+        "kvkNumber",
+        "vatNumber"
+      ],
+      "pageSize": 1000
+    }
+  ]
+}

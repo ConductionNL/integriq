@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Service\Feed\FeedDeclarationShape;
 use OCA\Integriq\Service\Feed\FeedDeclarationValidator;
 use OCA\Integriq\Service\Feed\FeedSchemaFieldsInterface;
 use OCA\Integriq\Service\FeedDeclarationService;
@@ -40,6 +41,7 @@ use Psr\Log\LoggerInterface;
  */
 #[CoversClass(FeedDeclarationService::class)]
 #[UsesClass(FeedDeclarationValidator::class)]
+#[UsesClass(FeedDeclarationShape::class)]
 class FeedDeclarationServiceTest extends TestCase {
 
 	/**
@@ -52,6 +54,15 @@ class FeedDeclarationServiceTest extends TestCase {
 		'account' => ['id', 'code', 'name', 'administrationId'],
 		'period' => ['id', 'start', 'end', 'administrationId'],
 		'relation' => ['id', 'name', 'kvkNumber', 'administrationId'],
+		// The schemas shillinq's own declaration names (tests/fixtures/feeds/shillinq-datasets).
+		'GLLine' => [
+			'transactionId', 'lineNumber', 'accountNumber', 'accountClass', 'periodId', 'costCenterCode', 'costCarrierCode',
+			'projectCode', 'subLedgerType', 'subLedgerRef', 'side', 'amount', 'signedAmount', 'currency', 'description',
+			'countsInResult', 'administrationId',
+		],
+		'Account' => ['accountNumber', 'name', 'accountType', 'parentAccountNumber', 'rgsCode', 'administrationId'],
+		'FiscalPeriod' => ['periodId', 'name', 'fiscalYear', 'startDate', 'endDate', 'state', 'administrationId'],
+		'Payee' => ['name', 'payeeType', 'vendorNumber', 'kvkNumber', 'vatNumber', 'administrationId'],
 	];
 
 	/**
@@ -239,6 +250,58 @@ class FeedDeclarationServiceTest extends TestCase {
 		$this->assertSame('shillinq-data-feeds', $product['productSlug']);
 		$this->assertEqualsCanonicalizing(array_column($endpoints, 'uuid'), $product['endpoints']);
 	}//end testFourDatasetsBecomeFourEndpointsAndOneProduct()
+
+	/**
+	 * shillinq's own file, written as datasets bound by administration, is
+	 * served as four feeds scoped by administrationId.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-an-app-declares-its-data-feeds-in-a-file-req-ddf-001
+	 */
+	public function testShillinqsDatasetShapedFileBecomesFourScopedFeeds(): void {
+		$this->apps['shillinq'] = dirname(__DIR__, 2) . '/fixtures/feeds/shillinq-datasets';
+
+		$summary = $this->service()->sync();
+
+		$this->assertSame(['created' => 4, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'refused' => []], $summary);
+		$endpoints = $this->endpointsByPath();
+		$this->assertSame(
+			['feeds/shillinq/accounts', 'feeds/shillinq/ledger-lines', 'feeds/shillinq/periods', 'feeds/shillinq/relations'],
+			array_keys($endpoints)
+		);
+
+		$ledger = $endpoints['feeds/shillinq/ledger-lines'];
+		$this->assertSame('shillinq/GLLine', $ledger['targetId']);
+		$this->assertSame(['parameter' => 'administrationId', 'field' => 'administrationId'], $ledger['feed']['scope']);
+		$this->assertSame(['countsInResult' => true], $ledger['feed']['filter']);
+		$this->assertSame(1000, $ledger['feed']['pageSize']);
+		$this->assertSame(500, $endpoints['feeds/shillinq/periods']['feed']['pageSize']);
+		$this->assertArrayNotHasKey('binding', $ledger['feed']);
+	}//end testShillinqsDatasetShapedFileBecomesFourScopedFeeds()
+
+	/**
+	 * A dataset bound by two fields is refused by name; the others are served.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-an-app-declares-its-data-feeds-in-a-file-req-ddf-001
+	 */
+	public function testADatasetBoundByTwoFieldsIsRefused(): void {
+		$declaration = json_decode(
+			(string)file_get_contents(dirname(__DIR__, 2) . '/fixtures/feeds/shillinq-datasets/lib/Settings/feeds.json'),
+			true
+		);
+		$declaration['datasets'][1]['binding']['accountType'] = 'credential.accountType';
+		$this->shillinq(declaration: $declaration);
+
+		$summary = $this->service()->sync();
+
+		$this->assertSame(3, $summary['created']);
+		$this->assertArrayHasKey('shillinq/accounts', $summary['refused']);
+		$this->assertStringContainsString('binding', $summary['refused']['shillinq/accounts']);
+		$this->assertArrayNotHasKey('feeds/shillinq/accounts', $this->endpointsByPath());
+	}//end testADatasetBoundByTwoFieldsIsRefused()
 
 	/**
 	 * A second sync of the same declaration changes nothing.

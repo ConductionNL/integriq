@@ -32,6 +32,12 @@ by and a page size. The shape is published in Integriq's
 }
 ```
 
+A file written as `datasets`, each bound by
+`"binding": {"administrationId": "credential.administrationId"}` (the way
+shillinq writes it), is read the same way: `datasets` as `feeds`, and a binding
+of one field as the scope of that field. A binding of more than one field is
+refused with the dataset named.
+
 Integriq reads the file of every enabled app on install, on upgrade and when an
 administrator asks for a sync. A dataset that names a field its schema does not
 declare is refused with that field named; the other datasets of the app are
