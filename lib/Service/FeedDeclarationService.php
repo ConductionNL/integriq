@@ -185,32 +185,15 @@ class FeedDeclarationService {
 		foreach ($entries as $index => $entry) {
 			$key = (string)($entry['key'] ?? ('#' . $index));
 			$refusal = $this->refusalOf(entry: $entry, index: (int)$index);
-			if ($refusal !== null) {
-				$summary['refused'][$app . '/' . $key] = $refusal;
-				$this->logger->error(
-					'Integriq refused the feed {feed} of {declaringApp}: {reason}',
-					['app' => 'integriq', 'declaringApp' => $app, 'feed' => $key, 'reason' => $refusal]
-				);
-				if (isset($existing[$key]) === true) {
-					$served[$key] = (string)$existing[$key]->getUuid();
-				}
-
+			if ($refusal === null) {
+				$served[$key] = $this->upsert(app: $app, entry: $entry, existing: ($existing[$key] ?? null), summary: $summary);
 				continue;
 			}
 
-			$served[$key] = $this->upsert(app: $app, entry: $entry, existing: ($existing[$key] ?? null), summary: $summary);
+			$served = array_replace($served, $this->refuseEntry(app: $app, key: $key, refusal: $refusal, existing: $existing, summary: $summary));
 		}
 
-		foreach ($existing as $key => $endpoint) {
-			if (isset($served[$key]) === true) {
-				continue;
-			}
-
-			$this->objectService->deleteObject(
-				deletion: new ObjectDeletion(uuid: (string)$endpoint->getUuid(), target: new ObjectFindTarget(register: self::REGISTER, schema: 'endpoint'))
-			);
-			$summary['deleted']++;
-		}
+		$summary['deleted'] += $this->deleteUnserved(existing: $existing, served: $served);
 
 		if ($served !== [] || $existing !== []) {
 			$this->keepProduct(app: $app, endpointUuids: array_values($served));
@@ -218,6 +201,50 @@ class FeedDeclarationService {
 
 		return $summary;
 	}//end syncApp()
+
+	/**
+	 * Record a refused feed; a feed that was served before keeps being served.
+	 *
+	 * @param string                      $app      The declaring app.
+	 * @param string                      $key      The feed key.
+	 * @param string                      $refusal  Why it is refused.
+	 * @param array<string, ObjectEntity> $existing The app's endpoints by feed key.
+	 * @param array                       $summary  The running summary.
+	 *
+	 * @return array<string, string> The kept endpoint by key, or none.
+	 */
+	private function refuseEntry(string $app, string $key, string $refusal, array $existing, array &$summary): array {
+		$summary['refused'][$app . '/' . $key] = $refusal;
+		$this->logger->error(
+			'Integriq refused the feed {feed} of {declaringApp}: {reason}',
+			['app' => 'integriq', 'declaringApp' => $app, 'feed' => $key, 'reason' => $refusal]
+		);
+		if (isset($existing[$key]) === true) {
+			return [$key => (string)$existing[$key]->getUuid()];
+		}
+
+		return [];
+	}//end refuseEntry()
+
+	/**
+	 * Delete the endpoints of feeds the app no longer serves.
+	 *
+	 * @param array<string, ObjectEntity> $existing The app's endpoints by feed key.
+	 * @param array<string, string>       $served   The served endpoints by feed key.
+	 *
+	 * @return int How many were deleted.
+	 */
+	private function deleteUnserved(array $existing, array $served): int {
+		$deleted = 0;
+		foreach (array_diff_key($existing, $served) as $endpoint) {
+			$this->objectService->deleteObject(
+				deletion: new ObjectDeletion(uuid: (string)$endpoint->getUuid(), target: new ObjectFindTarget(register: self::REGISTER, schema: 'endpoint'))
+			);
+			$deleted++;
+		}
+
+		return $deleted;
+	}//end deleteUnserved()
 
 	/**
 	 * Why a dataset is refused, or null when it can be served.

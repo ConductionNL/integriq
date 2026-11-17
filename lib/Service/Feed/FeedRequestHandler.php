@@ -75,12 +75,7 @@ class FeedRequestHandler {
 	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
 	 */
 	public function boundScope(array $feed, ObjectEntity $consumer): array {
-		$scopes = ($consumer->getObject()['feedScopes'] ?? []);
-		$bound = [];
-		if (is_array($scopes) === true) {
-			$bound = ($scopes[(string)($feed['app'] ?? '')] ?? []);
-		}
-
+		$bound = $this->boundValues(feed: $feed, consumer: $consumer);
 		if (is_scalar($bound) === true) {
 			$bound = [$bound];
 		}
@@ -98,6 +93,23 @@ class FeedRequestHandler {
 
 		return array_values(array_unique($values));
 	}//end boundScope()
+
+	/**
+	 * What the consumer's `feedScopes` holds for the feed's app, as stored.
+	 *
+	 * @param array        $feed     The feed declaration.
+	 * @param ObjectEntity $consumer The consumer.
+	 *
+	 * @return mixed The stored value; an empty list when there is none.
+	 */
+	private function boundValues(array $feed, ObjectEntity $consumer): mixed {
+		$scopes = ($consumer->getObject()['feedScopes'] ?? []);
+		if (is_array($scopes) === false) {
+			return [];
+		}
+
+		return ($scopes[(string)($feed['app'] ?? '')] ?? []);
+	}//end boundValues()
 
 	/**
 	 * The refusal for a consumer outside the feed's scope, or null to go on.
@@ -192,12 +204,9 @@ class FeedRequestHandler {
 	 * @return array{top: int, skip: int, select: array<int, string>, filters: array<string, mixed>}|JSONResponse
 	 */
 	private function options(array $feed, array $query): array|JSONResponse {
-		$scopeParameter = (string)($feed['scope']['parameter'] ?? '');
-		foreach (array_keys($query) as $name) {
-			$name = (string)$name;
-			if (in_array($name, self::OPTIONS, true) === false && $name !== $scopeParameter) {
-				return $this->badRequest(message: sprintf('%s is not supported by this feed.', $name));
-			}
+		$unsupported = $this->unsupportedOption(feed: $feed, query: $query);
+		if ($unsupported !== null) {
+			return $unsupported;
 		}
 
 		$pageSize = max(1, (int)($feed['pageSize'] ?? 1));
@@ -219,6 +228,25 @@ class FeedRequestHandler {
 
 		return ['top' => min($top, $pageSize), 'skip' => $skip, 'select' => $select, 'filters' => $filters];
 	}//end options()
+
+	/**
+	 * The refusal of the first query option the feed does not support, or null.
+	 *
+	 * @param array                $feed  The feed declaration.
+	 * @param array<string, mixed> $query The query.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function unsupportedOption(array $feed, array $query): ?JSONResponse {
+		$supported = array_merge(self::OPTIONS, [(string)($feed['scope']['parameter'] ?? '')]);
+		foreach (array_keys($query) as $name) {
+			if (in_array((string)$name, $supported, true) === false) {
+				return $this->badRequest(message: sprintf('%s is not supported by this feed.', (string)$name));
+			}
+		}
+
+		return null;
+	}//end unsupportedOption()
 
 	/**
 	 * The fields `$select` names, all declared ones when it is absent.
@@ -260,12 +288,9 @@ class FeedRequestHandler {
 		$declared = array_merge((array)($feed['fields'] ?? []), [(string)($feed['scope']['field'] ?? '')]);
 		$filters = [];
 		foreach (preg_split('/\s+and\s+/i', trim((string)$value)) as $comparison) {
-			if (preg_match(self::COMPARISON, $comparison, $match) !== 1) {
-				return $this->badRequest(message: sprintf('$filter supports only "field eq value" joined by "and"; "%s" is not supported.', trim($comparison)));
-			}
-
-			if (in_array($match[1], $declared, true) === false) {
-				return $this->badRequest(message: sprintf('$filter names %s, which this feed does not declare.', $match[1]));
+			$match = $this->comparison(comparison: $comparison, declared: $declared);
+			if ($match instanceof JSONResponse) {
+				return $match;
 			}
 
 			$filters[$match[1]] = $this->literal(match: $match);
@@ -273,6 +298,26 @@ class FeedRequestHandler {
 
 		return $filters;
 	}//end filter()
+
+	/**
+	 * One `field eq value` comparison of a $filter, on a declared field.
+	 *
+	 * @param string             $comparison The comparison.
+	 * @param array<int, string> $declared   The fields the filter may name.
+	 *
+	 * @return array<int, string>|JSONResponse The regular expression match, or the refusal.
+	 */
+	private function comparison(string $comparison, array $declared): array|JSONResponse {
+		if (preg_match(self::COMPARISON, $comparison, $match) !== 1) {
+			return $this->badRequest(message: sprintf('$filter supports only "field eq value" joined by "and"; "%s" is not supported.', trim($comparison)));
+		}
+
+		if (in_array($match[1], $declared, true) === false) {
+			return $this->badRequest(message: sprintf('$filter names %s, which this feed does not declare.', $match[1]));
+		}
+
+		return $match;
+	}//end comparison()
 
 	/**
 	 * The value of one `$filter` comparison.
