@@ -29,6 +29,7 @@ use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
 use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
 use OCA\Forms\Events\FormSubmittedEvent;
 use OCA\Integriq\BackgroundJob\ViewDeletedEventListener;
+use OCA\Integriq\Event\ConnectionCallRequestedEvent;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
@@ -47,6 +48,7 @@ use OCA\Integriq\Event\OptOutChangeRequestedEvent;
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
 use OCA\Integriq\Event\PaymentRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
+use OCA\Integriq\Event\RouteDistanceRequestedEvent;
 use OCA\Integriq\Event\ServiceFetchRequestedEvent;
 use OCA\Integriq\Event\SourceRequestedEvent;
 use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
@@ -391,6 +393,9 @@ final class EventListenerBindings {
 		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);
 		// Sources-ecb-exchange-rates D2: a sibling app (shillinq) asks for the rate of a currency pair on a date.
 		$dispatcher->addServiceListener(eventName: ExchangeRateRequestedEvent::class, className: ExchangeRateRequestedListener::class);
+		// Sources-route-distance-and-rdw-lookup: a sibling app calls a connection it declared, and asks a road distance.
+		$dispatcher->addServiceListener(eventName: ConnectionCallRequestedEvent::class, className: ConnectionCallRequestedListener::class);
+		$dispatcher->addServiceListener(eventName: RouteDistanceRequestedEvent::class, className: RouteDistanceRequestedListener::class);
 		// Form-submission-registration-targets D2: portaliq registers a form submission at an outside system.
 		$dispatcher->addServiceListener(eventName: SubmissionRegistrationRequestedEvent::class, className: SubmissionRegistrationListener::class);
 	}//end registerSiblingRequestListeners()
