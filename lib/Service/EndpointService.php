@@ -49,6 +49,7 @@ use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Endpoint\GraphqlOperation;
+use OCA\Integriq\Service\Endpoint\GraphqlOperationLimiter;
 use OCA\Integriq\Service\Endpoint\GraphqlProxyHandler;
 use OCA\Integriq\Service\Endpoint\UpstreamRequest;
 use OCA\Integriq\Service\Endpoint\UpstreamRouter;
@@ -2680,7 +2681,17 @@ class EndpointService implements EndpointServiceInterface {
 			if ($graphql instanceof JSONResponse === true) {
 				return $graphql;
 			}
-		}
+
+			$limited = (new GraphqlOperationLimiter(rateLimits: $this->rateLimitService))->enforce(
+				endpointData: $endpointData,
+				endpointKey: (string)$endpoint->getUuid(),
+				operation: $graphql,
+				callerKey: $this->graphqlCallerKey(request: $request)
+			);
+			if ($limited !== null) {
+				return $limited;
+			}
+		}//end if
 
 		// Fetch the source entity by targetId.
 		//
@@ -2808,6 +2819,25 @@ class EndpointService implements EndpointServiceInterface {
 
 		return new JSONResponse($answer, $callLogData['statusCode'] ?? 200);
 	}//end handleSourceRequest()
+
+	/**
+	 * Who a graphql endpoint's per-operation limit counts against: the resolved consumer, else the client address.
+	 *
+	 * @param IRequest $request The inbound request.
+	 *
+	 * @return string `consumer:<uuid>` or `ip:<address>`.
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function graphqlCallerKey(IRequest $request): string {
+		$consumer = $this->consumerField()['consumer'] ?? '';
+		if ($consumer !== '') {
+			return 'consumer:' . $consumer;
+		}
+
+		return 'ip:' . $request->getRemoteAddress();
+
+	}//end graphqlCallerKey()
 
 	/**
 	 * Whether the signed-in caller is an administrator, who may introspect a graphql endpoint.

@@ -1680,7 +1680,17 @@
           "method",
           "targetType",
           "targetId",
-          "configurations"
+          "configurations",
+          "allowedOperations",
+          "maxDepth",
+          "introspection",
+          "operationLimits",
+          "streamProtocol",
+          "streamRoute",
+          "streamUpstream",
+          "allowedConsumers",
+          "requiredScopes",
+          "connectionRateLimit"
         ],
         "fieldOverrides": {
           "name": {
@@ -1714,6 +1724,76 @@
           },
           "configurations": {
             "order": 10
+          },
+          "allowedOperations": {
+            "order": 11,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "graphql"
+            }
+          },
+          "maxDepth": {
+            "order": 12,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "graphql"
+            }
+          },
+          "introspection": {
+            "order": 13,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "graphql"
+            }
+          },
+          "operationLimits": {
+            "order": 14,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "graphql"
+            }
+          },
+          "streamProtocol": {
+            "order": 15,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
+          },
+          "streamRoute": {
+            "order": 16,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
+          },
+          "streamUpstream": {
+            "order": 17,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
+          },
+          "allowedConsumers": {
+            "order": 18,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
+          },
+          "requiredScopes": {
+            "order": 19,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
+          },
+          "connectionRateLimit": {
+            "order": 20,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
           }
         },
         "sidebar": {
@@ -1875,6 +1955,20 @@
             }
           },
           {
+            "key": "graphqlOperationName",
+            "label": "GraphQL operation",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "call_log",
+              "labelKey": "graphqlOperationName",
+              "valueKey": "graphqlOperationName",
+              "filter": {
+                "direction": "inbound"
+              }
+            }
+          },
+          {
             "key": "direction",
             "label": "Direction",
             "type": "select",
@@ -1954,11 +2048,17 @@
             "key": "statusMessage",
             "label": "Result",
             "sortable": true,
-            "width": "25%"
+            "width": "19%"
           },
           {
             "key": "direction",
             "label": "Direction",
+            "sortable": true,
+            "width": "12%"
+          },
+          {
+            "key": "graphqlOperationName",
+            "label": "Operation",
             "sortable": true,
             "width": "12%"
           },
@@ -1976,7 +2076,7 @@
             "key": "product",
             "label": "API product",
             "sortable": true,
-            "width": "24%",
+            "width": "18%",
             "widget": "fkResolve",
             "widgetProps": {
               "register": "integriq",
