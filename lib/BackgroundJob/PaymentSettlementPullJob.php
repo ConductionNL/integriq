@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\Payment\PaymentSettlementService;
+use OCA\Integriq\Service\Payment\PaymentSettlementServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -53,13 +53,13 @@ class PaymentSettlementPullJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory             $time        The clock.
-	 * @param PaymentSettlementService $settlements The pull.
-	 * @param LoggerInterface          $logger      The logger.
+	 * @param ITimeFactory                      $time        The clock.
+	 * @param PaymentSettlementServiceInterface $settlements The pull.
+	 * @param LoggerInterface                   $logger      The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly PaymentSettlementService $settlements,
+		private readonly PaymentSettlementServiceInterface $settlements,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

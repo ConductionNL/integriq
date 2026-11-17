@@ -37,7 +37,7 @@ use Throwable;
  *
  * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
  */
-class ServiceFetchCatalogue {
+class ServiceFetchCatalogue implements ServiceFetchCatalogueInterface {
 
 	/**
 	 * The register every object involved lives in.
