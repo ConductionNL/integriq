@@ -46,7 +46,7 @@ use Throwable;
  *
  * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
  */
-class RegressionSuiteService {
+class RegressionSuiteService implements RegressionSuiteServiceInterface {
 
 	/**
 	 * The register the cases and runs live in.
