@@ -141,7 +141,7 @@ class FeedDeclarationService {
 		$enabled = array_map('strval', $this->appManager->getEnabledApps());
 		$existing = $this->feedEndpoints();
 
-		foreach (($app === null ? $enabled : [$app]) as $appId) {
+		foreach ($this->appsToSync(app: $app, enabled: $enabled) as $appId) {
 			$entries = $this->entriesOf(app: $appId, enabled: $enabled, summary: $summary);
 			if ($entries === null) {
 				// A file that cannot be read changes nothing: what was served stays.
@@ -158,6 +158,22 @@ class FeedDeclarationService {
 
 		return $summary;
 	}//end sync()
+
+	/**
+	 * The apps a sync covers: the one asked for, else every enabled app.
+	 *
+	 * @param string|null        $app     The app asked for, null for all.
+	 * @param array<int, string> $enabled The enabled apps.
+	 *
+	 * @return array<int, string>
+	 */
+	private function appsToSync(?string $app, array $enabled): array {
+		if ($app === null) {
+			return $enabled;
+		}
+
+		return [$app];
+	}//end appsToSync()
 
 	/**
 	 * Sync the apps that still have feed endpoints but were not synced: they

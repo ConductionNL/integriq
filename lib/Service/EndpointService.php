@@ -703,7 +703,14 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		$query = $this->feedQuery(request: $request);
-		$refusal = $this->feedRefusal(endpoint: $endpoint, request: $request, feed: $feed, consumer: $consumer, query: $query, enforceRateLimit: $enforceRateLimit);
+		$refusal = $this->feedRefusal(
+			endpoint: $endpoint,
+			request: $request,
+			feed: $feed,
+			consumer: $consumer,
+			query: $query,
+			enforceRateLimit: $enforceRateLimit
+		);
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -729,7 +736,14 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return Response|null The refusal, or null when the read may go ahead.
 	 */
-	private function feedRefusal(ObjectEntity $endpoint, IRequest $request, array $feed, ?ObjectEntity $consumer, array $query, bool $enforceRateLimit): ?Response {
+	private function feedRefusal(
+		ObjectEntity $endpoint,
+		IRequest $request,
+		array $feed,
+		?ObjectEntity $consumer,
+		array $query,
+		bool $enforceRateLimit
+	): ?Response {
 		$refusal = $this->enforceConsumerScope(request: $request);
 		if ($refusal !== null) {
 			return $refusal;
