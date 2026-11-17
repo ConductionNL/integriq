@@ -36,6 +36,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every create, update and delete path of writeObjectToTarget(), recorded
@@ -74,7 +75,8 @@ class SynchronizationWriteObjectToTargetTest extends TestCase {
 	private function service(): SynchronizationService {
 		$or = $this->createMock(ORObjectService::class);
 		$or->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null) {
+			function (...$legacyArgs) {
+				[$id, $register, $schema] = LegacyObjectArgs::positional(method: 'find', args: $legacyArgs);
 				$this->log[] = ['or.find', (string)$id, $register, $schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)$id);
@@ -88,7 +90,8 @@ class SynchronizationWriteObjectToTargetTest extends TestCase {
 			}
 		);
 		$or->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function (...$legacyArgs) {
+				[$object, $register, $schema, $uuid] = LegacyObjectArgs::positional(method: 'saveObject', args: $legacyArgs);
 				$this->log[] = ['or.saveObject', $object, $register, $schema, $uuid];
 				return new ObjectEntity();
 			}

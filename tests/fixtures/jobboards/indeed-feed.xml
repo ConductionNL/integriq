@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<source>
+  <publisher>Voorbeeldgemeente</publisher>
+  <publisherurl>https://werken.example.nl</publisherurl>
+  <job>
+    <title>Medior Vue-developer</title>
+    <date>Mon, 15 Jun 2026 00:00:00 GMT</date>
+    <referencenumber>5b7d2c1e-8a44-4f0e-9a71-2f3c6d9e1a01</referencenumber>
+    <requisitionid>5b7d2c1e-8a44-4f0e-9a71-2f3c6d9e1a01</requisitionid>
+    <url>https://werken.example.nl/vacatures/5b7d2c1e-8a44-4f0e-9a71-2f3c6d9e1a01</url>
+    <company>Voorbeeldgemeente</company>
+    <sourcename>Voorbeeldgemeente</sourcename>
+    <city></city>
+    <country>NL</country>
+    <description>Wij zoeken een medior Vue-developer voor ons platformteam. Placeholder vacaturetekst (recruiting-ats-basic seed).</description>
+    <category>Engineering</category>
+    <experience>3+ years</experience>
+    <expirationdate>2026-08-31</expirationdate>
+  </job>
+</source>

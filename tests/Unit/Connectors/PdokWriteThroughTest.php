@@ -32,6 +32,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * The write-through cache stores each PDOK record once, keyed by pdokId.
@@ -94,7 +96,10 @@ class PdokWriteThroughTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, ...$rest): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saves[] = ['uuid' => $uuid, 'register' => $register, 'schema' => $schema, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy];
 				$entity = ($this->stored[$uuid] ?? new ObjectEntity());
 				if ($uuid === null) {
@@ -175,9 +180,8 @@ class PdokWriteThroughTest extends TestCase {
 		$this->expectExceptionMessage('Unknown named parameter $uniqueOn');
 
 		$this->objectService->saveObject(
-			register: 'integriq',
-			schema: 'addresses',
 			object: ['pdokId' => 'adr-1'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'addresses')),
 			uniqueOn: ['pdokId'],
 		);
 

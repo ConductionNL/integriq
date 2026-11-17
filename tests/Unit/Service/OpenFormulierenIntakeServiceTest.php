@@ -36,6 +36,8 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Files\File;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for submission ingest (mapping + attachments) and the authenticated
@@ -80,7 +82,10 @@ class OpenFormulierenIntakeServiceTest extends TestCase {
 			->getMock();
 
 		$mock->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($schema !== OpenFormulierenIntakeService::SCHEMA_SUBMISSION) {
 					return $this->buildEntity((array)$object, ($uuid ?? 'other-' . (++$this->uuidCounter)));
 				}
@@ -94,7 +99,9 @@ class OpenFormulierenIntakeServiceTest extends TestCase {
 		);
 
 		$mock->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === OpenFormulierenIntakeService::SCHEMA_SUBMISSION) {
 					return ($this->submissionStore[(string)$id] ?? null);
 				}

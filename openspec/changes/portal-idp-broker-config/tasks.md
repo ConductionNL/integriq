@@ -24,8 +24,8 @@ the flag is `1`.
   - GIVEN a second registration for the same organisation and provider WHEN it is saved THEN the save is refused with a message naming the existing one
   - GIVEN a user outside the admin group WHEN they list `idpRegistration` objects THEN nothing is returned
   - GIVEN the re-import WHEN the log is read THEN there is no `PARTIAL IMPORT` line for this schema
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: The secret seam
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-identity-provider-secrets-are-read-from-keepiq-and-fail-closed-req-idpc-004`
@@ -46,8 +46,8 @@ the flag is `1`.
   - GIVEN each of the six statuses WHEN readiness is computed THEN it returns that status with reasons naming properties and roles only
   - GIVEN any status but `ready` WHEN `forRegistration()` is called THEN the Log adapter is returned
   - GIVEN `ready` WHEN `forRegistration()` is called THEN the adapter of the registration's kind is returned
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 5: The SAML Service Provider adapter
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001`
@@ -77,8 +77,8 @@ the flag is `1`.
   - GIVEN `polymorphic` and an assertion with a plain BSN WHEN the callback runs THEN it is refused and the BSN is in no log line
   - GIVEN `hmac` WHEN the same BSN logs in to two organisations THEN the pseudonyms differ, and stay stable per organisation
   - GIVEN `IdpBrokerConfig` WHEN read THEN it no longer reads `idp_broker_entity_ids`, `idp_broker_salts` or `idp_broker_trust_aliases`; the assurance aliases come from the registration's `assuranceMapping`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 8: The assurance floor and its refusal page
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006`
@@ -89,8 +89,8 @@ the flag is `1`.
   - GIVEN assertions at DigiD Basis, DigiD Midden, EH2, EH2+ and eIDAS low WHEN the callback runs THEN each is refused with no code; GIVEN DigiD Substantieel and Hoog, EH3, EH4, eIDAS substantial and high THEN each is accepted when it satisfies the requested trust
   - GIVEN a refusal below the floor WHEN the page renders THEN it names the level used, the level needed and how to get it for that provider, in Dutch and English, and its one action goes to the return address with `error=assurance_below_floor` and the relay state
   - GIVEN the page copy WHEN written THEN it follows the `writing` skill (no em-dashes, sentence case) and is reviewed in REVIEW mode before merge
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 9: The metadata endpoint
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-every-sp-is-published-at-its-own-metadata-url-req-idpc-003`

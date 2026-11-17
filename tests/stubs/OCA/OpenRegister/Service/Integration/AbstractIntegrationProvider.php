@@ -1,7 +1,5 @@
 <?php
 
-// Copy of openregister development 4abd834344 lib/Service/Integration/AbstractIntegrationProvider.php (only @spec lines dropped), so the provider tests run against the real contract.
-
 /**
  * Abstract base class for IntegrationProvider implementations.
  *
@@ -30,12 +28,14 @@
  *
  * @link https://conduction.nl
  *
+ * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-2
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use BadMethodCallException;
 use OCA\OpenRegister\Exception\NotImplementedException;
 
 /**
@@ -43,8 +43,11 @@ use OCA\OpenRegister\Exception\NotImplementedException;
  *
  * Concrete providers MUST override the metadata methods (getId,
  * getLabel, getIcon, getRequiredApp, getStorageStrategy) and the
- * read-path list(). They MAY override get/create/update/delete when
- * their storage strategy supports those operations.
+ * read-path list(). They MAY add get/create/update/delete when their
+ * storage strategy supports those operations, in either published form
+ * (see IntegrationProvider); an operation a provider does not declare
+ * answers NotImplementedException, called directly or through
+ * IntegrationProviderInvoker.
  *
  * @SuppressWarnings(PHPMD.NumberOfChildren) ADR-019's pluggable integration
  *   registry is built around exactly this template-method base — each leaf
@@ -71,6 +74,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 *
 	 * @return string|null Default null (inherits from object RBAC).
 	 *
+	 * @spec exclude Base-class default (trivial `return null`) — RBAC gating contract is owned by
 	 *              pluggable-integration-registry task-2/generic-integrations Permission Inheritance;
 	 *              concrete overrides carry the behaviour.
 	 */
@@ -84,6 +88,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * @return array<string,mixed> Default `['type' => 'none']` for
 	 *                             integrations that need no credentials.
 	 *
+	 * @spec exclude Base-class default (static `['type' => 'none']`) — the auth-requirements contract is owned by
 	 *              pluggable-integration-registry task-2; external providers override with real descriptors.
 	 */
 	public function authRequirements(): array {
@@ -101,97 +106,45 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	}//end getOpenConnectorSource()
 
 	/**
-	 * Get a single linked thing.
+	 * Answer NotImplementedException for a linked-thing operation the provider does not declare.
 	 *
-	 * Default: throw NotImplementedException. List-only and query-time
-	 * providers can rely on this default; CRUD-capable providers
-	 * override.
+	 * The operations are not declared here so that a subclass can declare
+	 * them in either published form; a declared method always wins over this.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
-	 * @param string $entityId Linked-thing id.
+	 * @param string      $name      The method called.
+	 * @param list<mixed> $arguments Its arguments.
 	 *
-	 * @return array<string,mixed>
+	 * @return never
 	 *
-	 * @throws NotImplementedException Always, unless overridden.
+	 * @throws NotImplementedException For get, create, update, delete or list.
+	 * @throws BadMethodCallException  For any other undeclared method.
 	 *
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
+	 * @spec openspec/specs/integration-registry/spec.md
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature of __call is fixed by PHP.
 	 */
-	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support get()', $this->getId())
-		);
-	}//end get()
+	public function __call(string $name, array $arguments): never {
+		if (in_array($name, ['list', 'get', 'create', 'update', 'delete'], true) === true) {
+			throw $this->unsupported(operation: $name);
+		}
+
+		throw new BadMethodCallException(sprintf('Call to undefined method %s::%s()', static::class, $name));
+	}//end __call()
 
 	/**
-	 * Create / attach a linked thing.
+	 * The NotImplementedException a provider answers for an operation it does not support.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
-	 * @param array<string,mixed> $payload New linked-thing fields.
+	 * @param string $operation The operation, as the message names it: `list`, `get`, `create`, `update` or `delete`.
 	 *
-	 * @return array<string,mixed>
+	 * @return NotImplementedException
 	 *
-	 * @throws NotImplementedException Always, unless overridden.
-	 *
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support create()', $this->getId())
+	protected function unsupported(string $operation): NotImplementedException {
+		return new NotImplementedException(
+			message: sprintf('Provider %s does not support %s()', $this->getId(), $operation)
 		);
-	}//end create()
-
-	/**
-	 * Update a linked thing.
-	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
-	 * @param string $entityId Linked-thing id.
-	 * @param array<string,mixed> $payload Update payload.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @throws NotImplementedException Always, unless overridden.
-	 *
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
-	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support update()', $this->getId())
-		);
-	}//end update()
-
-	/**
-	 * Delete / unlink a linked thing.
-	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
-	 * @param string $entityId Linked-thing id.
-	 *
-	 * @return void
-	 *
-	 * @throws NotImplementedException Always, unless overridden.
-	 *
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
-	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support delete()', $this->getId())
-		);
-	}//end delete()
+	}//end unsupported()
 
 	/**
 	 * Default health descriptor — assumes a healthy, configured integration.
@@ -202,6 +155,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 *
+	 * @spec exclude Base-class default health descriptor (static ok/configured) — the health/OCS-capabilities
 	 *              contract is owned by pluggable-integration-registry task-2; external providers override with a real probe.
 	 */
 	public function health(): array {
@@ -211,4 +165,21 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 			'message' => null,
 		];
 	}//end health()
+
+	/**
+	 * Health descriptor of a provider that needs one Nextcloud app: ok when it
+	 * is available, otherwise unavailable with the given message.
+	 *
+	 * @param bool   $available Whether the backing app is available.
+	 * @param string $missing   The message when it is not.
+	 *
+	 * @return array{status: string, authStatus: string, message: ?string}
+	 */
+	protected function installedHealth(bool $available, string $missing): array {
+		if ($available === true) {
+			return ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];
+		}
+
+		return ['status' => 'unavailable', 'authStatus' => 'configured', 'message' => $missing];
+	}//end installedHealth()
 }//end class

@@ -35,6 +35,7 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Exchanges pre-authorized codes against offers in every state and records
@@ -154,7 +155,10 @@ class EudiTokenExchangeGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				foreach (['accessTokenHash', 'cNonce'] as $key) {
 					if (isset($object[$key]) === true) {
 						$this->rawSaves[$key][] = $object[$key];

@@ -52,6 +52,25 @@ class RegistrationService {
 	public const DEFAULT_ALLOWED_APPS = ['portaliq'];
 
 	/**
+	 * The sample hand-over an administrator's dry run maps when they give none (design D3).
+	 *
+	 * It carries no files, so a dry run never reads one.
+	 *
+	 * @var array<string,mixed>
+	 */
+	public const SAMPLE_HANDOVER = [
+		'reference' => 'OF-TEST-0000',
+		'form' => ['slug' => 'sample-form', 'title' => 'Sample form'],
+		'submittedAt' => '2026-01-01T12:00:00+01:00',
+		'language' => 'nl',
+		'applicant' => ['kind' => 'bsn', 'value' => '999990627', 'filledBy' => null],
+		'answers' => ['subject' => 'Sample answer'],
+		'fields' => ['subject' => ['label' => 'Subject', 'type' => 'string', 'computed' => false]],
+		'attachments' => [],
+		'cosign' => null,
+	];
+
+	/**
 	 * The legs by target kind.
 	 *
 	 * @var array<string,RegistrationLeg>
@@ -66,6 +85,8 @@ class RegistrationService {
 	 * @param JsonRegistrationLeg       $json       The json leg.
 	 * @param ObjectsApiRegistrationLeg $objectsApi The objects-api leg.
 	 * @param LoggerInterface           $logger     Records refusals by target and reference, never the answers.
+	 * @param StufZdsRegistrationLeg|null $stufZds  The stuf-zds leg.
+	 * @param ZgwRegistrationLeg|null     $zgw      The zgw leg.
 	 *
 	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
 	 */
@@ -75,8 +96,10 @@ class RegistrationService {
 		JsonRegistrationLeg $json,
 		ObjectsApiRegistrationLeg $objectsApi,
 		private readonly LoggerInterface $logger,
+		?StufZdsRegistrationLeg $stufZds = null,
+		?ZgwRegistrationLeg $zgw = null,
 	) {
-		foreach ([$json, $objectsApi] as $leg) {
+		foreach (array_filter([$json, $objectsApi, $stufZds, $zgw]) as $leg) {
 			$this->legs[$leg->kind()] = $leg;
 		}
 	}//end __construct()
@@ -168,12 +191,16 @@ class RegistrationService {
 		$uuid   = $this->store->saveRecord(data: $data, uuid: ($record['uuid'] ?? null));
 
 		try {
-			$result = $leg->register(target: $target, mapped: $mapped, handover: $handover, steps: $data['steps']);
+			// The leg reads files as the calling app, so the caller's id wins over anything the hand-over says.
+			$result = $leg->register(target: $target, mapped: $mapped, handover: ['app' => $app] + $handover, steps: $data['steps']);
 		} catch (RegistrationRefusal $refusal) {
-			$this->store->saveRecord(
-				data: ['state' => 'failed', 'lastError' => $refusal->toAnswer(), 'finishedAt' => self::now()] + $data,
-				uuid: $uuid
-			);
+			// Keep what the leg already did, so a repeat resumes after it.
+			$failed = ['state' => 'failed', 'lastError' => $refusal->toAnswer(), 'finishedAt' => self::now()];
+			if ($refusal->getSteps() !== null) {
+				$failed['steps'] = $refusal->getSteps();
+			}
+
+			$this->store->saveRecord(data: $failed + $data, uuid: $uuid);
 			throw $refusal;
 		}
 
@@ -190,6 +217,79 @@ class RegistrationService {
 
 		return self::answer(externalReference: $result['externalReference'], externalUrl: $result['externalUrl']);
 	}//end registerOrRefuse()
+
+	/**
+	 * Map a hand-over for a target and stop before the first write (design D6).
+	 *
+	 * The administrator's "Test": the target is looked up whatever its
+	 * enabled flag or allowed apps, the hand-over is checked and mapped, and a
+	 * leg that checks its body before sending (the JSON Schema) does so. No
+	 * record is written, no file is read and no outside system is called. An
+	 * empty hand-over maps the sample of design D3.
+	 *
+	 * @param string              $target   The target slug.
+	 * @param array<string,mixed> $handover The hand-over to map, or nothing for the sample.
+	 *
+	 * @return array<string,mixed> `ok`, `dry`, `kind` and the `mapped` body, or a refusal answer.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
+	 */
+	public function dryRun(string $target, array $handover = []): array {
+		if ($handover === []) {
+			$handover = self::SAMPLE_HANDOVER;
+		}
+
+		try {
+			return $this->dryMap(target: $target, handover: $handover);
+		} catch (RegistrationRefusal $refusal) {
+			return ['dry' => true] + $refusal->toAnswer();
+		} catch (Throwable $e) {
+			$this->logger->error('Integriq: a registration dry run failed', ['target' => $target, 'exception' => $e]);
+			$refusal = new RegistrationRefusal(
+				reason: RegistrationRefusal::SOURCE_UNAVAILABLE,
+				retryable: true,
+				message: 'The dry run could not be completed: ' . $e->getMessage()
+			);
+			return ['dry' => true] + $refusal->toAnswer();
+		}//end try
+	}//end dryRun()
+
+	/**
+	 * Look the target up, check and map the hand-over, and let a leg check the body; nothing is written.
+	 *
+	 * @param string              $target   The target slug.
+	 * @param array<string,mixed> $handover The hand-over to map.
+	 *
+	 * @return array<string,mixed> `ok`, `dry`, `kind` and the `mapped` body.
+	 *
+	 * @throws RegistrationRefusal When the target is unknown or the hand-over cannot be mapped.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
+	 */
+	private function dryMap(string $target, array $handover): array {
+		$found = null;
+		if ($target !== '') {
+			$found = $this->store->findTarget(slug: $target);
+		}
+
+		if ($found === null) {
+			throw new RegistrationRefusal(
+				reason: RegistrationRefusal::UNKNOWN_TARGET,
+				retryable: false,
+				message: 'There is no registration target ' . $target . '.'
+			);
+		}
+
+		self::checkHandover(handover: $handover);
+		$mapped = $this->mapped(target: $found, handover: $handover);
+		$kind   = (string)($found['kind'] ?? '');
+		$leg    = ($this->legs[$kind] ?? null);
+		if ($leg instanceof RegistrationBodyCheck) {
+			$leg->checkBody(target: $found, mapped: $mapped);
+		}
+
+		return ['ok' => true, 'dry' => true, 'kind' => $kind, 'mapped' => $mapped];
+	}//end dryMap()
 
 	/**
 	 * The target, when it exists, is enabled and allows the app.

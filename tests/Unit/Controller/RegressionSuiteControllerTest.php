@@ -23,12 +23,14 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use InvalidArgumentException;
 use OCA\Integriq\Controller\RegressionSuiteController;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Regression\TraceCaseRecorder;
 use OCA\Integriq\Service\RegressionSuiteService;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+use OutOfBoundsException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -44,26 +46,43 @@ class RegressionSuiteControllerTest extends TestCase {
 	 */
 	private RegressionSuiteService $suites;
 
+	/**
+	 * The recorder double.
+	 *
+	 * @var TraceCaseRecorder&MockObject
+	 */
+	private TraceCaseRecorder $recorder;
+
+	/**
+	 * The request double.
+	 *
+	 * @var IRequest&MockObject
+	 */
+	private IRequest $request;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->suites = $this->createMock(RegressionSuiteService::class);
+		$this->recorder = $this->createMock(TraceCaseRecorder::class);
+		$this->request = $this->createMock(IRequest::class);
 	}
 
 	/**
 	 * The controller for a signed-in user the action matrix allows or refuses, or for nobody.
 	 *
 	 * @param bool|null $allowed Whether the action is allowed; null for no user.
+	 * @param string    $action  The action the controller must ask about.
 	 *
 	 * @return RegressionSuiteController
 	 */
-	private function controller(?bool $allowed): RegressionSuiteController {
+	private function controller(?bool $allowed, string $action = 'regression-suite.run'): RegressionSuiteController {
 		$session = $this->createMock(IUserSession::class);
 		$actions = $this->createMock(ActionAuthServiceInterface::class);
 		if ($allowed !== null) {
 			$user = $this->createMock(IUser::class);
 			$user->method('getUID')->willReturn('alice');
 			$session->method('getUser')->willReturn($user);
-			$actions->method('can')->with($user, 'regression-suite.run')->willReturn($allowed);
+			$actions->method('can')->with($user, $action)->willReturn($allowed);
 		}
 
 		$l10n = $this->createMock(IL10N::class);
@@ -71,11 +90,12 @@ class RegressionSuiteControllerTest extends TestCase {
 
 		return new RegressionSuiteController(
 			appName: 'integriq',
-			request: $this->createMock(IRequest::class),
+			request: $this->request,
 			suites: $this->suites,
 			actionAuth: $actions,
 			userSession: $session,
-			l10n: $l10n
+			l10n: $l10n,
+			recorder: $this->recorder
 		);
 	}//end controller()
 
@@ -129,4 +149,66 @@ class RegressionSuiteControllerTest extends TestCase {
 
 		$this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $this->controller(allowed: true)->run(subjectType: 'rule', subjectId: 'x')->getStatus());
 	}//end testAnUnknownSubjectTypeIsABadRequest()
+
+	/**
+	 * A user without the record action gets 403 and no case is saved.
+	 *
+	 * @return void
+	 */
+	public function testRecordingWithoutTheActionIsRefused(): void {
+		$this->recorder->expects($this->never())->method('record');
+
+		$response = $this->controller(allowed: false, action: 'regression-suite.record')->record(id: 'trace-1');
+
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $response->getStatus());
+		$this->assertSame(expected: ['error' => 'You are not allowed to save test cases.'], actual: $response->getData());
+	}//end testRecordingWithoutTheActionIsRefused()
+
+	/**
+	 * An allowed user saves the named step with the edits the body carries.
+	 *
+	 * @return void
+	 */
+	public function testAnAllowedUserRecordsTheStepWithTheEdits(): void {
+		$params = ['step' => '2', 'name' => 'Ada', 'input' => ['authorization' => 'Bearer test']];
+		$this->request->method('getParam')->willReturnCallback(static fn (string $key) => $params[$key] ?? null);
+		$case = ['id' => 'case-1', 'redactedPaths' => []];
+		$this->recorder->expects($this->once())->method('record')
+			->with('trace-1', 2, ['name' => 'Ada', 'input' => ['authorization' => 'Bearer test']])
+			->willReturn($case);
+
+		$response = $this->controller(allowed: true, action: 'regression-suite.record')->record(id: 'trace-1');
+
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$this->assertSame(expected: $case, actual: $response->getData());
+	}//end testAnAllowedUserRecordsTheStepWithTheEdits()
+
+	/**
+	 * Without a step the answer is 400 and nothing is recorded.
+	 *
+	 * @return void
+	 */
+	public function testRecordingWithoutAStepIsABadRequest(): void {
+		$this->request->method('getParam')->willReturn(null);
+		$this->recorder->expects($this->never())->method('record');
+
+		$this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $this->controller(allowed: true, action: 'regression-suite.record')->record(id: 'trace-1')->getStatus());
+	}//end testRecordingWithoutAStepIsABadRequest()
+
+	/**
+	 * A missing trace or step answers 404; a step that is not recordable answers 400.
+	 *
+	 * @return void
+	 */
+	public function testRecorderRefusalsBecomeHttpAnswers(): void {
+		$this->request->method('getParam')->willReturnCallback(static fn (string $key) => $key === 'step' ? 1 : null);
+		$this->recorder->method('record')->willReturnOnConsecutiveCalls(
+			$this->throwException(new OutOfBoundsException('The trace has no step 1.')),
+			$this->throwException(new InvalidArgumentException('not from a rule step'))
+		);
+		$controller = $this->controller(allowed: true, action: 'regression-suite.record');
+
+		$this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $controller->record(id: 'trace-1')->getStatus());
+		$this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $controller->record(id: 'trace-1')->getStatus());
+	}//end testRecorderRefusalsBecomeHttpAnswers()
 }//end class

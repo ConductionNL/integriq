@@ -43,6 +43,7 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Asserts a `synchronization` flow step's dispatch never bypasses the
@@ -104,7 +105,10 @@ class FlowRunnerSynchronizationGuardsTest extends TestCase {
 			);
 
 		$orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'flow-run-1'));
 			}
 		);

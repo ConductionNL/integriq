@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.7"
+    "version": "1.2.1"
   },
   "x-openregister": {
     "type": "application",
@@ -55,6 +55,7 @@
           "payment_intent",
           "payment_settlement",
           "peppol_transmission",
+          "peppol_inbound_document",
           "recipient_key",
           "recipient_opt_out",
           "ris_sync_record",
@@ -136,7 +137,7 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit. Log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam. Not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveRequest(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService. Not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService. Not via CallService), 'sms' (SMS channel. NotifyNL or sandbox, dispatched directly by SmsDispatchService. Not via CallService), 'payment' (live payment provider. Log/sandbox or Mollie. Dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API. Log/sandbox or generic REST, dispatched directly by KissSyncService. Not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound(). Not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge. Log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService. Not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing. Log/sandbox or generic REST, dispatched directly by FscCallService. Not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit. Log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam. Not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveRequest(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService. Not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService. Not via CallService), 'sms' (SMS channel. NotifyNL or sandbox, dispatched directly by SmsDispatchService. Not via CallService), 'payment' (live payment provider. Log/sandbox or Mollie. Dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API. Log/sandbox or generic REST, dispatched directly by KissSyncService. Not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound(). Not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge. Log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService. Not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing. Log/sandbox or generic REST, dispatched directly by FscCallService. Not via CallService), 'feed' (a feed other systems read, such as a job board's vacancy feed: a call answers \"published in feed\" with the location as its link and sends nothing, answered in-process by CallService through FeedSource). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
@@ -426,6 +427,36 @@
             "default": 30,
             "description": "Seconds an open breaker stays open before the next dispatch is treated as a half-open probe. Mirrors PdokConnector::BREAKER_OPEN_SECONDS.",
             "title": "Circuit Breaker Cooldown Seconds"
+          },
+          "residency": {
+            "type": "object",
+            "title": "Residency",
+            "description": "Where this destination sits: an ISO 3166-1 alpha-2 country, who said so (basis) and on what evidence. Without it the destination reads as unknown and blocks the EU only verdict.",
+            "properties": {
+              "country": {
+                "type": "string",
+                "pattern": "^[A-Z]{2}$",
+                "description": "ISO 3166-1 alpha-2 country code, upper case."
+              },
+              "basis": {
+                "type": "string",
+                "enum": ["set-by-admin", "declared-by-app", "seeded"],
+                "description": "Who recorded the country. An administrator's value always wins over a declared one."
+              },
+              "evidence": {
+                "type": "string",
+                "description": "A URL or a short text, such as the processor agreement."
+              },
+              "recordedBy": {
+                "type": "string",
+                "description": "The user id or app id that recorded the country."
+              },
+              "recordedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the country was recorded."
+              }
+            }
           }
         },
         "x-openregister-seed": [],
@@ -686,12 +717,12 @@
           },
           "targetType": {
             "type": "string",
-            "description": "Polymorphic target kind: `register/schema`, `api`, `job`, `synchronization`.",
+            "description": "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `job`, `synchronization`.",
             "title": "Target Type"
           },
           "targetId": {
             "type": "string",
-            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` → integer Source PK (legacy) or UUID; for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID.",
+            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` and `a2a` → integer Source PK (legacy) or UUID; for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID.",
             "title": "Target ID"
           },
           "conditions": {
@@ -3426,6 +3457,81 @@
               "nl": "Peppol-verzending mislukt: {{recipientPeppolId}} ({{documentType}})",
               "en": "Peppol transmission failed: {{recipientPeppolId}} ({{documentType}})"
             }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "peppol_inbound_document": {
+        "slug": "peppol_inbound_document",
+        "title": "Peppol Inbound Document",
+        "icon": "InboxArrowDown",
+        "version": "1.0.0",
+        "summary": "One UBL document received over the Peppol network, stored as a file the receiving app can read",
+        "description": "An inbound document announced by the Peppol Access Point. integriq fetches it with the Access Point's credential and stores the UBL as a file on this object, then emits nl.conduction.peppol.inbound.received naming this object and its file. A fetch or store that fails leaves the object fetch-failed; a redelivered notification for the same accessPointReference retries it. See openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009.",
+        "authorization": {
+          "create": [],
+          "read": [
+            "authenticated"
+          ],
+          "update": [],
+          "delete": []
+        },
+        "required": [
+          "senderPeppolId",
+          "accessPointReference",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "senderPeppolId": {
+            "type": "string",
+            "description": "Sender Peppol participant identifier, `scheme:identifier` (e.g. 0106:12345678)",
+            "title": "Sender Peppol ID"
+          },
+          "documentType": {
+            "type": "string",
+            "description": "UBL document type slug (e.g. ubl-invoice-2.1)",
+            "title": "Document Type"
+          },
+          "accessPointReference": {
+            "type": "string",
+            "description": "The Access Point's own reference to the document, as its notification named it; the idempotency key for redeliveries",
+            "title": "Access Point Reference"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the notification first arrived",
+            "title": "Received At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "stored",
+              "fetch-failed"
+            ],
+            "description": "stored (the UBL is a file on this object and the inbound event was emitted) or fetch-failed (fetch or store failed; no event was emitted)",
+            "title": "Status"
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why the last fetch or store failed",
+            "title": "Detail"
+          },
+          "fileId": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Nextcloud file id of the stored UBL",
+            "title": "File ID"
+          },
+          "fileName": {
+            "type": "string",
+            "nullable": true,
+            "description": "File name of the stored UBL",
+            "title": "File Name"
           }
         },
         "x-openregister-seed": [],

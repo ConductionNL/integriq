@@ -31,6 +31,8 @@ use OCA\Integriq\Service\SynchronizationRunProgressServiceInterface;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -203,8 +205,7 @@ class SynchronizationsController extends Controller {
 		try {
 			$synchronization = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'synchronization',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
@@ -300,8 +301,7 @@ class SynchronizationsController extends Controller {
 		try {
 			$synchronization = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'synchronization',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
@@ -395,8 +395,7 @@ class SynchronizationsController extends Controller {
 		try {
 			$synchronization = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'synchronization',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
@@ -666,8 +665,7 @@ class SynchronizationsController extends Controller {
 		try {
 			$log = $this->orObjectService->find(
 				id: (string)$id,
-				register: 'integriq',
-				schema: 'synchronization_log',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization_log'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
@@ -675,7 +673,7 @@ class SynchronizationsController extends Controller {
 		}
 
 		try {
-			$this->orObjectService->deleteObject(uuid: $log->getUuid());
+			$this->orObjectService->deleteObject(new ObjectDeletion(uuid: $log->getUuid()));
 			return new JSONResponse(['message' => $this->l->t('Log deleted successfully')], 200);
 		} catch (\Exception $exception) {
 			return new JSONResponse(['error' => $this->l->t('Failed to delete log: %s', [$exception->getMessage()])], 500);
