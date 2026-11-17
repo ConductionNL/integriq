@@ -120,4 +120,23 @@ class DocumentRenderRequestedListenerTest extends TestCase {
 
 		$this->listener()->handle(new Event());
 	}//end testOtherEventsAreIgnored()
+
+	/**
+	 * A request without a requester is passed on as coming from filinq, with no user.
+	 *
+	 * @return void
+	 */
+	public function testARequestWithoutARequesterComesFromFilinq(): void {
+		$job = new ObjectEntity();
+		$job->setUuid('job-1');
+		$this->service->expects($this->once())
+			->method('requestRender')
+			->with('src-docs', 'tpl-1', [], '', 'filinq')
+			->willReturn($job);
+		$event = new DocumentRenderRequestedEvent(sourceId: 'src-docs', templateId: 'tpl-1', data: []);
+
+		$this->listener()->handle($event);
+
+		$this->assertSame('job-1', $event->getJobId());
+	}//end testARequestWithoutARequesterComesFromFilinq()
 }//end class

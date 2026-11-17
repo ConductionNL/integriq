@@ -8,5 +8,5 @@ Kind: code. Matrix row `integriq:acc-a2a-gateway`.
 - **acceptance_criteria**:
   - GIVEN an `a2a` endpoint WHEN the agent card is fetched through it THEN every agent address in the card is the endpoint address
   - GIVEN an authentication rule WHEN a call has no valid key THEN 401 and no upstream call
-- [ ] Implement
-- [ ] Test (PHPUnit)
+- [x] Implement
+- [x] Test (PHPUnit)

@@ -40,6 +40,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The notice path through the real SourceDestructionService and SynchronizationService.
@@ -143,6 +144,7 @@ class SourceDestructionServiceTest extends TestCase {
 		$orObjectService->method('find')->willReturnCallback(fn (...$args) => ($objects[(string)$args[0]] ?? null));
 		$orObjectService->method('saveObject')->willReturnCallback(
 			function (...$args) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				if (in_array('synchronization_contract', $args, true) === true) {
 					$this->contracts[] = $args[0];
 				} else {
@@ -154,6 +156,7 @@ class SourceDestructionServiceTest extends TestCase {
 		);
 		$orObjectService->method('deleteObject')->willReturnCallback(
 			function (...$args): bool {
+				$args = LegacyObjectArgs::positional(method: 'deleteObject', args: $args);
 				// By position: 0 is the uuid, 7 is `permanent` (openregister 98a3469c0f).
 				$this->deletes[] = ['uuid' => $args[0], 'permanent' => ($args[7] ?? false)];
 				return true;

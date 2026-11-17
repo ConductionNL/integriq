@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The test and run actions, the statistics, the log statistics and the log export.
@@ -122,7 +123,9 @@ final class SynchronizationsControllerActionsTest extends TestCase {
 	public function testTestRunsTheSynchronizationAsATest(): void {
 		$sync = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'KVK pull'], 'sync-1');
 		$this->objects->expects($this->once())->method('find')
-			->with($this->callback(static fn ($id): bool => $id === 'sync-1'))
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => $this->callback(static fn ($id): bool => $id === 'sync-1'),
+			]))
 			->willReturn($sync);
 		$this->actionAuth->expects($this->once())->method('requireAction')->with($this->user, 'synchronization.test');
 		$this->service->expects($this->once())->method('synchronize')

@@ -25,6 +25,7 @@ use OCA\Integriq\Service\ConnectionDeclarationValidator;
 use OCA\Integriq\Service\ConnectionRegistryService;
 use OCA\Integriq\Service\ConnectionStatusResolver;
 use OCA\Integriq\Service\ConnectionStore;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -64,6 +65,27 @@ class ConnectionRegistryServiceTest extends TestCase {
 	 * @var string[]
 	 */
 	private array $deletes = [];
+
+	/**
+	 * Linked sources by uuid, as stored.
+	 *
+	 * @var array<string,array<string,mixed>>
+	 */
+	private array $sources = [];
+
+	/**
+	 * Residency writes: [source uuid, residency].
+	 *
+	 * @var array<int,array{0:string,1:array<string,mixed>}>
+	 */
+	private array $residencySaves = [];
+
+	/**
+	 * Whether the residency write throws.
+	 *
+	 * @var bool
+	 */
+	private bool $failResidencyWrite = false;
 
 	/**
 	 * Remove temporary app directories.
@@ -175,8 +197,31 @@ class ConnectionRegistryServiceTest extends TestCase {
 	private function makeStore(): ConnectionStore {
 		$store = $this->getMockBuilder(className: ConnectionStore::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findRows', 'save', 'delete'])
+			->onlyMethods(['findRows', 'save', 'delete', 'findSourceRaw', 'saveSourceResidency'])
 			->getMock();
+
+		$store->method('findSourceRaw')->willReturnCallback(
+			function (string $uuid): ?ObjectEntity {
+				if (isset($this->sources[$uuid]) === false) {
+					return null;
+				}
+
+				$source = new ObjectEntity();
+				$source->setUuid($uuid);
+				$source->setObject($this->sources[$uuid]);
+				return $source;
+			}
+		);
+		$store->method('saveSourceResidency')->willReturnCallback(
+			function (ObjectEntity $source, array $residency): void {
+				if ($this->failResidencyWrite === true) {
+					throw new \RuntimeException('register refused the write');
+				}
+
+				$this->residencySaves[] = [$source->getUuid(), $residency];
+				$this->sources[$source->getUuid()]['residency'] = $residency;
+			}
+		);
 
 		$store->method('findRows')->willReturnCallback(
 			function (?string $app = null): array {
@@ -723,4 +768,128 @@ class ConnectionRegistryServiceTest extends TestCase {
 	public function testRefreshedAtIsAStoredProperty(): void {
 		$this->assertContains(needle: 'refreshedAt', haystack: ConnectionStore::PROPERTIES);
 	}//end testRefreshedAtIsAStoredProperty()
+
+	/**
+	 * Sync the dossiq declaration once, link its brp row to a source, and
+	 * return the declaration with a residency on brp.
+	 *
+	 * @param array<string,mixed> $sourceData The linked source as stored.
+	 *
+	 * @return array<string,mixed> The declaration with residency.
+	 */
+	private function linkBrpSource(array $sourceData): array {
+		$this->makeService(appPaths: ['dossiq' => $this->appDir(declaration: $this->dossiqDeclaration())])->sync();
+		foreach ($this->rows as $uuid => $data) {
+			if ($data['key'] === 'brp') {
+				$this->rows[$uuid]['source'] = 'src-brp';
+			}
+		}
+
+		$this->sources['src-brp'] = $sourceData;
+		$declaration = $this->dossiqDeclaration();
+		$declaration['connections'][1]['residency'] = ['country' => 'NL', 'evidence' => 'Haal Centraal BRP, RvIG'];
+
+		return $declaration;
+	}//end linkBrpSource()
+
+	/**
+	 * A declared residency is copied onto the linked source with basis declared-by-app.
+	 *
+	 * @return void
+	 */
+	public function testADeclaredResidencyIsCopiedToTheLinkedSource(): void {
+		$declaration = $this->linkBrpSource(sourceData: ['name' => 'BRP', 'location' => 'https://brp.example.invalid']);
+
+		$this->makeService(appPaths: ['dossiq' => $this->appDir(declaration: $declaration)])->sync();
+
+		$this->assertCount(expectedCount: 1, haystack: $this->residencySaves);
+		$residency = $this->sources['src-brp']['residency'];
+		$this->assertSame(expected: 'NL', actual: $residency['country']);
+		$this->assertSame(expected: 'declared-by-app', actual: $residency['basis']);
+		$this->assertSame(expected: 'Haal Centraal BRP, RvIG', actual: $residency['evidence']);
+		$this->assertSame(expected: 'dossiq', actual: $residency['recordedBy']);
+		$this->assertNotFalse(strtotime($residency['recordedAt']));
+		$this->assertSame(expected: 'BRP', actual: $this->sources['src-brp']['name']);
+	}//end testADeclaredResidencyIsCopiedToTheLinkedSource()
+
+	/**
+	 * A second sync with the same declaration does not write the residency again.
+	 *
+	 * @return void
+	 */
+	public function testAnUnchangedDeclaredResidencyIsNotRewritten(): void {
+		$declaration = $this->linkBrpSource(sourceData: ['name' => 'BRP']);
+		$service = $this->makeService(appPaths: ['dossiq' => $this->appDir(declaration: $declaration)]);
+		$service->sync();
+
+		$service->sync();
+
+		$this->assertCount(expectedCount: 1, haystack: $this->residencySaves);
+	}//end testAnUnchangedDeclaredResidencyIsNotRewritten()
+
+	/**
+	 * An administrator's residency is never overwritten by a declaration.
+	 *
+	 * @return void
+	 */
+	public function testAnAdminResidencyWins(): void {
+		$admin = ['country' => 'DE', 'basis' => 'set-by-admin', 'evidence' => 'contract', 'recordedBy' => 'admin'];
+		$declaration = $this->linkBrpSource(sourceData: ['name' => 'BRP', 'residency' => $admin]);
+
+		$this->makeService(appPaths: ['dossiq' => $this->appDir(declaration: $declaration)])->sync();
+
+		$this->assertSame(expected: [], actual: $this->residencySaves);
+		$this->assertSame(expected: $admin, actual: $this->sources['src-brp']['residency']);
+	}//end testAnAdminResidencyWins()
+
+	/**
+	 * A linked source that no longer exists gets no residency, silently.
+	 *
+	 * @return void
+	 */
+	public function testAMissingLinkedSourceIsSkipped(): void {
+		$declaration = $this->linkBrpSource(sourceData: ['name' => 'BRP']);
+		unset($this->sources['src-brp']);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+
+		$summary = $this->makeService(appPaths: ['dossiq' => $this->appDir(declaration: $declaration)], logger: $logger)->sync();
+
+		$this->assertSame(expected: [], actual: $this->residencySaves);
+		$this->assertSame(expected: [], actual: $summary['skipped']);
+	}//end testAMissingLinkedSourceIsSkipped()
+
+	/**
+	 * A stored residency that is not an object is replaced by the declared one.
+	 *
+	 * @return void
+	 */
+	public function testAMalformedStoredResidencyIsReplaced(): void {
+		$declaration = $this->linkBrpSource(sourceData: ['name' => 'BRP', 'residency' => 'NL']);
+
+		$this->makeService(appPaths: ['dossiq' => $this->appDir(declaration: $declaration)])->sync();
+
+		$this->assertSame(expected: 'NL', actual: $this->sources['src-brp']['residency']['country']);
+		$this->assertSame(expected: 'declared-by-app', actual: $this->sources['src-brp']['residency']['basis']);
+	}//end testAMalformedStoredResidencyIsReplaced()
+
+	/**
+	 * A residency write that throws is logged and the sync of the rows goes on.
+	 *
+	 * @return void
+	 */
+	public function testAFailingResidencyWriteIsLoggedAndTheSyncGoesOn(): void {
+		$declaration = $this->linkBrpSource(sourceData: ['name' => 'BRP']);
+		$this->failResidencyWrite = true;
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(
+			$this->stringContains('could not copy the declared residency'),
+			$this->callback(static fn (array $context): bool => $context['key'] === 'brp' && $context['reason'] === 'register refused the write')
+		);
+
+		$summary = $this->makeService(appPaths: ['dossiq' => $this->appDir(declaration: $declaration)], logger: $logger)->sync();
+
+		$this->assertSame(expected: [], actual: $summary['skipped']);
+		$this->assertSame(expected: 2, actual: $summary['unchanged'] + $summary['updated']);
+	}//end testAFailingResidencyWriteIsLoggedAndTheSyncGoesOn()
 }//end class

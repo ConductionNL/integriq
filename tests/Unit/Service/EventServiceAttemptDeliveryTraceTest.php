@@ -37,6 +37,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The trace wrapper around one delivery attempt.
@@ -67,10 +69,10 @@ class EventServiceAttemptDeliveryTraceTest extends TestCase {
 	private function service(bool $persistThrows): EventService {
 		$objects = $this->createMock(ORObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			fn ($id, $register = null, $schema = null) => ObjectServiceMockBuilder::objectEntity($this, ['name' => 'job-' . $id], 'job-' . $id)
+			fn ($id, ?ObjectFindOptions $options = null) => ObjectServiceMockBuilder::objectEntity($this, ['name' => 'job-' . $id], 'job-' . $id)
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			fn ($object, $register = null, $schema = null, $uuid = null) => ObjectServiceMockBuilder::objectEntity($this, (array)$object, (string)$uuid)
+			fn ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) => ObjectServiceMockBuilder::objectEntity($this, (array)$object, (string)($options->uuid))
 		);
 
 		$traces = $this->createMock(ExecutionTraceService::class);

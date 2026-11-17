@@ -33,6 +33,7 @@ use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The fan-out reads the subscriptions of every organisation in system context,
@@ -90,10 +91,11 @@ class EventServiceOrganisationFanOutTest extends TestCase {
 
 		$names = array_map(
 			static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
-			(new ReflectionMethod(ObjectService::class, 'saveObject'))->getParameters()
+			LegacyObjectArgs::parameters(ObjectService::class, 'saveObject')
 		);
 		$objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use ($names): ObjectEntity {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$named = array_combine(array_slice($names, 0, count($args)), $args);
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->rows, COUNT_RECURSIVE));

@@ -23,6 +23,8 @@ namespace OCA\Integriq\BackgroundJob;
 use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -223,7 +225,7 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 				// against openregister origin/development: the only delete
 				// entry points are deleteObject/deleteObjects/
 				// deleteObjectsBySchema/deleteObjectsByRegister.
-				$openRegister->deleteObject(uuid: $uuid, register: $register, schema: $schema);
+				$openRegister->deleteObject(new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: $register, schema: $schema)));
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					'Integriq: failed to delete an extended view during cascade',

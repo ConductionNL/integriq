@@ -42,6 +42,7 @@ use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every EventService writer of an `event` row saves with `_rbac: false`.
@@ -73,11 +74,12 @@ class EventServiceEventWriteContextTest extends TestCase {
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$names = array_map(
 			static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
-			(new ReflectionMethod(ObjectService::class, 'saveObject'))->getParameters()
+			LegacyObjectArgs::parameters(ObjectService::class, 'saveObject')
 		);
 
 		$objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use ($names) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$named = array_combine(array_slice($names, 0, count($args)), $args);
 				if (($named['schema'] ?? null) === 'event') {
 					$this->eventSaves[] = [

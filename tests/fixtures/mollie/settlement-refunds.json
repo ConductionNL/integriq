@@ -1,0 +1,23 @@
+{
+  "count": 1,
+  "_embedded": {
+    "refunds": [
+      {
+        "resource": "refund",
+        "id": "re_ex0001",
+        "paymentId": "tr_ex0003",
+        "amount": {
+          "value": "22.85",
+          "currency": "EUR"
+        },
+        "settlementAmount": {
+          "value": "-22.85",
+          "currency": "EUR"
+        }
+      }
+    ]
+  },
+  "_links": {
+    "next": null
+  }
+}

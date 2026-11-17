@@ -31,6 +31,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Service\Intake\WebhookConnectionInterface;
@@ -175,9 +176,11 @@ class WebhookConnectionsSettingsController extends Controller {
 		try {
 			$this->objectService->saveObject(
 				object: $this->consumerData(profile: $profile, consumer: $consumer, trust: $trust, userId: $userId),
-				register: PortalConnectionInterface::REGISTER,
-				schema: PortalConnectionInterface::SCHEMA_CONSUMER,
-				uuid: $consumer?->getUuid()
+				options: RegisterSave::options(
+					register: PortalConnectionInterface::REGISTER,
+					schema: PortalConnectionInterface::SCHEMA_CONSUMER,
+					uuid: $consumer?->getUuid()
+				)
 			);
 		} catch (Throwable $exception) {
 			$this->logger->error(

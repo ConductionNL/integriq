@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Broker;
 
+use OCA\Integriq\Exception\CloudEventRefusedException;
+
 /**
  * The CloudEvents HTTP protocol binding, both content modes.
  *
@@ -57,6 +59,21 @@ class CloudEventHttpBinding implements CloudEventHttpBindingInterface {
 	 * @var array<int,string>
 	 */
 	private const BODY_ATTRIBUTES = ['data', 'data_base64', 'datacontenttype'];
+
+	/**
+	 * The attributes every received event must carry, in the order they are checked.
+	 *
+	 * @var array<int,string>
+	 */
+	public const REQUIRED_ATTRIBUTES = ['specversion', 'id', 'source', 'type'];
+
+	/**
+	 * The attributes read from `ce-` headers in binary mode, besides the required ones.
+	 * Extension attributes are not read: the request does not list its headers.
+	 *
+	 * @var array<int,string>
+	 */
+	private const OPTIONAL_ATTRIBUTES = ['subject', 'time', 'dataschema'];
 
 	/**
 	 * Render one CloudEvent for HTTP.
@@ -96,6 +113,96 @@ class CloudEventHttpBinding implements CloudEventHttpBindingInterface {
 		return ['headers' => $headers, 'body' => $this->binaryBody(cloudEvent: $cloudEvent)];
 
 	}//end render()
+
+	/**
+	 * Read one received CloudEvent from its HTTP body and headers.
+	 *
+	 * A body sent as `application/cloudevents+json` is the whole event
+	 * (structured mode). Any other body is the data alone, with the attributes
+	 * in `ce-` headers (binary mode). Either way `specversion`, `id`,
+	 * `source` and `type` must be present, and the version must be 1.0.
+	 *
+	 * @param string   $body     The raw request body.
+	 * @param callable $headerOf Returns a request header by name, '' when absent.
+	 *
+	 * @return array<string,mixed> The event, its required attributes checked.
+	 *
+	 * @throws CloudEventRefusedException When the event cannot be read or misses a required attribute.
+	 *
+	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 */
+	public function decode(string $body, callable $headerOf): array {
+		$contentType = trim((string)$headerOf('Content-Type'));
+		if (str_starts_with(strtolower($contentType), self::CLOUDEVENTS_JSON) === true) {
+			$cloudEvent = json_decode($body, true);
+			if (is_array($cloudEvent) === false || array_is_list($cloudEvent) === true) {
+				throw new CloudEventRefusedException(message: 'The body is not a CloudEvent in JSON.');
+			}
+		} else {
+			$cloudEvent = $this->fromHeaders(body: $body, contentType: $contentType, headerOf: $headerOf);
+		}
+
+		foreach (self::REQUIRED_ATTRIBUTES as $attribute) {
+			$value = ($cloudEvent[$attribute] ?? null);
+			if (is_string($value) === false || trim($value) === '') {
+				throw new CloudEventRefusedException(message: sprintf('The CloudEvent has no %s.', $attribute));
+			}
+		}
+
+		if ($cloudEvent['specversion'] !== '1.0') {
+			throw new CloudEventRefusedException(message: sprintf('CloudEvents version %s is not supported; send 1.0.', $cloudEvent['specversion']));
+		}
+
+		return $cloudEvent;
+
+	}//end decode()
+
+	/**
+	 * A binary-mode event: the attributes from `ce-` headers, the body as its data.
+	 *
+	 * @param string   $body        The raw request body, the event's data.
+	 * @param string   $contentType The body's content type, '' when absent.
+	 * @param callable $headerOf    Returns a request header by name, '' when absent.
+	 *
+	 * @return array<string,mixed> The event, unchecked.
+	 */
+	private function fromHeaders(string $body, string $contentType, callable $headerOf): array {
+		$cloudEvent = [];
+		foreach (array_merge(self::REQUIRED_ATTRIBUTES, self::OPTIONAL_ATTRIBUTES) as $attribute) {
+			$value = trim((string)$headerOf('ce-' . $attribute));
+			if ($value !== '') {
+				$cloudEvent[$attribute] = $value;
+			}
+		}
+
+		if ($contentType !== '') {
+			$cloudEvent['datacontenttype'] = $contentType;
+		}
+
+		if ($body === '') {
+			return $cloudEvent;
+		}
+
+		$decoded = null;
+		if ($contentType === '' || preg_match('#[/+]json\b#i', $contentType) === 1) {
+			$decoded = json_decode($body, true);
+		}
+
+		if ($decoded !== null) {
+			$cloudEvent['data'] = $decoded;
+			return $cloudEvent;
+		}
+
+		if (mb_check_encoding($body, 'UTF-8') === true) {
+			$cloudEvent['data'] = $body;
+			return $cloudEvent;
+		}
+
+		$cloudEvent['data_base64'] = base64_encode($body);
+
+		return $cloudEvent;
+
+	}//end fromHeaders()
 
 	/**
 	 * The body's own content type in binary mode.

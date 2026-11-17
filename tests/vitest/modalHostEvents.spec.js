@@ -29,7 +29,7 @@ function stubModal(path, name, props) {
 			default: defineComponent({
 				name,
 				props: ['open', ...props],
-				emits: ['close', 'linked'],
+				emits: ['close', 'linked', 'saved'],
 				render() {
 					return h('div', { 'data-modal': name, 'data-open': String(this.open) })
 				},
@@ -48,9 +48,12 @@ stubModal('../../src/dialogs/CatalogItemDetailDialog.vue', 'CatalogItemDetailDia
 stubModal('../../src/dialogs/ImportPreviewDialog.vue', 'ImportPreviewDialog', [])
 stubModal('../../src/dialogs/ExportConfigurationDialog.vue', 'ExportConfigurationDialog', [])
 stubModal('../../src/modals/PromotePreviewModal.vue', 'PromotePreviewModal', [])
+stubModal('../../src/dialogs/SharePointPublicationSetupDialog.vue', 'SharePointPublicationSetupDialog', [])
 stubModal('../../src/dialogs/RegistryLookupDialog.vue', 'RegistryLookupDialog', [])
 stubModal('../../src/dialogs/GatewayCatalogueDialog.vue', 'GatewayCatalogueDialog', [])
 stubModal('../../src/dialogs/LinkSourceDialog.vue', 'LinkSourceDialog', ['app'])
+stubModal('../../src/modals/Registration/RegistrationTargetTestModal.vue', 'RegistrationTargetTestModal', ['target'])
+stubModal('../../src/dialogs/SourceResidencyDialog.vue', 'SourceResidencyDialog', ['source'])
 
 const bus = await import('../../src/handlers/modalBus.js')
 const { default: ModalHost } = await import('../../src/modals/v2/ModalHost.vue')
@@ -93,9 +96,12 @@ const cases = [
 	[bus.EVENT_OPEN_CONFIGURATION_IMPORT, 'ImportPreviewDialog', {}, {}],
 	[bus.EVENT_OPEN_CONFIGURATION_EXPORT, 'ExportConfigurationDialog', {}, {}],
 	[bus.EVENT_OPEN_PROMOTION, 'PromotePreviewModal', {}, {}],
+	[bus.EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, 'SharePointPublicationSetupDialog', {}, {}],
 	[bus.EVENT_OPEN_REGISTRY_LOOKUP, 'RegistryLookupDialog', {}, {}],
 	[bus.EVENT_OPEN_GATEWAY_CATALOGUE, 'GatewayCatalogueDialog', {}, {}],
 	[bus.EVENT_OPEN_LINK_SOURCE, 'LinkSourceDialog', { app: 'dossiq' }, { app: '' }],
+	[bus.EVENT_OPEN_REGISTRATION_TEST, 'RegistrationTargetTestModal', { target: { slug: 'json-milieu' } }, { target: null }],
+	[bus.EVENT_OPEN_SOURCE_RESIDENCY, 'SourceResidencyDialog', { source: { id: 's1' } }, { source: null }],
 ]
 
 describe('ModalHost', () => {
@@ -128,6 +134,15 @@ describe('ModalHost', () => {
 		expect(modal('RunActionModal').props()).toMatchObject({ open: true, target: '', mode: '', item: null })
 		expect(modal('DirectoryRunModal').props()).toMatchObject({ open: true, source: null, mode: 'run' })
 		expect(modal('LinkSourceDialog').props()).toMatchObject({ open: true, app: '' })
+	})
+
+	it('relays a saved residency on the bus, so the page that listed the source reloads', () => {
+		mountHost()
+		const saved = vi.fn()
+		bus.modalBus.on(bus.EVENT_SOURCE_RESIDENCY_SAVED, saved)
+		modal('SourceResidencyDialog').vm.$emit('saved', { source: { id: 's1' }, residency: { country: 'NL' } })
+		bus.modalBus.off(bus.EVENT_SOURCE_RESIDENCY_SAVED, saved)
+		expect(saved).toHaveBeenCalledWith({ source: { id: 's1' }, residency: { country: 'NL' } })
 	})
 
 	it('stops listening once unmounted', async () => {
