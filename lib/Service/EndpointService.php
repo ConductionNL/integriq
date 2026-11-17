@@ -297,6 +297,15 @@ class EndpointService implements EndpointServiceInterface {
 	private bool $proxiedAnswer = false;
 
 	/**
+	 * Whether an authentication rule ran for the current request. A cached
+	 * answer of an endpoint that does not share answers is kept per caller,
+	 * so an authenticated caller without a resolved consumer is not cached.
+	 *
+	 * @var bool
+	 */
+	private bool $callerAuthenticated = false;
+
+	/**
 	 * The API product policy (subscription, tier, counter key, deprecation), shared with product channels.
 	 *
 	 * @var ProductPolicyService|null
@@ -472,6 +481,7 @@ class EndpointService implements EndpointServiceInterface {
 		$this->rateLimitHeaders = [];
 		$this->deprecationHeaders = [];
 		$this->proxiedAnswer = false;
+		$this->callerAuthenticated = false;
 		$startTime = microtime(true);
 
 		// Resolve the endpoint's api_product (if any) once, up front, so both
@@ -2809,6 +2819,11 @@ class EndpointService implements EndpointServiceInterface {
 			return null;
 		}
 
+		$caller = $this->cacheCaller(settings: $settings);
+		if ($caller === null) {
+			return null;
+		}
+
 		$headers = [];
 		foreach ($settings['varyHeaders'] as $name) {
 			$headers[$name] = (string)$request->getHeader($name);
@@ -2821,10 +2836,40 @@ class EndpointService implements EndpointServiceInterface {
 				'path' => $path,
 				'query' => $request->getParams(),
 				'headers' => $headers,
-				'consumer' => $this->authorizationService->getResolvedConsumer()?->getUuid(),
+				'consumer' => $caller,
 			],
 		];
 	}//end responseCacheOf()
+
+	/**
+	 * Who the cache keeps an answer for: the resolved consumer, `anonymous`
+	 * on an endpoint without authentication (every caller may ask it), or
+	 * null when an authenticated caller has no consumer to key on (basic,
+	 * oauth, nc-session), so their answers are not cached at all. An
+	 * endpoint that shares answers across consumers keys on no caller.
+	 *
+	 * @param array<string, mixed> $settings The endpoint's cache settings.
+	 *
+	 * @return string|null The caller, or null to not cache this request.
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 */
+	private function cacheCaller(array $settings): ?string {
+		if (($settings['sharedAcrossConsumers'] ?? false) === true) {
+			return '';
+		}
+
+		$consumer = (string)($this->authorizationService->getResolvedConsumer()?->getUuid() ?? '');
+		if ($consumer !== '') {
+			return $consumer;
+		}
+
+		if ($this->callerAuthenticated === false) {
+			return 'anonymous';
+		}
+
+		return null;
+	}//end cacheCaller()
 
 	/**
 	 * Answer from the cache: the stored status and answer with `X-Cache: HIT`,
@@ -3787,6 +3832,8 @@ class EndpointService implements EndpointServiceInterface {
 		if (isset($configuration['authentication']) === false) {
 			return $data;
 		}
+
+		$this->callerAuthenticated = true;
 
 		$anyOf = ($configuration['authentication']['anyOf'] ?? null);
 		if (is_array($anyOf) === true && $anyOf !== []) {

@@ -113,6 +113,20 @@ class EndpointServiceResponseCacheTest extends TestCase {
 	private EndpointResponseCache $cache;
 
 	/**
+	 * The credential bridge: answers the resolved consumer.
+	 *
+	 * @var OpenRegisterCredentialBridge&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private OpenRegisterCredentialBridge $bridge;
+
+	/**
+	 * The consumer uuid the bridge resolves, or null for none.
+	 *
+	 * @var string|null
+	 */
+	private ?string $consumer = null;
+
+	/**
 	 * The service under test.
 	 *
 	 * @var EndpointService
@@ -131,7 +145,10 @@ class EndpointServiceResponseCacheTest extends TestCase {
 
 		$source = ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://bag.example.org', 'isEnabled' => true], 'source-bag');
 		$this->objects = ObjectServiceMockBuilder::make($this);
-		$this->objects->method('find')->willReturn($source);
+		$rule = ObjectServiceMockBuilder::objectEntity($this, ['type' => 'authentication', 'timing' => 'before', 'configuration' => ['authentication' => ['type' => 'nc-session']]], 'rule-session');
+		$this->objects->method('find')->willReturnCallback(
+			static fn (string $id): ObjectEntity => ($id === 'rule-session' ? $rule : $source)
+		);
 		$this->objects->method('saveObject')->willReturnCallback(
 			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use ($source): ObjectEntity {
 				$schema = $options->target->schema;
@@ -162,6 +179,12 @@ class EndpointServiceResponseCacheTest extends TestCase {
 		$factory->method('createDistributed')->willReturn($memory);
 		$this->cache = new EndpointResponseCache(cacheFactory: $factory);
 
+		$this->consumer = null;
+		$this->bridge = $this->createMock(OpenRegisterCredentialBridge::class);
+		$this->bridge->method('getResolvedConsumer')->willReturnCallback(
+			fn (): ?ObjectEntity => ($this->consumer === null ? null : ObjectServiceMockBuilder::objectEntity($this, [], $this->consumer))
+		);
+
 		$logger = $this->createMock(LoggerInterface::class);
 		$scope = $this->createMock(ConsumerScopeService::class);
 		$scope->method('isAllowed')->willReturn(true);
@@ -177,7 +200,7 @@ class EndpointServiceResponseCacheTest extends TestCase {
 			$this->objects,
 			$this->createMock(IConfig::class),
 			$this->createMock(StorageService::class),
-			$this->createMock(OpenRegisterCredentialBridge::class),
+			$this->bridge,
 			$this->createMock(ContainerInterface::class),
 			$this->createMock(SynchronizationService::class),
 			$this->createMock(RuleService::class),
@@ -200,11 +223,16 @@ class EndpointServiceResponseCacheTest extends TestCase {
 	 * A source endpoint, with the given cache block.
 	 *
 	 * @param array<string, mixed>|null $cache The cache block, or null for none.
+	 * @param list<string>              $rules The endpoint's rule ids.
 	 *
 	 * @return ObjectEntity
 	 */
-	private function endpoint(?array $cache): ObjectEntity {
+	private function endpoint(?array $cache, array $rules = []): ObjectEntity {
 		$data = ['method' => 'GET', 'path' => '/api/adressen', 'targetType' => 'api', 'targetId' => 'source-bag'];
+		if ($rules !== []) {
+			$data['rules'] = $rules;
+		}
+
 		if ($cache !== null) {
 			$data['cache'] = $cache;
 		}
@@ -324,4 +352,59 @@ class EndpointServiceResponseCacheTest extends TestCase {
 
 		$this->assertSame('MISS', $this->header($after));
 	}//end testAfterAClearTheNextCallReachesTheSource()
+
+	/**
+	 * Two consumers asking the same question each reach the source: the key carries the consumer.
+	 *
+	 * @return void
+	 */
+	public function testTwoConsumersDoNotShareAnAnswer(): void {
+		$this->callService->expects($this->exactly(3))->method('call');
+		$endpoint = $this->endpoint(['enabled' => true, 'ttlSeconds' => 60]);
+
+		$this->consumer = 'consumer-a';
+		$this->service->handleRequest($endpoint, $this->request(), '/api/adressen');
+		$this->consumer = 'consumer-b';
+		$other = $this->service->handleRequest($endpoint, $this->request(), '/api/adressen');
+		$this->consumer = 'consumer-a';
+		$again = $this->service->handleRequest($endpoint, $this->request(), '/api/adressen');
+		$this->consumer = 'consumer-c';
+		$this->service->handleRequest($endpoint, $this->request(), '/api/adressen');
+
+		$this->assertSame('MISS', $this->header($other));
+		$this->assertSame('HIT', $this->header($again));
+	}//end testTwoConsumersDoNotShareAnAnswer()
+
+	/**
+	 * An authenticated caller without a consumer (nc-session, basic, oauth) is not cached: there is no caller to key on.
+	 *
+	 * @return void
+	 */
+	public function testAnAuthenticatedCallerWithoutAConsumerIsNotCached(): void {
+		$this->callService->expects($this->exactly(2))->method('call');
+		$endpoint = $this->endpoint(['enabled' => true, 'ttlSeconds' => 60], ['rule-session']);
+
+		$this->service->handleRequest($endpoint, $this->request(), '/api/adressen');
+		$second = $this->service->handleRequest($endpoint, $this->request(), '/api/adressen');
+
+		$this->assertNull($this->header($second));
+		$this->assertSame([], $this->stored);
+	}//end testAnAuthenticatedCallerWithoutAConsumerIsNotCached()
+
+	/**
+	 * An endpoint that shares answers across consumers serves one consumer's answer to another.
+	 *
+	 * @return void
+	 */
+	public function testASharedEndpointServesOneAnswerToEveryCaller(): void {
+		$this->callService->expects($this->once())->method('call');
+		$endpoint = $this->endpoint(['enabled' => true, 'ttlSeconds' => 60, 'sharedAcrossConsumers' => true], ['rule-session']);
+
+		$this->consumer = 'consumer-a';
+		$this->service->handleRequest($endpoint, $this->request(), '/api/adressen');
+		$this->consumer = null;
+		$second = $this->service->handleRequest($endpoint, $this->request(), '/api/adressen');
+
+		$this->assertSame('HIT', $this->header($second));
+	}//end testASharedEndpointServesOneAnswerToEveryCaller()
 }//end class
