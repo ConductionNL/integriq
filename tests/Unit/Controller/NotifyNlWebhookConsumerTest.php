@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\NotifyNlController;
+use OCA\Integriq\Service\NotifyNlEmailService;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
@@ -123,7 +124,8 @@ class NotifyNlWebhookConsumerTest extends TestCase {
 			userSession: $this->createMock(IUserSession::class),
 			actionAuth: $this->createMock(ActionAuthService::class),
 			l: $this->webhookL10n(),
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			emailService: $this->createMock(NotifyNlEmailService::class)
 		);
 
 	}//end controller()

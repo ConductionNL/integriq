@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Security;
 
+use OCA\Integriq\Service\Security\PersonalDataFieldList;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -323,4 +325,22 @@ class SensitiveFieldRegistryTest extends TestCase {
 		$this->assertSame('access_token=a&x=1', $this->registry->redactIssuedTokensInJson(body: 'access_token=a&x=1'));
 		$this->assertSame('{"name": "x"}', $this->registry->redactIssuedTokensInJson(body: '{"name": "x"}'));
 	}//end testIssuedTokensAreMaskedInAJsonBody()
+	/**
+	 * Personal data in a logged value is masked over the list the app config extends.
+	 *
+	 * @return void
+	 */
+	public function testMaskPersonalDataUsesTheAddedFields(): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')
+			->with('integriq', PersonalDataFieldList::CONFIG_KEY, '[]')
+			->willReturn('["kenteken"]');
+		$registry = new SensitiveFieldRegistry(appConfig: $appConfig);
+
+		$this->assertSame(
+			'{"kenteken":"[afgeschermd]","bsn":"[afgeschermd]","zaaktype":"z1"}',
+			$registry->maskPersonalData(value: '{"kenteken":"AB-123-C","bsn":"999993653","zaaktype":"z1"}')
+		);
+		$this->assertSame('{"kenteken":"AB-123-C"}', $this->registry->maskPersonalData(value: '{"kenteken":"AB-123-C"}'));
+	}//end testMaskPersonalDataUsesTheAddedFields()
 }//end class
