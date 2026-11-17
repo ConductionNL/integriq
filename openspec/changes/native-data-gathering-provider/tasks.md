@@ -120,8 +120,17 @@
   (REQ-MFL-001: a synchronization with `sourceConfig.format: "csv"`, with
   `csvDelimiter` / `csvEnclosure` / `csvHeader`); both drafts ship disabled
   until their synchronization is switched to it and run live once
-- [ ] Open follow-up: `.zip` multi-member archive iterate → unblocks
-  `spain_placsp`
+- [x] Open follow-up: `.zip` multi-member archive iterate → unblocks
+  `spain_placsp` — landed in this change: a page that is a zip archive
+  (`Source.configuration.decompress: "zip"`, a `.zip` endpoint, or the zip
+  signature) has every file member read with the synchronization's own parser
+  and the objects joined (`SynchronizationService::readZipPage()` over
+  `ZipArchiveMembers`); `Source.configuration.zipMembers` narrows the members by
+  shell pattern; an unreadable member or an archive over 1000 members / 256 MiB
+  unpacked fails the page instead of emptying it. Pinned by
+  `ZipArchiveMembersTest` and `SynchronizationZipPageTest`. The
+  `spain-placsp` draft now carries `zipMembers: "*.atom"` and stays disabled
+  until one watched live run confirms a month fits the memory cap
 - [ ] Open follow-up: N+1 two-hop (id-list then per-id detail fetch) → unblocks
   `italy_anac`, `saashub`, `sourceforge`
 - [ ] Open follow-up: wildcard / recursive `resultsPosition` → unblocks
