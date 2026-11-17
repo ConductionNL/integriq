@@ -1620,6 +1620,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md#requirement-inbound-observability-logging-for-api-product-scoped-endpoints-req-ep-009
 	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
 	 */
 	public function recordInboundCallLog(ObjectEntity $endpoint, ObjectEntity $product, int $statusCode, float $durationMs): void {
 		try {
@@ -1633,8 +1634,9 @@ class EndpointService implements EndpointServiceInterface {
 					'endpoint' => (string)$endpoint->getUuid(),
 					'responseTime' => (int)round($durationMs),
 					'created' => (new DateTime())->format('c'),
-				] + $this->organisationSelf(object: $endpoint),
+				] + $this->consumerField() + $this->organisationSelf(object: $endpoint),
 				options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
+				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1645,6 +1647,29 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 	}//end recordInboundCallLog()
+
+	/**
+	 * The `consumer` field of an inbound call_log row: the uuid of the consumer
+	 * the request authenticated as, or nothing when no consumer was resolved
+	 * (a public endpoint, an anonymous caller).
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 */
+	private function consumerField(): array {
+		$consumer = $this->authorizationService->getResolvedConsumer();
+		if ($consumer === null) {
+			return [];
+		}
+
+		$uuid = (string)($consumer->getUuid() ?? ($consumer->getObject()['uuid'] ?? ''));
+		if ($uuid === '') {
+			return [];
+		}
+
+		return ['consumer' => $uuid];
+	}//end consumerField()
 
 	/**
 	 * Record an inbound rate-limit/quota 429 on the CallLog observability surface.

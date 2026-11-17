@@ -20,12 +20,16 @@
           "startedAtUs": {
             "type": "integer",
             "description": "When the execution started, in microseconds since the epoch, so exported spans order below the second (observability-opentelemetry-export REQ-OTEL-001). Each step carries its own startedAtUs too, and an outbound call step the spanId its traceparent named",
-            "title": "Started at (µs)"
+            "title": "Started at (µs)",
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "finishedAtUs": {
             "type": "integer",
             "description": "When the execution finished, in microseconds since the epoch",
-            "title": "Finished at (µs)"
+            "title": "Finished at (µs)",
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "parentSpanId": {
             "type": "string",
