@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Security\PersonalDataFieldList;
 use OCA\Integriq\Service\Security\PersonalDataMasker;
-use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -124,13 +124,13 @@ class PersonalDataSettingsController extends Controller {
 		}
 
 		if ($names === []) {
-			$this->appConfig->deleteKey(AppIdentity::APP_ID, SensitiveFieldRegistry::PERSONAL_DATA_CONFIG_KEY);
+			$this->appConfig->deleteKey(AppIdentity::APP_ID, PersonalDataFieldList::CONFIG_KEY);
 			return new JSONResponse($this->config());
 		}
 
 		$this->appConfig->setValueString(
 			AppIdentity::APP_ID,
-			SensitiveFieldRegistry::PERSONAL_DATA_CONFIG_KEY,
+			PersonalDataFieldList::CONFIG_KEY,
 			(string)json_encode(array_values($names))
 		);
 
@@ -144,8 +144,8 @@ class PersonalDataSettingsController extends Controller {
 	 */
 	private function config(): array {
 		return [
-			'defaults' => SensitiveFieldRegistry::DEFAULT_PERSONAL_DATA_FIELDS,
-			'added' => (new SensitiveFieldRegistry(appConfig: $this->appConfig))->addedPersonalDataFields(),
+			'defaults' => PersonalDataFieldList::DEFAULT_FIELDS,
+			'added' => (new PersonalDataFieldList(appConfig: $this->appConfig))->addedPersonalDataFields(),
 		];
 	}//end config()
 }//end class

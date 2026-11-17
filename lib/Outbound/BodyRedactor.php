@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Outbound;
 
 use OCA\Integriq\Service\Security\PersonalDataMasker;
-use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\Security\PersonalDataFieldList;
 
 /**
  * Removes credential material from a body before it is stored.
@@ -80,14 +80,14 @@ class BodyRedactor {
 	/**
 	 * Constructor.
 	 *
-	 * @param SensitiveFieldRegistry|null $sensitiveFields The personal data field list, with an
-	 *                                                     administrator's additions; the default
-	 *                                                     list when null.
+	 * @param PersonalDataFieldList|null $sensitiveFields The personal data field list, with an
+	 *                                                    administrator's additions; the default
+	 *                                                    list when null.
 	 *
 	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function __construct(
-		private readonly ?SensitiveFieldRegistry $sensitiveFields = null,
+		private readonly ?PersonalDataFieldList $sensitiveFields = null,
 	) {
 
 	}//end __construct()
@@ -196,12 +196,12 @@ class BodyRedactor {
 	}//end maskPersonalData()
 
 	/**
-	 * The registry that knows the personal data field names.
+	 * The list that knows the personal data field names.
 	 *
-	 * @return SensitiveFieldRegistry The registry.
+	 * @return PersonalDataFieldList The list.
 	 */
-	private function registry(): SensitiveFieldRegistry {
-		return ($this->sensitiveFields ?? new SensitiveFieldRegistry());
+	private function registry(): PersonalDataFieldList {
+		return ($this->sensitiveFields ?? new PersonalDataFieldList());
 	}//end registry()
 
 	/**

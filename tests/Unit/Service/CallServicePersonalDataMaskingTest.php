@@ -30,6 +30,7 @@ use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Security\PersonalDataFieldList;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -110,7 +111,7 @@ class CallServicePersonalDataMaskingTest extends TestCase {
 		$appConfig->method('hasKey')->willReturn(false);
 		$appConfig->method('getValueInt')->willReturnArgument(2);
 		$appConfig->method('getValueString')->willReturnCallback(
-			static fn (string $app, string $key, string $default = ''): string => $key === SensitiveFieldRegistry::PERSONAL_DATA_CONFIG_KEY
+			static fn (string $app, string $key, string $default = ''): string => $key === PersonalDataFieldList::CONFIG_KEY
 				? (string)json_encode($added)
 				: $default
 		);

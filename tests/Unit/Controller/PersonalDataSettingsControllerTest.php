@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\PersonalDataSettingsController;
-use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\Security\PersonalDataFieldList;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -74,14 +74,14 @@ class PersonalDataSettingsControllerTest extends TestCase {
 		);
 		$appConfig->method('setValueString')->willReturnCallback(
 			function (string $app, string $key, string $value): bool {
-				$this->assertSame(['integriq', SensitiveFieldRegistry::PERSONAL_DATA_CONFIG_KEY], [$app, $key]);
+				$this->assertSame(['integriq', PersonalDataFieldList::CONFIG_KEY], [$app, $key]);
 				$this->stored = $value;
 				return true;
 			}
 		);
 		$appConfig->method('deleteKey')->willReturnCallback(
 			function (string $app, string $key): void {
-				$this->assertSame(['integriq', SensitiveFieldRegistry::PERSONAL_DATA_CONFIG_KEY], [$app, $key]);
+				$this->assertSame(['integriq', PersonalDataFieldList::CONFIG_KEY], [$app, $key]);
 				$this->stored = null;
 			}
 		);
@@ -127,7 +127,7 @@ class PersonalDataSettingsControllerTest extends TestCase {
 	public function testTheReadListsTheDefaults(): void {
 		$data = $this->controller->getConfig()->getData();
 
-		$this->assertSame(SensitiveFieldRegistry::DEFAULT_PERSONAL_DATA_FIELDS, $data['defaults']);
+		$this->assertSame(PersonalDataFieldList::DEFAULT_FIELDS, $data['defaults']);
 		$this->assertSame([], $data['added']);
 	}//end testTheReadListsTheDefaults()
 
