@@ -703,15 +703,7 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		$query = $this->feedQuery(request: $request);
-		$refusal = $this->enforceConsumerScope(request: $request);
-		if ($refusal === null) {
-			$refusal = $this->feedRequestHandler->scopeRefusal(feed: $feed, consumer: $consumer, query: $query);
-		}
-
-		if ($refusal === null && $enforceRateLimit === true) {
-			$refusal = $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint);
-		}
-
+		$refusal = $this->feedRefusal(endpoint: $endpoint, request: $request, feed: $feed, consumer: $consumer, query: $query, enforceRateLimit: $enforceRateLimit);
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -723,6 +715,33 @@ class EndpointService implements EndpointServiceInterface {
 			baseUrl: $this->feedBaseUrl(request: $request)
 		);
 	}//end handleFeedRequest()
+
+	/**
+	 * Why a feed read is refused, checked in order: the consumer's scope on the
+	 * endpoint, the feed scope it is bound to, then the inbound rate limit.
+	 *
+	 * @param ObjectEntity      $endpoint         The feed endpoint.
+	 * @param IRequest          $request          The request.
+	 * @param array             $feed             The feed declaration.
+	 * @param ObjectEntity|null $consumer         The consumer, null when anonymous.
+	 * @param array             $query            The query.
+	 * @param bool              $enforceRateLimit Whether the rate limit applies.
+	 *
+	 * @return Response|null The refusal, or null when the read may go ahead.
+	 */
+	private function feedRefusal(ObjectEntity $endpoint, IRequest $request, array $feed, ?ObjectEntity $consumer, array $query, bool $enforceRateLimit): ?Response {
+		$refusal = $this->enforceConsumerScope(request: $request);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$refusal = $this->feedRequestHandler->scopeRefusal(feed: $feed, consumer: $consumer, query: $query);
+		if ($refusal !== null || $enforceRateLimit === false) {
+			return $refusal;
+		}
+
+		return $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint);
+	}//end feedRefusal()
 
 	/**
 	 * The consumer a feed request comes from: the one the endpoint's

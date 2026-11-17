@@ -141,17 +141,8 @@ class FeedDeclarationService {
 		$enabled = array_map('strval', $this->appManager->getEnabledApps());
 		$existing = $this->feedEndpoints();
 
-		$apps = $enabled;
-		if ($app !== null) {
-			$apps = [$app];
-		}
-
-		foreach ($apps as $appId) {
-			$entries = [];
-			if (in_array($appId, $enabled, true) === true) {
-				$entries = $this->readDeclaration(app: $appId, summary: $summary);
-			}
-
+		foreach (($app === null ? $enabled : [$app]) as $appId) {
+			$entries = $this->entriesOf(app: $appId, enabled: $enabled, summary: $summary);
 			if ($entries === null) {
 				// A file that cannot be read changes nothing: what was served stays.
 				continue;
@@ -162,13 +153,28 @@ class FeedDeclarationService {
 		}
 
 		if ($app === null) {
-			foreach ($existing as $appId => $endpoints) {
-				$summary = $this->syncApp(app: (string)$appId, entries: [], existing: $endpoints, summary: $summary);
-			}
+			$summary = $this->syncVanished(existing: $existing, summary: $summary);
 		}
 
 		return $summary;
 	}//end sync()
+
+	/**
+	 * Sync the apps that still have feed endpoints but were not synced: they
+	 * declare nothing now, so their endpoints go.
+	 *
+	 * @param array<string, array<string, ObjectEntity>> $existing The remaining endpoints by app and feed key.
+	 * @param array                                      $summary  The running summary.
+	 *
+	 * @return array The summary.
+	 */
+	private function syncVanished(array $existing, array $summary): array {
+		foreach ($existing as $appId => $endpoints) {
+			$summary = $this->syncApp(app: (string)$appId, entries: [], existing: $endpoints, summary: $summary);
+		}
+
+		return $summary;
+	}//end syncVanished()
 
 	/**
 	 * Sync one app's datasets into endpoints and its product.
@@ -402,15 +408,7 @@ class FeedDeclarationService {
 		}
 
 		$data = json_decode((string)file_get_contents($file), true);
-		$errors = $this->validator->fileErrors(data: $data);
-		if (json_last_error() !== JSON_ERROR_NONE) {
-			$errors = ['it is not valid JSON (' . json_last_error_msg() . ')'];
-		}
-
-		if ($errors === [] && isset($data['app']) === true && $data['app'] !== $app) {
-			$errors = [sprintf('it claims the app id "%s"', $data['app'])];
-		}
-
+		$errors = $this->declarationErrors(app: $app, data: $data);
 		if ($errors !== []) {
 			$summary['refused'][$app] = implode('; ', $errors);
 			$this->logger->error(
@@ -422,6 +420,46 @@ class FeedDeclarationService {
 
 		return $data['feeds'];
 	}//end readDeclaration()
+
+	/**
+	 * The problems of a decoded declaration file: not JSON, malformed, or
+	 * claiming another app's id. Call right after json_decode().
+	 *
+	 * @param string $app  The declaring app.
+	 * @param mixed  $data The decoded file.
+	 *
+	 * @return array<int, string> The problems.
+	 */
+	private function declarationErrors(string $app, mixed $data): array {
+		$errors = $this->validator->fileErrors(data: $data);
+		if (json_last_error() !== JSON_ERROR_NONE) {
+			return ['it is not valid JSON (' . json_last_error_msg() . ')'];
+		}
+
+		if ($errors === [] && isset($data['app']) === true && $data['app'] !== $app) {
+			return [sprintf('it claims the app id "%s"', $data['app'])];
+		}
+
+		return $errors;
+	}//end declarationErrors()
+
+	/**
+	 * The feeds an app declares: none for an app that is not enabled, null
+	 * when its file cannot be read.
+	 *
+	 * @param string             $app     The app.
+	 * @param array<int, string> $enabled The enabled apps.
+	 * @param array              $summary The running summary.
+	 *
+	 * @return array|null The feed entries.
+	 */
+	private function entriesOf(string $app, array $enabled, array &$summary): ?array {
+		if (in_array($app, $enabled, true) === false) {
+			return [];
+		}
+
+		return $this->readDeclaration(app: $app, summary: $summary);
+	}//end entriesOf()
 
 	/**
 	 * The declaration file of an app, or null when it ships none.
