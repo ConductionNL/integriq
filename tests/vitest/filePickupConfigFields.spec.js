@@ -57,6 +57,7 @@ vi.mock('@nextcloud/vue', async () => {
 		NcSelect: field('NcSelect'),
 		NcButton: field('NcButton'),
 		NcLoadingIcon: field('NcLoadingIcon'),
+		NcCheckboxRadioSwitch: field('NcCheckboxRadioSwitch'),
 	}
 })
 
