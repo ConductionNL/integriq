@@ -28,7 +28,9 @@ namespace OCA\Integriq\Service\Exchange;
 use DateTime;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -218,10 +220,8 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 		try {
 			$entry = $this->objectService->find(
 				id: $rejectionId,
-				register: ExchangeJobService::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: ExchangeJobService::REGISTER, schema: self::SCHEMA),
 				_rbac: false,
-				// Unscoped: rejections are captured by the runner without a session; the caller reached the job first.
 				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
@@ -562,11 +562,8 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 	private function save(array $data, ?string $uuid = null): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: ExchangeJobService::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuid,
+			options: RegisterSave::options(register: ExchangeJobService::REGISTER, schema: self::SCHEMA, uuid: $uuid),
 			_rbac: false,
-			// Unscoped: system write of a rejection captured by the runner, no user session.
 			_multitenancy: false
 		);
 

@@ -196,7 +196,8 @@ class PromotionController extends Controller {
 				targetEnvironmentSlug: $promotion->targetEnvironmentSlug,
 				credentialBindings: $promotion->credentialBindings,
 				actorUid: $promoter->getUID(),
-				fromEnvironmentSlug: $this->resolveFromEnvironmentSlug()
+				fromEnvironmentSlug: $this->resolveFromEnvironmentSlug(),
+				overrideFailingTests: $this->overrideFailingTests()
 			);
 		} catch (Throwable $e) {
 			return $this->promotionFailure(exception: $e);
@@ -251,6 +252,19 @@ class PromotionController extends Controller {
 
 		return new JSONResponse(['error' => $this->l->t('Promotion failed: %s', [$exception->getMessage()])], Http::STATUS_BAD_GATEWAY);
 	}//end promotionFailure()
+
+	/**
+	 * Whether the promoter accepted failing test cases: `overrideFailingTests` true (or "true").
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 */
+	private function overrideFailingTests(): bool {
+		$override = $this->request->getParam('overrideFailingTests', false);
+
+		return $override === true || $override === 'true';
+	}//end overrideFailingTests()
 
 	/**
 	 * Read the optional `fromEnvironmentSlug` request param, defaulting to

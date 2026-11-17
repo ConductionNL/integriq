@@ -54,6 +54,7 @@ import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import DatabaseSearchOutline from 'vue-material-design-icons/DatabaseSearchOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Earth from 'vue-material-design-icons/Earth.vue'
+import EarthArrowRight from 'vue-material-design-icons/EarthArrowRight.vue'
 import Email from 'vue-material-design-icons/Email.vue'
 import EmailAlertOutline from 'vue-material-design-icons/EmailAlertOutline.vue'
 import EmailFast from 'vue-material-design-icons/EmailFast.vue'
@@ -84,6 +85,7 @@ import KeyPlus from 'vue-material-design-icons/KeyPlus.vue'
 import LanConnect from 'vue-material-design-icons/LanConnect.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
+import MapMarkerRadiusOutline from 'vue-material-design-icons/MapMarkerRadiusOutline.vue'
 import MedicalBag from 'vue-material-design-icons/MedicalBag.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
 import Package from 'vue-material-design-icons/Package.vue'
@@ -100,6 +102,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import RocketLaunchOutline from 'vue-material-design-icons/RocketLaunchOutline.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SchoolOutline from 'vue-material-design-icons/SchoolOutline.vue'
+import SendCheckOutline from 'vue-material-design-icons/SendCheckOutline.vue'
 import SendOutline from 'vue-material-design-icons/SendOutline.vue'
 import ServerNetwork from 'vue-material-design-icons/ServerNetwork.vue'
 import ShieldCheckOutline from 'vue-material-design-icons/ShieldCheckOutline.vue'
@@ -170,6 +173,7 @@ export default {
 	DatabaseSearchOutline,
 	Download,
 	Earth,
+	EarthArrowRight,
 	Email,
 	EmailAlertOutline,
 	EmailFast,
@@ -200,6 +204,7 @@ export default {
 	LanConnect,
 	LinkVariant,
 	MapMarkerPath,
+	MapMarkerRadiusOutline,
 	MedicalBag,
 	MessageTextOutline,
 	Package,
@@ -216,6 +221,7 @@ export default {
 	RocketLaunchOutline,
 	ScaleBalance,
 	SchoolOutline,
+	SendCheckOutline,
 	SendOutline,
 	ServerNetwork,
 	ShieldCheckOutline,

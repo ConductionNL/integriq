@@ -30,6 +30,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Twig\Loader\ArrayLoader;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the mapping execution service after chain-C cutover.
@@ -129,7 +130,11 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'map-uuid-42', register: 'integriq', schema: 'mapping')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => 'map-uuid-42',
+					'register' => 'integriq',
+					'schema' => 'mapping',
+				]))
 			->willReturn($object);
 
 		$result = $this->service->getMapping('map-uuid-42');
@@ -254,7 +259,11 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'lookup-uuid', register: 'integriq', schema: 'mapping')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => 'lookup-uuid',
+					'register' => 'integriq',
+					'schema' => 'mapping',
+				]))
 			->willReturn($object);
 
 		$result = $this->service->executeMapping('lookup-uuid', ['in' => 'value']);
@@ -279,7 +288,11 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'lookup-slug', register: 'integriq', schema: 'mapping')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => 'lookup-slug',
+					'register' => 'integriq',
+					'schema' => 'mapping',
+				]))
 			->willReturn(null);
 
 		$this->orObjectService->expects($this->once())

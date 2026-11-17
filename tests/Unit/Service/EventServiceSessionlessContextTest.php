@@ -33,6 +33,7 @@ use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The LTI AGS score route and inbound webhooks are public pages: the request
@@ -114,10 +115,11 @@ class EventServiceSessionlessContextTest extends TestCase {
 
 		$names = array_map(
 			static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
-			(new ReflectionMethod(ObjectService::class, 'saveObject'))->getParameters()
+			LegacyObjectArgs::parameters(ObjectService::class, 'saveObject')
 		);
 		$objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use ($names) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$named = array_combine(array_slice($names, 0, count($args)), $args);
 				$schema = ($named['schema'] ?? null);
 				$this->writes[] = [

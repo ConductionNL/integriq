@@ -31,6 +31,7 @@ namespace OCA\Integriq\Service;
 use Adbar\Dot;
 use Exception;
 use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistryInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -168,6 +169,7 @@ class RuleService {
 		if (count($sources) > 0) {
 			$source = $sources[0];
 		} else {
+			// Unscoped: a rule run records the external source it fetches from, during a run that may have no user.
 			$source = $this->orObjectService->saveObject(
 				object: [
 					'location' => $url,
@@ -175,10 +177,9 @@ class RuleService {
 					'type' => 'api',
 					'isEnabled' => true,
 				],
-				register: 'integriq',
-				schema: 'source',
+				options: RegisterSave::options(register: 'integriq', schema: 'source'),
 				_rbac: false,
-				_multitenancy: false,
+				_multitenancy: false
 			);
 		}
 

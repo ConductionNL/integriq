@@ -37,6 +37,8 @@ use OCP\Files\NotFoundException;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for participant lookup + the outbound transmission lifecycle.
@@ -675,6 +677,7 @@ class PeppolTransmissionServiceTest extends TestCase {
 		$captured = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return $this->entity($object, 'tx-uuid-1');
 			}
@@ -751,7 +754,10 @@ class PeppolTransmissionServiceTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->assertSame('integriq', $register);
 				$this->assertSame(PeppolTransmissionService::SCHEMA_INBOUND_DOCUMENT, $schema);
 				// No account may write the schema: integriq writes it in system context.
@@ -853,7 +859,10 @@ class PeppolTransmissionServiceTest extends TestCase {
 	public function testWithoutASourceTheRecordIsFetchFailed(): void {
 		$this->objectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->inboundSaves[] = [$uuid, $object];
 				return $this->entity($object, 'in-uuid-1');
 			}

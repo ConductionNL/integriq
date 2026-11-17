@@ -146,4 +146,19 @@ class JsonTagReaderTest extends TestCase {
 		$this->assertSame('abc', (new JsonTagReader())->lastSegment('/uuid/abc'));
 		$this->assertSame('abc', (new JsonTagReader())->lastSegment('abc'));
 	}//end testLastSegment()
+	/**
+	 * A document that is not an object or a list indexes nothing; nested objects are indexed by id and tail.
+	 *
+	 * @return void
+	 */
+	public function testIndexByIdSkipsScalarDocuments(): void {
+		$reader = new JsonTagReader();
+
+		$this->assertSame([], $reader->indexById('<object id="/uuid/a">'));
+		$this->assertSame([], $reader->indexById(null));
+		$this->assertSame([], $reader->indexById(42));
+
+		$inner = ['@id' => '/uuid/b', 'title' => 'b'];
+		$this->assertSame(['/uuid/b' => $inner, 'b' => $inner], $reader->indexById(['x', 3, ['L' => [$inner]]]));
+	}//end testIndexByIdSkipsScalarDocuments()
 }//end class

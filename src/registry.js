@@ -59,6 +59,7 @@ import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.v
 import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
 import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
 import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
+import EgressDestinationsPage from './views/EgressDestinations/EgressDestinationsPage.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 import FlowDetailSidebar from './views/Flow/FlowDetailSidebar.vue'
@@ -83,8 +84,10 @@ import {
 	runDirectorySyncHandler,
 	runJobHandler,
 	runSynchronizationHandler,
+	setSourceResidencyHandler,
 	testJobHandler,
 	testMappingModalHandler,
+	testRegistrationTargetHandler,
 	testSourceHandler,
 	testSynchronizationHandler,
 	viewLogsHandler,
@@ -120,6 +123,9 @@ export default {
 	// Webhook signing-secret manager (opens SubscriptionSigningModal via
 	// the modal bus). See openconnector-webhook-signing.
 	manageSigningHandler,
+	// Registration target dry run (form-submission-registration-targets D6):
+	// opens RegistrationTargetTestModal, which owns the POST.
+	testRegistrationTargetHandler,
 	// Query-aware navigation handler for "View logs" row actions on
 	// parent index pages (#837). Pushes `?<queryParam>=<rowId>` onto the
 	// destination *Logs route. Will be retired once nc-vue#330 lands a
@@ -145,6 +151,9 @@ export default {
 	// App connections page header action (connection-registry D9): open the
 	// link-a-source dialog via the modal bus.
 	openLinkSourceHandler,
+	// Sources page row action (connections-declare-data-residency): set where a
+	// source processes the data, through the modal bus.
+	setSourceResidencyHandler,
 
 	// Card component for the Catalog index page (connector-catalog-ui):
 	// referenced by `pages[].config.cardComponent: "CatalogItemCard"`.
@@ -217,8 +226,8 @@ export default {
 	// hide the embedded-secret fields while brokered (integriq#102).
 	SourceFormFields,
 
-	// The Endpoints page wires `form-fields` to EndpointFormFields to restore
-	// the field set the pre-manifest EditEndpoint modal had: Register + Schema
+	// The Endpoints page wires `form-fields` to EndpointFormFields for the
+	// fields the schema-driven form cannot express: Register + Schema
 	// pickers composing the polymorphic `targetId`, `endpointArray` as a
 	// comma-separated list, method/targetType selects (the schema declares both
 	// as plain strings, no enum), and a configurations multiselect.
@@ -262,9 +271,9 @@ export default {
 	// The Rules page wires `form-dialog` to RuleEditorModal for the same reason:
 	// it hosts RuleConditionGroup, whose leaf rows lay out field + operator +
 	// value and whose operator select alone carries `min-width: 220px`, so the
-	// dialog has to be wider than NcDialog's `normal`. It restores the field set
-	// the pre-manifest EditRule modal had — conditions, order and the error
-	// response were all unreachable through the schema-driven form (enum-less
+	// dialog has to be wider than NcDialog's `normal`. It carries
+	// conditions, order and the error response, which are all unreachable
+	// through the schema-driven form (enum-less
 	// `action`/`timing`/`type` strings, a `type: object` conditions property
 	// that fieldsFromSchema drops, and a nested `configuration.error.*` path).
 	// Per-type parameters beyond `error` stay on RuleDetailPage, which already
@@ -311,6 +320,10 @@ export default {
 	// components above — the queues stay separate underneath because they are
 	// different schemas behind different admin-only endpoints.
 	DeadLettersPage,
+
+	// Outbound destinations (connections-declare-data-residency, custom page):
+	// every place integriq sends data, the verdict and the EU-only switch.
+	EgressDestinationsPage,
 
 	// Migrations index over column_mapping: the form-dialog slot checks a
 	// mapping before every save, and the below-header slot picks a migration
@@ -383,6 +396,7 @@ export const registry = {
 	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
 	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
+	EgressDestinationsPage: { kind: 'page', component: EgressDestinationsPage },
 	FlowDetailSidebar: { kind: 'page', component: FlowDetailSidebar },
 	ApprovalDetail: { kind: 'page', component: ApprovalDetail },
 	TraceDetailPage: { kind: 'page', component: TraceDetailPage },

@@ -503,4 +503,39 @@ class IdpLoginServiceEdgesTest extends TestCase {
 		return $secrets;
 
 	}//end secrets()
+	/**
+	 * A response that comes back on another provider than the login started on
+	 * earns no code: the browser is sent back with the login-failed error.
+	 *
+	 * @return void
+	 */
+	public function testAResponseOnAnotherProviderIsRefused(): void {
+		$adapter = new class('digid', []) extends ScriptedGovernmentIdpAdapter {
+			/**
+			 * The provider the adapter currently answers for.
+			 *
+			 * @var string
+			 */
+			public string $answersFor = 'digid';
+
+			/**
+			 * The provider id.
+			 *
+			 * @return string
+			 */
+			public function getProviderId(): string {
+				return $this->answersFor;
+			}
+		};
+		$adapter->assertion = $this->digid('pp-0123456789abcdef', 'bsn-pseudonym')->assertion;
+
+		$service = $this->service($adapter);
+		$service->start(provider: 'digid', params: $this->startParams());
+		$adapter->answersFor = 'eherkenning';
+
+		$back = $service->callback(provider: 'eherkenning', callback: ['inResponseTo' => $adapter->lastRequestId]);
+
+		$this->assertSame(self::RETURN_URL . '&error=' . IdpLoginService::ERROR_LOGIN_FAILED . '&relayState=relay-7', $back);
+		$this->assertStringContainsString('The response came back on another provider than it started on.', implode("\n", $this->logLines));
+	}//end testAResponseOnAnotherProviderIsRefused()
 }//end class

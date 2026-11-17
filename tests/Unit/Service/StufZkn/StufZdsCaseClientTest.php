@@ -62,6 +62,8 @@ use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\Integriq\Service\StufZkn\StufZdsCaseClient
@@ -69,6 +71,9 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\Integriq\Service\StufZkn\StufZdsOutbound
  * @covers \OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver
  * @covers \OCA\Integriq\Service\StufZkn\StufZknClient
+ * @covers \OCA\Integriq\Service\StufZkn\ZdsAttempt
+ * @covers \OCA\Integriq\Service\StufZkn\ZdsConclusion
+ * @covers \OCA\Integriq\Service\StufZkn\ZdsRequest
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsMessageBuilder
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsResponseReader
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsCircuitBreaker
@@ -140,6 +145,20 @@ class StufZdsCaseClientTest extends TestCase {
 	private bool $failBreaker = false;
 
 	/**
+	 * Whether the conclusion listener throws.
+	 *
+	 * @var bool
+	 */
+	private bool $failListener = false;
+
+	/**
+	 * The warnings the logger received.
+	 *
+	 * @var array<int,array{0:string,1:array}>
+	 */
+	private array $warnings = [];
+
+	/**
 	 * The outbound side of the last built client (it owns retry()).
 	 *
 	 * @var StufZdsOutbound
@@ -161,6 +180,8 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->failSaveOfStatus = null;
 		$this->failSchedule     = false;
 		$this->failBreaker      = false;
+		$this->failListener     = false;
+		$this->warnings         = [];
 		$this->sources   = [
 			'zsh' => [
 				'type' => 'stuf-zkn',
@@ -197,10 +218,17 @@ class StufZdsCaseClientTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message, array $context=[]): void {
+				$this->warnings[] = [$message, $context];
+			}
+		);
 
 		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register=null, ?string $schema=null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->assertSame('integriq', $register);
 				if ($schema === 'source') {
 					return isset($this->sources[$id]) === true ? ObjectServiceMockBuilder::objectEntity($this, $this->sources[$id], $id) : null;
@@ -210,7 +238,10 @@ class StufZdsCaseClientTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->assertSame('stuf_message', $schema);
 				$this->assertFalse($_rbac);
 				$this->assertSame([], self::schemaErrors($object), 'The row is one the stuf_message schema accepts');
@@ -251,6 +282,10 @@ class StufZdsCaseClientTest extends TestCase {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(
 			function (object $event): void {
+				if ($this->failListener === true) {
+					throw new \RuntimeException('Listener exploded');
+				}
+
 				$this->events[] = $event;
 			}
 		);
@@ -351,6 +386,26 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertSame('case-1', $this->events[0]->getCorrelationId());
 		$this->assertTrue($this->events[0]->getResult()['success']);
 	}//end testConfirmedCreeerZaakIsSentAndConcluded()
+
+	/**
+	 * A conclusion listener that throws is logged; the caller still gets the confirmed result.
+	 *
+	 * @return void
+	 */
+	public function testAFailingConclusionListenerIsLoggedAndTheResultStillReturned(): void {
+		$this->failListener = true;
+
+		$result = $this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', ['omschrijving' => 'Melding'], 'Melding openbare ruimte', ['sourceApp' => 'dossiq', 'correlationId' => 'case-1']);
+
+		$this->assertTrue($result['success']);
+		$this->assertSame('0363-Z-1', $result['caseIdentification']);
+		$this->assertSame('sent', $this->rows[$result['messageId']]['status'], 'The row is concluded before the listener runs');
+		$this->assertSame([], $this->events);
+		$this->assertContains(
+			['StUF-ZDS conclusion listener failed: {error}', ['error' => 'Listener exploded']],
+			$this->warnings
+		);
+	}//end testAFailingConclusionListenerIsLoggedAndTheResultStillReturned()
 
 	/**
 	 * A 503 is retried: row retrying with the envelope, a retry scheduled after 5 s, nothing announced yet.
