@@ -125,7 +125,7 @@ class SmsStatusCallbackServiceTest extends TestCase {
 	 */
 	private static function source(array $configuration): ObjectEntity {
 		$entity = new ObjectEntity();
-		$entity->setObject(['type' => 'sms', 'isEnabled' => true, 'configuration' => $configuration]);
+		$entity->setObject(['slug' => 'sms-een', 'type' => 'sms', 'isEnabled' => true, 'configuration' => $configuration]);
 		$entity->setUuid('');
 		return $entity;
 
@@ -187,7 +187,7 @@ class SmsStatusCallbackServiceTest extends TestCase {
 		$signature = base64_encode(hash_hmac('sha1', $url . 'MessageSidSM1MessageStatusdelivered', 'auth-token', true));
 		$updated = new ObjectEntity();
 		$this->dispatch->expects($this->once())->method('handleStatusCallback')
-			->with('SM1', 'delivered', 'Twilio status: delivered')
+			->with('SM1', 'delivered', 'Twilio status: delivered', ['slug' => 'sms-een', 'provider' => 'twilio'])
 			->willReturn($updated);
 
 		$result = $this->service->receive(

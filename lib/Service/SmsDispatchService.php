@@ -91,6 +91,13 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 */
 	public const EVENT_TYPE_DELIVERY_STATUS = 'nl.conduction.sms.delivery.status';
 
+	/**
+	 * How many messages with one provider message id a status callback looks through for its source's.
+	 *
+	 * @var int
+	 */
+	private const CALLBACK_MATCH_LIMIT = 20;
+
 
 	/**
 	 * Every SMS binding by provider id.
@@ -463,12 +470,15 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @param string $providerMessageId The provider-assigned message id from the callback.
 	 * @param string $status The reported normalised status ({@see DeliveryResult::STATUSES}).
 	 * @param string|null $detail An optional reason/detail message.
+	 * @param array{slug: string, provider: string}|null $source The source the callback came through, when
+	 *                                                            known: only a message that source sent is updated.
 	 *
 	 * @return ObjectEntity|null The updated message, or null when the providerMessageId is unknown.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
-	public function handleStatusCallback(string $providerMessageId, string $status, ?string $detail): ?ObjectEntity {
+	public function handleStatusCallback(string $providerMessageId, string $status, ?string $detail, ?array $source = null): ?ObjectEntity {
 		if (in_array($status, DeliveryResult::STATUSES, true) === false) {
 			$this->logger->warning(
 				'[SmsDispatchService] inbound status callback carried an unsupported status; ignored',
@@ -477,7 +487,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 			return null;
 		}
 
-		$message = $this->findMessageByProviderMessageId(providerMessageId: $providerMessageId);
+		$message = $this->findMessageByProviderMessageId(providerMessageId: $providerMessageId, source: $source);
 		if ($message === null) {
 			$this->logger->warning(
 				'[SmsDispatchService] inbound status callback for unknown providerMessageId; recorded, no state change',
@@ -669,7 +679,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 *
 	 * @return ObjectEntity|null The matching message, or null when none exists.
 	 */
-	private function findMessageByProviderMessageId(string $providerMessageId): ?ObjectEntity {
+	private function findMessageByProviderMessageId(string $providerMessageId, ?array $source = null): ?ObjectEntity {
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
@@ -677,17 +687,49 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 					'schema' => self::SCHEMA_MESSAGE,
 					'providerMessageId' => $providerMessageId,
 				],
-				'limit' => 1,
+				'limit' => self::CALLBACK_MATCH_LIMIT,
 			]
 		);
 		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		if (is_array($results) === false || empty($results) === true) {
 			return null;
 		}
 
-		return $results[0];
+		if ($source === null) {
+			return $results[0];
+		}
+
+		foreach ($results as $message) {
+			if ($message instanceof ObjectEntity && self::sentThrough(message: $message, source: $source) === true) {
+				return $message;
+			}
+		}
+
+		return null;
 	}//end findMessageByProviderMessageId()
+
+	/**
+	 * Whether a message was sent through a source.
+	 *
+	 * A message stores the slug of the source that sent it. One stored without
+	 * a slug matches a source of the same provider.
+	 *
+	 * @param ObjectEntity                          $message The message.
+	 * @param array{slug: string, provider: string} $source  The source's slug and provider.
+	 *
+	 * @return bool True when that source sent the message.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	private static function sentThrough(ObjectEntity $message, array $source): bool {
+		$data = $message->getObject();
+		$slug = (string)($data['sourceSlug'] ?? '');
+		if ($slug !== '') {
+			return $source['slug'] !== '' && hash_equals($slug, $source['slug']) === true;
+		}
+
+		return $source['provider'] !== '' && (string)($data['provider'] ?? '') === $source['provider'];
+	}//end sentThrough()
 
 	/**
 	 * Emit `nl.conduction.sms.delivery.status` for a message's current state.

@@ -98,12 +98,15 @@ interface SmsDispatchServiceInterface {
 	 * @param string $providerMessageId The provider-assigned message id from the callback.
 	 * @param string $status The reported normalised status ({@see DeliveryResult::STATUSES}).
 	 * @param string|null $detail An optional reason/detail message.
+	 * @param array{slug: string, provider: string}|null $source The source the callback came through, when
+	 *                                                            known: only a message that source sent is updated.
 	 *
 	 * @return ObjectEntity|null The updated message, or null when the providerMessageId is unknown.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
-	public function handleStatusCallback(string $providerMessageId, string $status, ?string $detail): ?ObjectEntity;
+	public function handleStatusCallback(string $providerMessageId, string $status, ?string $detail, ?array $source = null): ?ObjectEntity;
 
 	/**
 	 * Select the provider binding named by `configuration.provider` (default `log`).

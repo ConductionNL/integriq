@@ -114,7 +114,7 @@ class SmsStatusCallbackService implements SmsStatusCallbackServiceInterface {
 	 * @param ObjectEntity      $source   The source the token picked.
 	 * @param SmsStatusCallback $callback The callback, without its signing key.
 	 *
-	 * @return ObjectEntity|null The updated message, or null when the callback names a message nobody sent.
+	 * @return ObjectEntity|null The updated message, or null when the callback names a message this source did not send.
 	 *
 	 * @throws SmsProviderException With code `bad_signature` when the vendor's signature does not verify,
 	 *                              or `unreadable_callback` when the callback names no message.
@@ -151,7 +151,8 @@ class SmsStatusCallbackService implements SmsStatusCallbackServiceInterface {
 		return $this->dispatch->handleStatusCallback(
 			providerMessageId: $result->providerMessageId,
 			status: $result->status,
-			detail: $result->detail
+			detail: $result->detail,
+			source: ['slug' => (string)($source->getObject()['slug'] ?? ''), 'provider' => (string)($configuration['provider'] ?? '')]
 		);
 	}//end receive()
 

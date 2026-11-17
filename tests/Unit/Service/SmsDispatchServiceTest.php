@@ -532,6 +532,66 @@ class SmsDispatchServiceTest extends TestCase {
 		$this->assertSame('delivered', $result->getObject()['status']);
 
 	}//end testHandleStatusCallbackUpdatesMatchingMessage()
+
+	/**
+	 * A callback through one source never sets the status of a message another source sent.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	public function testACallbackThroughOneSourceLeavesAnotherSourcesMessageAlone(): void {
+		$other = $this->entity(['status' => 'sent', 'providerMessageId' => 'SM1', 'provider' => 'twilio', 'sourceSlug' => 'sms-twee'], 'sms-uuid-2');
+		$this->objectService->method('findAll')->willReturn(['results' => [$other], 'total' => 1]);
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->eventService->expects($this->never())->method('emitCloudEvent');
+
+		$result = $this->service->handleStatusCallback(
+			providerMessageId: 'SM1',
+			status: 'delivered',
+			detail: null,
+			source: ['slug' => 'sms-een', 'provider' => 'twilio']
+		);
+
+		$this->assertNull($result);
+
+	}//end testACallbackThroughOneSourceLeavesAnotherSourcesMessageAlone()
+
+	/**
+	 * Of two messages with one provider message id, the callback updates the one its source sent;
+	 * a message stored without a source slug matches a source of its provider.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	public function testACallbackUpdatesTheMessageItsSourceSent(): void {
+		$other = $this->entity(['status' => 'sent', 'providerMessageId' => 'SM1', 'provider' => 'twilio', 'sourceSlug' => 'sms-twee'], 'sms-uuid-2');
+		$own = $this->entity(['status' => 'sent', 'providerMessageId' => 'SM1', 'provider' => 'twilio', 'sourceSlug' => 'sms-een'], 'sms-uuid-1');
+		$legacy = $this->entity(['status' => 'sent', 'providerMessageId' => 'SM2', 'provider' => 'twilio'], 'sms-uuid-3');
+		$this->objectService->method('findAll')->willReturnOnConsecutiveCalls(
+			['results' => [$other, $own], 'total' => 2],
+			['results' => [$legacy], 'total' => 1],
+			['results' => [$legacy], 'total' => 1]
+		);
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object, $options) use (&$saved) {
+				$saved[] = $options->uuid;
+				return $this->entity($object, 'saved');
+			}
+		);
+
+		$first = $this->service->handleStatusCallback(providerMessageId: 'SM1', status: 'delivered', detail: null, source: ['slug' => 'sms-een', 'provider' => 'twilio']);
+		$second = $this->service->handleStatusCallback(providerMessageId: 'SM2', status: 'delivered', detail: null, source: ['slug' => 'sms-een', 'provider' => 'twilio']);
+		$third = $this->service->handleStatusCallback(providerMessageId: 'SM2', status: 'delivered', detail: null, source: ['slug' => 'sms-een', 'provider' => 'messagebird']);
+
+		$this->assertNotNull($first);
+		$this->assertNotNull($second);
+		$this->assertNull($third);
+		$this->assertSame(['sms-uuid-1', 'sms-uuid-3'], $saved);
+
+	}//end testACallbackUpdatesTheMessageItsSourceSent()
 	/**
 	 * A send naming an enabled SMS source goes through that source, looked up
 	 * by its slug, and the stored message says which source sent.
