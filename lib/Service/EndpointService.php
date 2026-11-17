@@ -3720,15 +3720,9 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		$challenge = $this->tokenChallenge(authentication: (array)$configuration['authentication'], endpointPath: $endpointPath);
-		if (($header === '' || $header === null) && $challenge !== null) {
-			// REQ-TOKV-004: a token-protected endpoint answers a call without a token
-			// with 401 and the address that says where to get one (RFC 9728).
-			$response = new JSONResponse(
-				['error' => 'unauthorized', 'details' => 'This endpoint requires a bearer token'],
-				Http::STATUS_UNAUTHORIZED
-			);
-			$response->addHeader('WWW-Authenticate', $challenge);
-			return $response;
+		$missingToken = self::missingTokenResponse(header: $header, challenge: $challenge);
+		if ($missingToken !== null) {
+			return $missingToken;
 		}
 
 		if ($header === '' || $header === null) {
@@ -3792,6 +3786,32 @@ class EndpointService implements EndpointServiceInterface {
 
 		return $data;
 	}//end processAuthenticationRule()
+
+	/**
+	 * The 401 of a token-protected endpoint called without a token, or null when a token was sent or none is required.
+	 *
+	 * REQ-TOKV-004: the answer carries the address that says where to get one (RFC 9728).
+	 *
+	 * @param mixed       $header    The Authorization header, as read from the request.
+	 * @param string|null $challenge The endpoint's `WWW-Authenticate` value; null when it is not token-protected.
+	 *
+	 * @return JSONResponse|null
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
+	 */
+	private static function missingTokenResponse(mixed $header, ?string $challenge): ?JSONResponse {
+		if ($challenge === null || ($header !== '' && $header !== null)) {
+			return null;
+		}
+
+		$response = new JSONResponse(
+			['error' => 'unauthorized', 'details' => 'This endpoint requires a bearer token'],
+			Http::STATUS_UNAUTHORIZED
+		);
+		$response->addHeader('WWW-Authenticate', $challenge);
+
+		return $response;
+	}//end missingTokenResponse()
 
 	/**
 	 * Refuse an authenticated caller that lacks a scope the rule requires for this method.

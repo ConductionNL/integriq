@@ -108,17 +108,58 @@ class TokenIssuer implements TokenIssuerInterface {
 			throw new OAuthError(error: 'unsupported_grant_type', description: 'Only client_credentials is supported.', status: 400);
 		}
 
+		$consumer = $this->authenticatedClient(clientId: $clientId, clientSecret: $clientSecret);
+		$granted  = self::grantedScopes(held: self::scopesOf(consumer: $consumer), asked: $scope);
+		if ($this->issuerKey->hasKey() === false) {
+			throw new OAuthError(error: 'temporarily_unavailable', description: 'No issuer key has been created.', status: 503);
+		}
+
+		$token = $this->signedToken(clientId: $clientId, resource: $resource, granted: $granted);
+
+		return [
+			'access_token' => $token,
+			'token_type'   => 'Bearer',
+			'expires_in'   => self::LIFETIME_SECONDS,
+			'scope'        => implode(' ', $granted),
+		];
+	}//end issue()
+
+	/**
+	 * The consumer whose client id and secret these are.
+	 *
+	 * @param string $clientId     The consumer's uuid.
+	 * @param string $clientSecret The consumer's secret.
+	 *
+	 * @return array<string, mixed> The consumer.
+	 *
+	 * @throws OAuthError When the client is unknown, has no secret, or the secret does not match.
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
+	 */
+	private function authenticatedClient(string $clientId, string $clientSecret): array {
 		$consumer = $this->client(clientId: $clientId);
 		$hash     = (string) ($consumer[self::SECRET_HASH_FIELD] ?? '');
 		if ($consumer === null || $clientSecret === '' || $hash === '' || password_verify($clientSecret, $hash) === false) {
 			throw new OAuthError(error: 'invalid_client', description: 'Client authentication failed.', status: 401);
 		}
 
-		$granted = self::grantedScopes(held: self::scopesOf(consumer: $consumer), asked: $scope);
-		if ($this->issuerKey->hasKey() === false) {
-			throw new OAuthError(error: 'temporarily_unavailable', description: 'No issuer key has been created.', status: 503);
-		}
+		return $consumer;
+	}//end authenticatedClient()
 
+	/**
+	 * A token for this client, signed with the issuer key.
+	 *
+	 * @param string             $clientId The consumer's uuid; the token's subject.
+	 * @param string|null        $resource The resource the token is for; its `aud`. Null or empty is the issuer.
+	 * @param array<int, string> $granted  The granted scopes.
+	 *
+	 * @return string The signed JWT.
+	 *
+	 * @throws OAuthError When the token cannot be signed.
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
+	 */
+	private function signedToken(string $clientId, ?string $resource, array $granted): string {
 		$now      = $this->time->getTime();
 		$issuer   = $this->issuerKey->issuerUrl();
 		$audience = trim((string) $resource);
@@ -127,7 +168,7 @@ class TokenIssuer implements TokenIssuerInterface {
 		}
 
 		try {
-			$token = $this->issuerKey->sign(
+			return $this->issuerKey->sign(
 				claims: [
 					'iss'       => $issuer,
 					'sub'       => $clientId,
@@ -143,14 +184,7 @@ class TokenIssuer implements TokenIssuerInterface {
 		} catch (RuntimeException $e) {
 			throw new OAuthError(error: 'temporarily_unavailable', description: $e->getMessage(), status: 503);
 		}
-
-		return [
-			'access_token' => $token,
-			'token_type'   => 'Bearer',
-			'expires_in'   => self::LIFETIME_SECONDS,
-			'scope'        => implode(' ', $granted),
-		];
-	}//end issue()
+	}//end signedToken()
 
 	/**
 	 * Set a new client secret on a client credentials consumer and answer it, once.

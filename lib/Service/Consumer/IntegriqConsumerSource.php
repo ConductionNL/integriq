@@ -165,7 +165,34 @@ class IntegriqConsumerSource implements ConsumerSource {
 			return null;
 		}
 
-		$subject = ($this->tokenPayload['sub'] ?? '');
+		$object = $this->clientCredentialsConsumer(subject: ($this->tokenPayload['sub'] ?? ''));
+		if ($object === null) {
+			return null;
+		}
+
+		$data = $object->getObject();
+
+		return new ResolvedConsumer(
+			source: self::SOURCE,
+			uuid: self::uuidOf(consumer: $object, data: $data),
+			name: (string)($data['name'] ?? ''),
+			userId: self::stringOrNull(value: ($data['userId'] ?? null)),
+			authorizationType: TokenIssuer::CLIENT_CREDENTIALS,
+			configuration: ['algorithm' => IssuerKeyService::ALGORITHM, 'publicKey' => $this->ownIssuer->publicPem()],
+			record: $object,
+		);
+	}//end ownTokenConsumer()
+
+	/**
+	 * The client credentials consumer a token of integriq's own issuer names as its subject.
+	 *
+	 * @param mixed $subject The token's `sub` claim.
+	 *
+	 * @return ObjectEntity|null The consumer, or null when the subject names no client credentials consumer.
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
+	 */
+	private function clientCredentialsConsumer(mixed $subject): ?ObjectEntity {
 		if (is_string($subject) === false || $subject === '') {
 			return null;
 		}
@@ -182,25 +209,14 @@ class IntegriqConsumerSource implements ConsumerSource {
 			return null;
 		}
 
-		if (($object instanceof ObjectEntity) === false) {
+		if (($object instanceof ObjectEntity) === false
+			|| strtolower((string)self::typeOf(data: $object->getObject())) !== TokenIssuer::CLIENT_CREDENTIALS
+		) {
 			return null;
 		}
 
-		$data = $object->getObject();
-		if (strtolower((string)self::typeOf(data: $data)) !== TokenIssuer::CLIENT_CREDENTIALS) {
-			return null;
-		}
-
-		return new ResolvedConsumer(
-			source: self::SOURCE,
-			uuid: self::uuidOf(consumer: $object, data: $data),
-			name: (string)($data['name'] ?? ''),
-			userId: self::stringOrNull(value: ($data['userId'] ?? null)),
-			authorizationType: TokenIssuer::CLIENT_CREDENTIALS,
-			configuration: ['algorithm' => IssuerKeyService::ALGORITHM, 'publicKey' => $this->ownIssuer->publicPem()],
-			record: $object,
-		);
-	}//end ownTokenConsumer()
+		return $object;
+	}//end clientCredentialsConsumer()
 
 	/**
 	 * The API-key consumer whose configured key equals the presented one.

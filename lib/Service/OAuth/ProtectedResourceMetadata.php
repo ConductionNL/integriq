@@ -134,16 +134,7 @@ class ProtectedResourceMetadata implements ProtectedResourceMetadataInterface {
 			return null;
 		}
 
-		$authentications = [];
-		foreach ($this->endpointsAt(path: $path) as $endpoint) {
-			foreach ((array) ($endpoint['rules'] ?? []) as $ruleId) {
-				$authentication = $this->authenticationOf(ruleId: (string) $ruleId);
-				if ($authentication !== null && self::requiresToken(authentication: $authentication) === true) {
-					$authentications[] = $authentication;
-				}
-			}
-		}
-
+		$authentications = $this->tokenAuthenticationsAt(path: $path);
 		if ($authentications === []) {
 			return null;
 		}
@@ -155,6 +146,29 @@ class ProtectedResourceMetadata implements ProtectedResourceMetadataInterface {
 			'bearer_methods_supported' => ['header'],
 		];
 	}//end forPath()
+
+	/**
+	 * The token-requiring authentication configurations of the endpoints at this path.
+	 *
+	 * @param string $path The path, without slashes around it.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @throws RuntimeException When an endpoint rule could not be read.
+	 */
+	private function tokenAuthenticationsAt(string $path): array {
+		$authentications = [];
+		foreach ($this->endpointsAt(path: $path) as $endpoint) {
+			foreach ((array) ($endpoint['rules'] ?? []) as $ruleId) {
+				$authentication = $this->authenticationOf(ruleId: (string) $ruleId);
+				if ($authentication !== null && self::requiresToken(authentication: $authentication) === true) {
+					$authentications[] = $authentication;
+				}
+			}
+		}
+
+		return $authentications;
+	}//end tokenAuthenticationsAt()
 
 	/**
 	 * Every scope the rules require, for any method.
