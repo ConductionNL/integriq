@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
+use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
 use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\Integriq\Service\Adapter\DataInfra\SftpAdapter;
@@ -538,7 +539,8 @@ final class ServiceBindings {
 				return new SettingsService(
 					config: $c->get('OCP\IAppConfig'),
 					rebaseScheduler: $c->get(RetentionRebaseSchedulerInterface::class),
-					logger: $c->get('Psr\Log\LoggerInterface')
+					logger: $c->get('Psr\Log\LoggerInterface'),
+					errorSink: $c->get(ErrorSinkSettings::class)
 				);
 			}
 		);
