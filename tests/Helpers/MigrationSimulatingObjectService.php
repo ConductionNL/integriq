@@ -41,6 +41,8 @@ namespace OCA\Integriq\Tests\Helpers;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Reproduces the render boundary AND entity columns AND persisting saves.
@@ -114,14 +116,15 @@ class MigrationSimulatingObjectService extends OrObjectService {
 	 */
 	public function find(
 		$id,
-		?string $register = null,
-		?string $schema = null,
+		?ObjectFindOptions $options = null,
 		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $_render = true,
-		bool $_audit = true,
-		?array $_extend = [],
+		bool $_multitenancy = true
 	): ?ObjectEntity {
+		$register = $options?->register;
+		$schema = $options?->schema;
+		$_render = $options?->render ?? true;
+		$_audit = $options?->audit ?? true;
+		$_extend = $options?->extend ?? [];
 		$this->reads[] = ['uuid' => (string)$id, '_render' => $_render, '_rbac' => $_rbac];
 
 		$entry = ($this->stored[(string)$id] ?? null);
@@ -176,14 +179,15 @@ class MigrationSimulatingObjectService extends OrObjectService {
 	 */
 	public function saveObject(
 		$object,
-		?string $register = null,
-		?string $schema = null,
-		?string $uuid = null,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
+		bool $_multitenancy = true
 	): ObjectEntity {
+		$register = $options->target->register;
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+		$silent = $options->policy->silent ?? false;
+		$_validation = $options->policy->validation ?? true;
 		$data = $object;
 		if ($object instanceof ObjectEntity === true) {
 			$data = $object->getObject();

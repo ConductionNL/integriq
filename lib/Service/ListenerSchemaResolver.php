@@ -216,6 +216,7 @@ class ListenerSchemaResolver {
 			$mapper = $this->container->get($service);
 			// Both mappers take `_rbac` and `_multitenancy` by name; see the class
 			// docblock for why a slug lookup skips them.
+			// Unscoped: an event listener resolves a schema slug as the system.
 			$entity = $mapper->find($id, _rbac: false, _multitenancy: false);
 			if (is_object($entity) === true) {
 				// The slug accessor is magic on OpenRegister's Register and

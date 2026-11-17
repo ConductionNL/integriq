@@ -31,8 +31,10 @@ namespace OCA\Integriq\Intake;
 
 use OCA\Integriq\Event\IntakeMessageRoutedEvent;
 use OCA\Integriq\Exception\IntakeRoutingException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -82,12 +84,14 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 	 * @param IEventDispatcher $eventDispatcher Offers a routed message to the owning app.
 	 * @param SchemaMapper $schemaMapper Reads the target case type's declared fields.
 	 * @param LoggerInterface $logger Records refusals.
+	 * @param HeldMessageFiles $heldFiles Keeps a held message's files for a later route.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
+		private readonly HeldMessageFiles $heldFiles,
 	) {
 
 	}//end __construct()
@@ -103,15 +107,77 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 		$payload = array_merge($message->toObject(), ['status' => self::STATUS_RECEIVED]);
 		$stored = $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
+		return $this->dispatch(message: $message, payload: $payload, uuid: (string)$stored->getUuid());
+
+	}//end route()
+
+	/**
+	 * Route a held or failed message again, onto the same stored object.
+	 *
+	 * Routing runs once, on arrival, so a message held before its rule
+	 * existed stays held until someone asks for this. The match and the
+	 * hand-off are the ones a new arrival gets, with the files kept when it
+	 * was held.
+	 *
+	 * @param string $uuid The `intake_message` uuid.
+	 *
+	 * @return ObjectEntity The stored message, in its new state.
+	 *
+	 * @throws IntakeRoutingException When the message is unknown or neither held nor failed.
+	 *
+	 * @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-held-message-is-routed-again-on-request-with-its-files-req-ire-003
+	 */
+	public function reroute(string $uuid): ObjectEntity {
+		try {
+			$stored = $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+			);
+		} catch (Throwable) {
+			$stored = null;
+		}
+
+		if (($stored instanceof ObjectEntity) === false) {
+			throw new IntakeRoutingException(message: 'No intake message "' . $uuid . '".');
+		}
+
+		$payload = $stored->getObject();
+		unset($payload['@self'], $payload['id']);
+		$status = (string)($payload['status'] ?? '');
+		if ($status !== self::STATUS_HELD && $status !== self::STATUS_FAILED) {
+			throw new IntakeRoutingException(message: 'Only a held or failed message can be routed again.');
+		}
+
+		$files = $this->heldFiles->restore(uuid: $uuid, object: $payload);
+		$message = InboundMessage::fromObject(object: $payload)->withFiles(
+			attachments: $files['attachments'],
+			media: $files['media']
+		);
+
+		return $this->dispatch(message: $message, payload: $payload, uuid: $uuid);
+
+	}//end reroute()
+
+	/**
+	 * Match a stored message to its first rule and offer it to the app that
+	 * owns the target, or hold it with the reason.
+	 *
+	 * @param InboundMessage      $message The message, with its files.
+	 * @param array<string,mixed> $payload The stored object payload.
+	 * @param string              $uuid    The stored message's uuid.
+	 *
+	 * @return ObjectEntity The stored message, in its final state.
+	 */
+	private function dispatch(InboundMessage $message, array $payload, string $uuid): ObjectEntity {
 		$rule = $this->firstMatchingRule(message: $message);
 		if ($rule === null) {
 			return $this->hold(
 				payload: $payload,
-				uuid: (string)$stored->getUuid(),
+				uuid: $uuid,
+				message: $message,
 				reason: 'No routing rule matched channel "' . $message->getChannelId() . '".'
 			);
 		}
@@ -121,14 +187,15 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 			targetSchema: (string)($rule['targetSchema'] ?? ''),
 			targetPayload: $this->buildTargetPayload(rule: $rule, message: $message),
 			files: $this->transferableFiles(message: $message),
-			messageUuid: (string)$stored->getUuid(),
+			messageUuid: $uuid,
 			ruleName: (string)($rule['name'] ?? ''));
 		$this->eventDispatcher->dispatchTyped($event);
 
 		if ($event->getCreatedRef() === null) {
 			return $this->hold(
 				payload: $payload,
-				uuid: (string)$stored->getUuid(),
+				uuid: $uuid,
+				message: $message,
 				reason: 'No app opened a "' . (string)($rule['targetSchema'] ?? '') . '" for this message.'
 			);
 		}
@@ -141,12 +208,10 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: (string)$stored->getUuid(),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid)
 		);
 
-	}//end route()
+	}//end dispatch()
 
 	/**
 	 * Route a batch, one item at a time.
@@ -316,6 +381,7 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 	 * @return mixed The result rows, or whatever the object service answered.
 	 */
 	private function readChannelRules(InboundMessage $message): mixed {
+		// Unscoped: inbound message routing reads its channel rules as the system, before any user is known.
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
@@ -523,21 +589,26 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 	/**
 	 * Hold a message for review.
 	 *
+	 * Its attachment and media files are kept on the held object, so a later
+	 * route hands them over (messaging-intake-routing-rules D3).
+	 *
 	 * @param array<string,mixed> $payload The message payload.
 	 * @param string $uuid The stored message's uuid.
+	 * @param InboundMessage $message The message, bytes and all.
 	 * @param string $reason Why it is held.
 	 *
 	 * @return ObjectEntity The held message.
+	 *
+	 * @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-held-message-is-routed-again-on-request-with-its-files-req-ire-003
 	 */
-	private function hold(array $payload, string $uuid, string $reason): ObjectEntity {
+	private function hold(array $payload, string $uuid, InboundMessage $message, string $reason): ObjectEntity {
+		$payload = $this->heldFiles->keep(uuid: $uuid, message: $message, payload: $payload);
 		$payload['status'] = self::STATUS_HELD;
 		$payload['reason'] = $reason;
 
 		return $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $uuid,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid)
 		);
 
 	}//end hold()
@@ -557,8 +628,7 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 					$message->toObject(),
 					['status' => self::STATUS_FAILED, 'reason' => $reason]
 				),
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 			);
 		} catch (Throwable $exception) {
 			$this->logger->error(

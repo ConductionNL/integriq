@@ -33,6 +33,7 @@ namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -152,7 +153,12 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	private function routeApproval(ApprovalDecisionRun $run): JSONResponse {
 		return match ($this->resumeKind(data: $run->data)) {
 			'endpointId' => $this->approveEndpointSuspension(run: $run),
-			'synchronizationId' => $this->approveSynchronizationGate(approvalRequest: $run->approvalRequest, data: $run->data, user: $run->user, comment: $run->comment),
+			'synchronizationId' => $this->approveSynchronizationGate(
+				approvalRequest: $run->approvalRequest,
+				data: $run->data,
+				user: $run->user,
+				comment: $run->comment
+			),
 			'flowRunId' => $this->approveFlowSuspension(run: $run),
 			'engineRunUuid' => $this->approveEngineSuspension(run: $run),
 			default => $this->refuseMalformed(run: $run),
@@ -327,10 +333,10 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	 */
 	private function approveSynchronizationGate(ObjectEntity $approvalRequest, array $data, IUser $user, ?string $comment): JSONResponse {
 		try {
+			// Unscoped: re-reads the synchronization named on an approval request the caller already reached in scope.
 			$synchronization = $this->orObjectService->find(
 				id: (string)$data['synchronizationId'],
-				register: 'integriq',
-				schema: 'synchronization',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -360,7 +366,8 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 			);
 			// The engine marked the request consumed or superseded; read it
 			// back so the answer shows what is stored.
-			$approvalRequest = $this->approvalService->find(id: (string)$approvalRequest->getUuid());
+			// System read: re-reads the request the caller already reached in scope.
+			$approvalRequest = $this->approvalService->find(id: (string)$approvalRequest->getUuid(), asSystem: true);
 		} catch (Throwable $e) {
 			$this->logger->error('ApprovalDecisionService: resumed synchronization failed: ' . $e->getMessage(), ['exception' => $e]);
 			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;

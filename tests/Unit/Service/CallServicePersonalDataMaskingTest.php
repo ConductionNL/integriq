@@ -33,6 +33,7 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -96,8 +97,8 @@ class CallServicePersonalDataMaskingTest extends TestCase {
 	private function service(Response $answer, array $added = []): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
-				$this->saved[] = ['object' => $object, 'schema' => $schema];
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$this->saved[] = ['object' => $object, 'schema' => $options->target->schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
 				$entity->setObject($object);

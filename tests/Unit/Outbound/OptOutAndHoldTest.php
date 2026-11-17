@@ -41,6 +41,7 @@ use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests who may be written to, and what can still be taken back.
@@ -119,7 +120,10 @@ class OptOutAndHoldTest extends TestCase {
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register = '', string $schema = '', ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register ?? '';
+				$schema = $options->target->schema ?? '';
+				$uuid = $options->uuid;
 				if ($uuid === null || $uuid === '') {
 					$this->created++;
 					$uuid = 'object-' . $this->created;

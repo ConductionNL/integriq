@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Protocol selection (case and space insensitive, refused when unknown or
@@ -193,12 +194,12 @@ class MailboxSourceHandlerTransportTest extends TestCase {
 				return new ObjectEntity();
 			}
 		);
-		$this->objects->expects($this->once())->method('saveObject')->with(
-			['type' => 'mailbox', 'configuration' => ['sinceCursor' => '2026-09-15T12:00:00+00:00'] + $configuration],
-			MailIntakeService::REGISTER,
-			'source',
-			'source-1'
-		);
+		$this->objects->expects($this->once())->method('saveObject')->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['type' => 'mailbox', 'configuration' => ['sinceCursor' => '2026-09-15T12:00:00+00:00'] + $configuration],
+				'register' => MailIntakeService::REGISTER,
+				'schema' => 'source',
+				'uuid' => 'source-1',
+			]));
 
 		$result = $this->handler->poll(source: $this->source(configuration: $configuration));
 

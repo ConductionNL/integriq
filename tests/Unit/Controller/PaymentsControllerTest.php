@@ -299,4 +299,62 @@ class PaymentsControllerTest extends TestCase {
 		$this->assertTrue($response->getData()['received']);
 
 	}//end testWebhookNeverCrashesOnProcessingException()
+	/**
+	 * The terminal list answers the source's terminals (REQ-LPP-009).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function testTerminalsListsTheSourcesTerminals(): void {
+		$this->actionAuth->expects($this->once())->method('requireAction')->with($this->anything(), 'payments.create');
+		$this->paymentIntentService->expects($this->once())->method('listTerminals')->with('mollie-live')
+			->willReturn([['terminalId' => 'term_example0001', 'label' => 'Telefoon Anna', 'status' => 'active']]);
+
+		$response = $this->controller->terminals(slug: 'mollie-live');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['terminals' => [['terminalId' => 'term_example0001', 'label' => 'Telefoon Anna', 'status' => 'active']]], $response->getData());
+	}//end testTerminalsListsTheSourcesTerminals()
+
+	/**
+	 * Without the payments.create action the terminal list is refused (403)
+	 * and the provider is never asked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function testTerminalsWithoutTheActionIsForbidden(): void {
+		$this->actionAuth->method('requireAction')->willThrowException(new \OCP\AppFramework\OCS\OCSForbiddenException('forbidden'));
+		$this->paymentIntentService->expects($this->never())->method('listTerminals');
+
+		$this->expectException(\OCP\AppFramework\OCS\OCSForbiddenException::class);
+		$this->controller->terminals(slug: 'mollie-live');
+	}//end testTerminalsWithoutTheActionIsForbidden()
+
+	/**
+	 * An unknown source is 404, a provider failure 502.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function testTerminalsMapsAMissingSourceAndAProviderFailure(): void {
+		$this->paymentIntentService->method('listTerminals')->willReturnCallback(
+			function (string $slug): ?array {
+				if ($slug === 'gone') {
+					return null;
+				}
+
+				throw new \OCA\Integriq\Exception\PaymentProviderException('Mollie responded with HTTP 500.');
+			}
+		);
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->terminals(slug: 'gone')->getStatus());
+		$failed = $this->controller->terminals(slug: 'mollie-live');
+		$this->assertSame(Http::STATUS_BAD_GATEWAY, $failed->getStatus());
+		$this->assertSame('payment_provider_unavailable', $failed->getData()['error']);
+	}//end testTerminalsMapsAMissingSourceAndAProviderFailure()
+
 }//end class

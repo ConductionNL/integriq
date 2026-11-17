@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use DateTimeImmutable;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
@@ -39,6 +40,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The per-call switch that keeps every body out of the call log (decision 229).
@@ -99,7 +101,9 @@ class CallServiceWithheldBodiesTest extends TestCase {
 	private function service(Response $answer, ?string $userId = 'j.devries'): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
@@ -265,7 +269,7 @@ class CallServiceWithheldBodiesTest extends TestCase {
 	public function testTheSwitchWinsOverLogBody(): void {
 		$service = $this->service(new Response(200, [], '{"burgerservicenummer":"' . self::ANSWERED . '"}'));
 
-		$service->call(source: $this->source(), endpoint: '/personen', method: 'POST', config: ['logBody' => true], withholdBodies: true);
+		$service->call(source: $this->source(), endpoint: '/personen', method: 'POST', config: ['logBody' => SloCurriculumClientHttp::class], withholdBodies: true);
 
 		$this->assertHoldsNoBody($this->callLogs()[0]);
 	}//end testTheSwitchWinsOverLogBody()

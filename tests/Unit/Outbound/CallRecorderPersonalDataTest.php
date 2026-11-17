@@ -28,6 +28,8 @@ use OCA\Integriq\Outbound\Call\CallRecorder;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -67,16 +69,17 @@ class CallRecorderPersonalDataTest extends TestCase {
 
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options) {
+				$schema = $options->target->schema;
 				$this->assertSame([], RegisterSchemaValidator::errors((string)$schema, $object));
-				$uuid = ($uuid ?? 'call-1');
+				$uuid = ($options->uuid ?? 'call-1');
 				$this->records[$uuid] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
 		);
 		$objectService->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null) {
-				if ($schema === 'source') {
+			function ($id, ?ObjectFindOptions $options = null) {
+				if ($options?->schema === 'source') {
 					return ObjectServiceMockBuilder::objectEntity($this, ['bodyCaptureUntil' => (new \DateTimeImmutable('+1 hour'))->format('c')], (string)$id);
 				}
 

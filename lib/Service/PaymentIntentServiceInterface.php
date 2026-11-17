@@ -82,4 +82,18 @@ interface PaymentIntentServiceInterface {
 	 * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
 	 */
 	public function resolveActiveSource(): ObjectEntity;
+
+	/**
+	 * The point-of-sale terminals of a payment source.
+	 *
+	 * @param string $sourceSlug The payment source slug.
+	 *
+	 * @return list<array{terminalId: string, label: string, status: string}>|null The terminals, or null
+	 *                                                                              when no source has that slug.
+	 *
+	 * @throws PaymentProviderException When the provider errors.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function listTerminals(string $sourceSlug): ?array;
 }

@@ -21,6 +21,7 @@
 			<ConnectionAlertSettings />
 			<PersonalDataFieldsSettings />
 			<OtelSettings />
+			<RetentionSettings />
 		</div>
 	</CnAdminSettingsShell>
 </template>
@@ -37,6 +38,7 @@ import ExpressionSourceSettings from './ExpressionSourceSettings.vue'
 import OpenFormulierenConnectionSettings from './OpenFormulierenConnectionSettings.vue'
 import OtelSettings from './OtelSettings.vue'
 import PersonalDataFieldsSettings from './PersonalDataFieldsSettings.vue'
+import RetentionSettings from './RetentionSettings.vue'
 import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
 
 /**
@@ -60,6 +62,7 @@ import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
  * @spec openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md#requirement-the-allowlist-is-administered-and-every-change-is-recorded-req-evs-003
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
  * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
+ * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
  * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-on-the-admin-settings-page-req-dso-012
  * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
@@ -79,6 +82,7 @@ export default {
 		OpenFormulierenConnectionSettings,
 		OtelSettings,
 		PersonalDataFieldsSettings,
+		RetentionSettings,
 		WebhookConnectionsSettings,
 	},
 }

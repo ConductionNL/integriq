@@ -16,8 +16,9 @@ no window dialog exist.
 - **acceptance_criteria**:
   - GIVEN the SLO adapter WHEN it passes `logBody` THEN the response body is stored
   - GIVEN any other class under `lib/` that passes `logBody` WHEN the suite runs THEN the scan test fails naming it
-- [ ] Implement
-- [ ] Test: PHPUnit `CallServiceBodyCaptureTest::testOnlyListedCallersPassLogBody` (scans `lib/` for `'logBody'` and compares against the allowlist)
+- [x] Implement
+- [x] Test: PHPUnit `CallServiceBodyCaptureTest::testOnlyListedCallersPassLogBody` (scans `lib/` for `'logBody'` and compares against the allowlist)
+- note: `logBody` is honoured only when its value is the class name of a caller on `LOG_BODY_ALLOWLIST` (the SLO adapter passes `self::class`); a bare `true` or a source setting stores nothing. `SupplierSourceCall` (pupil results, rosters, SWV hand-offs) no longer passes it: it reads the answer from the returned call log, which always carries the body.
 
 ### Task 6: The source page
 - **spec_ref**: `openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-the-source-page-shows-the-window-and-says-when-no-body-was-stored-req-ocd-011`
@@ -25,7 +26,8 @@ no window dialog exist.
 - **acceptance_criteria**:
   - GIVEN a source without a window WHEN an administrator opens one THEN the page shows "Bodies are stored until {time}" and a button to stop early
   - GIVEN a record in the call log WHEN it was not captured THEN the detail says "No body stored: no investigation window was open"
-- [ ] Implement
+- [x] Implement
+- note: `BodyCaptureWindow` (a `bodyWidgets` section on SourceDetail) and `src/dialogs/BodyCaptureWindowDialog.vue`; the Source logs row detail is `CallLogDetail` (`slots.row-detail`). Vitest `tests/vitest/bodyCaptureWindow.spec.js`; the Playwright test is a live pass and is not run here.
 - [ ] Test: Playwright `tests/e2e/outbound-call-log.spec.ts` (open a window, see a captured record, stop early)
 
 ## Verification

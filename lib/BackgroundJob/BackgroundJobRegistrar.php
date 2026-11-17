@@ -48,5 +48,6 @@ final class BackgroundJobRegistrar {
 		$context->registerServiceAlias(MessageRetrySchedulerInterface::class, MessageRetryJobScheduler::class);
 		$context->registerServiceAlias(TraceExportSchedulerInterface::class, OtelExportJobScheduler::class);
 		$context->registerServiceAlias(AttachmentFetchSchedulerInterface::class, AttachmentFetchJobScheduler::class);
+		$context->registerServiceAlias(RetentionRebaseSchedulerInterface::class, RetentionRebaseJobScheduler::class);
 	}
 }

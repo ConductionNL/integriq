@@ -1038,7 +1038,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * Collect the source, or the register and schema, one side of an endpoint or synchronization points at.
 	 *
 	 * @param array $ids  The ids collected so far, by kind.
-	 * @param array $side The side's `type` ('api' or 'register/schema') and `id` (a source id, or `{register}/{schema}`).
+	 * @param array $side The side's `type` ('api', 'a2a' or 'register/schema') and `id` (a source id, or `{register}/{schema}`).
 	 *
 	 * @return array The ids with the side's source, or register and schema, added.
 	 *
@@ -1047,7 +1047,8 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	private function collectSideExportIds(array $ids, array $side): array {
 		$type = $side['type'];
 		$id = $side['id'];
-		if ($type === 'api') {
+		// An `a2a` endpoint targets a source too (gateway-a2a-agent-card).
+		if ($type === 'api' || $type === 'a2a') {
 			$ids['source'][] = $id;
 		}
 
@@ -1152,12 +1153,20 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @throws \InvalidArgumentException If required components are missing or invalid.
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md
+	 * @spec openspec/changes/connectors-hr-staff-sync/tasks.md#task-3
 	 */
 	public function importConfiguration(array $oas): array {
 		$this->resetMappings();
 
 		if (isset($oas['components']) === false) {
 			throw new \InvalidArgumentException('OAS must contain a components property');
+		}
+
+		// A set marked as carrying personal data imports only with allow-list
+		// mappings; it is refused before anything is written.
+		$refusals = PersonalDataSetGuard::refusals(document: $oas);
+		if ($refusals !== []) {
+			throw new \InvalidArgumentException(implode(' ', $refusals));
 		}
 
 		$result = [];

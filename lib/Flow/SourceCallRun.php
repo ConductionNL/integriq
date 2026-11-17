@@ -122,14 +122,36 @@ final class SourceCallRun {
 	public int $index = 0;
 
 	/**
+	 * The source reference each item is sent through, rendered per item when templated.
+	 *
+	 * @var array<int, string>
+	 */
+	public array $references = [];
+
+	/**
+	 * The resolved Source per item, absent for an item whose reference did not resolve.
+	 *
+	 * @var array<int, ObjectEntity>
+	 */
+	public array $sources = [];
+
+	/**
+	 * Why an item's reference did not resolve, per item.
+	 *
+	 * @var array<int, FlowNodeException>
+	 */
+	public array $unresolved = [];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array        $config The step's authored configuration.
-	 * @param ObjectEntity $source The resolved Source object.
+	 * @param array             $config The step's authored configuration.
+	 * @param ObjectEntity|null $source The Source a plain reference resolved to, or null when the
+	 *                                  reference is a template resolved per item.
 	 */
 	public function __construct(
 		public readonly array $config,
-		public readonly ObjectEntity $source,
+		public readonly ?ObjectEntity $source,
 	) {
 
 	}//end __construct()

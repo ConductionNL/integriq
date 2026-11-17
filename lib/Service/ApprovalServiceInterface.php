@@ -204,15 +204,21 @@ interface ApprovalServiceInterface {
 	/**
 	 * Find an approval_request by id.
 	 *
-	 * @param string $id The approval_request uuid.
+	 * Within the caller's organisation by default: a request of another
+	 * organisation answers 404. `$asSystem` reads across organisations, for a
+	 * path that runs without a user or re-reads a request already found in scope.
+	 *
+	 * @param string $id       The approval_request uuid.
+	 * @param bool   $asSystem Whether to read without the organisation filter.
 	 *
 	 * @return ObjectEntity
 	 *
 	 * @throws ApprovalStateException (404) When no such request exists.
 	 *
 	 * @spec openspec/changes/archive/2026-07-15-hitl-approval-rule-action/design.md#api-design
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
-	public function find(string $id): ObjectEntity;
+	public function find(string $id, bool $asSystem = false): ObjectEntity;
 
 	/**
 	 * Whether the given user may act on this specific approval_request:

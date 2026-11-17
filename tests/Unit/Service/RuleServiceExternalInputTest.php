@@ -30,6 +30,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * A rule that extends its input with the objects its fields point at:
@@ -144,13 +145,13 @@ class RuleServiceExternalInputTest extends TestCase {
 		$created = ObjectServiceMockBuilder::objectEntity($this, [], 'src-new');
 		$this->orObjectService->method('findAll')->willReturn(['results' => []]);
 		$this->orObjectService->expects($this->once())->method('saveObject')
-			->with(
-				['location' => 'https://api.example.test/zaken/2', 'name' => '2', 'type' => 'api', 'isEnabled' => true],
-				'integriq',
-				'source',
-				false,
-				false
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['location' => 'https://api.example.test/zaken/2', 'name' => '2', 'type' => 'api', 'isEnabled' => true],
+				'register' => 'integriq',
+				'schema' => 'source',
+				'uuid' => false,
+				'_rbac' => false,
+			]))
 			->willReturn($created);
 		$this->callService->expects($this->once())->method('call')->with($created)->willReturn($this->answer(200, ['id' => 'zaak-2']));
 

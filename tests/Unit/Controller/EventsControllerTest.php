@@ -36,6 +36,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the dead-letter REST surface.
@@ -312,6 +313,7 @@ class EventsControllerTest extends TestCase {
 		$written = [];
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$written, $stored) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$written = ($args['object'] ?? $args[0]);
 				return $stored;
 			}
@@ -394,6 +396,7 @@ class EventsControllerTest extends TestCase {
 
 		$this->orObjectService->method('find')->willReturnCallback(
 			function (string $id, ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				if ($id === 'sub-webhook') {
 					return ObjectServiceMockBuilder::objectEntity($this, [], 'sub-webhook');
 				}

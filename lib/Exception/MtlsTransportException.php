@@ -91,6 +91,13 @@ class MtlsTransportException extends Exception {
 	public const ERROR_HANDSHAKE_FAILED = 'MTLS_HANDSHAKE_FAILED';
 
 	/**
+	 * A part given as a keepiq reference could not be resolved through the credential broker.
+	 *
+	 * @var string
+	 */
+	public const ERROR_REFERENCE_UNRESOLVED = 'MTLS_REFERENCE_UNRESOLVED';
+
+	/**
 	 * The stable machine-readable error code for this failure.
 	 *
 	 * @var string

@@ -32,6 +32,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Removing and pulling a subscription, rotating its signing secret, and the detail of a dead-lettered message.
@@ -122,7 +123,9 @@ final class EventsControllerSubscriptionActionsTest extends TestCase {
 	public function testUnsubscribeDeletesTheSubscription(): void {
 		$this->actionAuth->expects($this->once())->method('requireAction')->with($this->user, 'event.unsubscribe');
 		$this->objects->method('find')->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'sub-1'));
-		$this->objects->expects($this->once())->method('deleteObject')->with('sub-1');
+		$this->objects->expects($this->once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'sub-1',
+			]));
 
 		$response = $this->controller()->unsubscribe('sub-1');
 
@@ -181,6 +184,7 @@ final class EventsControllerSubscriptionActionsTest extends TestCase {
 	public function testPullRefusesAPushOrUnknownSubscription(): void {
 		$this->events->expects($this->never())->method('pullEvents');
 		$this->objects->method('find')->willReturnCallback(function (...$args) {
+			$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 			if ($args[0] === 'push-1') {
 				return ObjectServiceMockBuilder::objectEntity($this, ['style' => 'push'], 'push-1');
 			}
@@ -206,6 +210,7 @@ final class EventsControllerSubscriptionActionsTest extends TestCase {
 		$saved = null;
 		$this->objects->expects($this->once())->method('saveObject')
 			->willReturnCallback(function (...$args) use (&$saved) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$saved = $args[0];
 				$this->assertContains('sub-1', $args);
 				return ObjectServiceMockBuilder::objectEntity($this, $args[0], 'sub-1');
@@ -231,6 +236,7 @@ final class EventsControllerSubscriptionActionsTest extends TestCase {
 	public function testRotateRefusals(): void {
 		$this->objects->expects($this->never())->method('saveObject');
 		$this->objects->method('find')->willReturnCallback(function (...$args) {
+			$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 			return match ($args[0]) {
 				'none'  => ObjectServiceMockBuilder::objectEntity($this, [], 'none'),
 				'empty' => ObjectServiceMockBuilder::objectEntity($this, ['protocolSettings' => ['signingSecret' => '']], 'empty'),
@@ -257,6 +263,7 @@ final class EventsControllerSubscriptionActionsTest extends TestCase {
 	 */
 	public function testDeadLetterShowIncludesTheSubscription(): void {
 		$this->objects->method('find')->willReturnCallback(function (...$args) {
+			$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 			if ($args[0] === 'msg-1') {
 				return ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-1', 'payload' => ['source' => '/nextcloud/files']], 'msg-1');
 			}
@@ -277,6 +284,7 @@ final class EventsControllerSubscriptionActionsTest extends TestCase {
 	 */
 	public function testDeadLetterShowWithoutAKnownSubscription(): void {
 		$this->objects->method('find')->willReturnCallback(function (...$args) {
+			$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 			return match ($args[0]) {
 				'msg-1' => ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-gone', 'payload' => ['source' => 'https://elsewhere']], 'msg-1'),
 				'msg-2' => ObjectServiceMockBuilder::objectEntity($this, [], 'msg-2'),
