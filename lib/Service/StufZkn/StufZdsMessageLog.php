@@ -41,6 +41,8 @@ namespace OCA\Integriq\Service\StufZkn;
 
 use DateTime;
 use OCA\Integriq\Exception\StufZknProviderException;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Throwable;
 
@@ -110,11 +112,13 @@ class StufZdsMessageLog {
 			try {
 				$found = $this->objectService->find(
 					id: $sourceId,
-					register: self::REGISTER,
-					schema: self::SCHEMA_SOURCE,
+					options: new ObjectFindOptions(
+						register: self::REGISTER,
+						schema: self::SCHEMA_SOURCE,
+						render: false
+					),
 					_rbac: false,
-					_multitenancy: false,
-					_render: false
+					_multitenancy: false
 				);
 			} catch (Throwable $exception) {
 				$found = null;
@@ -333,6 +337,7 @@ class StufZdsMessageLog {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: matches a confirmation from a remote StUF system to its outbound message, no user session.
 			_multitenancy: false
 		);
 	}//end outboundMatches()
@@ -350,11 +355,9 @@ class StufZdsMessageLog {
 		try {
 			$found = $this->objectService->find(
 				id: $messageId,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $exception) {
 			return null;
@@ -385,9 +388,7 @@ class StufZdsMessageLog {
 
 		$saved     = $this->objectService->saveObject(
 			object: $row,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $uuid,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);

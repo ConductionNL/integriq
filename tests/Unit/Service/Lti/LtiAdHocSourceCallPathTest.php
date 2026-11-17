@@ -45,6 +45,7 @@ use ReflectionMethod;
 use ReflectionProperty;
 use RuntimeException;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The JWKS resolver and the AGS dispatcher call out through a Source built on
@@ -142,7 +143,9 @@ class LtiAdHocSourceCallPathTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
 			// Parameter order of tests/stubs/OCA/OpenRegister/Service/ObjectService.php.
-			function ($object = [], $register = null, $schema = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				if ($schema === 'call_log') {
 					$source = (string)($object['source'] ?? '');
 					if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $source) !== 1) {

@@ -46,7 +46,7 @@ Kind: code. Size M. Row `planninq:tt-hr-sync`.
 - **files**: `lib/Settings/configurations/staff-to-untis.README.md`
 - **acceptance_criteria**:
   - GIVEN Zermelo, Xedule and TimeEdit WHEN the README is read THEN each has its documented HR import, its source URL, and what a humaniq school lacks
-- [ ] Implement
+- [x] Implement (`lib/Settings/configurations/staff-to-untis.README.md`)
 - [ ] Test (review)
 
 ## Verification

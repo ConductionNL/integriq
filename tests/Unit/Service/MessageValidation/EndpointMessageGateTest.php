@@ -33,6 +33,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The gate over the real validators; OpenRegister is the boundary.
@@ -107,7 +109,9 @@ class EndpointMessageGateTest extends TestCase {
 
 		$this->objects = $this->createMock(ObjectService::class);
 		$this->objects->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null): ?ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->assertSame('integriq', $register);
 				$data = ($this->stored[$schema][(string)$id] ?? null);
 				if ($data === 'throw') {
@@ -125,7 +129,10 @@ class EndpointMessageGateTest extends TestCase {
 			}
 		);
 		$this->objects->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if (($this->stored['saveFails'] ?? false) === true) {
 					throw new RuntimeException('write refused');
 				}

@@ -32,6 +32,7 @@ const {
 	previewDirectorySyncHandler,
 	rerunFailedRunHandler,
 	runDirectorySyncHandler,
+	testRegistrationTargetHandler,
 	viewLogsHandler,
 } = await import('../../src/handlers/actionHandlers.js')
 const { logsLocation } = await import('../../src/handlers/logTargets.js')
@@ -125,6 +126,15 @@ describe('header-action openers', () => {
 			bus.EVENT_OPEN_SUBSCRIPTION_SIGNING,
 		]
 		expect(new Set(names).size).toBe(names.length)
+	})
+})
+
+describe('testRegistrationTargetHandler', () => {
+	it('opens the registration dry run with the row as its target', () => {
+		const row = { slug: 'json-milieu', title: 'Milieu' }
+		expect(emitted(() => testRegistrationTargetHandler({ actionId: 'test', item: row }))).toEqual([
+			[bus.EVENT_OPEN_REGISTRATION_TEST, { target: row }],
+		])
 	})
 })
 

@@ -44,4 +44,18 @@ interface CloudEventHttpBindingInterface {
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-cloudevents-travel-in-structured-or-binary-content-mode-req-015
 	 */
 	public function render(array $cloudEvent, string $contentMode = self::MODE_STRUCTURED): array;
+
+	/**
+	 * Read one received CloudEvent from its HTTP body and headers.
+	 *
+	 * @param string   $body     The raw request body.
+	 * @param callable $headerOf Returns a request header by name, '' when absent.
+	 *
+	 * @return array<string,mixed> The event, its required attributes checked.
+	 *
+	 * @throws \OCA\Integriq\Exception\CloudEventRefusedException When the event cannot be read or misses a required attribute.
+	 *
+	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 */
+	public function decode(string $body, callable $headerOf): array;
 }

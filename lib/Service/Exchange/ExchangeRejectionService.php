@@ -28,7 +28,9 @@ namespace OCA\Integriq\Service\Exchange;
 use DateTime;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -218,8 +220,7 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 		try {
 			$entry = $this->objectService->find(
 				id: $rejectionId,
-				register: ExchangeJobService::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: ExchangeJobService::REGISTER, schema: self::SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -396,6 +397,7 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 					'limit' => 1,
 				],
 				_rbac: false,
+				// Unscoped: reads the seeded status mapping, configuration shared by every organisation.
 				_multitenancy: false
 			);
 			foreach (($matches['results'] ?? $matches) as $row) {
@@ -560,9 +562,7 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 	private function save(array $data, ?string $uuid = null): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: ExchangeJobService::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuid,
+			options: RegisterSave::options(register: ExchangeJobService::REGISTER, schema: self::SCHEMA, uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);

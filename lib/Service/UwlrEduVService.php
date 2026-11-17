@@ -34,6 +34,7 @@ use DateTime;
 use OCA\Integriq\Event\UwlrEduVAcknowledgementReceivedEvent;
 use OCA\Integriq\Exception\UwlrEduVProviderException;
 use OCA\Integriq\Exception\UwlrEduVTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\UwlrEduV\BasispoortSyncTranslator;
@@ -260,8 +261,7 @@ class UwlrEduVService implements UwlrEduVServiceInterface {
 				'error' => null,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$this->eventDispatcher->dispatchTyped(
@@ -344,9 +344,7 @@ class UwlrEduVService implements UwlrEduVServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 	}//end retryOne()
@@ -421,8 +419,7 @@ class UwlrEduVService implements UwlrEduVServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($status === 'failed') {

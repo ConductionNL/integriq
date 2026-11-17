@@ -128,6 +128,25 @@ XML;
 		);
 	}//end testOnlySoapOneAndTwoAreAccepted()
 
+	public function testCallSoapSourceRefusesASourceWithoutAWsdlAndRestoresTheNullEntityLoader(): void {
+		libxml_set_external_entity_loader(static fn (): string => '/permissive');
+
+		try {
+			(new SOAPService(cookieJar: new CookieJar()))->callSoapSource(
+				source: $this->source([]),
+				soapAction: 'Echo',
+				config: ['body' => '{"text":"hallo"}']
+			);
+			$this->fail('A source without a WSDL must be refused.');
+		} catch (ConfigException $exception) {
+			$this->assertSame('No wsdl provided', $exception->getMessage());
+		}
+
+		$loader = libxml_get_external_entity_loader();
+		$this->assertIsCallable($loader);
+		$this->assertNull($loader('public', 'file:///etc/hostname', []));
+	}//end testCallSoapSourceRefusesASourceWithoutAWsdlAndRestoresTheNullEntityLoader()
+
 	/**
 	 * A SOAP source.
 	 *
