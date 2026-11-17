@@ -50,7 +50,12 @@ class MicrosecondColumnsFitTest extends TestCase {
 	 */
 	public function testMicrosecondPropertiesGetABigintColumn(): void {
 		$settings = __DIR__ . '/../../../lib/Settings';
-		$files = array_merge([$settings . '/integriq_register.json'], (glob($settings . '/register.d/*.json') ?: []));
+		$fragments = glob($settings . '/register.d/*.json');
+		if ($fragments === false) {
+			$fragments = [];
+		}
+
+		$files = array_merge([$settings . '/integriq_register.json'], $fragments);
 
 		$checked = [];
 		foreach ($files as $file) {
@@ -64,13 +69,13 @@ class MicrosecondColumnsFitTest extends TestCase {
 
 					$label = basename($file) . ' ' . $schemaName . '.' . $name;
 					$checked[] = $label;
-					$this->assertGreaterThan(self::INT32_MAX, ($property['maximum'] ?? 0), $label . ' needs a maximum above 32 bits');
+					$this->assertGreaterThan(expected: self::INT32_MAX, actual: ($property['maximum'] ?? 0), message: $label . ' needs a maximum above 32 bits');
 				}
 			}
 		}
 
-		$this->assertContains('execution-trace-observability.json execution_trace.startedAtUs', $checked);
-		$this->assertContains('execution-trace-observability.json execution_trace.finishedAtUs', $checked);
+		$this->assertContains(needle: 'execution-trace-observability.json execution_trace.startedAtUs', haystack: $checked);
+		$this->assertContains(needle: 'execution-trace-observability.json execution_trace.finishedAtUs', haystack: $checked);
 	}//end testMicrosecondPropertiesGetABigintColumn()
 
 }//end class
