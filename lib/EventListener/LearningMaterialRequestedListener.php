@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialRefusedException;
-use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialService;
+use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialServiceInterface;
 use OCA\Integriq\Event\LearningMaterialRequestedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -45,11 +45,11 @@ class LearningMaterialRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param LearningMaterialService $service Carries out the request.
-	 * @param LoggerInterface $logger Logs refusals and failures.
+	 * @param LearningMaterialServiceInterface $service Carries out the request.
+	 * @param LoggerInterface                  $logger  Logs refusals and failures.
 	 */
 	public function __construct(
-		private readonly LearningMaterialService $service,
+		private readonly LearningMaterialServiceInterface $service,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
