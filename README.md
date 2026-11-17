@@ -17,7 +17,7 @@
 
 ---
 
-Integriq brings enterprise service bus (ESB) capabilities natively into Nextcloud. Define external API connections as sources, expose your own API endpoints, transform data with flexible mappings, and keep systems in sync through scheduled or event-driven synchronizations — all from within your Nextcloud instance. It supports REST, SOAP, and XML APIs with OAuth, JWT, and API key authentication out of the box.
+Integriq brings enterprise service bus (ESB) capabilities natively into Nextcloud. Define external API connections as sources, expose your own API endpoints, transform data with flexible mappings, and keep systems in sync through scheduled or event-driven synchronizations — all from within your Nextcloud instance. It supports REST, SOAP, and XML APIs with OAuth, JWT, and API key authentication out of the box. Install it from the [Nextcloud App Store](https://apps.nextcloud.com/apps/integriq).
 
 Integriq requires the [OpenRegister](https://github.com/ConductionNL/openregister) app as a runtime dependency. Every entity (source, endpoint, mapping, synchronization, consumer, job, event, call log) is persisted as an OpenRegister object, and the controllers inject OpenRegister's `ObjectService` as a required dependency — Integriq does not function without it. `src/manifest.json` declares `"dependencies": ["openregister"]` accordingly.
 

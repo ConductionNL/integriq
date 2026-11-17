@@ -1,17 +1,25 @@
 publiccodeYmlVersion: '0.4'
 
-name: Open Connector
+name: Integriq
 url: https://github.com/ConductionNL/integriq
-softwareVersion: '0.2.10'
-releaseDate: '2026-05-26'
+landingURL: https://conductionnl.github.io/integriq/
+logo: img/app-store.svg
+softwareVersion: '0.2.22'
+releaseDate: '2026-08-09'
 developmentStatus: stable
 softwareType: addon
 
 platforms:
-  - nextcloud
+  - web
 
 categories:
   - data-collection
+
+intendedAudience:
+  countries:
+    - nl
+  scope:
+    - government
 
 description:
   en:
@@ -24,10 +32,22 @@ description:
       ecosystem: synchronise external data sources, emit cloud events,
       and translate API calls through configurable mappings.
       Conduction maintains this component on behalf of OpenWoo.app.
+      Install it from the Nextcloud App Store at https://apps.nextcloud.com/apps/integriq.
     features:
-      - Data source synchronisation
+      - Connect REST, SOAP and XML APIs as sources
+      - OAuth 2.0, JWT, API key and Basic authentication
+      - Expose external APIs through Nextcloud endpoints
+      - Rules on endpoints for authentication, mapping and file handling
+      - Field mapping and Twig based data transformation
+      - Synchronisation between systems with change detection
+      - Per-object synchronisation contracts for incremental sync
+      - Scheduled jobs and event driven synchronisation
       - Cloud event publishing
-      - API mapping and translation
+      - Data stored as OpenRegister objects
+    screenshots:
+      - img/screenshot-dashboard.png
+      - img/screenshot-sources.png
+      - img/screenshot-mappings.png
   nl:
     shortDescription: >-
       Gateway en servicebus voor Nextcloud: synchroniseer databronnen,
@@ -38,10 +58,22 @@ description:
       synchroniseer externe databronnen, publiceer cloud events en vertaal
       API-aanroepen via configureerbare mappings.
       Conduction onderhoudt dit component in opdracht van OpenWoo.app.
+      Installeer het via de Nextcloud App Store op https://apps.nextcloud.com/apps/integriq.
     features:
-      - Synchronisatie van databronnen
+      - REST-, SOAP- en XML-API's koppelen als bron
+      - Authenticatie met OAuth 2.0, JWT, API-sleutel en Basic
+      - Externe API's aanbieden via Nextcloud-endpoints
+      - Regels op endpoints voor authenticatie, mapping en bestanden
+      - Veldmapping en datatransformatie met Twig
+      - Synchronisatie tussen systemen met wijzigingsdetectie
+      - Synchronisatiecontracten per object voor incrementele sync
+      - Geplande taken en synchronisatie op basis van events
       - Publiceren van cloud events
-      - API-mapping en -vertaling
+      - Gegevens opgeslagen als OpenRegister-objecten
+    screenshots:
+      - img/screenshot-dashboard.png
+      - img/screenshot-sources.png
+      - img/screenshot-mappings.png
 
 legal:
   license: EUPL-1.2
@@ -63,14 +95,48 @@ maintenance:
 localisation:
   localisationReady: true
   availableLanguages:
+    - be
+    - bg
+    - bs
+    - ca
+    - cs
+    - da
+    - de
+    - el
     - en
+    - es
+    - et
+    - fi
+    - fr
+    - ga
+    - hr
+    - hu
+    - is
+    - it
+    - lb
+    - lt
+    - lv
+    - mk
+    - mt
+    - nb
     - nl
+    - pl
+    - pt
+    - rm
+    - ro
+    - ru
+    - sk
+    - sl
+    - sq
+    - sr
+    - sv
+    - tr
+    - uk
 
 dependsOn:
   open:
+    - name: Nextcloud
+      versionMin: '32'
+      versionMax: '35'
     - name: OpenRegister
       versionMin: '0.2.0'
-
-# Common Ground layer (nl.vng profile), as a standard supports entry.
-supports:
-  - id: https://commonground.nl/cms/view/54476261/5-lagen-model#integration
