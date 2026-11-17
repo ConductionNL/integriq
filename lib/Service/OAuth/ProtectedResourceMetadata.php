@@ -30,7 +30,10 @@ namespace OCA\Integriq\Service\OAuth;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -61,6 +64,7 @@ class ProtectedResourceMetadata {
 	 * @param ObjectService    $objectService OpenRegister object service (endpoints and rules).
 	 * @param IURLGenerator    $urlGenerator  Builds the absolute addresses.
 	 * @param IssuerKeyService $issuerKey     Integriq's own issuer, the authorization server.
+	 * @param LoggerInterface  $logger        Logger for a rule that could not be read.
 	 *
 	 * @return void
 	 *
@@ -70,6 +74,7 @@ class ProtectedResourceMetadata {
 		private readonly ObjectService $objectService,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IssuerKeyService $issuerKey,
+		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -118,6 +123,8 @@ class ProtectedResourceMetadata {
 	 * @param string $endpointPath The endpoint's path.
 	 *
 	 * @return array<string, mixed>|null resource, authorization_servers, scopes_supported and bearer_methods_supported.
+	 *
+	 * @throws RuntimeException When an endpoint rule could not be read.
 	 *
 	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
 	 */
@@ -212,19 +219,11 @@ class ProtectedResourceMetadata {
 	 * @param string $ruleId The rule.
 	 *
 	 * @return array<string, mixed>|null
+	 *
+	 * @throws RuntimeException When the rule could not be read for a reason other than it not existing.
 	 */
 	private function authenticationOf(string $ruleId): ?array {
-		try {
-			$rule = $this->objectService->find(
-				id: $ruleId,
-				options: new ObjectFindOptions(register: self::REGISTER, schema: 'rule', render: false),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			return null;
-		}
-
+		$rule = $this->ruleObject(ruleId: $ruleId);
 		if (($rule instanceof ObjectEntity) === false || ($rule->getObject()['type'] ?? null) !== 'authentication') {
 			return null;
 		}
@@ -236,4 +235,35 @@ class ProtectedResourceMetadata {
 
 		return ['type' => ($authentication['type'] ?? ''), 'requiredScopes' => ($authentication['requiredScopes'] ?? [])];
 	}//end authenticationOf()
+
+	/**
+	 * The rule object with this id, or null when no rule has it.
+	 *
+	 * A failed lookup is not "no rule": it is logged and thrown, so the caller
+	 * refuses to answer instead of publishing an incomplete document.
+	 *
+	 * @param string $ruleId The rule.
+	 *
+	 * @return ObjectEntity|null
+	 *
+	 * @throws RuntimeException When the rule could not be read for a reason other than it not existing.
+	 */
+	private function ruleObject(string $ruleId): ?ObjectEntity {
+		try {
+			return $this->objectService->find(
+				id: $ruleId,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'rule', render: false),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException) {
+			return null;
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'[ProtectedResourceMetadata] could not read an endpoint rule',
+				['ruleId' => $ruleId, 'exception' => $e]
+			);
+			throw new RuntimeException(message: 'The endpoint rules could not be read', previous: $e);
+		}
+	}//end ruleObject()
 }//end class

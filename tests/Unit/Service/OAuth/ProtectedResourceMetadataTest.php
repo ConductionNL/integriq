@@ -30,12 +30,16 @@ use OCA\Integriq\Service\OAuth\IssuerKeyService;
 use OCA\Integriq\Service\OAuth\ProtectedResourceMetadata;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
 use ReflectionClass;
 use ReflectionProperty;
 
@@ -50,13 +54,21 @@ final class ProtectedResourceMetadataTest extends TestCase {
 	private ProtectedResourceMetadata $metadata;
 
 	/**
+	 * Logger the builder reports a failed rule lookup to.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface&MockObject $logger;
+
+	/**
 	 * Endpoint "zaken" behind a JWT rule requiring zaken:read on GET and zaken:write on POST; "open" behind an API key.
 	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
 		$endpoints = [
-			['endpoint' => 'zaken', 'rules' => ['r-jwt', 'r-map']],
+			['endpoint' => 'zaken', 'rules' => ['r-jwt', 'r-map', 'r-deleted']],
+			['endpoint' => 'broken', 'rules' => ['r-jwt', 'r-unreadable']],
 			['endpoint' => 'open', 'rules' => ['r-key']],
 		];
 		$rules = [
@@ -80,6 +92,14 @@ final class ProtectedResourceMetadataTest extends TestCase {
 			return $found;
 		});
 		$objects->method('find')->willReturnCallback(static function (string|int $id) use ($rules): ?ObjectEntity {
+			if ($id === 'r-deleted') {
+				throw new DoesNotExistException('Object not found');
+			}
+
+			if ($id === 'r-unreadable') {
+				throw new RuntimeException('database unavailable');
+			}
+
 			if (isset($rules[$id]) === false) {
 				return null;
 			}
@@ -93,7 +113,9 @@ final class ProtectedResourceMetadataTest extends TestCase {
 		$issuer = $this->createMock(IssuerKeyService::class);
 		$issuer->method('issuerUrl')->willReturn('https://cloud.example.nl/apps/integriq');
 
-		$this->metadata = new ProtectedResourceMetadata(objectService: $objects, urlGenerator: $urls, issuerKey: $issuer);
+		$this->logger = $this->createMock(LoggerInterface::class);
+
+		$this->metadata = new ProtectedResourceMetadata(objectService: $objects, urlGenerator: $urls, issuerKey: $issuer, logger: $this->logger);
 	}//end setUp()
 
 	/**
@@ -119,6 +141,28 @@ final class ProtectedResourceMetadataTest extends TestCase {
 		$this->assertSame(200, $controller->protectedResource(_path: 'zaken')->getStatus());
 		$this->assertSame(404, $controller->protectedResource(_path: 'open')->getStatus());
 	}//end testTheDocumentOfATokenProtectedEndpoint()
+
+	/**
+	 * A rule that cannot be read is logged and refused, never published as an incomplete document or a 404.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableRuleIsNotTreatedAsNoAuthentication(): void {
+		$this->logger->expects($this->exactly(2))->method('error')->with(
+			'[ProtectedResourceMetadata] could not read an endpoint rule',
+			$this->callback(static fn (array $context): bool => $context['ruleId'] === 'r-unreadable' && $context['exception'] instanceof RuntimeException)
+		);
+
+		$controller = new WellKnownController(appName: 'integriq', request: $this->createMock(IRequest::class), metadata: $this->metadata);
+		$response = $controller->protectedResource(_path: 'broken');
+
+		$this->assertSame(503, $response->getStatus());
+		$this->assertSame(['error' => 'temporarily_unavailable'], $response->getData());
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('The endpoint rules could not be read');
+		$this->metadata->forPath(endpointPath: 'broken');
+	}//end testAnUnreadableRuleIsNotTreatedAsNoAuthentication()
 
 	/**
 	 * A call without a token to a JWT endpoint gets 401 naming the metadata; a refused token too; an API-key endpoint keeps its 403.

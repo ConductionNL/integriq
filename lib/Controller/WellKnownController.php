@@ -35,6 +35,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use RuntimeException;
 
 /**
  * The protected-resource metadata documents.
@@ -67,7 +68,7 @@ class WellKnownController extends Controller {
 	 *
 	 * @param string $_path The endpoint's path.
 	 *
-	 * @return JSONResponse 200 the metadata; 404 for an endpoint that is not token-protected.
+	 * @return JSONResponse 200 the metadata; 404 for an endpoint that is not token-protected; 503 when its rules could not be read.
 	 *
 	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
 	 */
@@ -75,7 +76,12 @@ class WellKnownController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function protectedResource(string $_path): JSONResponse {
-		$document = $this->metadata->forPath(endpointPath: $_path);
+		try {
+			$document = $this->metadata->forPath(endpointPath: $_path);
+		} catch (RuntimeException) {
+			return new JSONResponse(['error' => 'temporarily_unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
 		if ($document === null) {
 			return new JSONResponse(['error' => 'not_found'], Http::STATUS_NOT_FOUND);
 		}
