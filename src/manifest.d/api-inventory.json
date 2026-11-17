@@ -45,7 +45,7 @@
         {
           "id": "ApiInventory",
           "label": "API inventory",
-          "icon": "ApiOff",
+          "icon": "Api",
           "route": "ApiInventory",
           "order": 25
         }
