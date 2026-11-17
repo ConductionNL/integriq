@@ -33,6 +33,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the API Products subscription REST surface.
@@ -123,7 +124,10 @@ class ProductSubscriptionsControllerTest extends TestCase {
 
 		$saved = [];
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$saved) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saved) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'sub-1'));
 			}
@@ -159,7 +163,10 @@ class ProductSubscriptionsControllerTest extends TestCase {
 		);
 
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'sub-1'));
 			}
 		);
@@ -244,7 +251,10 @@ class ProductSubscriptionsControllerTest extends TestCase {
 
 		$saved = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$saved) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saved) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$saved = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'sub-1'));
 			}
@@ -414,7 +424,10 @@ class ProductSubscriptionsControllerTest extends TestCase {
 		// the wrong reason.
 		$calls = 0;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$calls) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$calls) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$calls++;
 				if ($calls >= 2) {
 					throw new \OCA\OpenRegister\Exception\ValidationException(

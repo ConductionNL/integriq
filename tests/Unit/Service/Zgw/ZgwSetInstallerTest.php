@@ -30,6 +30,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use OCA\Integriq\Tests\Helpers\CatalogueL10n;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The installer runs both guards, then binds the set's seeded synchronizations
@@ -71,7 +73,9 @@ class ZgwSetInstallerTest extends TestCase {
 	private function installer(?string $setDirectory=null): ZgwSetInstaller {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register=null, ?string $schema=null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($this->findThrows === true) {
 					throw new \RuntimeException('Object not found');
 				}
@@ -87,7 +91,10 @@ class ZgwSetInstallerTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->assertSame('integriq', $register);
 				$this->assertSame('synchronization', $schema);
 				$slug               = substr((string)$uuid, strlen('uuid-'));

@@ -60,6 +60,20 @@ final class RedactedValueFilter {
 	}//end filter()
 
 	/**
+	 * Whether a value is the redaction placeholder itself.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return boolean True only for the exact placeholder string.
+	 *
+	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+	 */
+	public static function isPlaceholder(mixed $value): bool {
+		return $value === SensitiveFieldRegistry::PLACEHOLDER;
+
+	}//end isPlaceholder()
+
+	/**
 	 * Whether a value is the placeholder, or a non-empty array of only masked values.
 	 *
 	 * @param mixed $value The value.

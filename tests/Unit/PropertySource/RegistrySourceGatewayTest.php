@@ -29,6 +29,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\Integriq\PropertySource\RegistrySourceGateway
+ * @covers \OCA\Integriq\PropertySource\RegistryRead
  */
 class RegistrySourceGatewayTest extends TestCase {
 
@@ -188,4 +189,20 @@ class RegistrySourceGatewayTest extends TestCase {
 		$this->assertSame(self::GOLDEN_ANSWERS, json_encode($outcomes));
 	}//end testGoldenAnswersAndFailures()
 
+
+	/**
+	 * A source whose configuration is not an array reads as an empty configuration.
+	 *
+	 * @return void
+	 */
+	public function testANonArraySourceConfigurationReadsAsEmpty(): void {
+		$source = new ObjectEntity();
+		$source->setObject(['slug' => 'brp-haalcentraal', 'configuration' => 'relationFields']);
+		$store = $this->createMock(ConnectionStore::class);
+		$store->expects($this->once())->method('findSourceBySlug')->with('brp-haalcentraal')->willReturn($source);
+
+		$gateway = new RegistrySourceGateway($store, $this->createMock(CallService::class), $this->createMock(LoggerInterface::class));
+
+		$this->assertSame([], $gateway->configuration('brp-haalcentraal'));
+	}//end testANonArraySourceConfigurationReadsAsEmpty()
 }//end class

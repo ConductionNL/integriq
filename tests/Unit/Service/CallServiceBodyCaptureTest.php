@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use RuntimeException;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Body capture on the CallService write path (Woo row 13.23, decision D5).
@@ -78,7 +79,9 @@ class CallServiceBodyCaptureTest extends TestCase {
 	private function service(Response $answer, ?IAppConfig $appConfig = null): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));

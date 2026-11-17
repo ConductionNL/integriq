@@ -29,7 +29,9 @@ namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Service\Helper\RandomUuid;
 use DateTime;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -98,6 +100,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: the status list is found for the organisation passed in, during issuance without a session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -118,9 +121,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		return $this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'eudi_status_list',
-			uuid: $uuid
+			options: RegisterSave::options(register: 'integriq', schema: 'eudi_status_list', uuid: $uuid)
 		);
 
 	}//end findOrCreateStatusList()
@@ -162,9 +163,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'eudi_status_list',
-			uuid: $entity->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'eudi_status_list', uuid: $entity->getUuid())
 		);
 
 		return ['statusListId' => $entity->getUuid(), 'index' => $index];
@@ -188,8 +187,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 	public function revokeIndex(string $statusListId, int $index): bool {
 		$entity = $this->orObjectService->find(
 			id: $statusListId,
-			register: 'integriq',
-			schema: 'eudi_status_list',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_status_list'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -206,9 +204,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'eudi_status_list',
-			uuid: $entity->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'eudi_status_list', uuid: $entity->getUuid())
 		);
 
 		// Re-sign immediately so a verifier fetching the endpoint right
@@ -216,8 +212,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 		// background refresh window.
 		$refreshedEntity = $this->orObjectService->find(
 			id: $statusListId,
-			register: 'integriq',
-			schema: 'eudi_status_list',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_status_list'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -338,9 +333,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'eudi_status_list',
-			uuid: $entity->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'eudi_status_list', uuid: $entity->getUuid())
 		);
 
 		return $token;
@@ -360,8 +353,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 		try {
 			$entity = $this->orObjectService->find(
 				id: $statusListId,
-				register: 'integriq',
-				schema: 'eudi_status_list',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_status_list'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -394,6 +386,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: background refresh of status lists near expiry, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);

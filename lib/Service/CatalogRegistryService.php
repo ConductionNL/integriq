@@ -144,6 +144,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'corporate-card-feed' => 'Bank',
 		'mollie-payments' => 'Payments',
 		'digipoort-sbr' => 'Tax filing',
+		// The ECB euro reference rates, credential-free (sources-ecb-exchange-rates D4).
 		'ecb-eurofxref-daily' => 'Bank',
 		// Other vendors' gateways whose APIs integriq lists (gateway-federated-api-discovery).
 		'kong-gateway-discovery' => 'API gateways',
@@ -318,6 +319,9 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 */
 	private const PROVIDER_CATEGORY_OVERRIDES = [
 		'azure-virtual-desktop' => 'Endpoint / Workspace',
+		'intune' => 'Endpoint / Workspace',
+		'jamf-pro' => 'Endpoint / Workspace',
+		'citrix-daas' => 'Endpoint / Workspace',
 		'sharepoint-online' => 'Document / CMS',
 		'microsoft-365' => 'SaaS productivity',
 		'data-infra-s3' => 'Data infrastructure',

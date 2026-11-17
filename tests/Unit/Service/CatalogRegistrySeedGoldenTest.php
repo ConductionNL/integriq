@@ -66,9 +66,28 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 
 		$entries = $this->service(logger: $logger)->collect();
 
-		$this->assertSame('124f23bb38a1628bf40e21d94b773af2d837522205a74213c909bfab42f2c7ef', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
+		$this->assertSame('9d9df168250560f9ef749d5ef5ce24393007aabbda14ccba65826b123e7322b8', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
 
 	}//end testCollectIsUnchanged()
+
+	/**
+	 * The ECB reference rates are listed under Bank (sources-ecb-exchange-rates D4).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+	 */
+	public function testTheEcbRatesAreListedUnderBank(): void {
+		$entries = array_values(array_filter(
+			$this->service()->collect(),
+			static fn (array $entry): bool => $entry['slug'] === 'source-template:ecb-eurofxref-daily'
+		));
+
+		$this->assertCount(1, $entries);
+		$this->assertSame('Bank', $entries[0]['category']);
+		$this->assertSame('ecb-eurofxref-daily', $entries[0]['sourceTemplateSlug']);
+
+	}//end testTheEcbRatesAreListedUnderBank()
 
 	/**
 	 * Every seed payload, and the misses, are as before.
@@ -89,7 +108,7 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 		$payloads[''] = $service->findSeedSourcePayload('');
 
 		$this->assertNull($payloads['no-such-seed']);
-		$this->assertSame('64cadb45e7ec6003bf285f96051b0b28fe27ae4f16f9e5c606677f64ac805582', hash('sha256', json_encode($payloads, JSON_THROW_ON_ERROR)));
+		$this->assertSame('bf6fb30bafcfe1d27ec5d15f2bd19856ef5be2f1f9e5ebe5a468b874c3592147', hash('sha256', json_encode($payloads, JSON_THROW_ON_ERROR)));
 
 	}//end testSeedPayloadsAreUnchanged()
 

@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Builds and signs the verdict on a staged-batch toolcall approval.
@@ -228,8 +229,10 @@ class ApprovalVerdictService
         try {
             $agent = $this->objectService->find(
                 id: $agentId,
-                register: 'hermiq',
-                schema: 'agent',
+                options: new ObjectFindOptions(
+                	register: 'hermiq',
+                	schema: 'agent'
+                ),
                 _rbac: false,
                 _multitenancy: false
             );

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Edge cases of the StUF-ZKN entry points.
@@ -84,11 +85,11 @@ class StUFZKNServiceEdgesTest extends TestCase {
 		$this->objects->expects($this->once())->method('findAll')->with(
 			['filters' => ['register' => 'zaken', 'schema' => 'zaak', 'zaakidentificatie' => 'ZAAK-1']]
 		)->willReturn(['results' => [['zaakidentificatie' => 'ZAAK-1', 'omschrijving' => 'oud', 'status' => 'open']]]);
-		$this->objects->expects($this->once())->method('saveObject')->with(
-			['zaakidentificatie' => 'ZAAK-1', 'omschrijving' => 'nieuw', 'status' => 'open', 'zaaktype' => 'melding'],
-			'zaken',
-			'zaak'
-		)->willReturn($this->stored(['zaakidentificatie' => 'ZAAK-1']));
+		$this->objects->expects($this->once())->method('saveObject')->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['zaakidentificatie' => 'ZAAK-1', 'omschrijving' => 'nieuw', 'status' => 'open', 'zaaktype' => 'melding'],
+				'register' => 'zaken',
+				'schema' => 'zaak',
+			]))->willReturn($this->stored(['zaakidentificatie' => 'ZAAK-1']));
 		$this->builder->expects($this->once())->method('buildBv03')->with(caseIdentification: 'ZAAK-1', stuurgegevens: self::STUURGEGEVENS)->willReturn('<Bv03/>');
 
 		$answer = $this->service->handleZakLk01(soapXml: $this->zakLk01(identification: 'ZAAK-1'), stuurgegevens: self::STUURGEGEVENS);
@@ -100,11 +101,11 @@ class StUFZKNServiceEdgesTest extends TestCase {
 		$entity = new ObjectEntity();
 		$entity->setObject(['zaakidentificatie' => 'ZAAK-1', 'einddatum' => '20261231']);
 		$this->objects->method('findAll')->willReturn(['results' => [$entity]]);
-		$this->objects->expects($this->once())->method('saveObject')->with(
-			['zaakidentificatie' => 'ZAAK-1', 'einddatum' => '20261231', 'omschrijving' => 'nieuw', 'zaaktype' => 'melding'],
-			'zaken',
-			'zaak'
-		)->willReturn($this->stored(['zaakidentificatie' => 'ZAAK-1']));
+		$this->objects->expects($this->once())->method('saveObject')->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['zaakidentificatie' => 'ZAAK-1', 'einddatum' => '20261231', 'omschrijving' => 'nieuw', 'zaaktype' => 'melding'],
+				'register' => 'zaken',
+				'schema' => 'zaak',
+			]))->willReturn($this->stored(['zaakidentificatie' => 'ZAAK-1']));
 		$this->builder->method('buildBv03')->willReturn('<Bv03/>');
 
 		$this->service->handleZakLk01(soapXml: $this->zakLk01(identification: 'ZAAK-1'), stuurgegevens: self::STUURGEGEVENS);

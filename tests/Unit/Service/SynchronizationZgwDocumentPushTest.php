@@ -35,6 +35,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
@@ -123,7 +124,8 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 		);
 		$or->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 		$or->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false) {
+			function (...$legacyArgs) {
+				[$object, $register, $schema, $uuid, $_rbac, $_multitenancy, $silent] = LegacyObjectArgs::positional(method: 'saveObject', args: $legacyArgs);
 				$this->saves[] = ['object' => $object, 'uuid' => $uuid, 'silent' => $silent];
 				return new ObjectEntity();
 			}

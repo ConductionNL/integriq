@@ -54,6 +54,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Fail-closed and fallback paths across the LTI services.
@@ -95,7 +96,11 @@ class LtiFailClosedPathsTest extends TestCase {
 	public function testARegistrationWithoutAnActiveKeyHasNoActiveEntry(): void {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->expects($this->once())->method('find')
-			->with('tool-1', 'integriq', 'lti_tool')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'tool-1',
+				'register' => 'integriq',
+				'schema' => 'lti_tool',
+			]))
 			->willReturn(
 				$this->entity(
 					'tool-1',
@@ -182,7 +187,11 @@ class LtiFailClosedPathsTest extends TestCase {
 	 */
 	public function testAToolLookupYieldingNothingGivesNoDetails(): void {
 		$objects = $this->createMock(ObjectService::class);
-		$objects->expects($this->once())->method('find')->with('tool-1', 'integriq', 'lti_tool')->willReturn(null);
+		$objects->expects($this->once())->method('find')->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'tool-1',
+				'register' => 'integriq',
+				'schema' => 'lti_tool',
+			]))->willReturn(null);
 		$resolver = $this->createMock(LtiRegistrationResolverService::class);
 		$resolver->expects($this->never())->method($this->anything());
 		$urls = $this->createMock(IURLGenerator::class);
@@ -259,7 +268,11 @@ class LtiFailClosedPathsTest extends TestCase {
 	private function autoProvisionObjects(array $lookups): ObjectService {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->expects($this->exactly(count($lookups)))->method('findAll')->willReturnOnConsecutiveCalls(...$lookups);
-		$objects->method('find')->with('plat-1', 'integriq', 'lti_platform')->willReturn(
+		$objects->method('find')->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'plat-1',
+				'register' => 'integriq',
+				'schema' => 'lti_platform',
+			]))->willReturn(
 			$this->entity('plat-1', ['identityPolicy' => 'autoProvisionAsRole', 'defaultProvisionGroup' => 'learners'])
 		);
 
