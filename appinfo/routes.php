@@ -456,8 +456,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
-		['name' => 'file_server_sources#test', 'url' => '/api/sources/{id}/host-key/test', 'verb' => 'POST'],
-		['name' => 'file_server_sources#pin', 'url' => '/api/sources/{id}/host-key', 'verb' => 'POST'],
+		['name' => 'fileServerSources#test', 'url' => '/api/sources/{id}/host-key/test', 'verb' => 'POST'],
+		['name' => 'fileServerSources#pin', 'url' => '/api/sources/{id}/host-key', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
 		['name' => 'runSummary#show', 'url' => '/api/sources/{id}/run-summary', 'verb' => 'GET'],
 		// connectors-endpoint-workspace-adapters: the sessions or devices the workspace
