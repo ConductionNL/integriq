@@ -83,9 +83,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Intake channels beyond mail (openspec/changes/intake-channels-beyond-mail).
 		// The inbound leg is public and gated by a webhook signature verified over
 		// the raw bytes before the body is read, like peppol#inbound and
-		// notifyNl#inbound. The rule save and the reply are session calls behind
-		// the ADR-023 action matrix (`intake.rules`, `intake.reply`), because a
-		// rule decides what opens a case and a reply leaves the building.
+		// notifyNl#inbound. The rule save, the reply and the assign are session calls behind
+		// the ADR-023 action matrix (`intake.rules`, `intake.reply`, `intake.assign`), because a
+		// rule decides what opens a case, a reply leaves the building and an assign
+		// puts a citizen's message on a case.
 		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
 		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
 		// CloudEvents from outside systems (openspec/changes/cloudevents-receiver).
@@ -108,6 +109,7 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
+		['name' => 'intakeChannels#assign', 'url' => '/api/intake/messages/{id}/assign', 'verb' => 'POST'],
 
 		// The outbound communication log (openspec/changes/outbound-communication-log).
 		// Listing the log is the declarative page over `outbound_message`; these are
@@ -433,6 +435,12 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Every refusal is one undifferentiated 401
 		// (openspec/specs/digid-eherkenning-auth-adapter/spec.md).
 		['name' => 'idpBroker#exchange', 'url' => '/api/idp/envelope/exchange', 'verb' => 'POST'],
+		// Each organisation's SP / RP, published for its identity provider (portal-idp-broker-config D3).
+		['name' => 'idpMetadata#metadata', 'url' => '/api/idp/metadata/{organisation}/{provider}', 'verb' => 'GET'],
+		['name' => 'idpMetadata#jwks', 'url' => '/api/idp/jwks/{organisation}/{provider}', 'verb' => 'GET'],
+		// Beheer > Authenticatie: the registrations with their readiness, and the Test action (admin only).
+		['name' => 'idpRegistration#index', 'url' => '/api/idp/registrations', 'verb' => 'GET'],
+		['name' => 'idpRegistration#test', 'url' => '/api/idp/registrations/{id}/test', 'verb' => 'POST'],
 		// The browser half of the same login. The start checks the consumer and
 		// its registered return address before anything leaves integriq; the
 		// callback sends the browser back only to the address kept in the
