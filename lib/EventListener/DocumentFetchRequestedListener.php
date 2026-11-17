@@ -29,7 +29,7 @@ namespace OCA\Integriq\EventListener;
 use OCA\Integriq\Event\DocumentFetchRequestedEvent;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
-use OCA\Integriq\Service\Chat\TalkMessageSource;
+use OCA\Integriq\Service\Chat\TalkMessageSourceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -51,13 +51,13 @@ class DocumentFetchRequestedListener implements IEventListener {
 	 * @param Microsoft365AdapterInterface $adapter The Microsoft 365 source.
 	 * @param DocumentConnectionGuardInterface $guard Refuses an app without a linked connection.
 	 * @param LoggerInterface     $logger  Records who asked and for which handle, never what was found.
-	 * @param TalkMessageSource   $talk    The Nextcloud Talk source, for `chatMessage:talk:` handles.
+	 * @param TalkMessageSourceInterface $talk    The Nextcloud Talk source, for `chatMessage:talk:` handles.
 	 */
 	public function __construct(
 		private readonly Microsoft365AdapterInterface $adapter,
 		private readonly DocumentConnectionGuardInterface $guard,
 		private readonly LoggerInterface $logger,
-		private readonly TalkMessageSource $talk,
+		private readonly TalkMessageSourceInterface $talk,
 	) {
 	}//end __construct()
 

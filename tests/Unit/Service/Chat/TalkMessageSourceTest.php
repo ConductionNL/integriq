@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\Integriq\Service\Chat\IntegriqSearchQuery
  * @covers \OCA\Integriq\Service\Chat\TalkSearchHits
  * @uses \OCA\Integriq\Service\Chat\ThreadTranscript
+ * @uses \OCA\Integriq\Service\Chat\TalkThreadReader
  * @uses \OCA\Integriq\EventListener\DocumentSearchRequestedListener
  * @uses \OCA\Integriq\Event\DocumentSearchRequestedEvent
  * @uses \OCA\Integriq\Event\DocumentConnectionRequestEvent

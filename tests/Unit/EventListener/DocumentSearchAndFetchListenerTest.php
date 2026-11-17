@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\Integriq\Event\DocumentFetchRequestedEvent
  * @uses \OCA\Integriq\Service\Chat\TalkMessageSource
  * @uses \OCA\Integriq\Service\Chat\ThreadTranscript
+ * @uses \OCA\Integriq\Service\Chat\TalkThreadReader
  */
 class DocumentSearchAndFetchListenerTest extends TestCase {
 
