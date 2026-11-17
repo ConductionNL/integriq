@@ -39,7 +39,8 @@ Kind: code. Matrix rows `integriq:plt-action-matrix` and `integriq:plt-roles`.
   - GIVEN `object.mapping.update` granted to a group WHEN saved THEN the mapping schema's authorization lists that group and `admin`
   - GIVEN a register import WHEN the repair step runs THEN the stored grants are back on the schemas
   - GIVEN a refused schema update WHEN saving THEN the answer names the schema
-- [ ] Implement
+- [x] Implement
+  - `ObjectRightsService::apply()` writes each `object.<schema>.<verb>` row onto the schema's block (found by application and slug), always with `admin`, keeping keys the matrix does not govern. A row still at its seed is the register's own posture: `["admin"]` for source, rule and consumer, the verb removed (OpenRegister's default) for the six others, so an untouched matrix writes nothing. `setMatrix()` applies after storing and answers `notApplied` and a `warning` naming the schemas; `ApplyObjectRights` runs after InitializeRegister and InitializeActions in post-migration and install.
 - [ ] Test (PHPUnit on the service and repair step; Playwright for the mapping versus source scenario)
 
 ## Verification
