@@ -51,5 +51,8 @@ object, portaliq, wave 2. The channel half waits on nothing.
   - GIVEN a held message WHEN a handler assigns it to a case THEN it is linked with its attachments and the assigner is recorded
   - GIVEN a message from a channel that can reply WHEN a handler replies from the inbox THEN `IntakeReplyService::reply()` sends it on that channel
 - [ ] Implement (rows `msg-shared-inbox`, `msg-reply-channel`)
+  - Done: `POST /api/intake/messages/{id}/assign` behind the new `intake.assign` action right (`IntakeChannelsController::assign()`), `IntakeAssignmentService` (a held, routed or assigned message gets `status: assigned`, `targetRef`, `assignedBy`, `assignedAt`; the owning app is handed the message and its attachments through `IntakeMessageAssignedEvent`), the `intake_message` schema 1.2.0 fields, and the inbox's Case and Assigned by columns. The reply route already existed.
+  - Open: the two row actions on the inbox. The page is `type: logs`, which declares no row actions, and the app shell passes no ADR-023 action rights to the manifest, so a row action cannot yet be hidden from a reader without the right (REQ-IC-021 scenario 3).
 - [ ] Test (PHPUnit for the assign route; Playwright for the two row actions)
+  - Done: PHPUnit `IntakeChannelsControllerAssignTest` and `IntakeAssignmentServiceTest`. Open: Playwright for the row actions.
 
