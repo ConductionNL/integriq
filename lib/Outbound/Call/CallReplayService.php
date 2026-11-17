@@ -36,6 +36,7 @@ namespace OCA\Integriq\Outbound\Call;
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\Integriq\Service\Security\PersonalDataFields;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Throwable;
@@ -595,7 +596,7 @@ class CallReplayService implements CallReplayServiceInterface {
 			return true;
 		}
 
-		if ($request === []) {
+		if ($request === [] || self::holdsMaskedValue(value: $request) === true) {
 			return false;
 		}
 
@@ -613,6 +614,37 @@ class CallReplayService implements CallReplayServiceInterface {
 			&& ($captured === true || $hasBody === true)
 		);
 	}//end requestIsKept()
+
+	/**
+	 * Whether a stored request carries a masked personal data value.
+	 *
+	 * Without `replayRequest` the stored request is what a replay sends, and a
+	 * masked value in it would reach the partner as the placeholder instead of
+	 * the value the call sent (REQ-PDM-001), so such a record is not replayed.
+	 *
+	 * @param mixed $value The stored request, or a part of it.
+	 *
+	 * @return bool True when a string in it holds the mask placeholder.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 */
+	private static function holdsMaskedValue(mixed $value): bool {
+		if (is_string($value) === true) {
+			return str_contains($value, PersonalDataFields::PLACEHOLDER);
+		}
+
+		if (is_array($value) === false) {
+			return false;
+		}
+
+		foreach ($value as $item) {
+			if (self::holdsMaskedValue(value: $item) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end holdsMaskedValue()
 
 	/**
 	 * A stored bag narrowed to an array.
