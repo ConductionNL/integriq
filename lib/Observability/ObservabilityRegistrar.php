@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Observability;
 
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\EventDispatcher\IEventDispatcher;
 
 /**
  * Entry point of this component's container wiring for Application.
@@ -47,4 +48,17 @@ final class ObservabilityRegistrar {
 	public function register(IRegistrationContext $context): void {
 		(new ObservabilityBindings())->register(context: $context);
 	}//end register()
+
+	/**
+	 * Register the listeners on the event dispatcher.
+	 *
+	 * @param IEventDispatcher $dispatcher The event dispatcher.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude container wiring only, it registers this component's listeners and has no behaviour of its own
+	 */
+	public function registerListeners(IEventDispatcher $dispatcher): void {
+		(new ObservabilityBindings())->registerListeners(dispatcher: $dispatcher);
+	}//end registerListeners()
 }//end class
