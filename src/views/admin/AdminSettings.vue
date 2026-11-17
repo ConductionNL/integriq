@@ -16,6 +16,7 @@
 			<OpenFormulierenConnectionSettings />
 			<WebhookConnectionsSettings />
 			<DigitalPostAccountSettings />
+			<IdpRegistrationSettings />
 			<BerichtenboxSettings />
 			<ExpressionSourceSettings />
 			<ConnectionAlertSettings />
@@ -36,6 +37,7 @@ import DsoActivityMappingSettings from './DsoActivityMappingSettings.vue'
 import DsoPkiSettings from './DsoPkiSettings.vue'
 import ErrorSinkSettings from './ErrorSinkSettings.vue'
 import ExpressionSourceSettings from './ExpressionSourceSettings.vue'
+import IdpRegistrationSettings from './IdpRegistrationSettings.vue'
 import OpenFormulierenConnectionSettings from './OpenFormulierenConnectionSettings.vue'
 import OtelSettings from './OtelSettings.vue'
 import RetentionSettings from './RetentionSettings.vue'
@@ -66,6 +68,7 @@ import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
  * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-on-the-admin-settings-page-req-dso-012
  * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+ * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-beheer-authenticatie-configures-the-registrations-req-idpc-008
  */
 export default {
 	name: 'AdminSettings',
@@ -80,6 +83,7 @@ export default {
 		DsoPkiSettings,
 		ErrorSinkSettings,
 		ExpressionSourceSettings,
+		IdpRegistrationSettings,
 		OpenFormulierenConnectionSettings,
 		OtelSettings,
 		RetentionSettings,

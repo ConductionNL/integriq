@@ -146,6 +146,10 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'digipoort-sbr' => 'Tax filing',
 		// The ECB euro reference rates, credential-free (sources-ecb-exchange-rates D4).
 		'ecb-eurofxref-daily' => 'Bank',
+		// Other vendors' gateways whose APIs integriq lists (gateway-federated-api-discovery).
+		'kong-gateway-discovery' => 'API gateways',
+		'azure-apim-discovery' => 'API gateways',
+		'aws-apigateway-discovery' => 'API gateways',
 	];
 
 	/**
@@ -215,6 +219,21 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'sourceTemplateSlug' => '',
 			'standards' => ['OGC WMS', 'OGC WFS', 'PDOK Locatieserver'],
 			'icon' => 'MapMarkerOutline',
+		],
+		[
+			'slug' => 'adapter:digid-eherkenning-auth-adapter',
+			'name' => 'DigiD, eHerkenning and eIDAS login',
+			'description' => 'Signs residents and businesses in through DigiD, eHerkenning or eIDAS for an app such as portaliq, '
+				. 'which receives a signed pseudonymous envelope, never a BSN. Each organisation gets its own SAML Service Provider '
+				. 'or OIDC Relying Party registration, configured under Beheer > Authenticatie; this entry creates no configuration '
+				. 'of its own. Keys stay in Keepiq. Substantial is the lowest level accepted. Dormant until `idp_broker_enabled` is 1.',
+			'category' => 'Identity',
+			'kind' => 'adapter',
+			'mechanism' => 'flag-gated',
+			'flagKey' => 'idp_broker_enabled',
+			'sourceTemplateSlug' => '',
+			'standards' => ['SAML 2.0', 'OpenID Connect', 'DigiD', 'eHerkenning', 'eIDAS'],
+			'icon' => 'AccountKeyOutline',
 		],
 		[
 			'slug' => 'adapter:digikoppeling',
