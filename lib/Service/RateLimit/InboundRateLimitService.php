@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/consumer-management/spec.md
  */
-class InboundRateLimitService {
+class InboundRateLimitService implements InboundRateLimitServiceInterface {
 
 	/**
 	 * Distributed cache holding the window + quota counters.

@@ -298,7 +298,7 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		$this->assertionGuard->assertAcceptable(
 			assertion: $login->assertion,
 			outstandingRequestId: $login->requestId,
-			expectedAudience: $registration->text(key: 'spEntityId'),
+			expectedAudience: self::expectedAudience(registration: $registration),
 			now: $login->now
 		);
 
@@ -308,6 +308,25 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		return $this->exchange->issueCode(envelope: $this->envelopeFor(login: $login, consumer: $consumer, registration: $registration));
 
 	}//end finish()
+
+	/**
+	 * The audience an assertion for this registration must name: the client id of an
+	 * `oidc-rp` registration, the SP EntityID of a `saml-sp` one.
+	 *
+	 * @param IdpRegistration $registration The organisation's registration.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-pseudonymisation-mode-is-chosen-per-registration-req-idpc-005
+	 */
+	private static function expectedAudience(IdpRegistration $registration): string {
+		if ($registration->kind() === IdpRegistration::KIND_OIDC) {
+			return $registration->text(key: 'clientId');
+		}
+
+		return $registration->text(key: 'spEntityId');
+
+	}//end expectedAudience()
 
 	/**
 	 * The organisation's enabled registration for the provider the login runs on.

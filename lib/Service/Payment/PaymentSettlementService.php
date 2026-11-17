@@ -48,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-every-provider-settlement-is-reported-once-with-its-transactions-req-lpp-008
  */
-class PaymentSettlementService {
+class PaymentSettlementService implements PaymentSettlementServiceInterface {
 
 	/**
 	 * The OpenRegister register slug integriq stores its objects in.
