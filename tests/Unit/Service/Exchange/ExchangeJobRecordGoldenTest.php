@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Golden job records of ExchangeJobService.
@@ -59,6 +60,7 @@ class ExchangeJobRecordGoldenTest extends TestCase {
 		$store = $this->createMock(ORObjectService::class);
 		$store->method('saveObject')->willReturnCallback(
 			function ($object = [], ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				if ($this->failSave === true) {
 					throw new RuntimeException('disk full');
 				}

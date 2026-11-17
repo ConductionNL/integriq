@@ -69,6 +69,10 @@
 		<GatewayCatalogueDialog
 			:open="gatewayCatalogue.open"
 			@close="closeGatewayCatalogue" />
+		<RegistrationTargetTestModal
+			:open="registrationTest.open"
+			:target="registrationTest.target"
+			@close="closeRegistrationTest" />
 		<LinkSourceDialog
 			:open="linkSource.open"
 			:app="linkSource.app"
@@ -93,6 +97,7 @@ import SharePointPublicationSetupDialog from '../../dialogs/SharePointPublicatio
 import SourceResidencyDialog from '../../dialogs/SourceResidencyDialog.vue'
 import DirectoryRunModal from '../Directory/DirectoryRunModal.vue'
 import PromotePreviewModal from '../PromotePreviewModal.vue'
+import RegistrationTargetTestModal from '../Registration/RegistrationTargetTestModal.vue'
 import SubscriptionSigningModal from '../Subscription/SubscriptionSigningModal.vue'
 import AddEndpointRuleModal from './AddEndpointRuleModal.vue'
 import RunActionModal from './RunActionModal.vue'
@@ -107,6 +112,7 @@ import {
 	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
 	EVENT_OPEN_PROMOTION,
+	EVENT_OPEN_REGISTRATION_TEST,
 	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP,
@@ -136,6 +142,7 @@ export default {
 		LinkSourceDialog,
 		RegistryLookupDialog,
 		GatewayCatalogueDialog,
+		RegistrationTargetTestModal,
 		SourceResidencyDialog,
 	},
 
@@ -156,6 +163,7 @@ export default {
 			gatewayCatalogue: { open: false },
 			sourceResidency: { open: false, source: null },
 			linkSource: { open: false, app: '' },
+			registrationTest: { open: false, target: null },
 		}
 	},
 
@@ -205,6 +213,7 @@ export default {
 		modalBus.on(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 		modalBus.on(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.on(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
+		modalBus.on(EVENT_OPEN_REGISTRATION_TEST, this.openRegistrationTest)
 		modalBus.on(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 		modalBus.on(EVENT_OPEN_SOURCE_RESIDENCY, this.openSourceResidency)
 	},
@@ -224,6 +233,7 @@ export default {
 		modalBus.off(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 		modalBus.off(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.off(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
+		modalBus.off(EVENT_OPEN_REGISTRATION_TEST, this.openRegistrationTest)
 		modalBus.off(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 		modalBus.off(EVENT_OPEN_SOURCE_RESIDENCY, this.openSourceResidency)
 	},
@@ -395,6 +405,19 @@ export default {
 		/** @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008 */
 		closeGatewayCatalogue() {
 			this.gatewayCatalogue = { open: false }
+		},
+
+		/**
+		 * @param {object} payload `{ target }`, the registration target row.
+		 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
+		 */
+		openRegistrationTest(payload) {
+			this.registrationTest = { open: true, target: payload?.target ?? null }
+		},
+
+		/** @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001 */
+		closeRegistrationTest() {
+			this.registrationTest = { open: false, target: null }
 		},
 
 		/**

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\UuidV4;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for MappingRuntime.
@@ -164,7 +165,13 @@ final class MappingRuntimeTest extends TestCase {
 		$source   = $this->entity(data: ['location' => 'https://api.example/v2']);
 		$registry = $this->createMock(ORObjectService::class);
 		$registry->expects($this->once())->method('find')
-			->with('src-1', 'integriq', 'source', false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'src-1',
+				'register' => 'integriq',
+				'schema' => 'source',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))
 			->willReturn($source);
 		$this->objectService->method('getOpenRegisters')->willReturn($registry);
 		$this->callService->expects($this->once())->method('call')

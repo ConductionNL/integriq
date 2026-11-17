@@ -23,6 +23,7 @@ use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every slug/id translation import() makes, recorded as the save it ends in.
@@ -53,7 +54,8 @@ class EndpointHandlerImportGoldenTest extends TestCase {
 	private function handler(): EndpointHandler {
 		$or = $this->createMock(OrObjectService::class);
 		$or->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function (...$legacyArgs) {
+				[$object, $register, $schema, $uuid] = LegacyObjectArgs::positional(method: 'saveObject', args: $legacyArgs);
 				$this->log[] = ['object' => $object, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			}

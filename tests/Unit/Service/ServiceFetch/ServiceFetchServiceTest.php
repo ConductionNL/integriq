@@ -41,6 +41,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Design D3 and D4, with a recorded source answer.
@@ -126,7 +128,10 @@ class ServiceFetchServiceTest extends TestCase {
 		$this->savedLogs = [];
 
 		$this->objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->savedLogs[] = ['schema' => $schema, 'uuid' => $uuid, 'row' => $object];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, (string)$uuid);
 			}
@@ -155,7 +160,9 @@ class ServiceFetchServiceTest extends TestCase {
 			}
 		);
 		$this->objects->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null): ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null): ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'source' && $id === 'source-brk') {
 					return ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://brk.example'], 'source-brk');
 				}

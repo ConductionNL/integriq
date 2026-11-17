@@ -32,6 +32,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Runs and resumes flows through every step-loop path and records every
@@ -146,14 +148,19 @@ class FlowRunnerServiceGoldenTest extends TestCase {
 	private function service(array $steps): FlowRunnerService {
 		$objects = ObjectServiceMockBuilder::make($this);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				unset($object['startedAt'], $object['finishedAt']);
 				$this->trace[] = ['save' => $schema, 'uuid' => $uuid, 'object' => $object];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'run-1'));
 			}
 		);
 		$objects->method('find')->willReturnCallback(
-			function (string $id, ?string $register = null, ?string $schema = null) use ($steps): ObjectEntity {
+			function (string $id, ?ObjectFindOptions $options = null) use ($steps): ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->trace[] = ['find' => $schema, 'id' => $id];
 				if ($schema === 'flow_run') {
 					return ObjectServiceMockBuilder::objectEntity($this, ['flowId' => 'flow-1', 'status' => 'suspended'], $id);

@@ -29,6 +29,8 @@ use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
 use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
 use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
 use OCA\Integriq\Intake\Adapter\TeamsChannelAdapter;
+use OCA\Integriq\Intake\IntakeAssignmentService;
+use OCA\Integriq\Intake\IntakeAssignmentServiceInterface;
 use OCA\Integriq\Intake\IntakeBindings;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Intake\IntakeChannelRegistryInterface;
@@ -69,6 +71,7 @@ class IntakeBindingsTest extends TestCase {
 			[
 				IntakeRoutingServiceInterface::class => IntakeRoutingService::class,
 				IntakeReplyServiceInterface::class => IntakeReplyService::class,
+				IntakeAssignmentServiceInterface::class => IntakeAssignmentService::class,
 				IntakeChannelRegistryInterface::class => IntakeChannelRegistry::class,
 			],
 			$aliases

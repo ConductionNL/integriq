@@ -30,6 +30,7 @@ import {
 	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
 	EVENT_OPEN_PROMOTION,
+	EVENT_OPEN_REGISTRATION_TEST,
 	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SOURCE_RESIDENCY,
@@ -174,6 +175,19 @@ export function testMappingModalHandler({ item }) {
  */
 export function addEndpointRuleHandler({ item }) {
 	modalBus.emit(EVENT_OPEN_ADD_ENDPOINT_RULE, { endpoint: item })
+}
+
+/**
+ * Open the dry run of a registration target row ("Test", design D6).
+ *
+ * The modal owns the POST to /api/registration-targets/{slug}/test, which
+ * maps a sample hand-over and stops before the first write.
+ *
+ * @param {{ item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
+ */
+export function testRegistrationTargetHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_REGISTRATION_TEST, { target: item })
 }
 
 /**

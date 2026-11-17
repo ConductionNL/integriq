@@ -31,8 +31,8 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
-use OCA\Integriq\Service\Regression\TraceCaseRecorder;
-use OCA\Integriq\Service\RegressionSuiteService;
+use OCA\Integriq\Service\Regression\TraceCaseRecorderInterface;
+use OCA\Integriq\Service\RegressionSuiteServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -66,22 +66,22 @@ class RegressionSuiteController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                     $appName     The app id.
-	 * @param IRequest                   $request     The request.
-	 * @param RegressionSuiteService     $suites      Runs the suites.
-	 * @param ActionAuthServiceInterface $actionAuth  The action matrix.
-	 * @param IUserSession               $userSession The signed-in user.
-	 * @param IL10N                      $l10n        Translates the refusals.
-	 * @param TraceCaseRecorder          $recorder    Saves a trace step as a case.
+	 * @param string                          $appName     The app id.
+	 * @param IRequest                        $request     The request.
+	 * @param RegressionSuiteServiceInterface $suites      Runs the suites.
+	 * @param ActionAuthServiceInterface      $actionAuth  The action matrix.
+	 * @param IUserSession                    $userSession The signed-in user.
+	 * @param IL10N                           $l10n        Translates the refusals.
+	 * @param TraceCaseRecorderInterface      $recorder    Saves a trace step as a case.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RegressionSuiteService $suites,
+		private readonly RegressionSuiteServiceInterface $suites,
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l10n,
-		private readonly TraceCaseRecorder $recorder,
+		private readonly TraceCaseRecorderInterface $recorder,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

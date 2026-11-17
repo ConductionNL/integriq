@@ -31,6 +31,7 @@ use OCP\ICacheFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Resolves a sequence of values against one cache and records every cache
@@ -126,6 +127,7 @@ class DashboardDatasourceResolveGoldenTest extends TestCase {
 		$objects = $this->createMock(OrObjectService::class);
 		$objects->method('find')->willReturnCallback(
 			function (...$args): ObjectEntity {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$this->trace[] = ['find' => $args];
 				$id = (string)($args['id'] ?? $args[0]);
 				if ($id === 'src-denied') {
