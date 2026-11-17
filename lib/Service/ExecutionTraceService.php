@@ -33,9 +33,11 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Otel\TraceExportQueue;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -156,11 +158,8 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $trace->getTraceId(),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $trace->getTraceId()),
 			_rbac: false,
-			// Unscoped: system write of telemetry from background jobs and listeners, no user session.
 			_multitenancy: false
 		);
 
@@ -187,10 +186,8 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 		try {
 			$trace = $this->orObjectService->find(
 				id: $traceId,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
 				_rbac: false,
-				// Unscoped: the OpenTelemetry export job reads the trace it was queued for, no user session.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -234,8 +231,7 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 		try {
 			return $this->orObjectService->find(
 				id: $traceId,
-				register: self::REGISTER,
-				schema: self::SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA)
 			);
 		} catch (DoesNotExistException $exception) {
 			// A miss is null. Everything else — an OpenRegister outage, a
@@ -462,10 +458,8 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 		try {
 			$job = $this->orObjectService->find(
 				id: $entryPointId,
-				register: 'integriq',
-				schema: 'job',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'job'),
 				_rbac: false,
-				// Unscoped: replay re-reads the job of a trace the caller already reached in scope.
 				_multitenancy: false
 			);
 			$jobService = $this->containerInterface->get(JobService::class);
@@ -511,10 +505,8 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 
 			$message = $this->orObjectService->find(
 				id: $entryPointId,
-				register: 'integriq',
-				schema: 'event_message',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_message'),
 				_rbac: false,
-				// Unscoped: replay re-reads the event of a trace the caller already reached in scope.
 				_multitenancy: false
 			);
 			$preview = $eventService->previewWebhookDelivery(message: $message);

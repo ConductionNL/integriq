@@ -35,6 +35,8 @@ use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * @spec openspec/changes/archive/2026-07-15-nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
@@ -110,6 +112,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured, $eventEntity) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				if ($captured === null) {
 					$captured = $object;
 				}
@@ -193,7 +196,9 @@ class EventServiceNextcloudEventTest extends TestCase {
 
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($synchronization) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($synchronization) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'synchronization') {
 					return $synchronization;
 				}
@@ -205,6 +210,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$captured = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
@@ -250,6 +256,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$captured = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
@@ -288,7 +295,9 @@ class EventServiceNextcloudEventTest extends TestCase {
 
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($synchronization) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($synchronization) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'synchronization') {
 					return $synchronization;
 				}
@@ -300,6 +309,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$captured = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
@@ -337,7 +347,9 @@ class EventServiceNextcloudEventTest extends TestCase {
 
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($job) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($job) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'job') {
 					return $job;
 				}
@@ -349,6 +361,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$captured = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
@@ -387,6 +400,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$captured = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
@@ -578,7 +592,9 @@ class EventServiceNextcloudEventTest extends TestCase {
 		);
 
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($subscription, $synchronization, $abandoned) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($subscription, $synchronization, $abandoned) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'event_subscription') {
 					return $subscription;
 				}

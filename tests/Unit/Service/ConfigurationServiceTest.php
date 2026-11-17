@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the configuration export/import service (rewritten for OR cutover).
@@ -401,7 +402,10 @@ class ConfigurationServiceTest extends TestCase {
 		$savedCapture = null;
 		$this->orObjectService->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register = null, $schema = null, $uuid = null) use (&$savedCapture) {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$savedCapture) {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
+					$uuid = $options->uuid;
 					$savedCapture = $object;
 					return ObjectServiceMockBuilder::objectEntity($this, (array)$object, 'imported-source-uuid');
 				}

@@ -142,7 +142,7 @@ export default {
 
 		/** @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002 */
 		sections() {
-			return actionSections(this.actions, this.areas, this.labels)
+			return actionSections(this.actions, { areas: this.areas, labels: this.labels })
 		},
 	},
 

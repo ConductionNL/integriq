@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Payment;
 
 use OCA\Integriq\Service\CloudEventEmitterInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -47,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-every-provider-settlement-is-reported-once-with-its-transactions-req-lpp-008
  */
-class PaymentSettlementService {
+class PaymentSettlementService implements PaymentSettlementServiceInterface {
 
 	/**
 	 * The OpenRegister register slug integriq stores its objects in.
@@ -166,10 +167,7 @@ class PaymentSettlementService {
 						'reportedAt' => gmdate('c', $this->time->getTime()),
 					]
 				),
-				register: self::REGISTER,
-				schema: self::SCHEMA_SETTLEMENT,
-				// System context: the pull runs as a background job, and
-				// payment_settlement is locked to administrators.
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_SETTLEMENT),
 				_rbac: false,
 				_multitenancy: false
 			);

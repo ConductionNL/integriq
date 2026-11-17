@@ -40,6 +40,7 @@ use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FileService as ORFileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\Response;
@@ -85,7 +86,7 @@ class EndpointServicePacingTest extends TestCase {
 		$logger = new NullLogger();
 		$this->objects = ObjectServiceMockBuilder::make($this);
 		$this->objects->method('find')->willReturnCallback(
-			fn ($id, ?string $register = null, ?string $schema = null): ?ObjectEntity => match ($schema) {
+			fn ($id, ?ObjectFindOptions $options = null): ?ObjectEntity => match ($options?->schema) {
 				'source' => ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://bron.example.nl', 'isEnabled' => true], 'source-1'),
 				'call_log' => ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200, 'direction' => 'outbound', 'response' => ['statusCode' => 200]], 'call-log-1'),
 				default => null,

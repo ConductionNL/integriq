@@ -31,8 +31,10 @@ namespace OCA\Integriq\Intake;
 
 use OCA\Integriq\Event\IntakeMessageRoutedEvent;
 use OCA\Integriq\Exception\IntakeRoutingException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -105,8 +107,7 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 		$payload = array_merge($message->toObject(), ['status' => self::STATUS_RECEIVED]);
 		$stored = $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		return $this->dispatch(message: $message, payload: $payload, uuid: (string)$stored->getUuid());
@@ -133,8 +134,7 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 		try {
 			$stored = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 			);
 		} catch (Throwable) {
 			$stored = null;
@@ -208,9 +208,7 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $uuid,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid)
 		);
 
 	}//end dispatch()
@@ -610,9 +608,7 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $uuid,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid)
 		);
 
 	}//end hold()
@@ -632,8 +628,7 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 					$message->toObject(),
 					['status' => self::STATUS_FAILED, 'reason' => $reason]
 				),
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 			);
 		} catch (Throwable $exception) {
 			$this->logger->error(

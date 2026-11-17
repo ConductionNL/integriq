@@ -38,6 +38,8 @@ use OCA\Integriq\Adapters\Digikoppeling\WusProfileService;
 use OCA\Integriq\Adapters\LearningMaterial\EdurepHttpTransport;
 use OCA\Integriq\Adapters\LearningMaterial\EdurepSourceHttp;
 use OCA\Integriq\Adapters\LearningMaterial\EdurepSourceMock;
+use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialService;
+use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialServiceInterface;
 use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialSource;
 use OCA\Integriq\Adapters\LearningMaterial\SruTransport;
 use OCA\Integriq\Adapters\Lvs\UwlrResultImportClient;
@@ -101,6 +103,7 @@ final class AdaptersBindings {
 		$context->registerServiceAlias(SloCurriculumPresetRegistryInterface::class, SloCurriculumPresetRegistry::class);
 		$context->registerServiceAlias(SloCurriculumMapperInterface::class, SloCurriculumMapper::class);
 		$context->registerServiceAlias(PkiOverheidCredentialResolverInterface::class, PkiOverheidCredentialResolver::class);
+		$context->registerServiceAlias(LearningMaterialServiceInterface::class, LearningMaterialService::class);
 		$this->registerPdokClients(context: $context);
 		$this->registerDormantSourceClients(context: $context);
 		$this->registerSwvHandoffClient(context: $context);

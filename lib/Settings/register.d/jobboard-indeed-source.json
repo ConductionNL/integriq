@@ -1,7 +1,23 @@
 {
-  "$comment": "ADR-037 register fragment (connectors-job-board-multiposting). Indeed pulls vacancies from a feed instead of taking a push: the mapping from humaniq's Vacancy to one job of Indeed's XML job feed, and the anonymous feed endpoint jobfeeds/indeed.xml that lists the published vacancies offered to Indeed as that feed (design D3). The Indeed template's answer to a source call is not part of this fragment.",
+  "$comment": "ADR-037 register fragment (connectors-job-board-multiposting). Indeed pulls vacancies from a feed instead of taking a push: the dormant Indeed source, a feed source whose call answers \"published in feed\" without sending anything, the mapping from humaniq's Vacancy to one job of Indeed's XML job feed, and the anonymous feed endpoint jobfeeds/indeed.xml that lists the published vacancies offered to Indeed as that feed (design D2 and D3).",
   "components": {
     "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "jobboard-indeed"
+        },
+        "name": "Indeed vacancy feed",
+        "description": "Indeed reads vacancies from the feed jobfeeds/indeed.xml instead of taking a push, so a call to this source sends nothing: it answers \"published in feed\" with the feed URL as its link, and the humaniq flow records the posting as placed. Before enabling, set the location to this instance's feed URL, https://<your-nextcloud>/index.php/apps/integriq/api/endpoint/jobfeeds/indeed.xml, and register that URL with Indeed; Indeed's terms for employer job feeds apply before going live.",
+        "type": "feed",
+        "location": "",
+        "auth": "none",
+        "configuration": {},
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
       {
         "@self": {
           "register": "integriq",

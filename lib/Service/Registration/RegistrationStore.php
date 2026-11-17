@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Registration;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\SystemWrite;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -38,7 +39,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
  *
  * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
  */
-class RegistrationStore {
+class RegistrationStore implements RegistrationStoreInterface {
 
 	public const REGISTER = 'integriq';
 
@@ -157,9 +158,7 @@ class RegistrationStore {
 			what: 'a registration record write',
 			operation: fn () => $this->objectService->saveObject(
 				object: $payload,
-				register: self::REGISTER,
-				schema: self::RECORD_SCHEMA,
-				uuid: $uuid
+				options: RegisterSave::options(register: self::REGISTER, schema: self::RECORD_SCHEMA, uuid: $uuid)
 			)
 		);
 

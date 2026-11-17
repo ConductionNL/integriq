@@ -22,6 +22,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Auth\Idp;
 
 use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
+use OCA\Integriq\Auth\Idp\Adapter\OidcRelyingPartyAdapter;
+use OCA\Integriq\Auth\Idp\Adapter\OidcRelyingPartyAdapterFactory;
 use OCA\Integriq\Auth\Idp\IdpAdapterRegistry;
 use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
 use OCA\Integriq\Auth\Idp\IdpReadiness;
@@ -38,6 +40,7 @@ use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\Integriq\Auth\Idp\IdpRegistrationService
@@ -162,7 +165,10 @@ class IdpRegistrationServiceTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array $object, mixed $register = null, mixed $schema = null, mixed $uuid = null): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = $object;
 				return $this->object((string)($uuid ?? 'new-uuid'), $object);
 			}
@@ -354,6 +360,31 @@ class IdpRegistrationServiceTest extends TestCase {
 
 
 	/**
+	 * The settings screen reads every registration, of every organisation, from the integriq register's schema,
+	 * with RBAC on and multitenancy off; an object that is not an entity is skipped.
+	 *
+	 * @return void
+	 */
+	public function testAllReadsEveryRegistrationForTheScreen(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->expects($this->once())->method('findAll')
+			->with(['filters' => ['register' => 'integriq', 'schema' => 'idpRegistration'], 'limit' => 500], true, false)
+			->willReturn([$this->object('reg-1', self::oidc()), 'not an object', $this->object('reg-2', self::oidc(['organisation' => 'gemeente-y']))]);
+		$service = new IdpRegistrationService(
+			objectService: $objects,
+			secretSeam: $this->createMock(IdpSecretSeam::class),
+			brokerConfig: $this->createMock(IdpBrokerConfigInterface::class),
+			appManager: $this->createMock(IAppManager::class)
+		);
+
+		$all = $service->all();
+
+		$this->assertSame(['reg-1', 'reg-2'], array_map(static fn (IdpRegistration $registration): string => $registration->id, $all));
+		$this->assertSame('gemeente-y', $all[1]->organisation());
+	}//end testAllReadsEveryRegistrationForTheScreen()
+
+
+	/**
 	 * The registry binds a live adapter only for a ready registration of a kind it can build.
 	 *
 	 * @return void
@@ -388,6 +419,37 @@ class IdpRegistrationServiceTest extends TestCase {
 		$this->assertSame(['reg-1'], $built, 'no builder for saml-sp yet, so none is called');
 	}//end testTheRegistryBindsLiveOnlyWhenReady()
 
+
+	/**
+	 * A ready `oidc-rp` registration gets the OIDC Relying Party adapter this app ships,
+	 * built for that registration; a kind builder given to the registry still wins.
+	 *
+	 * @return void
+	 */
+	public function testAReadyOidcRegistrationGetsTheBuiltInOidcAdapter(): void {
+		$this->stored = [$this->object('reg-1', self::oidc())];
+		$built = [];
+		$factory = $this->createMock(OidcRelyingPartyAdapterFactory::class);
+		$adapter = $this->createMock(OidcRelyingPartyAdapter::class);
+		$factory->expects($this->once())->method('build')->willReturnCallback(
+			function (IdpRegistration $registration) use (&$built, $adapter): OidcRelyingPartyAdapter {
+				$built[] = $registration->id;
+				return $adapter;
+			}
+		);
+		$registry = new IdpAdapterRegistry(
+			boundAdapter: new LogGovernmentIdpAdapter(logger: new NullLogger()),
+			logger: new NullLogger(),
+			registrations: $this->service(),
+			oidcAdapters: $factory
+		);
+
+		$this->assertSame($adapter, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
+		$this->assertSame(['reg-1'], $built);
+
+		$this->stored = [$this->object('reg-1', self::oidc(['clientId' => '']))];
+		$this->assertInstanceOf(LogGovernmentIdpAdapter::class, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
+	}//end testAReadyOidcRegistrationGetsTheBuiltInOidcAdapter()
 
 	/**
 	 * Without registrations the registry refuses, and an unknown provider throws.

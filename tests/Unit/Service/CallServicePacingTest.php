@@ -32,6 +32,7 @@ use OCA\Integriq\Service\Call\SourcePacer;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
@@ -93,8 +94,8 @@ class CallServicePacingTest extends TestCase {
 	private function service(): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
-				$this->saved[] = ['object' => $object, 'schema' => $schema];
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$this->saved[] = ['object' => $object, 'schema' => $options->target->schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
 				$entity->setObject($object);

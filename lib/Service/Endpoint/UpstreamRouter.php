@@ -30,6 +30,10 @@ use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -179,7 +183,12 @@ class UpstreamRouter {
 	private function findSource(string $uuid): ?ObjectEntity {
 		try {
 			// Unscoped: resolves the upstream source of an endpoint already reached for an inbound caller.
-			$source = $this->objects->find(id: $uuid, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
+			$source = $this->objects->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -235,7 +244,12 @@ class UpstreamRouter {
 			// Merge onto the stored row, which CallService redacted before persisting
 			// (http-call-engine REQ-006); the entity in hand may still hold the bodies.
 			// Unscoped: system write stamping the routing decision on the inbound call log.
-			$stored = $this->objects->find(id: $uuid, register: 'integriq', schema: 'call_log', _rbac: false, _multitenancy: false);
+			$stored = $this->objects->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'call_log'),
+				_rbac: false,
+				_multitenancy: false
+			);
 			if ($stored instanceof ObjectEntity === false) {
 				$this->logger->warning('[integriq] the call log ' . $uuid . ' was not found to record its routed target');
 				return $callLog;
@@ -243,14 +257,13 @@ class UpstreamRouter {
 
 			$saved = $this->objects->saveObject(
 				object: array_merge((array)$stored->getObject(), $routing),
-				register: 'integriq',
-				schema: 'call_log',
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+					uuid: $uuid,
+					policy: new SavePolicy(silent: true, validation: false)
+				),
 				_rbac: false,
-				// Unscoped: system write stamping the routing decision on the inbound call log.
-				_multitenancy: false,
-				silent: true,
-				_validation: false
+				_multitenancy: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('[integriq] the call log ' . $uuid . ' could not record its routed target', ['exception' => $e->getMessage()]);

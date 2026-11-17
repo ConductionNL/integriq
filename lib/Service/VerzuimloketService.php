@@ -34,6 +34,7 @@ use DateTime;
 use OCA\Integriq\Event\VerzuimloketAcknowledgementReceivedEvent;
 use OCA\Integriq\Exception\VerzuimloketProviderException;
 use OCA\Integriq\Exception\VerzuimloketTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Verzuimloket\VerzuimloketAcknowledgementTranslator;
@@ -163,7 +164,10 @@ class VerzuimloketService implements VerzuimloketServiceInterface {
 			$record['bsnHash'] = hash('sha256', (string)$payload['bsn']);
 		}
 
-		$this->objectService->saveObject(object: self::withoutNulls(record: $record), register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
+		$this->objectService->saveObject(
+			object: self::withoutNulls(record: $record),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+		);
 
 		if ($status === 'failed') {
 			throw new VerzuimloketProviderException(message: (string)$error);
@@ -232,8 +236,7 @@ class VerzuimloketService implements VerzuimloketServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			]),
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($outbound === null) {
@@ -324,9 +327,7 @@ class VerzuimloketService implements VerzuimloketServiceInterface {
 
 		$this->objectService->saveObject(
 			object: self::withoutNulls(record: $data),
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 	}//end retryOne()
