@@ -40,6 +40,7 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * REQ-DPA-002 and REQ-DPA-003.
@@ -131,7 +132,10 @@ class DigitalPostServiceTest extends TestCase {
 
 		$objectService = $this->createMock(OrObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($this->failSaves === true) {
 					throw new \RuntimeException('OpenRegister refused the write');
 				}

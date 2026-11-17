@@ -1,0 +1,52 @@
+{
+	"orders": [
+		{
+			"id": 9001,
+			"createdAt": "2026-09-16T10:05:00+02:00",
+			"updatedAt": "2026-09-18T11:20:44+02:00",
+			"number": "ORD00042",
+			"status": "completed_shipped",
+			"channel": "main",
+			"priceExcl": 20.51,
+			"priceIncl": 22.85,
+			"discountAmount": 0,
+			"email": "j.bakker@example.nl",
+			"firstname": "J.",
+			"middlename": "",
+			"lastname": "Bakker",
+			"isCompany": false,
+			"companyName": "",
+			"companyCoCNumber": "",
+			"companyVatNumber": "",
+			"addressBillingName": "J. Bakker",
+			"addressBillingStreet": "Oudegracht",
+			"addressBillingStreet2": "",
+			"addressBillingNumber": "120",
+			"addressBillingExtension": "",
+			"addressBillingZipcode": "3511 AW",
+			"addressBillingCity": "Utrecht",
+			"addressBillingRegion": "",
+			"addressBillingCountry": {
+				"id": "nl",
+				"code": "nl",
+				"code3": "nld",
+				"title": "Nederland"
+			},
+			"paymentId": "ideal",
+			"paymentStatus": "refunded",
+			"paymentTitle": "iDEAL",
+			"shipmentId": "core|1|1",
+			"shipmentStatus": "not_shipped",
+			"shipmentTitle": "PostNL",
+			"shipmentPriceExcl": 4.09,
+			"shipmentPriceIncl": 4.95,
+			"products": {
+				"resource": {
+					"id": false,
+					"url": "orders/9001/products",
+					"link": "https://api.webshopapp.com/nl/orders/9001/products.json"
+				}
+			}
+		}
+	]
+}

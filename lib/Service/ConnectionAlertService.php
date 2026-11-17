@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTimeImmutable;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -384,6 +385,7 @@ class ConnectionAlertService implements ConnectionAlertServiceInterface {
 			$config['sort'] = [$sort => 'DESC'];
 		}
 
+		// Unscoped: the threshold job and setup check count failures across all sources, as the system.
 		$result = $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false);
 
 		return array_values(($result['results'] ?? $result));
@@ -401,11 +403,9 @@ class ConnectionAlertService implements ConnectionAlertServiceInterface {
 		try {
 			$this->objectService->saveObject(
 				object: $alert,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $uuid,
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuid),
 				_rbac: false,
-				_multitenancy: false,
+				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
 			$this->logger->warning(

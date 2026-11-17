@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Payment;
 
 use OCA\Integriq\Service\CloudEventEmitterInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -166,10 +167,7 @@ class PaymentSettlementService {
 						'reportedAt' => gmdate('c', $this->time->getTime()),
 					]
 				),
-				register: self::REGISTER,
-				schema: self::SCHEMA_SETTLEMENT,
-				// System context: the pull runs as a background job, and
-				// payment_settlement is locked to administrators.
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_SETTLEMENT),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -221,6 +219,7 @@ class PaymentSettlementService {
 	 * @return list<array<string, mixed>> The payloads.
 	 */
 	private function rows(array $filters, int $limit): array {
+		// Unscoped: the settlement pull job reads its rows as the system, with no user session.
 		$found = $this->objectService->findAll(
 			config: ['filters' => array_merge(['register' => self::REGISTER], $filters), 'limit' => $limit],
 			_rbac: false,

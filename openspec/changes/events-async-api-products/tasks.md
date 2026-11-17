@@ -18,8 +18,8 @@ Kind: code. Matrix row `integriq:evt-async-apis`.
   - GIVEN the register is imported WHEN a product is saved with a channel THEN OpenRegister accepts it, and a duplicate channel slug is refused
   - GIVEN the product detail page WHEN an administrator adds a channel THEN it is listed
   - GIVEN a fresh install WHEN the seed runs THEN `woo-publications` 2.0.0 has channel `publications`
-- [ ] Implement (schema fragment and seed done; the product page's channels section and refusing a duplicate channel slug on save are not built yet)
-- [ ] Test (`node tests/validate-register.js` and a PHPUnit fragment test done; Playwright left)
+- [x] Implement (schema fragment and seed; `ProductChannelSlugGuardListener` refuses a repeated slug with 409 on create and update; the detail page's Channels section adds, edits and removes channels and links the AsyncAPI document, its rules in `src/views/ApiProducts/productChannels.js`)
+- [x] Test (`node tests/validate-register.js`, the fragment test, `ProductChannelSlugGuardListenerTest`, `tests/vitest/productChannels.spec.js`; the Playwright spec is an e2e test and is not written here)
 
 ### Task 3: Consumer pull and subscribe routes
 - **spec_ref**: openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
@@ -28,8 +28,8 @@ Kind: code. Matrix row `integriq:evt-async-apis`.
   - GIVEN no active product subscription WHEN a consumer pulls THEN 403 `subscription_required`
   - GIVEN a tier budget of 2 WHEN a consumer spends it across an endpoint and a channel THEN the next request is 429
   - GIVEN a deprecated product version WHEN a consumer pulls THEN Deprecation and Sunset headers are present
-- [ ] Implement
-- [ ] Test (PHPUnit on the controller; Newman requests in `tests/postman/`)
+- [x] Implement (`productChannels#pull`, `#subscribe`, `#unsubscribe`; the consumer authenticates with a JWT as on the AsyncAPI route, API-key consumers are not accepted here yet; the tier budget is spent under `ProductPolicyService::counterKey()`, the counter the product's endpoints use)
+- [x] Test (`ProductChannelsControllerChannelTest`: 403 without subscription, one pull subscription per channel, 429 with Retry-After, Deprecation and Sunset, refused sinks, own-only unsubscribe; the Newman requests are left for a live run)
 
 ### Task 4: Push deliveries under the product subscription
 - **spec_ref**: openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
@@ -38,8 +38,8 @@ Kind: code. Matrix row `integriq:evt-async-apis`.
   - GIVEN a revoked product subscription WHEN an event matches THEN no delivery is made
   - GIVEN a spent quota WHEN an event matches THEN the delivery is deferred to the window end
   - GIVEN a sink on a private or metadata address WHEN a consumer registers it THEN 400 and nothing is created
-- [ ] Implement
-- [ ] Test (PHPUnit on EventService and on the sink check)
+- [x] Implement (`ProductDeliveryGate`, read by `EventService::deliverMessage()`: a revoked product subscription abandons the delivery, a spent budget defers it to the window end without spending a retry; the subscribe route takes https only and the egress guard's refusal)
+- [x] Test (`ProductDeliveryGateTest`, `EventServiceProductHoldTest`, the sink cases in `ProductChannelsControllerChannelTest`)
 
 ### Task 5: AsyncAPI document
 - **spec_ref**: openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
