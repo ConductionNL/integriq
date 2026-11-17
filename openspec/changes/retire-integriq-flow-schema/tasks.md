@@ -49,6 +49,7 @@ arrival.
 
 - [ ] E2E: a flow that calls a Source, maps the response and writes an object runs green end to end on OpenRegister's engine
 - [ ] E2E: an approval step pauses the run and resumes on approve
+  > Both E2E specs are written in `tests/e2e/spec-coverage/flow-engine-retirement.spec.ts` (occ/worker driving in `tests/e2e/support/flowWorker.ts`). Left unticked until they have run green against a live instance.
 - [x] The migration repair step runs twice with the same result
   > Proven at the service the repair step calls: `FlowGraphMigrationServiceTest::testMigratingTwiceGivesTheSameResult` runs `migrate(apply: true)` twice over one stateful store; the second run writes nothing and the stored graph is unchanged.
 - [ ] `occ openregister:schemas:prune-retired --app integriq --slug flow` reports not-found afterwards, which is the proof the row is gone rather than the descriptor merely edited
