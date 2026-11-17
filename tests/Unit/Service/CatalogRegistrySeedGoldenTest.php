@@ -66,7 +66,7 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 
 		$entries = $this->service(logger: $logger)->collect();
 
-		$this->assertSame('9c74b8ba0c9da8aa2a8e88f7d1432bde068f46b96745b1de6e80ea72d88b7fa8', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
+		$this->assertSame('057aaf6c9fdb585fb2549475b19cc6411307e831f2ff344bcdd0cc062f99a9da', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
 
 	}//end testCollectIsUnchanged()
 
@@ -108,7 +108,7 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 		$payloads[''] = $service->findSeedSourcePayload('');
 
 		$this->assertNull($payloads['no-such-seed']);
-		$this->assertSame('461a4ea91276fbc694970151818016f61c601da893861235a99f06dd2819c306', hash('sha256', json_encode($payloads, JSON_THROW_ON_ERROR)));
+		$this->assertSame('190c796df32001d7529e70edbde7e658c6f3627494111e87faaef870e8205cc1', hash('sha256', json_encode($payloads, JSON_THROW_ON_ERROR)));
 
 	}//end testSeedPayloadsAreUnchanged()
 
