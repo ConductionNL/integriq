@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests the acts on the log: read, retry, forward, ask.
@@ -89,7 +90,10 @@ class OutboundLogServicesTest extends TestCase {
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register = '', string $schema = '', ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register ?? '';
+				$schema = $options->target->schema ?? '';
+				$uuid = $options->uuid;
 				if ($uuid === null || $uuid === '') {
 					$this->created++;
 					$uuid = 'message-' . $this->created;

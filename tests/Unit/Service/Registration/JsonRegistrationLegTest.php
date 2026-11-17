@@ -166,4 +166,36 @@ class JsonRegistrationLegTest extends TestCase {
 			$this->assertSame(['source-unavailable', false, 'source gone'], [$refusal->getReason(), $refusal->isRetryable(), $refusal->getMessage()]);
 		}
 	}//end testAMissingSourceIsRefused()
+	/**
+	 * The body check refuses a mismatching body as mapping-failed and makes no call.
+	 *
+	 * @return void
+	 */
+	public function testTheBodyCheckRefusesAMismatchWithoutPosting(): void {
+		$leg = $this->leg(status: 201, data: [], calls: $calls);
+
+		try {
+			$leg->checkBody(self::TARGET, ['subject' => 7]);
+			$this->fail('A mismatching body was accepted.');
+		} catch (RegistrationRefusal $refusal) {
+			$this->assertSame(RegistrationRefusal::MAPPING_FAILED, $refusal->getReason());
+			$this->assertFalse($refusal->isRetryable());
+		}
+
+		$this->assertSame([], $calls);
+	}//end testTheBodyCheckRefusesAMismatchWithoutPosting()
+
+	/**
+	 * The body check passes a matching body, and a target without a schema, without a call.
+	 *
+	 * @return void
+	 */
+	public function testTheBodyCheckPassesAMatchingBodyWithoutPosting(): void {
+		$leg = $this->leg(status: 201, data: [], calls: $calls);
+
+		$leg->checkBody(self::TARGET, ['subject' => 'milieu']);
+		$leg->checkBody(['kind' => 'json', 'json' => ['path' => '/intake']], ['anything' => 1]);
+
+		$this->assertSame([], $calls);
+	}//end testTheBodyCheckPassesAMatchingBodyWithoutPosting()
 }//end class

@@ -41,7 +41,7 @@ use OCA\Integriq\Kernel\FlowNodeIds;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
@@ -65,7 +65,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
  */
-class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
+class EventEmitNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
 	use FlowNodePaletteDefaults;
 
 	/**

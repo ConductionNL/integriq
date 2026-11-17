@@ -159,7 +159,7 @@ describe('moveWrites', () => {
 	const other = { id: 'r3', name: 'Ander', channelId: 'form-submission', order: 15 }
 
 	it('swaps the orders of a rule and the one above it on the same channel', () => {
-		expect(moveWrites([second, other, first], second, 'up')).toEqual([
+		expect(moveWrites([second, other, first], { rule: second, direction: 'up' })).toEqual([
 			{ row: second, order: 10 },
 			{ row: first, order: 20 },
 		])
@@ -168,13 +168,13 @@ describe('moveWrites', () => {
 	it('gives two rules of the same order distinct values when one moves', () => {
 		const a = { id: 'a', name: 'A', channelId: 'teams', order: 10 }
 		const b = { id: 'b', name: 'B', channelId: 'teams', order: 10 }
-		expect(moveWrites([a, b], b, 'up')).toEqual([{ row: b, order: 9 }, { row: a, order: 10 }])
-		expect(moveWrites([a, b], a, 'down')).toEqual([{ row: a, order: 11 }, { row: b, order: 10 }])
+		expect(moveWrites([a, b], { rule: b, direction: 'up' })).toEqual([{ row: b, order: 9 }, { row: a, order: 10 }])
+		expect(moveWrites([a, b], { rule: a, direction: 'down' })).toEqual([{ row: a, order: 11 }, { row: b, order: 10 }])
 	})
 
 	it('writes nothing for the first rule moving up or the last moving down', () => {
-		expect(moveWrites([first, second], first, 'up')).toEqual([])
-		expect(moveWrites([first, second], second, 'down')).toEqual([])
-		expect(moveWrites([first], other, 'up')).toEqual([])
+		expect(moveWrites([first, second], { rule: first, direction: 'up' })).toEqual([])
+		expect(moveWrites([first, second], { rule: second, direction: 'down' })).toEqual([])
+		expect(moveWrites([first], { rule: other, direction: 'up' })).toEqual([])
 	})
 })

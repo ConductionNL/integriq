@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * REQ-001 and REQ-002 scenarios.
@@ -67,7 +68,10 @@ class ExchangeJobServiceTest extends TestCase {
 
 		$store = $this->createMock(ORObjectService::class);
 		$store->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null, ...$rest) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return $this->entity(uuid: $uuid ?? ('new-' . count($this->saved)), data: $object);
 			}

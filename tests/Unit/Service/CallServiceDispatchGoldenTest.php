@@ -43,6 +43,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Every case of call() and callAsync() recorded against a golden file: the
@@ -131,7 +132,9 @@ class CallServiceDispatchGoldenTest extends TestCase {
 	private function service(): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->log[] = ['or.saveObject', $register, $schema, $this->mask(value: $object)];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->log));

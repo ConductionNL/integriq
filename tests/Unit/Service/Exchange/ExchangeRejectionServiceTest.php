@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * REQ-002, REQ-006 and REQ-007 scenarios.
@@ -67,7 +69,10 @@ class ExchangeRejectionServiceTest extends TestCase {
 
 		$objects = $this->createMock(ORObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null, ...$rest) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$uuid = $uuid ?? ($schema . '-' . (count($this->store) + 1));
 				$this->store[$uuid] = $object;
 				$this->schemaOf[$uuid] = (string)$schema;
@@ -76,6 +81,7 @@ class ExchangeRejectionServiceTest extends TestCase {
 		);
 		$objects->method('find')->willReturnCallback(
 			function ($id, ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				if (isset($this->store[$id]) === false) {
 					throw new \RuntimeException('not found');
 				}
@@ -343,4 +349,19 @@ class ExchangeRejectionServiceTest extends TestCase {
 		$this->assertSame('learniq', $open['ownerApp']);
 
 	}//end testTheStoredRowsInFull()
+	/**
+	 * Offending fields that are not a list are stored as none when a rejection reopens.
+	 *
+	 * @return void
+	 */
+	public function testReopenWithFieldsThatAreNotAListStoresNone(): void {
+		$id = $this->failedRejection();
+		$this->service->resubmit($id, 'coordinator');
+
+		$this->service->reopen($id, ['errorCode' => 'BRON-101', 'offendingFields' => 'bsn']);
+
+		$this->assertSame('failed', $this->store[$id]['status']);
+		$this->assertSame([], $this->store[$id]['offendingFields']);
+
+	}//end testReopenWithFieldsThatAreNotAListStoresNone()
 }//end class

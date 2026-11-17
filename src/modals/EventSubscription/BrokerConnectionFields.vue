@@ -180,8 +180,7 @@ export default {
 				'protocolSettings',
 				buildBrokerSettings(
 					this.formData?.protocolSettings,
-					{ [key]: value },
-					this.brokerId,
+					{ patch: { [key]: value }, brokerId: this.brokerId },
 				),
 			)
 		},
@@ -199,11 +198,13 @@ export default {
 				buildBrokerSettings(
 					this.formData?.protocolSettings,
 					{
-						credentialRef: option?.id
-							? { credentialId: String(option.id) }
-							: null,
+						patch: {
+							credentialRef: option?.id
+								? { credentialId: String(option.id) }
+								: null,
+						},
+						brokerId: this.brokerId,
 					},
-					this.brokerId,
 				),
 			)
 		},
