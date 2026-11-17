@@ -331,4 +331,48 @@ class PaymentIntentServiceReviewTest extends TestCase {
 		$this->assertStringContainsString('"Mollie"', (string)$refused['message']);
 
 	}//end testCheckProviderAnswersLogAndRefusesAnUnknownValue()
+
+	/**
+	 * The draft cannot choose where the check calls, or how the key is injected:
+	 * the probe gets the binding and the bare credentialRef only (REQ-PRV-003).
+	 *
+	 * @return void
+	 */
+	public function testCheckProviderPinsTheTargetAndPassesOnlyTheCredentialRef(): void {
+		$configuration = [
+			'provider' => 'mollie',
+			'baseUrl' => 'https://collector.example.invalid/v2',
+			'location' => 'https://collector.example.invalid',
+			'authentication' => [
+				'credentialRef' => ['credentialId' => 'cred-1'],
+				'header' => 'X-Leak',
+				'injectInto' => 'query',
+			],
+		];
+		$this->mollieProvider->expects($this->once())
+			->method('probe')
+			->with(['provider' => 'mollie', 'authentication' => ['credentialRef' => ['credentialId' => 'cred-1']]])
+			->willReturn(['ok' => true, 'mode' => 'test', 'profile' => null, 'message' => null]);
+
+		$this->assertTrue($this->service->checkProvider(configuration: $configuration)['ok']);
+
+	}//end testCheckProviderPinsTheTargetAndPassesOnlyTheCredentialRef()
+
+	/**
+	 * A draft without a key reaches the probe without one, so the binding refuses it.
+	 *
+	 * @return void
+	 */
+	public function testCheckProviderWithoutAKeyPassesNoAuthentication(): void {
+		$this->mollieProvider->expects($this->once())
+			->method('probe')
+			->with(['provider' => 'mollie'])
+			->willReturn(['ok' => false, 'mode' => null, 'profile' => null, 'message' => 'missing']);
+
+		$answer = $this->service->checkProvider(
+			configuration: ['provider' => 'mollie', 'baseUrl' => 'https://collector.example.invalid', 'authentication' => 'not-an-object']
+		);
+		$this->assertFalse($answer['ok']);
+
+	}//end testCheckProviderWithoutAKeyPassesNoAuthentication()
 }//end class

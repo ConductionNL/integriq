@@ -385,9 +385,41 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 			];
 		}
 
-		return ['provider' => $name] + $provider->probe(sourceConfiguration: $configuration);
+		return ['provider' => $name] + $provider->probe(sourceConfiguration: $this->probeConfiguration(configuration: $configuration));
 
 	}//end checkProvider()
+
+	/**
+	 * The configuration a provider check probes with: the draft names only the
+	 * binding and the brokered key, never where the call goes.
+	 *
+	 * The outbound target is the binding's own default, whatever the draft
+	 * carries (`baseUrl` and any other key are dropped), so a check cannot send
+	 * a brokered key to a host of the caller's choosing. The credential is the
+	 * draft's bare `credentialRef`, the key the administrator picked from the
+	 * broker, which applies its own guards to it; nothing else of
+	 * `authentication` (how or where the secret is injected) is passed on.
+	 *
+	 * @param array $configuration The draft `configuration` of a payment source.
+	 *
+	 * @return array The configuration to probe with.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	private function probeConfiguration(array $configuration): array {
+		$pinned = [];
+		if (array_key_exists('provider', $configuration) === true) {
+			$pinned['provider'] = $configuration['provider'];
+		}
+
+		$authentication = ($configuration['authentication'] ?? null);
+		if (is_array($authentication) === true && array_key_exists('credentialRef', $authentication) === true) {
+			$pinned['authentication'] = ['credentialRef' => $authentication['credentialRef']];
+		}
+
+		return $pinned;
+
+	}//end probeConfiguration()
 
 	/**
 	 * Resolve the payment source's `configuration.webhookSignature` block for
