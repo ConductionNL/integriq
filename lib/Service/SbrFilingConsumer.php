@@ -7,7 +7,7 @@
  * object is a `nl.conduction.sbr.filing.requested` CloudEvent in integriq's
  * own `event` schema. A sending app (shillinq for the VAT return) raises that
  * event with the finished XBRL instance stored in Nextcloud Files; everything
- * after that lives in {@see SbrFilingService}, so this stays a thin dispatch
+ * after that lives in {@see Digipoort\SbrFilingService}, so this stays a thin dispatch
  * shell, like the Peppol consumer it mirrors.
  *
  * @category Service
@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\Service\Digipoort\SbrFilingService;
+use OCA\Integriq\Service\Digipoort\SbrFilingServiceInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Dispatches `nl.conduction.sbr.filing.requested` CloudEvents to SbrFilingService.
+ * Dispatches `nl.conduction.sbr.filing.requested` CloudEvents to Digipoort\SbrFilingService.
  *
  * @template-implements IEventListener<Event>
  *
@@ -54,12 +54,12 @@ class SbrFilingConsumer implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SbrFilingService       $filings        Stores and delivers the filing.
-	 * @param ListenerSchemaResolver $schemaResolver Maps the stamped register and schema ids back to slugs.
-	 * @param LoggerInterface        $logger         Logger for a filing that could not be processed.
+	 * @param SbrFilingServiceInterface $filings        Stores and delivers the filing.
+	 * @param ListenerSchemaResolver    $schemaResolver Maps the stamped register and schema ids back to slugs.
+	 * @param LoggerInterface           $logger         Logger for a filing that could not be processed.
 	 */
 	public function __construct(
-		private readonly SbrFilingService $filings,
+		private readonly SbrFilingServiceInterface $filings,
 		private readonly ListenerSchemaResolver $schemaResolver,
 		private readonly LoggerInterface $logger,
 	) {
@@ -83,7 +83,7 @@ class SbrFilingConsumer implements IEventListener {
 		$objectData = $object->getObject();
 		// The type is a plain array read; checking it first keeps the id
 		// lookups off every other object write on the instance.
-		if (($objectData['type'] ?? null) !== SbrFilingService::EVENT_TYPE_REQUESTED) {
+		if (($objectData['type'] ?? null) !== SbrFilingServiceInterface::EVENT_TYPE_REQUESTED) {
 			return;
 		}
 

@@ -52,7 +52,7 @@ use Throwable;
  *
  * @spec openspec/changes/connectors-digipoort-sbr-filing/specs/digipoort-sbr-connector/spec.md
  */
-class SbrFilingService {
+class SbrFilingService implements SbrFilingServiceInterface {
 	/**
 	 * OpenRegister register slug (frozen across the app-id rename).
 	 *
@@ -80,13 +80,6 @@ class SbrFilingService {
 	 * @var string
 	 */
 	public const SOURCE_TYPE = 'digipoort-sbr';
-
-	/**
-	 * CloudEvent type consumed to start a filing.
-	 *
-	 * @var string
-	 */
-	public const EVENT_TYPE_REQUESTED = 'nl.conduction.sbr.filing.requested';
 
 	/**
 	 * CloudEvent type emitted on every status change.

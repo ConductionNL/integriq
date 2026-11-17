@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\Digipoort\SbrFilingService;
+use OCA\Integriq\Service\Digipoort\SbrFilingServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -50,13 +50,13 @@ class SbrFilingStatusJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory     $time    The time factory.
-	 * @param SbrFilingService $filings Retries deliveries and polls statuses.
-	 * @param LoggerInterface  $logger  Logger for the sweep's outcome.
+	 * @param ITimeFactory              $time    The time factory.
+	 * @param SbrFilingServiceInterface $filings Retries deliveries and polls statuses.
+	 * @param LoggerInterface           $logger  Logger for the sweep's outcome.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SbrFilingService $filings,
+		private readonly SbrFilingServiceInterface $filings,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
