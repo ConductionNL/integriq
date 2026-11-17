@@ -28,7 +28,7 @@ Kind: code. Size M. Halves for shillinq `receivables-payment-links` and `receiva
   - GIVEN a settlement pulled yesterday WHEN the job runs again THEN no second `nl.conduction.payment.settlement` event is emitted
   - GIVEN a source on the `log` provider WHEN the job runs THEN it is skipped
 - [x] Implement
-- [ ] Test (PHPUnit; `occ background-job:list` shows the job after upgrade on a dev instance)
+- [x] Test (PHPUnit; `occ background-job:list` shows the job after upgrade on a dev instance): PaymentSettlementServiceTest 5/5; live pass 2026-11-17, after `occ upgrade` on a fresh NC 34.0.6 instance `background-job:list` shows `PaymentSettlementPullJob`, and it survived the first cron run.
 
 ### Task 4: Point-of-sale payments and the terminal list
 - **spec_ref**: `openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009`
