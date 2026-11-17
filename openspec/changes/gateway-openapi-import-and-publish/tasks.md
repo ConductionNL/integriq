@@ -19,6 +19,7 @@ Kind: code. Size M. Rows `integriq:gw-openapi-import`, `integriq:gw-openapi-publ
   - GIVEN three chosen operations WHEN imported THEN one source and three endpoints exist, and the source asks for its credential
 - [x] Implement
 - [ ] Test (PHPUnit; Newman call through one created endpoint against a mock source)
+  - PHPUnit done (`OpenApiImportServiceTest`, `OpenApiImportControllerTest`). Newman written: folder 18 in `tests/postman/integriq.postman_collection.json` imports three operations (one source, three endpoints, the source's credential still to be named), then imports one operation of a mock source (the instance's own `status.php`, `oapiMockBase`) and calls through the created endpoint; it deletes what it created. Not run yet: needs a live instance.
 
 ### Task 3: The import dialog
 - **spec_ref**: `openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001`
@@ -27,6 +28,7 @@ Kind: code. Size M. Rows `integriq:gw-openapi-import`, `integriq:gw-openapi-publ
   - GIVEN an administrator on the sources page WHEN they import from a URL and pick two operations THEN the new source and its two endpoints are listed
 - [x] Implement
 - [ ] Test (Playwright)
+  - Written: `tests/e2e/spec-coverage/openapi-import.spec.ts` (sources page Actions > import, paste a document, preview, pick two of three operations, import; the source and its two endpoints open, pointing at the source). The document is pasted: fetching by address passes the egress guard, which a CI instance cannot satisfy. Not run yet: needs a live instance.
 
 ### Task 4: Publish the gateway and product documents
 - **spec_ref**: `openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002`
