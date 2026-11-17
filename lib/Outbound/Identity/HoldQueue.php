@@ -32,6 +32,7 @@ namespace OCA\Integriq\Outbound\Identity;
 
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -209,9 +210,7 @@ class HoldQueue implements HoldQueueInterface {
 	private function write(string $uuid, array $record): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $record,
-			register: MessageRecorder::REGISTER,
-			schema: MessageRecorder::SCHEMA,
-			uuid: $uuid,
+			options: RegisterSave::options(register: MessageRecorder::REGISTER, schema: MessageRecorder::SCHEMA, uuid: $uuid)
 		);
 
 	}//end write()

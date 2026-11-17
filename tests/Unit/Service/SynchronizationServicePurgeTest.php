@@ -43,6 +43,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The purge policy through the real deleteInvalidObjects() and updateTarget().
@@ -102,6 +103,7 @@ class SynchronizationServicePurgeTest extends TestCase {
 		$orObjectService->method('find')->willReturnCallback(fn (...$args) => ($objects[(string)$args[0]] ?? null));
 		$orObjectService->method('saveObject')->willReturnCallback(
 			function (...$args) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				// A mock callback receives its arguments by position; the
 				// schema is looked up by value so the stub's and OpenRegister's
 				// parameter orders both work.
@@ -114,6 +116,7 @@ class SynchronizationServicePurgeTest extends TestCase {
 		);
 		$orObjectService->method('deleteObject')->willReturnCallback(
 			function (...$args) use ($refuseUuid): bool {
+				$args = LegacyObjectArgs::positional(method: 'deleteObject', args: $args);
 				// By position: 0 is the uuid, 7 is `permanent` (openregister 98a3469c0f).
 				$args = ['uuid' => $args[0], 'permanent' => ($args[7] ?? false)];
 				if ($refuseUuid !== null && $args['uuid'] === $refuseUuid) {

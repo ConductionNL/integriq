@@ -45,10 +45,13 @@ use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiver
  * @covers \OCA\Integriq\Service\StufZkn\StufZdsMessageLog
+ * @covers \OCA\Integriq\Service\StufZkn\ZdsConfirmation
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver
  * @uses   \OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsResponseReader
@@ -63,6 +66,20 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 	 * @var array<string,array>
 	 */
 	private array $rows = [];
+
+	/**
+	 * Whether the conclusion listener throws.
+	 *
+	 * @var bool
+	 */
+	private bool $failListener = false;
+
+	/**
+	 * The warnings the logger received.
+	 *
+	 * @var array<int,array{0:string,1:array}>
+	 */
+	private array $warnings = [];
 
 	/**
 	 * The source objects, by id.
@@ -148,6 +165,8 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 		$this->nonces       = [];
 		$this->events       = [];
 		$this->cryptoBroken = false;
+		$this->failListener = false;
+		$this->warnings     = [];
 		$this->sources      = [
 			'zsh' => [
 				'type' => 'stuf-zkn',
@@ -210,6 +229,26 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 		$this->assertSame('Bv01', $event->getResult()['confirmation']);
 		$this->assertSame('ZAAK-2026-7', $event->getResult()['caseIdentification']);
 	}//end testBv01ConfirmsTheOutboundRow()
+
+	/**
+	 * A conclusion listener that throws is logged; the row is still confirmed and acknowledged.
+	 *
+	 * @return void
+	 */
+	public function testAFailingConclusionListenerIsLoggedAndTheConfirmationStillAcknowledged(): void {
+		$this->failListener = true;
+
+		$answer = $this->receiver()->receive(rawXml: self::envelope(code: 'Bv01', crossRef: 'REF-1', identificatie: 'ZAAK-2026-7'));
+
+		$this->assertSame(200, $answer['statusCode']);
+		$this->assertStringContainsString('Bv03Bericht', $answer['body']);
+		$this->assertSame('Bv01', $this->rows['msg-1']['confirmation']);
+		$this->assertSame([], $this->events);
+		$this->assertContains(
+			['StUF-ZDS conclusion listener failed: {error}', ['error' => 'Listener exploded']],
+			$this->warnings
+		);
+	}//end testAFailingConclusionListenerIsLoggedAndTheConfirmationStillAcknowledged()
 
 	/**
 	 * A Fo01 fails the row with the case system's fout and announces the failure.
@@ -465,7 +504,9 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 
 		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register=null, ?string $schema=null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->assertSame('integriq', $register);
 				if ($schema === 'source') {
 					return isset($this->sources[$id]) === true ? ObjectServiceMockBuilder::objectEntity($this, $this->sources[$id], $id) : null;
@@ -490,7 +531,10 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->assertSame('stuf_message', $schema);
 				$this->assertFalse($_rbac);
 				$this->assertSame([], self::schemaErrors($object), 'The row is one the stuf_message schema accepts');
@@ -502,7 +546,17 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(
 			function (object $event): void {
+				if ($this->failListener === true) {
+					throw new RuntimeException('Listener exploded');
+				}
+
 				$this->events[] = $event;
+			}
+		);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message, array $context=[]): void {
+				$this->warnings[] = [$message, $context];
 			}
 		);
 
@@ -511,7 +565,7 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 			new StufZdsCredentialResolver($crypto),
 			new StufZknAcknowledgementBuilder(),
 			$dispatcher,
-			$this->createMock(LoggerInterface::class),
+			$logger,
 			$this->verifier()
 		);
 	}//end receiver()

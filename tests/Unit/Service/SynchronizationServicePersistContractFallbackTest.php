@@ -31,6 +31,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The non-delegating persistContract() path.
@@ -89,6 +90,7 @@ class SynchronizationServicePersistContractFallbackTest extends TestCase {
 
 		$or->method('saveObject')->willReturnCallback(
 			function (...$args) use ($saved, &$seen): mixed {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$seen = ($args[3] ?? null);
 
 				return $saved;
@@ -117,6 +119,7 @@ class SynchronizationServicePersistContractFallbackTest extends TestCase {
 
 		$or->method('saveObject')->willReturnCallback(
 			function (...$args) use ($saved, &$seen): mixed {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$seen = ($args[3] ?? null);
 
 				return $saved;

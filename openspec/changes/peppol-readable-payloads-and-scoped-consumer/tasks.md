@@ -10,7 +10,7 @@ Kind: code. Size S to M. Halves for shillinq `sales-einvoice-exchange` (rows shi
 - **acceptance_criteria**:
   - GIVEN an object in register `integriq`, schema `event`, with type `nl.conduction.peppol.outbound.requested` WHEN it is created THEN a `peppol_transmission` is queued
   - GIVEN the same payload in another register WHEN it is created THEN nothing is queued
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit with real `ObjectEntity` instances carrying numeric ids; the live check of #1222 on a dev instance, and close #1222's Peppol finding with its result)
 
 ### Task 2: Submit the UBL, not its reference
@@ -19,8 +19,8 @@ Kind: code. Size S to M. Halves for shillinq `sales-einvoice-exchange` (rows shi
 - **acceptance_criteria**:
   - GIVEN a UBL stored in Nextcloud Files WHEN a request names it by id or path THEN the access point receives its XML
   - GIVEN a reference that does not resolve WHEN the request is consumed THEN the transmission is `failed` with the reason
-- [ ] Implement
-- [ ] Test (PHPUnit with a Files fixture and a recorded access point)
+- [x] Implement
+- [x] Test (PHPUnit with a Files fixture and a recorded access point)
 
 ### Task 3: Fetch and store inbound documents
 - **spec_ref**: `openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009`
@@ -28,7 +28,7 @@ Kind: code. Size S to M. Halves for shillinq `sales-einvoice-exchange` (rows shi
 - **acceptance_criteria**:
   - GIVEN a signed inbound notification WHEN it is received THEN a `peppol_inbound_document` with the UBL attached exists and the emitted event names its path and file id
   - GIVEN an access point that answers 500 on the fetch WHEN the notification arrives THEN the webhook answers 200, the object is `fetch-failed` and no event is emitted
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit; Newman for the signed webhook with the `log` provider)
 
 ### Task 4: Docs, seed and strings
@@ -43,3 +43,5 @@ Kind: code. Size S to M. Halves for shillinq `sales-einvoice-exchange` (rows shi
 - [ ] `openspec validate peppol-readable-payloads-and-scoped-consumer --strict` passes
 - [ ] `composer check:strict` once before push; PHPUnit and Newman exit codes read
 - [ ] shillinq `sales-einvoice-exchange` task 1.3 run against this branch on a dev instance
+
+Built: Tasks 1 and 2 landed earlier (#2237 scopes the consumer on resolved ids through `ListenerSchemaResolver`; #2240 submits the UBL content, with the Files-fixture and recorded-access-point tests). Task 3 adds `fetchInboundDocument()` to both providers, stores the UBL as a file on a `peppol_inbound_document` (written in system context; read like `event`), and announces it with `payloadReference`, `payloadFileId` and `payloadFileName`; a failed fetch leaves the record `fetch-failed` and a redelivery retries it. Task 4: `docs/features/peppol.md` and the schema strings in `l10n/en.json` / `nl.json`. Left open: the live check of #1222 (Task 1 test), the Newman run for the signed webhook (Task 3 test), the seed of a stored inbound document (a seed cannot carry its file), and the verification section, which needs a dev instance.

@@ -40,6 +40,8 @@ use OCA\Integriq\Tests\Helpers\PhpInputStream;
 use OCA\Integriq\Tests\Helpers\WebhookWorld;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
+use OCA\OpenRegister\Service\FileService as ORFileService;
+use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -102,18 +104,20 @@ class PeppolWebhookConsumerTest extends TestCase {
 	 *
 	 * @param string            $signature The signature header.
 	 * @param EventService|null $events    The event service, mocked unless given.
+	 * @param ORFileService|null $files    The file service, mocked unless given.
 	 *
 	 * @return PeppolController
 	 */
-	private function controller(string $signature, ?EventService $events = null): PeppolController {
+	private function controller(string $signature, ?EventService $events = null, ?ORFileService $files = null): PeppolController {
 		$service = new PeppolTransmissionService(
 			objectService: $this->objectService,
-			logProvider: $this->createMock(LogPeppolAccessPointProvider::class),
+			logProvider: new LogPeppolAccessPointProvider(),
 			restProvider: $this->createMock(RestPeppolAccessPointProvider::class),
 			eventService: ($events ?? $this->createMock(EventService::class)),
 			l: $this->webhookL10n(),
 			logger: new NullLogger(),
-			rootFolder: $this->createMock(IRootFolder::class)
+			rootFolder: $this->createMock(IRootFolder::class),
+			fileService: ($files ?? $this->createMock(ORFileService::class))
 		);
 
 		return new PeppolController(
@@ -207,6 +211,18 @@ class PeppolWebhookConsumerTest extends TestCase {
 	 */
 	public function testAnInboundDocumentIsEmittedAsTheConnectionsAccount(): void {
 		$this->body = '{"senderPeppolId":"0106:1","documentType":"invoice","payloadReference":"ap://doc-1"}';
+		$this->addOther(schema: 'source', uuid: 'src-peppol', data: ['type' => 'peppol', 'isEnabled' => true, 'configuration' => ['provider' => 'log']]);
+		$actingDuringStore = [];
+		$files = $this->createMock(ORFileService::class);
+		$files->expects($this->once())->method('addFile')->willReturnCallback(
+			function () use (&$actingDuringStore): File {
+				$actingDuringStore[] = $this->worldSession->getUser()?->getUID();
+				$file = $this->createMock(File::class);
+				$file->method('getId')->willReturn(77);
+				$file->method('getName')->willReturn('peppol-inbound.xml');
+				return $file;
+			}
+		);
 		$actingDuringEmit = [];
 		$events = $this->createMock(EventService::class);
 		$events->expects($this->once())->method('emitCloudEvent')->willReturnCallback(
@@ -216,9 +232,10 @@ class PeppolWebhookConsumerTest extends TestCase {
 			}
 		);
 
-		$response = $this->controller(signature: $this->signWebhook($this->body), events: $events)->inbound();
+		$response = $this->controller(signature: $this->signWebhook($this->body), events: $events, files: $files)->inbound();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['peppol-intake'], $actingDuringStore);
 		$this->assertSame(['peppol-intake'], $actingDuringEmit);
 
 	}//end testAnInboundDocumentIsEmittedAsTheConnectionsAccount()

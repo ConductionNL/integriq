@@ -29,6 +29,8 @@ use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests the slug-keyed upsert behaviour (create on first run, in-place
@@ -104,7 +106,10 @@ class MaterializeCatalogItemsTest extends TestCase {
 		$orObjectService->expects($this->exactly(2))
 			->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register = null, $schema = null, $uuid = null) use (&$savedUuids) {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$savedUuids) {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
+					$uuid = $options->uuid;
 					$this->assertSame('integriq', $register);
 					$this->assertSame('catalog_item', $schema);
 					$this->assertNull($uuid, 'first run must CREATE (no uuid)');
@@ -141,7 +146,10 @@ class MaterializeCatalogItemsTest extends TestCase {
 		$orObjectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register = null, $schema = null, $uuid = null) {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
+					$uuid = $options->uuid;
 					$this->assertSame('existing-uuid', $uuid, 're-run must UPDATE the existing object in place');
 					return ObjectServiceMockBuilder::objectEntity($this, $object, 'existing-uuid');
 				}
@@ -180,7 +188,9 @@ class MaterializeCatalogItemsTest extends TestCase {
 			}
 		);
 		$orObjectService->expects($this->once())->method('deleteObject')
-			->with($this->callback(static fn ($uuid): bool => $uuid === 'stale-uuid'));
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => $this->callback(static fn ($uuid): bool => $uuid === 'stale-uuid'),
+			]));
 
 		$this->makeStep($this->makeRegistryService($entries), $orObjectService)->run($this->makeOutput());
 
@@ -298,7 +308,10 @@ class MaterializeCatalogItemsTest extends TestCase {
 		$orObjectService = ObjectServiceMockBuilder::make($this);
 		$orObjectService->method('findAll')->willReturn([$stale, ['slug' => 'adapter:pdok', 'id' => 'not-an-entity']]);
 		$orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->assertNull($uuid, 'a plain array row is not indexed, so pdok is created');
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'new');
 			}

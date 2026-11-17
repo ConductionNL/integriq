@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the sync-item dead-letter capture/replay/discard machinery.
@@ -70,7 +71,10 @@ class SyncItemDeadLetterServiceTest extends TestCase {
 		$this->saved = [];
 		$this->objectService = $this->createMock(ORObjectService::class);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				$entity = new ObjectEntity();
 				$entity->setUuid($uuid ?? ('saved-' . count($this->saved)));

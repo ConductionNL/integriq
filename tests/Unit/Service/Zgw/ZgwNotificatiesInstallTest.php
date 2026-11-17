@@ -28,6 +28,8 @@ use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\Integriq\Tests\Helpers\CatalogueL10n;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The installer with the real NotificatiesSubscriberService, every save validated against the register.
@@ -81,7 +83,9 @@ class ZgwNotificatiesInstallTest extends TestCase {
 	private function installer(): ZgwSetInstaller {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register=null, ?string $schema=null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'source' && $id === self::SOURCE_UUID) {
 					$id = 'zgw-set-notificaties';
 				}
@@ -97,7 +101,10 @@ class ZgwNotificatiesInstallTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = ['schema' => (string)$schema, 'object' => $object];
 				$uuid          = ($uuid ?? sprintf('5a0c%04x-0000-4000-8000-%012x', count($this->saved), count($this->saved)));
 				$entity        = new ObjectEntity();
