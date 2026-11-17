@@ -48,6 +48,18 @@ use Throwable;
 class OpenApiPublishService {
 
 	/**
+	 * The operation of an endpoint whose target describes none.
+	 */
+	private const UNDESCRIBED_OPERATION = [
+		'responses' => [
+			'200' => [
+				'description' => 'The answer of the endpoint.',
+				'content' => ['application/json' => ['schema' => ['type' => 'object', 'description' => 'Not described: this endpoint carries no schema.']]],
+			],
+		],
+	];
+
+	/**
 	 * The OpenAPI version of the published document.
 	 *
 	 * @var string
@@ -143,16 +155,8 @@ class OpenApiPublishService {
 	public function productDocument(ObjectEntity $product, string $serverUrl): array {
 		$data = $product->getObject();
 		$deprecated = (($data['status'] ?? 'active') === 'deprecated');
-		$info = [
-			'title' => (string) ($data['name'] ?? ($data['productSlug'] ?? '')),
-			'version' => (string) ($data['version'] ?? '1.0.0'),
-		];
-		if (is_string($data['description'] ?? null) === true && $data['description'] !== '') {
-			$info['description'] = $data['description'];
-		}
-
 		$document = $this->build(
-			info: $info,
+			info: self::productInfo(data: $data),
 			endpointIds: self::stringList(value: ($data['endpoints'] ?? [])),
 			serverUrl: $serverUrl,
 			deprecated: $deprecated
@@ -163,6 +167,25 @@ class OpenApiPublishService {
 
 		return $document;
 	}//end productDocument()
+
+	/**
+	 * The info object of a product's document: its name, version and, when it has one, its description.
+	 *
+	 * @param array<string,mixed> $data The product's data.
+	 *
+	 * @return array<string,string> The info object.
+	 */
+	private static function productInfo(array $data): array {
+		$info = [
+			'title' => (string) ($data['name'] ?? ($data['productSlug'] ?? '')),
+			'version' => (string) ($data['version'] ?? '1.0.0'),
+		];
+		if (is_string($data['description'] ?? null) === true && $data['description'] !== '') {
+			$info['description'] = $data['description'];
+		}
+
+		return $info;
+	}//end productInfo()
 
 	/**
 	 * Build a document from a list of endpoint uuids.
@@ -220,36 +243,15 @@ class OpenApiPublishService {
 	 */
 	private function addEndpoint(array &$document, ObjectEntity $endpoint, array $rules, bool $deprecated): void {
 		$data = $endpoint->getObject();
-		$segments = array_values(
-			array_filter((array) ($data['endpointArray'] ?? []), static fn (mixed $part): bool => is_scalar($part) === true && (string) $part !== '')
-		);
-		if ($segments === []) {
-			$segments = array_values(array_filter(explode('/', (string) ($data['endpoint'] ?? '')), static fn (string $part): bool => $part !== ''));
-		}
-
+		$segments = self::segmentsOf(data: $data);
 		$method = strtolower((string) ($data['method'] ?? ''));
 		if ($segments === [] || in_array($method, OpenApiDocumentNormaliser::METHODS, true) === false) {
 			return;
 		}
 
-		$pathParameters = [];
-		foreach ($segments as $index => $segment) {
-			if (preg_match('#^\{\{?\s*([^}\s]+)\s*\}?\}$#', (string) $segment, $match) === 1) {
-				$segments[$index] = '{'.$match[1].'}';
-				$pathParameters[] = $match[1];
-			}
-		}
-
-		$path = '/'.implode('/', $segments);
+		[$path, $pathParameters] = self::templatedPath(segments: $segments);
 		$operation = $this->operationFor(document: $document, data: $data, pathParameters: $pathParameters);
-		$operation['operationId'] = (string) ($data['slug'] ?? $endpoint->getUuid());
-		if ($operation['operationId'] === '') {
-			$operation['operationId'] = (string) $endpoint->getUuid();
-		}
-
-		if (($operation['summary'] ?? '') === '' && is_string($data['name'] ?? null) === true) {
-			$operation['summary'] = $data['name'];
-		}
+		$operation = self::named(operation: $operation, data: $data, uuid: (string) $endpoint->getUuid());
 
 		$security = $this->securityFor(document: $document, ruleIds: self::stringList(value: ($data['rules'] ?? [])), rules: $rules);
 		if ($security !== []) {
@@ -264,6 +266,65 @@ class OpenApiPublishService {
 	}//end addEndpoint()
 
 	/**
+	 * The route segments of an endpoint: its endpointArray, else its endpoint path split on slashes.
+	 *
+	 * @param array<string,mixed> $data The endpoint's data.
+	 *
+	 * @return array<int,string|int|float|bool> The non-empty segments.
+	 */
+	private static function segmentsOf(array $data): array {
+		$segments = array_values(
+			array_filter((array) ($data['endpointArray'] ?? []), static fn (mixed $part): bool => is_scalar($part) === true && (string) $part !== '')
+		);
+		if ($segments === []) {
+			$segments = array_values(array_filter(explode('/', (string) ($data['endpoint'] ?? '')), static fn (string $part): bool => $part !== ''));
+		}
+
+		return $segments;
+	}//end segmentsOf()
+
+	/**
+	 * The OpenAPI path of route segments, with `{x}` and `{{x}}` placeholders as path parameters.
+	 *
+	 * @param array<int,string|int|float|bool> $segments The route segments.
+	 *
+	 * @return array{0:string,1:array<int,string>} The path and its parameter names.
+	 */
+	private static function templatedPath(array $segments): array {
+		$pathParameters = [];
+		foreach ($segments as $index => $segment) {
+			if (preg_match('#^\{\{?\s*([^}\s]+)\s*\}?\}$#', (string) $segment, $match) === 1) {
+				$segments[$index] = '{'.$match[1].'}';
+				$pathParameters[] = $match[1];
+			}
+		}
+
+		return ['/'.implode('/', $segments), $pathParameters];
+	}//end templatedPath()
+
+	/**
+	 * The operation with its operationId (slug, else uuid) and, when it has none, the endpoint name as summary.
+	 *
+	 * @param array<string,mixed> $operation The operation.
+	 * @param array<string,mixed> $data      The endpoint's data.
+	 * @param string              $uuid      The endpoint's uuid.
+	 *
+	 * @return array<string,mixed> The named operation.
+	 */
+	private static function named(array $operation, array $data, string $uuid): array {
+		$operation['operationId'] = (string) ($data['slug'] ?? $uuid);
+		if ($operation['operationId'] === '') {
+			$operation['operationId'] = $uuid;
+		}
+
+		if (($operation['summary'] ?? '') === '' && is_string($data['name'] ?? null) === true) {
+			$operation['summary'] = $data['name'];
+		}
+
+		return $operation;
+	}//end named()
+
+	/**
 	 * The operation an endpoint publishes, by its target type.
 	 *
 	 * @param array<string,mixed> $document       The document being built, for its components.
@@ -273,33 +334,29 @@ class OpenApiPublishService {
 	 * @return array<string,mixed> The operation.
 	 */
 	private function operationFor(array &$document, array $data, array $pathParameters): array {
-		$operation = null;
-		$targetType = (string) ($data['targetType'] ?? '');
-		if ($targetType === 'api') {
-			$operation = $this->importedOperation(document: $document, data: $data);
-		}
-
-		if ($targetType === 'register/schema') {
-			$operation = $this->registerOperation(document: $document, data: $data);
-		}
-
-		if ($operation === null) {
-			$operation = [
-				'responses' => [
-					'200' => [
-						'description' => 'The answer of the endpoint.',
-						'content' => ['application/json' => ['schema' => ['type' => 'object', 'description' => 'Not described: this endpoint carries no schema.']]],
-					],
-				],
-			];
-		}
-
+		$operation = ($this->targetOperation(document: $document, data: $data) ?? self::UNDESCRIBED_OPERATION);
 		if (is_string($data['description'] ?? null) === true && $data['description'] !== '' && isset($operation['description']) === false) {
 			$operation['description'] = $data['description'];
 		}
 
 		return $this->withPathParameters(operation: $operation, names: $pathParameters);
 	}//end operationFor()
+
+	/**
+	 * The operation the endpoint's target describes: the vendor document's for `api`, the schema's for `register/schema`.
+	 *
+	 * @param array<string,mixed> $document The document being built.
+	 * @param array<string,mixed> $data     The endpoint's data.
+	 *
+	 * @return array<string,mixed>|null The operation, or null when the target describes none.
+	 */
+	private function targetOperation(array &$document, array $data): ?array {
+		return match ((string) ($data['targetType'] ?? '')) {
+			'api' => $this->importedOperation(document: $document, data: $data),
+			'register/schema' => $this->registerOperation(document: $document, data: $data),
+			default => null,
+		};
+	}//end targetOperation()
 
 	/**
 	 * The operation of an imported endpoint, taken from the vendor document kept on its source.
@@ -320,26 +377,44 @@ class OpenApiPublishService {
 		// An imported endpoint keeps the vendor path in `upstreamPath`; its
 		// `endpoint` carries the gateway prefix the vendor document lacks.
 		$wanted = self::shape(path: EndpointService::upstreamTemplate(endpointData: $data));
+		$operation = self::vendorOperation(vendor: $vendor, method: $method, wanted: $wanted);
+		if ($operation === null) {
+			return null;
+		}
+
+		$prefix = self::componentPrefix(sourceId: $sourceId);
+		unset($operation['servers'], $operation['security'], $operation['operationId'], $operation['callbacks']);
+		$this->copyComponents(document: $document, vendor: $vendor, prefix: $prefix);
+
+		return self::prefixRefs(value: $operation, prefix: $prefix);
+	}//end importedOperation()
+
+	/**
+	 * The vendor document's operation for a method on a path shape, with its path item's shared parameters first.
+	 *
+	 * @param array<string,mixed> $vendor The vendor document.
+	 * @param string              $method The lower-case HTTP method.
+	 * @param string              $wanted The path shape.
+	 *
+	 * @return array<string,mixed>|null The operation, or null when the document has none.
+	 */
+	private static function vendorOperation(array $vendor, string $method, string $wanted): ?array {
 		foreach ((array) ($vendor['paths'] ?? []) as $path => $item) {
 			if (is_array($item) === false || is_array($item[$method] ?? null) === false || self::shape(path: (string) $path) !== $wanted) {
 				continue;
 			}
 
-			$prefix = self::componentPrefix(sourceId: $sourceId);
 			$operation = $item[$method];
 			$shared = array_values(array_filter((array) ($item['parameters'] ?? []), 'is_array'));
 			if ($shared !== []) {
 				$operation['parameters'] = array_merge($shared, (array) ($operation['parameters'] ?? []));
 			}
 
-			unset($operation['servers'], $operation['security'], $operation['operationId'], $operation['callbacks']);
-			$this->copyComponents(document: $document, vendor: $vendor, prefix: $prefix);
-
-			return self::prefixRefs(value: $operation, prefix: $prefix);
+			return $operation;
 		}
 
 		return null;
-	}//end importedOperation()
+	}//end vendorOperation()
 
 	/**
 	 * The operation of a register/schema endpoint, its schema read from OpenRegister.
@@ -367,15 +442,8 @@ class OpenApiPublishService {
 
 		$document['components']['schemas'][$name] = $definition;
 		$reference = ['$ref' => '#/components/schemas/'.$name];
-
 		$method = strtoupper((string) ($data['method'] ?? ''));
-		$segments = (array) ($data['endpointArray'] ?? []);
-		$last = (string) end($segments);
-		$single = (str_contains($last, '{') === true || $method !== 'GET');
-		$answer = $reference;
-		if ($single === false) {
-			$answer = ['type' => 'object', 'properties' => ['results' => ['type' => 'array', 'items' => $reference], 'total' => ['type' => 'integer']]];
-		}
+		$answer = self::registerAnswer(data: $data, method: $method, reference: $reference);
 
 		$operation = ['responses' => ['200' => ['description' => 'OK', 'content' => ['application/json' => ['schema' => $answer]]]]];
 		if (in_array($method, ['POST', 'PUT', 'PATCH'], true) === true) {
@@ -384,6 +452,25 @@ class OpenApiPublishService {
 
 		return $operation;
 	}//end registerOperation()
+
+	/**
+	 * The response schema of a register/schema endpoint: one object, or a page of them for a collection GET.
+	 *
+	 * @param array<string,mixed>  $data      The endpoint's data.
+	 * @param string               $method    The upper-case HTTP method.
+	 * @param array<string,string> $reference The reference to the object schema.
+	 *
+	 * @return array<string,mixed> The response schema.
+	 */
+	private static function registerAnswer(array $data, string $method, array $reference): array {
+		$segments = (array) ($data['endpointArray'] ?? []);
+		$last = (string) end($segments);
+		if (str_contains($last, '{') === true || $method !== 'GET') {
+			return $reference;
+		}
+
+		return ['type' => 'object', 'properties' => ['results' => ['type' => 'array', 'items' => $reference], 'total' => ['type' => 'integer']]];
+	}//end registerAnswer()
 
 	/**
 	 * The security requirements an endpoint's authentication rules publish.
@@ -402,17 +489,7 @@ class OpenApiPublishService {
 				continue;
 			}
 
-			$authentication = (array) ($rule['configuration']['authentication'] ?? []);
-			$type = (string) ($authentication['type'] ?? '');
-			$published = (self::AUTH_SCHEMES[$type] ?? null);
-			if ($type === 'apikey') {
-				$header = (string) ($authentication['header'] ?? 'Authorization');
-				$published = [
-					'name' => 'apiKey.'.preg_replace('/[^A-Za-z0-9._-]/', '-', $header),
-					'scheme' => ['type' => 'apiKey', 'in' => 'header', 'name' => $header],
-				];
-			}
-
+			$published = self::publishedScheme(authentication: (array) ($rule['configuration']['authentication'] ?? []));
 			if ($published === null) {
 				continue;
 			}
@@ -423,6 +500,27 @@ class OpenApiPublishService {
 
 		return array_values(array_unique($security, SORT_REGULAR));
 	}//end securityFor()
+
+	/**
+	 * The security scheme an authentication rule publishes, by name.
+	 *
+	 * @param array<string,mixed> $authentication The rule's authentication configuration.
+	 *
+	 * @return array{name:string,scheme:array<string,mixed>}|null The scheme, or null when its type publishes none.
+	 */
+	private static function publishedScheme(array $authentication): ?array {
+		$type = (string) ($authentication['type'] ?? '');
+		if ($type !== 'apikey') {
+			return (self::AUTH_SCHEMES[$type] ?? null);
+		}
+
+		$header = (string) ($authentication['header'] ?? 'Authorization');
+
+		return [
+			'name' => 'apiKey.'.preg_replace('/[^A-Za-z0-9._-]/', '-', $header),
+			'scheme' => ['type' => 'apiKey', 'in' => 'header', 'name' => $header],
+		];
+	}//end publishedScheme()
 
 	/**
 	 * The operation with a parameter for every gateway path placeholder, and none for a placeholder it lacks.
@@ -441,7 +539,7 @@ class OpenApiPublishService {
 			}
 
 			if (($parameter['in'] ?? '') === 'path') {
-				if (in_array(($parameter['name'] ?? ''), $names, true) === false || isset($declared[$parameter['name']]) === true) {
+				if (self::isDroppedPathParameter(parameter: $parameter, names: $names, declared: $declared) === true) {
 					continue;
 				}
 
@@ -464,6 +562,23 @@ class OpenApiPublishService {
 
 		return $operation;
 	}//end withPathParameters()
+
+	/**
+	 * Whether a declared path parameter is dropped: not in the published path, or already declared.
+	 *
+	 * @param array<string,mixed> $parameter The path parameter.
+	 * @param array<int,string>   $names     The published path's parameter names.
+	 * @param array<string,bool>  $declared  The path parameters kept so far.
+	 *
+	 * @return bool True when it is dropped.
+	 */
+	private static function isDroppedPathParameter(array $parameter, array $names, array $declared): bool {
+		if (in_array(($parameter['name'] ?? ''), $names, true) === false) {
+			return true;
+		}
+
+		return isset($declared[$parameter['name']]);
+	}//end isDroppedPathParameter()
 
 	/**
 	 * The vendor document a source keeps, in the OpenAPI 3.x shape.

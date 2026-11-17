@@ -189,6 +189,24 @@ class OpenApiDocumentNormaliser {
 			}
 		}
 
+		$components = $this->componentsOf(swagger: $swagger);
+		if ($components !== []) {
+			$document['components'] = $components;
+		}
+
+		$document['paths'] = $this->pathsOf(swagger: $swagger, consumes: $consumes, produces: $produces);
+
+		return $document;
+	}//end fromSwagger()
+
+	/**
+	 * The OpenAPI 3 components of a Swagger 2.0 document: schemas, security schemes and parameters.
+	 *
+	 * @param array<string,mixed> $swagger The Swagger 2.0 document.
+	 *
+	 * @return array<string,mixed> The components, empty when the document has none.
+	 */
+	private function componentsOf(array $swagger): array {
 		$components = [];
 		if (is_array($swagger['definitions'] ?? null) === true) {
 			$components['schemas'] = $swagger['definitions'];
@@ -211,20 +229,30 @@ class OpenApiDocumentNormaliser {
 			);
 		}
 
-		if ($components !== []) {
-			$document['components'] = $components;
-		}
+		return $components;
+	}//end componentsOf()
 
+	/**
+	 * The OpenAPI 3 paths of a Swagger 2.0 document.
+	 *
+	 * @param array<string,mixed> $swagger  The Swagger 2.0 document.
+	 * @param array<int,string>   $consumes The request media types.
+	 * @param array<int,string>   $produces The response media types.
+	 *
+	 * @return array<string,mixed> The path items by path.
+	 */
+	private function pathsOf(array $swagger, array $consumes, array $produces): array {
+		$paths = [];
 		foreach ((array) ($swagger['paths'] ?? []) as $path => $item) {
 			if (is_array($item) === false) {
 				continue;
 			}
 
-			$document['paths'][$path] = $this->pathItemOf(item: $item, consumes: $consumes, produces: $produces);
+			$paths[$path] = $this->pathItemOf(item: $item, consumes: $consumes, produces: $produces);
 		}
 
-		return $document;
-	}//end fromSwagger()
+		return $paths;
+	}//end pathsOf()
 
 	/**
 	 * The OpenAPI 3 servers of a Swagger 2.0 document: one per scheme, from host and basePath.
@@ -417,37 +445,62 @@ class OpenApiDocumentNormaliser {
 	 * @return array<string,mixed>|null The request body, or null when there is none.
 	 */
 	private function requestBodyOf(array $parameters, array $consumes): ?array {
+		$parameters = array_filter($parameters, static fn (mixed $parameter): bool => is_array($parameter) === true);
+		foreach ($parameters as $parameter) {
+			if (($parameter['in'] ?? '') === 'body') {
+				return self::bodyRequestOf(parameter: $parameter, consumes: $consumes);
+			}
+		}
+
+		return $this->formRequestOf(parameters: $parameters, consumes: $consumes);
+	}//end requestBodyOf()
+
+	/**
+	 * The OpenAPI 3 request body of a Swagger 2.0 `in: body` parameter.
+	 *
+	 * @param array<string,mixed> $parameter The body parameter.
+	 * @param array<int,string>   $consumes  The request media types.
+	 *
+	 * @return array<string,mixed> The request body.
+	 */
+	private static function bodyRequestOf(array $parameter, array $consumes): array {
+		$content = [];
+		foreach ($consumes as $mediaType) {
+			$content[$mediaType] = ['schema' => (array) ($parameter['schema'] ?? [])];
+		}
+
+		return array_filter(
+			[
+				'description' => ($parameter['description'] ?? null),
+				'required' => (bool) ($parameter['required'] ?? false),
+				'content' => $content,
+			],
+			static fn (mixed $value): bool => $value !== null
+		);
+	}//end bodyRequestOf()
+
+	/**
+	 * The OpenAPI 3 request body of Swagger 2.0 `in: formData` parameters: one object schema.
+	 *
+	 * @param array<int|string,array<string,mixed>> $parameters The operation's parameters.
+	 * @param array<int,string>                     $consumes   The request media types.
+	 *
+	 * @return array<string,mixed>|null The request body, null without form parameters.
+	 */
+	private function formRequestOf(array $parameters, array $consumes): ?array {
 		$form = ['type' => 'object', 'properties' => []];
 		$formRequired = [];
 		foreach ($parameters as $parameter) {
-			if (is_array($parameter) === false) {
+			if (($parameter['in'] ?? '') !== 'formData') {
 				continue;
 			}
 
-			if (($parameter['in'] ?? '') === 'body') {
-				$content = [];
-				foreach ($consumes as $mediaType) {
-					$content[$mediaType] = ['schema' => (array) ($parameter['schema'] ?? [])];
-				}
-
-				return array_filter(
-					[
-						'description' => ($parameter['description'] ?? null),
-						'required' => (bool) ($parameter['required'] ?? false),
-						'content' => $content,
-					],
-					static fn (mixed $value): bool => $value !== null
-				);
+			$name = (string) ($parameter['name'] ?? '');
+			$form['properties'][$name] = ($this->parameterOf(parameter: $parameter)['schema'] ?? ['type' => 'string']);
+			if (($parameter['required'] ?? false) === true) {
+				$formRequired[] = $name;
 			}
-
-			if (($parameter['in'] ?? '') === 'formData') {
-				$name = (string) ($parameter['name'] ?? '');
-				$form['properties'][$name] = ($this->parameterOf(parameter: $parameter)['schema'] ?? ['type' => 'string']);
-				if (($parameter['required'] ?? false) === true) {
-					$formRequired[] = $name;
-				}
-			}
-		}//end foreach
+		}
 
 		if ($form['properties'] === []) {
 			return null;
@@ -463,7 +516,7 @@ class OpenApiDocumentNormaliser {
 		}
 
 		return ['content' => [$mediaType => ['schema' => $form]]];
-	}//end requestBodyOf()
+	}//end formRequestOf()
 
 	/**
 	 * A Swagger 2.0 response in the OpenAPI 3 shape: its schema under content.
