@@ -101,6 +101,8 @@ class ServiceFetchController extends Controller {
 	 * framework refuses everyone else before this runs. The raw answer can hold
 	 * what the mapping keeps from an app, so it never leaves this route.
 	 *
+	 * @auth admin-only the raw answer of the source is for administrators, never for an app
+	 *
 	 * @param string $slug The fetch.
 	 *
 	 * @return JSONResponse `{raw, outputs, refusal, detail}`; 404 for an unknown

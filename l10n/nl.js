@@ -2504,6 +2504,7 @@ OC.L10N.register(
         "Refused: {refusal} ({detail})": "Geweigerd: {refusal} ({detail})",
         "Refused: {refusal}": "Geweigerd: {refusal}",
         "The service fetch could not be tested.": "De service fetch kon niet worden getest.",
+        "Service fetches": "Service-fetches",
         "A link to the API in the vendor's own console or Admin API": "Een link naar de API in de eigen console of Admin API van de leverancier",
         "Base URL": "Basis-URL",
         "External API": "Externe API",

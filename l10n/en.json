@@ -3853,7 +3853,20 @@
         "The residency could not be saved.": "The residency could not be saved.",
         "Where does {source} process the data integriq sends it? Record the country and the evidence for it.": "Where does {source} process the data integriq sends it? Record the country and the evidence for it.",
         "Zone": "Zone",
-        "this source": "this source"
+        "this source": "this source",
+        "Test service fetch": "Test service fetch",
+        "Testing service fetch: {name}": "Testing service fetch: {name}",
+        "Sample inputs": "Sample inputs",
+        "This fetch declares no inputs.": "This fetch declares no inputs.",
+        "{name} (required)": "{name} (required)",
+        "Answer from the source": "Answer from the source",
+        "Mapped outputs": "Mapped outputs",
+        "The source was not called.": "The source was not called.",
+        "No outputs.": "No outputs.",
+        "Refused: {refusal} ({detail})": "Refused: {refusal} ({detail})",
+        "Refused: {refusal}": "Refused: {refusal}",
+        "The service fetch could not be tested.": "The service fetch could not be tested.",
+        "Service fetches": "Service fetches"
     },
     "plurals": {}
 }

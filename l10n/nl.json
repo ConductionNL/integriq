@@ -2584,7 +2584,20 @@
         "The residency could not be saved.": "Het vestigingsland kon niet worden opgeslagen.",
         "Where does {source} process the data integriq sends it? Record the country and the evidence for it.": "Waar verwerkt {source} de gegevens die integriq stuurt? Leg het land vast en het bewijs daarvoor.",
         "Zone": "Zone",
-        "this source": "deze bron"
+        "this source": "deze bron",
+        "Test service fetch": "Service fetch testen",
+        "Testing service fetch: {name}": "Service fetch testen: {name}",
+        "Sample inputs": "Voorbeeldinvoer",
+        "This fetch declares no inputs.": "Deze fetch declareert geen invoer.",
+        "{name} (required)": "{name} (verplicht)",
+        "Answer from the source": "Antwoord van de bron",
+        "Mapped outputs": "Gemapte uitvoer",
+        "The source was not called.": "De bron is niet aangeroepen.",
+        "No outputs.": "Geen uitvoer.",
+        "Refused: {refusal} ({detail})": "Geweigerd: {refusal} ({detail})",
+        "Refused: {refusal}": "Geweigerd: {refusal}",
+        "The service fetch could not be tested.": "De service fetch kon niet worden getest.",
+        "Service fetches": "Service-fetches"
     },
     "plurals": {}
 }
