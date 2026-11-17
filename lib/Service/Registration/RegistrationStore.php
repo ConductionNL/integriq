@@ -39,7 +39,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
  *
  * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
  */
-class RegistrationStore {
+class RegistrationStore implements RegistrationStoreInterface {
 
 	public const REGISTER = 'integriq';
 

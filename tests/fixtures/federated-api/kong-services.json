@@ -1,0 +1,7 @@
+{
+  "data": [
+    {"id": "a3ad71a8-7d4a-4c2b-9a83-3f1e0f6b7c11", "name": "orders", "protocol": "http", "host": "orders.internal", "port": 8080, "path": "/v1", "tags": ["team:sales", "version:1.4"], "enabled": true, "created_at": 1762000000, "updated_at": 1763000000},
+    {"id": "5b8e2f04-1c6d-4e7a-b2f9-0d4c6a1e9b37", "name": "invoices", "protocol": "https", "host": "invoices.internal", "port": 443, "path": "/api", "tags": null, "enabled": true, "created_at": 1762000000, "updated_at": 1763000000}
+  ],
+  "next": null
+}
