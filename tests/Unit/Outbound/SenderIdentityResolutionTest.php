@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Identity resolution and signing-key resolution.
@@ -160,7 +161,14 @@ class SenderIdentityResolutionTest extends TestCase {
 		$entity = $this->entity('id-1', []);
 		$entity->setOrganisation('org-1');
 		$this->objects->expects($this->once())->method('find')
-			->with('id-1', MessageRecorder::REGISTER, 'sender_identity', false, false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'id-1',
+				'register' => MessageRecorder::REGISTER,
+				'schema' => 'sender_identity',
+				'_rbac' => false,
+				'_multitenancy' => false,
+				'_render' => false,
+			]))
 			->willReturn($entity);
 
 		$broker = $this->createMock(CredentialBrokerService::class);

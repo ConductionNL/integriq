@@ -40,6 +40,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Every action kind a subscription can carry, dispatched through
@@ -120,7 +122,9 @@ class EventServiceActionDispatchGoldenTest extends TestCase {
 	private function service(): EventService {
 		$objects = $this->createMock(ORObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->log[] = ['or.find', $id, $schema];
 				$answer = $this->answer('find.' . $schema);
 				if ($answer === 'throws') {
@@ -135,7 +139,10 @@ class EventServiceActionDispatchGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->log[] = ['or.saveObject', $this->mask(value: $object), $schema, $uuid];
 				return ObjectServiceMockBuilder::objectEntity($this, (array)$object, (string)$uuid);
 			}

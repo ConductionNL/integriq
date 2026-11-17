@@ -37,6 +37,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 class SynchronizationServiceRetireValuesTest extends TestCase {
 	private const SYNC_ID = 'sync-uuid-course-marketplace';
@@ -73,6 +74,7 @@ class SynchronizationServiceRetireValuesTest extends TestCase {
 		$orObjectService->method('find')->willReturnCallback(fn (...$args) => $objects[(string)$args[0]]);
 		$orObjectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$this->saved[] = ['object' => $object];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'saved');
 			}

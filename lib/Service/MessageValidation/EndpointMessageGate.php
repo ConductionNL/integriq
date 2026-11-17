@@ -27,6 +27,10 @@ namespace OCA\Integriq\Service\MessageValidation;
 
 use OCA\Integriq\Service\MessageValidationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
@@ -237,14 +241,13 @@ class EndpointMessageGate {
 		try {
 			$this->objects->saveObject(
 				object: array_merge($stored, ['validation' => $findings]),
-				register: 'integriq',
-				schema: 'call_log',
-				uuid: (string)$callLog->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+					uuid: (string)$callLog->getUuid(),
+					policy: new SavePolicy(silent: true, validation: false)
+				),
 				_rbac: false,
-				// Unscoped: system write of validation findings on an inbound call log.
-				_multitenancy: false,
-				silent: true,
-				_validation: false
+				_multitenancy: false
 			);
 		} catch (Throwable $failure) {
 			$this->logger->error('[integriq] could not write validation findings to call log ' . $callLog->getUuid() . ': ' . $failure->getMessage());
@@ -269,10 +272,8 @@ class EndpointMessageGate {
 		try {
 			$entity = $this->objects->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: 'call_log',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'call_log'),
 				_rbac: false,
-				// Unscoped: re-reads the inbound call log this gate is recording on.
 				_multitenancy: false
 			);
 		} catch (Throwable $failure) {
@@ -299,10 +300,8 @@ class EndpointMessageGate {
 		try {
 			$entity = $this->objects->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: 'message_schema',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'message_schema'),
 				_rbac: false,
-				// Unscoped: resolves the message schema of an endpoint already reached for an inbound caller.
 				_multitenancy: false
 			);
 		} catch (Throwable $failure) {

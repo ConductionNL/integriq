@@ -58,6 +58,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionProperty;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The whole request path of a proxying endpoint, with the real gate and the
@@ -97,7 +99,7 @@ class EndpointServiceMessageValidationTest extends TestCase {
 		$logger = new NullLogger();
 		$this->objects = ObjectServiceMockBuilder::make($this);
 		$this->objects->method('find')->willReturnCallback(
-			fn ($id, ?string $register = null, ?string $schema = null): ?ObjectEntity => match ($schema) {
+			fn ($id, ?ObjectFindOptions $options = null): ?ObjectEntity => match (($options?->schema)) {
 				'message_schema' => ObjectServiceMockBuilder::objectEntity($this, $this->personSchema(), self::SCHEMA_UUID),
 				'source' => ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://bron.example.nl', 'isEnabled' => true], 'source-1'),
 				'call_log' => ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200, 'direction' => 'outbound', 'response' => ['statusCode' => 200]], 'call-log-1'),
@@ -269,7 +271,10 @@ class EndpointServiceMessageValidationTest extends TestCase {
 
 		$saved = [];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) use (&$saved): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saved): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$saved[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			}

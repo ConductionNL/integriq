@@ -24,23 +24,23 @@ describe('product channels', () => {
 	})
 
 	it('adds a channel with its types', () => {
-		const result = withChannel([], { slug: 'publications', title: 'Publications', types: 'nl.woo.publication.created', description: '' })
+		const result = withChannel([], { draft: { slug: 'publications', title: 'Publications', types: 'nl.woo.publication.created', description: '' } })
 		expect(result).toEqual({ channels: [publications] })
 	})
 
 	it('refuses a bad slug, no title, no type or a repeated slug', () => {
 		const draft = { slug: 'publications', title: 'P', types: 't' }
-		expect(withChannel([], { ...draft, slug: 'Bad Slug' }).error).toBe('slug')
-		expect(withChannel([], { ...draft, title: ' ' }).error).toBe('title')
-		expect(withChannel([], { ...draft, types: ' , ' }).error).toBe('types')
-		expect(withChannel([publications], draft).error).toBe('duplicate')
+		expect(withChannel([], { draft: { ...draft, slug: 'Bad Slug' } }).error).toBe('slug')
+		expect(withChannel([], { draft: { ...draft, title: ' ' } }).error).toBe('title')
+		expect(withChannel([], { draft: { ...draft, types: ' , ' } }).error).toBe('types')
+		expect(withChannel([publications], { draft }).error).toBe('duplicate')
 	})
 
 	it('edits a channel in place, and may keep its own slug', () => {
 		const decisions = { slug: 'decisions', title: 'D', types: ['d'] }
-		const result = withChannel([publications, decisions], { ...draftOf(publications), title: 'Woo publications', description: 'All of them' }, 'publications')
+		const result = withChannel([publications, decisions], { draft: { ...draftOf(publications), title: 'Woo publications', description: 'All of them' }, editing: 'publications' })
 		expect(result.channels).toEqual([{ ...publications, title: 'Woo publications', description: 'All of them' }, decisions])
-		expect(withChannel([publications, decisions], { ...draftOf(publications), slug: 'decisions' }, 'publications').error).toBe('duplicate')
+		expect(withChannel([publications, decisions], { draft: { ...draftOf(publications), slug: 'decisions' }, editing: 'publications' }).error).toBe('duplicate')
 	})
 
 	it('removes a channel and fills the form from one', () => {

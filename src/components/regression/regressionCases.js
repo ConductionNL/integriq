@@ -53,12 +53,12 @@ export function redactedPaths(data, prefix = '') {
  * A deep copy of `data` with the value at `path` replaced.
  *
  * @param {object} data The snapshot; left unchanged.
- * @param {string} path A dot path that exists in the snapshot.
- * @param {string|number|boolean|null} value The new value.
+ * @param {{path: string, value: string|number|boolean|null}} change A dot path that exists in the snapshot, and its new value.
  * @return {object} The copy.
  * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
  */
-export function withValueAt(data, path, value) {
+export function withValueAt(data, change) {
+	const { path, value } = change
 	const copy = JSON.parse(JSON.stringify(data ?? {}))
 	const keys = path.split('.')
 	let node = copy

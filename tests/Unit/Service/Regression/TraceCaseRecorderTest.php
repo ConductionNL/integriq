@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OutOfBoundsException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * What the recorder saves, and when it refuses.
@@ -61,7 +62,9 @@ class TraceCaseRecorderTest extends TestCase {
 		$this->traces = $this->createMock(ExecutionTraceService::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null): ObjectEntity {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->saves[] = [$register, $schema, $object];
 				$entity = new ObjectEntity();
 				$entity->setUuid('case-1');
