@@ -43,6 +43,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Error-path and edge-case tests for the EUDI credential offer lifecycle:
@@ -99,6 +101,7 @@ class EudiCredentialOfferServiceCoverageTest extends TestCase {
 
 		$objectService->method('find')->willReturnCallback(
 			function ($id, ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				if (isset($this->rows[$id]) === false) {
 					throw new DoesNotExistException('not found');
 				}
@@ -142,7 +145,10 @@ class EudiCredentialOfferServiceCoverageTest extends TestCase {
 		);
 
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($uuid === null) {
 					$uuid = bin2hex(random_bytes(8));
 				}

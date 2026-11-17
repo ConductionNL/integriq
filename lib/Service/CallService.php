@@ -61,16 +61,25 @@ use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Call\CallPreparation;
 use OCA\Integriq\Service\Call\CallRequest;
+use OCA\Integriq\Service\Call\FeedSource;
 use OCA\Integriq\Service\Call\FinishedCall;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Residency\EgressResidencyPolicy;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
 use OCA\Integriq\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
@@ -801,8 +810,7 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: the log carries the source's organisation (stamped above), not the caller's.
 		return $this->objectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: 'call_log',
+			options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -859,9 +867,7 @@ class CallService implements CallServiceInterface {
 			// state.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $source->getUuid(),
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1322,9 +1328,10 @@ class CallService implements CallServiceInterface {
 	/**
 	 * Answer a source that needs no HTTP request of its own, or null for any other.
 	 *
-	 * A soap source is answered by SOAPService; a case-system source by
+	 * A feed source is answered by {@see FeedSource} (connectors-job-board-multiposting,
+	 * design D2); a soap source by SOAPService; a case-system source by
 	 * {@see CaseSystemOperations} (case-system-operations-for-decidiq, design
-	 * D1). Both answer a PSR-7 response, so the call log, redaction and rate
+	 * D1). Each answers a PSR-7 response, so the call log, redaction and rate
 	 * limit run as for any source. An asynchronous caller receives the
 	 * case-system answer as a fulfilled promise.
 	 *
@@ -1339,6 +1346,10 @@ class CallService implements CallServiceInterface {
 	 */
 	private function dispatchInProcess(ObjectEntity $source, string $endpoint, array $config, bool $asynchronous): mixed {
 		$sourceType = ($source->getObject()['type'] ?? null);
+
+		if ($sourceType === FeedSource::SOURCE_TYPE) {
+			return $this->inProcessAnswer(response: (new FeedSource())->answer(source: $source), asynchronous: $asynchronous);
+		}
 
 		if ($sourceType === 'soap') {
 			// Warning: This functionality requires ext-soap and ext-xsd.
@@ -1360,12 +1371,26 @@ class CallService implements CallServiceInterface {
 			$response = $this->caseSystemOperations->handle(source: $source, endpoint: $endpoint, config: $config);
 		}
 
+		return $this->inProcessAnswer(response: $response, asynchronous: $asynchronous);
+	}//end dispatchInProcess()
+
+	/**
+	 * An in-process answer as the caller expects it: the response, or a fulfilled promise of it.
+	 *
+	 * @param ResponseInterface $response     The answer.
+	 * @param boolean           $asynchronous Whether the caller expects a promise.
+	 *
+	 * @return ResponseInterface|FulfilledPromise The answer, as a promise for an asynchronous caller.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-werknl-linkedin-and-indeed-are-job-board-templates-req-jbc-002
+	 */
+	private function inProcessAnswer(ResponseInterface $response, bool $asynchronous): ResponseInterface|FulfilledPromise {
 		if ($asynchronous === true) {
 			return new FulfilledPromise($response);
 		}
 
 		return $response;
-	}//end dispatchInProcess()
+	}//end inProcessAnswer()
 
 	/**
 	 * Assemble the options handed to Guzzle from the persisted request config
@@ -1932,12 +1957,12 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: the log carries the source's organisation, not the caller's, and a run may have no user.
 		$callLog = $this->objectService->saveObject(
 			object: $callLogData,
-			register: 'integriq',
-			schema: 'call_log',
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+				policy: new SavePolicy(silent: true, validation: false)
+			),
 			_rbac: false,
-			_multitenancy: false,
-			silent: true,
-			_validation: false
+			_multitenancy: false
 		);
 
 		// Set full response (with body) on the returned entity for processing.
@@ -2019,13 +2044,12 @@ class CallService implements CallServiceInterface {
 			// System write, unscoped: buffered logs carry their source's organisation, not the caller's.
 			$this->objectService->saveObjects(
 				objects: $batch,
-				register: 'integriq',
-				schema: 'call_log',
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: 'integriq', schema: 'call_log'),
+					audit: false
+				),
 				_rbac: false,
-				_multitenancy: false,
-				validation: false,
-				events: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
 			$this->logger->error(
@@ -2504,9 +2528,7 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: bookkeeping on a source the caller already reached in scope.
 		return $this->objectService->saveObject(
 			object: $sourceData,
-			register: 'integriq',
-			schema: 'source',
-			uuid: $source->getUuid(),
+			options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2872,11 +2894,9 @@ class CallService implements CallServiceInterface {
 			// System read, unscoped: re-reads the source already in hand, so a run without a user still dispatches.
 			$raw = $this->objectService->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
 			// A raw re-read failure must never break an outbound call that
@@ -3751,9 +3771,7 @@ class CallService implements CallServiceInterface {
 			// back to its own admin-owned source config on behalf of any caller.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $source->getUuid(),
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);

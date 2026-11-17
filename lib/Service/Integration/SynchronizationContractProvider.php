@@ -41,6 +41,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Services\IAppConfig;
@@ -157,16 +159,17 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 	 * Finds every SyncContract whose `targetId === $objectId` and
 	 * returns a lightweight summary for sidebar display.
 	 *
-	 * @param string $register The OR register slug.
-	 * @param string $schema The OR schema slug.
-	 * @param string $objectId The OR object id being viewed.
+	 * @param ObjectRef $ref The register, schema and id of the object.
 	 * @param array $filters Optional filters with `_limit` and `_page` for pagination.
 	 *
 	 * @return array The list of contract summaries.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
+		$register = (string) $ref->register;
+		$schema = (string) $ref->schema;
+		$objectId = $ref->id;
 		if ($this->isEnabled() === false) {
 			return [];
 		}
@@ -385,8 +388,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 		try {
 			$sync = $this->objectService->find(
 				id: $synchronizationId,
-				register: self::REGISTER_SLUG,
-				schema: 'synchronization'
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'synchronization')
 			);
 			if (is_object($sync) === true && method_exists($sync, 'getObject') === true) {
 				$syncBody = $sync->getObject();

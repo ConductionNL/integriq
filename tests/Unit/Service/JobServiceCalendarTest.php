@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The clock is Tuesday 10 November 2026, 07:02 Amsterdam time, two minutes
@@ -116,6 +117,7 @@ class JobServiceCalendarTest extends TestCase {
 		$this->objects = ObjectServiceMockBuilder::make($this);
 		$this->objects->method('saveObject')->willReturnCallback(
 			function (...$args): ObjectEntity {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$this->saved[$args[2]][] = $args[0];
 				return ObjectServiceMockBuilder::objectEntity($this, $args[0], 'saved-' . $args[2]);
 			}

@@ -26,6 +26,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * @covers \OCA\Integriq\BackgroundJob\RISPollJob
@@ -122,7 +123,9 @@ class RISPollJobOutcomeTest extends TestCase {
 		$objects = $this->createMock(OrObjectService::class);
 		$objects->method('findAll')->willReturn(['results' => [$this->record(['caseId' => 'z-9', 'risType' => 'ibabs'])]]);
 		$source = new ObjectEntity();
-		$objects->expects($this->once())->method('find')->with('default')->willReturn($source);
+		$objects->expects($this->once())->method('find')->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'default',
+			]))->willReturn($source);
 		$ibabs = $this->createMock(IBabsConnectorServiceInterface::class);
 		$ibabs->expects($this->once())->method('pollDecisions')->with($source, [['caseId' => 'z-9', 'risType' => 'ibabs']])->willReturn([]);
 

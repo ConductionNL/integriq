@@ -25,7 +25,7 @@ use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\HostKeyPin;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileClient;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
 use OCA\Integriq\Settings\IntegriqAdmin;
-use OCA\Integriq\Tests\Helpers\MainApiObjectService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -55,9 +55,9 @@ final class SourceHostKeyControllerTest extends TestCase {
 	private const PRESENTED = 'SHA256:presentedKey';
 
 	/**
-	 * @var MainApiObjectService&MockObject
+	 * @var ObjectService&MockObject
 	 */
-	private MainApiObjectService $objects;
+	private ObjectService $objects;
 
 	/**
 	 * @var RemoteFileClient&MockObject
@@ -82,7 +82,7 @@ final class SourceHostKeyControllerTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objects = $this->createMock(MainApiObjectService::class);
+		$this->objects = $this->createMock(ObjectService::class);
 		$this->client  = $this->createMock(RemoteFileClient::class);
 		$this->request = $this->createMock(IRequest::class);
 	}//end setUp()
@@ -102,20 +102,19 @@ final class SourceHostKeyControllerTest extends TestCase {
 			$entity->setUuid('source-1');
 			$entity->setObject($object);
 			$this->objects->method('find')->willReturnCallback(
-				function (string $id, ...$rest) use ($entity): ?ObjectEntity {
-					$options = end($rest);
+				function (string $id, ?ObjectFindOptions $options=null, bool $_rbac=true) use ($entity): ?ObjectEntity {
 					$this->assertSame('source-1', $id);
 					$this->assertInstanceOf(ObjectFindOptions::class, $options);
 					$this->assertSame(['integriq', 'source'], [$options->register, $options->schema], 'the source schema of the integriq register');
-					$this->assertFalse($rest[2], 'read without RBAC: the endpoint is admin-only');
+					$this->assertFalse($_rbac, 'read without RBAC: the endpoint is admin-only');
 					return $entity;
 				}
 			);
 		}
 
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (array $object, ...$rest): ObjectEntity {
-				$this->saved[] = ['object' => $object, 'options' => end($rest)];
+			function (array $object, ObjectSaveOptions $options=new ObjectSaveOptions()): ObjectEntity {
+				$this->saved[] = ['object' => $object, 'options' => $options];
 				return new ObjectEntity();
 			}
 		);

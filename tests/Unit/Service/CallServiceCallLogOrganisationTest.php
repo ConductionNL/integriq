@@ -37,6 +37,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The logs pages read call logs with OpenRegister's organisation filter on, so
@@ -78,7 +79,9 @@ class CallServiceCallLogOrganisationTest extends TestCase {
 	private function service(): CallService {
 		$objectService = $this->createMock(originalClassName: ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));

@@ -26,6 +26,7 @@ use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Runs the guard over the real seeded marketplace synchronizations and mappings.
@@ -62,7 +63,9 @@ class RunPrerequisiteGuardTest extends TestCase {
 	private function guard(): RunPrerequisiteGuard {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if (isset($this->seeds[$schema][$id]) === false) {
 					throw new \RuntimeException('Object not found');
 				}

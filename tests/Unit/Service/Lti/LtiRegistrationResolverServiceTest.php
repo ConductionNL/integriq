@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Tests for the `status`-gated registration/deployment lookups.
@@ -82,7 +83,11 @@ class LtiRegistrationResolverServiceTest extends TestCase {
 		);
 
 		$objectService->method('find')->willReturnCallback(
-			function ($id, $_extend = [], $files = false, $register = null, $schema = null, $_rbac = true, $_multitenancy = true) {
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) {
+				$_extend = $options?->extend ?? [];
+				$files = $options?->files ?? false;
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if (isset($this->registrations[$id]) === false) {
 					throw new DoesNotExistException('not found');
 				}

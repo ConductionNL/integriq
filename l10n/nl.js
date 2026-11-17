@@ -824,6 +824,14 @@ OC.L10N.register(
         "Test": "Testen",
         "Test connection": "Verbinding testen",
         "Test mapping": "Mapping testen",
+        "Registration targets": "Registratiedoelen",
+        "Test registration target": "Registratiedoel testen",
+        "The test maps the hand-over and stops before anything is sent or saved.": "De test zet de overdracht om en stopt voordat er iets wordt verstuurd of opgeslagen.",
+        "Hand-over (JSON, leave empty for the sample)": "Overdracht (JSON, leeg laten voor het voorbeeld)",
+        "Mapped body": "Omgezette inhoud",
+        "Refused ({code}): {message}": "Geweigerd ({code}): {message}",
+        "The hand-over must be a JSON object.": "De overdracht moet een JSON-object zijn.",
+        "The test could not be run.": "De test kon niet worden uitgevoerd.",
         "Test mode": "Testmodus",
         "Testing mapping: {name}": "Mapping testen: {name}",
         "The \"%1$s\" field is not accepted: a flow step names a configured Source and a relative endpoint, never a URL, host, scheme or port.": "Het veld \"%1$s\" wordt niet geaccepteerd: een flowstap wijst een geconfigureerde bron en een relatief endpoint aan, nooit een URL, host, schema of poort.",
@@ -2594,7 +2602,13 @@ OC.L10N.register(
         "There are no test cases for this yet.": "Hiervoor zijn nog geen testgevallen.",
         "These fields were redacted when the trace was stored. Replace them with test values, or the case will not pass.": "Deze velden zijn afgeschermd toen de trace werd opgeslagen. Vervang ze door testwaarden, anders slaagt het testgeval niet.",
         "Passed: {count}": "Geslaagd: {count}",
-        "Failed: {count}": "Mislukt: {count}"
+        "Failed: {count}": "Mislukt: {count}",
+        "This service needs a stronger login": "Voor deze dienst is een hoger inlogniveau nodig",
+        "You logged in with %1$s. This service needs at least %2$s.": "Je bent ingelogd met %1$s. Voor deze dienst is minimaal %2$s nodig.",
+        "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.": "Log in met de DigiD app met ID-check, of gebruik een ander DigiD-middel op niveau Substantieel.",
+        "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.": "Log in met een eHerkenningsmiddel op niveau EH3 of hoger. Je eHerkenningsleverancier vertelt je hoe je er een krijgt.",
+        "Log in with a means at eIDAS level substantial or high.": "Log in met een middel op eIDAS-niveau substantial of high.",
+        "Go back": "Terug"
     },
     "nplurals=2; plural=(n != 1);"
 )

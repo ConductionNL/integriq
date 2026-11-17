@@ -163,6 +163,14 @@ OC.L10N.register(
         "Target type": "Target Type",
         "Test": "Test",
         "Test mapping": "Test mapping",
+        "Registration targets": "Registration targets",
+        "Test registration target": "Test registration target",
+        "The test maps the hand-over and stops before anything is sent or saved.": "The test maps the hand-over and stops before anything is sent or saved.",
+        "Hand-over (JSON, leave empty for the sample)": "Hand-over (JSON, leave empty for the sample)",
+        "Mapped body": "Mapped body",
+        "Refused ({code}): {message}": "Refused ({code}): {message}",
+        "The hand-over must be a JSON object.": "The hand-over must be a JSON object.",
+        "The test could not be run.": "The test could not be run.",
         "Test this rule": "Test this rule",
         "Tests the rule as it is drafted against a sample message. Nothing is saved and no case is opened.": "Tests the rule as it is drafted against a sample message. Nothing is saved and no case is opened.",
         "The channels or case types could not be loaded. Reopen the dialog to try again.": "The channels or case types could not be loaded. Reopen the dialog to try again.",
@@ -3863,7 +3871,13 @@ OC.L10N.register(
         "There are no test cases for this yet.": "There are no test cases for this yet.",
         "These fields were redacted when the trace was stored. Replace them with test values, or the case will not pass.": "These fields were redacted when the trace was stored. Replace them with test values, or the case will not pass.",
         "Passed: {count}": "Passed: {count}",
-        "Failed: {count}": "Failed: {count}"
+        "Failed: {count}": "Failed: {count}",
+        "This service needs a stronger login": "This service needs a stronger login",
+        "You logged in with %1$s. This service needs at least %2$s.": "You logged in with %1$s. This service needs at least %2$s.",
+        "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.": "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.",
+        "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.": "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.",
+        "Log in with a means at eIDAS level substantial or high.": "Log in with a means at eIDAS level substantial or high.",
+        "Go back": "Go back"
     },
     "nplurals=2; plural=(n != 1);"
 )

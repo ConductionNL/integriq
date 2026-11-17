@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 
 /**
@@ -84,7 +85,7 @@ class WriteBackConflictReader {
 		}
 
 		try {
-			$object = $this->objectService->find(id: $objectId, register: $register, schema: $schema);
+			$object = $this->objectService->find(id: $objectId, options: new ObjectFindOptions(register: $register, schema: $schema));
 		} catch (\Throwable $e) {
 			return false;
 		}
