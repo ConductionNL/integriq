@@ -51,6 +51,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @spec openspec/specs/endoflife-date-source/spec.md#requirement-a-live-smoke-test-proves-the-preset-against-the-real-public-api
@@ -211,7 +214,10 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 		];
 
 		$orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, ...$rest) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($schema === 'synchronization_contract') {
 					$key = ($uuid ?? ($object['uuid'] ?? 'contract-' . (count($this->contractStore) + 1)));
 					$this->contractStore[$key] = $object;
@@ -237,7 +243,9 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 		// A non-test run buffers its target writes and flushes them through
 		// saveObjects(), so the eol_cycle rows land here.
 		$orObjectService->method('saveObjects')->willReturnCallback(
-			function (array $objects, ?string $register = null, ?string $schema = null, ...$rest): array {
+			function (array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest): array {
+				$register = $options->defaults->register;
+				$schema = $options->defaults->schema;
 				if ($schema === 'eol_cycle') {
 					foreach ($objects as $object) {
 						$key = ($object['uuid'] ?? ($object['@self']['id'] ?? ('eolcycle-' . (count($this->targetStore) + 1))));
@@ -283,6 +291,7 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 
 		$orObjectService->method('find')->willReturnCallback(
 			function (...$args) use ($findPos, $syncPayload, $mappingPayload) {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$id = ($args[$findPos['id']] ?? null);
 				$schema = ($args[$findPos['schema']] ?? null);
 

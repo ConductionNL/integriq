@@ -36,6 +36,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Covers the redelivery match, bijlage edge cases, getRequest() and
@@ -144,7 +146,10 @@ class DsoIngestServiceCoverageTest extends TestCase {
 	 */
 	private function recordSaves(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saves[] = [(array)$object, $schema, $uuid];
 				return $this->entity((array)$object, ($uuid ?? 'verzoek-new'));
 			}
@@ -282,7 +287,11 @@ class DsoIngestServiceCoverageTest extends TestCase {
 	public function testGetRequestReturnsTheBodyWithItsId(): void {
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('verzoek-1', 'integriq', 'dso_verzoek')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => 'verzoek-1',
+					'register' => 'integriq',
+					'schema' => 'dso_verzoek',
+				]))
 			->willReturn($this->entity(['verzoekId' => 'dso-1', 'status' => 'mapped'], 'verzoek-1'));
 
 		$this->assertSame(
@@ -374,7 +383,14 @@ class DsoIngestServiceCoverageTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn(['results' => [$located]]);
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('source-dso', 'integriq', 'source', false, false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => 'source-dso',
+					'register' => 'integriq',
+					'schema' => 'source',
+					'_rbac' => false,
+					'_multitenancy' => false,
+					'_render' => false,
+				]))
 			->willReturn($raw);
 
 		$this->assertSame($raw, $this->buildService()->resolveActiveSourceAsEngine());

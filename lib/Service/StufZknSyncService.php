@@ -56,6 +56,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\StufZknProviderException;
 use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\StufZkn\InboundMessageTranslator;
@@ -345,6 +346,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: background retry of failed StUF messages, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -423,6 +425,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: resolves the active StUF source for a background sync, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -510,7 +513,10 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 
 			$data = $existing->getObject();
 			$data['status'] = 'vervallen';
-			$this->objectService->saveObject(object: $data, register: $register, schema: $schema, uuid: $existing->getUuid());
+			$this->objectService->saveObject(
+				object: $data,
+				options: RegisterSave::options(register: $register, schema: $schema, uuid: $existing->getUuid())
+			);
 			return;
 		}
 
@@ -520,7 +526,10 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 			$uuid = $existing->getUuid();
 		}
 
-		$this->objectService->saveObject(object: $data, register: $register, schema: $schema, uuid: $uuid);
+		$this->objectService->saveObject(
+			object: $data,
+			options: RegisterSave::options(register: $register, schema: $schema, uuid: $uuid)
+		);
 
 	}//end upsertOrObject()
 
@@ -574,6 +583,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: matches an inbound StUF message from a remote system, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -630,9 +640,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $record,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $uuid,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -671,9 +679,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid(),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);

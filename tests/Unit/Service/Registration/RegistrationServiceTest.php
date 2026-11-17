@@ -26,6 +26,7 @@ use OCA\Integriq\Service\Registration\ObjectsApiRegistrationLeg;
 use OCA\Integriq\Service\Registration\RegistrationRefusal;
 use OCA\Integriq\Service\Registration\RegistrationService;
 use OCA\Integriq\Service\Registration\RegistrationStore;
+use OCA\Integriq\Service\Registration\StufZdsRegistrationLeg;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -131,7 +132,7 @@ class RegistrationServiceTest extends TestCase {
 		$this->store->expects($this->once())->method('findRecord')->with('json-milieu', 'portaliq', 'OF-7Q2K')->willReturn(null);
 		$this->mappings->expects($this->once())->method('executeMapping')->with('map-1', self::HANDOVER)->willReturn(['subject' => 'milieu']);
 		$this->json->expects($this->once())->method('register')
-			->with(self::TARGET, ['subject' => 'milieu'], self::HANDOVER, [])
+			->with(self::TARGET, ['subject' => 'milieu'], ['app' => 'portaliq'] + self::HANDOVER, [])
 			->willReturn(['externalReference' => 'ext-9', 'externalUrl' => 'https://x.example/9', 'steps' => [['step' => 'posted']]]);
 
 		$answer = $this->service()->register(app: 'portaliq', target: 'json-milieu', handover: self::HANDOVER);
@@ -142,6 +143,51 @@ class RegistrationServiceTest extends TestCase {
 		$this->assertSame(['json-milieu', 'portaliq', 'OF-7Q2K'], [$this->saved[0][0]['target'], $this->saved[0][0]['app'], $this->saved[0][0]['submissionReference']]);
 		$this->assertSame(['done', 'rec-1', 'ext-9', [['step' => 'posted']]], [$this->saved[1][0]['state'], $this->saved[1][1], $this->saved[1][0]['externalReference'], $this->saved[1][0]['steps']]);
 	}//end testASubmissionIsRegisteredAndRecordedAsDone()
+
+	/**
+	 * A stuf-zds target reaches the stuf-zds leg once it is wired, and its zaak is the reference.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
+	 *
+	 * @return void
+	 */
+	public function testAStufZdsTargetIsRegisteredThroughItsLeg(): void {
+		$target = ['kind' => 'stuf-zds', 'sources' => ['zkn' => 'src-zkn']] + self::TARGET;
+		$this->target($target);
+		$this->store->method('findRecord')->willReturn(null);
+		$this->mappings->method('executeMapping')->willReturn(['omschrijving' => 'Milieu']);
+		$objects = $this->createMock(ObjectsApiRegistrationLeg::class);
+		$objects->method('kind')->willReturn('objects-api');
+		$stuf = $this->createMock(StufZdsRegistrationLeg::class);
+		$stuf->method('kind')->willReturn('stuf-zds');
+		$stuf->expects($this->once())->method('register')
+			->with($target, ['omschrijving' => 'Milieu'], ['app' => 'portaliq'] + self::HANDOVER, [])
+			->willReturn(['externalReference' => '0363-Z-1', 'externalUrl' => '', 'steps' => [['step' => 'zaak', 'reference' => '0363-Z-1']]]);
+		$this->json->expects($this->never())->method('register');
+
+		$service = new RegistrationService($this->store, $this->mappings, $this->json, $objects, $this->createMock(LoggerInterface::class), $stuf);
+		$answer  = $service->register(app: 'portaliq', target: 'json-milieu', handover: self::HANDOVER);
+
+		$this->assertSame(['ok' => true, 'externalReference' => '0363-Z-1', 'externalUrl' => ''], $answer);
+	}//end testAStufZdsTargetIsRegisteredThroughItsLeg()
+
+	/**
+	 * The leg reads files as the app that called, whatever app the hand-over names.
+	 *
+	 * @return void
+	 */
+	public function testTheLegIsHandedTheCallingAppNotTheOneTheHandOverNames(): void {
+		$this->target(self::TARGET);
+		$this->store->method('findRecord')->willReturn(null);
+		$this->mappings->method('executeMapping')->willReturn([]);
+		$this->json->expects($this->once())->method('register')
+			->with(self::TARGET, [], $this->callback(static fn (array $handover): bool => $handover['app'] === 'portaliq'), [])
+			->willReturn(['externalReference' => 'ext-1', 'externalUrl' => '', 'steps' => []]);
+
+		$answer = $this->service()->register(app: 'portaliq', target: 'json-milieu', handover: ['app' => 'other'] + self::HANDOVER);
+
+		$this->assertTrue($answer['ok']);
+	}//end testTheLegIsHandedTheCallingAppNotTheOneTheHandOverNames()
 
 	/**
 	 * The refusals that never reach a leg.
@@ -160,7 +206,7 @@ class RegistrationServiceTest extends TestCase {
 			'pdf as bytes' => ['portaliq', 'json-milieu', self::TARGET, ['pdf' => ['content' => 'JVBERi0=']] + $handover, 'invalid-handover'],
 			'attachment without id' => ['portaliq', 'json-milieu', self::TARGET, ['attachments' => [['fileId' => 0]]] + $handover, 'invalid-handover'],
 			'no mapping' => ['portaliq', 'json-milieu', ['mapping' => ''] + self::TARGET, $handover, 'mapping-failed'],
-			'kind without a leg yet' => ['portaliq', 'json-milieu', ['kind' => 'stuf-zds'] + self::TARGET, $handover, 'source-unavailable'],
+			'kind without a leg yet' => ['portaliq', 'json-milieu', ['kind' => 'zgw'] + self::TARGET, $handover, 'source-unavailable'],
 		];
 	}//end earlyRefusals()
 
@@ -244,4 +290,43 @@ class RegistrationServiceTest extends TestCase {
 		$this->assertSame(['portaliq'], RegistrationService::allowedApps(target: ['allowedApps' => []]));
 		$this->assertSame(['dossiq'], RegistrationService::allowedApps(target: ['allowedApps' => ['dossiq', 7]]));
 	}//end testAllowedAppsDefaultToPortaliq()
+	/**
+	 * A refusal carrying the leg's steps stores them on the failed record, so a repeat resumes after them.
+	 *
+	 * @return void
+	 */
+	public function testARefusalCarryingStepsStoresThemOnTheFailedRecord(): void {
+		$this->target(self::TARGET);
+		$this->mappings->method('executeMapping')->willReturn(['subject' => 'x']);
+		$done = [['step' => 'zaak', 'url' => 'https://zaken.example/z-1', 'reference' => 'ZAAK-1']];
+		$this->json->method('register')->willThrowException(
+			(new RegistrationRefusal(reason: RegistrationRefusal::SOURCE_UNAVAILABLE, retryable: true, message: 'down'))->withSteps($done)
+		);
+
+		$answer = $this->service()->register('portaliq', 'json-milieu', self::HANDOVER);
+
+		$this->assertSame(RegistrationRefusal::SOURCE_UNAVAILABLE, $answer['code']);
+		$failed = end($this->saved)[0];
+		$this->assertSame('failed', $failed['state']);
+		$this->assertSame($done, $failed['steps']);
+	}//end testARefusalCarryingStepsStoresThemOnTheFailedRecord()
+
+	/**
+	 * A refusal without steps keeps the steps the record already had.
+	 *
+	 * @return void
+	 */
+	public function testARefusalWithoutStepsKeepsTheRecordedSteps(): void {
+		$this->target(self::TARGET);
+		$earlier = [['step' => 'post', 'reference' => 'R-1']];
+		$this->store->method('findRecord')->willReturn(['uuid' => 'rec-9', 'data' => ['state' => 'failed', 'steps' => $earlier]]);
+		$this->mappings->method('executeMapping')->willReturn(['subject' => 'x']);
+		$this->json->method('register')->willThrowException(new RegistrationRefusal(reason: RegistrationRefusal::OUTSIDE_REFUSED, retryable: false, message: 'no'));
+
+		$this->service()->register('portaliq', 'json-milieu', self::HANDOVER);
+
+		$failed = end($this->saved);
+		$this->assertSame('rec-9', $failed[1]);
+		$this->assertSame($earlier, $failed[0]['steps']);
+	}//end testARefusalWithoutStepsKeepsTheRecordedSteps()
 }//end class

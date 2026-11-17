@@ -61,6 +61,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the seeded ORI endpoints.
@@ -145,6 +146,7 @@ class OriPublicEndpointsTest extends TestCase {
 		$orObjectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
 		$orObjectService->method('find')->willReturnCallback(
 			function (...$args) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = (string)($args['id'] ?? $args[0]);
 				$schema = (string)($args['schema'] ?? $args[2] ?? '');
 				$object = self::seed(schema: $schema, slug: $id);

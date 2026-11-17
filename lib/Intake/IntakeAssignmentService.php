@@ -33,6 +33,9 @@ use OCA\Integriq\Event\IntakeMessageAssignedEvent;
 use OCA\Integriq\Exception\IntakeChannelException;
 use OCA\Integriq\Exception\IntakeRoutingException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -112,9 +115,13 @@ class IntakeAssignmentService implements IntakeAssignmentServiceInterface {
 
 		$stored = $this->objectService->saveObject(
 			object: $object,
-			register: IntakeRoutingServiceInterface::REGISTER,
-			schema: IntakeRoutingServiceInterface::SCHEMA_MESSAGE,
-			uuid: $messageUuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(
+					register: IntakeRoutingServiceInterface::REGISTER,
+					schema: IntakeRoutingServiceInterface::SCHEMA_MESSAGE
+				),
+				uuid: $messageUuid
+			),
 		);
 
 		$event = new IntakeMessageAssignedEvent(message: $object, caseRef: $caseRef, messageUuid: $messageUuid);
@@ -143,8 +150,10 @@ class IntakeAssignmentService implements IntakeAssignmentServiceInterface {
 		try {
 			$stored = $this->objectService->find(
 				id: $messageUuid,
-				register: IntakeRoutingServiceInterface::REGISTER,
-				schema: IntakeRoutingServiceInterface::SCHEMA_MESSAGE,
+				options: new ObjectFindOptions(
+					register: IntakeRoutingServiceInterface::REGISTER,
+					schema: IntakeRoutingServiceInterface::SCHEMA_MESSAGE
+				),
 			);
 		} catch (DoesNotExistException) {
 			throw new IntakeChannelException(message: 'No inbound message "' . $messageUuid . '".');

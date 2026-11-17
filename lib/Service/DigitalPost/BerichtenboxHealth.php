@@ -113,7 +113,7 @@ class BerichtenboxHealth implements BerichtenboxHealthInterface {
 	}//end sources()
 
 	/**
-	 * The integriq sources, read without RBAC or multitenancy, or none when the read fails.
+	 * The integriq sources of the whole instance, read without RBAC or multitenancy, or none when the read fails.
 	 *
 	 * @return array<mixed>
 	 *
@@ -121,6 +121,7 @@ class BerichtenboxHealth implements BerichtenboxHealthInterface {
 	 */
 	private function sourceRows(): array {
 		try {
+			// Unscoped: a setup check runs as the system and reviews every Berichtenbox source of the instance.
 			$result = $this->objectService->findAll(
 				config: ['filters' => ['register' => ConnectionStore::REGISTER, 'schema' => 'source']],
 				_rbac: false,

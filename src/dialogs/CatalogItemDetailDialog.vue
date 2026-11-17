@@ -67,6 +67,12 @@
 					{{ t('integriq', 'Close') }}
 				</NcButton>
 				<NcButton
+					v-if="offersPublicationRoute"
+					data-testid="catalog-detail-route-to-publications"
+					@click="openPublicationRoute">
+					{{ t('integriq', 'Route to publications') }}
+				</NcButton>
+				<NcButton
 					v-if="showPrimaryAction"
 					variant="primary"
 					:disabled="actionRunning || statusLoading"
@@ -81,8 +87,10 @@
 
 <script>
 import { NcButton, NcDialog, NcNoteCard } from '@nextcloud/vue'
+import { EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, modalBus } from '../handlers/modalBus.js'
 import closableDialog from '../mixins/closableDialog.js'
 import { useCatalogStore } from '../store/catalog.js'
+import { offersPublicationRoute } from './sharePointSetup.js'
 
 /**
  * What the primary action did, in words.
@@ -154,6 +162,16 @@ export default {
 		 */
 		catalogItem() {
 			return this.item || {}
+		},
+
+		/**
+		 * Whether this card offers "Route to publications" (the SharePoint card).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 */
+		offersPublicationRoute() {
+			return offersPublicationRoute(this.catalogItem)
 		},
 
 		/**
@@ -301,6 +319,17 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Close this dialog and open the SharePoint to publication setup.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 */
+		openPublicationRoute() {
+			this.close()
+			modalBus.emit(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP)
+		},
+
 		/**
 		 * Live status re-check on dialog open (REQ-002: never offer an
 		 * action from a stale materialised card).

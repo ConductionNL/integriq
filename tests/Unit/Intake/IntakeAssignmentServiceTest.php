@@ -29,6 +29,8 @@ use OCA\Integriq\Exception\IntakeChannelException;
 use OCA\Integriq\Exception\IntakeRoutingException;
 use OCA\Integriq\Intake\IntakeAssignmentService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -227,11 +229,15 @@ class IntakeAssignmentServiceTest extends TestCase {
 	private function storeHolding(array $object): MockObject {
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->method('find')
-			->with(self::UUID, 'integriq', 'intake_message')
+			->with(
+				self::UUID,
+				$this->callback(static fn (?ObjectFindOptions $options): bool => [$options?->register, $options?->schema] === ['integriq', 'intake_message'])
+			)
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, $object, self::UUID));
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?string $register=null, ?string $schema=null, ?string $uuid=null) {
-				$this->assertSame(['integriq', 'intake_message'], [$register, $schema]);
+			function (array $object, ObjectSaveOptions $options=new ObjectSaveOptions()) {
+				$this->assertSame(['integriq', 'intake_message'], [$options->target->register, $options->target->schema]);
+				$uuid = $options->uuid;
 				$this->saved[] = ['object' => $object, 'uuid' => $uuid];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}

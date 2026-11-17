@@ -28,7 +28,9 @@ namespace OCA\Integriq\Service\DocumentGeneration;
 use DateTime;
 use OCA\Integriq\Event\DocumentRenderedEvent;
 use OCA\Integriq\Exception\DocumentGenerationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -115,8 +117,7 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 				'lastError' => '',
 				'attempts' => [],
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_JOB
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_JOB)
 		);
 
 		return $this->apply(
@@ -342,9 +343,7 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_JOB,
-			uuid: $job->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_JOB, uuid: $job->getUuid())
 		);
 
 		if ($outcome->isTerminal() === true) {
@@ -379,8 +378,7 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 
 		$source = $this->objectService->find(
 			id: $sourceId,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SOURCE
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SOURCE)
 		);
 
 		if ($source === null) {

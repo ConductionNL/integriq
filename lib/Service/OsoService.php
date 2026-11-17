@@ -37,6 +37,7 @@ use OCA\Integriq\Event\OsoAcknowledgementReceivedEvent;
 use OCA\Integriq\Event\OsoDossierReceivedEvent;
 use OCA\Integriq\Exception\OsoProviderException;
 use OCA\Integriq\Exception\OsoTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Oso\OsoAcknowledgementTranslator;
 use OCA\Integriq\Service\Oso\OsoExportEnvelopeTranslator;
 use OCA\Integriq\Service\Oso\OsoImportTranslator;
@@ -156,8 +157,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($status === 'failed') {
@@ -202,8 +202,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => null,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$this->eventDispatcher->dispatchTyped(
@@ -254,8 +253,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => null,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$this->eventDispatcher->dispatchTyped(
@@ -337,9 +335,7 @@ class OsoService implements OsoServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 	}//end retryOne()

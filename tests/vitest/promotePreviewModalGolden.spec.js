@@ -46,6 +46,7 @@ vi.mock('@nextcloud/vue', async () => {
 		]),
 		NcLoadingIcon: stub('NcLoadingIcon', ['size']),
 		NcNoteCard: stub('NcNoteCard', ['type']),
+		NcCheckboxRadioSwitch: stub('NcCheckboxRadioSwitch', ['modelValue']),
 	}
 })
 
@@ -138,6 +139,7 @@ describe('initial state', () => {
 			confirming: false,
 			preview: null,
 			credentialBindings: {},
+			overrideFailingTests: false,
 			errorMessage: '',
 		})
 	})
@@ -272,6 +274,7 @@ describe('the preview', () => {
 			updates: [],
 			collisions: [],
 			credentialRefsNeedingRebind: [],
+			failingTestCases: [],
 		})
 		expect(wrapper.vm.step).toBe('preview')
 		expect(wrapper.vm.previewing).toBe(false)
@@ -285,6 +288,7 @@ describe('the preview', () => {
 			updates: [2],
 			collisions: [3],
 			credentialRefsNeedingRebind: [4],
+			failingTestCases: [5],
 		}
 		post.mockResolvedValue({ data })
 		await wrapper.vm.runPreview()
@@ -404,5 +408,22 @@ describe('the confirmation', () => {
 		expect(wrapper.vm.step).toBe('select')
 		expect(wrapper.vm.preview).toBeNull()
 		expect(wrapper.vm.buildCredentialBindings()).toEqual([])
+	})
+})
+
+describe('failing test cases (REQ-IRT-005)', () => {
+	it('hold the confirm back until the override is ticked, and the override is sent', async () => {
+		answerGets({ [CONFIG_URL]: CONFIG_ROWS, [ENV_URL]: ENV_ROWS })
+		const wrapper = await openModal()
+		wrapper.vm.onSelectConfig({ id: 'u-1', label: 'Title one' })
+		wrapper.vm.onSelectEnvironment({ id: 'acc', label: 'Acceptance' })
+		post.mockResolvedValue({ data: { creates: [], failingTestCases: [{ caseId: 'c-1', caseName: 'Vacature', subjectType: 'mapping', subjectId: 'm' }] } })
+		await wrapper.vm.runPreview()
+
+		expect(wrapper.vm.testsBlockConfirm).toBe(true)
+		expect(wrapper.vm.confirmedRequest()).not.toHaveProperty('overrideFailingTests')
+		wrapper.vm.overrideFailingTests = true
+		expect(wrapper.vm.testsBlockConfirm).toBe(false)
+		expect(wrapper.vm.confirmedRequest()).toMatchObject({ confirmed: true, overrideFailingTests: true })
 	})
 })
