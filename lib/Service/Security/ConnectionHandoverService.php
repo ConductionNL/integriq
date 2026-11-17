@@ -372,19 +372,29 @@ class ConnectionHandoverService {
 	private function mintAndVerify(object $broker, array $mint): ?string {
 		try {
 			$credentialId = self::mintCredential(broker: $broker, mint: $mint);
-			if ($credentialId === '') {
-				$this->logFailure(step: 'mint-no-uuid', part: $mint['part'], e: null);
-				return null;
-			}
+		} catch (Throwable $e) {
+			$this->logFailure(step: 'mint', part: $mint['part'], e: $e);
+			return null;
+		}
 
+		if ($credentialId === '') {
+			$this->logFailure(step: 'mint-no-uuid', part: $mint['part'], e: null);
+			return null;
+		}
+
+		try {
 			$verified = $broker->resolveInjectable($credentialId, InlineSecretMigrationExecutor::APP_ID, null, $mint['organisation']);
 		} catch (Throwable $e) {
-			$this->logFailure(step: 'mint-or-verify', part: $mint['part'], e: $e);
+			// The credential exists but cannot be resolved back: remove it, so
+			// none stays behind in keepiq unreferenced.
+			$this->logFailure(step: 'verify', part: $mint['part'], e: $e);
+			$this->revokeCredential(credentialId: $credentialId, part: $mint['part']);
 			return null;
 		}
 
 		if (self::isSameSecret(secret: $mint['secret'], verified: $verified) === false) {
 			$this->logFailure(step: 'verify-mismatch', part: $mint['part'], e: null);
+			$this->revokeCredential(credentialId: $credentialId, part: $mint['part']);
 			return null;
 		}
 
@@ -546,21 +556,38 @@ class ConnectionHandoverService {
 				continue;
 			}
 
-			try {
-				$this->objectService->deleteObject(
-					deletion: new ObjectDeletion(
-						uuid: $credentialId,
-						target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
-					),
-					_rbac: false,
-					_multitenancy: false
-				);
-			} catch (Throwable $e) {
-				$this->logFailure(step: 'revoke', part: $part, e: $e);
-			}
+			$this->revokeCredential(credentialId: $credentialId, part: $part);
 		}
 
 	}//end revokeMinted()
+
+	/**
+	 * Remove one credential minted for a part that was not taken over.
+	 *
+	 * Best effort: a removal that fails is logged without any secret.
+	 *
+	 * @param string $credentialId The credential id.
+	 * @param string $part         The part name, for the secret-free log.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private function revokeCredential(string $credentialId, string $part): void {
+		try {
+			$this->objectService->deleteObject(
+				deletion: new ObjectDeletion(
+					uuid: $credentialId,
+					target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+				),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			$this->logFailure(step: 'revoke', part: $part, e: $e);
+		}
+
+	}//end revokeCredential()
 
 	/**
 	 * The source with the given slug, read raw so secrets already set are visible.

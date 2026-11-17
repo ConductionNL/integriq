@@ -69,6 +69,13 @@ class HandoverBrokerDouble {
 	public bool $mintThrows = false;
 
 	/**
+	 * Whether resolveInjectable throws.
+	 *
+	 * @var bool
+	 */
+	public bool $resolveThrows = false;
+
+	/**
 	 * Mint a credential.
 	 *
 	 * @param string      $name         The name.
@@ -127,6 +134,10 @@ class HandoverBrokerDouble {
 		?string $actingUserId = null,
 		?string $actingOrganisationId = null,
 	): ?string {
+		if ($this->resolveThrows === true) {
+			throw new RuntimeException('resolve refused');
+		}
+
 		if (in_array($credentialId, $this->corrupt, true) === true) {
 			return 'something else';
 		}
@@ -478,8 +489,34 @@ class ConnectionHandoverServiceTest extends TestCase {
 		self::assertSame(['clientSecret' => 'failed', 'certificate' => 'taken'], $answer);
 		self::assertSame('', $this->stored()['configuration']['authentication']['client_secret']);
 		self::assertSame(['credentialRef' => ['credentialId' => 'cred-2']], $this->stored()['configuration']['cert']);
+		self::assertSame(
+			expected: [['uuid' => 'cred-1', 'register' => 'credential-broker', 'schema' => 'brokeredcredential']],
+			actual: $this->objects->deletions,
+			message: 'The credential that did not verify is removed again; the verified one stays.'
+		);
 
 	}//end testAVerifyMismatchFailsOnlyThatPart()
+
+	/**
+	 * A credential that cannot be resolved back after its mint is removed and the part fails.
+	 *
+	 * @return void
+	 */
+	public function testAVerifyThatThrowsRemovesTheMintedCredential(): void {
+		$this->seedEmptySource();
+		$this->broker->resolveThrows = true;
+
+		$answer = $this->service()->takeOver(sourceSlug: 'brp-haalcentraal', settings: ['clientSecret' => 'abc']);
+
+		self::assertSame(expected: ['clientSecret' => 'failed'], actual: $answer);
+		self::assertCount(expectedCount: 1, haystack: $this->broker->mints);
+		self::assertSame(
+			expected: [['uuid' => 'cred-1', 'register' => 'credential-broker', 'schema' => 'brokeredcredential']],
+			actual: $this->objects->deletions
+		);
+		self::assertSame(expected: [], actual: $this->objects->saves);
+
+	}//end testAVerifyThatThrowsRemovesTheMintedCredential()
 
 	/**
 	 * A mint the broker refuses fails the part.
@@ -494,6 +531,7 @@ class ConnectionHandoverServiceTest extends TestCase {
 
 		self::assertSame(['privateKey' => 'failed'], $answer);
 		self::assertSame([], $this->objects->saves);
+		self::assertSame(expected: [], actual: $this->objects->deletions, message: 'Nothing was minted, so nothing is removed.');
 
 	}//end testARefusedMintFailsThePart()
 
