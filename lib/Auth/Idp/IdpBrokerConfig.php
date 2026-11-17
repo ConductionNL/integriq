@@ -40,13 +40,6 @@ use OCP\IAppConfig;
 class IdpBrokerConfig implements IdpBrokerConfigInterface {
 
 	/**
-	 * The app id these settings live under.
-	 *
-	 * @var string
-	 */
-	public const APP_ID = 'integriq';
-
-	/**
 	 * The feature flag key.
 	 *
 	 * @var string
@@ -66,28 +59,6 @@ class IdpBrokerConfig implements IdpBrokerConfigInterface {
 	 * @var string
 	 */
 	public const KEY_CONSUMERS = 'idp_broker_consumers';
-
-	/**
-	 * The per-organisation pseudonym salts, as a JSON map.
-	 *
-	 * @var string
-	 */
-	public const KEY_SALTS = 'idp_broker_salts';
-
-	/**
-	 * The per-provider assurance-level aliases, as a JSON map.
-	 *
-	 * @var string
-	 */
-	public const KEY_TRUST_ALIASES = 'idp_broker_trust_aliases';
-
-	/**
-	 * The per-provider Service Provider or Relying Party EntityID an
-	 * assertion must name as its audience, as a JSON map.
-	 *
-	 * @var string
-	 */
-	public const KEY_ENTITY_IDS = 'idp_broker_entity_ids';
 
 	/**
 	 * Constructor.

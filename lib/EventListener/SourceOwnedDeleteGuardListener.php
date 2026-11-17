@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use InvalidArgumentException;
-use OCA\Integriq\Service\ListenerSchemaResolver;
+use OCA\Integriq\Service\ListenerSchemaResolverInterface;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\OwnershipReadFailed;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
@@ -70,15 +70,15 @@ class SourceOwnedDeleteGuardListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param RecordOwnershipServiceInterface $ownership Answers who owns the record.
-	 * @param LocalDeleteGuardInterface $guard Decides, and words the refusal.
-	 * @param LoggerInterface $logger Names a guard that failed.
-	 * @param ListenerSchemaResolver $schemas Tells integriq's own register apart.
+	 * @param LocalDeleteGuardInterface       $guard     Decides, and words the refusal.
+	 * @param LoggerInterface                 $logger    Names a guard that failed.
+	 * @param ListenerSchemaResolverInterface $schemas   Tells integriq's own register apart.
 	 */
 	public function __construct(
 		private readonly RecordOwnershipServiceInterface $ownership,
 		private readonly LocalDeleteGuardInterface $guard,
 		private readonly LoggerInterface $logger,
-		private readonly ListenerSchemaResolver $schemas,
+		private readonly ListenerSchemaResolverInterface $schemas,
 	) {
 
 	}//end __construct()

@@ -16,6 +16,7 @@
 			<OpenFormulierenConnectionSettings />
 			<WebhookConnectionsSettings />
 			<DigitalPostAccountSettings />
+			<IdpRegistrationSettings />
 			<BerichtenboxSettings />
 			<ExpressionSourceSettings />
 			<MappingLookupSettings />
@@ -35,6 +36,7 @@ import DigitalPostAccountSettings from './DigitalPostAccountSettings.vue'
 import DsoActivityMappingSettings from './DsoActivityMappingSettings.vue'
 import DsoPkiSettings from './DsoPkiSettings.vue'
 import ExpressionSourceSettings from './ExpressionSourceSettings.vue'
+import IdpRegistrationSettings from './IdpRegistrationSettings.vue'
 import MappingLookupSettings from './MappingLookupSettings.vue'
 import OpenFormulierenConnectionSettings from './OpenFormulierenConnectionSettings.vue'
 import OtelSettings from './OtelSettings.vue'
@@ -66,6 +68,7 @@ import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
  * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
  * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-on-the-admin-settings-page-req-dso-012
+ * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-beheer-authenticatie-configures-the-registrations-req-idpc-008
  */
 export default {
 	name: 'AdminSettings',
@@ -79,6 +82,7 @@ export default {
 		DsoActivityMappingSettings,
 		DsoPkiSettings,
 		ExpressionSourceSettings,
+		IdpRegistrationSettings,
 		MappingLookupSettings,
 		OpenFormulierenConnectionSettings,
 		OtelSettings,
