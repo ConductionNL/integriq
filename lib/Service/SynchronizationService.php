@@ -65,6 +65,8 @@ use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Service\Synchronization\SourceItemRequest;
 use OCA\Integriq\Service\Synchronization\TargetWrite;
 use OCA\Integriq\Service\Synchronization\DeletionRun;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DatabaseSourceException;
+use OCA\Integriq\Service\Adapter\DataInfra\DatabaseAdapter;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Ownership\DisappearanceApplier;
@@ -7061,7 +7063,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		?array $synchronization = null,
 	): array {
 		// Normalise null to the same [] the parameter already defaults to. The
-		// `database` (a @todo no-op) and `nextcloud-table` branches never write
+		// `database` and `nextcloud-table` branches never write
 		// $targetObject back, so without this a null passed IN came straight
 		// back OUT — which is what made the @param-out below untrue for those
 		// two paths.
@@ -7114,7 +7116,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				);
 				break;
 			case 'database':
-				// @todo: implement.
+				$synchronizationContract = $this->updateTargetDatabase(
+					synchronizationContract: $synchronizationContract,
+					synchronization: $synchronization,
+					targetObject: $targetObject,
+					action: $action
+				);
 				break;
 			case 'nextcloud-table':
 				$synchronizationContract = $this->updateTargetTable(
@@ -7280,7 +7287,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				);
 				break;
 			case 'database':
-				// @todo: implement
+				$objects = $this->getAllObjectsFromDatabase(
+					synchronization: $synchronization,
+					isTest: $isTest,
+					fetchInfo: $fetchInfo,
+					resolvedSource: $resolvedSource
+				);
 				break;
 			case 'nextcloud-table':
 				$objects = $this->getAllObjectsFromTable(synchronization: $synchronization, isTest: $isTest);
@@ -7292,6 +7304,178 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return $objects;
 	}//end getAllObjectsFromSource()
+
+	/**
+	 * Reads every row of a `database` source's declared read statement, page by page.
+	 *
+	 * `sourceConfig.statement` names the read statement, `sourceConfig.parameters`
+	 * holds its values and `sourceConfig.pageSize` its page size. Pages are read
+	 * on the statement's key until a page is shorter than the page size, and the
+	 * rows go to the existing mapping unchanged. A test run returns the first row.
+	 * A failure on the first page fails the run; a failure later returns what was
+	 * read and marks the fetch incomplete, so no deletion follows from it.
+	 *
+	 * @param array      $synchronization The synchronization.
+	 * @param bool|null  $isTest          Whether this is a test run.
+	 * @param array|null $fetchInfo       By-reference fetch completeness, as for the api branch.
+	 * @param array|null $resolvedSource  A source resolved by the caller, used as is.
+	 *
+	 * @return array The rows.
+	 *
+	 * @throws Exception When the synchronization names no statement or the first page fails.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-synchronization-reads-from-a-database-page-by-page-req-dbsf-002
+	 */
+	public function getAllObjectsFromDatabase(
+		array $synchronization,
+		?bool $isTest = false,
+		?array &$fetchInfo = null,
+		?array $resolvedSource = null,
+	): array {
+		$fetchInfo = ['complete' => true, 'pagesFetched' => 0, 'failureReason' => null];
+
+		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
+		$statement = trim((string) ($sourceConfig['statement'] ?? ''));
+		if ($statement === '') {
+			throw new Exception('A database synchronization needs sourceConfig.statement, the read statement to run.');
+		}
+
+		$parameters = ($sourceConfig['parameters'] ?? []);
+		if (is_array($parameters) === false) {
+			$parameters = [];
+		}
+
+		$pageSize = null;
+		if (isset($sourceConfig['pageSize']) === true && filter_var($sourceConfig['pageSize'], FILTER_VALIDATE_INT) !== false) {
+			$pageSize = (int) $sourceConfig['pageSize'];
+		}
+
+		$source = $resolvedSource;
+		if ($source === null) {
+			$source = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['sourceId'] ?? null))->getObject();
+		}
+
+		$adapter = $this->databaseAdapter();
+		$rows = [];
+		$after = null;
+		do {
+			try {
+				$page = $adapter->read(source: $source, statement: $statement, parameters: $parameters, after: $after, limit: $pageSize);
+			} catch (DatabaseSourceException $exception) {
+				if ($fetchInfo['pagesFetched'] === 0) {
+					throw new Exception('The database source could not be read: ' . $exception->getMessage(), 0, $exception);
+				}
+
+				$fetchInfo['complete'] = false;
+				$fetchInfo['failureReason'] = $exception->getMessage();
+
+				return $rows;
+			}
+
+			$fetchInfo['pagesFetched']++;
+			array_push($rows, ...$page['rows']);
+
+			if ($isTest === true) {
+				return array_slice($rows, 0, 1);
+			}
+
+			if ($page['next'] !== null && $page['next'] === $after) {
+				$fetchInfo['complete'] = false;
+				$fetchInfo['failureReason'] = 'The page key did not advance; reading stopped.';
+
+				return $rows;
+			}
+
+			$after = $page['next'];
+		} while ($after !== null);
+
+		return $rows;
+	}//end getAllObjectsFromDatabase()
+
+	/**
+	 * Writes one object to a `database` target through its declared write statement.
+	 *
+	 * `targetConfig.statement` names the write statement for a save and
+	 * `targetConfig.deleteStatement` the one for a delete; without it a delete
+	 * only clears the contract. The mapped object's fields are the values, plus
+	 * `targetId`, the id this contract already holds; values the statement does
+	 * not declare are never bound. `targetConfig.idField` (default `id`) names
+	 * the field whose value becomes the contract's target id.
+	 *
+	 * @param array      $synchronizationContract The contract.
+	 * @param array      $synchronization         The synchronization.
+	 * @param array|null $targetObject            The mapped object.
+	 * @param string|null $action                 save or delete.
+	 *
+	 * @return array The contract.
+	 *
+	 * @throws Exception When the synchronization names no write statement or the database fails the write.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 */
+	private function updateTargetDatabase(
+		array $synchronizationContract,
+		array $synchronization,
+		?array $targetObject = [],
+		?string $action = 'save',
+	): array {
+		$targetConfig = ($synchronization['targetConfig'] ?? []);
+		$targetId = ($synchronizationContract['targetId'] ?? null);
+
+		$statement = trim((string) ($targetConfig['statement'] ?? ''));
+		if ($action === 'delete') {
+			$statement = trim((string) ($targetConfig['deleteStatement'] ?? ''));
+		}
+
+		if ($statement === '' && $action === 'delete') {
+			$synchronizationContract['targetId'] = null;
+			$synchronizationContract['targetHash'] = null;
+
+			return $synchronizationContract;
+		}
+
+		if ($statement === '') {
+			throw new Exception('A database target needs targetConfig.statement, the write statement to run.');
+		}
+
+		$mappedObject = [];
+		if (is_array($targetObject) === true) {
+			$mappedObject = $targetObject;
+		}
+
+		$target = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['targetId'] ?? null))->getObject();
+
+		try {
+			$this->databaseAdapter()->write(source: $target, statement: $statement, parameters: array_merge($mappedObject, ['targetId' => $targetId]));
+		} catch (DatabaseSourceException $exception) {
+			throw new Exception('The database target could not be written: ' . $exception->getMessage(), 0, $exception);
+		}
+
+		if ($action === 'delete') {
+			$synchronizationContract['targetId'] = null;
+			$synchronizationContract['targetHash'] = null;
+
+			return $synchronizationContract;
+		}
+
+		$idField = (string) ($targetConfig['idField'] ?? 'id');
+		if (isset($mappedObject[$idField]) === true && is_scalar($mappedObject[$idField]) === true) {
+			$synchronizationContract['targetId'] = (string) $mappedObject[$idField];
+		}
+
+		$synchronizationContract['targetHash'] = md5(serialize($mappedObject));
+
+		return $synchronizationContract;
+	}//end updateTargetDatabase()
+
+	/**
+	 * The database adapter, resolved when a database synchronization first needs it.
+	 *
+	 * @return DatabaseAdapter
+	 */
+	private function databaseAdapter(): DatabaseAdapter {
+		return $this->containerInterface->get(DatabaseAdapter::class);
+	}//end databaseAdapter()
 
 	/**
 	 * Fetches all rows from a `nextcloud-table` source for a given synchronization.

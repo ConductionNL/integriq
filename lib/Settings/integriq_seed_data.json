@@ -125,6 +125,38 @@
           "MOCK-PAY-3": "authorized"
         }
       }
+    },
+    {
+      "@self": {
+        "register": "integriq",
+        "schema": "source",
+        "slug": "example-postgres"
+      },
+      "name": "Example PostgreSQL database",
+      "description": "Dormant example of a database source (sources-database-adapter): a back-office PostgreSQL database read through the declared statement zaken-sinds. Set the host, the database name, a read-only account and its password as a credential reference before enabling.",
+      "type": "database",
+      "location": "",
+      "isEnabled": false,
+      "version": "1.0.0",
+      "database": {
+        "driver": "pdo_pgsql",
+        "host": "db.example.nl",
+        "port": 5432,
+        "dbname": "zaken",
+        "user": "integriq_read",
+        "timeout": 30
+      },
+      "statements": [
+        {
+          "name": "zaken-sinds",
+          "kind": "read",
+          "sql": "SELECT id, zaaknummer, omschrijving FROM zaken WHERE id > :after ORDER BY id LIMIT :limit",
+          "parameters": [],
+          "pageKey": "id",
+          "pageStart": 0,
+          "pageSize": 500
+        }
+      ]
     }
   ],
   "consumer": [

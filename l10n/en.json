@@ -2904,6 +2904,7 @@
         "Why this rejection was waived. Required when an exchange rejection is discarded.": "Why this rejection was waived. Required when an exchange rejection is discarded.",
         "Run a data exchange": "Run a data exchange",
         "S3-compatible storage with an API key (not AWS S3)": "S3-compatible storage with an API key (not AWS S3)",
+        "Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)": "Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)",
         "Body, as JSON": "Body, as JSON",
         "Call actions": "Call actions",
         "Dry run": "Dry run",

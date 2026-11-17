@@ -9298,6 +9298,121 @@
                 }
             }
         },
+        "/sources/{id}/database/schema": {
+            "get": {
+                "operationId": "database_source-schema",
+                "summary": "The tables and views of a database source, with their columns",
+                "description": "The tables and views of a database source's database, with their columns. Administrators only.",
+                "tags": [
+                    "database_source"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{tables[], durationMs}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/sources/{id}/database/statements/{name}/test": {
+            "post": {
+                "operationId": "database_source-test_statement",
+                "summary": "Run a declared read statement once and show its first page",
+                "description": "Runs a read statement the source declares, with `parameters` from the body, and answers its first page (at most 50 rows) and how long it took. A write statement is never run here. Administrators only.",
+                "tags": [
+                    "database_source"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "parameters": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`{statement, rows[], rowCount, more, durationMs}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "required": true,
+                        "description": "The statement's name.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/sources/{id}/run-summary": {
             "get": {
                 "operationId": "run-summary-show",

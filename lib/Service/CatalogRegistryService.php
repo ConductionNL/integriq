@@ -345,6 +345,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'sharepoint-online' => 'Document / CMS',
 		'microsoft-365' => 'SaaS productivity',
 		'data-infra-s3' => 'Data infrastructure',
+		'data-infra-database' => 'Data infrastructure',
 	];
 
 	/**

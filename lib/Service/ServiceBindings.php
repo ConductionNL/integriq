@@ -27,6 +27,9 @@ namespace OCA\Integriq\Service;
 
 use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
 use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DatabaseConnectionFactoryInterface;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DbalDatabaseConnectionFactory;
+use OCA\Integriq\Service\Adapter\DataInfra\DatabaseAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\Integriq\Service\Format\ArrayToXml;
 use OCA\Integriq\Service\Format\XmlEncoderInterface;
@@ -328,6 +331,7 @@ final class ServiceBindings {
 		BerichtenboxSourceSettingsInterface::class => BerichtenboxSourceSettings::class,
 		ConnectionMonitorServiceInterface::class => ConnectionMonitorService::class,
 		TablesSyncAdapterInterface::class => TablesSyncAdapter::class,
+		DatabaseConnectionFactoryInterface::class => DbalDatabaseConnectionFactory::class,
 	];
 
 	/**
@@ -481,6 +485,8 @@ final class ServiceBindings {
 	 *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
 	 *     proving the `AbstractCategoryAdapterProvider` registration pattern
 	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
+	 *   - DatabaseAdapter — the relational database data-infra adapter
+	 *     (sources-database-adapter).
 	 *   - IntuneAdapter, JamfProAdapter, CitrixDaasAdapter — the endpoint-workspace
 	 *     adapters of connectors-endpoint-workspace-adapters (REQ-EWC-008).
 	 *
@@ -511,6 +517,7 @@ final class ServiceBindings {
 			$registry->addProvider($container->get(SharePointOnlineAdapter::class));
 			$registry->addProvider($container->get(Microsoft365Adapter::class));
 			$registry->addProvider($container->get(S3Adapter::class));
+			$registry->addProvider($container->get(DatabaseAdapter::class));
 		} catch (\Throwable $e) {
 			// Don't crash boot — log and continue. The provider just won't appear
 			// in object sidebars on this instance until the registry resolves.

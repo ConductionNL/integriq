@@ -348,6 +348,8 @@ use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
 use OCA\Integriq\Service\Tables\TablesSyncAdapterInterface;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DatabaseConnectionFactoryInterface;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DbalDatabaseConnectionFactory;
 use OCA\Integriq\Service\UserService;
 use OCA\Integriq\Service\UserServiceInterface;
 use OCA\Integriq\Service\UwlrEduVService;
@@ -438,6 +440,7 @@ class ServiceRegistrarTest extends TestCase {
 		BerichtenboxSourceSettingsInterface::class => BerichtenboxSourceSettings::class,
 		ConnectionMonitorServiceInterface::class => ConnectionMonitorService::class,
 		TablesSyncAdapterInterface::class => TablesSyncAdapter::class,
+		DatabaseConnectionFactoryInterface::class => DbalDatabaseConnectionFactory::class,
 		StufZdsConfirmationReceiverInterface::class => StufZdsConfirmationReceiver::class,
 		FscCallServiceInterface::class => FscCallService::class,
 		ConnectionStoreInterface::class => ConnectionStore::class,

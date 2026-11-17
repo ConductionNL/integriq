@@ -4009,7 +4009,26 @@ OC.L10N.register(
         "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.": "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.",
         "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.": "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.",
         "Log in with a means at eIDAS level substantial or high.": "Log in with a means at eIDAS level substantial or high.",
-        "Go back": "Go back"
+        "Go back": "Go back",
+        "Database connection": "Database connection",
+        "Database {dbname} on {host} as {user}": "Database {dbname} on {host} as {user}",
+        "No database host and name are set yet.": "No database host and name are set yet.",
+        "This source declares write statements. Its account needs only the rights those statements use.": "This source declares write statements. Its account needs only the rights those statements use.",
+        "This source only reads. Connect with a read-only account.": "This source only reads. Connect with a read-only account.",
+        "Declared statements": "Declared statements",
+        "No statements are declared. Integriq runs only the statements you declare on the source.": "No statements are declared. Integriq runs only the statements you declare on the source.",
+        "Read statement": "Read statement",
+        "Write statement": "Write statement",
+        "Test the statement": "Test the statement",
+        "Rows on the first page: {count}, in {duration} ms. More rows follow.": "Rows on the first page: {count}, in {duration} ms. More rows follow.",
+        "Rows on the first page: {count}, in {duration} ms.": "Rows on the first page: {count}, in {duration} ms.",
+        "Tables and columns": "Tables and columns",
+        "Show tables and columns": "Show tables and columns",
+        "The database has no tables or views this account can see.": "The database has no tables or views this account can see.",
+        "Database view": "Database view",
+        "no account": "no account",
+        "The statement could not be run.": "The statement could not be run.",
+        "The tables and columns could not be read.": "The tables and columns could not be read."
     },
     "nplurals=2; plural=(n != 1);"
 )

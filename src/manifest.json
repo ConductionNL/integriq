@@ -1457,6 +1457,12 @@
             "colSpan": 12
           },
           {
+            "id": "src-database",
+            "component": "DatabaseSourcePanel",
+            "placement": "after-data",
+            "colSpan": 12
+          },
+          {
             "id": "src-document-generation",
             "component": "DocumentGenerationSourcePanel",
             "placement": "after-data",

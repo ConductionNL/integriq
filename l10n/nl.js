@@ -2659,7 +2659,26 @@ OC.L10N.register(
         "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.": "Log in met de DigiD app met ID-check, of gebruik een ander DigiD-middel op niveau Substantieel.",
         "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.": "Log in met een eHerkenningsmiddel op niveau EH3 of hoger. Je eHerkenningsleverancier vertelt je hoe je er een krijgt.",
         "Log in with a means at eIDAS level substantial or high.": "Log in met een middel op eIDAS-niveau substantial of high.",
-        "Go back": "Terug"
+        "Go back": "Terug",
+        "Database connection": "Databaseverbinding",
+        "Database {dbname} on {host} as {user}": "Database {dbname} op {host} als {user}",
+        "No database host and name are set yet.": "Er zijn nog geen databaseserver en databasenaam ingesteld.",
+        "This source declares write statements. Its account needs only the rights those statements use.": "Deze bron declareert schrijf-statements. Het account heeft alleen de rechten nodig die deze statements gebruiken.",
+        "This source only reads. Connect with a read-only account.": "Deze bron leest alleen. Maak verbinding met een account dat alleen mag lezen.",
+        "Declared statements": "Gedeclareerde statements",
+        "No statements are declared. Integriq runs only the statements you declare on the source.": "Er zijn geen statements gedeclareerd. Integriq voert alleen de statements uit die u bij de bron declareert.",
+        "Read statement": "Lees-statement",
+        "Write statement": "Schrijf-statement",
+        "Test the statement": "Statement testen",
+        "Rows on the first page: {count}, in {duration} ms. More rows follow.": "Rijen op de eerste pagina: {count}, in {duration} ms. Er volgen meer rijen.",
+        "Rows on the first page: {count}, in {duration} ms.": "Rijen op de eerste pagina: {count}, in {duration} ms.",
+        "Tables and columns": "Tabellen en kolommen",
+        "Show tables and columns": "Tabellen en kolommen tonen",
+        "The database has no tables or views this account can see.": "De database heeft geen tabellen of weergaven die dit account kan zien.",
+        "Database view": "Weergave",
+        "no account": "geen account",
+        "The statement could not be run.": "Het statement kon niet worden uitgevoerd.",
+        "The tables and columns could not be read.": "De tabellen en kolommen konden niet worden gelezen."
     },
     "nplurals=2; plural=(n != 1);"
 )
