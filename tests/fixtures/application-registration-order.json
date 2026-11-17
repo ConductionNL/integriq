@@ -204,6 +204,8 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Auth\\Idp\\IdpLoginServiceInterface, OCA\\Integriq\\Auth\\Idp\\IdpLoginService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Auth\\Idp\\IdpBrokerConfigInterface, OCA\\Integriq\\Auth\\Idp\\IdpBrokerConfig)",
 	"context.registerServiceAlias(OCA\\Integriq\\Auth\\Idp\\EnvelopeExchangeServiceInterface, OCA\\Integriq\\Auth\\Idp\\EnvelopeExchangeService)",
+	"context.registerServiceAlias(OCA\\Integriq\\Auth\\Idp\\IdpPublicationInterface, OCA\\Integriq\\Auth\\Idp\\IdpPublication)",
+	"context.registerServiceAlias(OCA\\Integriq\\Auth\\Idp\\IdpRegistrationAdminInterface, OCA\\Integriq\\Auth\\Idp\\IdpRegistrationAdmin)",
 	"context.registerService(OCA\\Integriq\\Auth\\Idp\\GovernmentIdpAdapterInterface, closure, bool)",
 	"context.registerServiceAlias(OCA\\Integriq\\Adapters\\Berichtenbox\\LetterBuilderInterface, OCA\\Integriq\\Adapters\\Berichtenbox\\BerichtenboxLetterBuilder)",
 	"context.registerServiceAlias(OCA\\Integriq\\Adapters\\Digikoppeling\\SignedSoapProfileInterface, OCA\\Integriq\\Adapters\\Digikoppeling\\WusProfileService)",
