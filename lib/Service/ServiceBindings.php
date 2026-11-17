@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
+use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
@@ -211,6 +212,8 @@ use OCA\Integriq\Service\ServiceFetch\ServiceFetchService;
 use OCA\Integriq\Service\ServiceFetch\ServiceFetchServiceInterface;
 use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
 use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
+use OCA\Integriq\Service\Sms\SmsProviderRegistryInterface;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClient;
@@ -293,6 +296,9 @@ final class ServiceBindings {
 		IwmoIjwSyncServiceInterface::class => IwmoIjwSyncService::class,
 		StufZdsOutboundInterface::class => StufZdsOutbound::class,
 		SmsDispatchServiceInterface::class => SmsDispatchService::class,
+		NotifyNlEmailServiceInterface::class => NotifyNlEmailService::class,
+		SmsStatusCallbackServiceInterface::class => SmsStatusCallbackService::class,
+		SmsProviderRegistryInterface::class => SmsProviderRegistry::class,
 		StufProviderReceiverInterface::class => StufProviderReceiver::class,
 		DigitalPostServiceInterface::class => DigitalPostService::class,
 		ExchangeRejectionServiceInterface::class => ExchangeRejectionService::class,
@@ -535,7 +541,8 @@ final class ServiceBindings {
 				return new SettingsService(
 					config: $c->get('OCP\IAppConfig'),
 					rebaseScheduler: $c->get(RetentionRebaseSchedulerInterface::class),
-					logger: $c->get('Psr\Log\LoggerInterface')
+					logger: $c->get('Psr\Log\LoggerInterface'),
+					errorSink: $c->get(ErrorSinkSettings::class)
 				);
 			}
 		);

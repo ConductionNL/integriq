@@ -25,6 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Observability;
 
+use OCA\Integriq\Event\SpanExportRequestedEvent;
+use OCA\Integriq\Listener\SpanExportRequestedListener;
+use OCA\Integriq\Observability\Errors\ErrorSinkListener;
 use OCA\Integriq\Observability\Otel\OtelExportBreaker;
 use OCA\Integriq\Observability\Otel\OtelExportBreakerInterface;
 use OCA\Integriq\Observability\Otel\OtelSettings;
@@ -35,6 +38,8 @@ use OCA\Integriq\Observability\Otel\SpanMapperInterface;
 use OCA\Integriq\Observability\Otel\TraceExporterInterface;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\Log\BeforeMessageLoggedEvent;
 
 /**
  * Binds each Observability contract to the class that implements it, so callers
@@ -58,7 +63,26 @@ final class ObservabilityBindings {
 		$context->registerServiceAlias(OtelExportBreakerInterface::class, OtelExportBreaker::class);
 		$this->registerTraceExporter(context: $context);
 		$this->registerMetricsProvider(context: $context);
-	}
+		// Error sink (REQ-OTEL-006): every message Nextcloud logs passes this
+		// listener, which queues the selected ones and never sends or logs.
+		$context->registerEventListener(BeforeMessageLoggedEvent::class, ErrorSinkListener::class);
+	}//end register()
+
+	/**
+	 * Register the listeners on the event dispatcher.
+	 *
+	 * @param IEventDispatcher $dispatcher The event dispatcher.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude container wiring only, it registers this component's listeners and has no behaviour of its own
+	 */
+	public function registerListeners(IEventDispatcher $dispatcher): void {
+		// Span command for other apps (REQ-OTEL-007): a sibling hands integriq
+		// its finished spans and reads the answer off the same event.
+		$dispatcher->addServiceListener(eventName: SpanExportRequestedEvent::class, className: SpanExportRequestedListener::class);
+	}//end registerListeners()
+
 	/**
 	 * Binds the OpenTelemetry trace exporter.
 	 *
