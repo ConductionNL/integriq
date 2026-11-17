@@ -120,6 +120,7 @@ class OAuthTokenController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function jwks(): JSONResponse {
 		return new JSONResponse($this->issuerKey->jwks());
 	}//end jwks()
