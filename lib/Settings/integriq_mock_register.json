@@ -12877,6 +12877,102 @@
         "environment": "1",
         "gatewayApiId": "vergunningen",
         "lastSeen": "2026-11-13T06:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_ruleset",
+          "slug": "api-design-ruleset-gemeente-aanvullend"
+        },
+        "name": "Gemeentelijke aanvullende API-regels",
+        "version": "1.0",
+        "source": "custom",
+        "enabled": true,
+        "rules": [
+          {
+            "id": "gemeente/info-contact",
+            "title": "Every API names a contact",
+            "severity": "warning",
+            "given": "$.info",
+            "then": {
+              "field": "contact",
+              "function": "truthy"
+            },
+            "message": "The API description has no contact."
+          },
+          {
+            "id": "gemeente/servers-https",
+            "title": "Servers use https",
+            "severity": "error",
+            "given": "$.servers[*].url",
+            "then": {
+              "function": "pattern",
+              "functionOptions": {
+                "match": "^https://"
+              }
+            },
+            "message": "A server URL does not use https."
+          },
+          {
+            "id": "gemeente/privacy-review",
+            "title": "A privacy officer reviewed the API",
+            "severity": "info",
+            "manual": true
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_finding",
+          "slug": "api-design-finding-voorbeeld-1-trailing-slash"
+        },
+        "product": "00000000-0000-4000-8000-000000000000",
+        "productVersion": "1.0.0",
+        "ruleset": "nl-api-design-rules",
+        "ruleId": "/core/no-trailing-slash",
+        "severity": "error",
+        "path": "/paths/~1zaken~1",
+        "message": "Leave off trailing slashes from URIs",
+        "url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/no-trailing-slash",
+        "status": "open",
+        "checkedAt": "2026-11-12T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_finding",
+          "slug": "api-design-finding-voorbeeld-1-version-header"
+        },
+        "product": "00000000-0000-4000-8000-000000000000",
+        "productVersion": "1.0.0",
+        "ruleset": "nl-api-design-rules",
+        "ruleId": "/core/version-header",
+        "severity": "warning",
+        "path": "/paths/~1zaken/get/responses/200/headers",
+        "message": "Return the full version number in a response header",
+        "url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/version-header",
+        "status": "waived",
+        "waivedBy": "admin",
+        "waiveReason": "The gateway adds the API-Version header to every response.",
+        "waivedAt": "2026-11-12T10:15:00+00:00",
+        "checkedAt": "2026-11-12T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_finding",
+          "slug": "api-design-finding-voorbeeld-3-contact"
+        },
+        "product": "00000000-0000-4000-8000-000000000002",
+        "productVersion": "1.0.0",
+        "ruleset": "Gemeentelijke aanvullende API-regels",
+        "ruleId": "gemeente/info-contact",
+        "severity": "warning",
+        "path": "/info",
+        "message": "The API description has no contact.",
+        "status": "open",
+        "checkedAt": "2026-11-13T08:30:00+00:00"
       }
     ]
   }
