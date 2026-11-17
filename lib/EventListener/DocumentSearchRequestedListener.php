@@ -137,13 +137,7 @@ class DocumentSearchRequestedListener implements IEventListener {
 		}
 
 		if ($event->wantsPlatform(platform: DocumentSearchRequestedEvent::PLATFORM_NEXTCLOUD_TALK) === true && $this->asksForChat(event: $event) === true) {
-			$parts[] = $this->talk->search(
-				userId: $event->getUserId(),
-				terms: $event->getTerms(),
-				from: $event->getFrom(),
-				to: $event->getTo(),
-				limit: $event->getLimit(),
-			);
+			$parts[] = $this->talk->search(search: $event);
 		}
 
 		$event->setResult($this->merge(parts: $parts, limit: $event->getLimit()));

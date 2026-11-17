@@ -33,9 +33,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Chat;
 
-use DateTimeImmutable;
+use DateTime;
 use DateTimeInterface;
-use DateTimeZone;
+use OCA\Integriq\Event\DocumentSearchRequestedEvent;
 use OCP\App\IAppManager;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
@@ -98,6 +98,13 @@ class TalkMessageSource {
 	private readonly ThreadTranscript $transcript;
 
 	/**
+	 * Turns Talk's search entries into hits.
+	 *
+	 * @var TalkSearchHits
+	 */
+	private readonly TalkSearchHits $hits;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppManager        $appManager Tells whether Talk is enabled.
@@ -112,6 +119,7 @@ class TalkMessageSource {
 		private readonly ICommentsManager $comments,
 	) {
 		$this->transcript = new ThreadTranscript();
+		$this->hits = new TalkSearchHits();
 	}//end __construct()
 
 	/**
@@ -156,46 +164,53 @@ class TalkMessageSource {
 	}//end isTalkHandle()
 
 	/**
-	 * Search Talk messages as the person, in a period.
+	 * Search Talk messages as the person who asks, in the asked period.
 	 *
-	 * @param string      $userId The person searching.
-	 * @param string      $terms  The search terms.
-	 * @param string|null $from   Start of the period, Y-m-d.
-	 * @param string|null $to     End of the period, Y-m-d.
-	 * @param int         $limit  At most this many hits.
+	 * @param DocumentSearchRequestedEvent $search The search: person, terms, period and limit.
 	 *
 	 * @return array{hits: array<int,array<string,mixed>>, moreCount: int, notices: array<int,string>} REQ-DCC-004 hits.
 	 *
 	 * @spec openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-nextcloud-talk-is-a-searchable-source-as-the-requesting-person-req-dcc-011
 	 */
-	public function search(string $userId, string $terms, ?string $from, ?string $to, int $limit): array {
+	public function search(DocumentSearchRequestedEvent $search): array {
 		if ($this->isAvailable() === false) {
 			return ['hits' => [], 'moreCount' => 0, 'notices' => ['talk-not-installed']];
 		}
 
-		$user = $this->users->get($userId);
-		if ($user === null || trim($terms) === '' || $limit < 1) {
-			return ['hits' => [], 'moreCount' => 0, 'notices' => []];
-		}
-
-		try {
-			$provider = $this->container->get(self::SEARCH_CLASS);
-			$result = $provider->search($user, new IntegriqSearchQuery(term: $terms, limit: $limit));
-			$entries = (array)($result->jsonSerialize()['entries'] ?? []);
-		} catch (Throwable) {
+		$entries = $this->entries(search: $search);
+		if ($entries === null) {
 			return ['hits' => [], 'moreCount' => 0, 'notices' => ['search-failed']];
 		}
 
-		$hits = [];
-		foreach ($entries as $entry) {
-			$hit = $this->hit(entry: $entry, from: $from, to: $to);
-			if ($hit !== null && count($hits) < $limit) {
-				$hits[] = $hit;
-			}
+		$hits = $this->hits->fromEntries(entries: $entries, from: $search->getFrom(), to: $search->getTo());
+
+		return ['hits' => array_slice($hits, 0, max(0, $search->getLimit())), 'moreCount' => 0, 'notices' => []];
+	}//end search()
+
+	/**
+	 * Talk's own search entries for the person and terms.
+	 *
+	 * @param DocumentSearchRequestedEvent $search The search.
+	 *
+	 * @return array<int,mixed>|null The entries (none for an unknown person or empty terms), or null when Talk failed.
+	 */
+	private function entries(DocumentSearchRequestedEvent $search): ?array {
+		$user = $this->users->get($search->getUserId());
+		if ($user === null || trim($search->getTerms()) === '' || $search->getLimit() < 1) {
+			return [];
 		}
 
-		return ['hits' => $hits, 'moreCount' => 0, 'notices' => []];
-	}//end search()
+		try {
+			$result = $this->container->get(self::SEARCH_CLASS)->search(
+				$user,
+				new IntegriqSearchQuery(term: $search->getTerms(), limit: $search->getLimit())
+			);
+
+			return array_values((array)($result->jsonSerialize()['entries'] ?? []));
+		} catch (Throwable) {
+			return null;
+		}
+	}//end entries()
 
 	/**
 	 * Fetch a Talk hit with its conversation, as the person.
@@ -258,75 +273,6 @@ class TalkMessageSource {
 	}//end fetch()
 
 	/**
-	 * A REQ-DCC-004 hit from one of Talk's search entries, inside the period.
-	 *
-	 * @param mixed       $entry The `SearchResultEntry`.
-	 * @param string|null $from  Start of the period, Y-m-d.
-	 * @param string|null $to    End of the period, Y-m-d.
-	 *
-	 * @return array<string,mixed>|null The hit, or null when outside the period or unreadable.
-	 */
-	private function hit(mixed $entry, ?string $from, ?string $to): ?array {
-		if (($entry instanceof \JsonSerializable) === false) {
-			return null;
-		}
-
-		$data = (array)$entry->jsonSerialize();
-		$attributes = (array)($data['attributes'] ?? []);
-		$token = (string)($attributes['conversation'] ?? '');
-		$messageId = (string)($attributes['messageId'] ?? '');
-		$timestamp = (int)($attributes['timestamp'] ?? 0);
-		if ($token === '' || $messageId === '' || $this->inPeriod(timestamp: $timestamp, from: $from, to: $to) === false) {
-			return null;
-		}
-
-		return [
-			'sourceSlug' => self::PLATFORM,
-			'remoteId' => self::HANDLE_PREFIX . $token . ':' . $messageId,
-			'title' => (string)($data['title'] ?? ''),
-			'mimeType' => 'text/plain',
-			'sizeBytes' => null,
-			'modifiedAt' => gmdate(DATE_ATOM, $timestamp),
-			'modifiedByLabel' => (string)($attributes['actorId'] ?? ''),
-			'path' => null,
-			'previewUrl' => (string)($data['resourceUrl'] ?? ''),
-			'snippet' => (string)($data['subline'] ?? ''),
-			'score' => null,
-			'entityType' => 'chatMessage',
-			'platform' => self::PLATFORM,
-			'conversationId' => $token,
-		];
-	}//end hit()
-
-	/**
-	 * Whether a message time falls inside the period (both ends whole days, UTC).
-	 *
-	 * @param int         $timestamp The message time.
-	 * @param string|null $from      Start of the period, Y-m-d.
-	 * @param string|null $to        End of the period, Y-m-d.
-	 *
-	 * @return bool True when inside.
-	 */
-	private function inPeriod(int $timestamp, ?string $from, ?string $to): bool {
-		$utc = new DateTimeZone('UTC');
-		if ($from !== null && $from !== '') {
-			$start = DateTimeImmutable::createFromFormat('!Y-m-d', $from, $utc);
-			if ($start !== false && $timestamp < $start->getTimestamp()) {
-				return false;
-			}
-		}
-
-		if ($to !== null && $to !== '') {
-			$end = DateTimeImmutable::createFromFormat('!Y-m-d', $to, $utc);
-			if ($end !== false && $timestamp >= $end->modify('+1 day')->getTimestamp()) {
-				return false;
-			}
-		}
-
-		return true;
-	}//end inPeriod()
-
-	/**
 	 * The hit's own comment, only when it is a chat message of this conversation.
 	 *
 	 * A hand-built handle can pair a conversation the person is in with a
@@ -386,7 +332,7 @@ class TalkMessageSource {
 
 		$expires = $comment->getExpireDate();
 
-		return $expires === null || $expires > new \DateTime();
+		return $expires === null || $expires > new DateTime();
 	}//end isKept()
 
 	/**
