@@ -27,16 +27,18 @@ Kind: code. Size M. Row `integriq:acc-mcp-gateway`.
 - **files**: `lib/Settings/integriq_register.json` (call_log `mcpMethod`, `mcpTool`), `lib/Service/Endpoint/McpProxyHandler.php`, the call log page filters
 - **acceptance_criteria**:
   - GIVEN three tools/call requests for two tools WHEN the administrator filters the call log by one tool THEN only its calls show
-- [ ] Implement
-- [ ] Test (PHPUnit; Playwright for the filter)
+- [x] Implement
+- [x] Test (PHPUnit; Playwright for the filter)
+  - Built: `McpProxyHandler::stamp()` writes `mcpMethod` and `mcpTool` on the call log (both facetable), and tool arguments stay out unless `mcpStoreArguments` is set. The source logs page shows an MCP tool column and an MCP method control. The logs page has no free-text control type, so a filter on one tool is the link `/sources/logs?mcpTool=<tool>`, which the page passes on as a filter; a text control for it belongs in nextcloud-vue's `logFilterControls`. PHPUnit in `McpProxyHandlerTest`. The Playwright run needs a live instance and is not done here.
 
 ### Task 4: Per-tool limits
 - **spec_ref**: `openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003`
 - **files**: `lib/Service/Endpoint/McpProxyHandler.php`, the endpoint editor, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN a limit of 10 a minute on search WHEN a consumer calls search an eleventh time within the minute THEN it gets 429 with a JSON-RPC error naming the tool
-- [ ] Implement
-- [ ] Test (PHPUnit on the limiter key and the error body)
+- [x] Implement
+- [x] Test (PHPUnit on the limiter key and the error body)
+  - Built: `McpProxyHandler::toolLimitRefusal()` counts `mcp-tool:<endpoint>:<consumer>:<tool>` with the consumer limiter, after the consumer's own limits; over the limit it answers 429 with a JSON-RPC error `-32000` that names the tool, never rewritten into a problem document. The endpoint editor gains `mcp` as a target type and `McpEndpointFields` (source, tool limits, stream duration with the worker-pool warning, the argument switch); en and nl strings.
 
 ### Task 5: Seed and documentation
 - **spec_ref**: `openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001`

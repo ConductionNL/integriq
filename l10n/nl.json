@@ -2660,7 +2660,20 @@
         "The tool could not be opened": "De tool kon niet worden geopend",
         "The launch could not be completed.": "De launch kon niet worden voltooid.",
         "Failed check: %s": "Mislukte controle: %s",
-        "If the tool opens inside the page, try opening it in a new tab.": "Als de tool binnen de pagina opent, probeer hem dan in een nieuw tabblad te openen."
+        "If the tool opens inside the page, try opening it in a new tab.": "Als de tool binnen de pagina opent, probeer hem dan in een nieuw tabblad te openen.",
+        "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `mcp` (a source that is an MCP tool server over streamable HTTP, relayed with its session headers and event streams), `job`, `synchronization`.": "Soort doel: `register/schema`, `api`, `a2a` (een bron met een A2A-agent, waarvan de agentkaart naar het eindpunt wijst), `mcp` (een bron die een MCP-toolserver is via streamable HTTP, doorgegeven met zijn sessiekoppen en eventstreams), `job`, `synchronization`.",
+        "For an mcp endpoint: a rate limit per tool, counted per consumer on top of the consumer's own limits. Maps a tool name to the number of calls allowed in a window of seconds; a call over it gets HTTP 429 with a JSON-RPC error naming the tool.": "Voor een mcp-eindpunt: een limiet per tool, geteld per afnemer bovenop de eigen limieten van de afnemer. Koppelt een toolnaam aan het aantal aanroepen dat in een venster van seconden mag; een aanroep daarboven krijgt HTTP 429 met een JSON-RPC-fout die de tool noemt.",
+        "Calls allowed in the window.": "Aanroepen die in het venster mogen.",
+        "The length of the window, in seconds.": "De lengte van het venster, in seconden.",
+        "For an mcp endpoint: the longest an answer is relayed, an event stream included, after which integriq closes it. Every open stream holds a web server worker until it ends.": "Voor een mcp-eindpunt: hoe lang een antwoord, ook een eventstream, ten hoogste wordt doorgegeven; daarna sluit integriq het. Elke open stream houdt een webserverproces bezet tot hij eindigt.",
+        "For an mcp endpoint: keep the request body, and so the tool arguments, in the call log after its usual redaction. Off by default, because tool arguments may carry personal data.": "Voor een mcp-eindpunt: bewaar de inhoud van het verzoek, en dus de toolargumenten, in het aanroeplog na de gebruikelijke afscherming. Standaard uit, omdat toolargumenten persoonsgegevens kunnen bevatten.",
+        "Store tool arguments": "Toolargumenten bewaren",
+        "For a call through an mcp endpoint: the JSON-RPC method, such as initialize, tools/list or tools/call.": "Voor een aanroep via een mcp-eindpunt: de JSON-RPC-methode, zoals initialize, tools/list of tools/call.",
+        "For a tools/call through an mcp endpoint: the name of the tool called.": "Voor een tools/call via een mcp-eindpunt: de naam van de aangeroepen tool.",
+        "MCP method": "MCP-methode",
+        "MCP tool": "MCP-tool",
+        "Maximum stream duration (seconds)": "Maximale streamduur (seconden)",
+        "Tool limits": "Toollimieten"
     },
     "plurals": {}
 }

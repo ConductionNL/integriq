@@ -3931,7 +3931,20 @@
         "The tool could not be opened": "The tool could not be opened",
         "The launch could not be completed.": "The launch could not be completed.",
         "Failed check: %s": "Failed check: %s",
-        "If the tool opens inside the page, try opening it in a new tab.": "If the tool opens inside the page, try opening it in a new tab."
+        "If the tool opens inside the page, try opening it in a new tab.": "If the tool opens inside the page, try opening it in a new tab.",
+        "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `mcp` (a source that is an MCP tool server over streamable HTTP, relayed with its session headers and event streams), `job`, `synchronization`.": "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `mcp` (a source that is an MCP tool server over streamable HTTP, relayed with its session headers and event streams), `job`, `synchronization`.",
+        "For an mcp endpoint: a rate limit per tool, counted per consumer on top of the consumer's own limits. Maps a tool name to the number of calls allowed in a window of seconds; a call over it gets HTTP 429 with a JSON-RPC error naming the tool.": "For an mcp endpoint: a rate limit per tool, counted per consumer on top of the consumer's own limits. Maps a tool name to the number of calls allowed in a window of seconds; a call over it gets HTTP 429 with a JSON-RPC error naming the tool.",
+        "Calls allowed in the window.": "Calls allowed in the window.",
+        "The length of the window, in seconds.": "The length of the window, in seconds.",
+        "For an mcp endpoint: the longest an answer is relayed, an event stream included, after which integriq closes it. Every open stream holds a web server worker until it ends.": "For an mcp endpoint: the longest an answer is relayed, an event stream included, after which integriq closes it. Every open stream holds a web server worker until it ends.",
+        "For an mcp endpoint: keep the request body, and so the tool arguments, in the call log after its usual redaction. Off by default, because tool arguments may carry personal data.": "For an mcp endpoint: keep the request body, and so the tool arguments, in the call log after its usual redaction. Off by default, because tool arguments may carry personal data.",
+        "Store tool arguments": "Store tool arguments",
+        "For a call through an mcp endpoint: the JSON-RPC method, such as initialize, tools/list or tools/call.": "For a call through an mcp endpoint: the JSON-RPC method, such as initialize, tools/list or tools/call.",
+        "For a tools/call through an mcp endpoint: the name of the tool called.": "For a tools/call through an mcp endpoint: the name of the tool called.",
+        "MCP method": "MCP method",
+        "MCP tool": "MCP tool",
+        "Maximum stream duration (seconds)": "Maximum stream duration (seconds)",
+        "Tool limits": "Tool limits"
     },
     "plurals": {}
 }

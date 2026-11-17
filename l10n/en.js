@@ -4009,7 +4009,25 @@ OC.L10N.register(
         "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.": "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.",
         "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.": "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.",
         "Log in with a means at eIDAS level substantial or high.": "Log in with a means at eIDAS level substantial or high.",
-        "Go back": "Go back"
+        "Go back": "Go back",
+        "Add a tool limit": "Add a tool limit",
+        "Every open stream holds a web server worker until it ends, so keep this short.": "Every open stream holds a web server worker until it ends, so keep this short.",
+        "MCP tool server": "MCP tool server",
+        "Maximum stream duration (seconds)": "Maximum stream duration (seconds)",
+        "No tool has its own limit. Every tool shares the consumer's limits.": "No tool has its own limit. Every tool shares the consumer's limits.",
+        "Off by default: tool arguments may carry personal data.": "Off by default: tool arguments may carry personal data.",
+        "Per seconds": "Per seconds",
+        "Remove the limit of {tool}": "Remove the limit of {tool}",
+        "Store tool arguments in the call log": "Store tool arguments in the call log",
+        "Tool limits": "Tool limits",
+        "Tool server source": "Tool server source",
+        "MCP method": "MCP method",
+        "MCP tool": "MCP tool",
+        "Session start": "Session start",
+        "Tool list": "Tool list",
+        "Tool call": "Tool call",
+        "Resource request": "Resource request",
+        "Prompt request": "Prompt request"
     },
     "nplurals=2; plural=(n != 1);"
 )
