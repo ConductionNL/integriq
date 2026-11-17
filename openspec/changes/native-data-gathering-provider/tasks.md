@@ -109,11 +109,17 @@
 
 ## Wave 2 — one follow-up change per capability GAP, then the connector
 
-- [ ] Open follow-up: offset/cursor pagination beyond page 1 (`start`/`rows`,
+- [x] Open follow-up: offset/cursor pagination beyond page 1 (`start`/`rows`,
   `limit`/`offset`) + a `sourceConfig.pageOffset` knob → unblocks
-  germany/france multi-page and many EU portals
-- [ ] Open follow-up: CSV / delimited parse → unblocks `ireland_etenders`,
-  `canada_canadabuys`
+  germany/france multi-page and many EU portals — landed on development as
+  `sourceConfig.paginationMode: "offset"` with a page size
+  (`SynchronizationService::paginationValueFor()`, CKAN `start`/`rows`
+  recognised); enabling germany/france multi-page still needs a watched run
+- [x] Open follow-up: CSV / delimited parse → unblocks `ireland_etenders`,
+  `canada_canadabuys` — landed through `mapping-formats-and-lookups`
+  (REQ-MFL-001: a synchronization with `sourceConfig.format: "csv"`, with
+  `csvDelimiter` / `csvEnclosure` / `csvHeader`); both drafts ship disabled
+  until their synchronization is switched to it and run live once
 - [ ] Open follow-up: `.zip` multi-member archive iterate → unblocks
   `spain_placsp`
 - [ ] Open follow-up: N+1 two-hop (id-list then per-id detail fetch) → unblocks
@@ -126,6 +132,14 @@
   decompress/parse; JS-rendered SPA headless render (`fedramp`)
 - [ ] Ship each Wave-2 connector draft `isEnabled: false` with a `$comment`
   naming its gap and follow-up change until that change lands
+  - Shipped (Source and Job `isEnabled: false`, `$comment` opens with
+    `INTEGRIQ DRAFT ... GAP:`): `ireland-etenders-connector.json`,
+    `canada-canadabuys-connector.json`, `spain-placsp-connector.json`,
+    `italy-anac-connector.json`, ported from `spectr/connectors`; pinned by
+    `GatherContractTest::testADraftShipsDisabledWithItsGapNamed` and the
+    wiring test. Left: `dutch_laws_bwb` (its fragment also seeds `spectr`
+    `law` objects, which Integriq fragments do not carry yet), `saashub`,
+    `sourceforge`, `fedramp` (no draft exists in `spectr/connectors`)
 
 ## Wave 3 — credential/broker-gated connectors (parked)
 
@@ -133,6 +147,12 @@
   (apikey), `norway_doffin` (broker `credentialRef`), `g2` / `builtwith` /
   `wappalyzer` / `saashub` (commercial keys) as fragments, `isEnabled: false`,
   secrets as `<PLACEHOLDER>` or broker reference; unpark each via its own change
+  - Shipped: `belgium-connector.json` (credentials `<PLACEHOLDER>`),
+    `norway-doffin-connector.json` (broker `credentialRef: doffin`), both with
+    Source and Job disabled. Left: `github_competitors` (two synchronizations
+    and `spectr` `competitor` seed objects in one fragment), `g2` /
+    `builtwith` / `wappalyzer` / `saashub` (no draft exists in
+    `spectr/connectors`)
 
 ## Out of scope (stay Python)
 
