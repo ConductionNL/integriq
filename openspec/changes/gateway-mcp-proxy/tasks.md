@@ -45,8 +45,9 @@ Kind: code. Size M. Row `integriq:acc-mcp-gateway`.
 - **files**: `lib/Settings/integriq_seed_data.json`, `docs/`
 - **acceptance_criteria**:
   - GIVEN a fresh install WHEN the endpoints page opens THEN the disabled example MCP endpoint is listed
-- [ ] Implement
-- [ ] Test (docs walked once)
+- [x] Implement
+- [x] Test (docs walked once)
+  - Built: the disabled source `example-mcp-server` and endpoint `mcp-example` (path `mcp/example`, `search` limited to 10 a minute) are seeded by the register fragment `register.d/gateway-mcp-proxy.json`, the way this repo seeds connector examples, rather than `integriq_seed_data.json`; `docs/features/mcp-gateway.md`, linked from the endpoints page and the feature index.
 
 ## Verification
 - [ ] `openspec validate gateway-mcp-proxy --type change --strict` passes
