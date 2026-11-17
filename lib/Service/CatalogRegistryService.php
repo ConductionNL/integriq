@@ -146,6 +146,10 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'digipoort-sbr' => 'Tax filing',
 		// The ECB euro reference rates, credential-free (sources-ecb-exchange-rates D4).
 		'ecb-eurofxref-daily' => 'Bank',
+		// Other vendors' gateways whose APIs integriq lists (gateway-federated-api-discovery).
+		'kong-gateway-discovery' => 'API gateways',
+		'azure-apim-discovery' => 'API gateways',
+		'aws-apigateway-discovery' => 'API gateways',
 	];
 
 	/**
