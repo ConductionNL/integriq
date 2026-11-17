@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
-class CloudEventReceiver {
+class CloudEventReceiver implements CloudEventReceiverInterface {
 
 	/**
 	 * Namespace of the uuid a received event is stored under. The uuid is
