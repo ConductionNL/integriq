@@ -11,6 +11,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
   - GIVEN a consumer with a plaintext apiKey WHEN the repair step runs THEN it has one hashed credential and no plaintext key, and its calls still pass
 - [x] Implement
 - [ ] Test (PHPUnit on the repair step including a failure halfway; Newman call with the old key after repair)
+  - The Newman call with the old key is not written: it needs a consumer with a plaintext key from before the upgrade and the repair step run by `occ`, which a Newman run cannot set up.
 
 ### Task 2: Generate, reveal once, revoke
 - **spec_ref**: `openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-new-key-is-shown-exactly-once-req-cred-002`
@@ -20,6 +21,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - [x] Implement
   - Consumer page (2026-11-14): `src/components/ConsumerCredentialsPanel.vue`, a body widget on `ConsumerDetail`, lists the credentials (label, type, a key's prefix or a certificate's subject, created, expires, last used) and revokes one through `src/dialogs/RevokeConsumerCredentialDialog.vue`. `src/dialogs/AddConsumerCredentialDialog.vue` generates a key and shows it once with a copy button; closing it forgets the key, so the page afterwards shows only the prefix. Strings in `l10n/en.js` and `l10n/nl.js`. Vitest: `tests/vitest/consumerCredentialsPanel.spec.js` (13).
 - [ ] Test (Playwright for generate, copy and revoke; PHPUnit that no route returns a key)
+  - Playwright written, not yet run (it needs the live instance): `tests/e2e/consumer-credentials.spec.ts` generates a key, copies it, reloads to see only the label and prefix, revokes it, and keeps a new key active while the old one is revoked. Newman folder "18 — Consumer credentials and anyOf" in `tests/postman/integriq.postman_collection.json` checks the key is in the generate answer only, never in the list or the consumer object.
 
 ### Task 3: Two keys at once and last used
 - **spec_ref**: `openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-key-can-be-replaced-without-downtime-req-cred-003`
@@ -59,6 +61,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - [x] Implement
   - Backend: `EndpointService` passes a rule when any one of its `anyOf` methods passes and answers 401 with every reason. Rule editor (2026-11-14): `AuthenticationForm` offers "Any one of several methods" at the top level (a list of method forms, none of them an anyOf, which the service refuses) and "Client certificate (mTLS)" with its allowed consumers; picking another type drops the list, because the service reads `anyOf` before `type`. Vitest: `tests/vitest/authenticationFormAnyOf.spec.js` (6).
 - [ ] Test (PHPUnit; Newman with each method and with none)
+  - Newman written, not yet run (it needs the live instance): folder "18 — Consumer credentials and anyOf" calls an endpoint whose rule is `anyOf` apikey or jwt with a generated key, with an HS256 token, with neither (401 naming `0:apikey` and `1:jwt`), with a wrong key and with the revoked key.
 
 ## Verification
 - [ ] `openspec validate access-consumer-credentials --type change --strict` passes

@@ -2189,6 +2189,540 @@
       ]
     },
     {
+      "name": "18 — Consumer credentials and anyOf (access-consumer-credentials)",
+      "description": "REQ-CRED-001, 002, 003, 005: generate a key that is shown once, list without it, log in with either an API key or a JWT on an anyOf rule, a 401 that names both reasons, and a revoked key refused. Self-contained, cleans up after itself.",
+      "item": [
+        {
+          "name": "POST consumer: API-key consumer (OR)",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/consumer",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "access-consumer-credentials: a consumer that logs in with a generated key.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-cred-apikey\",\"description\":\"newman\",\"authorizationType\":\"apiKey\",\"userId\":\"{{admin_user}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('credKeyConsumer', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /consumers/{id}/credentials: generate a key",
+          "request": {
+            "method": "POST",
+            "url": "{{ocBase}}/consumers/{{credKeyConsumer}}/credentials",
+            "header": [
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "REQ-CRED-002: the generated key is returned in this one response only.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"label\":\"Newman koppeling\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the key is generated', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('the key is in this answer, with its credential', () => {",
+                  "  pm.expect(b.key).to.be.a('string').and.have.length.above(20);",
+                  "  pm.expect(b.credential.id).to.be.a('string').and.not.empty;",
+                  "  pm.expect(b.credential).to.not.have.property('keyHash');",
+                  "});",
+                  "pm.collectionVariables.set('credKey', b.key);",
+                  "pm.collectionVariables.set('credKeyId', b.credential.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /consumers/{id}/credentials: a label is required",
+          "request": {
+            "method": "POST",
+            "url": "{{ocBase}}/consumers/{{credKeyConsumer}}/credentials",
+            "header": [
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"label\":\"\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused without a label', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /consumers/{id}/credentials: the list never holds the key",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/consumers/{{credKeyConsumer}}/credentials",
+            "header": [
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "description": "REQ-CRED-002: reloading shows the credential, never the key."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('listed', () => pm.response.to.have.status(200));",
+                  "const text = pm.response.text();",
+                  "pm.test('the key and its hash are not in the list', () => {",
+                  "  pm.expect(text).to.not.include(pm.collectionVariables.get('credKey'));",
+                  "  pm.expect(text).to.not.include('keyHash');",
+                  "});",
+                  "pm.test('the credential is listed', () => {",
+                  "  pm.expect(pm.response.json().results.map((c) => c.id)).to.include(pm.collectionVariables.get('credKeyId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET consumer (OR): the object holds no key and no hash",
+          "request": {
+            "method": "GET",
+            "url": "{{orBase}}/consumer/{{credKeyConsumer}}",
+            "header": [],
+            "description": "REQ-CRED-001: a read of the consumer over the OpenRegister object API shows no key and no hash."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('read', () => pm.response.to.have.status(200));",
+                  "const text = pm.response.text();",
+                  "pm.test('no key and no hash over the object API', () => {",
+                  "  pm.expect(text).to.not.include(pm.collectionVariables.get('credKey'));",
+                  "  pm.expect(text).to.not.include('keyHash');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST consumer: JWT consumer (OR)",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/consumer",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "A consumer that logs in with an HS256 token; its name is the token's issuer.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"{{credJwtIssuer}}\",\"description\":\"newman\",\"authorizationType\":\"jwt\",\"userId\":\"{{admin_user}}\",\"authorizationConfiguration\":{\"algorithm\":\"HS256\",\"publicKey\":\"{{credJwtSecret}}\"}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('credJwtIssuer', 'newman-cred-jwt-' + Date.now());",
+                  "let secret = '';",
+                  "while (secret.length < 64) { secret += Math.random().toString(36).slice(2); }",
+                  "pm.collectionVariables.set('credJwtSecret', secret.slice(0, 64));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('credJwtConsumer', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST rule: authentication anyOf apikey or jwt (OR)",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/rule",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "REQ-CRED-005: an endpoint that accepts an API key or a JWT.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-cred-anyof\",\"type\":\"authentication\",\"action\":\"read\",\"timing\":\"before\",\"order\":1,\"isEnabled\":true,\"configuration\":{\"authentication\":{\"anyOf\":[{\"type\":\"apikey\",\"header\":\"X-Api-Key\",\"keys\":{}},{\"type\":\"jwt\"}]}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('credRule', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST endpoint: guarded by the anyOf rule (OR)",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/endpoint",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-cred-anyof\",\"endpoint\":\"newman-cred-anyof\",\"method\":\"GET\",\"isEnabled\":true,\"rules\":[\"{{credRule}}\"]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('credEndpoint', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET gateway with the generated API key: passes",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{ocBase}}/endpoint/newman-cred-anyof",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "{{credKey}}"
+              }
+            ],
+            "description": "REQ-CRED-005 and REQ-CRED-003: the generated key passes; the gateway answers whatever the endpoint answers after its rules."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the key passes the anyOf rule', () => pm.expect([401, 403]).to.not.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET gateway with a JWT: passes",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{ocBase}}/endpoint/newman-cred-anyof",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{credJwt}}"
+              }
+            ],
+            "description": "REQ-CRED-005: the other method of the rule passes on its own."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// HS256 token for the JWT consumer, signed with its stored secret.",
+                  "const b64 = (words) => CryptoJS.enc.Base64.stringify(words).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (obj) => b64(CryptoJS.enc.Utf8.parse(JSON.stringify(obj)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('credJwtIssuer'), iat: now, exp: now + 600, jti: 'newman-' + now });",
+                  "const sig = b64(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('credJwtSecret')));",
+                  "pm.variables.set('credJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the token passes the anyOf rule', () => pm.expect([401, 403]).to.not.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET gateway with neither: 401 names both methods",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{ocBase}}/endpoint/newman-cred-anyof",
+            "header": [],
+            "description": "REQ-CRED-005: with neither credential the 401 lists the reason of each method."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.response.to.have.status(401));",
+                  "pm.test('every method gives its reason', () => {",
+                  "  const reasons = pm.response.json().details.anyOf;",
+                  "  pm.expect(reasons.map((r) => r.method)).to.eql(['0:apikey', '1:jwt']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET gateway with a wrong API key: 401",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{ocBase}}/endpoint/newman-cred-anyof",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "newman-not-a-key"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /consumers/{id}/credentials/{credentialId}: revoke the key",
+          "request": {
+            "method": "DELETE",
+            "url": "{{ocBase}}/consumers/{{credKeyConsumer}}/credentials/{{credKeyId}}",
+            "header": [
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "description": "REQ-CRED-003: a revoked key stops passing at once."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('revoked', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET gateway with the revoked API key: 401",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{ocBase}}/endpoint/newman-cred-anyof",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "{{credKey}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the revoked key is refused', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the anyOf endpoint",
+          "request": {
+            "method": "DELETE",
+            "url": "{{orBase}}/endpoint/{{credEndpoint}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the anyOf rule",
+          "request": {
+            "method": "DELETE",
+            "url": "{{orBase}}/rule/{{credRule}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the API-key consumer",
+          "request": {
+            "method": "DELETE",
+            "url": "{{orBase}}/consumer/{{credKeyConsumer}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the JWT consumer",
+          "request": {
+            "method": "DELETE",
+            "url": "{{orBase}}/consumer/{{credJwtConsumer}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "99 — Teardown (via OR)",
       "description": "Deletes the fixtures created in folder 01.",
       "item": [
