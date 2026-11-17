@@ -30,6 +30,9 @@ namespace OCA\Integriq\Service;
 use OCA\Integriq\Service\Feed\FeedDeclarationValidator;
 use OCA\Integriq\Service\Feed\FeedSchemaFieldsInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -203,7 +206,9 @@ class FeedDeclarationService {
 				continue;
 			}
 
-			$this->objectService->deleteObject(uuid: (string)$endpoint->getUuid(), register: self::REGISTER, schema: 'endpoint');
+			$this->objectService->deleteObject(
+				deletion: new ObjectDeletion(uuid: (string)$endpoint->getUuid(), target: new ObjectFindTarget(register: self::REGISTER, schema: 'endpoint'))
+			);
 			$summary['deleted']++;
 		}
 
@@ -261,9 +266,10 @@ class FeedDeclarationService {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: 'endpoint',
-			uuid: $existing?->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: 'endpoint'),
+				uuid: $existing?->getUuid()
+			)
 		);
 
 		if ($existing === null) {
@@ -347,9 +353,10 @@ class FeedDeclarationService {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: 'api_product',
-			uuid: $product?->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: 'api_product'),
+				uuid: $product?->getUuid()
+			)
 		);
 	}//end keepProduct()
 

@@ -26,6 +26,8 @@ use OCA\Integriq\Service\Feed\FeedDeclarationValidator;
 use OCA\Integriq\Service\Feed\FeedSchemaFieldsInterface;
 use OCA\Integriq\Service\FeedDeclarationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -123,15 +125,16 @@ class FeedDeclarationServiceTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array $object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
-				$uuid = ($uuid ?? $schema . '-' . (count($this->store[$schema]) + 1));
+			function (array $object, ObjectSaveOptions $options): ObjectEntity {
+				$schema = (string)$options->target->schema;
+				$uuid   = ($options->uuid ?? $schema . '-' . (count($this->store[$schema]) + 1));
 				$this->store[$schema][$uuid] = json_decode((string)json_encode($object), true);
 				return $this->entity(uuid: $uuid, data: $object);
 			}
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, ?string $register = null, ?string $schema = null): bool {
-				unset($this->store[$schema][$uuid]);
+			function (ObjectDeletion $deletion): bool {
+				unset($this->store[(string)$deletion->target->schema][$deletion->uuid]);
 				return true;
 			}
 		);
