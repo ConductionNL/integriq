@@ -17,8 +17,9 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 - **files**: `lib/Controller/PortalController.php`, `lib/Service/ProductSubscriptionService.php`, `lib/Settings/integriq_register.json` (consumer `ownerKind`)
 - **acceptance_criteria**:
   - GIVEN developer A WHEN they request access with developer B's consumer id THEN the answer is 404 and nothing is written
-- [ ] Implement
+- [x] Implement (`PortalController` `applications`, `createApplication` and `requestAccess`, checking the developer group and `consumer.userId` with `ownerKind: developer`; `ProductSubscriptionService` is the one subscribe path, so a request opens the product's approval as an administrator's would)
 - [ ] Test (PHPUnit on the ownership check; Playwright for create application and request access)
+  - PHPUnit done: `PortalControllerTest::testAnotherDevelopersApplicationIsOutOfReach` and the rest of `PortalControllerTest`, `ProductSubscriptionServiceTest`. Left: the Playwright run.
 
 ### Task 3: Self-service keys in the portal
 - **spec_ref**: `openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003`
