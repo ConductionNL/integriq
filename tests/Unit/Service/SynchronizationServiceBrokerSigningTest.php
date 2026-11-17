@@ -75,7 +75,8 @@ class SynchronizationServiceBrokerSigningTest extends TestCase {
 
 		$orObjects = ObjectServiceMockBuilder::make($this);
 		$orObjects->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null) use ($seeds) {
+			function ($id, $options = null) use ($seeds) {
+				$schema = $options?->schema;
 				// An object found by slug comes back with uuid-<slug>; a second lookup uses that.
 				$id = preg_replace('/^uuid-/', '', (string)$id);
 				if (isset($seeds[$schema][$id]) === false) {
@@ -87,8 +88,8 @@ class SynchronizationServiceBrokerSigningTest extends TestCase {
 		);
 		$orObjects->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 		$orObjects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ...$rest) use (&$writes) {
-				if ($schema !== 'synchronization_log') {
+			function ($object, $options = null, ...$rest) use (&$writes) {
+				if (($options?->target?->schema ?? null) !== 'synchronization_log') {
 					$writes++;
 				}
 
