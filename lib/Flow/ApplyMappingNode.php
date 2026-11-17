@@ -259,8 +259,8 @@ class ApplyMappingNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeC
 
 		return $this->flowOwner->runAs(
 			user: $owner,
-			callback: function () use ($items, $config, $context) {
-				return $this->mapEachItem(items: $items, config: $config, context: $context);
+			callback: function () use ($call) {
+				return $this->mapEachItem(call: $call);
 			}
 		);
 
@@ -272,9 +272,7 @@ class ApplyMappingNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeC
 	 * The loop is plain on purpose — mapping is CPU-bound, so a concurrency
 	 * pool would buy nothing and cost failure ordering (see class docblock).
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
@@ -282,7 +280,10 @@ class ApplyMappingNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeC
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	private function mapEachItem(array $items, array $config, array $context): array {
+	private function mapEachItem(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$reference = trim((string)$config['mapping']);
 		$inputPath = trim((string)($config['input'] ?? ''));
 		$outputKey = trim((string)($config['output'] ?? ''));

@@ -40,7 +40,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
  */
-class CertificateExpiryAlertService {
+class CertificateExpiryAlertService implements CertificateExpiryAlertServiceInterface {
 
 	/**
 	 * The alert rule of a certificate expiry.

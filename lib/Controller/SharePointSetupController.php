@@ -28,8 +28,8 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use InvalidArgumentException;
-use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
-use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSetInterface;
 use OCA\Integriq\Service\ConfigurationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
@@ -50,16 +50,16 @@ class SharePointSetupController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                      $request       The request.
-	 * @param SharePointOnlineAdapter       $adapter       Makes the brokered Graph calls.
-	 * @param SharePointPublicationSet      $set           Fills the packaged set with the setup's choices.
-	 * @param ConfigurationServiceInterface $configuration Imports the filled set.
-	 * @param LoggerInterface               $logger        Records an import that failed.
+	 * @param IRequest                          $request       The request.
+	 * @param SharePointOnlineAdapterInterface  $adapter       Makes the brokered Graph calls.
+	 * @param SharePointPublicationSetInterface $set           Fills the packaged set with the setup's choices.
+	 * @param ConfigurationServiceInterface     $configuration Imports the filled set.
+	 * @param LoggerInterface                   $logger        Records an import that failed.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly SharePointOnlineAdapter $adapter,
-		private readonly SharePointPublicationSet $set,
+		private readonly SharePointOnlineAdapterInterface $adapter,
+		private readonly SharePointPublicationSetInterface $set,
 		private readonly ConfigurationServiceInterface $configuration,
 		private readonly LoggerInterface $logger,
 	) {
