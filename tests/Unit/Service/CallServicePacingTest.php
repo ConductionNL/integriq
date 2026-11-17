@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use DateTimeImmutable;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
@@ -93,8 +94,8 @@ class CallServicePacingTest extends TestCase {
 	private function service(): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
-				$this->saved[] = ['object' => $object, 'schema' => $schema];
+			function ($object = [], ?ObjectSaveOptions $options = null) {
+				$this->saved[] = ['object' => $object, 'schema' => $options?->target->schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
 				$entity->setObject($object);

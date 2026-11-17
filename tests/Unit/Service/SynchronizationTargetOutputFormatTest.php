@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
@@ -79,7 +80,7 @@ class SynchronizationTargetOutputFormatTest extends TestCase {
 	private function service(): SynchronizationService {
 		$or = $this->createMock(ORObjectService::class);
 		$or->method('find')->willReturnCallback(
-			static function ($id, ?string $register = null, ?string $schema = null) {
+			static function ($id, ?ObjectFindOptions $options = null) {
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)$id);
 				$entity->setObject(['uuid' => (string)$id, 'name' => 'Target', 'location' => 'https://api.example.invalid/v1']);
