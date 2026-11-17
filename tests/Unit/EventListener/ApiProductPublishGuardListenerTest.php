@@ -24,6 +24,7 @@ use OCA\Integriq\EventListener\ApiProductPublishGuardListener;
 use OCA\Integriq\Service\ApiDesign\ApiProductDesignCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
@@ -178,4 +179,56 @@ class ApiProductPublishGuardListenerTest extends TestCase {
 		$this->listener->handle(new Event());
 
 	}//end testOnlyAChangeToActiveOfAProductIsChecked()
+
+	/**
+	 * A product created as active is checked too, and an open error refuses the create.
+	 *
+	 * @return void
+	 */
+	public function testAProductCreatedAsActiveWithAnOpenErrorIsRefused(): void {
+		$finding = ['ruleId' => '/core/no-trailing-slash', 'severity' => 'error', 'status' => 'open', 'path' => '/paths/~1besluiten~1'];
+		$product = self::object('active');
+		$this->check->expects(self::once())->method('blockingFindings')->with($product)->willReturn([$finding]);
+		$event = new ObjectCreatingEvent($product);
+
+		$this->listener->handle($event);
+
+		self::assertTrue($event->isPropagationStopped());
+		$errors = $event->getErrors();
+		self::assertSame('api_design_open_errors', $errors['code']);
+		self::assertSame(409, $errors['status']);
+		self::assertSame([$finding], $errors['findings']);
+
+	}//end testAProductCreatedAsActiveWithAnOpenErrorIsRefused()
+
+	/**
+	 * A product created as active with nothing blocking is created.
+	 *
+	 * @return void
+	 */
+	public function testAProductCreatedAsActiveWithNothingBlockingIsCreated(): void {
+		$this->check->expects(self::once())->method('blockingFindings')->willReturn([]);
+		$event = new ObjectCreatingEvent(self::object('active'));
+
+		$this->listener->handle($event);
+
+		self::assertFalse($event->isPropagationStopped());
+		self::assertSame([], $event->getErrors());
+
+	}//end testAProductCreatedAsActiveWithNothingBlockingIsCreated()
+
+	/**
+	 * A product created in another status, or an object of another schema, is not checked on create.
+	 *
+	 * @return void
+	 */
+	public function testACreateThatIsNotAnActiveProductIsNotChecked(): void {
+		$this->check->expects(self::never())->method('blockingFindings');
+
+		foreach ([new ObjectCreatingEvent(self::object('draft')), new ObjectCreatingEvent(self::object('active', 3))] as $event) {
+			$this->listener->handle($event);
+			self::assertFalse($event->isPropagationStopped());
+		}
+
+	}//end testACreateThatIsNotAnActiveProductIsNotChecked()
 }//end class

@@ -25,6 +25,7 @@ namespace OCA\Integriq\EventListener;
 use OCA\Integriq\Service\ApiDesign\ApiProductDesignCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -35,7 +36,7 @@ use Throwable;
 /**
  * Refuses making an API product active while a check finds an open error.
  *
- * Runs when a product's status changes to `active`. The check replaces the
+ * Runs when a product is created as `active` or its status changes to `active`. The check replaces the
  * product version's open findings, so the refusal lists what the product page
  * then shows. A product whose description cannot be written is refused too:
  * an unchecked product is not published.
@@ -71,21 +72,26 @@ class ApiProductPublishGuardListener implements IEventListener {
 	}//end __construct()
 
 	/**
-	 * Guard a product status change to active.
+	 * Guard a product created as active or a status change to active.
 	 *
-	 * @param Event $event The dispatched event.
+	 * @param Event $event The dispatched event (creating or updating).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectUpdatingEvent === false) {
+		if ($event instanceof ObjectCreatingEvent === true) {
+			$product = $event->getObject();
+			$old     = null;
+		} else if ($event instanceof ObjectUpdatingEvent === true) {
+			$product = $event->getNewObject();
+			$old     = $event->getOldObject();
+		} else {
 			return;
 		}
 
-		$product = $event->getNewObject();
-		if ($this->becomesActive(product: $product, old: $event->getOldObject()) === false) {
+		if ($this->becomesActive(product: $product, old: $old) === false) {
 			return;
 		}
 
@@ -120,10 +126,10 @@ class ApiProductPublishGuardListener implements IEventListener {
 	}//end handle()
 
 	/**
-	 * Whether this update moves an API product to active.
+	 * Whether this save makes an API product active.
 	 *
 	 * @param ObjectEntity      $product The product as it will be saved.
-	 * @param ObjectEntity|null $old     The product as it was.
+	 * @param ObjectEntity|null $old     The product as it was, null when it is being created.
 	 *
 	 * @return bool
 	 *
@@ -149,7 +155,7 @@ class ApiProductPublishGuardListener implements IEventListener {
 	/**
 	 * Refuse the save with the findings that hold it back.
 	 *
-	 * @param ObjectUpdatingEvent        $event    The event.
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event.
 	 * @param string                     $code     A stable refusal code.
 	 * @param string                     $message  The translated message.
 	 * @param list<array<string, mixed>> $findings The blocking findings.
@@ -158,7 +164,7 @@ class ApiProductPublishGuardListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 	 */
-	private function refuse(ObjectUpdatingEvent $event, string $code, string $message, array $findings): void {
+	private function refuse(ObjectCreatingEvent|ObjectUpdatingEvent $event, string $code, string $message, array $findings): void {
 		$event->setErrors(['code' => $code, 'message' => $message, 'status' => 409, 'findings' => $findings]);
 		$event->stopPropagation();
 
