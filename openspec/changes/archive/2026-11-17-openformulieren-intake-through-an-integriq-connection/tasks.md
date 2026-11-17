@@ -22,7 +22,7 @@ Ruben approved the model on 2026-10-04: "same consumer model, after DSO", with t
 
 - [x] 4.1 Add `OpenFormulierenSettingsController` (GET never returns the secret; a blank secret keeps the stored one; unknown, disabled and right-less accounts refused with a field error; an admin account warns)
 - [x] 4.2 Add `OpenFormulierenConnectionSettings.vue` with the account picker and the one-line state, en and nl strings through `l10n/*.json` and `npm run l10n:build`
-- [ ] 4.3 Run `tests/e2e/openformulieren-connection-settings.spec.ts` (written; it runs in the nightly Playwright job, not locally)
+- [x] 4.3 Run `tests/e2e/openformulieren-connection-settings.spec.ts`: 3 of 3 passed on a fresh NC 34.0.6 + OpenRegister main instance (live pass 2026-11-17)
 
 ## 5. Migration
 

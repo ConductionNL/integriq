@@ -5797,7 +5797,7 @@
         "slug": "intake_message",
         "title": "Intake Message",
         "icon": "InboxArrowDown",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "One message an intake channel delivered, in the normalised shape every consumer reads",
         "description": "An Intake Message is one message delivered by a channel adapter, normalised so no consuming app contains channel-specific code. A routing rule decides which case type it opens; a message matching no rule is held with its reason rather than dropped or opened as a default case. See openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md.",
         "authorization": {
@@ -5917,9 +5917,10 @@
               "routed",
               "held",
               "failed",
-              "rejected"
+              "rejected",
+              "assigned"
             ],
-            "description": "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel)",
+            "description": "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel) | assigned (a handler linked it to a case from the inbox)",
             "title": "Status"
           },
           "reason": {
@@ -5939,8 +5940,19 @@
           },
           "targetRef": {
             "type": "string",
-            "description": "The object the owning app opened for this message",
+            "description": "The object the owning app opened for this message, or the case a handler assigned it to",
             "title": "Target Reference"
+          },
+          "assignedBy": {
+            "type": "string",
+            "description": "The user id of the handler who assigned the message to a case from the inbox",
+            "title": "Assigned By"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the handler assigned the message to a case",
+            "title": "Assigned At"
           },
           "replies": {
             "type": "array",

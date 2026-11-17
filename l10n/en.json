@@ -1,5 +1,13 @@
 {
     "translations": {
+        "When the handler assigned the message to a case": "When the handler assigned the message to a case",
+        "The user id of the handler who assigned the message to a case from the inbox": "The user id of the handler who assigned the message to a case from the inbox",
+        "The object the owning app opened for this message, or the case a handler assigned it to": "The object the owning app opened for this message, or the case a handler assigned it to",
+        "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel) | assigned (a handler linked it to a case from the inbox)": "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel) | assigned (a handler linked it to a case from the inbox)",
+        "Assigned By": "Assigned By",
+        "Assigned At": "Assigned At",
+        "Assigning a message to a case is not available.": "Assigning a message to a case is not available.",
+        "Assigned by": "Assigned by",
         "The configured source this step calls. The call inherits its base URL, authentication and rate limits. A template such as jobboard-{{ json.channel }} picks the source per item.": "The configured source this step calls. The call inherits its base URL, authentication and rate limits. A template such as jobboard-{{ json.channel }} picks the source per item.",
         "The configured mapping applied to every item in the page. A template such as jobboard-{{ json.channel }} picks the mapping per item.": "The configured mapping applied to every item in the page. A template such as jobboard-{{ json.channel }} picks the mapping per item.",
         "No source configured: \"%1$s\". This item makes no request.": "No source configured: \"%1$s\". This item makes no request.",
@@ -3824,6 +3832,10 @@
         "Written by the markEnded disappearance policy: the first run that no longer found the API": "Written by the markEnded disappearance policy: the first run that no longer found the API",
         "API inventory": "API inventory",
         "APIs found on other gateways, next to the API products integriq serves itself. Amazon API Gateway discovery waits on OpenRegister: its credential broker cannot sign AWS Signature Version 4 yet.": "APIs found on other gateways, next to the API products integriq serves itself. Amazon API Gateway discovery waits on OpenRegister: its credential broker cannot sign AWS Signature Version 4 yet.",
+        "Per consumer": "Per consumer",
+        "Per endpoint": "Per endpoint",
+        "Anonymous": "Anonymous",
+        "No traffic in this period.": "No traffic in this period.",
         "EU only mode stays off. These destinations are not shown to be in the EU: %s": "EU only mode stays off. These destinations are not shown to be in the EU: %s",
         "Choose a country from the list.": "Choose a country from the list.",
         "Only an administrator can manage data residency.": "Only an administrator can manage data residency.",
@@ -3865,7 +3877,19 @@
         "The residency could not be saved.": "The residency could not be saved.",
         "Where does {source} process the data integriq sends it? Record the country and the evidence for it.": "Where does {source} process the data integriq sends it? Record the country and the evidence for it.",
         "Zone": "Zone",
-        "this source": "this source"
+        "this source": "this source",
+        "Continue to the tool": "Continue to the tool",
+        "This launch was started for another user. Sign in as that user, or start the launch again.": "This launch was started for another user. Sign in as that user, or start the launch again.",
+        "The launch request is not valid. Start the launch again from the lesson.": "The launch request is not valid. Start the launch again from the lesson.",
+        "The launch took too long and has expired. Start the launch again from the lesson.": "The launch took too long and has expired. Start the launch again from the lesson.",
+        "The tool that answered is not the approved tool of this launch.": "The tool that answered is not the approved tool of this launch.",
+        "The tool asked to return to an address that is not registered for it.": "The tool asked to return to an address that is not registered for it.",
+        "The tool sent no nonce, so the launch cannot be completed.": "The tool sent no nonce, so the launch cannot be completed.",
+        "The tool sent no state, so the launch cannot be completed.": "The tool sent no state, so the launch cannot be completed.",
+        "The tool could not be opened": "The tool could not be opened",
+        "The launch could not be completed.": "The launch could not be completed.",
+        "Failed check: %s": "Failed check: %s",
+        "If the tool opens inside the page, try opening it in a new tab.": "If the tool opens inside the page, try opening it in a new tab."
     },
     "plurals": {}
 }
