@@ -86,6 +86,8 @@ class FtpsAdapter extends RemoteFilesAdapter {
 	 * {@inheritDoc}
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	protected function unavailableMessage(): string {
 		return $this->l10n->t('FTPS needs PHP curl with TLS support, which is missing on this instance.');

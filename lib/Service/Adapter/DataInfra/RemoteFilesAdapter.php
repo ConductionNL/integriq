@@ -183,6 +183,8 @@ abstract class RemoteFilesAdapter extends AbstractCategoryAdapterProvider {
 	 * Why the protocol is not available here.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	abstract protected function unavailableMessage(): string;
 }//end class

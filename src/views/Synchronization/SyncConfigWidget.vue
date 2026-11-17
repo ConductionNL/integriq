@@ -650,6 +650,7 @@ export default {
 			return `sync-config-${this.widgetUid}-form-source`
 		},
 
+		/** @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002 */
 		pickupSourceId() {
 			return `sync-config-${this.widgetUid}-pickup-source`
 		},

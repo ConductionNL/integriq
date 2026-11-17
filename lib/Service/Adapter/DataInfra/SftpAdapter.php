@@ -87,6 +87,8 @@ class SftpAdapter extends RemoteFilesAdapter {
 	 * {@inheritDoc}
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	protected function unavailableMessage(): string {
 		return $this->l10n->t('SFTP needs the phpseclib 3 library, which is not installed on this instance.');
