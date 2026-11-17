@@ -29,6 +29,7 @@ namespace OCA\Integriq\EventListener;
 use OCA\Integriq\Event\DocumentFetchRequestedEvent;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
+use OCA\Integriq\Service\Chat\TalkMessageSource;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -50,11 +51,13 @@ class DocumentFetchRequestedListener implements IEventListener {
 	 * @param Microsoft365AdapterInterface $adapter The Microsoft 365 source.
 	 * @param DocumentConnectionGuardInterface $guard Refuses an app without a linked connection.
 	 * @param LoggerInterface     $logger  Records who asked and for which handle, never what was found.
+	 * @param TalkMessageSource   $talk    The Nextcloud Talk source, for `chatMessage:talk:` handles.
 	 */
 	public function __construct(
 		private readonly Microsoft365AdapterInterface $adapter,
 		private readonly DocumentConnectionGuardInterface $guard,
 		private readonly LoggerInterface $logger,
+		private readonly TalkMessageSource $talk,
 	) {
 	}//end __construct()
 
@@ -84,8 +87,15 @@ class DocumentFetchRequestedListener implements IEventListener {
 			return;
 		}
 
+		if ($event->getContext() > DocumentFetchRequestedEvent::MAX_CONTEXT) {
+			// Refused before any source is called (REQ-DCC-010).
+			$event->setResult(['error' => 'context-too-large', 'maximum' => DocumentFetchRequestedEvent::MAX_CONTEXT]);
+			$this->logger->info('Integriq: a document fetch was refused, the context is too large', $audit + ['context' => $event->getContext()]);
+			return;
+		}
+
 		try {
-			$fetched = $this->adapter->fetch(handle: $event->getHandle(), userId: $event->getUserId());
+			$fetched = $this->fetch(event: $event);
 			if ($fetched === null) {
 				return;
 			}
@@ -96,4 +106,27 @@ class DocumentFetchRequestedListener implements IEventListener {
 			$this->logger->warning('Integriq: a document fetch failed', $audit + ['error' => $e->getMessage()]);
 		}
 	}//end handle()
+
+	/**
+	 * The answer for the handle: a Talk or Teams chat hit with its thread, else a drive item.
+	 *
+	 * @param DocumentFetchRequestedEvent $event The fetch.
+	 *
+	 * @return array<string,mixed>|null The answer, or null when the handle names nothing.
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-a-fetched-chat-message-comes-with-its-conversation-req-dcc-010
+	 */
+	private function fetch(DocumentFetchRequestedEvent $event): ?array {
+		$handle = $event->getHandle();
+		$context = max(0, $event->getContext());
+		if ($this->talk->isTalkHandle(handle: $handle) === true) {
+			return $this->talk->fetch(handle: $handle, userId: $event->getUserId(), context: $context);
+		}
+
+		if (str_starts_with($handle, 'chatMessage:') === true) {
+			return $this->adapter->fetchThread(handle: $handle, userId: $event->getUserId(), context: $context);
+		}
+
+		return $this->adapter->fetch(handle: $handle, userId: $event->getUserId());
+	}//end fetch()
 }//end class
