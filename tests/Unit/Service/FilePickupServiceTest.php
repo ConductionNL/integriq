@@ -24,6 +24,7 @@ use OCA\Integriq\Service\FilePickupService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\Integriq\Tests\Unit\Service\Adapter\FileTransfer\FileTransferAdapterTestCase;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -89,8 +90,8 @@ class FilePickupServiceTest extends FileTransferAdapterTestCase {
 
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?string $register = null, ?string $schema = null) {
-				$this->saved[] = [(string)$register, (string)$schema, $object];
+			function (array $object, ObjectSaveOptions $options) {
+				$this->saved[] = [(string)$options->target->register, (string)$options->target->schema, $object];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'object-' . count($this->saved));
 			}
 		);

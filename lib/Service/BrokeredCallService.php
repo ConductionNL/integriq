@@ -3,6 +3,9 @@
 /**
  * Integriq Brokered Call Service.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Isolates ALL coupling between the outbound HTTP call engine and the
  * OpenRegister credential broker (`OCA\OpenRegister\Service\Credential\
  * CredentialBrokerService`). A Source whose merged configuration carries
@@ -29,9 +32,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -42,8 +42,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -78,7 +78,7 @@ use Throwable;
  *
  * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
  */
-class BrokeredCallService {
+class BrokeredCallService implements BrokeredCallServiceInterface {
 
 	/**
 	 * The configuration keys that carry a TLS client identity (Guzzle's `cert` / `ssl_key`).
@@ -86,19 +86,6 @@ class BrokeredCallService {
 	 * @var array<int, string>
 	 */
 	private const TLS_IDENTITY_KEYS = ['cert', 'ssl_key'];
-
-	/**
-	 * The app id the broker authorises against the credential's allowedApps.
-	 *
-	 * @var string
-	 */
-	// Frozen on the old id: this is NOT this app's Nextcloud app id but the identity
-	// OpenRegister's credential broker matches against a stored credential's
-	// `allowedApps` (strict in_array). Every credential minted so far carries
-	// "openconnector"; renaming it fails every brokered call CLOSED.
-	// Moves only with a credential re-provisioning pass — as do the hint strings
-	// below that tell the admin which value to add to `allowedApps`.
-	public const APP_ID = 'openconnector';
 
 	/**
 	 * FQCN of the OpenRegister credential broker (resolved lazily — the class
@@ -562,6 +549,48 @@ class BrokeredCallService {
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
 	public function prepare(array $config, array $sourceData, bool $asynchronous): array {
+		$ref = $this->validateCredentialRef(authentication: $this->authenticationOf(config: $config));
+		$this->refuseSoapSource(sourceData: $sourceData);
+		$this->refuseAsynchronousDispatch(asynchronous: $asynchronous);
+		$this->refuseTopLevelTlsIdentity(config: $config);
+		$this->assertBrokerAvailable();
+
+		// Resolve the broker eagerly so a container-resolution failure is a
+		// 409 config error here — not an unhandled throw at dispatch time.
+		$this->resolveBroker();
+
+		// Per-user OAuth (sources-per-user-oauth D2): a per-user reference resolves to the
+		// signed-in user's own personal credential at the provider, and the
+		// broker is called as that user. There is no shared fallback.
+		if (($ref['perUserProvider'] ?? null) !== null) {
+			return [
+				'credentialId' => $this->resolvePerUserCredentialId(provider: (string)$ref['perUserProvider']),
+				'actingUserId' => null,
+			];
+		}
+
+		$credentialId = $this->resolveCredentialId(ref: $ref);
+		$credential = $this->loadCredential(credentialId: $credentialId, ref: $ref);
+
+		return [
+			'credentialId' => $credentialId,
+			'actingUserId' => $this->resolveActingUser(credential: $credential, credentialId: $credentialId),
+		];
+
+	}//end prepare()
+
+	/**
+	 * The source configuration's `authentication` object.
+	 *
+	 * @param array $config The merged call configuration.
+	 *
+	 * @return array The authentication object.
+	 *
+	 * @throws BrokeredCallConfigurationException When it is not an object.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	private function authenticationOf(array $config): array {
 		$authentication = ($config['authentication'] ?? []);
 		if (is_array($authentication) === false) {
 			throw new BrokeredCallConfigurationException(
@@ -569,24 +598,9 @@ class BrokeredCallService {
 			);
 		}
 
-		$ref = $this->validateCredentialRef(authentication: $authentication);
-		$this->assertScopeGuards(config: $config, sourceData: $sourceData, asynchronous: $asynchronous);
-		$this->assertBrokerAvailable();
+		return $authentication;
 
-		// Resolve the broker eagerly so a container-resolution failure is a
-		// 409 config error here — not an unhandled throw at dispatch time.
-		$this->resolveBroker();
-
-		$credentialId = $this->resolveCredentialId(ref: $ref);
-		$credential = $this->loadCredential(credentialId: $credentialId, ref: $ref);
-		$actingUserId = $this->resolveActingUser(credential: $credential, credentialId: $credentialId);
-
-		return [
-			'credentialId' => $credentialId,
-			'actingUserId' => $actingUserId,
-		];
-
-	}//end prepare()
+	}//end authenticationOf()
 
 	/**
 	 * Dispatches one brokered call through the OpenRegister credential broker.
@@ -785,6 +799,10 @@ class BrokeredCallService {
 			);
 		}
 
+		if (array_key_exists('perUser', $ref) === true) {
+			return self::validatePerUserRef(ref: $ref);
+		}
+
 		$unknownKeys = array_diff(array_keys($ref), ['credentialId', 'credentialName']);
 		if (empty($unknownKeys) === false) {
 			throw new BrokeredCallConfigurationException(
@@ -795,6 +813,131 @@ class BrokeredCallService {
 
 		return $this->extractSingleRefValue(ref: $ref);
 	}//end validateCredentialRef()
+
+	/**
+	 * Validate a per-user reference: `{"provider": "<slug>", "perUser": true}` and nothing else.
+	 *
+	 * @param array $ref The credentialRef object.
+	 *
+	 * @return array{credentialId: null, credentialName: null, perUserProvider: string} The validated reference.
+	 *
+	 * @throws BrokeredCallConfigurationException When the shape is anything else.
+	 *
+	 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+	 */
+	private static function validatePerUserRef(array $ref): array {
+		$provider = ($ref['provider'] ?? null);
+		$shapeIsValid = array_diff(array_keys($ref), ['provider', 'perUser']) === []
+			&& $ref['perUser'] === true
+			&& is_string($provider) === true
+			&& trim($provider) !== '';
+		if ($shapeIsValid === false) {
+			throw new BrokeredCallConfigurationException(
+				message: 'A per-user credentialRef must be exactly {"provider": "<provider slug>", "perUser": true}.'
+			);
+		}
+
+		return ['credentialId' => null, 'credentialName' => null, 'perUserProvider' => trim($provider)];
+	}//end validatePerUserRef()
+
+	/**
+	 * The signed-in user's own personal credential at a provider.
+	 *
+	 * Refuses a call without a signed-in user, because there is no account to
+	 * use, and refuses rather than guesses when the user has more than one.
+	 * Only the user's own, enabled, personal credentials count: never another
+	 * user's and never an organisation credential.
+	 *
+	 * @param string $provider The provider slug.
+	 *
+	 * @return string The credential UUID.
+	 *
+	 * @throws PerUserAccountNotConnectedException When the user has no such credential.
+	 * @throws BrokeredCallConfigurationException  Without a signed-in user, or with more than one credential.
+	 *
+	 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+	 */
+	private function resolvePerUserCredentialId(string $provider): string {
+		$uid = (string)($this->userSession->getUser()?->getUID() ?? '');
+		if ($uid === '') {
+			throw new BrokeredCallConfigurationException(
+				message: 'This source calls with each user\'s own account at "' . $provider . '", and this call runs '
+					. 'without a signed-in user (a background job or synchronization), so there is no account to use. '
+					. 'Call it from a user session.'
+			);
+		}
+
+		$owned = array_values(
+			array_filter(
+				$this->perUserCandidates(provider: $provider),
+				static fn ($row): bool => self::isUsablePersonalCredential(row: $row, uid: $uid)
+			)
+		);
+		if ($owned === []) {
+			throw new PerUserAccountNotConnectedException(provider: $provider);
+		}
+
+		if (count($owned) > 1) {
+			throw new BrokeredCallConfigurationException(
+				message: 'You have ' . count($owned) . ' connected accounts at "' . $provider . '"; disconnect the ones '
+					. 'this source should not use.'
+			);
+		}
+
+		return (string)$owned[0]->getUuid();
+	}//end resolvePerUserCredentialId()
+
+	/**
+	 * The broker's credentials at a provider, before the owner filter.
+	 *
+	 * @param string $provider The provider slug.
+	 *
+	 * @return array<int, mixed> The rows.
+	 *
+	 * @throws BrokeredCallConfigurationException When the lookup fails.
+	 */
+	private function perUserCandidates(string $provider): array {
+		try {
+			$matches = $this->objectService->findAll(
+				config: [
+					'filters' => [
+						'register' => self::CREDENTIAL_REGISTER,
+						'schema' => self::CREDENTIAL_SCHEMA,
+						'provider' => $provider,
+					],
+				]
+			);
+		} catch (Throwable $exception) {
+			throw new BrokeredCallConfigurationException(
+				message: 'The connected accounts at "' . $provider . '" could not be read: ' . $exception->getMessage()
+			);
+		}
+
+		$rows = ($matches['results'] ?? $matches);
+		if (is_array($rows) === false) {
+			return [];
+		}
+
+		return $rows;
+	}//end perUserCandidates()
+
+	/**
+	 * Whether a credential row is the user's own, personal, enabled credential.
+	 *
+	 * @param mixed  $row The row.
+	 * @param string $uid The signed-in user.
+	 *
+	 * @return bool
+	 */
+	private static function isUsablePersonalCredential(mixed $row, string $uid): bool {
+		if ($row instanceof ObjectEntity === false || $row->getOwner() !== $uid) {
+			return false;
+		}
+
+		$data = $row->getObject();
+
+		return (string)($data['scope'] ?? 'personal') === 'personal' && (string)($data['status'] ?? '') !== 'disabled';
+	}//end isUsablePersonalCredential()
 
 	/**
 	 * Enforces the exactly-one-of contract and non-empty value on a shape-valid ref.
@@ -844,19 +987,17 @@ class BrokeredCallService {
 	}//end extractSingleRefValue()
 
 	/**
-	 * Enforces the v1 scope guards: no SOAP, no async, no TLS client certs.
+	 * v1 scope: credentialRef is refused on a SOAP source, whose transport bypasses the brokered HTTP path.
 	 *
-	 * @param array $config The merged call configuration.
 	 * @param array $sourceData The raw source data array.
-	 * @param boolean $asynchronous Whether asynchronous dispatch was requested.
 	 *
 	 * @return void
 	 *
-	 * @throws BrokeredCallConfigurationException On any v1 scope violation.
+	 * @throws BrokeredCallConfigurationException On a SOAP source.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
 	 */
-	private function assertScopeGuards(array $config, array $sourceData, bool $asynchronous): void {
+	private function refuseSoapSource(array $sourceData): void {
 		if (($sourceData['type'] ?? null) === 'soap') {
 			throw new BrokeredCallConfigurationException(
 				message: 'credentialRef is not supported on SOAP sources (v1 scope) — the SOAP transport '
@@ -864,6 +1005,20 @@ class BrokeredCallService {
 			);
 		}
 
+	}//end refuseSoapSource()
+
+	/**
+	 * v1 scope: credentialRef is refused on asynchronous dispatch; the brokered call is synchronous in-process.
+	 *
+	 * @param boolean $asynchronous Whether asynchronous dispatch was requested.
+	 *
+	 * @return void
+	 *
+	 * @throws BrokeredCallConfigurationException On asynchronous dispatch.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+	 */
+	private function refuseAsynchronousDispatch(bool $asynchronous): void {
 		if ($asynchronous === true) {
 			throw new BrokeredCallConfigurationException(
 				message: 'credentialRef does not support asynchronous dispatch (v1 scope) — the brokered '
@@ -871,12 +1026,27 @@ class BrokeredCallService {
 			);
 		}
 
-		// An empty `cert` / `ssl_key` is no certificate: the seeded BRP source ships both
-		// as "" placeholders, and `isset("")` is true, so the proxy path refused a source
-		// that carried no certificate at all (integriq#2102). A REAL certificate is still
-		// refused here: on the proxy path the broker opens the TLS connection itself and
-		// cannot present a client certificate, so accepting one would send the call
-		// without it. The app-injected form below carries both.
+	}//end refuseAsynchronousDispatch()
+
+	/**
+	 * A real TLS client certificate is refused next to a top-level credentialRef.
+	 *
+	 * An empty `cert` / `ssl_key` is no certificate: the seeded BRP source ships both
+	 * as "" placeholders, and `isset("")` is true, so the proxy path refused a source
+	 * that carried no certificate at all (integriq#2102). A REAL certificate is still
+	 * refused here: on the proxy path the broker opens the TLS connection itself and
+	 * cannot present a client certificate, so accepting one would send the call
+	 * without it. The app-injected form carries both.
+	 *
+	 * @param array $config The merged call configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws BrokeredCallConfigurationException When the configuration carries a certificate.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+	 */
+	private function refuseTopLevelTlsIdentity(array $config): void {
 		if ($this->hasTlsIdentity(config: $config) === true) {
 			throw new BrokeredCallConfigurationException(
 				message: 'A TLS client certificate (cert / ssl_key) cannot be used with a top-level '
@@ -886,7 +1056,7 @@ class BrokeredCallService {
 			);
 		}
 
-	}//end assertScopeGuards()
+	}//end refuseTopLevelTlsIdentity()
 
 	/**
 	 * Soft-fail guard: the broker class must exist AND openregister must be enabled.
@@ -1012,8 +1182,7 @@ class BrokeredCallService {
 		try {
 			$credential = $this->objectService->find(
 				id: $credentialId,
-				register: self::CREDENTIAL_REGISTER,
-				schema: self::CREDENTIAL_SCHEMA,
+				options: new ObjectFindOptions(register: self::CREDENTIAL_REGISTER, schema: self::CREDENTIAL_SCHEMA),
 				_rbac: false
 			);
 		} catch (Throwable) {

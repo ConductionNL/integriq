@@ -28,6 +28,7 @@ use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\IAppConfig;
 use OCP\ISession;
 use OCP\IUserSession;
@@ -54,9 +55,9 @@ class SynchronizationFilePickupDispatchTest extends TestCase {
 	public function testAnSftpSynchronizationRunsThePickup(): void {
 		$orObjects = ObjectServiceMockBuilder::make($this);
 		$orObjects->method('find')->willReturnCallback(
-			fn ($id, $register = null, $schema = null) => ObjectServiceMockBuilder::objectEntity(
+			fn ($id, ?ObjectFindOptions $options = null) => ObjectServiceMockBuilder::objectEntity(
 				$this,
-				['type' => 'sftp', 'location' => 'sftp.example.nl', 'schemaAsked' => $schema],
+				['type' => 'sftp', 'location' => 'sftp.example.nl', 'schemaAsked' => $options?->schema],
 				(string)$id
 			)
 		);

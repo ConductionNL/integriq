@@ -1,0 +1,123 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`event delivery detail > renders an empty row 1`] = `
+"<div class="NcModal" data-testid="event-delivery-detail-modal">
+  <div class="deliveryDetail">
+    <h2>Event delivery</h2>
+    <div class="deliveryDetail__body">
+      <div class="deliveryDetail__meta"><span class="deliveryDetail__badge deliveryDetail__badge--replayed">replayed</span><span class="deliveryDetail__actionBadge" data-testid="detail-action-kind-badge">Action: webhook</span>
+        <!--v-if--><span class="deliveryDetail__retry">Attempts: 0</span>
+      </div>
+      <!--v-if-->
+      <h3>Attempt timeline</h3>
+      <p class="deliveryDetail__empty">No attempts recorded yet</p>
+      <h3>Payload</h3><pre class="deliveryDetail__payload" data-testid="payload-viewer">{}</pre>
+    </div>
+    <div class="deliveryDetail__actions"><button class="NcButton" disabled="">Replay</button><button class="NcButton" disabled="">Discard</button></div>
+  </div>
+</div>"
+`;
+
+exports[`event delivery detail > renders nothing but the actions without a row 1`] = `
+"<div class="NcModal" data-testid="event-delivery-detail-modal">
+  <div class="deliveryDetail">
+    <h2>Event delivery</h2>
+    <!--v-if-->
+    <div class="deliveryDetail__actions"><button class="NcButton" disabled="">Replay</button><button class="NcButton" disabled="">Discard</button></div>
+  </div>
+</div>"
+`;
+
+exports[`event delivery detail > renders the full detail 1`] = `
+"<div class="NcModal" data-testid="event-delivery-detail-modal">
+  <div class="deliveryDetail">
+    <h2>Event delivery</h2>
+    <div class="deliveryDetail__body">
+      <div class="deliveryDetail__meta"><span class="deliveryDetail__badge deliveryDetail__badge--failed">failed</span><span class="deliveryDetail__actionBadge" data-testid="detail-action-kind-badge">Action: n8n</span><span class="deliveryDetail__provenanceBadge" data-testid="detail-provenance-badge">Nextcloud event</span><span class="deliveryDetail__retry">Attempts: 3</span></div>
+      <div class="deliveryDetail__audit">
+        <p>Replayed by alice at 2026-11-01</p>
+        <p>Discarded by bob at 2026-11-02</p>
+      </div>
+      <h3>Attempt timeline</h3>
+      <ol class="deliveryDetail__timeline" data-testid="attempt-timeline">
+        <li><span class="deliveryDetail__time">t1</span><span class="deliveryDetail__status">HTTP 502</span></li>
+        <li><span class="deliveryDetail__time">t2</span><span class="deliveryDetail__error">timeout</span></li>
+        <li><span class="deliveryDetail__time">t3</span>
+          <!--v-if-->
+        </li>
+      </ol>
+      <h3>Payload</h3><pre class="deliveryDetail__payload" data-testid="payload-viewer">{
+  "a": 1,
+  "nested": {
+    "b": [
+      1,
+      2
+    ]
+  }
+}</pre>
+    </div>
+    <div class="deliveryDetail__actions"><button class="NcButton">Replay</button><button class="NcButton">Discard</button></div>
+  </div>
+</div>"
+`;
+
+exports[`sync item detail > renders an empty row 1`] = `
+"<div class="NcModal" data-testid="sync-dead-letter-detail-modal">
+  <div class="deadLetterDetail">
+    <h2>Sync dead letter</h2>
+    <div class="deadLetterDetail__body">
+      <div class="deadLetterDetail__meta"><span class="deadLetterDetail__badge deadLetterDetail__badge--replayed">replayed</span><span class="deadLetterDetail__retry">Attempts: 0</span></div>
+      <!--v-if-->
+      <h3>Error</h3>
+      <p class="deadLetterDetail__error"></p>
+      <h3>Attempt timeline</h3>
+      <p class="deadLetterDetail__empty">No attempts recorded yet</p>
+      <h3>Payload</h3><pre class="deadLetterDetail__payload" data-testid="payload-viewer">{}</pre>
+    </div>
+    <div class="deadLetterDetail__actions"><button class="NcButton" disabled="">Replay</button><button class="NcButton" disabled="">Discard</button></div>
+  </div>
+</div>"
+`;
+
+exports[`sync item detail > renders nothing but the actions without a row 1`] = `
+"<div class="NcModal" data-testid="sync-dead-letter-detail-modal">
+  <div class="deadLetterDetail">
+    <h2>Sync dead letter</h2>
+    <!--v-if-->
+    <div class="deadLetterDetail__actions"><button class="NcButton" disabled="">Replay</button><button class="NcButton" disabled="">Discard</button></div>
+  </div>
+</div>"
+`;
+
+exports[`sync item detail > renders the full detail 1`] = `
+"<div class="NcModal" data-testid="sync-dead-letter-detail-modal">
+  <div class="deadLetterDetail">
+    <h2>Sync dead letter</h2>
+    <div class="deadLetterDetail__body">
+      <div class="deadLetterDetail__meta"><span class="deadLetterDetail__badge deadLetterDetail__badge--failed">failed</span><span class="deadLetterDetail__retry">Attempts: 3</span></div>
+      <div class="deadLetterDetail__audit">
+        <p>Replayed by alice at 2026-11-01</p>
+        <p>Discarded by bob at 2026-11-02</p>
+      </div>
+      <h3>Error</h3>
+      <p class="deadLetterDetail__error">boom</p>
+      <h3>Attempt timeline</h3>
+      <ol class="deadLetterDetail__timeline" data-testid="attempt-timeline">
+        <li><span class="deadLetterDetail__time">t1</span><span class="deadLetterDetail__attemptOk">OK</span></li>
+        <li><span class="deadLetterDetail__time">t2</span><span class="deadLetterDetail__attemptError">timeout</span></li>
+        <li><span class="deadLetterDetail__time">t3</span><span class="deadLetterDetail__attemptOk">OK</span></li>
+      </ol>
+      <h3>Payload</h3><pre class="deadLetterDetail__payload" data-testid="payload-viewer">{
+  "a": 1,
+  "nested": {
+    "b": [
+      1,
+      2
+    ]
+  }
+}</pre>
+    </div>
+    <div class="deadLetterDetail__actions"><button class="NcButton">Replay</button><button class="NcButton">Discard</button></div>
+  </div>
+</div>"
+`;

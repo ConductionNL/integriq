@@ -29,6 +29,7 @@ use OCA\Integriq\Service\Adapter\DataInfra\FileTransfer\RemotePath;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -339,7 +340,12 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 			return [];
 		}
 
-		$entity = $this->objectService->find(id: $sourceId, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
+		$entity = $this->objectService->find(
+			id: $sourceId,
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+			_rbac: false,
+			_multitenancy: false
+		);
 		if (($entity instanceof ObjectEntity) === false) {
 			return [];
 		}

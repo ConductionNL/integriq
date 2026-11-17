@@ -3,6 +3,9 @@
 /**
  * Integriq Inline Secret Migration Planner.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Phase C of ocon#151 / ADR-064: plans the migration of a `source` object's
  * INLINE credential fields (`apikey`, `secret`, `password`, `jwt`,
  * `authenticationConfig`) into the OpenRegister credential broker, so the
@@ -34,9 +37,6 @@
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -47,6 +47,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Security;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -56,39 +57,7 @@ use Throwable;
  *
  * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
  */
-class InlineSecretMigrationPlanner {
-
-	/**
-	 * The OpenRegister register slug holding integriq's objects.
-	 *
-	 * @var string
-	 */
-	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
-	// OpenRegister matches registers by slug; renaming it orphans every stored object.
-	public const REGISTER = 'integriq';
-
-	/**
-	 * The OpenRegister schema slug for source objects.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA = 'source';
-
-	/**
-	 * The app id the broker authorises against a credential's allowedApps.
-	 *
-	 * Guard 2 of `CredentialBrokerService::resolveInjectable()` does a strict
-	 * `in_array($appId, $allowedApps, true)`, so a minted credential MUST carry
-	 * this exact string or it fails closed at call time.
-	 *
-	 * @var string
-	 */
-	// Frozen on the old id: this is NOT this app's Nextcloud app id but the identity
-	// OpenRegister's credential broker matches against a stored credential's
-	// `allowedApps` (strict in_array), so a minted credential MUST carry this exact
-	// string. Renaming it fails every brokered resolve CLOSED. Moves only with a
-	// credential re-provisioning pass.
-	public const APP_ID = 'openconnector';
+class InlineSecretMigrationPlanner implements InlineSecretMigrationPlannerInterface {
 
 	/**
 	 * Inline `source` secret fields, mapped to the inject-only broker provider
@@ -250,13 +219,12 @@ class InlineSecretMigrationPlanner {
 	 */
 	public function readRawSource(string $uuid, string $schema = self::SCHEMA): array {
 		try {
+			// Unscoped: the inline secret migration reads the raw stored object, run as the system.
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER,
-				schema: $schema,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: $schema, render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $e) {
 			// Secret-free: the uuid is not a secret, the exception text may not
@@ -592,33 +560,9 @@ class InlineSecretMigrationPlanner {
 	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function listUuids(string $schema, int $limit): array {
-		try {
-			$result = $this->objectService->findAll(
-				config: [
-					'limit' => $limit,
-					'filters' => ['register' => self::REGISTER, 'schema' => $schema],
-				]
-			);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'[integriq] inline-secret planner: source listing failed',
-				['errorClass' => get_class($e)]
-			);
-			return [];
-		}
-
-		$items = ($result['results'] ?? $result);
-		if (is_array($items) === false) {
-			return [];
-		}
-
 		$uuids = [];
-		foreach ($items as $item) {
-			if ($item instanceof ObjectEntity === false) {
-				continue;
-			}
-
-			$uuid = (string)$item->getUuid();
+		foreach ($this->listedItems(schema: $schema, limit: $limit) as $item) {
+			$uuid = $this->uuidOf(item: $item);
 			if ($uuid === '') {
 				continue;
 			}
@@ -629,4 +573,75 @@ class InlineSecretMigrationPlanner {
 
 		return $uuids;
 	}//end listSourceUuids()
+
+	/**
+	 * The rows of one rendered listing; none when it fails (logged, secret-free)
+	 * or answers no list.
+	 *
+	 * @param string $schema The schema slug.
+	 * @param int    $limit  Maximum number of objects to list.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function listedItems(string $schema, int $limit): array {
+		try {
+			$result = $this->renderedListing(schema: $schema, limit: $limit);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'[integriq] inline-secret planner: source listing failed',
+				['errorClass' => get_class($e)]
+			);
+			return [];
+		}
+
+		return $this->listOf(result: $result);
+	}//end listedItems()
+
+	/**
+	 * The rendered findAll() of one schema's objects (identity only, see listUuids()).
+	 *
+	 * @param string $schema The schema slug.
+	 * @param int    $limit  Maximum number of objects to list.
+	 *
+	 * @return mixed What findAll() answers.
+	 */
+	private function renderedListing(string $schema, int $limit): mixed {
+		return $this->objectService->findAll(
+			config: [
+				'limit' => $limit,
+				'filters' => ['register' => self::REGISTER, 'schema' => $schema],
+			]
+		);
+	}//end renderedListing()
+
+	/**
+	 * The uuid of a listed object; '' for a row that is no object.
+	 *
+	 * @param mixed $item The listed row.
+	 *
+	 * @return string
+	 */
+	private function uuidOf(mixed $item): string {
+		if ($item instanceof ObjectEntity === false) {
+			return '';
+		}
+
+		return (string)$item->getUuid();
+	}//end uuidOf()
+
+	/**
+	 * The items of a findAll() answer, enveloped or bare; none when it is no list.
+	 *
+	 * @param mixed $result What findAll() answered.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function listOf(mixed $result): array {
+		$items = ($result['results'] ?? $result);
+		if (is_array($items) === false) {
+			return [];
+		}
+
+		return $items;
+	}//end listOf()
 }//end class

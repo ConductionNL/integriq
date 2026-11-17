@@ -16,6 +16,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-a-providers-catalogue-arrives-in-learniq-as-draft-courses-that-launch-through-lti-req-cmkt-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Lti;
 
 use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -118,8 +122,7 @@ class LtiCustomParameterReader {
 		try {
 			$synchronization = $this->objectService->find(
 				id: $synchronizationId,
-				register: 'integriq',
-				schema: 'synchronization'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization')
 			);
 		} catch (\Throwable $e) {
 			return null;

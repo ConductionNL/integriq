@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Exchange;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -36,7 +37,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
  */
-class ExchangeReadModel {
+class ExchangeReadModel implements ExchangeReadModelInterface {
 
 	public const MAX_LIMIT = 200;
 
@@ -46,6 +47,16 @@ class ExchangeReadModel {
 	 * @var int
 	 */
 	private const OPEN_REJECTION_SCAN = 1000;
+
+	/**
+	 * Per schema: the filters an app may ask for, and the property each one reads.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	private const REQUESTED_FILTERS = [
+		ExchangeJobService::SCHEMA_JOB => ['target' => 'exchangeTarget', 'status' => 'exchangeStatus', 'ownerRef' => 'ownerRef'],
+		ExchangeRejectionService::SCHEMA => ['status' => 'status', 'target' => 'exchangeTarget', 'jobId' => 'exchangeJob'],
+	];
 
 	/**
 	 * Constructor.
@@ -77,18 +88,10 @@ class ExchangeReadModel {
 	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	public function listJobs(string $ownerApp, array $filters = [], int $limit = 50, int $offset = 0): array {
-		$orFilters = [
-			'register' => ExchangeJobService::REGISTER,
-			'schema' => ExchangeJobService::SCHEMA_JOB,
-			'ownerApp' => $ownerApp,
-		];
-		foreach (['target' => 'exchangeTarget', 'status' => 'exchangeStatus', 'ownerRef' => 'ownerRef'] as $key => $property) {
-			if (($filters[$key] ?? '') !== '') {
-				$orFilters[$property] = $filters[$key];
-			}
-		}
-
-		$matches = $this->find(filters: $orFilters, limit: $limit, offset: $offset);
+		$matches = $this->find(
+			filters: $this->withRequested(orFilters: $this->appFilters(schema: ExchangeJobService::SCHEMA_JOB, ownerApp: $ownerApp), filters: $filters),
+			page: new ReadPage(limit: $limit, offset: $offset)
+		);
 		$open = $this->openRejectionCounts(ownerApp: $ownerApp);
 
 		$rows = [];
@@ -114,8 +117,10 @@ class ExchangeReadModel {
 		try {
 			$job = $this->objectService->find(
 				id: $jobId,
-				register: ExchangeJobService::REGISTER,
-				schema: ExchangeJobService::SCHEMA_JOB,
+				options: new ObjectFindOptions(
+					register: ExchangeJobService::REGISTER,
+					schema: ExchangeJobService::SCHEMA_JOB
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -157,18 +162,10 @@ class ExchangeReadModel {
 	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
 	 */
 	public function listRejections(string $ownerApp, array $filters = [], int $limit = 50, int $offset = 0): array {
-		$orFilters = [
-			'register' => ExchangeJobService::REGISTER,
-			'schema' => ExchangeRejectionService::SCHEMA,
-			'ownerApp' => $ownerApp,
-		];
-		foreach (['status' => 'status', 'target' => 'exchangeTarget', 'jobId' => 'exchangeJob'] as $key => $property) {
-			if (($filters[$key] ?? '') !== '') {
-				$orFilters[$property] = $filters[$key];
-			}
-		}
-
-		$matches = $this->find(filters: $orFilters, limit: $limit, offset: $offset);
+		$matches = $this->find(
+			filters: $this->withRequested(orFilters: $this->appFilters(schema: ExchangeRejectionService::SCHEMA, ownerApp: $ownerApp), filters: $filters),
+			page: new ReadPage(limit: $limit, offset: $offset)
+		);
 
 		$rows = [];
 		foreach ($matches['results'] as $entry) {
@@ -178,6 +175,42 @@ class ExchangeReadModel {
 		return ['results' => $rows, 'total' => $matches['total']];
 
 	}//end listRejections()
+
+	/**
+	 * The filters every read of an app's rows starts from: the register, the schema and the owning app.
+	 *
+	 * @param string $schema   The schema.
+	 * @param string $ownerApp The owning app.
+	 *
+	 * @return array<string, string> The filters.
+	 */
+	private function appFilters(string $schema, string $ownerApp): array {
+		return [
+			'register' => ExchangeJobService::REGISTER,
+			'schema' => $schema,
+			'ownerApp' => $ownerApp,
+		];
+
+	}//end appFilters()
+
+	/**
+	 * The filters with every non-empty filter the app asked for, on the property it reads.
+	 *
+	 * @param array<string, string> $orFilters The filters so far, `schema` set.
+	 * @param array<string, string> $filters   The filters the app asked for.
+	 *
+	 * @return array<string, string> The filters.
+	 */
+	private function withRequested(array $orFilters, array $filters): array {
+		foreach (self::REQUESTED_FILTERS[$orFilters['schema']] as $key => $property) {
+			if (($filters[$key] ?? '') !== '') {
+				$orFilters[$property] = $filters[$key];
+			}
+		}
+
+		return $orFilters;
+
+	}//end withRequested()
 
 	/**
 	 * The target catalogue with the directions integriq handles.
@@ -278,17 +311,10 @@ class ExchangeReadModel {
 	 * @return array<string, int> Job uuid to count.
 	 */
 	private function openRejectionCounts(string $ownerApp): array {
-		$matches = $this->find(
-			filters: [
-				'register' => ExchangeJobService::REGISTER,
-				'schema' => ExchangeRejectionService::SCHEMA,
-				'ownerApp' => $ownerApp,
-				'status' => ExchangeRejectionService::STATUS_FAILED,
-			],
-			limit: self::OPEN_REJECTION_SCAN,
-			offset: 0,
-			cap: self::OPEN_REJECTION_SCAN
-		);
+		$scan = new ReadPage(limit: self::OPEN_REJECTION_SCAN, offset: 0);
+		$scan->cap = self::OPEN_REJECTION_SCAN;
+		$failed = ['status' => ExchangeRejectionService::STATUS_FAILED];
+		$matches = $this->find(filters: ($this->appFilters(schema: ExchangeRejectionService::SCHEMA, ownerApp: $ownerApp) + $failed), page: $scan);
 
 		$counts = [];
 		foreach ($matches['results'] as $entry) {
@@ -310,18 +336,10 @@ class ExchangeReadModel {
 	private function lastLog(string $jobId): ?array {
 		$matches = $this->find(
 			filters: ['register' => ExchangeJobService::REGISTER, 'schema' => 'job_log', 'jobId' => $jobId],
-			limit: 20,
-			offset: 0
+			page: new ReadPage(limit: 20, offset: 0)
 		);
 
-		$latest = null;
-		foreach ($matches['results'] as $entry) {
-			$data = $entry->getObject();
-			if ($latest === null || (string)($data['created'] ?? '') > (string)($latest['created'] ?? '')) {
-				$latest = $data;
-			}
-		}
-
+		$latest = $this->latestOf(entries: $matches['results']);
 		if ($latest === null) {
 			return null;
 		}
@@ -335,28 +353,63 @@ class ExchangeReadModel {
 	}//end lastLog()
 
 	/**
+	 * The newest of some log lines by their `created` time, the first one on a tie.
+	 *
+	 * @param array<int, ObjectEntity> $entries The log lines.
+	 *
+	 * @return array<string, mixed>|null The newest line's data, or null when there is none.
+	 */
+	private function latestOf(array $entries): ?array {
+		$latest = null;
+		foreach ($entries as $entry) {
+			$data = $entry->getObject();
+			if ($latest === null || (string)($data['created'] ?? '') > (string)($latest['created'] ?? '')) {
+				$latest = $data;
+			}
+		}
+
+		return $latest;
+
+	}//end latestOf()
+
+	/**
 	 * A bounded OpenRegister read.
 	 *
 	 * OpenRegister's findAll returns a flat list of entities; the `results`
 	 * key is read too so a wrapped answer works the same.
 	 *
 	 * @param array<string, mixed> $filters The filters.
-	 * @param int                  $limit   Page size.
-	 * @param int                  $offset  Page offset.
-	 * @param int                  $cap     The largest page allowed.
+	 * @param ReadPage             $page    The page size, offset and largest page allowed.
 	 *
 	 * @return array{results: array<int, ObjectEntity>, total: int} The rows.
 	 */
-	private function find(array $filters, int $limit, int $offset, int $cap = self::MAX_LIMIT): array {
-		$limit = max(1, min($limit, $cap));
-		$offset = max(0, $offset);
+	private function find(array $filters, ReadPage $page): array {
+		$limit = max(1, min($page->limit, $page->cap));
+		$offset = max(0, $page->offset);
 
 		$matches = $this->objectService->findAll(
 			config: ['filters' => $filters, 'limit' => $limit, 'offset' => $offset],
 			_rbac: false,
+			// Unscoped: jobs are written without a session; the filters hold it to the owning app, ExchangeController authorises.
 			_multitenancy: false
 		);
 
+		$results = $this->entitiesOf(matches: $matches);
+
+		// `total` is the number of rows in this page: OpenRegister's findAll
+		// returns a plain list with no overall count.
+		return ['results' => $results, 'total' => count($results)];
+
+	}//end find()
+
+	/**
+	 * The entities of a findAll answer, flat or wrapped in `results`.
+	 *
+	 * @param array<mixed> $matches The answer.
+	 *
+	 * @return array<int, ObjectEntity> The entities.
+	 */
+	private function entitiesOf(array $matches): array {
 		$results = [];
 		foreach (($matches['results'] ?? $matches) as $row) {
 			if ($row instanceof ObjectEntity) {
@@ -364,9 +417,7 @@ class ExchangeReadModel {
 			}
 		}
 
-		// `total` is the number of rows in this page: OpenRegister's findAll
-		// returns a plain list with no overall count.
-		return ['results' => $results, 'total' => count($results)];
+		return $results;
 
-	}//end find()
+	}//end entitiesOf()
 }//end class

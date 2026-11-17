@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZKN Sync Service.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Core of the stuf-zkn-bridge: resolves the configured `type=stuf-zkn`
  * source + provider binding, drives the INBOUND path (parse+translate a
  * `zakLk01`/`edcLk01` kennisgeving, upsert the OR/ZGW zaak/document object,
@@ -21,14 +24,18 @@
  * row with `status=processed`, a redelivery short-circuits straight to a
  * fresh `Bv03` acknowledgement without touching the OR object again.
  *
- * AVG/persoonsgegevens hygiene: the raw inbound/outbound envelope XML is
- * NEVER persisted on `stuf_message` — a zaak/document can carry
+ * AVG/persoonsgegevens hygiene: this bridge NEVER persists the raw
+ * inbound/outbound envelope XML on `stuf_message` — a zaak/document can carry
  * persoonsgegevens (betrokkene BSN, namen) that this fleet's
  * `AvgBsnPolicyRule`/`iwmo_ijw_message` precedent already treats as
  * "never store the raw wire payload verbatim", only the correlation/audit
  * metadata (mirrors `IwmoIjwSyncService::retryOne()`'s identical, already-
  * accepted limitation: retry is best-effort at the reference level, not a
- * full replay of the original payload).
+ * full replay of the original payload). The one exception is the StUF-ZDS
+ * case client ({@see \OCA\Integriq\Service\StufZkn\StufZdsOutbound}): a
+ * kennisgeving that is waiting for a retry keeps its envelope, without the
+ * WS-Security header, on its row for at most 24 hours (`expires`); the row is
+ * admin-only and the envelope is erased when the message concludes.
  *
  * @category Service
  * @package  OCA\Integriq\Service
@@ -36,9 +43,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *
@@ -52,6 +56,8 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\StufZknProviderException;
 use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\StufZkn\InboundMessageTranslator;
 use OCA\Integriq\Service\StufZkn\LogStufZknProvider;
@@ -73,7 +79,7 @@ use Throwable;
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
-class StufZknSyncService {
+class StufZknSyncService implements StufZknSyncServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding stuf-zkn sources and message records.
@@ -338,7 +344,10 @@ class StufZknSyncService {
 					'schema' => self::SCHEMA_MESSAGE,
 					'direction' => 'outbound',
 				],
-			]
+			],
+			_rbac: false,
+			// Unscoped: background retry of failed StUF messages, no user session.
+			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
 
@@ -346,6 +355,12 @@ class StufZknSyncService {
 		foreach ($results as $message) {
 			$data = $message->getObject();
 			if (($data['status'] ?? null) !== 'failed') {
+				continue;
+			}
+
+			// A ZDS case message (it names its operation) has its own retry
+			// schedule, StufZdsRetryJob; its failure here is final.
+			if (($data['operation'] ?? '') !== '') {
 				continue;
 			}
 
@@ -373,27 +388,16 @@ class StufZknSyncService {
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new StufZknProviderException(
 				message: 'No active StUF-ZKN source is configured (register "openconnector", schema "source", '
 					. 'type "stuf-zkn", isEnabled=true). Configure one before using the StUF-ZKN bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**
@@ -421,6 +425,7 @@ class StufZknSyncService {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: resolves the active StUF source for a background sync, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -508,7 +513,10 @@ class StufZknSyncService {
 
 			$data = $existing->getObject();
 			$data['status'] = 'vervallen';
-			$this->objectService->saveObject(object: $data, register: $register, schema: $schema, uuid: $existing->getUuid());
+			$this->objectService->saveObject(
+				object: $data,
+				options: RegisterSave::options(register: $register, schema: $schema, uuid: $existing->getUuid())
+			);
 			return;
 		}
 
@@ -518,7 +526,10 @@ class StufZknSyncService {
 			$uuid = $existing->getUuid();
 		}
 
-		$this->objectService->saveObject(object: $data, register: $register, schema: $schema, uuid: $uuid);
+		$this->objectService->saveObject(
+			object: $data,
+			options: RegisterSave::options(register: $register, schema: $schema, uuid: $uuid)
+		);
 
 	}//end upsertOrObject()
 
@@ -570,7 +581,10 @@ class StufZknSyncService {
 					'referentienummer' => $referenceNumber,
 				],
 				'limit' => 1,
-			]
+			],
+			_rbac: false,
+			// Unscoped: matches an inbound StUF message from a remote system, no user session.
+			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
 
@@ -624,7 +638,12 @@ class StufZknSyncService {
 			$uuid = $existing->getUuid();
 		}
 
-		$this->objectService->saveObject(object: $record, register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid);
+		$this->objectService->saveObject(
+			object: $record,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid),
+			_rbac: false,
+			_multitenancy: false
+		);
 
 	}//end persistMessage()
 
@@ -660,9 +679,9 @@ class StufZknSyncService {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid()),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 	}//end retryOne()

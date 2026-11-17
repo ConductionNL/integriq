@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://github.com/ConductionNL/integriq
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -18,6 +21,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -57,23 +63,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
  */
-class SynchronizationRunProgressService {
-
-	/**
-	 * The register progress records live in.
-	 *
-	 * @var string
-	 */
-	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
-	// OpenRegister matches registers by slug; renaming it orphans every stored object.
-	public const REGISTER = 'integriq';
-
-	/**
-	 * The schema progress records live in.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA = 'synchronization_run';
+class SynchronizationRunProgressService implements SynchronizationRunProgressServiceInterface {
 
 	/**
 	 * Minimum seconds between two progress writes.
@@ -91,20 +81,6 @@ class SynchronizationRunProgressService {
 	 * @var string
 	 */
 	public const TRIGGER_CRON = 'cron';
-
-	/**
-	 * An administrator started the run.
-	 *
-	 * @var string
-	 */
-	public const TRIGGER_MANUAL = 'manual';
-
-	/**
-	 * Run again on a failed run started it.
-	 *
-	 * @var string
-	 */
-	public const TRIGGER_RERUN = 'rerun';
 
 	/**
 	 * Every value `triggeredBy` may hold, as the register's enum lists them.
@@ -396,13 +372,13 @@ class SynchronizationRunProgressService {
 
 			$saved = $this->objectService->saveObject(
 				object: $object,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+					uuid: $uuid,
+					policy: new SavePolicy(silent: true, validation: false)
+				),
 				_rbac: false,
-				_multitenancy: false,
-				silent: true,
-				_validation: false,
+				_multitenancy: false
 			);
 
 			$this->writeMillis += ((microtime(true) - $started) * 1000);

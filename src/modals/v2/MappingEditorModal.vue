@@ -72,22 +72,17 @@
 			     the input → transform → output columns rather than inside one,
 			     stacked and capped short of the modal width: they are not the
 			     work, and stacking sidesteps the input/textarea height gap. -->
-			<div class="cn-mapping-editor__identity">
-				<NcTextField
-					v-model="draft.name"
-					:label="nameLabel"
-					:error="!!nameError"
-					:helperText="nameError"
-					:disabled="saving"
-					required
-					@blur="nameTouched = true" />
-				<NcTextArea
-					v-model="draft.description"
-					:label="t('integriq', 'Description')"
-					:disabled="saving"
-					rows="1"
-					resize="vertical" />
-			</div>
+			<EditorIdentityFields
+				block="cn-mapping-editor"
+				:name="draft.name"
+				:description="draft.description"
+				:nameLabel="nameLabel"
+				:nameError="nameError"
+				:disabled="saving"
+				required
+				@update:name="draft.name = $event"
+				@update:description="draft.description = $event"
+				@blur="nameTouched = true" />
 
 			<!-- The pipeline. Arrows live in the grid gutters rather than in a
 			     separate strip: they carry the input → transform → output
@@ -185,100 +180,52 @@
 				</template>
 				{{ t('integriq', 'Test') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<PlusIcon v-else-if="isCreate" :size="20" />
-					<ContentSaveOutlineIcon v-else :size="20" />
-				</template>
-				{{ isCreate ? t('integriq', 'Create') : t('integriq', 'Save') }}
-			</NcButton>
+			<EditorSaveButton
+				:disabled="!canSave"
+				:saving="saving"
+				:isCreate="isCreate"
+				@click="onSave" />
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import { showSuccess } from '@nextcloud/dialogs'
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-	NcTextArea,
-	NcTextField,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcNoteCard } from '@nextcloud/vue'
 import ArrowRightIcon from 'vue-material-design-icons/ArrowRight.vue'
-import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseArrowLeftOutlineIcon from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
 import DatabaseArrowRightOutlineIcon from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import SwapHorizontalIcon from 'vue-material-design-icons/SwapHorizontal.vue'
 import TestTubeIcon from 'vue-material-design-icons/TestTube.vue'
 import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 import MappingRulesEditor from '../../views/wrappers/MappingRulesEditor.vue'
+import EditorIdentityFields from './EditorIdentityFields.vue'
+import EditorSaveButton from './EditorSaveButton.vue'
 import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
-
-/** A name has to carry at least one letter or digit — punctuation alone is not a name. */
-const NAME_PATTERN = /[\p{L}\p{N}]/u
+import confirmSave from '../../mixins/confirmSave.js'
+import namedEditorDialog from '../../mixins/namedEditorDialog.js'
+import { editorSlotScopeProps } from '../editorSlotScope.js'
 
 export default {
 	name: 'MappingEditorModal',
 
 	components: {
+		EditorSaveButton,
+		EditorIdentityFields,
 		NcButton,
 		NcDialog,
-		NcLoadingIcon,
 		NcNoteCard,
-		NcTextArea,
-		NcTextField,
 		MappingRulesEditor,
 		MappingResultPanel,
 		ArrowRightIcon,
-		ContentSaveOutlineIcon,
 		DatabaseArrowLeftOutlineIcon,
 		DatabaseArrowRightOutlineIcon,
-		PlusIcon,
 		SwapHorizontalIcon,
 		TestTubeIcon,
 	},
 
-	props: {
-		/** Slot scope: whether CnIndexPage wants the form dialog open. */
-		show: {
-			type: Boolean,
-			default: false,
-		},
+	mixins: [namedEditorDialog, confirmSave],
 
-		/** Slot scope: the row being edited, or `null` in create mode. */
-		item: {
-			type: Object,
-			default: null,
-		},
-
-		/** Slot scope: the effective JSON schema. Unused — the fields are bespoke. */
-		schema: {
-			type: Object,
-			default: null,
-		},
-
-		/**
-		 * Slot scope: persists the object through CnIndexPage's own save path
-		 * and refreshes the list. Saving here instead of calling this would
-		 * leave the index stale until a reload — the built-in refresh only
-		 * runs inside this handler — and would write to a different store
-		 * than the one the list reads from.
-		 */
-		confirm: {
-			type: Function,
-			default: null,
-		},
-
-		/** Slot scope: closes the form dialog on CnIndexPage. */
-		close: {
-			type: Function,
-			default: null,
-		},
-	},
+	props: { ...editorSlotScopeProps },
 
 	data() {
 		return {
@@ -298,10 +245,6 @@ export default {
 	},
 
 	computed: {
-		isCreate() {
-			return !this.item
-		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		dialogTitle() {
 			return this.isCreate
@@ -312,33 +255,6 @@ export default {
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		inputPlaceholder() {
 			return '{\n  "name": "hello"\n}'
-		},
-
-		/**
-		 * Required marker on the label. NcTextField/NcInputField has no
-		 * `required` prop and renders no marker of its own, so the ` *`
-		 * suffix is appended here — the same convention CnFormDialog uses for
-		 * schema-required fields, so both dialogs read alike.
-		 *
-		 * @return {string} Label text.
-		 *
-		 * @spec openspec/specs/mapping-editor-ui/spec.md
-		 */
-		nameLabel() {
-			return this.t('integriq', 'Name') + ' *'
-		},
-
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
-		nameError() {
-			if (!this.draft.name) {
-				return this.nameTouched ? this.t('integriq', 'Name is required') : ''
-			}
-			return NAME_PATTERN.test(this.draft.name)
-				? ''
-				: this.t(
-						'integriq',
-						'Name must contain at least one letter or number',
-					)
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
@@ -369,24 +285,39 @@ export default {
 		},
 	},
 
-	watch: {
-		show: {
-			immediate: true,
-			/**
-			 * Re-seed the draft every time the dialog opens, so a cancelled
-			 * edit leaves nothing behind for the next one.
-			 *
-			 * @param {boolean} value Whether the dialog is now open.
-			 *
-			 * @spec openspec/specs/mapping-editor-ui/spec.md
-			 */
-			handler(value) {
-				if (value) this.seedDraft()
-			},
-		},
-	},
-
 	methods: {
+		/**
+		 * The record to save.
+		 *
+		 * @return {object} The payload for the slot's `confirm` binding.
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		savePayload() {
+			return { ...this.testableMapping }
+		},
+
+		/**
+		 * The toast after a save.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		savedText() {
+			return this.isCreate
+				? this.t('integriq', 'Mapping created')
+				: this.t('integriq', 'Mapping saved')
+		},
+
+		/**
+		 * The reason shown when a save fails without one.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		saveFailedText() {
+			return this.t('integriq', 'Failed to save mapping')
+		},
+
 		/**
 		 * A blank mapping draft. Pass-through defaults to on, matching the
 		 * `mapping` schema's own default in the OpenRegister register.
@@ -435,50 +366,6 @@ export default {
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onTest() {
 			this.$refs.result?.run()
-		},
-
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
-		onCancel() {
-			if (this.saving) return
-			this.close?.()
-		},
-
-		/**
-		 * Persist the draft through CnIndexPage's `confirm` binding rather
-		 * than saving here directly.
-		 *
-		 * That is load-bearing, not stylistic: the index's list refresh runs
-		 * inside its own save handler, so a dialog that persists on its own
-		 * leaves the table stale until a reload (the `or-collection-*` live
-		 * update only covers it where server push is actually delivered).
-		 * Going through `confirm` also keeps the write in the same store the
-		 * list reads from instead of a second cache of the same objects.
-		 *
-		 * The draft is merged over `item` so fields this dialog does not edit
-		 * (slug, version, configurations, …) survive; no `id` means create.
-		 *
-		 * @return {Promise<void>} Resolves once the save has settled.
-		 *
-		 * @spec openspec/specs/mapping-editor-ui/spec.md
-		 */
-		async onSave() {
-			if (!this.canSave) return
-			this.saving = true
-			this.saveError = ''
-			try {
-				await this.confirm({ ...(this.item || {}), ...this.draft })
-				showSuccess(
-					this.isCreate
-						? this.t('integriq', 'Mapping created')
-						: this.t('integriq', 'Mapping saved'),
-				)
-				this.close?.()
-			} catch (err) {
-				this.saveError =
-					err?.message || this.t('integriq', 'Failed to save mapping')
-			} finally {
-				this.saving = false
-			}
 		},
 	},
 }

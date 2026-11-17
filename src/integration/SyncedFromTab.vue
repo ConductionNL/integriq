@@ -20,18 +20,18 @@
   unavailable" banner rather than a broken tab.
 -->
 <template>
-	<div class="oc-synced-from" data-testid="oc-synced-from">
+	<div v-if="!summarised" class="oc-synced-from" data-testid="oc-synced-from">
 		<NcLoadingIcon v-if="loading" :size="24" />
 
 		<div v-else-if="unavailable" class="oc-synced-from__notice">
 			{{ t('integriq', 'Sync information is currently unavailable.') }}
 		</div>
 
-		<div v-else-if="rows.length === 0" class="oc-synced-from__empty">
+		<div v-else-if="rows.length === 0 && !carded" class="oc-synced-from__empty">
 			{{ t('integriq', 'This object was not created by a synchronization.') }}
 		</div>
 
-		<template v-else>
+		<template v-else-if="rows.length > 0">
 			<p
 				v-if="writeBackConflict"
 				class="oc-synced-from__conflict"
@@ -81,6 +81,7 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcLoadingIcon } from '@nextcloud/vue'
 import SyncIcon from 'vue-material-design-icons/Sync.vue'
+import { leafReportMixin } from './leafReport.js'
 
 export default {
 	name: 'SyncedFromTab',
@@ -89,6 +90,8 @@ export default {
 		NcLoadingIcon,
 		SyncIcon,
 	},
+
+	mixins: [leafReportMixin],
 
 	props: {
 		/** OR object uuid the surface is rendering. */
@@ -121,6 +124,34 @@ export default {
 	},
 
 	computed: {
+		/** @return {string} Why the sync information could not be read, or ''. */
+		error() {
+			return this.unavailable ? 'unavailable' : ''
+		},
+
+		/**
+		 * What this leaf reports to a carding host or a "linked" card.
+		 *
+		 * @return {object} The report.
+		 * @spec openspec/specs/leaves-library-card/spec.md#requirement-the-sync-leaf-reports-to-the-library-card-and-the-linked-card
+		 */
+		leafReport() {
+			return {
+				count: this.rows.length,
+				emptyLabel: t(
+					'integriq',
+					'This object was not created by a synchronization.',
+				),
+
+				noun: t('integriq', 'synchronizations'),
+				rows: this.rows.map((row) => ({
+					label: row.title || t('integriq', 'Synchronization'),
+					href: row.url || '',
+					icon: 'SyncOutline',
+				})),
+			}
+		},
+
 		/**
 		 * Whether the connected system refused the last local change. The
 		 * provider puts the object's write-back state on every row.

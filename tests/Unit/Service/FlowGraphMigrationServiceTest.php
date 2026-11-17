@@ -14,6 +14,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -28,6 +31,7 @@ use OCP\IL10N;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the live-object half of the steps-to-graph migration.
@@ -120,7 +124,10 @@ class FlowGraphMigrationServiceTest extends TestCase {
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register, $schema, $uuid) use (&$written): ObjectEntity {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$written): ObjectEntity {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
+					$uuid = $options->uuid;
 					$this->assertSame('integriq', $register);
 					$this->assertSame('flow', $schema);
 					$this->assertSame('f-1', $uuid);

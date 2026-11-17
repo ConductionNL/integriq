@@ -19,14 +19,17 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\EudiCredentialOfferService;
-use OCA\Integriq\Service\EudiIssuerKeyService;
+use OCA\Integriq\Service\EudiCredentialOfferServiceInterface;
+use OCA\Integriq\Service\EudiIssuerKeyServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -50,15 +53,15 @@ class EudiIssuerKeyAdminController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
-	 * @param EudiIssuerKeyService $keyService Issuer signing-key lifecycle.
-	 * @param EudiCredentialOfferService $offerService Used only to resolve the active organisation id.
+	 * @param EudiIssuerKeyServiceInterface $keyService Issuer signing-key lifecycle.
+	 * @param EudiCredentialOfferServiceInterface $offerService Used only to resolve the active organisation id.
 	 * @param LoggerInterface $logger Logger for key lifecycle failures.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly EudiIssuerKeyService $keyService,
-		private readonly EudiCredentialOfferService $offerService,
+		private readonly EudiIssuerKeyServiceInterface $keyService,
+		private readonly EudiCredentialOfferServiceInterface $offerService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -106,7 +109,7 @@ class EudiIssuerKeyAdminController extends Controller {
 		return new JSONResponse(
 			data: [
 				'kid' => $active['kid'],
-				'algorithm' => EudiIssuerKeyService::ALGORITHM,
+				'algorithm' => EudiIssuerKeyServiceInterface::ALGORITHM,
 			]
 		);
 

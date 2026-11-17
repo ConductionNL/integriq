@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -19,6 +22,7 @@ use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
 use OCA\Integriq\Service\Integration\WriteBackConflictReader;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Services\IAppConfig;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
@@ -106,7 +110,7 @@ class SynchronizationContractProviderTest extends TestCase {
 		$this->objectService->expects($this->never())->method('findAll');
 
 		// Act
-		$result = $this->provider->list('some-register', 'some-schema', 'obj-uuid-1');
+		$result = $this->provider->list(new ObjectRef(register: 'some-register', schema: 'some-schema', id: 'obj-uuid-1'));
 
 		// Assert
 		$this->assertIsArray($result);
@@ -169,7 +173,7 @@ class SynchronizationContractProviderTest extends TestCase {
 		);
 
 		// Act
-		$result = $provider->list('reg', 'schema', 'obj-uuid-2');
+		$result = $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-uuid-2'));
 
 		// Assert
 		$this->assertCount(1, $result);
@@ -208,7 +212,7 @@ class SynchronizationContractProviderTest extends TestCase {
 		);
 
 		// Act
-		$result = $provider->list('reg', 'schema', 'obj-uuid-err');
+		$result = $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-uuid-err'));
 
 		// Assert — empty array, no exception propagated (endpoint stays 200).
 		$this->assertIsArray($result);

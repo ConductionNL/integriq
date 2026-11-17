@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Notification;
 
 use InvalidArgumentException;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
@@ -63,7 +63,7 @@ class ApprovalNotifier implements INotifier {
 	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
 	public function getID(): string {
-		return Application::APP_ID;
+		return AppIdentity::APP_ID;
 	}//end getID()
 
 	/**
@@ -74,7 +74,7 @@ class ApprovalNotifier implements INotifier {
 	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
 	public function getName(): string {
-		return $this->l10nFactory->get(Application::APP_ID)->t('Integriq');
+		return $this->l10nFactory->get(AppIdentity::APP_ID)->t('Integriq');
 	}//end getName()
 
 	/**
@@ -123,7 +123,7 @@ class ApprovalNotifier implements INotifier {
 	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
-		if ($notification->getApp() !== Application::APP_ID) {
+		if ($notification->getApp() !== AppIdentity::APP_ID) {
 			throw $this->unknownNotification();
 		}
 
@@ -131,7 +131,7 @@ class ApprovalNotifier implements INotifier {
 			throw $this->unknownNotification();
 		}
 
-		$l = $this->l10nFactory->get(Application::APP_ID, $languageCode);
+		$l = $this->l10nFactory->get(AppIdentity::APP_ID, $languageCode);
 		$params = $notification->getSubjectParameters();
 		$group = (string)($params['approverGroup'] ?? '');
 
@@ -143,7 +143,7 @@ class ApprovalNotifier implements INotifier {
 
 		$notification->setIcon(
 			$this->urlGenerator->getAbsoluteURL(
-				$this->urlGenerator->imagePath(appName: Application::APP_ID, file: 'app-dark.svg')
+				$this->urlGenerator->imagePath(appName: AppIdentity::APP_ID, file: 'app-dark.svg')
 			)
 		);
 

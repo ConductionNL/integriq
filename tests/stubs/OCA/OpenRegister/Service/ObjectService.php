@@ -14,6 +14,9 @@
  * @category Test
  * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -22,6 +25,12 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Minimal stub for OCA\OpenRegister\Service\ObjectService.
@@ -112,15 +121,34 @@ class ObjectService {
 	 */
 	public function find(
 		$id,
-		?string $register = null,
-		?string $schema = null,
+		?ObjectFindOptions $options = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true
+	): ?ObjectEntity {
+		$register = $options?->register;
+		$schema = $options?->schema;
+		$_render = $options?->render ?? true;
+		$_audit = $options?->audit ?? true;
+		$_extend = $options?->extend ?? [];
+		return new ObjectEntity();
+	}
+
+	/**
+	 * Render an entity (signature as OpenRegister #9077).
+	 *
+	 * @param ObjectEntity $entity The entity to render.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\RenderSelection|null $selection The extend, filter, fields and unset lists.
+	 * @param bool $_rbac Apply RBAC filters when true.
+	 * @param bool $_multitenancy Apply multitenancy filters when true.
+	 * @return array
+	 */
+	public function renderEntity(
+		ObjectEntity $entity,
+		?\OCA\OpenRegister\Kernel\Contracts\RenderSelection $selection = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $_render = true,
-		bool $_audit = true,
-		?array $_extend = [],
-	): ?ObjectEntity {
-		return new ObjectEntity();
+	): array {
+		return $entity->jsonSerialize();
 	}
 
 	/**
@@ -196,14 +224,15 @@ class ObjectService {
 	 */
 	public function saveObject(
 		$object,
-		?string $register = null,
-		?string $schema = null,
-		?string $uuid = null,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
+		bool $_multitenancy = true
 	): ObjectEntity {
+		$register = $options->target->register;
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+		$silent = $options->policy->silent ?? false;
+		$_validation = $options->policy->validation ?? true;
 		return new ObjectEntity();
 	}
 
@@ -235,16 +264,17 @@ class ObjectService {
 	 */
 	public function saveObjects(
 		array $objects,
-		?string $register = null,
-		?string $schema = null,
+		BulkSaveOptions $options = new BulkSaveOptions(),
 		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $validation = false,
-		bool $events = false,
-		bool $deduplicateIds = true,
-		bool $enrich = true,
-		bool $_audit = true,
+		bool $_multitenancy = true
 	): array {
+		$register = $options->defaults->register;
+		$schema = $options->defaults->schema;
+		$validation = $options->validation ?? false;
+		$events = $options->events ?? false;
+		$deduplicateIds = true;
+		$enrich = true;
+		$_audit = $options->audit ?? true;
 		return [];
 	}
 
@@ -276,15 +306,16 @@ class ObjectService {
 	 * @return bool
 	 */
 	public function deleteObject(
-		?string $uuid = null,
-		string|int|null $register = null,
-		string|int|null $schema = null,
+		ObjectDeletion $deletion,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $_retentionSweep = false,
-		mixed $currentUser = null,
-		bool $permanent = false,
+		bool $_retentionSweep = false
 	): bool {
+		$uuid = $deletion->uuid;
+		$register = $deletion->target->register;
+		$schema = $deletion->target->schema;
+		$currentUser = $deletion->currentUser;
+		$permanent = $deletion->permanent ?? false;
 		return true;
 	}
 
@@ -294,6 +325,39 @@ class ObjectService {
 	 * @param string $register
 	 * @return static
 	 */
+	/**
+	 * Count the objects matching a query.
+	 *
+	 * @param array $config The query, with its `filters`.
+	 * @return int
+	 */
+	public function count(array $config = []): int {
+		return 0;
+	}
+
+	/**
+	 * The audit-trail rows of an object (signature as OpenRegister ObjectService::getLogs()).
+	 *
+	 * @param string $uuid The object uuid.
+	 * @param array $filters Row filters.
+	 * @param bool $_rbac Apply RBAC filters when true.
+	 * @param bool $_multitenancy Apply multitenancy filters when true.
+	 * @return array
+	 */
+	public function getLogs(string $uuid, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array {
+		return [];
+	}
+
+	/**
+	 * Turn a validation failure into its JSON answer (as OpenRegister ObjectService::handleValidationException()).
+	 *
+	 * @param \Exception $exception The validation failure.
+	 * @return \OCP\AppFramework\Http\JSONResponse
+	 */
+	public function handleValidationException(\Exception $exception): \OCP\AppFramework\Http\JSONResponse {
+		return new \OCP\AppFramework\Http\JSONResponse(['message' => $exception->getMessage()], 400);
+	}
+
 	public function setRegister(string $register): static {
 		return $this;
 	}
@@ -316,7 +380,10 @@ class ObjectService {
 	 * @param int|null $duration Lock duration in seconds.
 	 * @return array<string, mixed>
 	 */
-	public function lockObject(string $identifier, ?string $process = null, ?int $duration = null): array {
+	public function lockObject(LockRequest $request, bool $advisory = false): array {
+		$identifier = $request->identifier;
+		$process = $request->process;
+		$duration = $request->duration;
 		return ['id' => $identifier, 'process' => $process, 'duration' => $duration];
 	}
 
@@ -326,7 +393,8 @@ class ObjectService {
 	 * @param string|int $identifier Object identifier.
 	 * @return bool
 	 */
-	public function unlockObject(string|int $identifier): bool {
+	public function unlockObject(UnlockRequest $request): bool {
+		$identifier = $request->identifier;
 		return true;
 	}
 

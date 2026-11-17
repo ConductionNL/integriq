@@ -30,7 +30,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Outbound;
 
 use DateTimeImmutable;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUser;
 
@@ -39,7 +40,7 @@ use OCP\IUser;
  *
  * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-the-sent-message-and-its-real-recipients-are-readable-behind-their-own-permission-req-ocl-002
  */
-class MessageBodyReader {
+class MessageBodyReader implements MessageBodyReaderInterface {
 
 	/**
 	 * The ADR-023 action reading a stored body is gated by.
@@ -56,12 +57,12 @@ class MessageBodyReader {
 	 *
 	 * @param MessageRecorder $recorder Reads the record.
 	 * @param ORObjectService $objectService Records the read.
-	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
 	 */
 	public function __construct(
 		private readonly MessageRecorder $recorder,
 		private readonly ORObjectService $objectService,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 
 	}//end __construct()
@@ -114,9 +115,7 @@ class MessageBodyReader {
 
 		$this->objectService->saveObject(
 			object: $record,
-			register: MessageRecorder::REGISTER,
-			schema: MessageRecorder::SCHEMA,
-			uuid: $uuid,
+			options: RegisterSave::options(register: MessageRecorder::REGISTER, schema: MessageRecorder::SCHEMA, uuid: $uuid)
 		);
 
 	}//end recordRead()

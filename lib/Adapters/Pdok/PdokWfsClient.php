@@ -6,7 +6,7 @@
  * Defines the polymorphic surface — `getCapabilities()`, `describeFeatureType()`,
  * `getFeature()`, `flavour()` — for the PDOK WFS dataset family.
  *
- * DI in {@see \OCA\Integriq\AppInfo\Application::register()} resolves this
+ * DI in {@see \OCA\Integriq\Adapters\AdaptersRegistrar} resolves this
  * abstract to a concrete flavour, gated on `pdok.feature_flag`.
  *
  * @category Adapter
@@ -67,7 +67,9 @@ abstract class PdokWfsClient {
 	 * @param string $srsName CRS (default `EPSG:28992`).
 	 * @param array<string,string> $filterFields Optional name=value filter pairs.
 	 *
-	 * @return array<string,mixed> Parsed GeoJSON FeatureCollection.
+	 * @return array<string,mixed> Parsed GeoJSON FeatureCollection. An empty
+	 *                              collection that carries `unanswered: true`
+	 *                              means the service gave no usable answer.
 	 */
 	abstract public function getFeature(
 		string $dataset,

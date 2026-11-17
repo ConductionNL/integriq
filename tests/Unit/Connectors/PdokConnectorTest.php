@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Connectors;
 
 use OCA\Integriq\Connectors\PdokConnector;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -32,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Unit tests for PdokConnector — normalisation, cache behaviour, breaker logic.
@@ -245,4 +248,206 @@ class PdokConnectorTest extends TestCase {
 		return json_decode((string)file_get_contents($path), true);
 	}//end loadFixture()
 
+	/**
+	 * Every fetch path matches the golden file recorded before fetch() was
+	 * split: the cache, the stored-address lookup, the open circuit, upstream
+	 * failures and success with write-through, as results, cache writes,
+	 * register calls and the one observability log line per call.
+	 *
+	 * Regenerate with PDOK_FETCH_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryFetchPathMatchesTheGoldenFile(): void {
+		$fixture = $this->loadFixture('lauriergracht');
+		$fresh = gmdate('c');
+		$cases = [
+			'suggest-cache-hit' => ['suggest', ['cache' => ['docs' => [['pdokId' => 'c']], 'numFound' => 1]]],
+			'suggest-upstream-200' => ['suggest', ['status' => 200]],
+			'free-upstream-200' => ['free', ['status' => 200]],
+			'free-upstream-500' => ['free', ['status' => 500]],
+			'free-upstream-throws' => ['free', ['status' => 0]],
+			'lookup-open-circuit' => ['lookup', ['circuit' => 'open']],
+			'lookup-stored-fresh' => ['lookup', ['stored' => [['pdokId' => 'adr-1', 'fetchedAt' => $fresh]]]],
+			'lookup-stored-stale' => ['lookup', ['stored' => [['pdokId' => 'adr-1', 'fetchedAt' => '2001-01-01T00:00:00Z']], 'status' => 200]],
+			'lookup-no-register' => ['lookup', ['noRegister' => true, 'status' => 200]],
+			'reverse-stored-empty-upstream-200' => ['reverse', ['stored' => [], 'status' => 200]],
+			'reverse-write-fails' => ['reverse', ['stored' => [], 'status' => 200, 'saveFails' => true]],
+			'reverse-stored-fresh' => ['reverse', ['stored' => [['pdokId' => 'adr-2', 'fetchedAt' => $fresh], ['pdokId' => 'adr-3', 'fetchedAt' => $fresh]]]],
+			'lookup-stored-throws' => ['lookup', ['stored' => [], 'storedThrows' => true, 'status' => 200]],
+			'lookup-stored-without-fetchedAt' => ['lookup', ['stored' => [['pdokId' => 'adr-1']], 'status' => 200]],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => [$method, $case]) {
+			$this->setUp();
+			$calls = [];
+			$store = [];
+			if (isset($case['cache']) === true) {
+				$store['PLACEHOLDER'] = $case['cache'];
+			}
+
+			$this->cache->method('get')->willReturnCallback(
+				function (string $key) use (&$store, $case) {
+					if (str_contains($key, '::circuit') === true) {
+						return (($case['circuit'] ?? null) === 'open' ? ['state' => 'open', 'failures' => 5, 'opened_at' => time()] : ($store[$key] ?? null));
+					}
+
+					return ($store[$key] ?? ($store['PLACEHOLDER'] ?? null));
+				}
+			);
+			$this->cache->method('set')->willReturnCallback(
+				function (string $key, $value, int $ttl = 0) use (&$store, &$calls) {
+					$store[$key] = $value;
+					$calls[] = ['cache.set', (str_contains($key, '::circuit') === true ? 'circuit' : 'answer'), $ttl, (str_contains($key, '::circuit') === true ? ($value['state'] ?? null) : $value)];
+					return true;
+				}
+			);
+
+			$response = $this->createMock(IResponse::class);
+			$response->method('getStatusCode')->willReturn(($case['status'] ?? 200));
+			$response->method('getBody')->willReturn(json_encode($fixture));
+			$client = $this->createMock(IClient::class);
+			$client->method('get')->willReturnCallback(
+				function (string $url, array $options) use ($response, $case, &$calls) {
+					$calls[] = ['http.get', $url, $options];
+					if (($case['status'] ?? 200) === 0) {
+						throw new \RuntimeException('dns failure');
+					}
+
+					return $response;
+				}
+			);
+			$this->clientService->method('newClient')->willReturn($client);
+
+			foreach (['debug', 'warning', 'error'] as $level) {
+				$this->logger->method($level)->willReturnCallback(
+					function (string $message, array $context = []) use ($level, &$calls) {
+						if (array_key_exists('upstream_latency_ms', $context) === true && $context['upstream_latency_ms'] !== null) {
+							$context['upstream_latency_ms'] = '(ms)';
+						}
+
+						$calls[] = ['log.' . $level, $message, $context];
+					}
+				);
+			}
+
+			if (isset($case['stored']) === true || ($case['noRegister'] ?? false) === true) {
+				$register = new class($case, $calls) extends ObjectService {
+					/**
+					 * @param array $case  The case.
+					 * @param array $calls The call log, by reference.
+					 */
+					public function __construct(private array $case, private array &$calls) {
+					}
+
+					/**
+					 * @param mixed ...$args Ignored.
+					 *
+					 * @return object
+					 */
+					public function getMapper(...$args): object {
+						$this->calls[] = ['or.getMapper', $args];
+						$stored = ($this->case['stored'] ?? []);
+						return new class($stored, $this->calls, ($this->case['storedThrows'] ?? false)) {
+							/**
+							 * @param array $stored The stored rows.
+							 * @param array $calls  The call log, by reference.
+							 * @param bool  $throws Whether the query fails.
+							 */
+							public function __construct(private array $stored, private array &$calls, private bool $throws) {
+							}
+
+							/**
+							 * @param array $config The query.
+							 *
+							 * @return array
+							 */
+							public function findAll(array $config): array {
+								$this->calls[] = ['or.mapper.findAll', $config];
+								if ($this->throws === true) {
+									throw new \RuntimeException('register query failed');
+								}
+
+								return $this->stored;
+							}
+						};
+					}
+
+					/**
+					 * @param array $config        The query.
+					 * @param bool  $_rbac         Apply RBAC.
+					 * @param bool  $_multitenancy Apply multitenancy.
+					 *
+					 * @return array
+					 */
+					public function findAll(array $config = [], bool $_rbac = true, bool $_multitenancy = true): array {
+						$this->calls[] = ['or.findAll', $config, $_rbac, $_multitenancy];
+						return [];
+					}
+
+					/**
+					 * @param mixed       $object        The object.
+					 * @param string|null $register      The register.
+					 * @param string|null $schema        The schema.
+					 * @param string|null $uuid          The uuid.
+					 * @param bool        $_rbac         Apply RBAC.
+					 * @param bool        $_multitenancy Apply multitenancy.
+					 * @param bool        $silent        Suppress events.
+					 * @param bool        $_validation   Validate.
+					 *
+					 * @return ObjectEntity
+					 */
+					public function saveObject(
+						$object,
+						ObjectSaveOptions $options = new ObjectSaveOptions(),
+						bool $_rbac = true,
+						bool $_multitenancy = true
+					): ObjectEntity {
+						$register = $options->target->register;
+						$schema = $options->target->schema;
+						$uuid = $options->uuid;
+						$silent = $options->policy->silent ?? false;
+						$_validation = $options->policy->validation ?? true;
+						$this->calls[] = ['or.saveObject', ['register' => $register, 'schema' => $schema, 'object' => $object, 'uuid' => $uuid, '_rbac' => $_rbac, '_multitenancy' => $_multitenancy]];
+						if (($this->case['saveFails'] ?? false) === true) {
+							throw new \RuntimeException('register refused');
+						}
+
+						return new ObjectEntity();
+					}
+				};
+				$this->container = $this->createMock(ContainerInterface::class);
+				if (($case['noRegister'] ?? false) === true) {
+					$this->container->method('get')->willThrowException(new \RuntimeException('no OR'));
+				} else {
+					$this->container->method('get')->willReturn($register);
+				}
+			}//end if
+
+			$connector = $this->makeConnector();
+			$result = match ($method) {
+				'suggest' => $connector->suggest('lauriergracht'),
+				'free' => $connector->free('Lauriergracht', 5, 2),
+				'lookup' => $connector->lookup('adr-1'),
+				'reverse' => $connector->reverse(52.37, 4.88),
+			};
+
+			$actual[$name] = ['result' => $result, 'calls' => $calls];
+		}//end foreach
+
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION)) . "\n";
+		$encoded = str_replace($fresh, '(fresh)', $encoded);
+		$encoded = (string)preg_replace('/"fetchedAt": "(?!2001)[^"]+Z"/', '"fetchedAt": "(clock)"', $encoded);
+		$golden = __DIR__ . '/../../fixtures/connectors/pdok-fetch.json';
+		if (getenv('PDOK_FETCH_GOLDEN') === '1') {
+			if (is_dir(dirname($golden)) === false) {
+				mkdir(dirname($golden), 0777, true);
+			}
+
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryFetchPathMatchesTheGoldenFile()
 }//end class

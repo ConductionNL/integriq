@@ -1,0 +1,2584 @@
+{
+    "single-page": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "single-page-test": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ]
+        ]
+    },
+    "paginated": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 2,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "pagination": {
+                        "paginationQuery": "page",
+                        "paginationIn": "query",
+                        "page": 2,
+                        "index": 2
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": true
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "pagination-string-false": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": "false"
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": "false"
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "pagination-garbage": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 2,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": "maybe"
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": "maybe"
+                }
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": "maybe"
+                }
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "pagination": {
+                        "paginationQuery": "page",
+                        "paginationIn": "query",
+                        "page": 2,
+                        "index": 2
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": "maybe"
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "pagination-absent": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 2,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items"
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items"
+                }
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items"
+                }
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "pagination": {
+                        "paginationQuery": "page",
+                        "paginationIn": "query",
+                        "page": 2,
+                        "index": 2
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items"
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "results-object": {
+        "outcome": {
+            "return": {
+                "id": "one",
+                "naam": "obj"
+            }
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "_object",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "_object",
+                        "usesPagination": true
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "results-assoc-wrapped": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "solo"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "item",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "item",
+                        "usesPagination": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "endpoint-template-relations": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/zaken/{{ data.zaak }}",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "mapping.renderTemplateString",
+                "/zaken/{{ data.zaak }}",
+                {
+                    "data": {
+                        "zaak": "z-1",
+                        "naam": "x",
+                        "@self": {
+                            "relations": {
+                                "zaak": "z-1",
+                                "naam": "rel"
+                            }
+                        }
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "R</zaken/{{ data.zaak }}>",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/zaken/{{ data.zaak }}",
+                        "resultsPosition": "items",
+                        "usesPagination": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "endpoint-template-no-data": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/zaken/{{ data.zaak }}",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "mapping.renderTemplateString",
+                "/zaken/{{ data.zaak }}",
+                {
+                    "data": []
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "R</zaken/{{ data.zaak }}>",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/zaken/{{ data.zaak }}",
+                        "resultsPosition": "items",
+                        "usesPagination": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "endpoint-template-relations-not-array": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/z/{{ x }}",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "mapping.renderTemplateString",
+                "/z/{{ x }}",
+                {
+                    "data": {
+                        "@self": {
+                            "relations": "nope"
+                        }
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "R</z/{{ x }}>",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/z/{{ x }}",
+                        "resultsPosition": "items",
+                        "usesPagination": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "endpoint-half-template": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/z/{{ x",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/z/{{ x",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/z/{{ x",
+                        "resultsPosition": "items",
+                        "usesPagination": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "endpoint-not-string": {
+        "outcome": {
+            "throws": "TypeError",
+            "message": "OCA\\Integriq\\Service\\SynchronizationService::fetchAllPages(): Argument #2 ($endpoint) must be of type string, array given"
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 0,
+            "failureReason": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": [
+                        "/z"
+                    ],
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ]
+        ]
+    },
+    "incremental-endpoint-and-query": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/z?since={{ cursor }}",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "query": {
+                        "since": "{{ cursor }}",
+                        "n": 5,
+                        "plain": "p",
+                        "half": "{{ x"
+                    }
+                }
+            ],
+            [
+                "mapping.renderTemplateString",
+                "/z?since={{ cursor }}",
+                {
+                    "data": {
+                        "zaak": "z-1",
+                        "naam": "x",
+                        "@self": {
+                            "relations": {
+                                "zaak": "z-1",
+                                "naam": "rel"
+                            }
+                        }
+                    },
+                    "cursor": "w-1"
+                }
+            ],
+            [
+                "mapping.renderTemplateString",
+                "{{ cursor }}",
+                {
+                    "data": {
+                        "zaak": "z-1",
+                        "naam": "x",
+                        "@self": {
+                            "relations": {
+                                "zaak": "z-1",
+                                "naam": "rel"
+                            }
+                        }
+                    },
+                    "cursor": "w-1"
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "R</z?since={{ cursor }}>",
+                "GET",
+                {
+                    "query": {
+                        "since": "R<{{ cursor }}>",
+                        "n": 5,
+                        "plain": "p",
+                        "half": "{{ x"
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/z?since={{ cursor }}",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "query": {
+                            "since": "{{ cursor }}",
+                            "n": 5,
+                            "plain": "p",
+                            "half": "{{ x"
+                        }
+                    },
+                    "syncMode": "incremental",
+                    "cursorWatermark": "w-1",
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "incremental-no-watermark": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "query": {
+                        "since": "{{ cursor }}"
+                    }
+                }
+            ],
+            [
+                "mapping.renderTemplateString",
+                "{{ cursor }}",
+                {
+                    "data": [],
+                    "cursor": ""
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "query": {
+                        "since": "R<{{ cursor }}>"
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "query": {
+                            "since": "{{ cursor }}"
+                        }
+                    },
+                    "syncMode": "incremental",
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "incremental-empty-query": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "query": []
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "query": []
+                    },
+                    "syncMode": "incremental",
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "incremental-query-relations-not-array": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "query": {
+                        "a": "{{ b }}"
+                    }
+                }
+            ],
+            [
+                "mapping.renderTemplateString",
+                "{{ b }}",
+                {
+                    "data": {
+                        "@self": {
+                            "relations": "nope"
+                        }
+                    },
+                    "cursor": ""
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "query": {
+                        "a": "R<{{ b }}>"
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "query": {
+                            "a": "{{ b }}"
+                        }
+                    },
+                    "syncMode": "incremental",
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "full-mode-query-unrendered": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "query": {
+                        "since": "{{ cursor }}"
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "query": {
+                        "since": "{{ cursor }}"
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "query": {
+                            "since": "{{ cursor }}"
+                        }
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "headers-and-query": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "headers": {
+                        "X-A": "1"
+                    },
+                    "query": {
+                        "q": "v"
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "headers": {
+                        "X-A": "1"
+                    },
+                    "query": {
+                        "q": "v"
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "headers": {
+                            "X-A": "1"
+                        },
+                        "query": {
+                            "q": "v"
+                        }
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "body-hash": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "useDataAsRequestBody": "#"
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "body": "{\"a\":1}"
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "useDataAsRequestBody": "#"
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "body-dot-path": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "useDataAsRequestBody": "a.b"
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "body": "\"deep\""
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "useDataAsRequestBody": "a.b"
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "body-empty-string": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "useDataAsRequestBody": ""
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "useDataAsRequestBody": ""
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "merge-data-when-body-false": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a",
+                    "extra": "yes"
+                },
+                {
+                    "id": "b",
+                    "extra": "yes"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "useDataAsRequestBody": false
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "useDataAsRequestBody": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "no-merge-when-body-unset": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "no-merge-empty-data": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "useDataAsRequestBody": false
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false,
+                        "useDataAsRequestBody": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "rate-limited-source-page": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 2,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": true
+                    },
+                    "currentPage": 4
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "pagination": {
+                        "paginationQuery": "page",
+                        "paginationIn": "query",
+                        "page": 4,
+                        "index": 4
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": true
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "rate-limited-source-no-page": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 2,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": true
+                    },
+                    "currentPage": 2
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "pagination": {
+                        "paginationQuery": "page",
+                        "paginationIn": "query",
+                        "page": 2,
+                        "index": 2
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": true
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "current-page-ignored": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 2,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "pagination": {
+                        "paginationQuery": "page",
+                        "paginationIn": "query",
+                        "page": 2,
+                        "index": 2
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": true
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "rate-limit-exceeded": {
+        "outcome": {
+            "throws": "Symfony\\Component\\HttpKernel\\Exception\\TooManyRequestsHttpException",
+            "message": "Rate Limit on Source has been exceeded. Canceling synchronization..."
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 0,
+            "failureReason": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ]
+        ]
+    },
+    "source-by-id": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "call-throws": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "source down"
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 0,
+            "failureReason": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ]
+        ]
+    },
+    "jsonl-first-batch": {
+        "outcome": {
+            "return": []
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": 1,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true,
+                    "format": "jsonl"
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": true,
+                        "format": "jsonl"
+                    },
+                    "currentPage": 1,
+                    "currentPageVersion": ""
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "jsonl-resume": {
+        "outcome": {
+            "return": []
+        },
+        "fetchInfo": {
+            "complete": false,
+            "pagesFetched": 1,
+            "failureReason": "batch_limit_reached",
+            "resumePage": 3,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "root",
+                    "usesPagination": false,
+                    "format": "jsonl",
+                    "pageSize": 1
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "root",
+                        "usesPagination": false,
+                        "format": "jsonl",
+                        "pageSize": 1
+                    },
+                    "currentPage": 3,
+                    "currentPageVersion": ""
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
+    "jsonl-test": {
+        "outcome": {
+            "return": []
+        },
+        "fetchInfo": {
+            "complete": false,
+            "pagesFetched": 1,
+            "failureReason": "batch_limit_reached",
+            "resumePage": 1,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false,
+                    "format": "jsonl"
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ]
+        ]
+    },
+    "no-uuid-legacy-id": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 1,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": false
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": null,
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": false
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "legacy-id"
+            ]
+        ]
+    }
+}

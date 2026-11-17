@@ -25,8 +25,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Event;
 
-use OCP\EventDispatcher\Event;
-
 /**
  * "May job X run, and what may leave?", answered by the owning app.
  *
@@ -38,9 +36,11 @@ use OCP\EventDispatcher\Event;
  * Exactly one answer counts: the first `allow()` or `refuse()` wins, so a
  * second listener cannot flip a refusal into a permission.
  *
+ * The job fields live in {@see ExchangeJobRunEvent}.
+ *
  * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
  */
-class ExchangeGateRequestedEvent extends Event {
+class ExchangeGateRequestedEvent extends ExchangeJobRunEvent {
 
 	/**
 	 * Whether an answer was given.
@@ -69,100 +69,6 @@ class ExchangeGateRequestedEvent extends Event {
 	 * @var array{code: string, reason: string}|null
 	 */
 	private ?array $refusal = null;
-
-	/**
-	 * Constructor.
-	 *
-	 * @param string              $jobId     The exchange job's uuid.
-	 * @param string              $ownerApp  The owning app's id.
-	 * @param string              $target    The exchange target id.
-	 * @param string              $direction export, import or sync.
-	 * @param string              $ownerRef  The owning app's reference.
-	 * @param array<string,mixed> $scope     The job's selectors and parameters.
-	 */
-	public function __construct(
-		private readonly string $jobId,
-		private readonly string $ownerApp,
-		private readonly string $target,
-		private readonly string $direction,
-		private readonly string $ownerRef = '',
-		private readonly array $scope = [],
-	) {
-		parent::__construct();
-
-	}//end __construct()
-
-	/**
-	 * The job being gated.
-	 *
-	 * @return string The job uuid.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
-	 */
-	public function getJobId(): string {
-		return $this->jobId;
-
-	}//end getJobId()
-
-	/**
-	 * The owning app a listener must match before answering.
-	 *
-	 * @return string The app id.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
-	 */
-	public function getOwnerApp(): string {
-		return $this->ownerApp;
-
-	}//end getOwnerApp()
-
-	/**
-	 * The exchange target.
-	 *
-	 * @return string The target id.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
-	 */
-	public function getTarget(): string {
-		return $this->target;
-
-	}//end getTarget()
-
-	/**
-	 * The direction.
-	 *
-	 * @return string export, import or sync.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
-	 */
-	public function getDirection(): string {
-		return $this->direction;
-
-	}//end getDirection()
-
-	/**
-	 * The owning app's reference for what the job is about.
-	 *
-	 * @return string The reference.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
-	 */
-	public function getOwnerRef(): string {
-		return $this->ownerRef;
-
-	}//end getOwnerRef()
-
-	/**
-	 * The job's selectors and target parameters.
-	 *
-	 * @return array<string,mixed> The scope.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-003-integriq-asks-the-owning-app-before-a-job-runs-and-fails-closed
-	 */
-	public function getScope(): array {
-		return $this->scope;
-
-	}//end getScope()
 
 	/**
 	 * Let the job run, handing over what may leave.

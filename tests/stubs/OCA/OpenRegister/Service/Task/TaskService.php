@@ -20,6 +20,9 @@
  * @category Test
  * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -27,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Minimal stub for OCA\OpenRegister\Service\Task\TaskService.
@@ -50,14 +54,14 @@ class TaskService {
 	/**
 	 * Apply a declared outcome to a task (real: idempotent on terminal rows).
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $outcome The declared outcome.
-	 * @param string $source The applying source.
-	 * @param string $reason The audited reason.
+	 * @param string              $uuid    The task uuid.
+	 * @param TimerOutcome|string $outcome The declared outcome, with its trigger.
+	 * @param string|null         $source  The applying source, for a string outcome.
+	 * @param string|null         $reason  The audited reason, for a string outcome.
 	 *
 	 * @return Task An empty task entity.
 	 */
-	public function applyTimerOutcome(string $uuid, string $outcome, string $source, string $reason): Task {
+	public function applyTimerOutcome(string $uuid, TimerOutcome|string $outcome, ?string $source = null, ?string $reason = null): Task {
 		return new Task();
 	}//end applyTimerOutcome()
 
@@ -65,13 +69,12 @@ class TaskService {
 	 * Offer a task to a pool (real: requester only, records the `offer`
 	 * action that OpenRegister's pool notification rule fires on).
 	 *
-	 * @param string $uuid The task uuid.
+	 * @param TaskActorRef $ref The task uuid and the offering identity.
 	 * @param array<string, mixed> $pool candidateUsers / candidateGroups / ...
-	 * @param string|null $actor The offering identity.
 	 *
 	 * @return Task An empty task entity.
 	 */
-	public function offer(string $uuid, array $pool, ?string $actor): Task {
+	public function offer(TaskActorRef $ref, array $pool): Task {
 		return new Task();
 	}//end offer()
 

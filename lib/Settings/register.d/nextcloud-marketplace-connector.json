@@ -86,15 +86,15 @@
         },
         "name": "Nextcloud App Store Weekly Sync",
         "description": "Runs the nextcloud-appstore-to-spectr-marketplaceapp synchronization weekly, matching Specter's own tendril cadence.",
-        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "nextcloud-appstore-to-spectr-marketplaceapp"
         },
         "interval": 604800,
-        "isEnabled": true,
+        "isEnabled": false,
         "singleRun": false,
         "allowParallelRuns": false,
-        "version": "1.0.0"
+        "version": "1.0.1"
       }
     ]
   }

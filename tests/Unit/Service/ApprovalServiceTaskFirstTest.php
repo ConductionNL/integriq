@@ -43,6 +43,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Tests for the task-first mirror behaviour.
@@ -92,6 +94,7 @@ class ApprovalServiceTaskFirstTest extends TestCase {
 		$this->saved = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$this->saved[] = $object;
 				$entity = new ObjectEntity();
 				$entity->setUuid('approval-created');
@@ -183,10 +186,10 @@ class ApprovalServiceTaskFirstTest extends TestCase {
 		$this->taskService->method('import')->willReturn($this->task('task-9'));
 		$offered = null;
 		$this->taskService->expects($this->once())->method('offer')->willReturnCallback(
-			function (string $uuid, array $pool, ?string $actor) use (&$offered): Task {
-				$offered = [$uuid, $pool, $actor];
+			function (TaskActorRef $ref, array $pool) use (&$offered): Task {
+				$offered = [$ref->uuid, $pool, $ref->actor];
 
-				return $this->task($uuid);
+				return $this->task($ref->uuid);
 			}
 		);
 		$this->notifications->expects($this->never())->method('notify');

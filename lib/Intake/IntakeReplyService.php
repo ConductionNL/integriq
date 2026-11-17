@@ -30,10 +30,12 @@ namespace OCA\Integriq\Intake;
 
 use DateTimeImmutable;
 use OCA\Integriq\Exception\IntakeChannelException;
-use OCA\Integriq\Outbound\Identity\OptOutCategories;
-use OCA\Integriq\Outbound\Identity\RecipientKey;
-use OCA\Integriq\Outbound\OutboundSendGate;
+use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
+use OCA\Integriq\Outbound\Identity\RecipientKeyInterface;
+use OCA\Integriq\Outbound\OutboundSendGateInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -42,19 +44,19 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-reply-goes-back-over-the-channel-it-arrived-on-req-ic-005
  */
-class IntakeReplyService {
+class IntakeReplyService implements IntakeReplyServiceInterface {
 
 	/**
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService Reads the message and records the reply.
 	 * @param IntakeChannelRegistry $registry The channels this instance has.
-	 * @param OutboundSendGate $gate Asks the opt-out list and keeps the outbound log row.
+	 * @param OutboundSendGateInterface $gate Asks the opt-out list and keeps the outbound log row.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly IntakeChannelRegistry $registry,
-		private readonly OutboundSendGate $gate,
+		private readonly OutboundSendGateInterface $gate,
 	) {
 
 	}//end __construct()
@@ -94,7 +96,7 @@ class IntakeReplyService {
 		$gateOptions = ['sourceApp' => 'integriq', 'correlationId' => $messageUuid, 'inReplyTo' => $messageUuid];
 		$decision = $this->gate->check(
 			channel: $channel,
-			category: OptOutCategories::REPLY,
+			category: OptOutCategoriesInterface::REPLY,
 			address: $address,
 			options: $gateOptions
 		);
@@ -123,7 +125,12 @@ class IntakeReplyService {
 			return $result;
 		}
 
-		$this->gate->failed(uuid: $logRow, address: (string)$decision['address'], step: OutboundSendGate::STEP_SEND, reason: (string)$result->getDetail());
+		$this->gate->failed(
+			uuid: $logRow,
+			address: (string)$decision['address'],
+			step: OutboundSendGateInterface::STEP_SEND,
+			reason: (string)$result->getDetail()
+		);
 
 		return $result;
 
@@ -141,19 +148,19 @@ class IntakeReplyService {
 		$email = trim((string)($correspondent['address'] ?? ''));
 		$phone = trim((string)($correspondent['phone'] ?? ''));
 
-		if ($message->getChannelId() === RecipientKey::CHANNEL_MESSAGING) {
-			return [RecipientKey::CHANNEL_MESSAGING, $phone];
+		if ($message->getChannelId() === RecipientKeyInterface::CHANNEL_MESSAGING) {
+			return [RecipientKeyInterface::CHANNEL_MESSAGING, $phone];
 		}
 
-		if ($message->getChannelId() === RecipientKey::CHANNEL_TEAMS) {
-			return [RecipientKey::CHANNEL_TEAMS, trim((string)($correspondent['id'] ?? ''))];
+		if ($message->getChannelId() === RecipientKeyInterface::CHANNEL_TEAMS) {
+			return [RecipientKeyInterface::CHANNEL_TEAMS, trim((string)($correspondent['id'] ?? ''))];
 		}
 
 		if ($email !== '') {
-			return [RecipientKey::CHANNEL_EMAIL, $email];
+			return [RecipientKeyInterface::CHANNEL_EMAIL, $email];
 		}
 
-		return [RecipientKey::CHANNEL_SMS, $phone];
+		return [RecipientKeyInterface::CHANNEL_SMS, $phone];
 
 	}//end recipientOf()
 
@@ -170,8 +177,10 @@ class IntakeReplyService {
 		try {
 			$stored = $this->objectService->find(
 				id: $messageUuid,
-				register: IntakeRoutingService::REGISTER,
-				schema: IntakeRoutingService::SCHEMA_MESSAGE,
+				options: new ObjectFindOptions(
+					register: IntakeRoutingService::REGISTER,
+					schema: IntakeRoutingService::SCHEMA_MESSAGE
+				)
 			);
 		} catch (DoesNotExistException) {
 			throw new IntakeChannelException(message: 'No inbound message "' . $messageUuid . '".');
@@ -219,9 +228,11 @@ class IntakeReplyService {
 
 		$this->objectService->saveObject(
 			object: $object,
-			register: IntakeRoutingService::REGISTER,
-			schema: IntakeRoutingService::SCHEMA_MESSAGE,
-			uuid: (string)$stored->getUuid(),
+			options: RegisterSave::options(
+				register: IntakeRoutingService::REGISTER,
+				schema: IntakeRoutingService::SCHEMA_MESSAGE,
+				uuid: (string)$stored->getUuid()
+			)
 		);
 
 	}//end record()

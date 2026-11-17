@@ -40,67 +40,12 @@
       "count": 1
     }
   },
-  "src/modals/Endpoint/AddEndpointRule.vue": {
-    "@typescript-eslint/no-use-before-define": {
-      "count": 6
-    },
-    "no-console": {
-      "count": 2
-    }
-  },
-  "src/modals/Endpoint/EditEndpoint.vue": {
-    "@typescript-eslint/no-use-before-define": {
-      "count": 8
-    },
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
-    "no-console": {
-      "count": 7
-    },
-    "vue/custom-event-name-casing": {
-      "count": 2
-    }
-  },
-  "src/modals/EventDelivery/EventDeliveryDetailModal.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/modals/EventSubscription/SubscriptionActionFields.vue": {
     "eqeqeq": {
       "count": 2
     }
   },
   "src/modals/NotificatiesAbonnement/NotificatiesAbonnementForm.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/modals/Rule/EditRule.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
-    "@typescript-eslint/no-unused-expressions": {
-      "count": 1
-    },
-    "@typescript-eslint/no-use-before-define": {
-      "count": 13
-    },
-    "jsdoc/require-param-type": {
-      "count": 6
-    },
-    "no-console": {
-      "count": 11
-    },
-    "vue/prefer-separate-static-class": {
-      "count": 3
-    }
-  },
-  "src/modals/Synchronization/SyncDeadLetterDetailModal.vue": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
@@ -121,9 +66,6 @@
     }
   },
   "src/modals/v2/JobFormFields.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
     "jsdoc/require-param-type": {
       "count": 1
     }
@@ -147,11 +89,6 @@
     },
     "jsdoc/require-param-type": {
       "count": 7
-    }
-  },
-  "src/modals/v2/SourceFormFields.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
     }
   },
   "src/modals/v2/SynchronizationEditorModal.vue": {
@@ -181,11 +118,6 @@
     }
   },
   "src/views/Approvals/ApprovalsIndex.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/views/EventDelivery/EventDeliveriesPage.vue": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
@@ -240,11 +172,6 @@
       "count": 1
     }
   },
-  "src/views/Rule/actionForms/JavascriptForm.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    }
-  },
   "src/views/Rule/actionForms/LockingForm.vue": {
     "eqeqeq": {
       "count": 1
@@ -270,16 +197,8 @@
       "count": 3
     }
   },
-  "src/views/Synchronization/SyncDeadLetterPage.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/views/Synchronization/SyncMappingPreview.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "no-useless-assignment": {
       "count": 1
     }
   },

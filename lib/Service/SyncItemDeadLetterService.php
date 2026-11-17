@@ -33,7 +33,9 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -43,7 +45,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
  */
-class SyncItemDeadLetterService {
+class SyncItemDeadLetterService implements SyncItemDeadLetterServiceInterface {
 	/**
 	 * Constructor.
 	 *
@@ -138,8 +140,7 @@ class SyncItemDeadLetterService {
 
 		return $this->objectService->saveObject(
 			object: $entry,
-			register: 'integriq',
-			schema: 'sync_item_dead_letter'
+			options: RegisterSave::options(register: 'integriq', schema: 'sync_item_dead_letter')
 		);
 
 	}//end recordFailure()
@@ -167,7 +168,7 @@ class SyncItemDeadLetterService {
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
 	 */
 	public function replayMessage(string $id, string $actorUid): ObjectEntity {
-		$entry = $this->objectService->find(id: $id, register: 'integriq', schema: 'sync_item_dead_letter');
+		$entry = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'sync_item_dead_letter'));
 		$data = $entry->getObject();
 		$status = ($data['status'] ?? '');
 
@@ -225,9 +226,7 @@ class SyncItemDeadLetterService {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'sync_item_dead_letter',
-			uuid: $entry->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'sync_item_dead_letter', uuid: $entry->getUuid())
 		);
 
 	}//end replayMessage()
@@ -249,7 +248,7 @@ class SyncItemDeadLetterService {
 	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-discard-of-a-dead-lettered-sync-item-req-dlr-010
 	 */
 	public function discardMessage(string $id, string $actorUid): ObjectEntity {
-		$entry = $this->objectService->find(id: $id, register: 'integriq', schema: 'sync_item_dead_letter');
+		$entry = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'sync_item_dead_letter'));
 		$data = $entry->getObject();
 		$status = ($data['status'] ?? '');
 
@@ -265,9 +264,7 @@ class SyncItemDeadLetterService {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'sync_item_dead_letter',
-			uuid: $entry->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'sync_item_dead_letter', uuid: $entry->getUuid())
 		);
 
 	}//end discardMessage()

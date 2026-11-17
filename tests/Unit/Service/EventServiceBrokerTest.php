@@ -11,18 +11,21 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\Integriq\Broker\BrokerCredentialResolver;
+use OCA\Integriq\Service\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
 use OCA\Integriq\Broker\BrokerResult;
 use OCA\Integriq\Broker\BrokerTransportInterface;
 use OCA\Integriq\Broker\BrokerTransportRegistry;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
@@ -35,6 +38,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * REQ-EBSC-003 on EventService's broker dispatch.
@@ -131,10 +136,11 @@ class EventServiceBrokerTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 		$this->objectService->method('find')->willReturnCallback(
-			static fn (string $id, string $register, string $schema) => ($schema === 'event' ? $event : $subscription)
+			static fn (string $id, ?ObjectFindOptions $options = null) => (($options?->schema) === 'event' ? $event : $subscription)
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$this->capturedMessage = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}

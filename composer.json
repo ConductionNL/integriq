@@ -22,7 +22,8 @@
     "scripts": {
         "post-install-cmd": [
             "@composer bin all install --ansi",
-            "git config core.hooksPath .githooks || true"
+            "git config core.hooksPath .githooks || true",
+            "@prune-core-provided"
         ],
         "post-update-cmd": [
             "@composer bin all update --ansi"
@@ -50,6 +51,12 @@
             "@cs:fix"
         ],
         "test:coverage": "./vendor/bin/phpunit --coverage-html=coverage/html --coverage-clover=coverage/clover.xml --colors=always",
+        "coverage:publish": [
+            "@putenv XDEBUG_MODE=coverage",
+            "@php -d pcov.enabled=1 -d pcov.directory=lib -d memory_limit=2G vendor/bin/phpunit -c phpunit.xml --do-not-fail-on-risky --coverage-clover=coverage/clover.xml",
+            "npm run test:coverage",
+            "@php scripts/coverage-publish.php"
+        ],
         "coverage:check": "php tests/scripts/check-coverage.php",
         "quality:phpcs-score": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ | php -r \"\\$json = json_decode(file_get_contents('php://stdin'), true); \\$errors = \\$json['totals']['errors'] ?? 0; \\$warnings = \\$json['totals']['warnings'] ?? 0; \\$score = 1000 - \\$errors - (\\$warnings / 2); echo 'PHPCS Score: ' . \\$score . ' (Errors: ' . \\$errors . ', Warnings: ' . \\$warnings . ')' . PHP_EOL;\"",
         "quality:phpmd-score": "phpmd lib/ json phpmd.xml | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$violations = count(\\$json['files'] ?? []); \\$score = 1000 - (\\$violations * 10); echo 'PHPMD Score: ' . \\$score . ' (Violations: ' . \\$violations . ')' . PHP_EOL;\" || echo 'PHPMD not available'",
@@ -60,7 +67,8 @@
             "@quality:phpmd-score",
             "@quality:psalm-score",
             "@quality:phpstan-score"
-        ]
+        ],
+        "prune-core-provided": "php scripts/prune-core-provided-vendor.php"
     },
     "require": {
         "php": "^8.3",
@@ -97,7 +105,7 @@
         "cyclonedx/cyclonedx-php-composer": "^6.2",
         "nextcloud/ocp": "^35.0",
         "phpcsstandards/phpcsextra": "^1.5",
-        "phpmd/phpmd": "^2.15",
+        "phpmd/phpmd": "^3.0",
         "phpmetrics/phpmetrics": "^2.8",
         "phpstan/phpstan": "^2.0",
         "phpunit/phpunit": "^10.5",
@@ -121,5 +129,39 @@
         "platform": {
             "php": "8.3"
         }
+    },
+    "extra": {
+        "nextcloud-core-provided": [
+            "brick/math",
+            "guzzlehttp/guzzle",
+            "guzzlehttp/promises",
+            "guzzlehttp/psr7",
+            "masterminds/html5",
+            "php-http/httplug",
+            "php-http/promise",
+            "psr/cache",
+            "psr/clock",
+            "psr/container",
+            "psr/event-dispatcher",
+            "psr/http-client",
+            "psr/http-factory",
+            "psr/http-message",
+            "psr/log",
+            "ralouphie/getallheaders",
+            "spomky-labs/pki-framework",
+            "symfony/console",
+            "symfony/css-selector",
+            "symfony/deprecation-contracts",
+            "symfony/dom-crawler",
+            "symfony/event-dispatcher",
+            "symfony/event-dispatcher-contracts",
+            "symfony/http-foundation",
+            "symfony/polyfill-intl-grapheme",
+            "symfony/polyfill-intl-normalizer",
+            "symfony/polyfill-uuid",
+            "symfony/service-contracts",
+            "symfony/string",
+            "symfony/uid"
+        ]
     }
 }

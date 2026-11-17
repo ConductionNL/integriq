@@ -40,7 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\Service\Intake\WebhookTrustMigrator;
+use OCA\Integriq\Service\Intake\WebhookTrustMigratorInterface;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -93,7 +93,7 @@ class MigrateOpenFormulierenConnection implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$migrator = $this->container->get(WebhookTrustMigrator::class);
+			$migrator = $this->container->get(WebhookTrustMigratorInterface::class);
 		} catch (Throwable $exception) {
 			$output->warning('Open Formulieren connection migration skipped: OpenRegister is not available (' . $exception->getMessage() . ').');
 			return;

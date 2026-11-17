@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -26,6 +29,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for signing-key generation, rotation, grace-window JWKS content, and retirement.
@@ -55,7 +60,10 @@ class LtiKeyServiceTest extends TestCase {
 		// only a `_render: false` read sees the keys. Parameter order follows the
 		// stub (tests/stubs/OCA/OpenRegister/Service/ObjectService.php).
 		$objectService->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null, $_rbac = true, $_multitenancy = true, $_render = true) {
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) {
+				$register = $options?->register;
+				$schema = $options?->schema;
+				$_render = $options?->render ?? true;
 				if (isset($this->registrations[$id]) === false) {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
 				}
@@ -94,7 +102,10 @@ class LtiKeyServiceTest extends TestCase {
 		);
 
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->registrations[$uuid] = $object;
 
 				$entity = new ObjectEntity();

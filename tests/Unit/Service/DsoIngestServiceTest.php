@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\BackgroundJob\AttachmentFetchJobScheduler;
 use OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
@@ -40,6 +41,8 @@ use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for verzoek ingest (persist + translate)
@@ -117,7 +120,10 @@ class DsoIngestServiceTest extends TestCase {
 			->getMock();
 
 		$mock->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($schema === DsoIngestService::SCHEMA_MESSAGE) {
 					$entity = $this->buildEntity((array)$object, 'message-' . (++$this->uuidCounter));
 					$this->messageStore[] = $entity;
@@ -137,7 +143,9 @@ class DsoIngestServiceTest extends TestCase {
 		);
 
 		$mock->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === DsoIngestService::SCHEMA_VERZOEK) {
 					return ($this->requestStore[(string)$id] ?? null);
 				}
@@ -221,7 +229,7 @@ class DsoIngestServiceTest extends TestCase {
 			restProvider: $this->restProvider,
 			logger: $this->createMock(LoggerInterface::class),
 			rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class)),
-			jobList: $this->jobList,
+			attachmentFetches: new AttachmentFetchJobScheduler($this->jobList),
 			activityMapper: new DsoActivityMapper(new DsoActivityTable($objectService))
 		);
 

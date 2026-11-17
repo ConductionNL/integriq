@@ -18,6 +18,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -47,8 +50,63 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.LongVariable)
  * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
  */
-class ConfigurationService {
+class ConfigurationService implements ConfigurationServiceInterface {
+
+	/**
+	 * The components of a configuration export and the schema each is read from, in export order.
+	 *
+	 * @var array<string, string>
+	 */
+	private const CONFIGURATION_COMPONENTS = [
+		'sources' => 'source',
+		'endpoints' => 'endpoint',
+		'mappings' => 'mapping',
+		'rules' => 'rule',
+		'jobs' => 'job',
+		'synchronizations' => 'synchronization',
+	];
+
+	/**
+	 * The components of a configuration import and the handler of each, in
+	 * dependency order: every component only references components before it.
+	 *
+	 * @var array<string, string>
+	 */
+	private const IMPORT_COMPONENTS = [
+		'sources' => 'source',
+		'mappings' => 'mapping',
+		'rules' => 'rule',
+		'endpoints' => 'endpoint',
+		'synchronizations' => 'synchronization',
+		'jobs' => 'job',
+	];
+
+	/**
+	 * How an exported entity's component is recognised, first match wins: the
+	 * keys it must have set, and either the component or the field that holds it.
+	 *
+	 * @var list<array{keys: list<string>, component?: string, field?: string}>
+	 */
+	private const ENTITY_COMPONENT_RULES = [
+		['keys' => ['type', 'authorizationHeader'], 'field' => 'type'],
+		['keys' => ['targetType'], 'field' => 'targetType'],
+		['keys' => ['mapping'], 'component' => 'mapping'],
+		['keys' => ['type', 'configuration'], 'field' => 'type'],
+		['keys' => ['jobClass'], 'component' => 'job'],
+	];
+
+	/**
+	 * The job arguments that reference another entity, and that entity's kind.
+	 *
+	 * @var array<string, string>
+	 */
+	private const JOB_ARGUMENT_REFERENCES = [
+		'synchronizationId' => 'synchronization',
+		'endpointId' => 'endpoint',
+		'sourceId' => 'source',
+	];
 
 	/**
 	 * Register mapper used to enumerate registers during export/import.
@@ -338,107 +396,79 @@ class ConfigurationService {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	public function exportConfiguration(string $configurationId): array {
-		// Reset all mappings.
 		$this->resetMappings();
 
-		// Get raw entities via OR.
-		$sources = $this->findByConfiguration(schema: 'source', configurationId: $configurationId);
-		$endpoints = $this->findByConfiguration(schema: 'endpoint', configurationId: $configurationId);
-		$mappings = $this->findByConfiguration(schema: 'mapping', configurationId: $configurationId);
-		$rules = $this->findByConfiguration(schema: 'rule', configurationId: $configurationId);
-		$jobs = $this->findByConfiguration(schema: 'job', configurationId: $configurationId);
-		$synchronizations = $this->findByConfiguration(schema: 'synchronization', configurationId: $configurationId);
+		$entities = [];
+		foreach (self::CONFIGURATION_COMPONENTS as $component => $schema) {
+			$entities[$component] = $this->findByConfiguration(schema: $schema, configurationId: $configurationId);
+		}
 
-		// Collect register and schema IDs from entities that reference them.
-		$registerIds = [];
-		$schemaIds = [];
+		$ids = $this->collectConfigurationSideIds(entities: $entities);
+		$this->buildRegisterAndSchemaMappings(
+			registerIds: array_filter(array_unique($ids['register'])),
+			schemaIds: array_filter(array_unique($ids['schema']))
+		);
 
-		foreach ($endpoints as $endpoint) {
+		$exported = [];
+		foreach ($entities as $component => $list) {
+			$exported[$component] = $this->exportBySlug(entities: $list, export: $this->componentExporter(component: $component));
+		}
+
+		$components = [];
+		foreach ($exported as $component => $list) {
+			$components[$component] = $this->organizeEntitiesByComponent(entities: $list);
+		}
+
+		return ['components' => $components];
+	}//end exportConfiguration()
+
+	/**
+	 * Collect the registers and schemas the endpoints and synchronizations of a
+	 * configuration point at.
+	 *
+	 * @param array<string, array> $entities The configuration's entities by component.
+	 *
+	 * @return array The ids by kind: `register`, `schema` and `source`.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function collectConfigurationSideIds(array $entities): array {
+		$ids = ['register' => [], 'schema' => [], 'source' => []];
+		foreach ($entities['endpoints'] as $endpoint) {
 			$data = $endpoint->getObject();
-			if (($data['targetType'] ?? '') === 'register/schema' && str_contains($data['targetId'] ?? '', '/') === true) {
-				[$registerId, $schemaId] = explode('/', $data['targetId']);
-				$registerIds[] = $registerId;
-				$schemaIds[] = $schemaId;
-			}
+			$ids = $this->collectSideExportIds(ids: $ids, side: ['type' => ($data['targetType'] ?? ''), 'id' => ($data['targetId'] ?? '')]);
 		}
 
-		foreach ($synchronizations as $synchronization) {
+		foreach ($entities['synchronizations'] as $synchronization) {
 			$data = $synchronization->getObject();
-			if (($data['sourceType'] ?? '') === 'register/schema' && str_contains($data['sourceId'] ?? '', '/') === true) {
-				[$registerId, $schemaId] = explode('/', $data['sourceId']);
-				$registerIds[] = $registerId;
-				$schemaIds[] = $schemaId;
-			}
-
-			if (($data['targetType'] ?? '') === 'register/schema' && str_contains($data['targetId'] ?? '', '/') === true) {
-				[$registerId, $schemaId] = explode('/', $data['targetId']);
-				$registerIds[] = $registerId;
-				$schemaIds[] = $schemaId;
-			}
+			$ids = $this->collectSideExportIds(ids: $ids, side: ['type' => ($data['sourceType'] ?? ''), 'id' => ($data['sourceId'] ?? '')]);
+			$ids = $this->collectSideExportIds(ids: $ids, side: ['type' => ($data['targetType'] ?? ''), 'id' => ($data['targetId'] ?? '')]);
 		}
 
-		// Remove duplicates and build register/schema mappings.
-		$registerIds = array_filter(array_unique($registerIds));
-		$schemaIds = array_filter(array_unique($schemaIds));
-		$this->buildRegisterAndSchemaMappings(registerIds: $registerIds, schemaIds: $schemaIds);
+		return $ids;
+	}//end collectConfigurationSideIds()
 
-		// Export entities using handlers to convert IDs to slugs.
-		$exportedSources = [];
-		foreach ($sources as $source) {
-			$data = $source->getObject();
-			$slug = ($data['slug'] ?? $source->getUuid());
-			$exportedSources[$slug] = $this->exportSource(source: $source);
-		}
-
-		$exportedEndpoints = [];
-		foreach ($endpoints as $endpoint) {
-			$data = $endpoint->getObject();
-			$slug = ($data['slug'] ?? $endpoint->getUuid());
-			$exportedEndpoints[$slug] = $this->exportEndpoint(endpoint: $endpoint);
-		}
-
-		$exportedMappings = [];
-		foreach ($mappings as $mapping) {
-			$data = $mapping->getObject();
-			$slug = ($data['slug'] ?? $mapping->getUuid());
-			$exportedMappings[$slug] = $this->exportMapping(mapping: $mapping);
-		}
-
-		$exportedRules = [];
-		foreach ($rules as $rule) {
-			$data = $rule->getObject();
-			$slug = ($data['slug'] ?? $rule->getUuid());
-			$exportedRules[$slug] = $this->exportRule(rule: $rule);
-		}
-
-		$exportedJobs = [];
-		foreach ($jobs as $job) {
-			$data = $job->getObject();
-			$slug = ($data['slug'] ?? $job->getUuid());
-			$exportedJobs[$slug] = $this->exportJob(job: $job);
-		}
-
-		$exportedSynchronizations = [];
-		foreach ($synchronizations as $synchronization) {
-			$data = $synchronization->getObject();
-			$slug = ($data['slug'] ?? $synchronization->getUuid());
-			$exportedSynchronizations[$slug] = $this->exportSynchronization(synchronization: $synchronization);
-		}
-
-		// Organize entities by components.
-		$components = [
-			'components' => [
-				'sources' => $this->organizeEntitiesByComponent(entities: $exportedSources),
-				'endpoints' => $this->organizeEntitiesByComponent(entities: $exportedEndpoints),
-				'mappings' => $this->organizeEntitiesByComponent(entities: $exportedMappings),
-				'rules' => $this->organizeEntitiesByComponent(entities: $exportedRules),
-				'jobs' => $this->organizeEntitiesByComponent(entities: $exportedJobs),
-				'synchronizations' => $this->organizeEntitiesByComponent(entities: $exportedSynchronizations),
-			],
+	/**
+	 * The exporter of one component of a configuration export.
+	 *
+	 * @param string $component The component: a key of CONFIGURATION_COMPONENTS.
+	 *
+	 * @return callable Exports one entity of that component.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function componentExporter(string $component): callable {
+		$exporters = [
+			'sources' => fn (mixed $source): array => $this->exportSource(source: $source),
+			'endpoints' => fn (mixed $endpoint): array => $this->exportEndpoint(endpoint: $endpoint),
+			'mappings' => fn (mixed $mapping): array => $this->exportMapping(mapping: $mapping),
+			'rules' => fn (mixed $rule): array => $this->exportRule(rule: $rule),
+			'jobs' => fn (mixed $job): array => $this->exportJob(job: $job),
+			'synchronizations' => fn (mixed $synchronization): array => $this->exportSynchronization(synchronization: $synchronization),
 		];
 
-		return $components;
-	}//end exportConfiguration()
+		return $exporters[$component];
+	}//end componentExporter()
 
 	/**
 	 * Organize entities by their component type.
@@ -477,44 +507,64 @@ class ConfigurationService {
 			return 'default';
 		}
 
-		// For sources: use the 'type' field.
-		if (isset($entity['type']) === true && isset($entity['authorizationHeader']) === true) {
-			return ($entity['type'] ?? 'default');
+		return ($this->componentByKeys(entity: $entity) ?? $this->syncComponent(entity: $entity));
+	}//end getEntityComponent()
+
+	/**
+	 * The component of the first ENTITY_COMPONENT_RULES rule whose keys are all set on the entity.
+	 *
+	 * @param array $entity The exported entity array.
+	 *
+	 * @return string|null The component, or null when no rule matches.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function componentByKeys(array $entity): ?string {
+		foreach (self::ENTITY_COMPONENT_RULES as $rule) {
+			if ($this->hasKeysSet(entity: $entity, keys: $rule['keys']) === true) {
+				return ($rule['component'] ?? $entity[$rule['field']]);
+			}
 		}
 
-		// For endpoints: use targetType.
-		if (isset($entity['targetType']) === true) {
-			return ($entity['targetType'] ?? 'default');
+		return null;
+	}//end componentByKeys()
+
+	/**
+	 * Whether every one of the keys is set (and not null) on the entity.
+	 *
+	 * @param array $entity The exported entity array.
+	 * @param list<string> $keys The keys.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function hasKeysSet(array $entity, array $keys): bool {
+		foreach ($keys as $key) {
+			if (isset($entity[$key]) === false) {
+				return false;
+			}
 		}
 
-		// For mappings: no meaningful component type.
-		if (isset($entity['mapping']) === true) {
-			return 'mapping';
-		}
+		return true;
+	}//end hasKeysSet()
 
-		// For rules: use the 'type' field.
-		if (isset($entity['type']) === true && isset($entity['configuration']) === true) {
-			return ($entity['type'] ?? 'default');
-		}
-
-		// For jobs: identified by 'jobClass'.
-		if (isset($entity['jobClass']) === true) {
-			return 'job';
-		}
-
-		// For synchronizations: identified by sourceType/targetType pair.
-		// PHPStan flags this isset() pair (after the narrowing above) as
-		// "always evaluates to true" — keep the runtime guard as a safety
-		// net but read it through array_key_exists to silence the
-		// false-true === comparison warning.
-		$hasSourceOrTarget = (array_key_exists('sourceType', $entity) === true
-			|| array_key_exists('targetType', $entity) === true);
-		if ($hasSourceOrTarget === true) {
+	/**
+	 * 'sync' for an entity with a sourceType or targetType key, even a null one; 'default' otherwise.
+	 *
+	 * @param array $entity The exported entity array.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function syncComponent(array $entity): string {
+		if (array_key_exists('sourceType', $entity) === true || array_key_exists('targetType', $entity) === true) {
 			return 'sync';
 		}
 
 		return 'default';
-	}//end getEntityComponent()
+	}//end syncComponent()
 
 	/**
 	 * Export a source to OpenAPI format.
@@ -674,37 +724,17 @@ class ConfigurationService {
 	 * Find synchronizations connected to a given register ID.
 	 *
 	 * @param string $registerId The register ID to search for.
-	 * @param bool $searchSource Whether to check sourceId.
-	 * @param bool $searchTarget Whether to check targetId.
+	 * @param RegisterExportOptions $options Which sides (sourceId, targetId) to check.
 	 *
 	 * @return ObjectEntity[]
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
-	private function getSynchronizationsByTarget(string $registerId, bool $searchSource = true, bool $searchTarget = true): array {
-		$all = $this->fetchBySchema(schema: 'synchronization');
+	private function getSynchronizationsByTarget(string $registerId, RegisterExportOptions $options): array {
 		return array_values(
 			array_filter(
-				$all,
-				function ($entity) use ($registerId, $searchSource, $searchTarget) {
-					$data = $entity->getObject();
-
-					if ($searchSource === true && ($data['sourceType'] ?? '') === 'register/schema') {
-						$sourceId = ($data['sourceId'] ?? '');
-						if (str_starts_with($sourceId, $registerId . '/') === true || $sourceId === $registerId) {
-							return true;
-						}
-					}
-
-					if ($searchTarget === true && ($data['targetType'] ?? '') === 'register/schema') {
-						$targetId = ($data['targetId'] ?? '');
-						if (str_starts_with($targetId, $registerId . '/') === true || $targetId === $registerId) {
-							return true;
-						}
-					}
-
-					return false;
-				}
+				$this->fetchBySchema(schema: 'synchronization'),
+				fn ($entity): bool => $options->linksRegister(data: $entity->getObject(), registerId: $registerId)
 			)
 		);
 	}//end getSynchronizationsByTarget()
@@ -712,56 +742,63 @@ class ConfigurationService {
 	/**
 	 * Find jobs whose arguments reference any of the given synchronization, endpoint, or source IDs.
 	 *
-	 * @param array $synchronizationIds UUIDs of synchronizations.
-	 * @param array $endpointIds UUIDs of endpoints.
-	 * @param array $sourceIds UUIDs of sources.
+	 * @param array $ids The UUIDs by kind: `synchronization`, `endpoint` and `source`.
 	 *
 	 * @return ObjectEntity[]
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
-	private function findJobsByArgumentIds(array $synchronizationIds = [], array $endpointIds = [], array $sourceIds = []): array {
-		if (empty($synchronizationIds) === true
-			&& empty($endpointIds) === true
-			&& empty($sourceIds) === true
-		) {
-			return [];
+	private function findJobsByArgumentIds(array $ids): array {
+		$wanted = [];
+		foreach (self::JOB_ARGUMENT_REFERENCES as $argument => $kind) {
+			$wanted[$argument] = array_map('strval', $ids[$kind]);
 		}
 
-		$all = $this->fetchBySchema(schema: 'job');
 		return array_values(
 			array_filter(
-				$all,
-				function ($entity) use ($synchronizationIds, $endpointIds, $sourceIds) {
-					$data = $entity->getObject();
-					$arguments = ($data['arguments'] ?? []);
-					if (is_string($arguments) === true) {
-						$arguments = (json_decode($arguments, true) ?? []);
-					}
-
-					if (empty($synchronizationIds) === false && isset($arguments['synchronizationId']) === true) {
-						if (in_array((string)$arguments['synchronizationId'], array_map('strval', $synchronizationIds), true) === true) {
-							return true;
-						}
-					}
-
-					if (empty($endpointIds) === false && isset($arguments['endpointId']) === true) {
-						if (in_array((string)$arguments['endpointId'], array_map('strval', $endpointIds), true) === true) {
-							return true;
-						}
-					}
-
-					if (empty($sourceIds) === false && isset($arguments['sourceId']) === true) {
-						if (in_array((string)$arguments['sourceId'], array_map('strval', $sourceIds), true) === true) {
-							return true;
-						}
-					}
-
-					return false;
-				}
+				$this->fetchBySchema(schema: 'job'),
+				fn (ObjectEntity $job): bool => $this->jobReferencesAny(arguments: $this->jobArguments(job: $job), wanted: $wanted)
 			)
 		);
 	}//end findJobsByArgumentIds()
+
+	/**
+	 * A job's arguments, with JSON text decoded; undecodable text and no arguments are an empty array.
+	 *
+	 * @param ObjectEntity $job The job.
+	 *
+	 * @return mixed The arguments.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function jobArguments(ObjectEntity $job): mixed {
+		$arguments = ($job->getObject()['arguments'] ?? []);
+		if (is_string($arguments) === true) {
+			return (json_decode($arguments, true) ?? []);
+		}
+
+		return $arguments;
+	}//end jobArguments()
+
+	/**
+	 * Whether a job's arguments reference one of the wanted UUIDs.
+	 *
+	 * @param mixed $arguments The job's arguments.
+	 * @param array<string, list<string>> $wanted The wanted UUIDs by argument name.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function jobReferencesAny(mixed $arguments, array $wanted): bool {
+		foreach ($wanted as $argument => $uuids) {
+			if (isset($arguments[$argument]) === true && in_array((string)$arguments[$argument], $uuids, true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end jobReferencesAny()
 
 	/**
 	 * Find entities of the given schema by their UUIDs.
@@ -812,206 +849,289 @@ class ConfigurationService {
 		bool $searchSource = true,
 		bool $searchTarget = true,
 	): array {
-		// Reset all mappings.
+		$options = new RegisterExportOptions(includeEndpoints: $includeEndpoints, includeSynchronizations: $includeSynchronizations);
+		$options->searchSource = $searchSource;
+		$options->searchTarget = $searchTarget;
+
+		return $this->exportRegisterWith(registerId: $registerId, options: $options);
+	}//end exportRegister()
+
+	/**
+	 * Export the entities connected to a register, with the options as given.
+	 *
+	 * @param string $registerId The ID of the register to export entities for.
+	 * @param RegisterExportOptions $options What to include and where to look.
+	 *
+	 * @return array<string,array> JSON-serializable array containing all connected entities.
+	 */
+	private function exportRegisterWith(string $registerId, RegisterExportOptions $options): array {
 		$this->resetMappings();
+		$ids = $this->initialExportIds(registerId: $registerId);
 
-		$components = [
-			'components' => [
-				'mappings' => [],
-				'sources' => [],
-				'rules' => [],
-				'endpoints' => [],
-				'synchronizations' => [],
-				'jobs' => [],
-			],
-		];
-
-		// Collect all entity IDs for batch processing.
-		$ruleIds = [];
-		$mappingIds = [];
-		$sourceIds = [];
-		$endpointIds = [];
-		$synchronizationIds = [];
-		$registerIds = [$registerId];
-		$schemaIds = [];
-
-		// Get and organize endpoints if requested.
 		$endpoints = [];
-		if ($includeEndpoints === true) {
+		if ($options->includeEndpoints === true) {
 			$endpoints = $this->getEndpointsByTarget(registerId: $registerId);
-			foreach ($endpoints as $endpoint) {
-				$data = $endpoint->getObject();
-				$endpointIds[] = $endpoint->getUuid();
+			$ids = $this->collectEndpointExportIds(endpoints: $endpoints, ids: $ids);
+		}
 
-				// Collect related IDs.
-				if (empty($data['inputMapping']) === false) {
-					$mappingIds[] = $data['inputMapping'];
-				}
-
-				if (empty($data['outputMapping']) === false) {
-					$mappingIds[] = $data['outputMapping'];
-				}
-
-				if (($data['targetType'] ?? '') === 'api') {
-					$sourceIds[] = ($data['targetId'] ?? '');
-				}
-
-				// Collect register and schema IDs from register/schema type targets.
-				if (($data['targetType'] ?? '') === 'register/schema' && str_contains($data['targetId'] ?? '', '/') === true) {
-					[$targetRegisterId, $targetSchemaId] = explode('/', $data['targetId']);
-					$registerIds[] = $targetRegisterId;
-					$schemaIds[] = $targetSchemaId;
-				}
-
-				// Collect rule IDs.
-				$rules = ($data['rules'] ?? []);
-				if (is_array($rules) === true) {
-					$ruleIds = array_merge($ruleIds, $rules);
-				}
-			}//end foreach
-		}//end if
-
-		// Get and organize synchronizations if requested.
 		$synchronizations = [];
-		if ($includeSynchronizations === true) {
-			$synchronizations = $this->getSynchronizationsByTarget(
-				registerId: $registerId,
-				searchSource: $searchSource,
-				searchTarget: $searchTarget
-			);
-			foreach ($synchronizations as $synchronization) {
-				$data = $synchronization->getObject();
-				$synchronizationIds[] = $synchronization->getUuid();
-
-				// Collect related IDs.
-				if (empty($data['sourceTargetMapping']) === false) {
-					$mappingIds[] = $data['sourceTargetMapping'];
-				}
-
-				if (empty($data['targetSourceMapping']) === false) {
-					$mappingIds[] = $data['targetSourceMapping'];
-				}
-
-				if (($data['sourceType'] ?? '') === 'api') {
-					$sourceIds[] = ($data['sourceId'] ?? '');
-				}
-
-				if (($data['targetType'] ?? '') === 'api') {
-					$sourceIds[] = ($data['targetId'] ?? '');
-				}
-
-				// Collect register and schema IDs from register/schema type sources and targets.
-				if (($data['sourceType'] ?? '') === 'register/schema' && str_contains($data['sourceId'] ?? '', '/') === true) {
-					[$sourceRegisterId, $sourceSchemaId] = explode('/', $data['sourceId']);
-					$registerIds[] = $sourceRegisterId;
-					$schemaIds[] = $sourceSchemaId;
-				}
-
-				if (($data['targetType'] ?? '') === 'register/schema' && str_contains($data['targetId'] ?? '', '/') === true) {
-					[$targetRegisterId, $targetSchemaId] = explode('/', $data['targetId']);
-					$registerIds[] = $targetRegisterId;
-					$schemaIds[] = $targetSchemaId;
-				}
-
-				// Collect rule IDs from actions.
-				$actions = ($data['actions'] ?? []);
-				if (is_array($actions) === true) {
-					$ruleIds = array_merge($ruleIds, $actions);
-				}
-			}//end foreach
-		}//end if
-
-		// Remove duplicates from collected IDs and unset any empty values.
-		$ruleIds = array_filter(array_unique($ruleIds));
-		$mappingIds = array_filter(array_unique($mappingIds));
-		$sourceIds = array_filter(array_unique($sourceIds));
-		$endpointIds = array_filter(array_unique($endpointIds));
-		$synchronizationIds = array_filter(array_unique($synchronizationIds));
-		$registerIds = array_filter(array_unique($registerIds));
-		$schemaIds = array_filter(array_unique($schemaIds));
-
-		// Build initial ID to slug maps for registers and schemas BEFORE exporting entities.
-		$this->buildRegisterAndSchemaMappings(registerIds: $registerIds, schemaIds: $schemaIds);
-
-		// Export synchronizations now that we have the register/schema mappings.
-		if ($includeSynchronizations === true) {
-			foreach ($synchronizations as $synchronization) {
-				$data = $synchronization->getObject();
-				$slug = ($data['slug'] ?? $synchronization->getUuid());
-				$components['components']['synchronizations'][$slug] = $this->exportSynchronization(synchronization: $synchronization);
-			}
+		if ($options->includeSynchronizations === true) {
+			$synchronizations = $this->getSynchronizationsByTarget(registerId: $registerId, options: $options);
+			$ids = $this->collectSynchronizationExportIds(synchronizations: $synchronizations, ids: $ids);
 		}
 
-		// Export endpoints now that we have the register/schema mappings.
-		if ($includeEndpoints === true) {
-			foreach ($endpoints as $endpoint) {
-				$data = $endpoint->getObject();
-				$slug = ($data['slug'] ?? $endpoint->getUuid());
-				$components['components']['endpoints'][$slug] = $this->exportEndpoint(endpoint: $endpoint);
-			}
-		}
+		return $this->exportCollected(collected: ['ids' => $ids, 'endpoints' => $endpoints, 'synchronizations' => $synchronizations]);
+	}//end exportRegisterWith()
 
-		if (empty($sourceIds) === false) {
-			$sources = $this->findByUuids(schema: 'source', uuids: array_values($sourceIds));
-			foreach ($sources as $source) {
-				$data = $source->getObject();
-				$slug = ($data['slug'] ?? $source->getUuid());
-				$components['components']['sources'][$slug] = $this->exportSource(source: $source);
-			}
-		}
+	/**
+	 * The ids a register export starts from: the register itself, nothing else yet.
+	 *
+	 * @param string $registerId The register ID.
+	 *
+	 * @return array<string,list<mixed>> The ids by kind.
+	 */
+	private function initialExportIds(string $registerId): array {
+		return [
+			'rule' => [],
+			'mapping' => [],
+			'source' => [],
+			'endpoint' => [],
+			'synchronization' => [],
+			'register' => [$registerId],
+			'schema' => [],
+		];
+	}//end initialExportIds()
 
-		if (empty($ruleIds) === false) {
-			$rules = $this->findByUuids(schema: 'rule', uuids: array_values($ruleIds));
-			foreach ($rules as $rule) {
-				$data = $rule->getObject();
-				$slug = ($data['slug'] ?? $rule->getUuid());
-				$components['components']['rules'][$slug] = $this->exportRule(rule: $rule, mappingIds: $mappingIds);
-			}
-		}
+	/**
+	 * Export what a register export collected, once its register and schema slugs are known.
+	 *
+	 * @param array $collected The collected `ids` by kind, and the register's `endpoints` and `synchronizations`.
+	 *
+	 * @return array<string,array> The `components`.
+	 */
+	private function exportCollected(array $collected): array {
+		// Remove duplicates and empty values.
+		$collected['ids'] = array_map(static fn (array $list): array => array_filter(array_unique($list)), $collected['ids']);
 
-		$mappingIds = array_values(array_filter(array_unique($mappingIds)));
+		// The register and schema slugs must be known before any entity is exported.
+		$this->buildRegisterAndSchemaMappings(registerIds: $collected['ids']['register'], schemaIds: $collected['ids']['schema']);
 
-		// Batch fetch and export related entities.
-		if (empty($mappingIds) === false) {
-			$mappings = $this->findByUuids(schema: 'mapping', uuids: $mappingIds);
-			$additionalMappingIds = [];
-			foreach ($mappings as $mapping) {
-				$data = $mapping->getObject();
-				$slug = ($data['slug'] ?? $mapping->getUuid());
-				$components['components']['mappings'][$slug] = $this->exportMapping(mapping: $mapping, mappingIds: $additionalMappingIds);
-			}
+		return ['components' => $this->exportRegisterComponents(collected: $collected)];
+	}//end exportCollected()
 
-			while (empty($additionalMappingIds) === false) {
-				$additionalMappingIds = array_values(array_filter(array_unique($additionalMappingIds)));
-				$additionalMappings = $this->findByUuids(schema: 'mapping', uuids: $additionalMappingIds);
-				$additionalMappingIds = [];
-				foreach ($additionalMappings as $mapping) {
-					$data = $mapping->getObject();
-					$slug = ($data['slug'] ?? $mapping->getUuid());
-					$components['components']['mappings'][$slug] = $this->exportMapping(mapping: $mapping, mappingIds: $additionalMappingIds);
-				}
+	/**
+	 * Export the entities a register export collected, keyed by slug per component.
+	 *
+	 * Rules may reference further mappings, so the mappings are exported after them.
+	 *
+	 * @param array $collected The collected `ids` by kind, and the register's `endpoints` and `synchronizations`.
+	 *
+	 * @return array The components: mappings, sources, rules, endpoints, synchronizations and jobs.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function exportRegisterComponents(array $collected): array {
+		$ids = $collected['ids'];
+		$mappingIds = $ids['mapping'];
+		$components = [
+			'mappings' => [],
+			'sources' => [],
+			'rules' => [],
+			'endpoints' => [],
+			'synchronizations' => [],
+			'jobs' => [],
+		];
+		$components['synchronizations'] = $this->exportBySlug(
+			entities: $collected['synchronizations'],
+			export: fn (mixed $synchronization): array => $this->exportSynchronization(synchronization: $synchronization)
+		);
+		$components['endpoints'] = $this->exportBySlug(
+			entities: $collected['endpoints'],
+			export: fn (mixed $endpoint): array => $this->exportEndpoint(endpoint: $endpoint)
+		);
+		$components['sources'] = $this->exportBySlug(
+			entities: $this->findByUuids(schema: 'source', uuids: array_values($ids['source'])),
+			export: fn (mixed $source): array => $this->exportSource(source: $source)
+		);
+		$components['rules'] = $this->exportBySlug(
+			entities: $this->findByUuids(schema: 'rule', uuids: array_values($ids['rule'])),
+			export: function (mixed $rule) use (&$mappingIds): array {
+				return $this->exportRule(rule: $rule, mappingIds: $mappingIds);
 			}
-		}
-
-		// Get and export related jobs.
-		if (empty($endpointIds) === false
-			|| empty($synchronizationIds) === false
-			|| empty($sourceIds) === false
-		) {
-			$jobs = $this->findJobsByArgumentIds(
-				synchronizationIds: array_values($synchronizationIds),
-				endpointIds: array_values($endpointIds),
-				sourceIds: array_values($sourceIds)
-			);
-			foreach ($jobs as $job) {
-				$data = $job->getObject();
-				$slug = ($data['slug'] ?? $job->getUuid());
-				$components['components']['jobs'][$slug] = $this->exportJob(job: $job);
-			}
-		}
+		);
+		$components['mappings'] = $this->exportMappingsWithReferences(mappingIds: array_values(array_filter(array_unique($mappingIds))));
+		$components['jobs'] = $this->exportRegisterJobs(ids: $ids);
 
 		return $components;
-	}//end exportRegister()
+	}//end exportRegisterComponents()
+
+	/**
+	 * Collect the ids an export needs from a register's endpoints.
+	 *
+	 * @param array $endpoints The endpoint objects.
+	 * @param array $ids       The ids collected so far, by kind.
+	 *
+	 * @return array The ids, with the endpoints' own ids, mappings, sources, registers, schemas and rules added.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function collectEndpointExportIds(array $endpoints, array $ids): array {
+		foreach ($endpoints as $endpoint) {
+			$data = $endpoint->getObject();
+			$ids['endpoint'][] = $endpoint->getUuid();
+
+			if (empty($data['inputMapping']) === false) {
+				$ids['mapping'][] = $data['inputMapping'];
+			}
+
+			if (empty($data['outputMapping']) === false) {
+				$ids['mapping'][] = $data['outputMapping'];
+			}
+
+			$ids = $this->collectSideExportIds(ids: $ids, side: ['type' => ($data['targetType'] ?? ''), 'id' => ($data['targetId'] ?? '')]);
+
+			$rules = ($data['rules'] ?? []);
+			if (is_array($rules) === true) {
+				$ids['rule'] = array_merge($ids['rule'], $rules);
+			}
+		}
+
+		return $ids;
+	}//end collectEndpointExportIds()
+
+	/**
+	 * Collect the ids an export needs from a register's synchronizations.
+	 *
+	 * @param array $synchronizations The synchronization objects.
+	 * @param array $ids              The ids collected so far, by kind.
+	 *
+	 * @return array The ids, with the synchronizations' own ids, mappings, sources, registers, schemas and rules added.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function collectSynchronizationExportIds(array $synchronizations, array $ids): array {
+		foreach ($synchronizations as $synchronization) {
+			$data = $synchronization->getObject();
+			$ids['synchronization'][] = $synchronization->getUuid();
+
+			if (empty($data['sourceTargetMapping']) === false) {
+				$ids['mapping'][] = $data['sourceTargetMapping'];
+			}
+
+			if (empty($data['targetSourceMapping']) === false) {
+				$ids['mapping'][] = $data['targetSourceMapping'];
+			}
+
+			$ids = $this->collectSideExportIds(ids: $ids, side: ['type' => ($data['sourceType'] ?? ''), 'id' => ($data['sourceId'] ?? '')]);
+			$ids = $this->collectSideExportIds(ids: $ids, side: ['type' => ($data['targetType'] ?? ''), 'id' => ($data['targetId'] ?? '')]);
+
+			$actions = ($data['actions'] ?? []);
+			if (is_array($actions) === true) {
+				$ids['rule'] = array_merge($ids['rule'], $actions);
+			}
+		}
+
+		return $ids;
+	}//end collectSynchronizationExportIds()
+
+	/**
+	 * Collect the source, or the register and schema, one side of an endpoint or synchronization points at.
+	 *
+	 * @param array $ids  The ids collected so far, by kind.
+	 * @param array $side The side's `type` ('api', 'a2a' or 'register/schema') and `id` (a source id, or `{register}/{schema}`).
+	 *
+	 * @return array The ids with the side's source, or register and schema, added.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function collectSideExportIds(array $ids, array $side): array {
+		$type = $side['type'];
+		$id = $side['id'];
+		// An `a2a` endpoint targets a source too (gateway-a2a-agent-card).
+		if ($type === 'api' || $type === 'a2a') {
+			$ids['source'][] = $id;
+		}
+
+		if ($type === 'register/schema' && str_contains($id, '/') === true) {
+			[$registerId, $schemaId] = explode('/', $id);
+			$ids['register'][] = $registerId;
+			$ids['schema'][] = $schemaId;
+		}
+
+		return $ids;
+	}//end collectSideExportIds()
+
+	/**
+	 * Export entities keyed by their slug, falling back to their uuid.
+	 *
+	 * @param iterable $entities The entities.
+	 * @param callable $export   Exports one entity.
+	 *
+	 * @return array The exported entities by slug.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function exportBySlug(iterable $entities, callable $export): array {
+		$exported = [];
+		foreach ($entities as $entity) {
+			$data = $entity->getObject();
+			$exported[($data['slug'] ?? $entity->getUuid())] = $export($entity);
+		}
+
+		return $exported;
+	}//end exportBySlug()
+
+	/**
+	 * Export mappings, and then every mapping they reference, until none are left.
+	 *
+	 * @param array $mappingIds The uuids of the mappings to export.
+	 *
+	 * @return array The exported mappings by slug.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function exportMappingsWithReferences(array $mappingIds): array {
+		if (empty($mappingIds) === true) {
+			return [];
+		}
+
+		$pending = [];
+		$export = function (mixed $mapping) use (&$pending): array {
+			return $this->exportMapping(mapping: $mapping, mappingIds: $pending);
+		};
+		$exported = $this->exportBySlug(entities: $this->findByUuids(schema: 'mapping', uuids: $mappingIds), export: $export);
+
+		while (empty($pending) === false) {
+			$uuids = array_values(array_filter(array_unique($pending)));
+			$pending = [];
+			$exported = array_replace(
+				$exported,
+				$this->exportBySlug(entities: $this->findByUuids(schema: 'mapping', uuids: $uuids), export: $export)
+			);
+		}
+
+		return $exported;
+	}//end exportMappingsWithReferences()
+
+	/**
+	 * Export the jobs that run the exported endpoints, synchronizations or sources.
+	 *
+	 * @param array $ids The collected ids, by kind.
+	 *
+	 * @return array The exported jobs by slug.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function exportRegisterJobs(array $ids): array {
+		if (empty($ids['endpoint']) === true && empty($ids['synchronization']) === true && empty($ids['source']) === true) {
+			return [];
+		}
+
+		return $this->exportBySlug(
+			entities: $this->findJobsByArgumentIds(ids: $ids),
+			export: fn (mixed $job): array => $this->exportJob(job: $job)
+		);
+	}//end exportRegisterJobs()
 
 	/**
 	 * Import a complete configuration from an OAS array.
@@ -1033,76 +1153,46 @@ class ConfigurationService {
 	 * @throws \InvalidArgumentException If required components are missing or invalid.
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md
+	 * @spec openspec/changes/connectors-hr-staff-sync/tasks.md#task-3
 	 */
 	public function importConfiguration(array $oas): array {
-		// Reset all mappings.
 		$this->resetMappings();
 
-		// Initialize result array.
-		$result = [
-			'sources' => [],
-			'mappings' => [],
-			'rules' => [],
-			'endpoints' => [],
-			'synchronizations' => [],
-			'jobs' => [],
-		];
-
-		// Validate OAS structure.
 		if (isset($oas['components']) === false) {
 			throw new \InvalidArgumentException('OAS must contain a components property');
 		}
 
-		$components = $oas['components'];
-
-		// 1. Import sources first (no dependencies).
-		if (isset($components['sources']) === true) {
-			foreach ($components['sources'] as $sourceSlug => $sourceData) {
-				$source = $this->handlers['source']->import($sourceData, $this->mappings);
-				$result['sources'][$sourceSlug] = $source;
-			}
+		// A set marked as carrying personal data imports only with allow-list
+		// mappings; it is refused before anything is written.
+		$refusals = PersonalDataSetGuard::refusals(document: $oas);
+		if ($refusals !== []) {
+			throw new \InvalidArgumentException(implode(' ', $refusals));
 		}
 
-		// 2. Import mappings (depends on sources).
-		if (isset($components['mappings']) === true) {
-			foreach ($components['mappings'] as $mappingSlug => $mappingData) {
-				$mapping = $this->handlers['mapping']->import($mappingData, $this->mappings);
-				$result['mappings'][$mappingSlug] = $mapping;
-			}
-		}
-
-		// 3. Import rules (depends on sources).
-		if (isset($components['rules']) === true) {
-			foreach ($components['rules'] as $ruleSlug => $ruleData) {
-				$rule = $this->handlers['rule']->import($ruleData, $this->mappings);
-				$result['rules'][$ruleSlug] = $rule;
-			}
-		}
-
-		// 4. Import endpoints (depends on sources and mappings).
-		if (isset($components['endpoints']) === true) {
-			foreach ($components['endpoints'] as $endpointSlug => $endpointData) {
-				$endpoint = $this->handlers['endpoint']->import($endpointData, $this->mappings);
-				$result['endpoints'][$endpointSlug] = $endpoint;
-			}
-		}
-
-		// 5. Import synchronizations (depends on sources, mappings, and endpoints).
-		if (isset($components['synchronizations']) === true) {
-			foreach ($components['synchronizations'] as $syncSlug => $syncData) {
-				$synchronization = $this->handlers['synchronization']->import($syncData, $this->mappings);
-				$result['synchronizations'][$syncSlug] = $synchronization;
-			}
-		}
-
-		// 6. Import jobs (depends on synchronizations, endpoints, and sources).
-		if (isset($components['jobs']) === true) {
-			foreach ($components['jobs'] as $jobSlug => $jobData) {
-				$job = $this->handlers['job']->import($jobData, $this->mappings);
-				$result['jobs'][$jobSlug] = $job;
-			}
+		$result = [];
+		foreach (self::IMPORT_COMPONENTS as $component => $handler) {
+			$result[$component] = $this->importComponent(handler: $handler, entities: ($oas['components'][$component] ?? []));
 		}
 
 		return $result;
 	}//end importConfiguration()
+
+	/**
+	 * Import the entities of one component with its handler.
+	 *
+	 * @param string $handler The handler key: an IMPORT_COMPONENTS value.
+	 * @param mixed $entities The entity configurations by slug.
+	 *
+	 * @return array The imported entities by slug.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function importComponent(string $handler, mixed $entities): array {
+		$imported = [];
+		foreach ($entities as $slug => $data) {
+			$imported[$slug] = $this->handlers[$handler]->import($data, $this->mappings);
+		}
+
+		return $imported;
+	}//end importComponent()
 }//end class

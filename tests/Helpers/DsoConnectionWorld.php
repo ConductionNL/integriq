@@ -19,6 +19,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -44,6 +47,8 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionProperty;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Fixture trait for TestCases that exercise the DSO identity path.
@@ -331,7 +336,9 @@ trait DsoConnectionWorld {
 		);
 
 		$service->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null, bool $_rbac = true): ?ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->worldReads[] = ['schema' => $schema, 'rbac' => $_rbac, 'uid' => $this->worldSession->getUser()?->getUID()];
 				foreach ($this->worldFind(schema: $schema, filters: [], rbac: $_rbac) as $entity) {
 					if ($entity->getUuid() === (string)$id) {
@@ -344,7 +351,10 @@ trait DsoConnectionWorld {
 		);
 
 		$service->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, ?string $uuid = null, bool $_rbac = true): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				return $this->worldSave(object: (array)$object, schema: (string)$schema, uuid: $uuid, rbac: $_rbac);
 			}
 		);

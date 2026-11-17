@@ -37,13 +37,19 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use GuzzleHttp\Client;
-use OCA\Integriq\Exception\MappingResolutionException;
 use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
+use OCA\Integriq\Service\OpenFormulieren\MappingResolutionException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileTransfer;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
@@ -57,7 +63,7 @@ use Throwable;
  *
  * @spec openspec/specs/open-formulieren-intake/spec.md
  */
-class OpenFormulierenIntakeService {
+class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding sources, mappings, and submissions.
@@ -194,8 +200,7 @@ class OpenFormulierenIntakeService {
 		if ($submission === null) {
 			$submission = $this->objectService->saveObject(
 				object: $record,
-				register: self::REGISTER,
-				schema: self::SCHEMA_SUBMISSION
+				options: $this->submissionSaveOptions()
 			);
 		}
 
@@ -212,9 +217,7 @@ class OpenFormulierenIntakeService {
 					$submission->getObject(),
 					['status' => 'failed', 'errorDetail' => $exception->getMessage()]
 				),
-				register: self::REGISTER,
-				schema: self::SCHEMA_SUBMISSION,
-				uuid: $submission->getUuid()
+				options: $this->submissionSaveOptions(uuid: $submission->getUuid())
 			);
 		}//end try
 
@@ -230,9 +233,7 @@ class OpenFormulierenIntakeService {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SUBMISSION,
-			uuid: $submission->getUuid()
+			options: $this->submissionSaveOptions(uuid: $submission->getUuid())
 		);
 
 	}//end ingest()
@@ -251,8 +252,7 @@ class OpenFormulierenIntakeService {
 	public function getSubmission(string $submissionUuid): array {
 		$submission = $this->objectService->find(
 			id: $submissionUuid,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SUBMISSION
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION)
 		);
 		if ($submission instanceof ObjectEntity === false) {
 			throw new OpenFormulierenException(message: 'No submission found for uuid "' . $submissionUuid . '".');
@@ -285,8 +285,7 @@ class OpenFormulierenIntakeService {
 	public function handoff(string $submissionUuid): array {
 		$submission = $this->objectService->find(
 			id: $submissionUuid,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SUBMISSION
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION)
 		);
 		if ($submission instanceof ObjectEntity === false) {
 			throw new OpenFormulierenException(message: 'No submission found for uuid "' . $submissionUuid . '".');
@@ -438,9 +437,8 @@ class OpenFormulierenIntakeService {
 
 				$content = (string)$response->getBody();
 				$file = $this->fileService->addFile(
-					objectEntity: $submission,
-					fileName: $filename,
-					content: $content
+					target: new FileTarget(object: $submission),
+					upload: new FileUpload(fileName: $filename, content: $content, share: false)
 				);
 
 				$results[] = [
@@ -487,8 +485,7 @@ class OpenFormulierenIntakeService {
 
 		$current = $this->objectService->find(
 			id: $submission->getUuid(),
-			register: self::REGISTER,
-			schema: self::SCHEMA_SUBMISSION
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION)
 		);
 		$data = $submission->getObject();
 		if ($current instanceof ObjectEntity === true) {
@@ -508,8 +505,10 @@ class OpenFormulierenIntakeService {
 		if (isset($target['register'], $target['schema'], $target['uuid']) === true) {
 			$targetObject = $this->objectService->find(
 				id: (string)$target['uuid'],
-				register: (string)$target['register'],
-				schema: (string)$target['schema']
+				options: new ObjectFindOptions(
+					register: (string)$target['register'],
+					schema: (string)$target['schema']
+				)
 			);
 		}
 
@@ -524,10 +523,8 @@ class OpenFormulierenIntakeService {
 			}
 
 			try {
-				$this->fileService->copyFile(
-					sourceObject: $submission,
-					fileId: (int)$attachment['fileId'],
-					targetObject: $targetObject
+				$this->fileService->copyAttachedFile(
+					transfer: new FileTransfer(source: $submission, fileId: (int)$attachment['fileId'], target: $targetObject)
 				);
 				$attachments[$index]['copiedToCase'] = true;
 			} catch (Throwable $exception) {
@@ -544,9 +541,7 @@ class OpenFormulierenIntakeService {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SUBMISSION,
-			uuid: $submission->getUuid()
+			options: $this->submissionSaveOptions(uuid: $submission->getUuid())
 		);
 
 	}//end recordHandoffSuccess()
@@ -567,10 +562,20 @@ class OpenFormulierenIntakeService {
 				$submission->getObject(),
 				['status' => 'failed', 'errorDetail' => $message]
 			),
-			register: self::REGISTER,
-			schema: self::SCHEMA_SUBMISSION,
-			uuid: $submission->getUuid()
+			options: $this->submissionSaveOptions(uuid: $submission->getUuid())
 		);
 
 	}//end markFailed()
+
+	/**
+	 * Where a submission is saved: the submission schema, under its uuid.
+	 *
+	 * @param string|null $uuid The uuid of the object, or null for a new one.
+	 *
+	 * @return ObjectSaveOptions
+	 */
+	private function submissionSaveOptions(?string $uuid = null): ObjectSaveOptions {
+		return RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION, uuid: $uuid);
+
+	}//end submissionSaveOptions()
 }//end class

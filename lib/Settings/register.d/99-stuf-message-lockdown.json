@@ -1,0 +1,15 @@
+{
+	"_comment": "ADR-037 register fragment, StUF message lockdown (integriq#2643 review, iq-f1). The `stuf_message` schema had NO `authorization` block, so OpenRegister's generic object API handed every row to any signed-in account, and let it create, update or delete rows. A retrying ZDS kennisgeving keeps its envelope on the row (zaak, betrokkenen with BSN) until it concludes, so the rows are personal data and must not be world-readable. Every verb is admin-only now. Integriq's own code reads and writes the rows with `_rbac: false` (StufZdsMessageLog, StufZknSyncService), as CallRecorder does for `call_log`; the WS-Security UsernameToken is never part of a stored envelope, it is added at send time.",
+	"components": {
+		"schemas": {
+			"stuf_message": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			}
+		}
+	}
+}

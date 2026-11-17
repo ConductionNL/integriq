@@ -37,7 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\Kiss\CtiEventIntake;
+use OCA\Integriq\Service\Kiss\CtiEventIntakeInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -58,7 +58,7 @@ class CtiController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param CtiEventIntake $intake Verifies, normalises, deduplicates and dispatches.
+	 * @param CtiEventIntakeInterface $intake Verifies, normalises, deduplicates and dispatches.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
@@ -66,7 +66,7 @@ class CtiController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly CtiEventIntake $intake,
+		private readonly CtiEventIntakeInterface $intake,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

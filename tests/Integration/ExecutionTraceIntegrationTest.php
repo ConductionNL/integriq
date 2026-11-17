@@ -34,13 +34,14 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Integration;
 
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
 use OCA\Integriq\Service\AuthenticationService;
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -62,6 +63,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @spec openspec/specs/execution-trace/spec.md
@@ -93,7 +95,10 @@ class ExecutionTraceIntegrationTest extends TestCase {
 		// CallServiceTest::buildBrokeredCallService()'s own callback.
 		$objectService = $this->createMock(ORObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = ['object' => $object, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
@@ -116,6 +121,7 @@ class ExecutionTraceIntegrationTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 		);
 
 		// Intercept the real Guzzle client — mirrors CallServiceTest's own

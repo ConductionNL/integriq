@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.5"
+    "version": "1.2.1"
   },
   "x-openregister": {
     "type": "application",
@@ -53,7 +53,9 @@
           "openformulieren_form_mapping",
           "openformulieren_submission",
           "payment_intent",
+          "payment_settlement",
           "peppol_transmission",
+          "peppol_inbound_document",
           "recipient_key",
           "recipient_opt_out",
           "ris_sync_record",
@@ -85,7 +87,7 @@
         "slug": "source",
         "title": "Source",
         "icon": "Cloud",
-        "version": "1.4.0",
+        "version": "1.5.0",
         "summary": "An outbound integration target (HTTP API, database, or service)",
         "description": "A Source is the integration counterpart for inbound or outbound data exchange. It defines the connection (location, auth, headers) and operational state (rate limits, retention, last-call timestamps). One half of the Source/Synchronization/Contract triad: see local ADR-005.",
         "required": [
@@ -135,7 +137,7 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit. Log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam. Not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveRequest(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService. Not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService. Not via CallService), 'sms' (SMS channel. NotifyNL or sandbox, dispatched directly by SmsDispatchService. Not via CallService), 'payment' (live payment provider. Log/sandbox or Mollie. Dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API. Log/sandbox or generic REST, dispatched directly by KissSyncService. Not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound(). Not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge. Log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService. Not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing. Log/sandbox or generic REST, dispatched directly by FscCallService. Not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit. Log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam. Not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveRequest(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService. Not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService. Not via CallService), 'sms' (SMS channel. NotifyNL or sandbox, dispatched directly by SmsDispatchService. Not via CallService), 'payment' (live payment provider. Log/sandbox or Mollie. Dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API. Log/sandbox or generic REST, dispatched directly by KissSyncService. Not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound(). Not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge. Log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService. Not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing. Log/sandbox or generic REST, dispatched directly by FscCallService. Not via CallService), 'feed' (a feed other systems read, such as a job board's vacancy feed: a call answers \"published in feed\" with the location as its link and sends nothing, answered in-process by CallService through FeedSource). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
@@ -273,11 +275,23 @@
                         "minLength": 1,
                         "title": "Credential Name",
                         "description": "Name of the broker credential to use. Convenience form; resolved to a credentialId at call time and a 409 when it is ambiguous (0 or >1 owned matches)."
+                      },
+                      "provider": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Provider",
+                        "description": "With `perUser: true`: the broker provider slug whose per-user OAuth 2.0 account each call uses (sources-per-user-oauth). The call runs with the signed-in user's own personal credential at this provider, never a shared one; a call without a signed-in user is refused."
+                      },
+                      "perUser": {
+                        "type": "boolean",
+                        "const": true,
+                        "title": "Each user's own account",
+                        "description": "Set together with `provider`, and with nothing else, to call with each signed-in user's own account at that provider."
                       }
                     },
                     "additionalProperties": false,
                     "minProperties": 1,
-                    "maxProperties": 1
+                    "maxProperties": 2
                   }
                 }
               }
@@ -413,6 +427,36 @@
             "default": 30,
             "description": "Seconds an open breaker stays open before the next dispatch is treated as a half-open probe. Mirrors PdokConnector::BREAKER_OPEN_SECONDS.",
             "title": "Circuit Breaker Cooldown Seconds"
+          },
+          "residency": {
+            "type": "object",
+            "title": "Residency",
+            "description": "Where this destination sits: an ISO 3166-1 alpha-2 country, who said so (basis) and on what evidence. Without it the destination reads as unknown and blocks the EU only verdict.",
+            "properties": {
+              "country": {
+                "type": "string",
+                "pattern": "^[A-Z]{2}$",
+                "description": "ISO 3166-1 alpha-2 country code, upper case."
+              },
+              "basis": {
+                "type": "string",
+                "enum": ["set-by-admin", "declared-by-app", "seeded"],
+                "description": "Who recorded the country. An administrator's value always wins over a declared one."
+              },
+              "evidence": {
+                "type": "string",
+                "description": "A URL or a short text, such as the processor agreement."
+              },
+              "recordedBy": {
+                "type": "string",
+                "description": "The user id or app id that recorded the country."
+              },
+              "recordedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the country was recorded."
+              }
+            }
           }
         },
         "x-openregister-seed": [],
@@ -527,8 +571,16 @@
           },
           "authorizationConfiguration": {
             "type": "object",
-            "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
+            "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. `keySource` says where a JWT consumer's key comes from: `static` (default, the stored `publicKey`/`algorithm`, issuer matched on the consumer name), `jwks` (`issuer` the tokens' `iss`, `jwksUri` the published key set; the key is chosen by the token's `kid`) or `oidc` (`issuerUrl`, `audience` and optional `requiredClaims`, a list of claim names or a map of claim to value; the JWKS address and issuer come from the provider's discovery document). `jwks` and `oidc` accept RS and PS algorithms only. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The scopes this consumer holds, e.g. `zaken:read`. An endpoint whose authentication rule lists `requiredScopes` (a list, or a map of HTTP method to list) answers 403 naming the missing scope to a caller that does not hold all of them. A JWT caller holds its token's `scope` (space-delimited) or `scp` claim when the token carries one, else these. Absent or empty: the consumer holds none, which only matters on endpoints that require scopes.",
+            "title": "Scopes"
           },
           "created": {
             "type": "string",
@@ -660,12 +712,12 @@
           },
           "targetType": {
             "type": "string",
-            "description": "Polymorphic target kind: `register/schema`, `api`, `job`, `synchronization`.",
+            "description": "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `job`, `synchronization`.",
             "title": "Target Type"
           },
           "targetId": {
             "type": "string",
-            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` → integer Source PK (legacy) or UUID; for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID.",
+            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` and `a2a` → integer Source PK (legacy) or UUID; for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID.",
             "title": "Target ID"
           },
           "conditions": {
@@ -1696,7 +1748,7 @@
         "slug": "synchronization",
         "title": "Synchronization",
         "icon": "Sync",
-        "version": "1.2.0",
+        "version": "1.2.1",
         "summary": "A bidirectional or unidirectional sync between two systems",
         "description": "A Synchronization is one half of the Source/Sync/Contract triad (see local ADR-005). It defines what to sync (sourceId/targetId), how to compare (sourceHashMapping), and per-pass state (currentPage, last-checked timestamps). The `sourceId`/`targetId` fields have an overloaded format documented inline.",
         "required": [
@@ -1784,6 +1836,11 @@
             "description": "Pagination cursor for in-flight sync passes",
             "default": 1,
             "title": "Current Page"
+          },
+          "currentPageVersion": {
+            "type": "string",
+            "description": "The version (ETag, or Last-Modified with Content-Length) of the JSONL file the current batch cycle reads; empty when the source sends neither. A later batch that finds another version starts the cycle again at batch 1.",
+            "title": "Current Page Version"
           },
           "syncMode": {
             "type": "string",
@@ -3401,6 +3458,81 @@
         "appendOnly": false,
         "immutable": false
       },
+      "peppol_inbound_document": {
+        "slug": "peppol_inbound_document",
+        "title": "Peppol Inbound Document",
+        "icon": "InboxArrowDown",
+        "version": "1.0.0",
+        "summary": "One UBL document received over the Peppol network, stored as a file the receiving app can read",
+        "description": "An inbound document announced by the Peppol Access Point. integriq fetches it with the Access Point's credential and stores the UBL as a file on this object, then emits nl.conduction.peppol.inbound.received naming this object and its file. A fetch or store that fails leaves the object fetch-failed; a redelivered notification for the same accessPointReference retries it. See openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009.",
+        "authorization": {
+          "create": [],
+          "read": [
+            "authenticated"
+          ],
+          "update": [],
+          "delete": []
+        },
+        "required": [
+          "senderPeppolId",
+          "accessPointReference",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "senderPeppolId": {
+            "type": "string",
+            "description": "Sender Peppol participant identifier, `scheme:identifier` (e.g. 0106:12345678)",
+            "title": "Sender Peppol ID"
+          },
+          "documentType": {
+            "type": "string",
+            "description": "UBL document type slug (e.g. ubl-invoice-2.1)",
+            "title": "Document Type"
+          },
+          "accessPointReference": {
+            "type": "string",
+            "description": "The Access Point's own reference to the document, as its notification named it; the idempotency key for redeliveries",
+            "title": "Access Point Reference"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the notification first arrived",
+            "title": "Received At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "stored",
+              "fetch-failed"
+            ],
+            "description": "stored (the UBL is a file on this object and the inbound event was emitted) or fetch-failed (fetch or store failed; no event was emitted)",
+            "title": "Status"
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why the last fetch or store failed",
+            "title": "Detail"
+          },
+          "fileId": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Nextcloud file id of the stored UBL",
+            "title": "File ID"
+          },
+          "fileName": {
+            "type": "string",
+            "nullable": true,
+            "description": "File name of the stored UBL",
+            "title": "File Name"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
       "payment_intent": {
         "slug": "payment_intent",
         "title": "Payment Intent",
@@ -3456,6 +3588,11 @@
             "type": "string",
             "description": "Requested payment method (ideal is the default/primary NL method; creditcard, bancontact, sepadirectdebit are also accepted passthrough)",
             "title": "Method"
+          },
+          "terminalId": {
+            "type": "string",
+            "description": "The point-of-sale terminal the payment was sent to, for method pointofsale; empty otherwise",
+            "title": "Terminal"
           },
           "redirectUrl": {
             "type": "string",
@@ -3536,6 +3673,93 @@
               "nl": "Betaling mislukt: {{providerPaymentId}} ({{description}})",
               "en": "Payment failed: {{providerPaymentId}} ({{description}})"
             }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "payment_settlement": {
+        "slug": "payment_settlement",
+        "title": "Payment Settlement",
+        "icon": "BankTransferIn",
+        "version": "1.0.0",
+        "summary": "One provider payout, with the payments, refunds and chargebacks it settles",
+        "description": "A Payment Settlement is one payout of a payment provider (e.g. Mollie) to the account of a payment source, pulled once a day and reported once as an nl.conduction.payment.settlement CloudEvent. Unique per source and settlement reference. See openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-every-provider-settlement-is-reported-once-with-its-transactions-req-lpp-008.",
+        "required": [
+          "sourceSlug",
+          "provider",
+          "settlementReference",
+          "settledAt",
+          "currency",
+          "amountNet"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceSlug": {
+            "type": "string",
+            "title": "Payment source",
+            "description": "The payment source whose account received the payout"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "description": "The payment provider binding, such as mollie"
+          },
+          "settlementReference": {
+            "type": "string",
+            "title": "Settlement reference",
+            "description": "The provider's reference of the payout, as it appears on the bank statement"
+          },
+          "settledAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Settled at",
+            "description": "When the provider paid the payout out"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "description": "ISO 4217 currency of the amounts"
+          },
+          "amountGross": {
+            "type": "string",
+            "title": "Gross amount",
+            "description": "The payments the payout settles, before refunds, chargebacks and fees"
+          },
+          "amountFees": {
+            "type": "string",
+            "title": "Fees",
+            "description": "What the provider kept as fees"
+          },
+          "amountRefunds": {
+            "type": "string",
+            "title": "Refunds",
+            "description": "The refunds the payout deducts"
+          },
+          "amountChargebacks": {
+            "type": "string",
+            "title": "Chargebacks",
+            "description": "The chargebacks the payout deducts"
+          },
+          "amountNet": {
+            "type": "string",
+            "title": "Net amount",
+            "description": "What was paid out to the account"
+          },
+          "transactions": {
+            "type": "array",
+            "title": "Transactions",
+            "description": "One line per payment (positive), refund or chargeback (negative): providerPaymentId, type, amount and fee",
+            "items": {
+              "type": "object"
+            }
+          },
+          "reportedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reported at",
+            "description": "When integriq reported the payout"
           }
         },
         "x-openregister-seed": [],
@@ -4507,7 +4731,7 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.6.0",
+        "version": "1.7.0",
         "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping; the case system makes the case",
         "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped | failed, isolated per verzoek. Integriq declares no case handoff: the case system (dossiq) reads the mapped verzoek and makes one case on the case type in mappedCaseTypes. handed_off survives only on records from the retired manual handoff. See openspec/changes/retire-dso-case-handoff.",
         "authorization": {
@@ -4783,6 +5007,12 @@
                         "type": "string",
                         "description": "The department that handles this case type",
                         "title": "Department"
+                      },
+                      "variant": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "description": "The route (variant) of this case type the case takes, as the matched mapping row gives it",
+                        "title": "Variant"
                       }
                     }
                   }
@@ -6239,8 +6469,8 @@
         "slug": "stuf_message",
         "title": "StUF-ZKN Message",
         "icon": "FileXmlBox",
-        "version": "1.0.0",
-        "summary": "Audit record for one inbound zakLk01/edcLk01 kennisgeving or one outbound zakLk01 kennisgeving send, produced by the stuf-zkn-bridge connector",
+        "version": "1.1.0",
+        "summary": "Audit record for one inbound zakLk01/edcLk01 kennisgeving, one outbound zakLk01 kennisgeving send, or one StUF-ZDS case message sent by the ZDS case client",
         "description": "A StUF-ZKN Message tracks either one inbound zakLk01/edcLk01 kennisgeving (a municipality's legacy StUF estate pushing a zaak/document create/update/vervallen) or one outbound zakLk01 kennisgeving (an OR/ZGW zaak change translated and sent to a subscribed StUF consumer): never merged into a single mutable row, except that a redelivered inbound message with the same referentienummer updates its own row in place (idempotency), never creating a duplicate. See openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md.",
         "required": [
           "direction",
@@ -6263,6 +6493,10 @@
             "enum": [
               "zakLk01",
               "edcLk01",
+              "zakLk02",
+              "zakLv01",
+              "genereerZaakIdentificatie_Di02",
+              "vrijBericht_Du01",
               "unknown"
             ],
             "description": "The StUF-ZKN berichttype tag; \"unknown\" when an inbound envelope could not even be identified",
@@ -6298,9 +6532,10 @@
             "enum": [
               "processed",
               "sent",
-              "failed"
+              "failed",
+              "retrying"
             ],
-            "description": "Inbound: processed|failed (the OR upsert outcome). Outbound: sent|failed (the transport dispatch outcome)",
+            "description": "Inbound: processed|failed (the OR upsert outcome). Outbound: sent|failed (the transport dispatch outcome). A ZDS case message is retrying while a transient failure waits for its next attempt",
             "title": "Status"
           },
           "error": {
@@ -6313,6 +6548,93 @@
             "format": "date-time",
             "description": "Timestamp of this record's last write",
             "title": "Synced At"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "creeerZaak",
+              "actualiseerZaak",
+              "geefZaakdetails",
+              "genereerZaakIdentificatie",
+              "vrijBericht"
+            ],
+            "description": "The ZDS case client operation this message carried; absent on stuf-zkn-bridge rows, which the bridge's own retry sweep handles",
+            "title": "Operation"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "The StUF-ZKN source the ZDS case message went to",
+            "title": "Source"
+          },
+          "sourceApp": {
+            "type": "string",
+            "description": "The app that asked for the ZDS case message (e.g. dossiq)",
+            "title": "Source App"
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "The asking app's correlation id, echoed on StufZdsCaseConcludedEvent",
+            "title": "Correlation Id"
+          },
+          "caseIdentification": {
+            "type": "string",
+            "description": "The zaak identificatie in the case system, when known",
+            "title": "Case Identification"
+          },
+          "attempts": {
+            "type": "integer",
+            "description": "Attempts made so far (ZDS case messages are retried after 5 s, 30 s, 2 min and 10 min)",
+            "title": "Attempts"
+          },
+          "httpStatus": {
+            "type": "integer",
+            "description": "HTTP status of the last attempt; 0 when the case system did not answer",
+            "title": "HTTP Status"
+          },
+          "durationMs": {
+            "type": "integer",
+            "description": "Round-trip time of the last attempt in milliseconds",
+            "title": "Duration (ms)"
+          },
+          "faultCode": {
+            "type": "string",
+            "description": "The StUF fout code or transport code of the last failure (StUF067, TIMEOUT, NETWORK, CIRCUIT_OPEN)",
+            "title": "Fault Code"
+          },
+          "nextAttemptAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When a retrying message is sent again",
+            "title": "Next Attempt At"
+          },
+          "envelope": {
+            "type": "string",
+            "description": "The envelope of a retrying kennisgeving, kept so the retry resends it; it carries no WS-Security credentials (the UsernameToken is added at send time); erased when the message concludes",
+            "title": "Envelope"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Retention horizon of a row that keeps an envelope for a retry: the retention sweep removes the row when it passes without the message having concluded; cleared when it concludes",
+            "title": "Expires At"
+          },
+          "confirmation": {
+            "type": "string",
+            "enum": [
+              "Bv01",
+              "Bv03",
+              "Fo01",
+              "Fo02",
+              "Fo03"
+            ],
+            "description": "The asynchronous confirmation the case system sent after processing the kennisgeving",
+            "title": "Confirmation"
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the asynchronous confirmation arrived",
+            "title": "Confirmed At"
           }
         },
         "x-openregister-seed": [],

@@ -21,6 +21,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/changes/ori-public-serving/specs/ori-public-serving/spec.md#requirement-field-projection-to-ori-popolo-json-ld-shape-req-oripub-003
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -58,6 +61,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the seeded ORI endpoints.
@@ -142,6 +146,7 @@ class OriPublicEndpointsTest extends TestCase {
 		$orObjectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
 		$orObjectService->method('find')->willReturnCallback(
 			function (...$args) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = (string)($args['id'] ?? $args[0]);
 				$schema = (string)($args['schema'] ?? $args[2] ?? '');
 				$object = self::seed(schema: $schema, slug: $id);

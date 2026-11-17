@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -32,6 +35,13 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
  */
 class S3AdapterTest extends TestCase {
+
+	/**
+	 * The golden write outcomes, taken before the shared write was reshaped.
+	 *
+	 * @var string
+	 */
+	private const GOLDEN_WRITES = '[["create",null,"RuntimeException","S3 write of \\"dir\\/k.txt\\" to bucket \\"b 1\\" did not complete."],["update",null,"RuntimeException","S3 write of \\"dir\\/k.txt\\" to bucket \\"b 1\\" did not complete."],["create",199,"RuntimeException","S3 write of \\"dir\\/k.txt\\" to bucket \\"b 1\\" was rejected upstream (status 199)."],["update",199,"RuntimeException","S3 write of \\"dir\\/k.txt\\" to bucket \\"b 1\\" was rejected upstream (status 199)."],["create",200,"returned",{"bucket":"b 1","key":"dir\\/k.txt","status":200}],["update",200,"returned",{"bucket":"b 1","key":"dir\\/k.txt","status":200}],["create",204,"returned",{"bucket":"b 1","key":"dir\\/k.txt","status":204}],["update",204,"returned",{"bucket":"b 1","key":"dir\\/k.txt","status":204}],["create",299,"returned",{"bucket":"b 1","key":"dir\\/k.txt","status":299}],["update",299,"returned",{"bucket":"b 1","key":"dir\\/k.txt","status":299}],["create",300,"RuntimeException","S3 write of \\"dir\\/k.txt\\" to bucket \\"b 1\\" was rejected upstream (status 300)."],["update",300,"RuntimeException","S3 write of \\"dir\\/k.txt\\" to bucket \\"b 1\\" was rejected upstream (status 300)."],["create",403,"RuntimeException","S3 write of \\"dir\\/k.txt\\" to bucket \\"b 1\\" was rejected upstream (status 403)."],["update",403,"RuntimeException","S3 write of \\"dir\\/k.txt\\" to bucket \\"b 1\\" was rejected upstream (status 403)."]]';
 
 	/**
 	 * @var CredentialBrokerService|\PHPUnit\Framework\MockObject\MockObject
@@ -451,4 +461,46 @@ XML;
 
 		$this->assertSame(200, $result['status']);
 	}//end testAbsentContentWritesAnEmptyObject()
+
+	/**
+	 * GOLDEN: what create() and update() return or throw at each upstream
+	 * status around the 2xx boundary and for an incomplete request, with the
+	 * exact messages. Pinned before the shared write was reshaped.
+	 *
+	 * @return void
+	 */
+	public function testGoldenWriteOutcomesAtEveryBoundary(): void {
+		$outcomes = [];
+		foreach ([null, 199, 200, 204, 299, 300, 403] as $status) {
+			foreach (['create', 'update'] as $method) {
+				$broker = $this->createMock(CredentialBrokerService::class);
+				if ($status === null) {
+					$broker->method('request')->willThrowException(new CredentialAccessDeniedException('host-lock denied'));
+				} else {
+					$broker->method('request')->willReturn(['status' => $status, 'headers' => [], 'body' => '']);
+				}
+
+				$appConfig = $this->createMock(IAppConfig::class);
+				$appConfig->method('getValueString')->willReturn('cred-uuid-s3');
+				$l10n = $this->createMock(IL10N::class);
+				$l10n->method('t')->willReturnArgument(0);
+				$adapter = new S3Adapter(credentialBroker: $broker, appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class), l10n: $l10n);
+
+				try {
+					if ($method === 'create') {
+						$result = $adapter->create('register', 'schema', 'object-id', ['bucket' => 'b 1', 'key' => 'dir/k.txt', 'content' => 'c']);
+					} else {
+						$result = $adapter->update('register', 'schema', 'object-id', 'b 1/dir/k.txt', ['content' => 'c']);
+					}
+
+					$outcomes[] = [$method, $status, 'returned', $result];
+				} catch (\Throwable $exception) {
+					$outcomes[] = [$method, $status, get_class($exception), $exception->getMessage()];
+				}
+			}//end foreach
+		}//end foreach
+
+		$this->assertSame(self::GOLDEN_WRITES, json_encode($outcomes));
+	}//end testGoldenWriteOutcomesAtEveryBoundary()
+
 }//end class

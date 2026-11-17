@@ -16,11 +16,14 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Twig;
 
-use OCA\Integriq\Service\AuthenticationService;
+use OCA\Integriq\Service\AuthenticationServiceInterface;
 use Twig\RuntimeLoader\RuntimeLoaderInterface;
 
 /**
@@ -32,10 +35,10 @@ class AuthenticationRuntimeLoader implements RuntimeLoaderInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuthenticationService $authenticationService Service that performs the token fetches.
+	 * @param AuthenticationServiceInterface $authenticationService Service that performs the token fetches.
 	 */
 	public function __construct(
-		private readonly AuthenticationService $authenticationService,
+		private readonly AuthenticationServiceInterface $authenticationService,
 	) {
 
 	}//end __construct()

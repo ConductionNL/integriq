@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -21,6 +24,7 @@ use DOMDocument;
 use DOMElement;
 use DOMXPath;
 use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\StufZkn\CaseDocumentDelivery;
 use OCA\Integriq\Service\StufZkn\OutboundDocumentTranslator;
 use OCA\Integriq\Service\StufZkn\StufZknNamespaces;
 use PHPUnit\Framework\TestCase;
@@ -86,15 +90,16 @@ class OutboundDocumentTranslatorTest extends TestCase {
 	 * @return array{referentienummer:string,xml:string}
 	 */
 	private function documentMessage(array $document=self::DOCUMENT): array {
-		return (new OutboundDocumentTranslator())->documentMessage(
+		$delivery = new CaseDocumentDelivery(
 			document: $document,
-			documentId: '0363-DOC-2026-000042',
 			zaakIdentificatie: '0363-ZAAK-2026-0099',
 			documenttype: 'Besluit',
 			file: ['content' => 'ANON!', 'filename' => 'besluit-geanonimiseerd.pdf', 'mimeType' => 'application/pdf'],
 			zender: ['organisatie' => '0363', 'applicatie' => 'integriq'],
 			ontvanger: ['organisatie' => '0363', 'applicatie' => 'ZSH']
 		);
+
+		return (new OutboundDocumentTranslator())->documentMessage(delivery: $delivery, documentId: '0363-DOC-2026-000042');
 	}//end documentMessage()
 
 	/**

@@ -17,13 +17,16 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-4
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -55,14 +58,14 @@ class EventRetryJob extends TimedJob {
 	 * EventRetryJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param EventService $eventService The event delivery service.
+	 * @param EventServiceInterface $eventService The event delivery service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 *
 	 * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-4
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

@@ -17,16 +17,24 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\BackgroundJob;
 
 use DateTime;
-use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
+use Psr\Log\LoggerInterface;
 
 /**
  * Background job task for cleaning up expired logs.
@@ -47,12 +55,14 @@ class LogCleanUpTask extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
 	 * @param OrObjectService $orObjectService OR object service for log operations.
-	 * @param BodyCapturePolicy $bodyCapturePolicy Strips call bodies past their expiry.
+	 * @param BodyCapturePolicyInterface $bodyCapturePolicy Strips call bodies past their expiry.
+	 * @param LoggerInterface $logger Logs a record that could not be stripped or deleted.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly OrObjectService $orObjectService,
-		private readonly BodyCapturePolicy $bodyCapturePolicy,
+		private readonly BodyCapturePolicyInterface $bodyCapturePolicy,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
 
@@ -71,32 +81,54 @@ class LogCleanUpTask extends TimedJob {
 	 * Delete expired objects for a given schema in the openconnector register.
 	 *
 	 * Finds all objects with a non-null `expires` field that is in the past,
-	 * then deletes them one by one via OR ObjectService.
+	 * then deletes them one by one via OR ObjectService. These are integriq's
+	 * own logs and the sweep runs under cron, where there is no session user:
+	 * with RBAC on, the admin-only rules (`call_log`, `stuf_message`) hide every
+	 * row and nothing would ever be deleted, so it reads and deletes with
+	 * `_rbac: false`.
 	 *
 	 * @param string $schema The schema slug to clean up.
+	 * @param array<string,string> $only Property values a row must have to be deleted, e.g. `['status' => 'retrying']`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
 	 */
-	private function cleanupSchema(string $schema): void {
+	private function cleanupSchema(string $schema, array $only = []): void {
 		$now = (new DateTime())->format('Y-m-d H:i:s');
+		// System path: the cron clean-up expires the logs of every organisation.
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
 					'register' => 'integriq',
 					'schema' => $schema,
 					'expires[lt]' => $now,
-				],
-			]
+				] + $only,
+			],
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$objects = $matches['results'] ?? $matches;
 		foreach ($objects as $object) {
+			// The filter is a hint to OpenRegister, not a guarantee: match the guard again before deleting.
+			$data = $object->getObject();
+			foreach ($only as $property => $value) {
+				if (is_array($data) === false || ($data[$property] ?? null) !== $value) {
+					continue 2;
+				}
+			}
+
 			try {
-				$this->orObjectService->deleteObject(uuid: $object->getUuid());
+				// System path: the cron clean-up expires the logs of every organisation.
+				$this->orObjectService->deleteObject(new ObjectDeletion(uuid: $object->getUuid()), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Continue with remaining objects even if one deletion fails.
+				$this->logger->warning(
+					'LogCleanUpTask: could not delete expired {schema} record {uuid}: {error}',
+					['schema' => $schema, 'uuid' => $object->getUuid(), 'error' => $e->getMessage()]
+				);
 			}
 		}
 
@@ -116,6 +148,7 @@ class LogCleanUpTask extends TimedJob {
 	 */
 	public function stripExpiredBodies(): int {
 		$now = new DateTime();
+		// System path: the cron clean-up expires the logs of every organisation.
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
@@ -142,18 +175,24 @@ class LogCleanUpTask extends TimedJob {
 			$record['bodyExpiredAt'] = $now->format('c');
 
 			try {
+				// System path: the cron clean-up expires the logs of every organisation.
 				$this->orObjectService->saveObject(
 					object: $record,
-					register: 'integriq',
-					schema: 'call_log',
-					uuid: $object->getUuid(),
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+						uuid: $object->getUuid(),
+						policy: new SavePolicy(silent: true)
+					),
 					_rbac: false,
-					_multitenancy: false,
-					silent: true
+					_multitenancy: false
 				);
 				$stripped++;
 			} catch (\Exception $e) {
 				// Continue with the remaining records even if one write fails.
+				$this->logger->warning(
+					'LogCleanUpTask: could not strip the bodies of call record {uuid}: {error}',
+					['uuid' => $object->getUuid(), 'error' => $e->getMessage()]
+				);
 			}
 		}//end foreach
 
@@ -198,6 +237,10 @@ class LogCleanUpTask extends TimedJob {
 
 		// Clear expired call logs.
 		$this->cleanupSchema(schema: 'call_log');
+
+		// Clear StUF-ZDS messages whose retry never concluded: they keep an envelope until `expires`.
+		// Only rows still `retrying`: a concluded row is an audit record, whatever its `expires` says.
+		$this->cleanupSchema(schema: 'stuf_message', only: ['status' => 'retrying']);
 
 		// Clear expired job logs.
 		$this->cleanupSchema(schema: 'job_log');

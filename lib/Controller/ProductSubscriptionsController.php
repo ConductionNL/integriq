@@ -33,10 +33,12 @@ namespace OCA\Integriq\Controller;
 
 use DateTime;
 use OCA\Integriq\Exception\ApprovalStateException;
-use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\ApprovalServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -79,7 +81,7 @@ class ProductSubscriptionsController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
-	 * @param ApprovalService $approvalService The approval state-machine service (subscription approval gate).
+	 * @param ApprovalServiceInterface $approvalService The approval state-machine service (subscription approval gate).
 	 * @param OrObjectService $orObjectService OpenRegister object service (product/subscription/call_log persistence).
 	 * @param IUserSession $userSession The user session.
 	 * @param IL10N $l The localization service.
@@ -88,7 +90,7 @@ class ProductSubscriptionsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ApprovalService $approvalService,
+		private readonly ApprovalServiceInterface $approvalService,
 		private readonly OrObjectService $orObjectService,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
@@ -124,10 +126,8 @@ class ProductSubscriptionsController extends Controller {
 		try {
 			$product = $this->orObjectService->find(
 				id: $productId,
-				register: self::REGISTER,
-				schema: 'api_product',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'api_product'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('No such API product')], Http::STATUS_NOT_FOUND);
@@ -158,8 +158,7 @@ class ProductSubscriptionsController extends Controller {
 				'requesterUserId' => $this->userSession->getUser()?->getUID(),
 				'createdAt' => $now->format('c'),
 			],
-			register: self::REGISTER,
-			schema: 'api_product_subscription'
+			options: RegisterSave::options(register: self::REGISTER, schema: 'api_product_subscription')
 		);
 
 		if ($requiresApproval === false) {
@@ -177,16 +176,14 @@ class ProductSubscriptionsController extends Controller {
 			subscriptionId: (string)$subscription->getUuid(),
 			approverGroup: $approverGroup,
 			onReject: 'error',
-			ttlSeconds: ApprovalService::DEFAULT_TTL_SECONDS
+			ttlSeconds: ApprovalServiceInterface::DEFAULT_TTL_SECONDS
 		);
 
 		$subscriptionData = $subscription->getObject();
 		$subscriptionData['approvalRequestId'] = $approvalRequest->getUuid();
 		$subscription = $this->orObjectService->saveObject(
 			object: $subscriptionData,
-			register: self::REGISTER,
-			schema: 'api_product_subscription',
-			uuid: $subscription->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: 'api_product_subscription', uuid: $subscription->getUuid())
 		);
 
 		return new JSONResponse($this->summarizeSubscription(subscription: $subscription), Http::STATUS_ACCEPTED);
@@ -271,9 +268,7 @@ class ProductSubscriptionsController extends Controller {
 
 		$subscription = $this->orObjectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: 'api_product_subscription',
-			uuid: $subscription->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: 'api_product_subscription', uuid: $subscription->getUuid())
 		);
 
 		return new JSONResponse($this->summarizeSubscription(subscription: $subscription));
@@ -311,10 +306,8 @@ class ProductSubscriptionsController extends Controller {
 		try {
 			$this->orObjectService->find(
 				id: $productId,
-				register: self::REGISTER,
-				schema: 'api_product',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'api_product'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('No such API product')], Http::STATUS_NOT_FOUND);
@@ -372,6 +365,11 @@ class ProductSubscriptionsController extends Controller {
 	 *
 	 * That is a deliberate choice and the reason this method has no `@throws`.
 	 *
+	 * The rows are read with RBAC off: `call_log` is admin-only, so with RBAC on
+	 * a delegated integriq administrator (who passes #[AuthorizedAdminSetting])
+	 * was shown zero traffic for every product. Only aggregates leave this
+	 * controller, never a row.
+	 *
 	 * @param string $productId The api_product's id.
 	 *
 	 * @return array<int, array<string, mixed>> Each row's own fields.
@@ -388,7 +386,8 @@ class ProductSubscriptionsController extends Controller {
 					],
 					'sort' => ['created' => 'desc'],
 					'limit' => self::ANALYTICS_ROW_LIMIT,
-				]
+				],
+				_rbac: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: failed to fetch product call_log rows for analytics: ' . $e->getMessage());
@@ -444,10 +443,8 @@ class ProductSubscriptionsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: self::REGISTER,
-				schema: 'api_product_subscription',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'api_product_subscription'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return [null, null, new JSONResponse(['error' => $this->l->t('No such subscription')], Http::STATUS_NOT_FOUND)];
@@ -507,9 +504,7 @@ class ProductSubscriptionsController extends Controller {
 
 		return $this->orObjectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: 'api_product_subscription',
-			uuid: $subscription->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: 'api_product_subscription', uuid: $subscription->getUuid())
 		);
 
 	}//end activateSubscription()

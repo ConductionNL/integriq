@@ -20,8 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Mail;
 
-use OCA\Integriq\Exception\MessageParseException;
 use OCA\Integriq\Service\Mail\CompoundFileReader;
+use OCA\Integriq\Service\Mail\MessageParseException;
 use OCA\Integriq\Service\Mail\MsgParser;
 use OCA\Integriq\Tests\Helpers\CompoundFileBuilder;
 use PHPUnit\Framework\TestCase;

@@ -24,7 +24,9 @@ use InvalidArgumentException;
 use OCA\Integriq\Service\Adapter\DataInfra\AbstractFileTransferAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\SftpAdapter;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Util\SafeXmlParser;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -361,7 +363,10 @@ class FilePickupService {
 
 		$mapping = null;
 		if (empty($synchronization['sourceTargetMapping']) === false) {
-			$mapping = $this->objectService->find(id: (string)$synchronization['sourceTargetMapping'], register: 'integriq', schema: 'mapping');
+			$mapping = $this->objectService->find(
+				id: (string)$synchronization['sourceTargetMapping'],
+				options: new ObjectFindOptions(register: 'integriq', schema: 'mapping')
+			);
 		}
 
 		$saved = 0;
@@ -375,7 +380,7 @@ class FilePickupService {
 				unset($object[$field]);
 			}
 
-			$this->objectService->saveObject(object: $object, register: $register, schema: $schema);
+			$this->objectService->saveObject(object: $object, options: RegisterSave::options(register: $register, schema: $schema));
 			$saved++;
 		}
 

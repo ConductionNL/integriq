@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -29,6 +32,8 @@ use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Tests for the event processing and delivery service (OR cutover — no deleted Db types).
@@ -386,6 +391,7 @@ class EventServiceTest extends TestCase {
 		$capturedArgs = null;
 		$this->objectService->method('find')->willReturnCallback(
 			function (...$args) use (&$capturedArgs, $subscription) {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$capturedArgs = $args;
 				return $subscription;
 			}
@@ -528,6 +534,7 @@ class EventServiceTest extends TestCase {
 		$saved = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$saved, $message) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$saved = ($args['object'] ?? $args[0]);
 				return $message;
 			}
@@ -875,7 +882,9 @@ class EventServiceTest extends TestCase {
 		// subscription, then final re-load. Return the abandoned message first,
 		// subscription on the style lookup, then the (reset) message.
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($abandoned, $subscription) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($abandoned, $subscription) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'event_subscription') {
 					return $subscription;
 				}
@@ -986,6 +995,7 @@ class EventServiceTest extends TestCase {
 
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured, $eventEntity) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$captured = $object;
 				return $eventEntity;
 			}

@@ -45,6 +45,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 class SynchronizationServiceDeletionPathTest extends TestCase {
 	private const SYNC_ID = 'sync-uuid-delete-path';
@@ -140,6 +141,7 @@ class SynchronizationServiceDeletionPathTest extends TestCase {
 		$resolvable = ($inScope ?? $targetIds);
 		$this->orObjectService->method('find')->willReturnCallback(
 			function (...$args) use ($resolvable) {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$id = (string)$args[0];
 				if (in_array($id, $resolvable, true) === false) {
 					// A target that lives in another register/schema, or was
@@ -284,5 +286,28 @@ class SynchronizationServiceDeletionPathTest extends TestCase {
 
 		$this->assertSame(0, $this->runDeletion(['target-1', 'target-2']));
 		$this->assertSame([], $this->updateTargetCalls);
+	}
+	/**
+	 * The contract of a deleted target is persisted after the delete, in the contract schema.
+	 *
+	 * @return void
+	 */
+	public function testTheDeletedContractIsPersisted(): void {
+		$this->seed(['target-1', 'target-2', 'target-3']);
+		$saved = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$saved) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
+				$saved[] = ['object' => $args[0], 'schema' => $args[2]];
+
+				return ObjectServiceMockBuilder::objectEntity($this, $args[0], 'saved');
+			}
+		);
+
+		$this->runDeletion(['target-1', 'target-2']);
+
+		$this->assertCount(1, $saved);
+		$this->assertSame('target-3', $saved[0]['object']['targetId']);
+		$this->assertSame('synchronization_contract', $saved[0]['schema']);
 	}
 }

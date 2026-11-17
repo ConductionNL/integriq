@@ -43,6 +43,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Drives MailboxPollJob over the real MailboxSourceHandler.
@@ -115,7 +116,7 @@ class MailboxPollJobTest extends TestCase {
 			}
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			fn ($object = [], $register = null, $schema = null, $uuid = null) => ObjectServiceMockBuilder::objectEntity($this, $object, (string)$uuid)
+			fn ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) => ObjectServiceMockBuilder::objectEntity($this, $object, (string)($options->uuid))
 		);
 
 		$intakeService = $this->getMockBuilder(MailIntakeService::class)

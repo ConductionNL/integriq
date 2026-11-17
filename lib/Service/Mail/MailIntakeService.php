@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Mail;
 
 use OCA\Integriq\Event\MessageReceivedEvent;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -41,14 +42,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/mail-intake/spec.md#requirement-a-received-message-is-offered-to-the-owning-app-as-a-typed-event-req-mail-003
  */
-class MailIntakeService {
-
-	/**
-	 * The OpenRegister register holding integriq's objects.
-	 *
-	 * @var string
-	 */
-	public const REGISTER = 'integriq';
+class MailIntakeService implements MailIntakeServiceInterface {
 
 	/**
 	 * The schema one received mail message is stored under.
@@ -56,13 +50,6 @@ class MailIntakeService {
 	 * @var string
 	 */
 	public const SCHEMA_MESSAGE = 'mail_message';
-
-	/**
-	 * The `source.type` a mailbox is.
-	 *
-	 * @var string
-	 */
-	public const SOURCE_TYPE = 'mailbox';
 
 	/**
 	 * A message has been read in and is waiting for an owner.
@@ -150,8 +137,7 @@ class MailIntakeService {
 
 		$stored = $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$event = new MessageReceivedEvent(
@@ -172,9 +158,7 @@ class MailIntakeService {
 
 		return $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: (string)$stored->getUuid(),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: (string)$stored->getUuid())
 		);
 
 	}//end intake()

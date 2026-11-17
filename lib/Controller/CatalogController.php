@@ -19,15 +19,20 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\CatalogRegistryService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\CatalogRegistryServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -56,7 +61,7 @@ class CatalogController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param CatalogRegistryService $registryService The catalog registry service.
+	 * @param CatalogRegistryServiceInterface $registryService The catalog registry service.
 	 * @param OrObjectService $objectService OpenRegister's object-service facade. Every catalog read and
 	 *                                       write goes through it, so per-object authorization is
 	 *                                       OpenRegister's register RBAC (ADR-022) — which is why the
@@ -65,19 +70,19 @@ class CatalogController extends Controller {
 	 * @param IAppConfig $appConfig App config, used to flip flag-gated items.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly CatalogRegistryService $registryService,
+		private readonly CatalogRegistryServiceInterface $registryService,
 		private readonly OrObjectService $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -247,9 +252,7 @@ class CatalogController extends Controller {
 			$existingData['isEnabled'] = true;
 			$saved = $this->objectService->saveObject(
 				object: $existingData,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $existing->getUuid()
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $existing->getUuid())
 			);
 
 			return new JSONResponse(
@@ -271,8 +274,7 @@ class CatalogController extends Controller {
 		$seedPayload['isEnabled'] = true;
 		$created = $this->objectService->saveObject(
 			object: $seedPayload,
-			register: 'integriq',
-			schema: 'source'
+			options: RegisterSave::options(register: 'integriq', schema: 'source')
 		);
 
 		return new JSONResponse(
@@ -297,7 +299,7 @@ class CatalogController extends Controller {
 	 */
 	private function findCatalogItem(string $id): ?ObjectEntity {
 		try {
-			return $this->objectService->find(id: $id, register: 'integriq', schema: 'catalog_item');
+			return $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'catalog_item'));
 		} catch (DoesNotExistException $e) {
 			return null;
 		}

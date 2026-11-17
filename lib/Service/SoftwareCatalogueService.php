@@ -22,6 +22,9 @@
  * @SuppressWarnings(PHPMD.MissingImport)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -29,6 +32,8 @@ namespace OCA\Integriq\Service;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -40,7 +45,7 @@ use function React\Promise\all;
 /**
  * Handles Software Catalogue model/view extension and organisation/contact lifecycle events.
  */
-class SoftwareCatalogueService {
+class SoftwareCatalogueService implements SoftwareCatalogueServiceInterface {
 
 	public const SUFFIX = '-sc';
 
@@ -120,7 +125,7 @@ class SoftwareCatalogueService {
 			return $deferred->promise();
 		}
 
-		$modelObject = $openRegister->find($modelId, register: 'vng-gemma', schema: 'model');
+		$modelObject = $openRegister->find($modelId, new ObjectFindOptions(register: 'vng-gemma', schema: 'model'));
 		$model = $modelObject->jsonSerialize();
 		$views = $model['views'];
 
@@ -262,7 +267,7 @@ class SoftwareCatalogueService {
 								);
 
 								// Save the updated view.
-								$this->objectService->getOpenRegisters()->saveObject($view, uuid: $id);
+								$this->objectService->getOpenRegisters()->saveObject($view, new ObjectSaveOptions(uuid: $id));
 							}
 						)
 						->otherwise(

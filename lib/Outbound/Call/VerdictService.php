@@ -31,6 +31,7 @@ namespace OCA\Integriq\Outbound\Call;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
@@ -39,7 +40,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-external-verdict-is-recorded-against-the-record-it-judges-req-ocd-006
  */
-class VerdictService {
+class VerdictService implements VerdictServiceInterface {
 
 	/**
 	 * The schema one verdict is stored under.
@@ -130,8 +131,7 @@ class VerdictService {
 				'payload' => $payload,
 				'receivedAt' => (new DateTimeImmutable())->format('c'),
 			],
-			register: MessageRecorder::REGISTER,
-			schema: self::SCHEMA,
+			options: RegisterSave::options(register: MessageRecorder::REGISTER, schema: self::SCHEMA)
 		);
 
 	}//end record()

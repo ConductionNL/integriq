@@ -27,8 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Connectors\PdokConnector;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Connectors\PdokConnectorInterface;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -47,17 +47,17 @@ class PdokController extends Controller {
 	 *
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
-	 * @param PdokConnector $pdokConnector Connector providing PDOK access.
+	 * @param PdokConnectorInterface $pdokConnector Connector providing PDOK access.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PdokConnector $pdokConnector,
+		private readonly PdokConnectorInterface $pdokConnector,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -84,10 +84,7 @@ class PdokController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'pdok.suggest');
 
 		if (trim($q) === '') {
-			return new JSONResponse(
-				['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->missingQuery();
 		}
 
 		return new JSONResponse($this->pdokConnector->suggest($q));
@@ -113,28 +110,11 @@ class PdokController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'pdok.lookup');
 
 		if (trim($id) === '') {
-			return new JSONResponse(
-				['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->missingQuery();
 		}
 
 		$payload = $this->pdokConnector->lookup($id);
-		if ($payload['numFound'] === 0 && empty($payload['stale']) === true) {
-			return new JSONResponse(
-				['error' => 'pdok_unavailable', 'message_key' => 'pdok.unavailable'],
-				Http::STATUS_SERVICE_UNAVAILABLE
-			);
-		}
-
-		if ($payload['numFound'] === 0) {
-			return new JSONResponse(
-				['error' => 'not_found', 'message_key' => 'pdok.error.not_found'],
-				Http::STATUS_NOT_FOUND
-			);
-		}
-
-		return new JSONResponse($payload);
+		return $this->singleAnswer(payload: $payload);
 	}//end lookupAction()
 
 	/**
@@ -159,10 +139,7 @@ class PdokController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'pdok.free');
 
 		if (trim($q) === '') {
-			return new JSONResponse(
-				['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->missingQuery();
 		}
 
 		return new JSONResponse($this->pdokConnector->free($q, $rows, $start));
@@ -196,6 +173,30 @@ class PdokController extends Controller {
 		}
 
 		$payload = $this->pdokConnector->reverse($lat, $lng);
+		return $this->singleAnswer(payload: $payload);
+	}//end reverseAction()
+
+	/**
+	 * The 400 answer for a missing or blank query.
+	 *
+	 * @return JSONResponse
+	 */
+	private function missingQuery(): JSONResponse {
+		return new JSONResponse(
+			['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
+			Http::STATUS_BAD_REQUEST
+		);
+	}//end missingQuery()
+
+	/**
+	 * The answer to a lookup that names one place: 503 when PDOK gave nothing
+	 * and no cached copy, 404 when nothing was found, the payload otherwise.
+	 *
+	 * @param array<string,mixed> $payload The normalised connector payload.
+	 *
+	 * @return JSONResponse
+	 */
+	private function singleAnswer(array $payload): JSONResponse {
 		if ($payload['numFound'] === 0 && empty($payload['stale']) === true) {
 			return new JSONResponse(
 				['error' => 'pdok_unavailable', 'message_key' => 'pdok.unavailable'],
@@ -211,5 +212,5 @@ class PdokController extends Controller {
 		}
 
 		return new JSONResponse($payload);
-	}//end reverseAction()
+	}//end singleAnswer()
 }//end class

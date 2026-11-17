@@ -26,9 +26,11 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\DocumentGenerationException;
-use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
-use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
+use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
+use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -54,14 +56,14 @@ class DocumentGenerationController extends Controller {
 	 * @param string $appName App name.
 	 * @param IRequest $request Request object.
 	 * @param ORObjectService $objectService Reads and writes the source objects.
-	 * @param DocumentGenerationProviderRegistry $registry Resolves the source's binding.
+	 * @param DocumentProviderRegistryInterface $registry Resolves the source's binding.
 	 * @param LoggerInterface $logger Logger for credential-free diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ORObjectService $objectService,
-		private readonly DocumentGenerationProviderRegistry $registry,
+		private readonly DocumentProviderRegistryInterface $registry,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -130,9 +132,11 @@ class DocumentGenerationController extends Controller {
 			$object['isEnabled'] = true;
 			$this->objectService->saveObject(
 				object: $object,
-				register: DocumentGenerationService::REGISTER,
-				schema: DocumentGenerationService::SCHEMA_SOURCE,
-				uuid: $source->getUuid()
+				options: RegisterSave::options(
+					register: DocumentGenerationServiceInterface::REGISTER,
+					schema: DocumentGenerationServiceInterface::SCHEMA_SOURCE,
+					uuid: $source->getUuid()
+				)
 			);
 
 			return new JSONResponse(['isEnabled' => true, 'providerId' => $provider->getProviderId()]);
@@ -205,8 +209,10 @@ class DocumentGenerationController extends Controller {
 	private function source(string $sourceId) {
 		$source = $this->objectService->find(
 			id: $sourceId,
-			register: DocumentGenerationService::REGISTER,
-			schema: DocumentGenerationService::SCHEMA_SOURCE
+			options: new ObjectFindOptions(
+				register: DocumentGenerationServiceInterface::REGISTER,
+				schema: DocumentGenerationServiceInterface::SCHEMA_SOURCE
+			)
 		);
 
 		if ($source === null) {
@@ -215,7 +221,7 @@ class DocumentGenerationController extends Controller {
 			);
 		}
 
-		if ((string)($source->getObject()['type'] ?? '') !== DocumentGenerationService::SOURCE_TYPE) {
+		if ((string)($source->getObject()['type'] ?? '') !== DocumentGenerationServiceInterface::SOURCE_TYPE) {
 			throw new DocumentGenerationException(
 				message: 'Source "' . $sourceId . '" is not a document generation source.'
 			);

@@ -37,6 +37,8 @@ use OCA\Integriq\Exception\FscDirectoryException;
 use OCA\Integriq\Service\Fsc\FscConnectivityProviderInterface;
 use OCA\Integriq\Service\Fsc\FscDirectoryClient;
 use OCA\Integriq\Service\Fsc\LogFscConnectivityProvider;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -48,7 +50,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/specs/fsc-connectivity/spec.md
  */
-class FscCallService {
+class FscCallService implements FscCallServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding FSC sources, service cache, and call log records.
@@ -174,8 +176,7 @@ class FscCallService {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_CALL
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_CALL)
 		);
 
 		if ($status === 'failed') {
@@ -227,27 +228,16 @@ class FscCallService {
 	 * @spec openspec/specs/fsc-connectivity/spec.md#scenario-no-active-source-produces-a-clean-not-configured-failure
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new FscConnectivityException(
 				message: 'No active FSC source is configured (register "openconnector", schema "source", '
 					. 'type "fsc", isEnabled=true). Configure one before using FSC connectivity.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**
@@ -295,9 +285,7 @@ class FscCallService {
 				'resolvedVia' => $provider->getProviderId(),
 				'resolvedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_SERVICE,
-			uuid: ($existing?->getUuid())
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_SERVICE, uuid: $existing?->getUuid())
 		);
 
 	}//end cacheResolution()

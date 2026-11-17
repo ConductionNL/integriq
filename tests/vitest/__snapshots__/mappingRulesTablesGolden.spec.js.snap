@@ -1,0 +1,1281 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MappingRulesEditor rule tables > a drag end commits the dragged order as recorded 1`] = `
+[
+  {
+    "update-mapping": [
+      [
+        {
+          "a": "{{ x }}",
+          "b": "{{ y }}",
+          "c": {
+            "not": "a string",
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "update-cast": [
+      [
+        {
+          "m": "bool",
+          "n": "int",
+        },
+      ],
+    ],
+    "update-mapping": [
+      [
+        {
+          "a": "{{ x }}",
+          "b": "{{ y }}",
+          "c": {
+            "not": "a string",
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "update-cast": [
+      [
+        {
+          "m": "bool",
+          "n": "int",
+        },
+      ],
+    ],
+    "update-mapping": [
+      [
+        {
+          "a": "{{ x }}",
+          "b": "{{ y }}",
+          "c": {
+            "not": "a string",
+          },
+        },
+      ],
+    ],
+    "update-unset": [
+      [
+        [
+          "p",
+          "q",
+          "p",
+        ],
+      ],
+    ],
+  },
+]
+`;
+
+exports[`MappingRulesEditor rule tables > arrow keys move rows as recorded 1`] = `
+[
+  [
+    0,
+    "up",
+    {},
+  ],
+  [
+    0,
+    "down",
+    {
+      "update-mapping": [
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    1,
+    "up",
+    {
+      "update-mapping": [
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    1,
+    "down",
+    {
+      "update-mapping": [
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    2,
+    "up",
+    {
+      "update-mapping": [
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    2,
+    "down",
+    {},
+  ],
+  [
+    3,
+    "up",
+    {},
+  ],
+  [
+    3,
+    "down",
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+            "n": "int",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    4,
+    "up",
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+            "n": "int",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    4,
+    "down",
+    {},
+  ],
+  [
+    5,
+    "up",
+    {},
+  ],
+  [
+    5,
+    "down",
+    {
+      "update-unset": [
+        [
+          [
+            "q",
+            "p",
+            "p",
+          ],
+        ],
+      ],
+    },
+  ],
+  [
+    6,
+    "up",
+    {
+      "update-unset": [
+        [
+          [
+            "q",
+            "p",
+            "p",
+          ],
+        ],
+      ],
+    },
+  ],
+  [
+    6,
+    "down",
+    {
+      "update-unset": [
+        [
+          [
+            "p",
+            "p",
+            "q",
+          ],
+        ],
+      ],
+    },
+  ],
+  [
+    7,
+    "up",
+    {
+      "update-unset": [
+        [
+          [
+            "p",
+            "p",
+            "q",
+          ],
+        ],
+      ],
+    },
+  ],
+  [
+    7,
+    "down",
+    {},
+  ],
+]
+`;
+
+exports[`MappingRulesEditor rule tables > renders empty as recorded 1`] = `
+"<div class="cn-rules-editor">
+  <div class="CnTabs" aria-label="Transformation rules">
+    <!---->
+    <!-- Mapping rules tab -->
+    <div class="CnTab"><span class="cn-rules-editor__tab-label">Mapping <span class="cn-rules-editor__tab-count">0</span></span>
+      <div class="cn-rules-editor__panel">
+        <p class="cn-rules-editor__help">Each mapping rule maps a target property to a Twig template that produces its value from the input object. Drag the handle to change rule order — order matters for cascading transformations.</p>
+        <p class="cn-rules-editor__empty">No mapping rules yet. Add one to start shaping the output.</p>
+        <div class="cn-rules-editor__footer"><button class="NcButton"><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add mapping rule</button></div>
+      </div>
+    </div><!-- Cast rules tab -->
+    <div class="CnTab"><span class="cn-rules-editor__tab-label">Cast <span class="cn-rules-editor__tab-count">0</span></span>
+      <div class="cn-rules-editor__panel">
+        <p class="cn-rules-editor__help">Cast rules coerce the value of a property to a specific JSON type after the mapping rules have run.</p>
+        <p class="cn-rules-editor__empty">No cast rules yet.</p>
+        <div class="cn-rules-editor__footer"><button class="NcButton"><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add cast rule</button></div>
+      </div>
+    </div><!-- Unset rules tab -->
+    <div class="CnTab"><span class="cn-rules-editor__tab-label">Unset <span class="cn-rules-editor__tab-count">0</span></span>
+      <div class="cn-rules-editor__panel">
+        <p class="cn-rules-editor__help">Unset rules remove a property from the output object. They only apply when pass-through is enabled.</p>
+        <p class="cn-rules-editor__empty">No unset rules yet.</p>
+        <div class="cn-rules-editor__footer"><button class="NcButton" disabled=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add unset rule</button>
+          <p class="cn-rules-editor__warning">Enable pass-through above to add unset rules.</p>
+        </div>
+      </div>
+    </div><!-- Options tab (opt-in via \`showOptionsTab\`) -->
+  </div><!-- Edit/Create dialog -->
+</div>"
+`;
+
+exports[`MappingRulesEditor rule tables > renders saving as recorded 1`] = `
+"<div class="cn-rules-editor">
+  <div class="CnTabs" aria-label="Transformation rules">
+    <!---->
+    <!-- Mapping rules tab -->
+    <div class="CnTab"><span class="cn-rules-editor__tab-label">Mapping <span class="cn-rules-editor__tab-count">3</span></span>
+      <div class="cn-rules-editor__panel">
+        <p class="cn-rules-editor__help">Each mapping rule maps a target property to a Twig template that produces its value from the input object. Drag the handle to change rule order — order matters for cascading transformations.</p>
+        <table class="cn-rules-editor__table">
+          <thead>
+            <tr>
+              <th class="cn-rules-editor__col-handle" aria-hidden="true"></th>
+              <th scope="col">Target property</th>
+              <th scope="col">Template</th>
+              <th scope="col" class="cn-rules-editor__col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody data-draggable=".cn-rules-editor__drag-handle">
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" disabled="" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">a</td>
+              <td class="cn-rules-editor__cell-value"><code>{{ x }}</code></td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" disabled="" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" disabled="" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" disabled="" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">b</td>
+              <td class="cn-rules-editor__cell-value"><code>{{ y }}</code></td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" disabled="" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" disabled="" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" disabled="" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">c</td>
+              <td class="cn-rules-editor__cell-value"><code>{"not":"a string"}</code></td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" disabled="" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" disabled="" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="cn-rules-editor__footer"><button class="NcButton" disabled=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add mapping rule</button></div>
+      </div>
+    </div><!-- Cast rules tab -->
+    <div class="CnTab"><span class="cn-rules-editor__tab-label">Cast <span class="cn-rules-editor__tab-count">2</span></span>
+      <div class="cn-rules-editor__panel">
+        <p class="cn-rules-editor__help">Cast rules coerce the value of a property to a specific JSON type after the mapping rules have run.</p>
+        <table class="cn-rules-editor__table">
+          <thead>
+            <tr>
+              <th class="cn-rules-editor__col-handle" aria-hidden="true"></th>
+              <th scope="col">Property</th>
+              <th scope="col">Cast type</th>
+              <th scope="col" class="cn-rules-editor__col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody data-draggable=".cn-rules-editor__drag-handle">
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" disabled="" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">n</td>
+              <td class="cn-rules-editor__cell-value">int</td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" disabled="" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" disabled="" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" disabled="" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">m</td>
+              <td class="cn-rules-editor__cell-value">bool</td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" disabled="" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" disabled="" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="cn-rules-editor__footer"><button class="NcButton" disabled=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add cast rule</button></div>
+      </div>
+    </div><!-- Unset rules tab -->
+    <div class="CnTab"><span class="cn-rules-editor__tab-label">Unset <span class="cn-rules-editor__tab-count">3</span></span>
+      <div class="cn-rules-editor__panel">
+        <p class="cn-rules-editor__help">Unset rules remove a property from the output object. They only apply when pass-through is enabled.</p>
+        <table class="cn-rules-editor__table">
+          <thead>
+            <tr>
+              <th class="cn-rules-editor__col-handle" aria-hidden="true"></th>
+              <th scope="col">Property</th>
+              <th scope="col" class="cn-rules-editor__col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody data-draggable=".cn-rules-editor__drag-handle">
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" disabled="" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">p</td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" disabled="" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" disabled="" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" disabled="" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">q</td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" disabled="" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" disabled="" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" disabled="" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">p</td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" disabled="" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" disabled="" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="cn-rules-editor__footer"><button class="NcButton" disabled=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add unset rule</button>
+        </div>
+      </div>
+    </div><!-- Options tab (opt-in via \`showOptionsTab\`) -->
+  </div><!-- Edit/Create dialog -->
+</div>"
+`;
+
+exports[`MappingRulesEditor rule tables > renders with rules as recorded 1`] = `
+"<div class="cn-rules-editor">
+  <div class="CnTabs" aria-label="Transformation rules">
+    <!---->
+    <!-- Mapping rules tab -->
+    <div class="CnTab"><span class="cn-rules-editor__tab-label">Mapping <span class="cn-rules-editor__tab-count">3</span></span>
+      <div class="cn-rules-editor__panel">
+        <p class="cn-rules-editor__help">Each mapping rule maps a target property to a Twig template that produces its value from the input object. Drag the handle to change rule order — order matters for cascading transformations.</p>
+        <table class="cn-rules-editor__table">
+          <thead>
+            <tr>
+              <th class="cn-rules-editor__col-handle" aria-hidden="true"></th>
+              <th scope="col">Target property</th>
+              <th scope="col">Template</th>
+              <th scope="col" class="cn-rules-editor__col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody data-draggable=".cn-rules-editor__drag-handle">
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">a</td>
+              <td class="cn-rules-editor__cell-value"><code>{{ x }}</code></td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">b</td>
+              <td class="cn-rules-editor__cell-value"><code>{{ y }}</code></td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">c</td>
+              <td class="cn-rules-editor__cell-value"><code>{"not":"a string"}</code></td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="cn-rules-editor__footer"><button class="NcButton"><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add mapping rule</button></div>
+      </div>
+    </div><!-- Cast rules tab -->
+    <div class="CnTab"><span class="cn-rules-editor__tab-label">Cast <span class="cn-rules-editor__tab-count">2</span></span>
+      <div class="cn-rules-editor__panel">
+        <p class="cn-rules-editor__help">Cast rules coerce the value of a property to a specific JSON type after the mapping rules have run.</p>
+        <table class="cn-rules-editor__table">
+          <thead>
+            <tr>
+              <th class="cn-rules-editor__col-handle" aria-hidden="true"></th>
+              <th scope="col">Property</th>
+              <th scope="col">Cast type</th>
+              <th scope="col" class="cn-rules-editor__col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody data-draggable=".cn-rules-editor__drag-handle">
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">n</td>
+              <td class="cn-rules-editor__cell-value">int</td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">m</td>
+              <td class="cn-rules-editor__cell-value">bool</td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="cn-rules-editor__footer"><button class="NcButton"><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add cast rule</button></div>
+      </div>
+    </div><!-- Unset rules tab -->
+    <div class="CnTab"><span class="cn-rules-editor__tab-label">Unset <span class="cn-rules-editor__tab-count">3</span></span>
+      <div class="cn-rules-editor__panel">
+        <p class="cn-rules-editor__help">Unset rules remove a property from the output object. They only apply when pass-through is enabled.</p>
+        <table class="cn-rules-editor__table">
+          <thead>
+            <tr>
+              <th class="cn-rules-editor__col-handle" aria-hidden="true"></th>
+              <th scope="col">Property</th>
+              <th scope="col" class="cn-rules-editor__col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody data-draggable=".cn-rules-editor__drag-handle">
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">p</td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">q</td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+            <tr tabindex="0" class="cn-rules-editor__row">
+              <td class="cn-rules-editor__col-handle"><button type="button" class="cn-rules-editor__drag-handle" aria-label="Drag to reorder" tabindex="-1"><span aria-hidden="true" class="material-design-icon drag-vertical-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z"><!--v-if--></path></svg></span></button></td>
+              <td class="cn-rules-editor__cell-key">p</td>
+              <td class="cn-rules-editor__col-actions"><button class="NcButton" aria-label="Edit rule"><span aria-hidden="true" class="material-design-icon pencil-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button><button class="NcButton" aria-label="Delete rule"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span>
+                  <!---->
+                </button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="cn-rules-editor__footer"><button class="NcButton"><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add unset rule</button>
+        </div>
+      </div>
+    </div><!-- Options tab (opt-in via \`showOptionsTab\`) -->
+  </div><!-- Edit/Create dialog -->
+</div>"
+`;
+
+exports[`MappingRulesEditor rule tables > row buttons edit and delete as recorded 1`] = `
+[
+  [
+    0,
+    "Edit rule",
+    {
+      "kind": "mapping",
+      "property": "a",
+      "value": "{{ x }}",
+    },
+    {},
+  ],
+  [
+    0,
+    "Delete rule",
+    null,
+    {
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    1,
+    "Edit rule",
+    {
+      "kind": "mapping",
+      "property": "b",
+      "value": "{{ y }}",
+    },
+    {
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    1,
+    "Delete rule",
+    null,
+    {
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    2,
+    "Edit rule",
+    {
+      "kind": "mapping",
+      "property": "c",
+      "value": {
+        "not": "a string",
+      },
+    },
+    {
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    2,
+    "Delete rule",
+    null,
+    {
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    3,
+    "Edit rule",
+    {
+      "kind": "cast",
+      "property": "n",
+      "value": "int",
+    },
+    {
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    3,
+    "Delete rule",
+    null,
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+          },
+        ],
+        [
+          {
+            "n": "int",
+          },
+        ],
+      ],
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    4,
+    "Edit rule",
+    {
+      "kind": "cast",
+      "property": "m",
+      "value": "bool",
+    },
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+          },
+        ],
+        [
+          {
+            "n": "int",
+          },
+        ],
+      ],
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    4,
+    "Delete rule",
+    null,
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+          },
+        ],
+        [
+          {
+            "n": "int",
+          },
+        ],
+      ],
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    5,
+    "Edit rule",
+    {
+      "kind": "unset",
+      "property": "p",
+      "value": "p",
+    },
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+          },
+        ],
+        [
+          {
+            "n": "int",
+          },
+        ],
+      ],
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+    },
+  ],
+  [
+    5,
+    "Delete rule",
+    null,
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+          },
+        ],
+        [
+          {
+            "n": "int",
+          },
+        ],
+      ],
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+      "update-unset": [
+        [
+          [
+            "q",
+          ],
+        ],
+        [
+          [
+            "p",
+            "p",
+          ],
+        ],
+        [
+          [
+            "q",
+          ],
+        ],
+      ],
+    },
+  ],
+  [
+    6,
+    "Edit rule",
+    {
+      "kind": "unset",
+      "property": "q",
+      "value": "q",
+    },
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+          },
+        ],
+        [
+          {
+            "n": "int",
+          },
+        ],
+      ],
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+      "update-unset": [
+        [
+          [
+            "q",
+          ],
+        ],
+        [
+          [
+            "p",
+            "p",
+          ],
+        ],
+        [
+          [
+            "q",
+          ],
+        ],
+      ],
+    },
+  ],
+  [
+    6,
+    "Delete rule",
+    null,
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+          },
+        ],
+        [
+          {
+            "n": "int",
+          },
+        ],
+      ],
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+      "update-unset": [
+        [
+          [
+            "q",
+          ],
+        ],
+        [
+          [
+            "p",
+            "p",
+          ],
+        ],
+        [
+          [
+            "q",
+          ],
+        ],
+      ],
+    },
+  ],
+  [
+    7,
+    "Edit rule",
+    {
+      "kind": "unset",
+      "property": "p",
+      "value": "p",
+    },
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+          },
+        ],
+        [
+          {
+            "n": "int",
+          },
+        ],
+      ],
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+      "update-unset": [
+        [
+          [
+            "q",
+          ],
+        ],
+        [
+          [
+            "p",
+            "p",
+          ],
+        ],
+        [
+          [
+            "q",
+          ],
+        ],
+      ],
+    },
+  ],
+  [
+    7,
+    "Delete rule",
+    null,
+    {
+      "update-cast": [
+        [
+          {
+            "m": "bool",
+          },
+        ],
+        [
+          {
+            "n": "int",
+          },
+        ],
+      ],
+      "update-mapping": [
+        [
+          {
+            "b": "{{ y }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "c": {
+              "not": "a string",
+            },
+          },
+        ],
+        [
+          {
+            "a": "{{ x }}",
+            "b": "{{ y }}",
+          },
+        ],
+      ],
+      "update-unset": [
+        [
+          [
+            "q",
+          ],
+        ],
+        [
+          [
+            "p",
+            "p",
+          ],
+        ],
+        [
+          [
+            "q",
+          ],
+        ],
+      ],
+    },
+  ],
+]
+`;

@@ -41,6 +41,8 @@ use OCA\Integriq\Outbound\Call\CallDispatcherInterface;
 use OCA\Integriq\Outbound\Call\CallServiceDispatcher;
 use OCA\Integriq\Outbound\Identity\DnsResolverInterface;
 use OCA\Integriq\Outbound\Identity\SystemDnsResolver;
+use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCA\Integriq\Tests\Helpers\AppContainerInjection;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -115,4 +117,18 @@ class ApplicationBindsAppOwnedInterfacesTest extends TestCase {
 		$this->assertSame(CallServiceDispatcher::class, $aliases[CallDispatcherInterface::class]);
 
 	}//end testTheBareAppOwnedInterfacesAreAliased()
+
+	/**
+	 * `register()` runs the Service component's registrar, so its contracts are bound.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container-wiring invariant; no requirement states which interfaces exist.
+	 */
+	public function testTheServiceContractsAreAliased(): void {
+		$aliases = $this->recordedAliases();
+
+		$this->assertSame(EventService::class, $aliases[EventServiceInterface::class] ?? null);
+
+	}//end testTheServiceContractsAreAliased()
 }//end class

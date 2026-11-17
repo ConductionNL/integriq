@@ -37,7 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Directory;
 
-use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\CallServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IL10N;
@@ -49,7 +49,7 @@ use Throwable;
  *
  * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md
  */
-class DirectorySource {
+class DirectorySource implements DirectorySourceInterface {
 
 	/**
 	 * The OpenRegister register every integriq configuration object lives in.
@@ -91,7 +91,7 @@ class DirectorySource {
 	 * Constructor.
 	 *
 	 * @param OrObjectService $orObjectService OpenRegister object service, for finding connections.
-	 * @param CallService $callService The shared outbound call engine (credentials via the broker).
+	 * @param CallServiceInterface $callService The shared outbound call engine (credentials via the broker).
 	 * @param IL10N $l10n Translations, so a refusal reads as a sentence.
 	 * @param LoggerInterface $logger Logger for secret-free diagnostics.
 	 *
@@ -99,7 +99,7 @@ class DirectorySource {
 	 */
 	public function __construct(
 		private readonly OrObjectService $orObjectService,
-		private readonly CallService $callService,
+		private readonly CallServiceInterface $callService,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
 	) {
@@ -143,6 +143,7 @@ class DirectorySource {
 	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-only-the-groups-a-connection-declares-it-manages-req-ds-009
 	 */
 	public function findConnectionsForPolicy(): array {
+		// Unscoped: directory sync and SCIM provisioning resolve connections as the system, with no user session.
 		$matches = $this->orObjectService->findAll(
 			config: self::connectionQuery(),
 			_rbac: false,
@@ -260,73 +261,85 @@ class DirectorySource {
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
 	 */
 	private function readScim(ObjectEntity $connection, array $configuration): DirectorySnapshot {
-		$endpoint = (string)($configuration['usersEndpoint'] ?? '/Users');
-		$pageSize = (int)($configuration['pageSize'] ?? self::PAGE_SIZE);
-		if ($pageSize < 1) {
-			$pageSize = self::PAGE_SIZE;
-		}
-
-		$rows = [];
-		$startIndex = 1;
-		$complete = false;
+		$read = new ScimRead(connection: $connection, endpoint: (string)($configuration['usersEndpoint'] ?? '/Users'));
+		$read->pageSize = $this->pageSizeOf(configuration: $configuration);
 
 		for ($page = 0; $page < self::MAX_PAGES; $page++) {
-			$body = $this->callPage(
-				connection: $connection,
-				endpoint: $endpoint,
-				startIndex: $startIndex,
-				pageSize: $pageSize
-			);
-
+			$body = $this->callPage(read: $read);
 			if ($body === null) {
 				// A page that did not answer leaves the read INCOMPLETE rather
 				// than short: the difference is what stops an outage from
 				// emptying every group.
-				return $this->toSnapshot(rows: $rows, complete: false);
+				return $this->toSnapshot(rows: $read->rows, complete: false);
 			}
 
-			$resources = (array)($body['Resources'] ?? []);
-			foreach ($resources as $resource) {
-				$rows[] = (array)$resource;
-			}
-
-			$total = (int)($body['totalResults'] ?? count($rows));
-			$startIndex += max(1, count($resources));
-
-			if (count($resources) === 0 || count($rows) >= $total) {
-				$complete = true;
-				break;
+			if ($this->addPage(read: $read, body: $body) === true) {
+				return $this->toSnapshot(rows: $read->rows, complete: true);
 			}
 		}
 
-		return $this->toSnapshot(rows: $rows, complete: $complete);
+		return $this->toSnapshot(rows: $read->rows, complete: false);
 
 	}//end readScim()
 
 	/**
+	 * The configured SCIM page size, or the default for a missing or non-positive one.
+	 *
+	 * @param array<string,mixed> $configuration The connection configuration.
+	 *
+	 * @return integer The page size.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
+	 */
+	private function pageSizeOf(array $configuration): int {
+		$pageSize = (int)($configuration['pageSize'] ?? self::PAGE_SIZE);
+		if ($pageSize < 1) {
+			return self::PAGE_SIZE;
+		}
+
+		return $pageSize;
+
+	}//end pageSizeOf()
+
+	/**
+	 * Add one page's rows and move to the next page.
+	 *
+	 * @param ScimRead            $read The read so far.
+	 * @param array<string,mixed> $body The decoded page.
+	 *
+	 * @return boolean True when the page was empty or the total is reached, so the read is complete.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
+	 */
+	private function addPage(ScimRead $read, array $body): bool {
+		$resources = (array)($body['Resources'] ?? []);
+		foreach ($resources as $resource) {
+			$read->rows[] = (array)$resource;
+		}
+
+		$total = (int)($body['totalResults'] ?? count($read->rows));
+		$read->startIndex += max(1, count($resources));
+
+		return count($resources) === 0 || count($read->rows) >= $total;
+
+	}//end addPage()
+
+	/**
 	 * Fetch one SCIM page, answering null when the directory did not.
 	 *
-	 * @param ObjectEntity $connection The directory connection Source.
-	 * @param string $endpoint The SCIM users endpoint.
-	 * @param integer $startIndex The 1-based SCIM start index.
-	 * @param integer $pageSize The SCIM page size.
+	 * @param ScimRead $read The read, with the page to fetch.
 	 *
 	 * @return array<string,mixed>|null The decoded page, or null when the page did not answer.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
 	 */
-	private function callPage(
-		ObjectEntity $connection,
-		string $endpoint,
-		int $startIndex,
-		int $pageSize,
-	): ?array {
+	private function callPage(ScimRead $read): ?array {
 		try {
 			$callLog = $this->callService->call(
-				source: $connection,
-				endpoint: $endpoint,
+				source: $read->connection,
+				endpoint: $read->endpoint,
 				method: 'GET',
-				config: ['query' => ['startIndex' => $startIndex, 'count' => $pageSize]]
+				config: ['query' => ['startIndex' => $read->startIndex, 'count' => $read->pageSize]]
 			);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
@@ -342,13 +355,26 @@ class DirectorySource {
 		if ($statusCode < 200 || $statusCode > 299) {
 			$this->logger->warning(
 				'[DirectorySource] directory answered status ' . $statusCode,
-				['startIndex' => $startIndex]
+				['startIndex' => $read->startIndex]
 			);
 
 			return null;
 		}
 
-		$body = ($response['body'] ?? null);
+		return $this->pageBody(body: ($response['body'] ?? null));
+
+	}//end callPage()
+
+	/**
+	 * A page's body as a map: an array as is, JSON text decoded, anything else null.
+	 *
+	 * @param mixed $body The response body.
+	 *
+	 * @return array<string,mixed>|null The decoded page, or null when it cannot be read.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
+	 */
+	private function pageBody(mixed $body): ?array {
 		if (is_array($body) === true) {
 			return $body;
 		}
@@ -364,7 +390,7 @@ class DirectorySource {
 
 		return $decoded;
 
-	}//end callPage()
+	}//end pageBody()
 
 	/**
 	 * Turn directory rows into entries, capturing the rows that cannot be read.

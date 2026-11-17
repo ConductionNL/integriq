@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -16,6 +19,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use Exception;
+use OCA\Integriq\Rule\Plugin\ConnectRelationsPlugin;
+use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistry;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\RuleService;
@@ -64,9 +69,9 @@ class RuleServiceTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$callService = $this->createMock(CallService::class);
 
-		// RuleService constructor signature (6 args, no $logger):
-		//   objectService, catalogueService, registerMapper, schemaMapper,
-		//   callService, orObjectService.
+		// RuleService constructor signature (no $logger):
+		//   objectService, registerMapper, schemaMapper, callService,
+		//   orObjectService, pluginRegistry.
 		// The previous version prepended $this->logger which pushed every
 		// dependency one slot to the right (objectService got the logger
 		// instance and crashed). Pre-existing test bug surfaced once #1015
@@ -74,11 +79,11 @@ class RuleServiceTest extends TestCase {
 		unset($this->logger);
 		$this->service = new RuleService(
 			$objectService,
-			$catalogueService,
 			$registerMapper,
 			$schemaMapper,
 			$callService,
 			$this->orObjectService,
+			new EndpointRulePluginRegistry(plugins: [new ConnectRelationsPlugin(catalogueService: $catalogueService)]),
 		);
 	}//end setUp()
 

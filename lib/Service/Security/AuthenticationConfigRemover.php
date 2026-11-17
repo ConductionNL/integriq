@@ -3,6 +3,9 @@
 /**
  * Operator-gated removal of the vestigial `source.authenticationConfig` (ocon#232).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * ─────────────────────────────────────────────────────────────────────────────
  * THIS CLASS DELETES CREDENTIAL DATA. THE GATING IS THE POINT.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -48,9 +51,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -61,7 +61,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Security;
 
 use LogicException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -71,7 +74,7 @@ use Throwable;
  *
  * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
  */
-class AuthenticationConfigRemover {
+class AuthenticationConfigRemover implements AuthenticationConfigRemoverInterface {
 
 	/**
 	 * Outcome: the value was cleared and the save persisted.
@@ -232,10 +235,9 @@ class AuthenticationConfigRemover {
 
 			$this->objectService->saveObject(
 				object: $data,
-				register: InlineSecretMigrationPlanner::REGISTER,
-				schema: InlineSecretMigrationPlanner::SCHEMA,
-				uuid: $uuid,
+				options: $this->sourceSaveOptions(uuid: $uuid),
 				_rbac: false,
+				// Unscoped: a repair step removing legacy authentication config, run as the system.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
@@ -280,11 +282,13 @@ class AuthenticationConfigRemover {
 	private function readRawEntity(string $uuid): ?ObjectEntity {
 		$entity = $this->objectService->find(
 			id: $uuid,
-			register: InlineSecretMigrationPlanner::REGISTER,
-			schema: InlineSecretMigrationPlanner::SCHEMA,
+			options: new ObjectFindOptions(
+				register: InlineSecretMigrationPlanner::REGISTER,
+				schema: InlineSecretMigrationPlanner::SCHEMA,
+				render: false
+			),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 
 		if ($entity instanceof ObjectEntity === false) {
@@ -314,4 +318,16 @@ class AuthenticationConfigRemover {
 			'reason' => $reason,
 		];
 	}//end outcome()
+
+	/**
+	 * Where a cleared source is saved: its register, schema and uuid.
+	 *
+	 * @param string $uuid The source's uuid.
+	 *
+	 * @return ObjectSaveOptions
+	 */
+	private function sourceSaveOptions(string $uuid): ObjectSaveOptions {
+		return RegisterSave::options(register: InlineSecretMigrationPlanner::REGISTER, schema: InlineSecretMigrationPlanner::SCHEMA, uuid: $uuid);
+
+	}//end sourceSaveOptions()
 }//end class

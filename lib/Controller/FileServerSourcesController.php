@@ -23,8 +23,10 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Service\Adapter\DataInfra\AbstractFileTransferAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\SftpAdapter;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -110,7 +112,7 @@ class FileServerSourcesController extends Controller {
 		}
 
 		$data['hostKeyFingerprint'] = $fingerprint;
-		$this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'source', uuid: $id);
+		$this->orObjectService->saveObject(object: $data, options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $id));
 
 		return new JSONResponse(['hostKeyFingerprint' => $fingerprint]);
 
@@ -125,7 +127,12 @@ class FileServerSourcesController extends Controller {
 	 */
 	private function fileServerSource(string $id): ObjectEntity|JSONResponse {
 		try {
-			$source = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
+			$source = $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException) {
 			$source = null;
 		}

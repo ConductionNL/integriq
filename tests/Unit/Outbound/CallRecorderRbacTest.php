@@ -28,10 +28,13 @@ namespace OCA\Integriq\Tests\Unit\Outbound;
 use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\CallRecorder;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class CallRecorderRbacTest extends TestCase {
 
@@ -66,7 +69,10 @@ class CallRecorderRbacTest extends TestCase {
 
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->calls[] = ['verb' => 'save', 'schema' => (string)$schema, 'rbac' => $_rbac];
 				$this->assertSame([], RegisterSchemaValidator::errors((string)$schema, $object));
 				$uuid = ($uuid ?? 'call-1');
@@ -75,7 +81,9 @@ class CallRecorderRbacTest extends TestCase {
 			}
 		);
 		$objectService->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null, bool $_rbac = true) {
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->calls[] = ['verb' => 'find', 'schema' => (string)$schema, 'rbac' => $_rbac];
 				return ObjectServiceMockBuilder::objectEntity($this, ($this->records[$id] ?? []), (string)$id);
 			}
@@ -83,7 +91,7 @@ class CallRecorderRbacTest extends TestCase {
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturnArgument(2);
-		$this->recorder = new CallRecorder($objectService, new BodyRedactor(), new BodyCapturePolicy($appConfig));
+		$this->recorder = new CallRecorder($objectService, new BodyRedactor(), new BodyCapturePolicy($appConfig), new SensitiveFieldRegistry());
 
 	}//end setUp()
 

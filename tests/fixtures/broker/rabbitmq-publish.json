@@ -1,0 +1,397 @@
+{
+    "no-base-url": {
+        "result": {
+            "status": "not configured",
+            "brokerId": "rabbitmq",
+            "reference": null,
+            "detail": "The subscription names no RabbitMQ management baseUrl.",
+            "statusCode": null
+        },
+        "sent": []
+    },
+    "blank-base-url": {
+        "result": {
+            "status": "not configured",
+            "brokerId": "rabbitmq",
+            "reference": null,
+            "detail": "The subscription names no RabbitMQ management baseUrl.",
+            "statusCode": null
+        },
+        "sent": []
+    },
+    "no-exchange": {
+        "result": {
+            "status": "not configured",
+            "brokerId": "rabbitmq",
+            "reference": null,
+            "detail": "The subscription names no exchange, and RabbitMQ publishes into one.",
+            "statusCode": null
+        },
+        "sent": []
+    },
+    "routed": {
+        "result": {
+            "status": "published",
+            "brokerId": "rabbitmq",
+            "reference": "b9b6b0a2",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://rabbit.example.nl/api/exchanges/a%2Fb/zaken/publish",
+            "options": {
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "auth": [
+                    "u",
+                    "p"
+                ],
+                "json": {
+                    "properties": {
+                        "content_type": "application/cloudevents+json",
+                        "delivery_mode": 2,
+                        "headers": {
+                            "Content-Type": "application/cloudevents+json"
+                        },
+                        "message_id": "b9b6b0a2"
+                    },
+                    "routing_key": "zaak.created",
+                    "payload": "{\"specversion\":\"1.0\",\"id\":\"b9b6b0a2\",\"source\":\"\\/integriq\\/zaken\",\"type\":\"nl.conduction.zaak.created\",\"datacontenttype\":\"application\\/json\",\"data\":{\"zaak\":\"ZAAK-2026-0042\"}}",
+                    "payload_encoding": "string"
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "default-vhost-no-credentials": {
+        "result": {
+            "status": "published",
+            "brokerId": "rabbitmq",
+            "reference": "b9b6b0a2",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://r.example/api/exchanges/%2F/zaken/publish",
+            "options": {
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "auth": [
+                    "",
+                    ""
+                ],
+                "json": {
+                    "properties": {
+                        "content_type": "application/cloudevents+json",
+                        "delivery_mode": 2,
+                        "headers": {
+                            "Content-Type": "application/cloudevents+json"
+                        },
+                        "message_id": "b9b6b0a2"
+                    },
+                    "routing_key": "zaak.created",
+                    "payload": "{\"specversion\":\"1.0\",\"id\":\"b9b6b0a2\",\"source\":\"\\/integriq\\/zaken\",\"type\":\"nl.conduction.zaak.created\",\"datacontenttype\":\"application\\/json\",\"data\":{\"zaak\":\"ZAAK-2026-0042\"}}",
+                    "payload_encoding": "string"
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "routed-false": {
+        "result": {
+            "status": "refused",
+            "brokerId": "rabbitmq",
+            "reference": null,
+            "detail": "RabbitMQ accepted the message and routed it to no queue (routing key \"zaak.created\").",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://rabbit.example.nl/api/exchanges/a%2Fb/zaken/publish",
+            "options": {
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "auth": [
+                    "u",
+                    "p"
+                ],
+                "json": {
+                    "properties": {
+                        "content_type": "application/cloudevents+json",
+                        "delivery_mode": 2,
+                        "headers": {
+                            "Content-Type": "application/cloudevents+json"
+                        },
+                        "message_id": "b9b6b0a2"
+                    },
+                    "routing_key": "zaak.created",
+                    "payload": "{\"specversion\":\"1.0\",\"id\":\"b9b6b0a2\",\"source\":\"\\/integriq\\/zaken\",\"type\":\"nl.conduction.zaak.created\",\"datacontenttype\":\"application\\/json\",\"data\":{\"zaak\":\"ZAAK-2026-0042\"}}",
+                    "payload_encoding": "string"
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "routed-missing": {
+        "result": {
+            "status": "refused",
+            "brokerId": "rabbitmq",
+            "reference": null,
+            "detail": "RabbitMQ accepted the message and routed it to no queue (routing key \"zaak.created\").",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://rabbit.example.nl/api/exchanges/a%2Fb/zaken/publish",
+            "options": {
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "auth": [
+                    "u",
+                    "p"
+                ],
+                "json": {
+                    "properties": {
+                        "content_type": "application/cloudevents+json",
+                        "delivery_mode": 2,
+                        "headers": {
+                            "Content-Type": "application/cloudevents+json"
+                        },
+                        "message_id": "b9b6b0a2"
+                    },
+                    "routing_key": "zaak.created",
+                    "payload": "{\"specversion\":\"1.0\",\"id\":\"b9b6b0a2\",\"source\":\"\\/integriq\\/zaken\",\"type\":\"nl.conduction.zaak.created\",\"datacontenttype\":\"application\\/json\",\"data\":{\"zaak\":\"ZAAK-2026-0042\"}}",
+                    "payload_encoding": "string"
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "routed-truthy-not-true": {
+        "result": {
+            "status": "refused",
+            "brokerId": "rabbitmq",
+            "reference": null,
+            "detail": "RabbitMQ accepted the message and routed it to no queue (routing key \"zaak.created\").",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://rabbit.example.nl/api/exchanges/a%2Fb/zaken/publish",
+            "options": {
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "auth": [
+                    "u",
+                    "p"
+                ],
+                "json": {
+                    "properties": {
+                        "content_type": "application/cloudevents+json",
+                        "delivery_mode": 2,
+                        "headers": {
+                            "Content-Type": "application/cloudevents+json"
+                        },
+                        "message_id": "b9b6b0a2"
+                    },
+                    "routing_key": "zaak.created",
+                    "payload": "{\"specversion\":\"1.0\",\"id\":\"b9b6b0a2\",\"source\":\"\\/integriq\\/zaken\",\"type\":\"nl.conduction.zaak.created\",\"datacontenttype\":\"application\\/json\",\"data\":{\"zaak\":\"ZAAK-2026-0042\"}}",
+                    "payload_encoding": "string"
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "not-json": {
+        "result": {
+            "status": "refused",
+            "brokerId": "rabbitmq",
+            "reference": null,
+            "detail": "RabbitMQ accepted the message and routed it to no queue (routing key \"zaak.created\").",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://rabbit.example.nl/api/exchanges/a%2Fb/zaken/publish",
+            "options": {
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "auth": [
+                    "u",
+                    "p"
+                ],
+                "json": {
+                    "properties": {
+                        "content_type": "application/cloudevents+json",
+                        "delivery_mode": 2,
+                        "headers": {
+                            "Content-Type": "application/cloudevents+json"
+                        },
+                        "message_id": "b9b6b0a2"
+                    },
+                    "routing_key": "zaak.created",
+                    "payload": "{\"specversion\":\"1.0\",\"id\":\"b9b6b0a2\",\"source\":\"\\/integriq\\/zaken\",\"type\":\"nl.conduction.zaak.created\",\"datacontenttype\":\"application\\/json\",\"data\":{\"zaak\":\"ZAAK-2026-0042\"}}",
+                    "payload_encoding": "string"
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "status-199": {
+        "result": {
+            "status": "refused",
+            "brokerId": "rabbitmq",
+            "reference": null,
+            "detail": "RabbitMQ answered 199 to the publish.",
+            "statusCode": 199
+        },
+        "sent": {
+            "url": "https://rabbit.example.nl/api/exchanges/a%2Fb/zaken/publish",
+            "options": {
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "auth": [
+                    "u",
+                    "p"
+                ],
+                "json": {
+                    "properties": {
+                        "content_type": "application/cloudevents+json",
+                        "delivery_mode": 2,
+                        "headers": {
+                            "Content-Type": "application/cloudevents+json"
+                        },
+                        "message_id": "b9b6b0a2"
+                    },
+                    "routing_key": "zaak.created",
+                    "payload": "{\"specversion\":\"1.0\",\"id\":\"b9b6b0a2\",\"source\":\"\\/integriq\\/zaken\",\"type\":\"nl.conduction.zaak.created\",\"datacontenttype\":\"application\\/json\",\"data\":{\"zaak\":\"ZAAK-2026-0042\"}}",
+                    "payload_encoding": "string"
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "status-299": {
+        "result": {
+            "status": "published",
+            "brokerId": "rabbitmq",
+            "reference": "b9b6b0a2",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://rabbit.example.nl/api/exchanges/a%2Fb/zaken/publish",
+            "options": {
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "auth": [
+                    "u",
+                    "p"
+                ],
+                "json": {
+                    "properties": {
+                        "content_type": "application/cloudevents+json",
+                        "delivery_mode": 2,
+                        "headers": {
+                            "Content-Type": "application/cloudevents+json"
+                        },
+                        "message_id": "b9b6b0a2"
+                    },
+                    "routing_key": "zaak.created",
+                    "payload": "{\"specversion\":\"1.0\",\"id\":\"b9b6b0a2\",\"source\":\"\\/integriq\\/zaken\",\"type\":\"nl.conduction.zaak.created\",\"datacontenttype\":\"application\\/json\",\"data\":{\"zaak\":\"ZAAK-2026-0042\"}}",
+                    "payload_encoding": "string"
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "status-300": {
+        "result": {
+            "status": "refused",
+            "brokerId": "rabbitmq",
+            "reference": null,
+            "detail": "RabbitMQ answered 300 to the publish.",
+            "statusCode": 300
+        },
+        "sent": {
+            "url": "https://rabbit.example.nl/api/exchanges/a%2Fb/zaken/publish",
+            "options": {
+                "headers": {
+                    "Accept": "application/json"
+                },
+                "auth": [
+                    "u",
+                    "p"
+                ],
+                "json": {
+                    "properties": {
+                        "content_type": "application/cloudevents+json",
+                        "delivery_mode": 2,
+                        "headers": {
+                            "Content-Type": "application/cloudevents+json"
+                        },
+                        "message_id": "b9b6b0a2"
+                    },
+                    "routing_key": "zaak.created",
+                    "payload": "{\"specversion\":\"1.0\",\"id\":\"b9b6b0a2\",\"source\":\"\\/integriq\\/zaken\",\"type\":\"nl.conduction.zaak.created\",\"datacontenttype\":\"application\\/json\",\"data\":{\"zaak\":\"ZAAK-2026-0042\"}}",
+                    "payload_encoding": "string"
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "transport-throws": {
+        "result": {
+            "status": "refused",
+            "brokerId": "rabbitmq",
+            "reference": null,
+            "detail": "RabbitMQ refused the publish: connection refused",
+            "statusCode": null
+        },
+        "sent": []
+    },
+    "binary-mode-with-headers": {
+        "result": {
+            "status": "published",
+            "brokerId": "rabbitmq",
+            "reference": "b9b6b0a2",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://rabbit.example.nl/api/exchanges/a%2Fb/zaken/publish",
+            "options": {
+                "headers": {
+                    "Accept": "application/json",
+                    "X-Trace": "t-1"
+                },
+                "auth": [
+                    "u",
+                    "p"
+                ],
+                "json": {
+                    "properties": {
+                        "content_type": "application/json",
+                        "delivery_mode": 2,
+                        "headers": {
+                            "Content-Type": "application/json",
+                            "ce-specversion": "1.0",
+                            "ce-id": "b9b6b0a2",
+                            "ce-source": "/integriq/zaken",
+                            "ce-type": "nl.conduction.zaak.created"
+                        },
+                        "message_id": "b9b6b0a2"
+                    },
+                    "routing_key": "zaak.created",
+                    "payload": "{\"zaak\":\"ZAAK-2026-0042\"}",
+                    "payload_encoding": "string"
+                },
+                "timeout": 30
+            }
+        }
+    }
+}

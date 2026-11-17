@@ -52,6 +52,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for EndpointService's api-product-gateway extensions: tier-policy
@@ -435,7 +436,10 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$captured = null;
 		$rbac = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null, bool $_rbac = true) use (&$captured, &$rbac) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) use (&$captured, &$rbac) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$captured = $object;
 				$rbac = $_rbac;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
@@ -482,7 +486,10 @@ class EndpointServiceTierPolicyTest extends TestCase {
 
 		$calls = [];
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null, bool $_rbac = true) use (&$calls) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) use (&$calls) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$calls[] = ['schema' => $schema, 'object' => $object, 'rbac' => $_rbac];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
 			}
@@ -496,5 +503,56 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$this->assertSame(429, $calls[0]['object']['statusCode']);
 		$this->assertFalse($calls[0]['rbac'], 'The inbound throttle call_log must be written with _rbac: false');
 	}//end testRecordInboundThrottleWritesPastRbac()
+
+	/**
+	 * An inbound call log is filed under the endpoint's organisation, so the
+	 * organisation's scoped log views list it (REQ-TEN-001).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	public function testRecordInboundCallLogIsFiledUnderTheEndpointsOrganisation(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, [], 'endpoint-uuid-1');
+		$endpoint->setOrganisation('0a0a0a0a-0000-4000-8000-00000000000a');
+		$product = ObjectServiceMockBuilder::objectEntity($this, [], 'product-uuid-1');
+
+		$captured = null;
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$captured) {
+				$captured = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
+			}
+		);
+
+		$this->service->recordInboundCallLog(endpoint: $endpoint, product: $product, statusCode: 200, durationMs: 5.0);
+
+		$this->assertSame(expected: ['organisation' => '0a0a0a0a-0000-4000-8000-00000000000a'], actual: $captured['@self']);
+	}//end testRecordInboundCallLogIsFiledUnderTheEndpointsOrganisation()
+
+	/**
+	 * An inbound 429 log is filed under the throttled consumer's organisation (REQ-TEN-001).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	public function testRecordInboundThrottleIsFiledUnderTheConsumersOrganisation(): void {
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, [], 'consumer-uuid-1');
+		$consumer->setOrganisation('0b0b0b0b-0000-4000-8000-00000000000b');
+
+		$captured = null;
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$captured) {
+				$captured = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
+			}
+		);
+
+		$method = new \ReflectionMethod($this->service, 'recordInboundThrottle');
+		$method->invoke($this->service, $consumer, new \OCA\Integriq\Service\RateLimit\RateLimitDecision(allowed: false, reason: 'rate'));
+
+		$this->assertSame(expected: ['organisation' => '0b0b0b0b-0000-4000-8000-00000000000b'], actual: $captured['@self']);
+	}//end testRecordInboundThrottleIsFiledUnderTheConsumersOrganisation()
 
 }//end class

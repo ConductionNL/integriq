@@ -1,5 +1,6 @@
 {
     "translations": {
+        "synchronizations": "sincronitzacions",
         "A signing secret is configured (hidden).": "Hi ha un secret de signatura configurat (ocult).",
         "Copied to clipboard": "Copiat al porta-retalls",
         "Copy": "Copia",

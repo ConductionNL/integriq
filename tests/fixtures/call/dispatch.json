@@ -1,0 +1,3202 @@
+{
+    "get": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "post-json": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "POST",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "POST",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "json": {
+                        "a": 1
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "POST",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "read-uses-read-method": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken/1",
+                        "method": "PUT",
+                        "headers": [],
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "PUT",
+                "https://zaken.example.invalid/api/zaken/1",
+                {
+                    "headers": [],
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken/1",
+                        "method": "PUT",
+                        "headers": [],
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "list-method-config": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "POST",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "POST",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "POST",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "not-found": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 404,
+                    "statusMessage": "Not Found",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken/9",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 404,
+                        "statusMessage": "Not Found",
+                        "responseTime": "<double>",
+                        "size": 17,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"detail\":\"nope\"}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken/9",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken/9",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 404,
+                    "statusMessage": "Not Found",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken/9",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 404,
+                        "statusMessage": "Not Found",
+                        "responseTime": "<double>",
+                        "size": 17,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken/9",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            ]
+        ]
+    },
+    "server-error": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 500,
+                    "statusMessage": "Internal Server Error",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 500,
+                        "statusMessage": "Internal Server Error",
+                        "responseTime": "<double>",
+                        "size": 4,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "boom",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 500,
+                    "statusMessage": "Internal Server Error",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 500,
+                        "statusMessage": "Internal Server Error",
+                        "responseTime": "<double>",
+                        "size": 4,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            ]
+        ]
+    },
+    "client-exception": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 422,
+                    "statusMessage": "Unprocessable Entity",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 422,
+                        "statusMessage": "Unprocessable Entity",
+                        "responseTime": "<double>",
+                        "size": 19,
+                        "remoteIp": null,
+                        "headers": [],
+                        "body": "{\"error\":\"invalid\"}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 422,
+                    "statusMessage": "Unprocessable Entity",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 422,
+                        "statusMessage": "Unprocessable Entity",
+                        "responseTime": "<double>",
+                        "size": 19,
+                        "remoteIp": null,
+                        "headers": [],
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            ]
+        ]
+    },
+    "connect-exception": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-3",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 503,
+                    "statusMessage": "Service Unavailable",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 503,
+                        "statusMessage": "Service Unavailable",
+                        "responseTime": "<double>",
+                        "size": 7,
+                        "remoteIp": null,
+                        "headers": [],
+                        "body": "refused",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "source",
+                {
+                    "name": "zaken-api",
+                    "isEnabled": true,
+                    "location": "https://zaken.example.invalid/api",
+                    "configuration": {
+                        "headers": {
+                            "Accept": "application/json"
+                        }
+                    },
+                    "lastCall": "<string>",
+                    "circuitBreakerFailureCount": 1
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 503,
+                    "statusMessage": "Service Unavailable",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 503,
+                        "statusMessage": "Service Unavailable",
+                        "responseTime": "<double>",
+                        "size": 7,
+                        "remoteIp": null,
+                        "headers": [],
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            ]
+        ]
+    },
+    "other-exception": {
+        "outcome": {
+            "throws": "RuntimeException",
+            "message": "transport broke"
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ]
+        ]
+    },
+    "disabled-source": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-1",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 409,
+                    "statusMessage": "This source is not enabled",
+                    "created": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 409,
+                    "statusMessage": "This source is not enabled",
+                    "created": "<string>"
+                }
+            ]
+        ]
+    },
+    "no-location": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-1",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 409,
+                    "statusMessage": "This source has no location",
+                    "created": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 409,
+                    "statusMessage": "This source has no location",
+                    "created": "<string>"
+                }
+            ]
+        ]
+    },
+    "no-persist": {
+        "outcome": {
+            "return": {
+                "uuid": "",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ]
+        ]
+    },
+    "withhold-bodies": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET"
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "sessionId": "<uuid>"
+                }
+            }
+        },
+        "steps": [
+            {
+                "order": 1,
+                "type": "call",
+                "name": "zaken-api",
+                "timing": null,
+                "status": "<string>",
+                "durationMs": "<integer>",
+                "startedAt": "<string>",
+                "startedAtUs": "<integer>",
+                "input": {
+                    "url": "https://zaken.example.invalid/api/zaken",
+                    "method": "GET"
+                },
+                "output": {
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "responseTime": "<double>",
+                    "size": 11,
+                    "encoding": "UTF-8"
+                },
+                "spanId": "<hex>"
+            }
+        ],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "traceparent": "<traceparent>"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET"
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "sessionId": "<uuid>"
+                }
+            ]
+        ]
+    },
+    "traced": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json",
+                            "traceparent": "<traceparent>"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "sessionId": "<uuid>"
+                }
+            }
+        },
+        "steps": [
+            {
+                "order": 1,
+                "type": "call",
+                "name": "zaken-api",
+                "timing": null,
+                "status": "<string>",
+                "durationMs": "<integer>",
+                "startedAt": "<string>",
+                "startedAtUs": "<integer>",
+                "input": {
+                    "url": "https://zaken.example.invalid/api/zaken",
+                    "method": "GET",
+                    "headers": {
+                        "Accept": "application/json",
+                        "traceparent": "<traceparent>"
+                    },
+                    "http_errors": false
+                },
+                "output": {
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "responseTime": "<double>",
+                    "size": 11,
+                    "remoteIp": null,
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    },
+                    "encoding": "UTF-8"
+                },
+                "spanId": "<hex>"
+            }
+        ],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "traceparent": "<traceparent>"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json",
+                            "traceparent": "<traceparent>"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "sessionId": "<uuid>"
+                }
+            ]
+        ]
+    },
+    "traced-error": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-3",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 503,
+                    "statusMessage": "Service Unavailable",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json",
+                            "traceparent": "<traceparent>"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 503,
+                        "statusMessage": "Service Unavailable",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json",
+                            "traceparent": "<traceparent>"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>",
+                    "sessionId": "<uuid>"
+                }
+            }
+        },
+        "steps": [
+            {
+                "order": 1,
+                "type": "call",
+                "name": "zaken-api",
+                "timing": null,
+                "status": "<string>",
+                "durationMs": "<integer>",
+                "startedAt": "<string>",
+                "startedAtUs": "<integer>",
+                "input": {
+                    "url": "https://zaken.example.invalid/api/zaken",
+                    "method": "GET",
+                    "headers": {
+                        "Accept": "application/json",
+                        "traceparent": "<traceparent>"
+                    },
+                    "http_errors": false
+                },
+                "output": {
+                    "statusCode": 503,
+                    "statusMessage": "Service Unavailable",
+                    "responseTime": "<double>",
+                    "size": 11,
+                    "remoteIp": null,
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    },
+                    "encoding": "UTF-8"
+                },
+                "spanId": "<hex>"
+            }
+        ],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "traceparent": "<traceparent>"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "source",
+                {
+                    "name": "zaken-api",
+                    "isEnabled": true,
+                    "location": "https://zaken.example.invalid/api",
+                    "configuration": {
+                        "headers": {
+                            "Accept": "application/json"
+                        }
+                    },
+                    "lastCall": "<string>",
+                    "circuitBreakerFailureCount": 1
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 503,
+                    "statusMessage": "Service Unavailable",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json",
+                            "traceparent": "<traceparent>"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 503,
+                        "statusMessage": "Service Unavailable",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json",
+                            "traceparent": "<traceparent>"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>",
+                    "sessionId": "<uuid>"
+                }
+            ]
+        ]
+    },
+    "traced-own-traceparent": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "TraceParent": "mine",
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "sessionId": "<uuid>"
+                }
+            }
+        },
+        "steps": [
+            {
+                "order": 1,
+                "type": "call",
+                "name": "zaken-api",
+                "timing": null,
+                "status": "<string>",
+                "durationMs": "<integer>",
+                "startedAt": "<string>",
+                "startedAtUs": "<integer>",
+                "input": {
+                    "url": "https://zaken.example.invalid/api/zaken",
+                    "method": "GET",
+                    "headers": {
+                        "TraceParent": "mine",
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                },
+                "output": {
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "responseTime": "<double>",
+                    "size": 11,
+                    "remoteIp": null,
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    },
+                    "encoding": "UTF-8"
+                }
+            }
+        ],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "TraceParent": "mine",
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "TraceParent": "mine",
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "sessionId": "<uuid>"
+                }
+            ]
+        ]
+    },
+    "sink": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/file",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/file",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false,
+                    "sink": "/tmp/never-written"
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/file",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "support-request": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "pre-and-post-request": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-4",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/login",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/login",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/logout",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/logout",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "support-request-with-hooks": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "preRequest": {
+                            "endpoint": "/login",
+                            "config": []
+                        },
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "preRequest": {
+                        "endpoint": "/login",
+                        "config": []
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "preRequest": {
+                            "endpoint": "/login",
+                            "config": []
+                        },
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "async-pre-and-post-request": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-4",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/login",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/login",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ],
+            [
+                "client.requestAsync",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/logout",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/logout",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "overrule-auth": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "retry-policy-status": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-3",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 503,
+                    "statusMessage": "Service Unavailable",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 503,
+                        "statusMessage": "Service Unavailable",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "source",
+                {
+                    "name": "zaken-api",
+                    "isEnabled": true,
+                    "location": "https://zaken.example.invalid/api",
+                    "configuration": {
+                        "headers": {
+                            "Accept": "application/json"
+                        }
+                    },
+                    "lastCall": "<string>",
+                    "circuitBreakerFailureCount": 1
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 503,
+                    "statusMessage": "Service Unavailable",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 503,
+                        "statusMessage": "Service Unavailable",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            ]
+        ]
+    },
+    "logged-body": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 14,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"secret\":\"x\"}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.request",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 14,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "async-get": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.requestAsync",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "async-post": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "POST",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.requestAsync",
+                "POST",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "json": {
+                        "b": 2
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "POST",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "async-not-found": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 404,
+                    "statusMessage": "Not Found",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken/9",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 404,
+                        "statusMessage": "Not Found",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken/9",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.requestAsync",
+                "GET",
+                "https://zaken.example.invalid/api/zaken/9",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 404,
+                    "statusMessage": "Not Found",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken/9",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 404,
+                        "statusMessage": "Not Found",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken/9",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            ]
+        ]
+    },
+    "async-client-exception": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 422,
+                    "statusMessage": "Unprocessable Entity",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 422,
+                        "statusMessage": "Unprocessable Entity",
+                        "responseTime": "<double>",
+                        "size": 19,
+                        "remoteIp": null,
+                        "headers": [],
+                        "body": "{\"error\":\"invalid\"}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.requestAsync",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 422,
+                    "statusMessage": "Unprocessable Entity",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 422,
+                        "statusMessage": "Unprocessable Entity",
+                        "responseTime": "<double>",
+                        "size": 19,
+                        "remoteIp": null,
+                        "headers": [],
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            ]
+        ]
+    },
+    "async-connect-exception": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-3",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 503,
+                    "statusMessage": "Service Unavailable",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 503,
+                        "statusMessage": "Service Unavailable",
+                        "responseTime": "<double>",
+                        "size": 7,
+                        "remoteIp": null,
+                        "headers": [],
+                        "body": "refused",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.requestAsync",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "source",
+                {
+                    "name": "zaken-api",
+                    "isEnabled": true,
+                    "location": "https://zaken.example.invalid/api",
+                    "configuration": {
+                        "headers": {
+                            "Accept": "application/json"
+                        }
+                    },
+                    "lastCall": "<string>",
+                    "circuitBreakerFailureCount": 1
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 503,
+                    "statusMessage": "Service Unavailable",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 503,
+                        "statusMessage": "Service Unavailable",
+                        "responseTime": "<double>",
+                        "size": 7,
+                        "remoteIp": null,
+                        "headers": [],
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "replayRequest": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "bodyExpiresAt": "<string>"
+                }
+            ]
+        ]
+    },
+    "async-other-exception": {
+        "outcome": {
+            "throws": "RuntimeException",
+            "message": "transport broke"
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.requestAsync",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "source",
+                {
+                    "name": "zaken-api",
+                    "isEnabled": true,
+                    "location": "https://zaken.example.invalid/api",
+                    "configuration": {
+                        "headers": {
+                            "Accept": "application/json"
+                        }
+                    },
+                    "lastCall": "<string>",
+                    "circuitBreakerFailureCount": 1
+                }
+            ]
+        ]
+    },
+    "async-disabled": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-1",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 409,
+                    "statusMessage": "This source is not enabled",
+                    "created": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 409,
+                    "statusMessage": "This source is not enabled",
+                    "created": "<string>"
+                }
+            ]
+        ]
+    },
+    "async-no-persist": {
+        "outcome": {
+            "return": {
+                "uuid": "",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>"
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.requestAsync",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ]
+        ]
+    },
+    "async-traced": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json",
+                            "traceparent": "<traceparent>"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "sessionId": "<uuid>"
+                }
+            }
+        },
+        "steps": [
+            {
+                "order": 1,
+                "type": "call",
+                "name": "zaken-api",
+                "timing": null,
+                "status": "<string>",
+                "durationMs": "<integer>",
+                "startedAt": "<string>",
+                "startedAtUs": "<integer>",
+                "input": {
+                    "url": "https://zaken.example.invalid/api/zaken",
+                    "method": "GET",
+                    "headers": {
+                        "Accept": "application/json",
+                        "traceparent": "<traceparent>"
+                    },
+                    "http_errors": false
+                },
+                "output": {
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "responseTime": "<double>",
+                    "size": 11,
+                    "remoteIp": null,
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    },
+                    "encoding": "UTF-8"
+                },
+                "spanId": "<hex>"
+            }
+        ],
+        "log": [
+            [
+                "client.requestAsync",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "traceparent": "<traceparent>"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json",
+                            "traceparent": "<traceparent>"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false,
+                    "sessionId": "<uuid>"
+                }
+            ]
+        ]
+    },
+    "async-sink-and-headers": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/file",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.requestAsync",
+                "GET",
+                "https://zaken.example.invalid/api/file",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false,
+                    "sink": "/tmp/never-written",
+                    "on_headers": "<callable>"
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/file",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "async-support-request": {
+        "outcome": {
+            "return": {
+                "uuid": "saved-2",
+                "object": {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": "{\"ok\":true}",
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            }
+        },
+        "steps": [],
+        "log": [
+            [
+                "client.requestAsync",
+                "GET",
+                "https://zaken.example.invalid/api/zaken",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "http_errors": false
+                }
+            ],
+            [
+                "or.saveObject",
+                "integriq",
+                "call_log",
+                {
+                    "source": "7d3f0c1e-5b2a-4c8d-9e6f-0a1b2c3d4e5f",
+                    "direction": "outbound",
+                    "statusCode": 200,
+                    "statusMessage": "OK",
+                    "request": {
+                        "url": "https://zaken.example.invalid/api/zaken",
+                        "method": "GET",
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "http_errors": false
+                    },
+                    "response": {
+                        "statusCode": 200,
+                        "statusMessage": "OK",
+                        "responseTime": "<double>",
+                        "size": 11,
+                        "remoteIp": null,
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "encoding": "UTF-8"
+                    },
+                    "created": "<string>",
+                    "bodyCaptured": false
+                }
+            ]
+        ]
+    },
+    "async-resource-sink": {
+        "outcome": {
+            "throws": "InvalidArgumentException",
+            "message": "CallService::callAsync() requires a temp-file PATH as its sink, not a stream resource. Guzzle closes a resource-typed sink when its PSR-7 wrapper is destructed, which under asynchronous dispatch happens outside the caller's control; see openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md (\"The sink is a PATH, never a handle\")."
+        },
+        "steps": [],
+        "log": []
+    },
+    "sync-asked-async": {
+        "outcome": {
+            "throws": "InvalidArgumentException",
+            "message": "CallService::call() is synchronous and returns an ObjectEntity call log. For concurrent dispatch use CallService::callAsync(), which returns a GuzzleHttp promise; see openspec/changes/archive/2026-09-29-parallel-file-fetch/design.md (\"Sibling async methods, not union returns\")."
+        },
+        "steps": [],
+        "log": []
+    }
+}

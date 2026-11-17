@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Outbound;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use InvalidArgumentException;
@@ -37,7 +38,7 @@ use InvalidArgumentException;
  *
  * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-a-message-is-forwarded-onward-and-the-forwarding-is-a-record-req-ocl-004
  */
-class ForwardService {
+class ForwardService implements ForwardServiceInterface {
 
 	/**
 	 * Constructor.
@@ -123,9 +124,7 @@ class ForwardService {
 
 		return $this->objectService->saveObject(
 			object: $payload,
-			register: MessageRecorder::REGISTER,
-			schema: MessageRecorder::SCHEMA,
-			uuid: (string)$forward->getUuid(),
+			options: RegisterSave::options(register: MessageRecorder::REGISTER, schema: MessageRecorder::SCHEMA, uuid: (string)$forward->getUuid())
 		);
 
 	}//end linkForward()
@@ -155,9 +154,7 @@ class ForwardService {
 
 		$this->objectService->saveObject(
 			object: $original,
-			register: MessageRecorder::REGISTER,
-			schema: MessageRecorder::SCHEMA,
-			uuid: $uuid,
+			options: RegisterSave::options(register: MessageRecorder::REGISTER, schema: MessageRecorder::SCHEMA, uuid: $uuid)
 		);
 
 	}//end linkOriginal()

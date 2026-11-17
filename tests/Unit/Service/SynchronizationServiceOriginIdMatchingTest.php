@@ -25,6 +25,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -43,6 +46,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests #1016 originId contract matching + REQ-013 duplicate surfacing.
@@ -114,7 +119,10 @@ class SynchronizationServiceOriginIdMatchingTest extends TestCase {
 		// Stateful saveObject: contract writes are recorded and replayed by
 		// findAll below, so a second run sees the first run's contract.
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, ...$rest) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($schema === 'synchronization_contract') {
 					$this->contractSaves++;
 					$key = ($uuid ?? ($object['uuid'] ?? 'contract-' . $this->contractSaves));
@@ -141,7 +149,9 @@ class SynchronizationServiceOriginIdMatchingTest extends TestCase {
 		// carry the SAME uuid and must collapse to ONE row. A store that
 		// appended would report two rows and look like a duplicate-contract bug.
 		$this->orObjectService->method('saveObjects')->willReturnCallback(
-			function (array $objects, $register = null, $schema = null, ...$rest): array {
+			function (array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest): array {
+				$register = $options->defaults->register;
+				$schema = $options->defaults->schema;
 				if ((string)$schema !== 'synchronization_contract') {
 					return ['saved' => [], 'errors' => [], 'statistics' => []];
 				}

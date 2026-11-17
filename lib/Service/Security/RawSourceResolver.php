@@ -3,6 +3,9 @@
 /**
  * Integriq Raw Source Resolver.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Re-resolves a `source` ObjectEntity RAW (`_render: false`) so the direct-Guzzle
  * clients that bypass {@see \OCA\Integriq\Service\CallService} keep seeing the
  * credential material an operator authored under `configuration.authentication.*`.
@@ -41,9 +44,6 @@
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -54,6 +54,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Security;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -119,11 +120,9 @@ class RawSourceResolver {
 		try {
 			$raw = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA, render: false),
 				_rbac: true,
-				_multitenancy: true,
-				_render: false
+				_multitenancy: true
 			);
 		} catch (Throwable $exception) {
 			// Secret-free log: the uuid is not a secret; the message is not

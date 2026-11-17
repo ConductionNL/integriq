@@ -52,7 +52,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
  */
-class OpenRegisterCredentialBridge {
+class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterface {
 
 	/**
 	 * The longest lifetime (exp - iat) integriq accepts on a token, in seconds.
@@ -62,15 +62,7 @@ class OpenRegisterCredentialBridge {
 	/**
 	 * The entry points integriq needs; an OpenRegister lacking one is refused.
 	 */
-	public const REQUIRED_ENTRY_POINTS = [
-		'authorizeJwt',
-		'authorizeApiKey',
-		'authorizeBasic',
-		'authorizeOAuth',
-		'authorizeNcSession',
-		'validatePayload',
-		'getResolvedConsumer',
-	];
+	public const REQUIRED_ENTRY_POINTS = OpenRegisterEntryPoints::REQUIRED;
 
 	/**
 	 * The shortest HMAC secret a consumer may verify with, in bytes (RFC 7518 §3.2).
@@ -106,11 +98,13 @@ class OpenRegisterCredentialBridge {
 	 * @param AuthorizationService $authorization OpenRegister's credential checks.
 	 * @param ObjectService        $objectService OpenRegister's object service, read by the consumer source.
 	 * @param IUserSession         $userSession   Nextcloud user session, cleared when the lifetime cap refuses.
+	 * @param ConsumerKeySourceResolver|null $keySources Resolves the key of a consumer with key source `jwks` or `oidc`.
 	 */
 	public function __construct(
 		private readonly AuthorizationService $authorization,
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
+		private readonly ?ConsumerKeySourceResolver $keySources = null,
 	) {
 	}//end __construct()
 
@@ -128,6 +122,7 @@ class OpenRegisterCredentialBridge {
 	public function authorizeJwt(string $authorization): void {
 		$this->resolvedConsumer = null;
 		$source = $this->source();
+		$this->presentToken(authorization: $authorization, source: $source);
 		$this->refuseWeakHmacSecret(authorization: $authorization, source: $source);
 		try {
 			$this->authorization->authorizeJwt($authorization, $source);
@@ -322,6 +317,31 @@ class OpenRegisterCredentialBridge {
 	}//end capLifetime()
 
 	/**
+	 * Hand the token's header and claims to the consumer source before any lookup, so a consumer whose key
+	 * comes from a published key set gets the key the token names.
+	 *
+	 * @param string         $authorization The `Bearer <jwt>` header.
+	 * @param ConsumerSource $source        The consumer source.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/tasks.md#task-2
+	 */
+	private function presentToken(string $authorization, ConsumerSource $source): void {
+		if ($source instanceof IntegriqConsumerSource === false) {
+			return;
+		}
+
+		$token = substr(string: $authorization, offset: strlen('Bearer '));
+		$header = json_decode((string)base64_decode(strtr(explode('.', $token)[0], '-_', '+/')), true);
+		if (is_array($header) === false) {
+			$header = [];
+		}
+
+		$source->presentToken(header: $header, payload: $this->payloadOf(token: $token));
+	}//end presentToken()
+
+	/**
 	 * The claims of a compact JWS that OpenRegister already verified.
 	 *
 	 * @param string $token The compact JWS.
@@ -368,7 +388,7 @@ class OpenRegisterCredentialBridge {
 	private function source(): ConsumerSource {
 		$this->assertEntryPoints();
 		if ($this->consumerSource === null) {
-			$this->consumerSource = new IntegriqConsumerSource(objectService: $this->objectService);
+			$this->consumerSource = new IntegriqConsumerSource(objectService: $this->objectService, keySources: $this->keySources);
 		}
 
 		return $this->consumerSource;
@@ -409,14 +429,11 @@ class OpenRegisterCredentialBridge {
 	 * @return bool True when every required entry point is callable and the ConsumerSource interface exists.
 	 *
 	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) delegates to the one shared rule set
 	 */
 	public static function entryPointsAvailable(object $authorization): bool {
-		$available = interface_exists(ConsumerSource::class);
-		foreach (self::REQUIRED_ENTRY_POINTS as $method) {
-			$available = ($available === true && is_callable([$authorization, $method]) === true);
-		}
-
-		return $available;
+		return OpenRegisterEntryPoints::available(authorization: $authorization);
 	}//end entryPointsAvailable()
 
 
@@ -436,16 +453,40 @@ class OpenRegisterCredentialBridge {
 	 * @throws AuthenticationException When the issuer claim is not a string or a number, or the issuer's HMAC secret is too short.
 	 */
 	private function refuseWeakHmacSecret(string $authorization, ConsumerSource $source): void {
+		$issuer = $this->issuerOf(authorization: $authorization);
+		if ($issuer === null) {
+			return;
+		}
+
+		$consumer = $source->findByIssuer(issuer: $issuer);
+		if ($consumer === null) {
+			return;
+		}
+
+		$this->assertHmacSecretLength(configuration: $consumer->configuration);
+	}//end refuseWeakHmacSecret()
+
+	/**
+	 * The token's issuer as OpenRegister reads it, or null when it is empty.
+	 *
+	 * Read `iss` exactly as OpenRegister does — with a string cast — so a
+	 * numeric issuer (`"iss": 12345`) reaches this guard too; it resolves to
+	 * the consumer named "12345" there. An empty `iss` is skipped: OpenRegister
+	 * refuses it itself ("No issuer mentioned"). Any other non-scalar is
+	 * refused here: OpenRegister only checks `empty()` and would cast `["x"]`
+	 * to the consumer named "Array".
+	 *
+	 * @param string $authorization The Authorization header value.
+	 *
+	 * @return string|null The issuer.
+	 *
+	 * @throws AuthenticationException When the issuer claim is not a string or a number.
+	 */
+	private function issuerOf(string $authorization): ?string {
 		$payload = $this->payloadOf(token: substr(string: $authorization, offset: strlen('Bearer ')));
-		// Read `iss` exactly as OpenRegister does — with a string cast — so a
-		// numeric issuer (`"iss": 12345`) reaches this guard too; it resolves
-		// to the consumer named "12345" there. An empty `iss` is skipped:
-		// OpenRegister refuses it itself ("No issuer mentioned"). Any other
-		// non-scalar is refused here: OpenRegister only checks `empty()` and
-		// would cast `["x"]` to the consumer named "Array".
 		$raw = ($payload['iss'] ?? null);
 		if (empty($raw) === true) {
-			return;
+			return null;
 		}
 
 		if (is_scalar($raw) === false) {
@@ -455,30 +496,34 @@ class OpenRegisterCredentialBridge {
 			);
 		}
 
-		$issuer = (string)$raw;
+		return (string)$raw;
+	}//end issuerOf()
 
-		$consumer = $source->findByIssuer(issuer: $issuer);
-		if ($consumer === null) {
+	/**
+	 * Refuse an HMAC secret below the algorithm's hash output; other algorithms pass.
+	 *
+	 * @param array<string, mixed> $configuration The consumer's authorization configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the HMAC secret is too short.
+	 */
+	private function assertHmacSecretLength(array $configuration): void {
+		$algorithm = (string)($configuration['algorithm'] ?? '');
+		$minimum = (self::HMAC_MIN_SECRET_BYTES[$algorithm] ?? 0);
+		if (strlen((string)($configuration['publicKey'] ?? '')) >= $minimum) {
 			return;
 		}
 
-		$algorithm = (string)($consumer->configuration['algorithm'] ?? '');
-		if (isset(self::HMAC_MIN_SECRET_BYTES[$algorithm]) === false) {
-			return;
-		}
-
-		$secret = (string)($consumer->configuration['publicKey'] ?? '');
-		if (strlen($secret) < self::HMAC_MIN_SECRET_BYTES[$algorithm]) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: [
-					'reason' => 'The issuer\'s HMAC secret is shorter than the algorithm\'s hash output',
-					'algorithm' => $algorithm,
-					'minimum_bytes' => self::HMAC_MIN_SECRET_BYTES[$algorithm],
-				]
-			);
-		}
-	}//end refuseWeakHmacSecret()
+		throw new AuthenticationException(
+			message: 'The token could not be validated',
+			details: [
+				'reason' => 'The issuer\'s HMAC secret is shorter than the algorithm\'s hash output',
+				'algorithm' => $algorithm,
+				'minimum_bytes' => $minimum,
+			]
+		);
+	}//end assertHmacSecretLength()
 
 	/**
 	 * Carry OpenRegister's refusal over as integriq's, which every caller catches.

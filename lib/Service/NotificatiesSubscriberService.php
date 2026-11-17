@@ -32,8 +32,11 @@ namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use InvalidArgumentException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Zgw\ZgwNotificationPullListener;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
@@ -54,7 +57,7 @@ use Throwable;
  *
  * @spec openspec/specs/notificaties-api-connector/spec.md
  */
-class NotificatiesSubscriberService {
+class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInterface {
 	/**
 	 * Abonnement lifecycle statuses (design.md Decision 5).
 	 *
@@ -85,7 +88,7 @@ class NotificatiesSubscriberService {
 	 *
 	 * @param ORObjectService $objectService The OR ObjectService for data access.
 	 * @param CallService $callService Outbound HTTP calls against a `Source` (abonnement CRUD, no new client).
-	 * @param EventService $eventService Normalizes inbound notifications into the CloudEvents pipe (REQ-003/REQ-011).
+	 * @param CloudEventEmitterInterface $eventService Normalizes inbound notifications into the CloudEvents pipe (REQ-003/REQ-011).
 	 * @param WebhookSignatureService $signatureService Reused for its secret-generation algorithm only (Decision 2 — no `whsec_` prefix).
 	 * @param IURLGenerator $urlGenerator Builds this app's absolute callback URL per abonnement.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics (cascade-delete failures, etc.).
@@ -95,7 +98,7 @@ class NotificatiesSubscriberService {
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly CallService $callService,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		private readonly WebhookSignatureService $signatureService,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
@@ -182,7 +185,7 @@ class NotificatiesSubscriberService {
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
 	 */
 	public function updateAbonnement(string $id, array $config): ObjectEntity {
-		$abonnement = $this->objectService->find(id: $id, register: 'integriq', schema: 'notificaties_abonnement');
+		$abonnement = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'notificaties_abonnement'));
 		$data = $this->mergeAbonnementConfig(current: $abonnement->getObject(), config: $config);
 
 		$source = $this->resolveSource(sourceId: (string)($data['sourceId'] ?? ''));
@@ -250,8 +253,7 @@ class NotificatiesSubscriberService {
 				'authScheme' => (string)($config['authScheme'] ?? ''),
 				'status' => self::STATUS_PENDING,
 			],
-			register: 'integriq',
-			schema: 'notificaties_abonnement'
+			options: RegisterSave::options(register: 'integriq', schema: 'notificaties_abonnement')
 		);
 
 	}//end persistPendingAbonnement()
@@ -267,9 +269,7 @@ class NotificatiesSubscriberService {
 	private function persistAbonnement(array $data, string $id): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'notificaties_abonnement',
-			uuid: $id
+			options: RegisterSave::options(register: 'integriq', schema: 'notificaties_abonnement', uuid: $id)
 		);
 
 	}//end persistAbonnement()
@@ -300,8 +300,7 @@ class NotificatiesSubscriberService {
 				'authorizationType' => 'apiKey',
 				'authorizationConfiguration' => ['apiKey' => $secret],
 			],
-			register: 'integriq',
-			schema: 'consumer'
+			options: RegisterSave::options(register: 'integriq', schema: 'consumer')
 		);
 
 		return ['consumerId' => $consumer->getUuid(), 'secret' => $secret];
@@ -415,7 +414,7 @@ class NotificatiesSubscriberService {
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-deletion-cascades-its-companion-consumer-req-004
 	 */
 	public function deleteAbonnement(string $id): ObjectEntity {
-		$abonnement = $this->objectService->find(id: $id, register: 'integriq', schema: 'notificaties_abonnement');
+		$abonnement = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'notificaties_abonnement'));
 		$data = $abonnement->getObject();
 
 		if (($data['status'] ?? '') === self::STATUS_DELETED) {
@@ -464,7 +463,7 @@ class NotificatiesSubscriberService {
 		}
 
 		try {
-			$this->objectService->deleteObject(uuid: $consumerId);
+			$this->objectService->deleteObject(new ObjectDeletion(uuid: $consumerId));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[NotificatiesSubscriberService] failed to cascade-delete companion consumer ' . $consumerId . ': ' . $e->getMessage(),
@@ -490,7 +489,10 @@ class NotificatiesSubscriberService {
 	 */
 	public function findAbonnement(string $abonnementId): ?ObjectEntity {
 		try {
-			return $this->objectService->find(id: $abonnementId, register: 'integriq', schema: 'notificaties_abonnement');
+			return $this->objectService->find(
+				id: $abonnementId,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'notificaties_abonnement')
+			);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -716,7 +718,7 @@ class NotificatiesSubscriberService {
 		}
 
 		try {
-			return $this->objectService->find(id: $sourceId, register: 'integriq', schema: 'source');
+			return $this->objectService->find(id: $sourceId, options: new ObjectFindOptions(register: 'integriq', schema: 'source'));
 		} catch (Throwable $e) {
 			return null;
 		}

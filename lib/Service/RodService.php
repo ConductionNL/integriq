@@ -37,10 +37,12 @@ use DateTime;
 use OCA\Integriq\Event\RodAcknowledgementReceivedEvent;
 use OCA\Integriq\Exception\RodProviderException;
 use OCA\Integriq\Exception\RodTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Rod\RodAcknowledgementTranslator;
 use OCA\Integriq\Service\Rod\RodEnvelopeTranslator;
 use OCA\Integriq\Service\Rod\RodPersonalNumberRedactor;
 use OCA\Integriq\Service\Rod\RodProviderRegistry;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -56,7 +58,7 @@ use Throwable;
  *
  * @spec openspec/specs/rod-adapter/spec.md
  */
-class RodService {
+class RodService implements RodServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding ROD sources and message records.
@@ -173,7 +175,10 @@ class RodService {
 		// either type (burgerservicenummer or onderwijsnummer), never the raw value.
 		$record['bsnHash'] = hash('sha256', $number);
 
-		$this->objectService->saveObject(object: $record, register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
+		$this->objectService->saveObject(
+			object: $record,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+		);
 
 		if ($status === 'failed') {
 			throw new RodProviderException(message: (string)$error);
@@ -237,8 +242,7 @@ class RodService {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($outbound === null) {
@@ -340,9 +344,7 @@ class RodService {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 	}//end retryOne()
@@ -361,27 +363,16 @@ class RodService {
 	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new RodProviderException(
 				message: 'No active ROD source is configured (register "integriq", schema "source", type "rod", '
 					. 'isEnabled=true). Configure one before using the ROD bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**

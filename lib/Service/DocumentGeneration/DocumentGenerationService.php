@@ -28,7 +28,9 @@ namespace OCA\Integriq\Service\DocumentGeneration;
 use DateTime;
 use OCA\Integriq\Event\DocumentRenderedEvent;
 use OCA\Integriq\Exception\DocumentGenerationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -54,35 +56,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) RenderOutcome's named constructors, as above.
  */
-class DocumentGenerationService {
-
-	/**
-	 * The register the job and source objects live in.
-	 *
-	 * @var string
-	 */
-	public const REGISTER = 'integriq';
-
-	/**
-	 * The job schema.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_JOB = 'documentGenerationJob';
-
-	/**
-	 * The source schema.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_SOURCE = 'source';
-
-	/**
-	 * The source type this service reads.
-	 *
-	 * @var string
-	 */
-	public const SOURCE_TYPE = 'documentGeneration';
+class DocumentGenerationService implements DocumentGenerationServiceInterface {
 
 	/**
 	 * Constructor.
@@ -143,8 +117,7 @@ class DocumentGenerationService {
 				'lastError' => '',
 				'attempts' => [],
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_JOB
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_JOB)
 		);
 
 		return $this->apply(
@@ -370,9 +343,7 @@ class DocumentGenerationService {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_JOB,
-			uuid: $job->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_JOB, uuid: $job->getUuid())
 		);
 
 		if ($outcome->isTerminal() === true) {
@@ -407,8 +378,7 @@ class DocumentGenerationService {
 
 		$source = $this->objectService->find(
 			id: $sourceId,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SOURCE
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SOURCE)
 		);
 
 		if ($source === null) {

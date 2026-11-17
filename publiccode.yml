@@ -5,7 +5,7 @@ url: https://github.com/ConductionNL/integriq
 softwareVersion: '0.2.10'
 releaseDate: '2026-05-26'
 developmentStatus: stable
-softwareType: softwareAddon
+softwareType: addon
 
 platforms:
   - nextcloud
@@ -23,6 +23,7 @@ description:
       It provides an ESB-framework for working together in an open data
       ecosystem: synchronise external data sources, emit cloud events,
       and translate API calls through configurable mappings.
+      Conduction maintains this component on behalf of OpenWoo.app.
     features:
       - Data source synchronisation
       - Cloud event publishing
@@ -36,6 +37,7 @@ description:
       Het levert een ESB-raamwerk voor samenwerking in een open data-ecosysteem:
       synchroniseer externe databronnen, publiceer cloud events en vertaal
       API-aanroepen via configureerbare mappings.
+      Conduction onderhoudt dit component in opdracht van OpenWoo.app.
     features:
       - Synchronisatie van databronnen
       - Publiceren van cloud events
@@ -47,7 +49,12 @@ legal:
   repoOwner: ConductionNL
 
 maintenance:
-  type: internal
+  type: contract
+  contractors:
+    - name: Conduction B.V.
+      until: "2027-12-31"
+      email: info@conduction.nl
+      website: https://conduction.nl
   contacts:
     - name: Conduction Development Team
       email: info@conduction.nl
@@ -62,5 +69,8 @@ localisation:
 dependsOn:
   open:
     - name: OpenRegister
-      url: https://github.com/ConductionNL/openregister
-      version-min: '0.2.0'
+      versionMin: '0.2.0'
+
+# Common Ground layer (nl.vng profile), as a standard supports entry.
+supports:
+  - id: https://commonground.nl/cms/view/54476261/5-lagen-model#integration

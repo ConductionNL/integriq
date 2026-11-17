@@ -32,9 +32,10 @@ use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Exception\TablesNotFoundException;
 use OCA\Integriq\Exception\TablesPermissionDeniedException;
 use OCA\Integriq\Exception\TablesUpstreamException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Tables\TablesSyncAdapterInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -58,22 +59,22 @@ class TablesBridgeController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The HTTP request.
-	 * @param TablesSyncAdapter $tablesSyncAdapter The Tables sync adapter (feature detection + discovery).
+	 * @param TablesSyncAdapterInterface $tablesSyncAdapter The Tables sync adapter (feature detection + discovery).
 	 * @param OrObjectService $orObjectService The OR object service (Source lookups).
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger The logger.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly TablesSyncAdapter $tablesSyncAdapter,
+		private readonly TablesSyncAdapterInterface $tablesSyncAdapter,
 		private readonly OrObjectService $orObjectService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -179,7 +180,7 @@ class TablesBridgeController extends Controller {
 	}//end columns()
 
 	/**
-	 * Resolve a Source by id, admin-context (the acting user need not have
+	 * Resolve a Source of the caller's organisation by id (the acting user need not have
 	 * direct OR access to the admin-only `source` schema — the engine reads
 	 * it on their behalf, mirroring `SynchronizationService::findSourceObject()`).
 	 *
@@ -193,10 +194,8 @@ class TablesBridgeController extends Controller {
 		try {
 			return $this->orObjectService->find(
 				id: $sourceId,
-				register: 'integriq',
-				schema: 'source',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $exception) {
 			throw new TablesNotFoundException(message: 'Source not found: ' . $sourceId);

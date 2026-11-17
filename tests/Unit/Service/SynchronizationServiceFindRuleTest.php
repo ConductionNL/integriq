@@ -3,6 +3,9 @@
 /**
  * `findRule()` reads a rule the way the MIGRATION needs it read.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * WHY THIS TEST EXISTS, WITH THE NUMBER THAT PAID FOR IT.
  *
  * `openconnector.fetch-file` shipped complete and was unreachable. A sweep of
@@ -28,9 +31,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
@@ -52,6 +52,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * The rule lookup the flow generator depends on.
@@ -137,14 +138,9 @@ class SynchronizationServiceFindRuleTest extends TestCase {
 		$this->orObjectService->expects($this->once())
 			->method('find')
 			->willReturnCallback(
-				function (
-					$id,
-					$register = null,
-					$schema = null,
-					bool $_rbac = true,
-					bool $_multitenancy = true,
-					...$rest,
-				) use ($entity, &$seen) {
+				function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true, ...$rest) use ($entity, &$seen) {
+					$register = $options?->register;
+					$schema = $options?->schema;
 					$seen = compact('id', 'register', 'schema', '_rbac', '_multitenancy');
 
 					return $entity;

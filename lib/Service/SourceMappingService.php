@@ -18,6 +18,9 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-adopt-or-abstractions/tasks.md#task-7
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -45,7 +48,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
-class SourceMappingService {
+class SourceMappingService implements SourceMappingServiceInterface {
 
 	/**
 	 * Default MongoDB action payload skeleton.

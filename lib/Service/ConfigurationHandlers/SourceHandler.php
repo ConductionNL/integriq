@@ -16,10 +16,14 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service\ConfigurationHandlers;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -95,9 +99,7 @@ class SourceHandler implements ConfigurationHandlerInterface {
 		// top-level unset() list above, matched values are MASKED
 		// (`***REDACTED***`), not omitted, so an operator re-importing this
 		// export sees the signal that a credential lived here and must be re-entered.
-		if (isset($sourceArray['configuration']) === true && is_array($sourceArray['configuration']) === true) {
-			$sourceArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $sourceArray['configuration']);
-		}
+		$sourceArray = $this->sensitiveFieldRegistry->redactConfiguration(data: $sourceArray);
 
 		return $sourceArray;
 	}//end export()
@@ -113,20 +115,23 @@ class SourceHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	public function import(array $data, array $mappings): Entity {
+		$data = $this->sensitiveFieldRegistry->withoutRedactedValues(data: $data);
+
 		// Check if source with this slug already exists.
 		$slug = $data['slug'] ?? null;
 		if ($slug !== null && isset($mappings['source']['slugToId'][$slug]) === true) {
 			// Update existing source.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $mappings['source']['slugToId'][$slug]
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $mappings['source']['slugToId'][$slug])
 			);
 		}
 
 		// Create new source.
-		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'source');
+		return $this->orObjectService->saveObject(
+			object: $data,
+			options: RegisterSave::options(register: 'integriq', schema: 'source')
+		);
 	}//end import()
 
 	/**

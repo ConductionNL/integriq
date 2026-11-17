@@ -20,12 +20,16 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 
 /**
@@ -81,7 +85,7 @@ class WriteBackConflictReader {
 		}
 
 		try {
-			$object = $this->objectService->find(id: $objectId, register: $register, schema: $schema);
+			$object = $this->objectService->find(id: $objectId, options: new ObjectFindOptions(register: $register, schema: $schema));
 		} catch (\Throwable $e) {
 			return false;
 		}

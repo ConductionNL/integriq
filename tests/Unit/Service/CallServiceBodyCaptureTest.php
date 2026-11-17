@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -20,7 +23,10 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use DateTimeImmutable;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
+use OCA\Integriq\Adapters\Support\SupplierSourceCall;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
@@ -34,6 +40,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use RuntimeException;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Body capture on the CallService write path (Woo row 13.23, decision D5).
@@ -72,7 +79,9 @@ class CallServiceBodyCaptureTest extends TestCase {
 	private function service(Response $answer, ?IAppConfig $appConfig = null): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
@@ -107,7 +116,6 @@ class CallServiceBodyCaptureTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
-			null,
 			new BodyCapturePolicy($appConfig, $clock),
 		);
 
@@ -253,6 +261,42 @@ class CallServiceBodyCaptureTest extends TestCase {
 	}//end testACallAfterTheWindowEndsStoresNoBody()
 
 	/**
+	 * A window that ends further away than the instance maximum (72 h by default) counts as closed:
+	 * only BodyCaptureController::open() checks the maximum, and a value written another way skips it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	public function testAWindowBeyondTheMaximumStoresNoBody(): void {
+		$service = $this->service(new Response(200, [], '{"uuid":"z1"}'));
+
+		$service->call(source: $this->source('2026-10-30T12:00:00+00:00'), endpoint: '/zaken', method: 'POST');
+
+		$logs = $this->callLogs();
+		$this->assertCount(1, $logs);
+		$this->assertNoBody($logs[0]);
+	}//end testAWindowBeyondTheMaximumStoresNoBody()
+
+	/**
+	 * A window that ends exactly at the maximum is open; a minute beyond it is closed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	public function testTheMaximumItselfIsStillInsideTheWindow(): void {
+		$service = $this->service(new Response(200, [], '{"uuid":"z1"}'));
+		$service->call(source: $this->source('2026-10-12T12:00:00+00:00'), endpoint: '/zaken', method: 'POST');
+		$service->call(source: $this->source('2026-10-12T12:01:00+00:00'), endpoint: '/zaken', method: 'POST');
+
+		$logs = $this->callLogs();
+		$this->assertCount(2, $logs);
+		$this->assertTrue($logs[0]['bodyCaptured'], 'NOW + 72 h is within the maximum');
+		$this->assertNoBody($logs[1]);
+	}//end testTheMaximumItselfIsStillInsideTheWindow()
+
+	/**
 	 * A window that cannot be read stores nothing.
 	 *
 	 * @return void
@@ -332,10 +376,111 @@ class CallServiceBodyCaptureTest extends TestCase {
 	public function testLogBodyKeepsTheBodies(): void {
 		$service = $this->service(new Response(200, [], '{"public":"curriculum"}'));
 
-		$service->call(source: $this->source(null), endpoint: '/zaken', config: ['logBody' => true]);
+		$service->call(source: $this->source(null), endpoint: '/zaken', config: ['logBody' => SloCurriculumClientHttp::class]);
 
 		$log = $this->callLogs()[0];
 		$this->assertTrue($log['bodyCaptured']);
 		$this->assertSame('{"public":"curriculum"}', $log['response']['body']);
 	}//end testLogBodyKeepsTheBodies()
+
+	/**
+	 * A bare true, an unlisted class or any other value keeps no body: only a listed caller does.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-code-may-keep-bodies-only-for-listed-public-data-callers-req-ocd-010
+	 */
+	public function testOnlyAListedCallerKeepsTheBodies(): void {
+		foreach ([true, 1, 'yes', SupplierSourceCall::class, ['x']] as $logBody) {
+			$this->saved = [];
+			$service = $this->service(new Response(200, [], '{"leerling":"999993653"}'));
+
+			$service->call(source: $this->source(null), endpoint: '/zaken', config: ['logBody' => $logBody]);
+
+			$this->assertNoBody($this->callLogs()[0]);
+		}
+	}//end testOnlyAListedCallerKeepsTheBodies()
+
+	/**
+	 * No class under lib/ passes logBody unless it is on the allowlist.
+	 *
+	 * CallService reads the option and is the one file allowed to name it
+	 * without being listed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-code-may-keep-bodies-only-for-listed-public-data-callers-req-ocd-010
+	 */
+	public function testOnlyListedCallersPassLogBody(): void {
+		$lib     = dirname(__DIR__, 3) . '/lib';
+		$readers = [CallService::class];
+		$callers = [];
+		$files   = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($lib, \FilesystemIterator::SKIP_DOTS));
+		foreach ($files as $file) {
+			if ($file->getExtension() !== 'php' || str_contains((string)file_get_contents($file->getPathname()), "'logBody'") === false) {
+				continue;
+			}
+
+			$relative  = substr($file->getPathname(), strlen($lib) + 1, -4);
+			$callers[] = 'OCA\\Integriq\\' . str_replace('/', '\\', $relative);
+		}
+
+		$unlisted = array_values(array_diff($callers, BodyCapturePolicy::LOG_BODY_ALLOWLIST, $readers));
+		sort($unlisted);
+
+		$this->assertSame([], $unlisted, 'These classes pass logBody but are not on BodyCapturePolicy::LOG_BODY_ALLOWLIST: ' . implode(', ', $unlisted));
+		$this->assertContains(SloCurriculumClientHttp::class, $callers);
+		$this->assertSame([SloCurriculumClientHttp::class], BodyCapturePolicy::LOG_BODY_ALLOWLIST);
+	}//end testOnlyListedCallersPassLogBody()
+	/**
+	 * A traced call outside an investigation window leaves no body in the trace step either (iq-f6).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+	 */
+	public function testATracedCallOutsideAWindowLeavesNoBodyInTheTrace(): void {
+		$service = $this->service(new Response(200, [], '{"uuid":"z1","bsn":"999993653"}'));
+		$trace = new ExecutionTraceContext('test');
+
+		$service->call(source: $this->source(null), endpoint: '/zaken', method: 'POST', trace: $trace);
+
+		$step = $trace->getSteps()[0];
+		foreach (BodyCapturePolicy::REQUEST_BODY_KEYS as $key) {
+			$this->assertArrayNotHasKey($key, $step['input'], 'input.' . $key);
+		}
+
+		$this->assertArrayNotHasKey('body', $step['output']);
+		$this->assertStringNotContainsString('999993653', (string)json_encode($step));
+		$this->assertSame(200, $step['output']['statusCode'], 'the rest of the step stays');
+	}//end testATracedCallOutsideAWindowLeavesNoBodyInTheTrace()
+
+	/**
+	 * Inside a window, and with logBody, the trace step keeps both bodies.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-administrator-opens-a-bounded-investigation-window-per-source-req-ocd-008
+	 */
+	public function testATracedCallInsideAWindowOrWithLogBodyKeepsTheBodiesInTheTrace(): void {
+		$windowTrace = new ExecutionTraceContext('window');
+		$this->service(new Response(200, [], '{"uuid":"z1"}'))->call(
+			source: $this->source('2026-10-10T12:00:00+00:00'),
+			endpoint: '/zaken',
+			method: 'POST',
+			trace: $windowTrace
+		);
+		$step = $windowTrace->getSteps()[0];
+		$this->assertSame('999993653', $step['input']['json']['bsn']);
+		$this->assertSame('{"uuid":"z1"}', $step['output']['body']);
+
+		$logBodyTrace = new ExecutionTraceContext('logbody');
+		$this->service(new Response(200, [], '{"public":"curriculum"}'))->call(
+			source: $this->source(null),
+			endpoint: '/zaken',
+			config: ['logBody' => SloCurriculumClientHttp::class],
+			trace: $logBodyTrace
+		);
+		$this->assertSame('{"public":"curriculum"}', $logBodyTrace->getSteps()[0]['output']['body']);
+	}//end testATracedCallInsideAWindowOrWithLogBodyKeepsTheBodiesInTheTrace()
 }//end class

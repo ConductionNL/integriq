@@ -75,6 +75,8 @@ import axios from '@nextcloud/axios'
 import { showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcDialog, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import closableDialog from '../mixins/closableDialog.js'
+import { downloadJson } from './downloadJson.js'
 
 export default {
 	name: 'ExportConfigurationDialog',
@@ -85,6 +87,8 @@ export default {
 		NcNoteCard,
 		NcSelect,
 	},
+
+	mixins: [closableDialog],
 
 	props: {
 		open: { type: Boolean, default: false },
@@ -178,16 +182,7 @@ export default {
 					`/apps/integriq/api/configurations/${this.selected.id}/export`,
 				)
 				const { data } = await axios.post(url)
-				const blob = new Blob([JSON.stringify(data, null, 2)], {
-					type: 'application/json',
-				})
-				const link = document.createElement('a')
-				link.href = URL.createObjectURL(blob)
-				link.download = `configuration-${this.selected.id}.json`
-				document.body.appendChild(link)
-				link.click()
-				document.body.removeChild(link)
-				URL.revokeObjectURL(link.href)
+				downloadJson(`configuration-${this.selected.id}.json`, data)
 				showSuccess(t('integriq', 'Configuration exported'))
 				this.close()
 			} catch (err) {
@@ -197,29 +192,6 @@ export default {
 			} finally {
 				this.exporting = false
 			}
-		},
-
-		/**
-		 * NcDialog open-state relay.
-		 *
-		 * @param {boolean} isOpen New open state from NcDialog.
-		 * @return {void}
-		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui
-		 */
-		onOpenChanged(isOpen) {
-			if (!isOpen) {
-				this.close()
-			}
-		},
-
-		/**
-		 * Ask ModalHost to close the dialog.
-		 *
-		 * @return {void}
-		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui
-		 */
-		close() {
-			this.$emit('close')
 		},
 	},
 }

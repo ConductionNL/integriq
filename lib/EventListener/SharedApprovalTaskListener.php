@@ -31,9 +31,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\ApprovalDecisionService;
-use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\ApprovalDecisionServiceInterface;
+use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
@@ -82,17 +82,17 @@ class SharedApprovalTaskListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ApprovalService $approvalService Finds, authorizes and expires approval_request records.
-	 * @param ApprovalDecisionService $decisionService Resumes or stops the suspended run.
-	 * @param ActionAuthService $actionAuth The action matrix, the first authorization layer.
+	 * @param ApprovalServiceInterface $approvalService Finds, authorizes and expires approval_request records.
+	 * @param ApprovalDecisionServiceInterface $decisionService Resumes or stops the suspended run.
+	 * @param ActionAuthServiceInterface $actionAuth The action matrix, the first authorization layer.
 	 * @param IUserManager $userManager Resolves the completing user.
 	 * @param IL10N $l10n Translates the fixed rejection reason.
 	 * @param LoggerInterface $logger Logger for refused and failed decisions.
 	 */
 	public function __construct(
-		private readonly ApprovalService $approvalService,
-		private readonly ApprovalDecisionService $decisionService,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ApprovalServiceInterface $approvalService,
+		private readonly ApprovalDecisionServiceInterface $decisionService,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserManager $userManager,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
@@ -115,28 +115,73 @@ class SharedApprovalTaskListener implements IEventListener {
 		}
 
 		$task = $event->getTask();
+		$metadata = $this->approvalMirrorMetadata(task: $task);
+		if ($metadata === []) {
+			return;
+		}
+
+		try {
+			$this->resolveMirror(task: $task, approvalRequestId: (string)$metadata['approvalRequestId']);
+		} catch (Throwable $e) {
+			$this->logUnresolved(task: $task, exception: $e);
+		}
+
+	}//end handle()
+
+	/**
+	 * The metadata of an Integriq approval mirror that names its request;
+	 * an empty array for any other task.
+	 *
+	 * @param Task $task The terminal task.
+	 *
+	 * @return array<string, mixed> The metadata, or [].
+	 */
+	private function approvalMirrorMetadata(Task $task): array {
 		$metadata = $task->getMetadata();
 		if ($task->getAppId() !== 'integriq'
 			|| is_array($metadata) === false
 			|| ($metadata['kind'] ?? null) !== 'approval_request'
 			|| (string)($metadata['approvalRequestId'] ?? '') === ''
 		) {
-			return;
+			return [];
 		}
 
-		try {
-			$record = $this->approvalService->find(id: (string)$metadata['approvalRequestId']);
-			if ($this->isPendingOn(record: $record, task: $task) === true) {
-				$this->resolve(record: $record, task: $task);
-			}
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'SharedApprovalTaskListener: the mirrored task could not resolve its approval request: ' . $e->getMessage(),
-				['taskUuid' => $task->getUuid(), 'approvalRequestId' => $metadata['approvalRequestId']]
-			);
+		return $metadata;
+
+	}//end approvalMirrorMetadata()
+
+	/**
+	 * Resolve the approval request when it is still pending on this mirror.
+	 *
+	 * @param Task   $task              The terminal mirror.
+	 * @param string $approvalRequestId The request the mirror names.
+	 *
+	 * @return void
+	 */
+	private function resolveMirror(Task $task, string $approvalRequestId): void {
+		// System read: a task event resolves the request its mirror names, outside any user's organisation.
+		$record = $this->approvalService->find(id: $approvalRequestId, asSystem: true);
+		if ($this->isPendingOn(record: $record, task: $task) === true) {
+			$this->resolve(record: $record, task: $task);
 		}
 
-	}//end handle()
+	}//end resolveMirror()
+
+	/**
+	 * Log a mirror that could not resolve its approval request.
+	 *
+	 * @param Task      $task      The terminal mirror.
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return void
+	 */
+	private function logUnresolved(Task $task, Throwable $exception): void {
+		$this->logger->warning(
+			'SharedApprovalTaskListener: the mirrored task could not resolve its approval request: ' . $exception->getMessage(),
+			['taskUuid' => $task->getUuid(), 'approvalRequestId' => $task->getMetadata()['approvalRequestId']]
+		);
+
+	}//end logUnresolved()
 
 	/**
 	 * Map the task's outcome onto the record.
@@ -258,13 +303,27 @@ class SharedApprovalTaskListener implements IEventListener {
 			return 'approval.approve';
 		}
 
-		if (in_array($outcome, self::REJECTING_OUTCOMES, true) === true || ($outcome === 'dead_letter' && $byTimer === false)) {
+		if ($this->isRejection(outcome: $outcome, byTimer: $byTimer) === true) {
 			return 'approval.reject';
 		}
 
 		return null;
 
 	}//end decision()
+
+	/**
+	 * Whether a user's outcome rejects: every outcome OpenRegister counts as a
+	 * rejection, and a rejection it rerouted to `dead_letter`.
+	 *
+	 * @param string $outcome The task's recorded outcome.
+	 * @param bool   $byTimer Whether the timer, not a user, recorded it.
+	 *
+	 * @return bool
+	 */
+	private function isRejection(string $outcome, bool $byTimer): bool {
+		return in_array($outcome, self::REJECTING_OUTCOMES, true) === true || ($outcome === 'dead_letter' && $byTimer === false);
+
+	}//end isRejection()
 
 	/**
 	 * The completing user, when both authorization layers admit them; null

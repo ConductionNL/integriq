@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
-use OCA\Integriq\Service\DigitalPost\DigitalPostService;
+use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -40,11 +40,11 @@ class DigitalPostSendRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param DigitalPostService $service The digital post service.
+	 * @param DigitalPostServiceInterface $service The digital post service.
 	 * @param LoggerInterface $logger Structured logger.
 	 */
 	public function __construct(
-		private readonly DigitalPostService $service,
+		private readonly DigitalPostServiceInterface $service,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

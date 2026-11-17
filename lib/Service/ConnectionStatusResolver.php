@@ -3,6 +3,9 @@
 /**
  * Integriq ConnectionStatusResolver.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Works out a connection row's `status`, `statusMessage` and `checkedAt` by the
  * rules of the hydra umbrella design D4, first match wins:
  *
@@ -48,9 +51,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- *
  * @version GIT: <git_id>
  *
  * @link https://conduction.nl
@@ -79,6 +79,13 @@ class ConnectionStatusResolver {
 	 * @var string[]
 	 */
 	public const STATUSES = ['configured', 'limited', 'unconfigured', 'simulated', 'disabled', 'unavailable', 'error'];
+
+	/**
+	 * The row property that holds integriq's own probe; the other observation is the app's report.
+	 *
+	 * @var string
+	 */
+	private const PROBE_PROPERTY = 'lastProbe';
 
 	/**
 	 * Reads the declaring app's settings.
@@ -116,72 +123,58 @@ class ConnectionStatusResolver {
 	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-resolver-applies-the-d4-rules-in-order-req-conn-003
 	 */
 	public function resolve(array $row, bool $appEnabled): array {
-		$declaration = $row['declaration'] ?? [];
-		if (is_array($declaration) === false) {
-			$declaration = [];
-		}
+		$check = new ConnectionStatusCheck(row: $row, now: $this->now());
 
-		$now = $this->now();
-
-		return $this->ruleAppDisabled(row: $row, appEnabled: $appEnabled, now: $now)
-			?? $this->ruleDeclaredUnavailable(row: $row, declaration: $declaration, now: $now)
-			?? $this->ruleSwitchedOff(row: $row, declaration: $declaration, now: $now)
-			?? $this->ruleSimulated(row: $row, declaration: $declaration, now: $now)
+		return $this->ruleAppDisabled(check: $check, appEnabled: $appEnabled)
+			?? $this->ruleDeclaredUnavailable(check: $check)
+			?? $this->ruleSwitchedOff(check: $check)
+			?? $this->ruleSimulated(check: $check)
 			?? $this->ruleReportedSimulated(row: $row)
 			?? $this->ruleObserved(row: $row)
-			?? $this->ruleSettingsSaved(row: $row, declaration: $declaration, now: $now)
-			?? $this->outcome(
-				status: 'unconfigured',
-				message: $this->nonEmptyString(value: $declaration['unconfiguredMessage'] ?? null, fallback: 'Not checked yet.'),
-				checkedAt: null,
-				rule: 6
-			);
+			?? $this->ruleSettingsSaved(check: $check)
+			?? $this->ruleUnconfigured(check: $check);
 	}//end resolve()
 
 	/**
 	 * Rule 1: the declaring app is disabled.
 	 *
-	 * @param array<string,mixed> $row The stored row data.
+	 * @param ConnectionStatusCheck $check The row being resolved.
 	 * @param bool $appEnabled Whether the declaring app is enabled.
-	 * @param string $now The current time.
 	 *
 	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}|null
 	 */
-	private function ruleAppDisabled(array $row, bool $appEnabled, string $now): ?array {
+	private function ruleAppDisabled(ConnectionStatusCheck $check, bool $appEnabled): ?array {
 		if ($appEnabled === true) {
 			return null;
 		}
 
-		return $this->outcome(
+		$verdict = new ConnectionVerdict(
 			status: 'unavailable',
-			message: 'The ' . (string)($row['app'] ?? '') . ' app is disabled.',
-			checkedAt: $now,
-			rule: 1
+			message: 'The ' . (string)($check->row['app'] ?? '') . ' app is disabled.'
 		);
+		$verdict->checkedAt = $check->now;
+
+		return $this->outcome(verdict: $verdict, rule: 1);
 	}//end ruleAppDisabled()
 
 	/**
 	 * Rule 2: declared, not usable yet.
 	 *
-	 * @param array<string,mixed> $row The stored row data.
-	 * @param array<string,mixed> $declaration The declaration entry.
-	 * @param string $now The current time.
+	 * @param ConnectionStatusCheck $check The row being resolved.
 	 *
 	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}|null
 	 */
-	private function ruleDeclaredUnavailable(array $row, array $declaration, string $now): ?array {
-		if (($declaration['available'] ?? true) !== false) {
+	private function ruleDeclaredUnavailable(ConnectionStatusCheck $check): ?array {
+		if (($check->declaration['available'] ?? true) !== false) {
 			return null;
 		}
 
-		$message = $this->nonEmptyString(value: $declaration['unavailableMessage'] ?? null, fallback: 'Declared, not built yet.');
-
-		return $this->outcome(
+		$verdict = new ConnectionVerdict(
 			status: 'unavailable',
-			message: $message,
-			checkedAt: $this->keepOrNow(row: $row, status: 'unavailable', message: $message, now: $now),
-			rule: 2
+			message: $this->nonEmptyString(value: $check->declaration['unavailableMessage'] ?? null, fallback: 'Declared, not built yet.')
 		);
+
+		return $this->outcome(verdict: $this->keepOrNow(check: $check, verdict: $verdict), rule: 2);
 	}//end ruleDeclaredUnavailable()
 
 	/**
@@ -191,28 +184,24 @@ class ConnectionStatusResolver {
 	 * "Now" keeps the stored time while status and message stay the same, as
 	 * rule 5 does, so a sync over a row that stays off changes nothing.
 	 *
-	 * @param array<string,mixed> $row The stored row data.
-	 * @param array<string,mixed> $declaration The declaration entry.
-	 * @param string $now The current time.
+	 * @param ConnectionStatusCheck $check The row being resolved.
 	 *
 	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}|null
 	 *
 	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-connection-switched-off-reads-disabled
 	 */
-	private function ruleSwitchedOff(array $row, array $declaration, string $now): ?array {
-		$app = (string)($row['app'] ?? '');
-		if ($this->config->isSwitchedOff(app: $app, switch: $declaration['switch'] ?? null) === false) {
+	private function ruleSwitchedOff(ConnectionStatusCheck $check): ?array {
+		$app = (string)($check->row['app'] ?? '');
+		if ($this->config->isSwitchedOff(app: $app, switch: $check->declaration['switch'] ?? null) === false) {
 			return null;
 		}
 
-		$message = $this->nonEmptyString(value: $declaration['disabledMessage'] ?? null, fallback: 'Switched off in ' . $app . "'s settings.");
-
-		return $this->outcome(
+		$verdict = new ConnectionVerdict(
 			status: 'disabled',
-			message: $message,
-			checkedAt: $this->keepOrNow(row: $row, status: 'disabled', message: $message, now: $now),
-			rule: 2
+			message: $this->nonEmptyString(value: $check->declaration['disabledMessage'] ?? null, fallback: 'Switched off in ' . $app . "'s settings.")
 		);
+
+		return $this->outcome(verdict: $this->keepOrNow(check: $check, verdict: $verdict), rule: 2);
 	}//end ruleSwitchedOff()
 
 	/**
@@ -220,36 +209,47 @@ class ConnectionStatusResolver {
 	 *
 	 * Skipped for a `reportedOnly` row: only the app can tell what answers there.
 	 *
-	 * @param array<string,mixed> $row The stored row data.
-	 * @param array<string,mixed> $declaration The declaration entry.
-	 * @param string $now The current time.
+	 * @param ConnectionStatusCheck $check The row being resolved.
 	 *
 	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}|null
 	 */
-	private function ruleSimulated(array $row, array $declaration, string $now): ?array {
-		$adapter = $declaration['adapter'] ?? null;
-		if (is_array($adapter) === false || $this->isReportedOnly(declaration: $declaration) === true) {
+	private function ruleSimulated(ConnectionStatusCheck $check): ?array {
+		$adapter = $this->simulatedAdapter(check: $check);
+		if ($adapter === null) {
 			return null;
 		}
 
-		if ($this->config->isSimulated(app: (string)($row['app'] ?? ''), adapter: $adapter) === false) {
-			return null;
-		}
-
-		$configKey = (string)($adapter['configKey'] ?? '');
-
-		$message = $this->nonEmptyString(
-			value: $adapter['simulatedMessage'] ?? null,
-			fallback: 'A mock adapter answers here. Set ' . $configKey . ' to a real adapter.'
-		);
-
-		return $this->outcome(
+		$verdict = new ConnectionVerdict(
 			status: 'simulated',
-			message: $message,
-			checkedAt: $this->keepOrNow(row: $row, status: 'simulated', message: $message, now: $now),
-			rule: 3
+			message: $this->nonEmptyString(
+				value: $adapter['simulatedMessage'] ?? null,
+				fallback: 'A mock adapter answers here. Set ' . (string)($adapter['configKey'] ?? '') . ' to a real adapter.'
+			)
 		);
+
+		return $this->outcome(verdict: $this->keepOrNow(check: $check, verdict: $verdict), rule: 3);
 	}//end ruleSimulated()
+
+	/**
+	 * The declared adapter, when rule 3 applies to it: not reported-only, and
+	 * the app's adapter value is one of the simulated values.
+	 *
+	 * @param ConnectionStatusCheck $check The row being resolved.
+	 *
+	 * @return array<string,mixed>|null The adapter entry, or null when rule 3 does not apply.
+	 */
+	private function simulatedAdapter(ConnectionStatusCheck $check): ?array {
+		$adapter = $check->declaration['adapter'] ?? null;
+		if (is_array($adapter) === false || $this->isReportedOnly(declaration: $check->declaration) === true) {
+			return null;
+		}
+
+		if ($this->config->isSimulated(app: (string)($check->row['app'] ?? ''), adapter: $adapter) === false) {
+			return null;
+		}
+
+		return $adapter;
+	}//end simulatedAdapter()
 
 	/**
 	 * Rule 4a: the app reported that a mock answers.
@@ -263,17 +263,12 @@ class ConnectionStatusResolver {
 	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}|null
 	 */
 	private function ruleReportedSimulated(array $row): ?array {
-		$report = $this->readObservation(row: $row, property: 'lastReport', isProbe: false);
+		$report = $this->readObservation(row: $row, property: 'lastReport');
 		if ($report === null || $report['status'] !== 'simulated') {
 			return null;
 		}
 
-		return $this->outcome(
-			status: 'simulated',
-			message: $report['message'],
-			checkedAt: $report['at'],
-			rule: 4
-		);
+		return $this->observedOutcome(observation: $report, rule: 4);
 	}//end ruleReportedSimulated()
 
 	/**
@@ -289,12 +284,7 @@ class ConnectionStatusResolver {
 			return null;
 		}
 
-		return $this->outcome(
-			status: $observation['status'],
-			message: $observation['message'],
-			checkedAt: $observation['at'],
-			rule: 4
-		);
+		return $this->observedOutcome(observation: $observation, rule: 4);
 	}//end ruleObserved()
 
 	/**
@@ -303,31 +293,57 @@ class ConnectionStatusResolver {
 	 * Skipped for a `reportedOnly` row: filled settings say nothing about a
 	 * platform chosen elsewhere.
 	 *
-	 * @param array<string,mixed> $row The stored row data.
-	 * @param array<string,mixed> $declaration The declaration entry.
-	 * @param string $now The current time.
+	 * @param ConnectionStatusCheck $check The row being resolved.
 	 *
 	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}|null
 	 */
-	private function ruleSettingsSaved(array $row, array $declaration, string $now): ?array {
-		$required = $declaration['requiredConfig'] ?? [];
-		if (is_array($required) === false || $required === [] || $this->isReportedOnly(declaration: $declaration) === true) {
+	private function ruleSettingsSaved(ConnectionStatusCheck $check): ?array {
+		$required = $this->requiredSettings(check: $check);
+		if ($required === null) {
 			return null;
 		}
 
-		if ($this->config->allFilled(app: (string)($row['app'] ?? ''), entries: $required) === false) {
+		if ($this->config->allFilled(app: (string)($check->row['app'] ?? ''), entries: $required) === false) {
 			return null;
 		}
 
-		$message = 'Required settings are filled.';
+		$verdict = new ConnectionVerdict(status: 'configured', message: 'Required settings are filled.');
 
-		return $this->outcome(
-			status: 'configured',
-			message: $message,
-			checkedAt: $this->keepOrNow(row: $row, status: 'configured', message: $message, now: $now),
-			rule: 5
-		);
+		return $this->outcome(verdict: $this->keepOrNow(check: $check, verdict: $verdict), rule: 5);
 	}//end ruleSettingsSaved()
+
+	/**
+	 * The declared required settings, when rule 5 applies: a non-empty list on
+	 * a row that is not reported-only.
+	 *
+	 * @param ConnectionStatusCheck $check The row being resolved.
+	 *
+	 * @return array<mixed>|null The `requiredConfig` entries, or null when rule 5 does not apply.
+	 */
+	private function requiredSettings(ConnectionStatusCheck $check): ?array {
+		$required = $check->declaration['requiredConfig'] ?? [];
+		if (is_array($required) === false || $required === [] || $this->isReportedOnly(declaration: $check->declaration) === true) {
+			return null;
+		}
+
+		return $required;
+	}//end requiredSettings()
+
+	/**
+	 * Rule 6: nothing else matched.
+	 *
+	 * @param ConnectionStatusCheck $check The row being resolved.
+	 *
+	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}
+	 */
+	private function ruleUnconfigured(ConnectionStatusCheck $check): array {
+		$verdict = new ConnectionVerdict(
+			status: 'unconfigured',
+			message: $this->nonEmptyString(value: $check->declaration['unconfiguredMessage'] ?? null, fallback: 'Not checked yet.')
+		);
+
+		return $this->outcome(verdict: $verdict, rule: 6);
+	}//end ruleUnconfigured()
 
 	/**
 	 * Pick the newer of `lastProbe` and `lastReport`, of those a refresh did not retire.
@@ -340,8 +356,8 @@ class ConnectionStatusResolver {
 	 * @return array{status:string,message:string,at:?string}|null The observation, or null when there is none.
 	 */
 	private function newestObservation(array $row): ?array {
-		$probe = $this->readObservation(row: $row, property: 'lastProbe', isProbe: true);
-		$report = $this->readObservation(row: $row, property: 'lastReport', isProbe: false);
+		$probe = $this->readObservation(row: $row, property: 'lastProbe');
+		$report = $this->readObservation(row: $row, property: 'lastReport');
 
 		if ($probe === null) {
 			return $report;
@@ -364,27 +380,45 @@ class ConnectionStatusResolver {
 	 * An observation retires when its time is older than the row's `refreshedAt`.
 	 * An equal time still counts. An observation without a time is older than
 	 * any refresh. A missing or unreadable `refreshedAt` retires nothing.
+	 * `lastProbe` reads as a probe (ok|error), anything else as a report (the
+	 * seven statuses).
 	 *
 	 * @param array<string,mixed> $row The stored row data.
 	 * @param string $property The row property, `lastProbe` or `lastReport`.
-	 * @param bool $isProbe Whether this is a probe (ok|error) or a report (the seven statuses).
 	 *
 	 * @return array{status:string,message:string,at:?string,time:int}|null
 	 *
 	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-save-retires-an-older-error
 	 * @spec openspec/specs/connection-registry/spec.md#scenario-a-report-after-the-refresh-counts-again
 	 */
-	private function readObservation(array $row, string $property, bool $isProbe): ?array {
+	private function readObservation(array $row, string $property): ?array {
 		$value = $row[$property] ?? null;
 		if (is_array($value) === false) {
 			return null;
 		}
 
-		$status = $this->observationStatus(status: (string)($value['status'] ?? ''), isProbe: $isProbe);
+		$status = $this->observationStatus(status: (string)($value['status'] ?? ''), isProbe: $property === self::PROBE_PROPERTY);
 		if ($status === null) {
 			return null;
 		}
 
+		$observation = $this->timedObservation(value: $value, status: $status);
+		if ($observation['time'] < $this->refreshTime(row: $row)) {
+			return null;
+		}
+
+		return $observation;
+	}//end readObservation()
+
+	/**
+	 * An observation with its message and, when it carries one, its time.
+	 *
+	 * @param array<string,mixed> $value The stored probe or report.
+	 * @param string $status The mapped status.
+	 *
+	 * @return array{status:string,message:string,at:?string,time:int}
+	 */
+	private function timedObservation(array $value, string $status): array {
 		$observation = ['status' => $status, 'message' => (string)($value['message'] ?? ''), 'at' => null, 'time' => 0];
 		$observedAt = $value['at'] ?? null;
 		if (is_string($observedAt) === true && $observedAt !== '') {
@@ -392,12 +426,8 @@ class ConnectionStatusResolver {
 			$observation['time'] = (int)strtotime($observedAt);
 		}
 
-		if ($observation['time'] < $this->refreshTime(row: $row)) {
-			return null;
-		}
-
 		return $observation;
-	}//end readObservation()
+	}//end timedObservation()
 
 	/**
 	 * The row's `refreshedAt` as a Unix time, or 0 when it is missing or unreadable.
@@ -451,26 +481,27 @@ class ConnectionStatusResolver {
 	}//end isReportedOnly()
 
 	/**
-	 * Keep the stored `checkedAt` when status and message did not change.
+	 * Stamp a verdict: keep the stored `checkedAt` when status and message did
+	 * not change, otherwise the current time.
 	 *
-	 * @param array<string,mixed> $row The stored row data.
-	 * @param string $status The resolved status.
-	 * @param string $message The resolved message.
-	 * @param string $now The current time.
+	 * @param ConnectionStatusCheck $check The row being resolved.
+	 * @param ConnectionVerdict $verdict The resolved status and message.
 	 *
-	 * @return string
+	 * @return ConnectionVerdict The same verdict, stamped.
 	 */
-	private function keepOrNow(array $row, string $status, string $message, string $now): string {
+	private function keepOrNow(ConnectionStatusCheck $check, ConnectionVerdict $verdict): ConnectionVerdict {
+		$row = $check->row;
 		$stored = $row['checkedAt'] ?? null;
-		if (($row['status'] ?? null) === $status
-			&& ($row['statusMessage'] ?? null) === $message
+		$verdict->checkedAt = $check->now;
+		if (($row['status'] ?? null) === $verdict->status
+			&& ($row['statusMessage'] ?? null) === $verdict->message
 			&& is_string($stored) === true
 			&& $stored !== ''
 		) {
-			return $stored;
+			$verdict->checkedAt = $stored;
 		}
 
-		return $now;
+		return $verdict;
 	}//end keepOrNow()
 
 	/**
@@ -492,21 +523,34 @@ class ConnectionStatusResolver {
 	/**
 	 * Build the outcome array.
 	 *
-	 * @param string $status The status.
-	 * @param string $message The status message.
-	 * @param string|null $checkedAt The observation time.
+	 * @param ConnectionVerdict $verdict The status, message and observation time.
 	 * @param int $rule The D4 rule number that matched.
 	 *
 	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}
 	 */
-	private function outcome(string $status, string $message, ?string $checkedAt, int $rule): array {
+	private function outcome(ConnectionVerdict $verdict, int $rule): array {
 		return [
-			'status' => $status,
-			'statusMessage' => $message,
-			'checkedAt' => $checkedAt,
+			'status' => $verdict->status,
+			'statusMessage' => $verdict->message,
+			'checkedAt' => $verdict->checkedAt,
 			'rule' => $rule,
 		];
 	}//end outcome()
+
+	/**
+	 * Build the outcome of rule 4 from an observation, at its own time.
+	 *
+	 * @param array{status:string,message:string,at:?string} $observation The observation.
+	 * @param int $rule The D4 rule number that matched.
+	 *
+	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}
+	 */
+	private function observedOutcome(array $observation, int $rule): array {
+		$verdict = new ConnectionVerdict(status: $observation['status'], message: $observation['message']);
+		$verdict->checkedAt = $observation['at'];
+
+		return $this->outcome(verdict: $verdict, rule: $rule);
+	}//end observedOutcome()
 
 	/**
 	 * The current time as ISO 8601.

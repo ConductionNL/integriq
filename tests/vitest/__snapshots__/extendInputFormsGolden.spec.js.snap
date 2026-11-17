@@ -1,0 +1,1126 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ExtendExternalInputForm > emits every edit as recorded 1`] = `
+[
+  [
+    0,
+    "typed",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "typed",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    0,
+    "",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    0,
+    "contact",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "contact",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    1,
+    "typed",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "typed",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    1,
+    "",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    1,
+    "contact",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "contact",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    2,
+    "typed",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "typed",
+              "schema": "",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    2,
+    "",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    2,
+    "contact",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "contact",
+              "schema": "",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    3,
+    "typed",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    3,
+    "",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    3,
+    "contact",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    4,
+    "typed",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "typed",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    4,
+    "",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    4,
+    "contact",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "contact",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    5,
+    "typed",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "typed",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    5,
+    "",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    5,
+    "contact",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "contact",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    "button",
+    0,
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    "button",
+    1,
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    "button",
+    2,
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    "button",
+    3,
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            {
+              "property": "q",
+              "schema": "",
+            },
+          ],
+          "validate": 1,
+        },
+      ],
+    ],
+  ],
+  [
+    "switch",
+    true,
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            null,
+            {
+              "property": "q",
+            },
+          ],
+          "validate": true,
+        },
+      ],
+    ],
+  ],
+  [
+    "switch",
+    false,
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            null,
+            {
+              "property": "q",
+            },
+          ],
+          "validate": false,
+        },
+      ],
+    ],
+  ],
+  [
+    "switch",
+    0,
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            {
+              "property": "p",
+              "schema": "s",
+            },
+            null,
+            {
+              "property": "q",
+            },
+          ],
+          "validate": false,
+        },
+      ],
+    ],
+  ],
+  [
+    "add to empty",
+    [
+      [
+        {
+          "properties": [],
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`ExtendExternalInputForm > renders a config as recorded 1`] = `
+"<div class="action-form">
+  <div class="NcCheckboxRadioSwitch" data-value="true">
+    <!---->Validate fetched object against schema
+  </div><label class="action-form__label">Properties to fetch</label>
+  <div class="action-form__row">
+    <div class="NcTextField" data-label="Property (dot path)" data-value="p" data-placeholder="body.relations.contact">
+      <!---->
+      <!---->
+    </div>
+    <div class="NcTextField" data-label="Schema ID" data-value="s" data-placeholder="contact">
+      <!---->
+      <!---->
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+      <!---->
+    </button>
+  </div>
+  <div class="action-form__row">
+    <div class="NcTextField" data-label="Property (dot path)" data-value="" data-placeholder="body.relations.contact">
+      <!---->
+      <!---->
+    </div>
+    <div class="NcTextField" data-label="Schema ID" data-value="" data-placeholder="contact">
+      <!---->
+      <!---->
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+      <!---->
+    </button>
+  </div>
+  <div class="action-form__row">
+    <div class="NcTextField" data-label="Property (dot path)" data-value="q" data-placeholder="body.relations.contact">
+      <!---->
+      <!---->
+    </div>
+    <div class="NcTextField" data-label="Schema ID" data-value="" data-placeholder="contact">
+      <!---->
+      <!---->
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+      <!---->
+    </button>
+  </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button>
+</div>"
+`;
+
+exports[`ExtendExternalInputForm > renders an empty config as recorded 1`] = `
+"<div class="action-form">
+  <div class="NcCheckboxRadioSwitch" data-value="false">
+    <!---->Validate fetched object against schema
+  </div><label class="action-form__label">Properties to fetch</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button>
+</div>"
+`;
+
+exports[`ExtendExternalInputForm > renders properties that are not a list as recorded 1`] = `
+"<div class="action-form">
+  <div class="NcCheckboxRadioSwitch" data-value="false">
+    <!---->Validate fetched object against schema
+  </div><label class="action-form__label">Properties to fetch</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button>
+</div>"
+`;
+
+exports[`ExtendInputForm > emits every edit as recorded 1`] = `
+[
+  [
+    0,
+    "typed",
+    [
+      [
+        {
+          "extends": {
+            "typed": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "typed",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    0,
+    "",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    0,
+    " x.y , ,z ",
+    [
+      [
+        {
+          "extends": {
+            " x.y , ,z ": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            " x.y , ,z ",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    1,
+    "typed",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "typed",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    1,
+    "",
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    1,
+    " x.y , ,z ",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x.y",
+              "z",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    2,
+    "typed",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "typed",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    2,
+    "",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    2,
+    " x.y , ,z ",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            " x.y , ,z ",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    3,
+    "typed",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    3,
+    "",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    3,
+    " x.y , ,z ",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    4,
+    "typed",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "typed",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    4,
+    "",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    4,
+    " x.y , ,z ",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            " x.y , ,z ",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    5,
+    "typed",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+            "c": [
+              "typed",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    5,
+    "",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    5,
+    " x.y , ,z ",
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+            "c": [
+              "x.y",
+              "z",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    "button",
+    0,
+    [
+      [
+        {
+          "keep": 1,
+          "properties": [
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    "button",
+    1,
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    "button",
+    2,
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    "button",
+    3,
+    [
+      [
+        {
+          "extends": {
+            "a.b": [
+              "x",
+              "y",
+            ],
+          },
+          "keep": 1,
+          "properties": [
+            "a.b",
+            "c",
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    "add to empty",
+    [
+      [
+        {
+          "properties": [],
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`ExtendInputForm > renders a config as recorded 1`] = `
+"<div class="action-form"><label class="action-form__label">Properties to extend</label>
+  <div class="action-form__row">
+    <div class="NcTextField" data-label="Property (dot path)" data-value="a.b" data-placeholder="a.b">
+      <!---->
+      <!---->
+    </div>
+    <div class="NcTextField" data-label="Extends (comma-separated paths, optional)" data-value="x,y" data-placeholder="x.y,z">
+      <!---->
+      <!---->
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+      <!---->
+    </button>
+  </div>
+  <div class="action-form__row">
+    <div class="NcTextField" data-label="Property (dot path)" data-value="" data-placeholder="a.b">
+      <!---->
+      <!---->
+    </div>
+    <div class="NcTextField" data-label="Extends (comma-separated paths, optional)" data-value="" data-placeholder="x.y,z">
+      <!---->
+      <!---->
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+      <!---->
+    </button>
+  </div>
+  <div class="action-form__row">
+    <div class="NcTextField" data-label="Property (dot path)" data-value="c" data-placeholder="a.b">
+      <!---->
+      <!---->
+    </div>
+    <div class="NcTextField" data-label="Extends (comma-separated paths, optional)" data-value="" data-placeholder="x.y,z">
+      <!---->
+      <!---->
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+      <!---->
+    </button>
+  </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button>
+</div>"
+`;
+
+exports[`ExtendInputForm > renders an empty config as recorded 1`] = `"<div class="action-form"><label class="action-form__label">Properties to extend</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button></div>"`;
+
+exports[`ExtendInputForm > renders properties that are not a list as recorded 1`] = `"<div class="action-form"><label class="action-form__label">Properties to extend</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button></div>"`;

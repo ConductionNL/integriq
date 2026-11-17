@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "synkronoinnit",
         "A signing secret is configured (hidden).": "Allekirjoitussalaisuus on määritetty (piilotettu).",
         "Copied to clipboard": "Kopioitu leikepöydälle",
         "Copy": "Kopioi",

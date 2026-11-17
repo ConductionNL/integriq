@@ -22,6 +22,8 @@ import AccountVoice from 'vue-material-design-icons/AccountVoice.vue'
 import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import Api from 'vue-material-design-icons/Api.vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
+import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
+import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
 import Bank from 'vue-material-design-icons/Bank.vue'
 import BankOutline from 'vue-material-design-icons/BankOutline.vue'
 import Bell from 'vue-material-design-icons/Bell.vue'
@@ -45,12 +47,14 @@ import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue
 import Cog from 'vue-material-design-icons/Cog.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CreditCardOutline from 'vue-material-design-icons/CreditCardOutline.vue'
+import CurrencyEur from 'vue-material-design-icons/CurrencyEur.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
 import DatabaseImportOutline from 'vue-material-design-icons/DatabaseImportOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import DatabaseSearchOutline from 'vue-material-design-icons/DatabaseSearchOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Earth from 'vue-material-design-icons/Earth.vue'
+import EarthArrowRight from 'vue-material-design-icons/EarthArrowRight.vue'
 import Email from 'vue-material-design-icons/Email.vue'
 import EmailAlertOutline from 'vue-material-design-icons/EmailAlertOutline.vue'
 import EmailFast from 'vue-material-design-icons/EmailFast.vue'
@@ -75,14 +79,18 @@ import History from 'vue-material-design-icons/History.vue'
 import HomeCityOutline from 'vue-material-design-icons/HomeCityOutline.vue'
 import HospitalBoxOutline from 'vue-material-design-icons/HospitalBoxOutline.vue'
 import InboxArrowDown from 'vue-material-design-icons/InboxArrowDown.vue'
+import KeyChange from 'vue-material-design-icons/KeyChange.vue'
 import KeyOutline from 'vue-material-design-icons/KeyOutline.vue'
+import KeyPlus from 'vue-material-design-icons/KeyPlus.vue'
 import LanConnect from 'vue-material-design-icons/LanConnect.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
+import MapMarkerRadiusOutline from 'vue-material-design-icons/MapMarkerRadiusOutline.vue'
 import MedicalBag from 'vue-material-design-icons/MedicalBag.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
 import Package from 'vue-material-design-icons/Package.vue'
 import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
+import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
 import PhoneLog from 'vue-material-design-icons/PhoneLog.vue'
@@ -90,9 +98,11 @@ import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
 import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import RocketLaunchOutline from 'vue-material-design-icons/RocketLaunchOutline.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SchoolOutline from 'vue-material-design-icons/SchoolOutline.vue'
+import SendCheckOutline from 'vue-material-design-icons/SendCheckOutline.vue'
 import SendOutline from 'vue-material-design-icons/SendOutline.vue'
 import ServerNetwork from 'vue-material-design-icons/ServerNetwork.vue'
 import ShieldCheckOutline from 'vue-material-design-icons/ShieldCheckOutline.vue'
@@ -108,6 +118,8 @@ import SyncCircle from 'vue-material-design-icons/SyncCircle.vue'
 import TableArrowRight from 'vue-material-design-icons/TableArrowRight.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Timeline from 'vue-material-design-icons/Timeline.vue'
+import ToggleSwitchOffOutline from 'vue-material-design-icons/ToggleSwitchOffOutline.vue'
+import ToggleSwitchOutline from 'vue-material-design-icons/ToggleSwitchOutline.vue'
 import TransitConnectionVariant from 'vue-material-design-icons/TransitConnectionVariant.vue'
 import Translate from 'vue-material-design-icons/Translate.vue'
 import Update from 'vue-material-design-icons/Update.vue'
@@ -129,6 +141,8 @@ export default {
 	AlertOutline,
 	Api,
 	ApplicationOutline,
+	ArrowDown,
+	ArrowUp,
 	Bank,
 	BankOutline,
 	Bell,
@@ -152,12 +166,14 @@ export default {
 	Cog,
 	CogOutline,
 	CreditCardOutline,
+	CurrencyEur,
 	DatabaseArrowLeftOutline,
 	DatabaseImportOutline,
 	DatabaseOutline,
 	DatabaseSearchOutline,
 	Download,
 	Earth,
+	EarthArrowRight,
 	Email,
 	EmailAlertOutline,
 	EmailFast,
@@ -182,14 +198,18 @@ export default {
 	HomeCityOutline,
 	HospitalBoxOutline,
 	InboxArrowDown,
+	KeyChange,
 	KeyOutline,
+	KeyPlus,
 	LanConnect,
 	LinkVariant,
 	MapMarkerPath,
+	MapMarkerRadiusOutline,
 	MedicalBag,
 	MessageTextOutline,
 	Package,
 	PackageVariantClosed,
+	PauseCircleOutline,
 	Pencil,
 	PencilOutline,
 	PhoneLog,
@@ -197,9 +217,11 @@ export default {
 	PlayOutline,
 	Plus,
 	PowerPlugOutline,
+	Refresh,
 	RocketLaunchOutline,
 	ScaleBalance,
 	SchoolOutline,
+	SendCheckOutline,
 	SendOutline,
 	ServerNetwork,
 	ShieldCheckOutline,
@@ -215,6 +237,8 @@ export default {
 	TableArrowRight,
 	TextBoxOutline,
 	Timeline,
+	ToggleSwitchOffOutline,
+	ToggleSwitchOutline,
 	TransitConnectionVariant,
 	Translate,
 	Update,

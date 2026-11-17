@@ -34,10 +34,13 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\PaymentProviderException;
+use OCA\Integriq\Exception\PaymentSourceMissingException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Payment\LogPaymentProvider;
 use OCA\Integriq\Service\Payment\MolliePaymentProvider;
 use OCA\Integriq\Service\Payment\PaymentProviderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -49,7 +52,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/live-payment-providers/spec.md
  */
-class PaymentIntentService {
+class PaymentIntentService implements PaymentIntentServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding payment sources and intents.
@@ -110,7 +113,7 @@ class PaymentIntentService {
 	 * @param ORObjectService $objectService OR object service for source/payment_intent persistence.
 	 * @param LogPaymentProvider $logProvider The sandbox provider binding.
 	 * @param MolliePaymentProvider $mollieProvider The Mollie REST provider binding.
-	 * @param EventService $eventService Emits the payment-status CloudEvent.
+	 * @param CloudEventEmitterInterface $eventService Emits the payment-status CloudEvent.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
@@ -118,7 +121,7 @@ class PaymentIntentService {
 		private readonly ORObjectService $objectService,
 		private readonly LogPaymentProvider $logProvider,
 		private readonly MolliePaymentProvider $mollieProvider,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
@@ -162,6 +165,7 @@ class PaymentIntentService {
 				'amountCurrency' => (string)($payload['amount']['currency'] ?? ''),
 				'description' => (string)($payload['description'] ?? ''),
 				'method' => ($payload['method'] ?? null),
+				'terminalId' => ($payload['terminalId'] ?? null),
 				'redirectUrl' => (string)($payload['redirectUrl'] ?? ''),
 				'checkoutUrl' => $result['checkoutUrl'],
 				'metadata' => ($payload['metadata'] ?? []),
@@ -170,12 +174,7 @@ class PaymentIntentService {
 				'createdAt' => $now,
 				'updatedAt' => $now,
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_PAYMENT_INTENT,
-			// System context: `payment_intent` is locked to admins and owners
-			// (99-payment-intent-lockdown.json), and a `payments.create` holder
-			// need not be an admin. The ADR-023 action check in
-			// PaymentsController::create() is the gate for this write.
+			options: $this->intentSaveOptions(),
 			_rbac: false
 		);
 
@@ -247,9 +246,7 @@ class PaymentIntentService {
 			// latest native status, no outcome change, no event (REQ-LPP-004).
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_PAYMENT_INTENT,
-				uuid: $record->getUuid(),
+				options: $this->intentSaveOptions(uuid: $record->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -262,9 +259,7 @@ class PaymentIntentService {
 			// not re-emit.
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_PAYMENT_INTENT,
-				uuid: $record->getUuid(),
+				options: $this->intentSaveOptions(uuid: $record->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -274,9 +269,7 @@ class PaymentIntentService {
 		$data['lastOutcome'] = $outcome;
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_PAYMENT_INTENT,
-			uuid: $record->getUuid(),
+			options: $this->intentSaveOptions(uuid: $record->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -303,6 +296,32 @@ class PaymentIntentService {
 	}//end resolveActiveSource()
 
 	/**
+	 * The point-of-sale terminals of a payment source.
+	 *
+	 * @param string $sourceSlug The payment source slug.
+	 *
+	 * @return list<array{terminalId: string, label: string, status: string}>|null The terminals (empty for a
+	 *                                                                              binding without them), or
+	 *                                                                              null when no payment source
+	 *                                                                              has that slug.
+	 *
+	 * @throws PaymentProviderException When the provider is unreachable or errors.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function listTerminals(string $sourceSlug): ?array {
+		try {
+			$source = $this->resolveSource(sourceSlug: $sourceSlug);
+		} catch (PaymentSourceMissingException) {
+			return null;
+		}
+
+		$configuration = ($source->getObject()['configuration'] ?? []);
+
+		return $this->resolveProvider(configuration: $configuration)->listTerminals(sourceConfiguration: $configuration);
+	}//end listTerminals()
+
+	/**
 	 * Validate the create-payment request shape (REQ-LPP-001).
 	 *
 	 * @param array $payload The create-payment envelope.
@@ -322,6 +341,10 @@ class PaymentIntentService {
 
 		if (empty($payload['description']) === true) {
 			throw new InvalidArgumentException('`description` is required.');
+		}
+
+		if (($payload['method'] ?? null) === 'pointofsale' && trim((string)($payload['terminalId'] ?? '')) === '') {
+			throw new InvalidArgumentException('`terminalId` is required for a point-of-sale payment.');
 		}
 
 	}//end validateCreateRequest()
@@ -364,7 +387,7 @@ class PaymentIntentService {
 				$selector = ', slug "' . $sourceSlug . '"';
 			}
 
-			throw new PaymentProviderException(
+			throw new PaymentSourceMissingException(
 				message: $this->l->t('No active payment source is configured') . ' (register "openconnector", '
 					. 'schema "source", type "payment"' . $selector . '). '
 					. 'Configure one before using the payment connector.'
@@ -466,4 +489,16 @@ class PaymentIntentService {
 		);
 
 	}//end emitStatusEvent()
+
+	/**
+	 * Where a payment intent is saved: the intent schema, under its uuid.
+	 *
+	 * @param string|null $uuid The uuid of the object, or null for a new one.
+	 *
+	 * @return ObjectSaveOptions
+	 */
+	private function intentSaveOptions(?string $uuid = null): ObjectSaveOptions {
+		return RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_PAYMENT_INTENT, uuid: $uuid);
+
+	}//end intentSaveOptions()
 }//end class

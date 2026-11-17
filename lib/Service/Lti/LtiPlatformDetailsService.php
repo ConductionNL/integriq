@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Lti;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
@@ -40,7 +41,7 @@ use OCP\IURLGenerator;
  *
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-an-administrator-can-give-a-tool-the-platform-details-it-needs-req-ltil-004
  */
-class LtiPlatformDetailsService {
+class LtiPlatformDetailsService implements ToolPlatformDetailsInterface {
 
 	/**
 	 * Constructor.
@@ -74,8 +75,7 @@ class LtiPlatformDetailsService {
 		try {
 			$tool = $this->orObjectService->find(
 				id: $toolUuid,
-				register: 'integriq',
-				schema: 'lti_tool',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'lti_tool'),
 				_rbac: false,
 				_multitenancy: false
 			);
