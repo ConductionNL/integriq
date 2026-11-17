@@ -33,6 +33,7 @@ namespace OCA\Integriq\Service\Kiss;
 
 use OCA\Integriq\Event\CallEvent;
 use OCA\Integriq\Exception\CallEventNotFoundException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -90,11 +91,9 @@ class CallEventLog {
 				'at'              => $event->at,
 				'durationSeconds' => max(0, $event->durationSeconds),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA),
 			_rbac: false,
-			// Unscoped: system write of a telephony event delivered by the CTI webhook, no user session.
-			_multitenancy: false,
+			_multitenancy: false
 		);
 
 	}//end record()

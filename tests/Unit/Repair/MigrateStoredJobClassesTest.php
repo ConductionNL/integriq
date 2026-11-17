@@ -34,6 +34,7 @@ use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests the stored-jobClass rewrite: it moves stale values, leaves everything
@@ -93,7 +94,10 @@ class MigrateStoredJobClassesTest extends TestCase {
 		$orObjectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register = null, $schema = null, $uuid = null) use (&$saved) {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saved) {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
+					$uuid = $options->uuid;
 					$saved = [$object, $register, $schema, $uuid];
 					$this->assertSame(
 						'OCA\\Integriq\\Action\\SynchronizationAction',
@@ -212,7 +216,10 @@ class MigrateStoredJobClassesTest extends TestCase {
 
 		$savedUuids = [];
 		$orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null) use (&$savedUuids) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$savedUuids) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$savedUuids[] = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, (string)$uuid);
 			}
@@ -249,7 +256,10 @@ class MigrateStoredJobClassesTest extends TestCase {
 
 		$savedUuids = [];
 		$orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null) use (&$savedUuids) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$savedUuids) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($uuid === 'bad-uuid') {
 					throw new \RuntimeException('write rejected');
 				}

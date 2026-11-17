@@ -29,6 +29,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * A miss reads as null; anything else reaches the caller; lists keep their total.
@@ -74,7 +75,13 @@ class ExecutionTraceServiceLookupTest extends TestCase {
 		$entity = new ObjectEntity();
 		$entity->setObject(['traceId' => 't-1', 'status' => 'success']);
 		$this->objects->expects($this->once())->method('find')
-			->with('t-1', 'integriq', 'execution_trace', false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 't-1',
+				'register' => 'integriq',
+				'schema' => 'execution_trace',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))
 			->willReturn($entity);
 
 		$this->assertSame(['traceId' => 't-1', 'status' => 'success'], $this->service->findForExport('t-1'));
@@ -99,7 +106,13 @@ class ExecutionTraceServiceLookupTest extends TestCase {
 	public function testFindKeepsAccessChecksOn(): void {
 		$entity = new ObjectEntity();
 		$this->objects->expects($this->once())->method('find')
-			->with('t-2', 'integriq', 'execution_trace', true, true)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 't-2',
+				'register' => 'integriq',
+				'schema' => 'execution_trace',
+				'_rbac' => true,
+				'_multitenancy' => true,
+			]))
 			->willReturn($entity);
 
 		$this->assertSame($entity, $this->service->find('t-2'));

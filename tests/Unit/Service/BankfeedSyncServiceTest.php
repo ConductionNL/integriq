@@ -38,6 +38,7 @@ use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the SCA consent flow, account discovery, and the scheduled bankfeed sync.
@@ -155,7 +156,10 @@ class BankfeedSyncServiceTest extends TestCase {
 	 */
 	private function captureSaves(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$key = (string)$schema;
 				$this->saved[$key][] = $object;
 				return $this->entity($object, ($uuid ?? 'saved-uuid-' . count($this->saved[$key])));

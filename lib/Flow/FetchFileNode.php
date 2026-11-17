@@ -72,7 +72,7 @@ namespace OCA\Integriq\Flow;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
@@ -87,7 +87,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
-class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, FetchFileNodeInterface {
+class FetchFileNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, FetchFileNodeInterface {
 	use FlowNodePaletteDefaults;
 
 	use SynchronizationLogActions;
@@ -255,8 +255,8 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 
 		return $this->flowOwner->runAs(
 			user: $owner,
-			callback: function () use ($items, $config, $context) {
-				return $this->fetchForEachItem(items: $items, config: $config, context: $context);
+			callback: function () use ($call) {
+				return $this->fetchForEachItem(call: $call);
 			}
 		);
 
@@ -269,15 +269,16 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * service dispatches and returns — so a concurrency pool here would
 	 * parallelise the DISPATCH and buy nothing, while reordering failures.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	private function fetchForEachItem(array $items, array $config, array $context): array {
+	private function fetchForEachItem(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$rule = trim((string)$config['rule']);
 		$idPath = trim((string)($config['objectIdPath'] ?? ''));
 		if ($idPath === '') {

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Targets and records are read and written in integriq's register, as the system.
@@ -101,7 +102,12 @@ class RegistrationStoreTest extends TestCase {
 	public function testARecordIsSavedWithoutNulls(): void {
 		$objects = $this->objects(['saveObject']);
 		$objects->expects($this->once())->method('saveObject')
-			->with(['target' => 't', 'state' => 'started'], 'integriq', 'registrationRecord', 'r-1')
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['target' => 't', 'state' => 'started'],
+				'register' => 'integriq',
+				'schema' => 'registrationRecord',
+				'uuid' => 'r-1',
+			]))
 			->willReturn($this->entity('r-1', []));
 
 		$this->assertSame('r-1', (new RegistrationStore($objects))->saveRecord(['target' => 't', 'state' => 'started', 'lastError' => null], 'r-1'));

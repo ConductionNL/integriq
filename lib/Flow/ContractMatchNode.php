@@ -57,7 +57,7 @@ namespace OCA\Integriq\Flow;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
@@ -71,7 +71,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#1-engine-steps-each-a-thin-adapter-over-a-kept-service
  */
-class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, ContractMatchNodeInterface {
+class ContractMatchNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, ContractMatchNodeInterface {
 	use FlowNodePaletteDefaults;
 
 	/**
@@ -247,8 +247,8 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 
 		return $this->flowOwner->runAs(
 			user: $owner,
-			callback: function () use ($items, $config, $context) {
-				return $this->matchPage(items: $items, config: $config, context: $context);
+			callback: function () use ($call) {
+				return $this->matchPage(call: $call);
 			}
 		);
 
@@ -257,9 +257,7 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	/**
 	 * Collect the page's origin ids, look them all up ONCE, decide per item.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
@@ -267,7 +265,10 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	private function matchPage(array $items, array $config, array $context): array {
+	private function matchPage(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$reference = trim((string)$config['synchronization']);
 		$idPosition = $this->pathOrDefault(config: $config, key: 'idPosition', default: self::DEFAULT_ID_POSITION);
 		$hashPosition = trim((string)($config['hashPosition'] ?? ''));

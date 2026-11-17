@@ -103,6 +103,7 @@ import RocketLaunchOutline from 'vue-material-design-icons/RocketLaunchOutline.v
 import RulerSquare from 'vue-material-design-icons/RulerSquare.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SchoolOutline from 'vue-material-design-icons/SchoolOutline.vue'
+import SendCheckOutline from 'vue-material-design-icons/SendCheckOutline.vue'
 import SendOutline from 'vue-material-design-icons/SendOutline.vue'
 import ServerNetwork from 'vue-material-design-icons/ServerNetwork.vue'
 import ShieldCheckOutline from 'vue-material-design-icons/ShieldCheckOutline.vue'
@@ -222,6 +223,7 @@ export default {
 	RulerSquare,
 	ScaleBalance,
 	SchoolOutline,
+	SendCheckOutline,
 	SendOutline,
 	ServerNetwork,
 	ShieldCheckOutline,

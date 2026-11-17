@@ -40,6 +40,7 @@ use OCP\Notification\IManager as INotificationManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Unit tests for listing approval requests and the edges around them.
@@ -117,12 +118,12 @@ class ApprovalServiceListingTest extends TestCase {
 	public function testAResumedRunsOutcomeIsWrittenBackOntoTheRequest(): void {
 		$request = $this->request('r5', 'inkoop', 'piet');
 		$stored = $this->request('r5', 'inkoop', 'piet');
-		$this->objects->expects($this->once())->method('saveObject')->with(
-			['approverGroup' => 'inkoop', 'requesterUserId' => 'piet', 'status' => 'approved', 'resumeResult' => 'superseded'],
-			'integriq',
-			'approval_request',
-			'r5'
-		)->willReturn($stored);
+		$this->objects->expects($this->once())->method('saveObject')->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['approverGroup' => 'inkoop', 'requesterUserId' => 'piet', 'status' => 'approved', 'resumeResult' => 'superseded'],
+				'register' => 'integriq',
+				'schema' => 'approval_request',
+				'uuid' => 'r5',
+			]))->willReturn($stored);
 
 		$this->assertSame($stored, $this->service()->recordResumeResult(approvalRequest: $request, resumeResult: 'superseded'));
 	}//end testAResumedRunsOutcomeIsWrittenBackOntoTheRequest()

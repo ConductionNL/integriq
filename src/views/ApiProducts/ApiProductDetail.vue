@@ -684,7 +684,7 @@ export default {
 		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
 		 */
 		async saveChannel() {
-			const result = withChannel(this.productChannels, this.newChannel, this.editingChannel)
+			const result = withChannel(this.productChannels, { draft: this.newChannel, editing: this.editingChannel })
 			if (result.error) {
 				this.channelError = {
 					slug: t('integriq', 'A slug is lower-case letters, digits and dashes, starting with a letter or digit.'),

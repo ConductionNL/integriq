@@ -56,7 +56,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
  */
-class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
+class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider implements SharePointOnlineAdapterInterface {
 
 	/**
 	 * NC Files folder name documents are persisted under.
