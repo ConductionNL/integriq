@@ -142,6 +142,8 @@ use OCA\Integriq\Service\FlowGraphMigrationService;
 use OCA\Integriq\Service\FlowGraphMigrationServiceInterface;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\FlowRunnerServiceInterface;
+use OCA\Integriq\Service\Format\ArrayToXml;
+use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Forms\FormsSyncAdapterInterface;
 use OCA\Integriq\Service\FscCallService;
@@ -172,6 +174,8 @@ use OCA\Integriq\Service\Kiss\CtiEventIntake;
 use OCA\Integriq\Service\Kiss\CtiEventIntakeInterface;
 use OCA\Integriq\Service\ListenerSchemaResolver;
 use OCA\Integriq\Service\ListenerSchemaResolverInterface;
+use OCA\Integriq\Service\LookupAllowlist;
+use OCA\Integriq\Service\LookupAllowlistInterface;
 use OCA\Integriq\Service\Lti\LtiAgsService;
 use OCA\Integriq\Service\Lti\LtiAgsServiceInterface;
 use OCA\Integriq\Service\Lti\LtiKeyService;
@@ -531,6 +535,8 @@ class ServiceRegistrarTest extends TestCase {
 		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
 		PhoneNumberNormaliserInterface::class => E164PhoneNumberNormaliser::class,
 		CloudEventEmitterInterface::class => EventService::class,
+		LookupAllowlistInterface::class => LookupAllowlist::class,
+		XmlEncoderInterface::class => ArrayToXml::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 
