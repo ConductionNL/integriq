@@ -28,8 +28,10 @@ namespace OCA\Integriq\Service\Exchange;
 use DateTime;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Job\ExchangeJobAction;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -249,9 +251,7 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 			$existing = $this->findMapping(slug: $slug);
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MAPPING,
-				uuid: $existing?->getUuid(),
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MAPPING, uuid: $existing?->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -334,8 +334,7 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 		try {
 			return $this->objectService->find(
 				id: $jobId,
-				register: self::REGISTER,
-				schema: self::SCHEMA_JOB,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_JOB),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -359,9 +358,7 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 	public function saveJob(array $data, ?string $uuid = null): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_JOB,
-			uuid: $uuid,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_JOB, uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -384,6 +381,7 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: an app's own exchange mapping, read for a listener or the runner without a session.
 			_multitenancy: false
 		);
 
@@ -618,6 +616,7 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: migration lookup run as the system, no user session.
 			_multitenancy: false
 		);
 

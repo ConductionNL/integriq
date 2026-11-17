@@ -38,6 +38,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the OSO export/import/retour orchestration.
@@ -122,7 +123,10 @@ class OsoServiceTest extends TestCase {
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$key = (string)$schema;
 				$this->saved[$key][] = ['object' => $object, 'register' => $register, 'uuid' => $uuid];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'saved-uuid-' . count($this->saved[$key])));
@@ -218,7 +222,8 @@ class OsoServiceTest extends TestCase {
 	}//end testTranslationFailureNeverPersistsARecord()
 
 	/**
-	 * receiveImport() persists an import record and dispatches OsoDossierReceivedEvent.
+	 * receiveImport() persists an import record and dispatches OsoDossierReceivedEvent
+	 * carrying the categories as sent, the attachment references and the draft profile.
 	 *
 	 * @return void
 	 */
@@ -231,6 +236,13 @@ class OsoServiceTest extends TestCase {
 		$this->assertInstanceOf(OsoDossierReceivedEvent::class, $event);
 		$this->assertSame('12AB', $event->getSourceSchoolBrin());
 		$this->assertSame('eck-id-seed-001', $event->getLearnerEckId());
+		$this->assertSame(['basisgegevens', 'onderwijskundig-rapport'], array_column($event->getCategories(), 'category'));
+		$this->assertSame([true, false], array_column($event->getCategories(), 'included'));
+		$this->assertSame(['nc:files/oso/onderwijskundig-rapport.pdf'], $event->getAttachmentRefs());
+		$this->assertSame(
+			['givenName' => 'Fatima', 'familyName' => 'El Amrani', 'birthDate' => '2015-04-12', 'eckId' => 'eck-id-seed-001', 'schoolId' => '12AB'],
+			$event->getDraftProfile()
+		);
 
 		$saved = $this->saved[OsoService::SCHEMA_MESSAGE][0]['object'];
 		$this->assertSame('import', $saved['direction']);

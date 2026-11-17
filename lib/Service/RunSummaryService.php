@@ -228,7 +228,6 @@ class RunSummaryService implements RunSummaryServiceInterface {
 					'offset' => ($page * self::PAGE_SIZE),
 				],
 				_rbac: false,
-				_multitenancy: false,
 			);
 			$entities = ($result['results'] ?? $result);
 

@@ -33,6 +33,7 @@ namespace OCA\Integriq\Service;
 use DateInterval;
 use DateTime;
 use Exception;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUserSession;
@@ -77,7 +78,8 @@ class SynchronizationApprovalGate {
 	public function resolve(string $synchronizationId, ?string $bypassApprovalId): ?ObjectEntity {
 		if ($bypassApprovalId !== null) {
 			try {
-				$candidate = $this->approvalService->find(id: $bypassApprovalId);
+				// System read: the engine resolves the id its caller already authorised, and checks below that it belongs to this synchronization.
+				$candidate = $this->approvalService->find(id: $bypassApprovalId, asSystem: true);
 			} catch (Exception $e) {
 				return null;
 			}
@@ -152,8 +154,7 @@ class SynchronizationApprovalGate {
 
 		$record = $this->objectService->saveObject(
 			object: $object,
-			register: ApprovalService::REGISTER,
-			schema: ApprovalService::SCHEMA
+			options: RegisterSave::options(register: ApprovalService::REGISTER, schema: ApprovalService::SCHEMA)
 		);
 
 		return $this->approvalService->announce(approvalRequest: $record);
@@ -210,9 +211,7 @@ class SynchronizationApprovalGate {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: ApprovalService::REGISTER,
-			schema: ApprovalService::SCHEMA,
-			uuid: $approvalRequest->getUuid()
+			options: RegisterSave::options(register: ApprovalService::REGISTER, schema: ApprovalService::SCHEMA, uuid: $approvalRequest->getUuid())
 		);
 
 	}//end markConsumed()
@@ -238,9 +237,7 @@ class SynchronizationApprovalGate {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: ApprovalService::REGISTER,
-			schema: ApprovalService::SCHEMA,
-			uuid: $approvalRequest->getUuid()
+			options: RegisterSave::options(register: ApprovalService::REGISTER, schema: ApprovalService::SCHEMA, uuid: $approvalRequest->getUuid())
 		);
 
 	}//end markSuperseded()

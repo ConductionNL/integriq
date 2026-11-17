@@ -3076,6 +3076,68 @@
                 },
                 "security": []
             }
+        },
+        "/cloudevents/sources/{source}": {
+            "post": {
+                "operationId": "cloud-event-receiver-receive",
+                "summary": "Receive one CloudEvent from a source",
+                "description": "Receive one CloudEvent 1.0, in structured or binary content mode, from a source. The source's webhook signature or credential is checked first. A repeated id from the same source answers 200 and is not routed again.",
+                "tags": [
+                    "cloudevents"
+                ],
+                "responses": {
+                    "202": {
+                        "description": "The event was stored and routed to the matching subscriptions.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "The same source sent this id before; it was not routed again.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "source",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "security": []
+            }
         }
     },
     "components": {
@@ -3235,6 +3297,10 @@
         }
     },
     "tags": [
+        {
+            "name": "cloudevents",
+            "description": "Receives CloudEvents from outside systems"
+        },
         {
             "name": "cti",
             "description": "Receives inbound call events from a phone system"

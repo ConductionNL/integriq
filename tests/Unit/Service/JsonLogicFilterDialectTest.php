@@ -30,6 +30,7 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * `evaluateFilters`/`doesEventMatchSubscription` are private, so the
@@ -100,6 +101,7 @@ class JsonLogicFilterDialectTest extends TestCase {
 		$savedMessages = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$savedMessages) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$savedMessages[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
