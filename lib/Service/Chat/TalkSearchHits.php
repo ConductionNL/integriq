@@ -48,9 +48,11 @@ class TalkSearchHits {
 	 * @spec openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-nextcloud-talk-is-a-searchable-source-as-the-requesting-person-req-dcc-011
 	 */
 	public function fromEntries(array $entries, ?string $from, ?string $to): array {
+		$start = $this->dayStart(day: $from, offsetDays: 0, unbounded: PHP_INT_MIN);
+		$end = $this->dayStart(day: $to, offsetDays: 1, unbounded: PHP_INT_MAX);
 		$hits = [];
 		foreach ($entries as $entry) {
-			$hit = $this->hit(entry: $entry, from: $from, to: $to);
+			$hit = $this->hit(entry: $entry, start: $start, end: $end);
 			if ($hit !== null) {
 				$hits[] = $hit;
 			}
@@ -62,23 +64,19 @@ class TalkSearchHits {
 	/**
 	 * A REQ-DCC-004 hit from one of Talk's search entries, inside the period.
 	 *
-	 * @param mixed       $entry The `SearchResultEntry`.
-	 * @param string|null $from  Start of the period, Y-m-d.
-	 * @param string|null $to    End of the period, Y-m-d.
+	 * @param mixed $entry The `SearchResultEntry`.
+	 * @param int   $start Start of the period (inclusive), a UTC timestamp.
+	 * @param int   $end   End of the period (exclusive), a UTC timestamp.
 	 *
 	 * @return array<string,mixed>|null The hit, or null when outside the period or unreadable.
 	 */
-	private function hit(mixed $entry, ?string $from, ?string $to): ?array {
-		if (($entry instanceof JsonSerializable) === false) {
-			return null;
-		}
-
-		$data = (array)$entry->jsonSerialize();
+	private function hit(mixed $entry, int $start, int $end): ?array {
+		$data = $this->entryData(entry: $entry);
 		$attributes = (array)($data['attributes'] ?? []);
 		$token = (string)($attributes['conversation'] ?? '');
 		$messageId = (string)($attributes['messageId'] ?? '');
 		$timestamp = (int)($attributes['timestamp'] ?? 0);
-		if ($token === '' || $messageId === '' || $this->inPeriod(timestamp: $timestamp, from: $from, to: $to) === false) {
+		if (in_array('', [$token, $messageId], true) === true || $timestamp < $start || $timestamp >= $end) {
 			return null;
 		}
 
@@ -101,37 +99,37 @@ class TalkSearchHits {
 	}//end hit()
 
 	/**
-	 * Whether a message time falls inside the period (both ends whole days, UTC).
+	 * The serialised data of a search entry.
 	 *
-	 * @param int         $timestamp The message time.
-	 * @param string|null $from      Start of the period, Y-m-d.
-	 * @param string|null $to        End of the period, Y-m-d.
+	 * @param mixed $entry The `SearchResultEntry`.
 	 *
-	 * @return bool True when inside.
+	 * @return array<string,mixed> Its data, or none when the entry cannot be serialised.
 	 */
-	private function inPeriod(int $timestamp, ?string $from, ?string $to): bool {
-		$start = $this->dayStart(day: $from, offsetDays: 0);
-		$end = $this->dayStart(day: $to, offsetDays: 1);
+	private function entryData(mixed $entry): array {
+		if (($entry instanceof JsonSerializable) === false) {
+			return [];
+		}
 
-		return ($start === null || $timestamp >= $start) && ($end === null || $timestamp < $end);
-	}//end inPeriod()
+		return (array)$entry->jsonSerialize();
+	}//end entryData()
 
 	/**
 	 * The start of a day, UTC, moved by whole days.
 	 *
-	 * @param string|null $day        The day, Y-m-d; null or unreadable for no bound.
-	 * @param int         $offsetDays Days to add.
+	 * @param mixed $day        The day, Y-m-d; null or unreadable for no bound.
+	 * @param int   $offsetDays Days to add.
+	 * @param int   $unbounded  The value for no bound.
 	 *
-	 * @return int|null The timestamp, or null for no bound.
+	 * @return int The timestamp, or `unbounded` for no bound.
 	 */
-	private function dayStart(?string $day, int $offsetDays): ?int {
-		if (is_string($day) === false || preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) !== 1) {
-			return null;
+	private function dayStart(mixed $day, int $offsetDays, int $unbounded): int {
+		$start = false;
+		if (is_string($day) === true && preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) === 1) {
+			$start = strtotime($day . 'T00:00:00+00:00');
 		}
 
-		$start = strtotime($day . 'T00:00:00+00:00');
 		if ($start === false) {
-			return null;
+			return $unbounded;
 		}
 
 		return $start + ($offsetDays * 86400);

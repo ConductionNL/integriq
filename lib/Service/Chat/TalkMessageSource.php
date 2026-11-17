@@ -196,7 +196,7 @@ class TalkMessageSource {
 	 */
 	private function entries(DocumentSearchRequestedEvent $search): ?array {
 		$user = $this->users->get($search->getUserId());
-		if ($user === null || trim($search->getTerms()) === '' || $search->getLimit() < 1) {
+		if ($this->isSearchable(user: $user, search: $search) === false) {
 			return [];
 		}
 
@@ -211,6 +211,18 @@ class TalkMessageSource {
 			return null;
 		}
 	}//end entries()
+
+	/**
+	 * Whether a search can run: a known person, terms and a positive limit.
+	 *
+	 * @param mixed                        $user   The person, or null when unknown.
+	 * @param DocumentSearchRequestedEvent $search The search.
+	 *
+	 * @return bool True when Talk should be asked.
+	 */
+	private function isSearchable(mixed $user, DocumentSearchRequestedEvent $search): bool {
+		return $user !== null && trim($search->getTerms()) !== '' && $search->getLimit() >= 1;
+	}//end isSearchable()
 
 	/**
 	 * Fetch a Talk hit with its conversation, as the person.
@@ -232,45 +244,75 @@ class TalkMessageSource {
 			return null;
 		}
 
+		return $this->fetchFromRoom(token: $match[1], messageId: $match[2], userId: $userId, context: $context);
+	}//end fetch()
+
+	/**
+	 * Fetch a Talk message with its conversation from the room the token names, as the person.
+	 *
+	 * @param string $token     The conversation token.
+	 * @param string $messageId The message id.
+	 * @param string $userId    The person fetching.
+	 * @param int    $context   Messages to read on each side of the hit.
+	 *
+	 * @return array<string,mixed>|null `{fileName, mimeType, content, thread}`, `{error}`, or null.
+	 */
+	private function fetchFromRoom(string $token, string $messageId, string $userId, int $context): ?array {
 		if ($this->isAvailable() === false) {
 			return ['error' => 'talk-not-installed'];
 		}
 
 		try {
-			$room = $this->container->get(self::MANAGER_CLASS)->getRoomForUserByToken($match[1], $userId);
+			$room = $this->container->get(self::MANAGER_CLASS)->getRoomForUserByToken($token, $userId);
 		} catch (Throwable) {
 			return ['error' => 'not-a-participant'];
 		}
 
-		$roomId = (string)$room->getId();
-		$hit = $this->hitComment(messageId: $match[2], roomId: $roomId);
+		$hit = $this->hitComment(messageId: $messageId, roomId: (string)$room->getId());
 		if ($hit === null) {
 			return null;
 		}
 
+		$thread = $this->thread(room: $room, token: $token, hit: $hit, hitId: $messageId, userId: $userId, context: $context);
+
+		return $this->transcript->answer(thread: $thread, fetchedAt: gmdate(DATE_ATOM));
+	}//end fetchFromRoom()
+
+	/**
+	 * The thread around a hit: the messages on each side in time order, and the room's participants.
+	 *
+	 * @param object   $room    Talk's Room.
+	 * @param string   $token   The conversation token.
+	 * @param IComment $hit     The hit's own comment.
+	 * @param string   $hitId   The hit's message id.
+	 * @param string   $userId  The person fetching.
+	 * @param int      $context Messages to read on each side of the hit.
+	 *
+	 * @return array<string,mixed> The thread.
+	 */
+	private function thread(object $room, string $token, IComment $hit, string $hitId, string $userId, int $context): array {
+		$roomId = (string)$room->getId();
 		$labels = $this->participants(room: $room);
 		$messages = array_merge(
-			array_reverse($this->around(roomId: $roomId, messageId: (int)$match[2], direction: 'desc', context: $context)),
+			array_reverse($this->around(roomId: $roomId, messageId: (int)$hitId, direction: 'desc', context: $context)),
 			[$hit],
-			$this->around(roomId: $roomId, messageId: (int)$match[2], direction: 'asc', context: $context)
+			$this->around(roomId: $roomId, messageId: (int)$hitId, direction: 'asc', context: $context)
 		);
 
-		$thread = [
+		return [
 			'platform' => self::PLATFORM,
 			'conversation' => [
-				'id' => $match[1],
+				'id' => $token,
 				'name' => (string)$room->getDisplayName($userId),
 				'kind' => (self::ROOM_KINDS[(int)$room->getType()] ?? 'group'),
 			],
 			'participants' => array_values($labels),
 			'messages' => array_map(
-				fn (IComment $comment): array => $this->message(comment: $comment, labels: $labels, hitId: $match[2]),
+				fn (IComment $comment): array => $this->message(comment: $comment, labels: $labels, hitId: $hitId),
 				$messages
 			),
 		];
-
-		return $this->transcript->answer(thread: $thread, fetchedAt: gmdate(DATE_ATOM));
-	}//end fetch()
+	}//end thread()
 
 	/**
 	 * The hit's own comment, only when it is a chat message of this conversation.
@@ -290,12 +332,24 @@ class TalkMessageSource {
 			return null;
 		}
 
-		if ($comment->getObjectType() !== 'chat' || (string)$comment->getObjectId() !== $roomId || $this->isKept(comment: $comment) === false) {
+		if ($this->isMessageOf(comment: $comment, roomId: $roomId) === false) {
 			return null;
 		}
 
 		return $comment;
 	}//end hitComment()
+
+	/**
+	 * Whether a comment is a kept chat message of this conversation.
+	 *
+	 * @param IComment $comment The comment.
+	 * @param string   $roomId  The conversation's id.
+	 *
+	 * @return bool True when it belongs to the conversation and is kept.
+	 */
+	private function isMessageOf(IComment $comment, string $roomId): bool {
+		return $comment->getObjectType() === 'chat' && (string)$comment->getObjectId() === $roomId && $this->isKept(comment: $comment) === true;
+	}//end isMessageOf()
 
 	/**
 	 * The chat messages on one side of the hit, nearest first.

@@ -358,7 +358,7 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements Doc
 		$read = $this->threads->read(
 			handle: $handle,
 			context: $context,
-			get: fn (string $path): ?array => $this->brokeredRequest(method: 'GET', path: $path, credentialId: $credentialId),
+			get: $this->delegatedGet(credentialId: $credentialId),
 		);
 		if ($read === null || isset($read['thread']) === false) {
 			return $read;
@@ -366,6 +366,17 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements Doc
 
 		return $this->transcript->answer(thread: $read['thread'], fetchedAt: gmdate(DATE_ATOM));
 	}//end fetchThread()
+
+	/**
+	 * A Graph GET transport that runs with one broker credential.
+	 *
+	 * @param string $credentialId The broker credential.
+	 *
+	 * @return callable `fn (string $path): ?array{status: int, body: string}`.
+	 */
+	private function delegatedGet(string $credentialId): callable {
+		return fn (string $path): ?array => $this->brokeredRequest(method: 'GET', path: $path, credentialId: $credentialId);
+	}//end delegatedGet()
 
 	/**
 	 * The broker credential holding this person's delegated Microsoft 365 grant.

@@ -94,6 +94,18 @@ class DocumentFetchRequestedListener implements IEventListener {
 			return;
 		}
 
+		$this->answer(event: $event, audit: $audit);
+	}//end handle()
+
+	/**
+	 * Fetch for an admitted request and write the answer; a failure is logged, never thrown.
+	 *
+	 * @param DocumentFetchRequestedEvent $event The fetch.
+	 * @param array<string,mixed>         $audit Who asked and for which handle.
+	 *
+	 * @return void
+	 */
+	private function answer(DocumentFetchRequestedEvent $event, array $audit): void {
 		try {
 			$fetched = $this->fetch(event: $event);
 			if ($fetched === null) {
@@ -105,7 +117,7 @@ class DocumentFetchRequestedListener implements IEventListener {
 		} catch (Throwable $e) {
 			$this->logger->warning('Integriq: a document fetch failed', $audit + ['error' => $e->getMessage()]);
 		}
-	}//end handle()
+	}//end answer()
 
 	/**
 	 * The answer for the handle: a Talk or Teams chat hit with its thread, else a drive item.

@@ -59,6 +59,14 @@ class TeamsThreadReader {
 	private const GRAPH_ORIGIN = 'https://graph.microsoft.com';
 
 	/**
+	 * The ids each handle kind carries after its kind segment, in handle order.
+	 */
+	private const HANDLE_SHAPES = [
+		'channel' => ['teamId', 'channelId', 'rootId', 'messageId'],
+		'chat'    => ['chatId', 'messageId'],
+	];
+
+	/**
 	 * Whether a handle names a Teams chat message.
 	 *
 	 * @param string $handle The handle.
@@ -108,19 +116,12 @@ class TeamsThreadReader {
 		}
 
 		$segments = array_map('rawurldecode', explode(':', substr($handle, strlen(self::HANDLE_PREFIX))));
-		if (in_array('', $segments, true) === true) {
+		$shape = self::HANDLE_SHAPES[$segments[0]] ?? [];
+		if (in_array('', $segments, true) === true || $shape === [] || count($segments) !== count($shape) + 1) {
 			return null;
 		}
 
-		if ($segments[0] === 'channel' && count($segments) === 5) {
-			return ['kind' => 'channel', 'teamId' => $segments[1], 'channelId' => $segments[2], 'rootId' => $segments[3], 'messageId' => $segments[4]];
-		}
-
-		if ($segments[0] === 'chat' && count($segments) === 3) {
-			return ['kind' => 'chat', 'chatId' => $segments[1], 'messageId' => $segments[2]];
-		}
-
-		return null;
+		return ['kind' => $segments[0]] + array_combine($shape, array_slice($segments, 1));
 	}//end parse()
 
 	/**
@@ -137,10 +138,9 @@ class TeamsThreadReader {
 		$channel = $this->json(response: $get($base . '?$select=id,displayName'));
 		$root = $this->json(response: $get($base . '/messages/' . rawurlencode($parts['rootId'])));
 		$members = $this->json(response: $get($base . '/members'));
-		foreach ([$channel, $root, $members] as $answer) {
-			if (isset($answer['error']) === true) {
-				return $answer;
-			}
+		$error = $this->firstError(answers: [$channel, $root, $members]);
+		if ($error !== null) {
+			return $error;
 		}
 
 		$replies = $this->pages(first: $base . '/messages/' . rawurlencode($parts['rootId']) . '/replies?$top=' . self::PAGE_SIZE, get: $get, stop: null);
@@ -148,17 +148,11 @@ class TeamsThreadReader {
 			return $replies;
 		}
 
-		$messages = $this->window(raw: array_merge([$root], $replies['value']), hitId: $parts['messageId'], context: $context);
-		if ($messages === null) {
-			return null;
-		}
-
-		return ['thread' => [
-			'platform' => 'microsoft-teams',
-			'conversation' => ['id' => $parts['channelId'], 'name' => (string)($channel['displayName'] ?? ''), 'kind' => 'channel'],
-			'participants' => $this->participants(members: $members),
-			'messages' => $messages,
-		]];
+		return $this->thread(
+			conversation: ['id' => $parts['channelId'], 'name' => (string)($channel['displayName'] ?? ''), 'kind' => 'channel'],
+			members: $members,
+			messages: $this->window(raw: array_merge([$root], $replies['value']), hitId: $parts['messageId'], context: $context)
+		);
 	}//end channel()
 
 	/**
@@ -174,42 +168,89 @@ class TeamsThreadReader {
 		$base = '/v1.0/chats/' . rawurlencode($parts['chatId']);
 		$chat = $this->json(response: $get($base . '?$select=id,topic,chatType'));
 		$members = $this->json(response: $get($base . '/members'));
-		foreach ([$chat, $members] as $answer) {
-			if (isset($answer['error']) === true) {
-				return $answer;
-			}
+		$error = $this->firstError(answers: [$chat, $members]);
+		if ($error !== null) {
+			return $error;
 		}
 
-		// Newest first: once the hit is seen, `context` kept messages after it in the list are the older side.
 		$hitId = $parts['messageId'];
-		$stop = function (array $seen) use ($hitId, $context): bool {
+		$page = $this->pages(
+			first: $base . '/messages?$top=' . self::PAGE_SIZE . '&$orderby=createdDateTime%20desc',
+			get: $get,
+			stop: $this->stopOnceContextRead(hitId: $hitId, context: $context)
+		);
+		if (isset($page['error']) === true) {
+			return $page;
+		}
+
+		return $this->thread(
+			conversation: [
+				'id' => $parts['chatId'],
+				'name' => (string)($chat['topic'] ?? ''),
+				'kind' => $this->chatKind(chatType: (string)($chat['chatType'] ?? '')),
+			],
+			members: $members,
+			messages: $this->window(raw: $page['value'], hitId: $hitId, context: $context)
+		);
+	}//end chat()
+
+	/**
+	 * The paging stop for a newest-first chat: once the hit is seen, `context`
+	 * kept messages after it in the list are the older side.
+	 *
+	 * @param string $hitId   The hit's message id.
+	 * @param int    $context Messages on each side.
+	 *
+	 * @return callable `fn (array $seen): bool`, true when enough was read.
+	 */
+	private function stopOnceContextRead(string $hitId, int $context): callable {
+		return function (array $seen) use ($hitId, $context): bool {
 			$kept = array_values(array_filter($seen, [$this, 'isKept']));
 			$ids = array_map(static fn (array $message): string => (string)($message['id'] ?? ''), $kept);
 			$position = array_search($hitId, $ids, true);
 
 			return $position !== false && (count($kept) - 1 - $position) >= $context;
 		};
-		$page = $this->pages(first: $base . '/messages?$top=' . self::PAGE_SIZE . '&$orderby=createdDateTime%20desc', get: $get, stop: $stop);
-		if (isset($page['error']) === true) {
-			return $page;
+	}//end stopOnceContextRead()
+
+	/**
+	 * The first error answer among several Graph answers.
+	 *
+	 * @param array<int,array<string,mixed>> $answers The decoded answers, in the order they were asked.
+	 *
+	 * @return array<string,mixed>|null The first `['error' => code]` answer, or null when none failed.
+	 */
+	private function firstError(array $answers): ?array {
+		foreach ($answers as $answer) {
+			if (isset($answer['error']) === true) {
+				return $answer;
+			}
 		}
 
-		$messages = $this->window(raw: $page['value'], hitId: $hitId, context: $context);
+		return null;
+	}//end firstError()
+
+	/**
+	 * A `['thread' => …]` answer, or null when the hit was not among the messages.
+	 *
+	 * @param array<string,string>                $conversation The conversation's id, name and kind.
+	 * @param array<string,mixed>                 $members      The decoded members answer.
+	 * @param array<int,array<string,mixed>>|null $messages     The windowed messages, or null.
+	 *
+	 * @return array<string,mixed>|null The thread, or null.
+	 */
+	private function thread(array $conversation, array $members, ?array $messages): ?array {
 		if ($messages === null) {
 			return null;
 		}
 
 		return ['thread' => [
 			'platform' => 'microsoft-teams',
-			'conversation' => [
-				'id' => $parts['chatId'],
-				'name' => (string)($chat['topic'] ?? ''),
-				'kind' => $this->chatKind(chatType: (string)($chat['chatType'] ?? '')),
-			],
+			'conversation' => $conversation,
 			'participants' => $this->participants(members: $members),
 			'messages' => $messages,
 		]];
-	}//end chat()
+	}//end thread()
 
 	/**
 	 * Read a paged collection, following Graph's next link, at most PAGE_CAP pages.
@@ -264,7 +305,7 @@ class TeamsThreadReader {
 	 */
 	private function json(?array $response): array {
 		$status = (int)($response['status'] ?? 0);
-		if ($status === 401 || $status === 403) {
+		if (in_array($status, [401, 403], true) === true) {
 			return ['error' => 'not-permitted'];
 		}
 
