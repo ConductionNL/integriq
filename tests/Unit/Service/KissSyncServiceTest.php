@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the KISS pull/push sync orchestration (cursor semantics, per-record
@@ -140,7 +141,10 @@ class KissSyncServiceTest extends TestCase {
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$key = (string)$schema;
 				$this->saved[$key][] = ['object' => $object, 'uuid' => $uuid];
 				return $this->entity($object, ($uuid ?? 'saved-uuid-' . count($this->saved[$key])));

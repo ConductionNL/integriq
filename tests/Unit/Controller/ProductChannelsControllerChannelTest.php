@@ -37,6 +37,7 @@ use OCP\IRequest;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * A channel is reached with the product's key, subscription and tier budget.
@@ -331,7 +332,8 @@ class ProductChannelsControllerChannelTest extends TestCase {
 		);
 		$objects->method('find')->willReturnCallback(fn ($id): ObjectEntity => $entity((string)$id, ($this->eventSubscriptions[$id] ?? [])));
 		$objects->method('deleteObject')->willReturnCallback(
-			function (?string $uuid = null): bool {
+			function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				$this->deleted[] = (string)$uuid;
 				return true;
 			}

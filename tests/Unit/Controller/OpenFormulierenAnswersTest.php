@@ -21,12 +21,12 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\OpenFormulierenController;
 use OCA\Integriq\Exception\OpenFormulierenException;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitterInterface;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\OpenFormulierenIntakeService;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\IL10N;
@@ -85,12 +85,20 @@ class OpenFormulierenAnswersTest extends TestCase {
 	private array $errors = [];
 
 	/**
+	 * The submit path.
+	 *
+	 * @var DestinationSubmitterInterface&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $submitter;
+
+	/**
 	 * Build the doubles.
 	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
 		parent::setUp();
+		$this->submitter = $this->createMock(DestinationSubmitterInterface::class);
 		$this->request = $this->createMock(IRequest::class);
 		$this->intake = $this->createMock(OpenFormulierenIntakeService::class);
 		$this->connection = $this->createMock(OpenFormulierenConnection::class);
@@ -119,7 +127,7 @@ class OpenFormulierenAnswersTest extends TestCase {
 			}
 		);
 
-		return new OpenFormulierenController('integriq', $this->request, $this->intake, $this->connection, $this->createMock(DsoConnectionAlerts::class), $this->session, $auth, $l, $logger);
+		return new OpenFormulierenController('integriq', $this->request, $this->intake, $this->connection, $this->createMock(DsoConnectionAlerts::class), $this->session, $auth, $l, $logger, $this->submitter);
 
 	}//end controller()
 
@@ -148,59 +156,51 @@ class OpenFormulierenAnswersTest extends TestCase {
 	}//end authenticated()
 
 	/**
-	 * The form uuid is read as a string when present, the auth block only
-	 * when it is an array, and the stored record answers with its id.
+	 * The slug, the submission id and the values are read leniently (a
+	 * non-array reads as empty), and OpenRegister's answer is answered 201.
 	 *
 	 * @return void
 	 */
-	public function testTheInboundPayloadIsReadAndTheRecordAnswered(): void {
-		$identity = $this->authenticated();
+	public function testTheInboundPayloadIsReadAndTheCaseAnswered(): void {
+		$this->authenticated();
 		$this->request->method('getParams')->willReturnOnConsecutiveCalls(
-			['form' => ['slug' => 's', 'uuid' => 42], 'auth' => ['bsn' => '1'], 'submission' => 'x', 'values' => 'v', 'attachments' => ['a']],
-			['form' => ['slug' => 's'], 'auth' => 'not-an-array']
+			['form' => ['slug' => 's', 'uuid' => 42], 'submission' => ['uuid' => 'of-1'], 'values' => ['v' => 1]],
+			['form' => ['slug' => 's'], 'submission' => 'x', 'values' => 'v']
 		);
 		$calls = [];
-		$this->intake->method('ingest')->willReturnCallback(
-			function (...$args) use (&$calls): ObjectEntity {
+		$this->submitter->method('submit')->willReturnCallback(
+			function (...$args) use (&$calls): array {
 				$calls[] = $args;
-				$record = new ObjectEntity();
-				$record->setUuid('rec-' . count($calls));
-				$record->setObject(['status' => 'mapped', 'id' => 'kept']);
-				return $record;
+				return ['reference' => 'R-' . count($calls)];
 			}
 		);
+		$this->intake->expects($this->never())->method('ingest');
 
 		$first = $this->controller()->inbound();
 		$second = $this->controller()->inbound();
 
-		$this->assertSame(['status' => 'mapped', 'id' => 'kept'], $first->getData());
-		$this->assertSame(200, $second->getStatus());
-		$this->assertSame(['s', '42', ['x'], ['v'], ['a'], ['bsn' => '1'], $identity], $calls[0]);
-		$this->assertSame(['s', null, [], [], [], null, $identity], $calls[1]);
+		$this->assertSame(['reference' => 'R-1'], $first->getData());
+		$this->assertSame(201, $second->getStatus());
+		$this->assertSame(['s', 'of-1', ['v' => 1], hash('sha256', '')], $calls[0]);
+		$this->assertSame(['s', '', ['v'], hash('sha256', '')], $calls[1]);
 
-	}//end testTheInboundPayloadIsReadAndTheRecordAnswered()
+	}//end testTheInboundPayloadIsReadAndTheCaseAnswered()
 
 	/**
-	 * A failing ingest, a non-record and a record without uuid answer 503.
+	 * A submit that fails unexpectedly answers 503 and logs it.
 	 *
 	 * @return void
 	 */
 	public function testAnUnstoredSubmissionAnswersFiveOhThree(): void {
 		$this->authenticated();
 		$this->request->method('getParams')->willReturn(['form' => ['slug' => 's'], 'submission' => ['uuid' => 'of-1']]);
-		$this->intake->method('ingest')->willReturnOnConsecutiveCalls(
-			$this->throwException(new RuntimeException('refused')),
-			'not a record',
-			new ObjectEntity()
-		);
+		$this->submitter->method('submit')->willThrowException(new RuntimeException('refused'));
 
-		foreach ([1, 2, 3] as $attempt) {
-			$response = $this->controller()->inbound();
-			$this->assertSame(503, $response->getStatus(), (string)$attempt);
-			$this->assertSame('submission_not_stored', $response->getData()['error'], (string)$attempt);
-		}
+		$response = $this->controller()->inbound();
 
-		$this->assertCount(3, $this->errors);
+		$this->assertSame(503, $response->getStatus());
+		$this->assertSame('submission_not_stored', $response->getData()['error']);
+		$this->assertCount(1, $this->errors);
 
 	}//end testAnUnstoredSubmissionAnswersFiveOhThree()
 

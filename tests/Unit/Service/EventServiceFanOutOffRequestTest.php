@@ -45,6 +45,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The object handlers queue; the queued run resolves subscriptions once.
@@ -111,11 +112,12 @@ class EventServiceFanOutOffRequestTest extends TestCase {
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$names = array_map(
 			static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
-			(new ReflectionMethod(ObjectService::class, 'saveObject'))->getParameters()
+			LegacyObjectArgs::parameters(ObjectService::class, 'saveObject')
 		);
 
 		$objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use ($names) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$named = array_combine(array_slice($names, 0, count($args)), $args);
 				$this->savedSchemas[] = ($named['schema'] ?? null);
 

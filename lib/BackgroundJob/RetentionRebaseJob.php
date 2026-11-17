@@ -39,6 +39,9 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Integriq\Service\RetentionSettings;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
@@ -267,12 +270,13 @@ class RetentionRebaseJob extends QueuedJob {
 	private function persist(ObjectEntity $row, array $object, string $kind): void {
 		$this->objectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: self::SCHEMAS[$kind],
-			uuid: (string)$row->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: self::SCHEMAS[$kind]),
+				uuid: (string)$row->getUuid(),
+				policy: new SavePolicy(silent: true)
+			),
 			_rbac: false,
-			_multitenancy: false,
-			silent: true,
+			_multitenancy: false
 		);
 	}//end persist()
 

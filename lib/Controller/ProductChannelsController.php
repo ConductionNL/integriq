@@ -26,15 +26,19 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\EgressRefusedException;
-use OCA\Integriq\Service\AsyncApiDocumentService;
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\AsyncApiDocumentServiceInterface;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EventServiceInterface;
-use OCA\Integriq\Service\ProductPolicyService;
-use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\Integriq\Service\ProductPolicyServiceInterface;
+use OCA\Integriq\Service\RateLimit\InboundRateLimitServiceInterface;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -67,29 +71,29 @@ class ProductChannelsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                       $appName      The app name.
-	 * @param IRequest                     $request      The request.
-	 * @param OrObjectService              $objects      OpenRegister's object service.
-	 * @param AsyncApiDocumentService      $documents    Builds the document.
-	 * @param ProductPolicyService         $policy       The product subscription lookup.
-	 * @param OpenRegisterCredentialBridge $credentials  Authenticates a consumer.
-	 * @param IURLGenerator                $urlGenerator Builds the server URL.
-	 * @param LoggerInterface              $logger       The logger.
-	 * @param InboundRateLimitService|null $rateLimits   The tier rate limit and quota counters a product endpoint uses.
-	 * @param EventServiceInterface|null   $events       Reads a pull subscription's pending events.
-	 * @param EgressGuardInterface|null    $egressGuard  Judges a consumer's push sink.
+	 * @param string                                  $appName       The app name.
+	 * @param IRequest                                $request       The request.
+	 * @param OrObjectService                         $objects       OpenRegister's object service.
+	 * @param AsyncApiDocumentServiceInterface        $documents     Builds the document.
+	 * @param ProductPolicyServiceInterface           $policy        The product subscription lookup.
+	 * @param OpenRegisterCredentialBridgeInterface   $credentials   Authenticates a consumer.
+	 * @param IURLGenerator                           $urlGenerator  Builds the server URL.
+	 * @param LoggerInterface                         $logger        The logger.
+	 * @param InboundRateLimitServiceInterface|null   $rateLimits    The tier rate limit and quota counters a product endpoint uses.
+	 * @param EventServiceInterface|null              $events        Reads a pull subscription's pending events.
+	 * @param EgressGuardInterface|null               $egressGuard   Judges a consumer's push sink.
 	 * @param SubscriptionSigningPolicyInterface|null $signingPolicy Reveals a new push subscription's signing secret once.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly OrObjectService $objects,
-		private readonly AsyncApiDocumentService $documents,
-		private readonly ProductPolicyService $policy,
-		private readonly OpenRegisterCredentialBridge $credentials,
+		private readonly AsyncApiDocumentServiceInterface $documents,
+		private readonly ProductPolicyServiceInterface $policy,
+		private readonly OpenRegisterCredentialBridgeInterface $credentials,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
-		private readonly ?InboundRateLimitService $rateLimits = null,
+		private readonly ?InboundRateLimitServiceInterface $rateLimits = null,
 		private readonly ?EventServiceInterface $events = null,
 		private readonly ?EgressGuardInterface $egressGuard = null,
 		private readonly ?SubscriptionSigningPolicyInterface $signingPolicy = null,
@@ -237,14 +241,17 @@ class ProductChannelsController extends Controller {
 	 */
 	private function savePushSubscription(array $data): ?array {
 		try {
-			$saved = $this->objects->saveObject(object: $data, register: 'integriq', schema: 'event_subscription', _rbac: false, _multitenancy: false);
+			$saved = $this->objects->saveObject(
+				object: $data,
+				options: RegisterSave::options(register: 'integriq', schema: 'event_subscription'),
+				_rbac: false,
+				_multitenancy: false
+			);
 			$stored = $this->objects->find(
 				id: (string)$saved->getUuid(),
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $exception) {
 			$this->logger->warning('integriq: a product channel push subscription could not be saved: ' . $exception->getMessage());
@@ -288,7 +295,11 @@ class ProductChannelsController extends Controller {
 		}
 
 		try {
-			$this->objects->deleteObject(uuid: $id, register: 'integriq', schema: 'event_subscription', _rbac: false, _multitenancy: false);
+			$this->objects->deleteObject(
+				new ObjectDeletion(uuid: $id, target: new ObjectFindTarget(register: 'integriq', schema: 'event_subscription')),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $exception) {
 			$this->logger->warning('integriq: a product channel push subscription could not be deleted: ' . $exception->getMessage());
 			return $this->unavailable();
@@ -443,8 +454,7 @@ class ProductChannelsController extends Controller {
 		try {
 			$saved = $this->objects->saveObject(
 				object: $this->subscriptionFor(access: $access, style: 'pull'),
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: RegisterSave::options(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -615,6 +625,7 @@ class ProductChannelsController extends Controller {
 	 */
 	private function versionsOf(string $productSlug): array {
 		try {
+			// Unscoped: a public page: an anonymous caller reads a public product's versions (see the docblock).
 			$matches = $this->objects->findAll(
 				config: ['filters' => ['register' => 'integriq', 'schema' => 'api_product', 'productSlug' => $productSlug], 'limit' => 100],
 				_rbac: false,

@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the iWMO/iJW send/retour sync orchestration (provider selection,
@@ -150,13 +152,18 @@ class IwmoIjwSyncServiceTest extends TestCase {
 		);
 
 		$this->objectService->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null): ?ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				return ($this->cases[$register . ':' . $schema . ':' . $id] ?? null);
 			}
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$key = (string)$schema;
 				$this->saved[$key][] = ['object' => $object, 'register' => $register, 'uuid' => $uuid];
 				return $this->entity($object, ($uuid ?? 'saved-uuid-' . count($this->saved[$key])));

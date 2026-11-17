@@ -96,6 +96,10 @@
             "description": "Describes the digital post bindings this instance carries"
         },
         {
+            "name": "sms-providers",
+            "description": "Describes the SMS bindings this instance carries"
+        },
+        {
             "name": "directory-sync",
             "description": "Admin-only REST surface for directory connections and their runs"
         },
@@ -114,6 +118,10 @@
         {
             "name": "dso-pki-settings",
             "description": "Admin-only controller for the DSO connection (`dso-stam` consumer)"
+        },
+        {
+            "name": "endpoint-workspace",
+            "description": "Lists the sessions or devices a workspace manager behind a source reports"
         },
         {
             "name": "endpoints",
@@ -150,6 +158,10 @@
         {
             "name": "expression-source",
             "description": "Reads and edits the environment allowlist, and lists the registered sources"
+        },
+        {
+            "name": "mapping-lookup",
+            "description": "The register schemas a mapping's lookup() may read."
         },
         {
             "name": "flows",
@@ -228,6 +240,10 @@
             "description": "Reads and stores the OpenTelemetry export settings"
         },
         {
+            "name": "error-sink-settings",
+            "description": "Reads and stores the error sink settings"
+        },
+        {
             "name": "outbound-log",
             "description": "Body, retry, forward and last-contact endpoints for the outbound log"
         },
@@ -246,6 +262,10 @@
         {
             "name": "peppol",
             "description": "Peppol participant lookup + signed inbound receive webhook"
+        },
+        {
+            "name": "personal-data-settings",
+            "description": "Reads and sets the app setting `personal_data_fields`, admin only"
         },
         {
             "name": "product-subscriptions",
@@ -482,6 +502,81 @@
                         }
                     }
                 ]
+            }
+        },
+        "/admin/personal-data-fields": {
+            "get": {
+                "operationId": "personal-data-settings-get-config",
+                "summary": "The default personal data fields and the ones an administrator added",
+                "description": "The default personal data fields and the ones an administrator added. Their values are masked in logged bodies.",
+                "tags": [
+                    "personal-data-settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{defaults, added}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "personal-data-settings-set-config",
+                "summary": "Replace the added personal data field names",
+                "description": "Replace the added personal data field names; an empty list removes every addition. The default list always applies.",
+                "tags": [
+                    "personal-data-settings"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "fields": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`{defaults, added}`, or 400 naming a value that is not a field name.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    }
+                }
             }
         },
         "/admin/connection-alert-group": {
@@ -929,6 +1024,151 @@
                 ]
             }
         },
+        "/admin/mapping-lookups": {
+            "get": {
+                "operationId": "mapping-lookup-index",
+                "summary": "The schemas a mapping may look up in",
+                "description": "The schemas a mapping may look up in. Instance administrators only.",
+                "tags": [
+                    "mapping-lookup"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "mapping-lookup-add",
+                "summary": "Add a schema to the lookup allowlist",
+                "description": "Add a schema to the lookup allowlist. Instance administrators only.",
+                "tags": [
+                    "mapping-lookup"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "schema"
+                                ],
+                                "properties": {
+                                    "schema": {
+                                        "type": "string",
+                                        "description": "The schema, as register/schema."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/admin/mapping-lookups/{register}/{schema}": {
+            "delete": {
+                "operationId": "mapping-lookup-remove",
+                "summary": "Remove a schema from the lookup allowlist",
+                "description": "Remove a schema from the lookup allowlist. Instance administrators only.",
+                "tags": [
+                    "mapping-lookup"
+                ],
+                "parameters": [
+                    {
+                        "name": "register",
+                        "in": "path",
+                        "required": true,
+                        "description": "The register.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "schema",
+                        "in": "path",
+                        "required": true,
+                        "description": "The schema.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
         "/admin/open-formulieren-connection": {
             "get": {
                 "operationId": "open-formulieren-settings-get-config",
@@ -1025,6 +1265,63 @@
                 "description": "Store the settings; 400 with the reason when a value is refused.",
                 "tags": [
                     "otel-settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The stored settings, or `{error}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    }
+                }
+            }
+        },
+        "/admin/errorsink": {
+            "get": {
+                "operationId": "error-sink-settings-get-config",
+                "summary": "The stored settings",
+                "description": "The stored settings.",
+                "tags": [
+                    "error-sink-settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The settings.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "error-sink-settings-set-config",
+                "summary": "Store the settings; 400 with the reason when a value is refused",
+                "description": "Store the settings; 400 with the reason when a value is refused.",
+                "tags": [
+                    "error-sink-settings"
                 ],
                 "responses": {
                     "200": {
@@ -1881,6 +2178,101 @@
                 }
             }
         },
+        "/registration-targets/{slug}/test": {
+            "post": {
+                "operationId": "registration-targets-test",
+                "summary": "Dry run of one registration target",
+                "description": "Administrators only. Maps the given hand-over, or a sample one, for the target and answers the mapped body. Stops before the first write: no record is written, no file is read and no outside system is called. A refusal is answered with its code, like the registration command's own answer (form-submission-registration-targets, design D6).",
+                "tags": [
+                    "registration-targets"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "The target slug."
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "handover": {
+                                        "type": "object",
+                                        "description": "A hand-over of the submission; empty or absent maps the sample hand-over."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The mapped body, or a refusal with its code and retryable flag.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "dry": {
+                                            "type": "boolean"
+                                        },
+                                        "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                                "zgw",
+                                                "objects-api",
+                                                "stuf-zds",
+                                                "json"
+                                            ]
+                                        },
+                                        "mapped": {
+                                            "type": "object"
+                                        },
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "unknown-target",
+                                                "invalid-handover",
+                                                "mapping-failed",
+                                                "source-unavailable"
+                                            ]
+                                        },
+                                        "retryable": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
         "/connections/{id}/link": {
             "post": {
                 "operationId": "connections-link",
@@ -2009,6 +2401,37 @@
                 "responses": {
                     "200": {
                         "description": "The provider descriptions.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/sms/providers": {
+            "get": {
+                "operationId": "sms-providers-providers",
+                "summary": "Every SMS binding on this instance, with its name and the configuration it needs",
+                "description": "Every SMS binding on this instance, with its name and the configuration it needs.",
+                "tags": [
+                    "sms-providers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{providers: [{providerId, name, configSchema}]}`.",
                         "headers": {
                             "API-Version": {
                                 "$ref": "#/components/headers/API-Version"
@@ -3754,6 +4177,96 @@
                         "in": "path",
                         "required": true,
                         "description": "The id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/execution-traces/{id}/test-case": {
+            "post": {
+                "operationId": "regressionSuite-record",
+                "summary": "Save a step of a traced execution as a test case",
+                "description": "Copies the input and output of one mapping or synchronization step of the trace into a new integration_test_case, replacing whatever the body edits (name, description, input, expectedOutput, ignoredPaths). The answer lists the paths that still carry the redaction marker. Needs the action regression-suite.record.",
+                "tags": [
+                    "regression-suites"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "step"
+                                ],
+                                "properties": {
+                                    "step": {
+                                        "type": "integer",
+                                        "description": "The order of the step in the trace."
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "input": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    },
+                                    "expectedOutput": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    },
+                                    "ignoredPaths": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The case as stored, with `redactedPaths`; an `error` with 400, 401, 403 or 404 otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The trace's id.",
                         "schema": {
                             "type": "string"
                         }
@@ -5750,6 +6263,46 @@
                 "responses": {
                     "200": {
                         "description": "The created `sms_message` record, a 400/502 error envelope, or 409 with \t *                      `error` set to the decision code when the opt-out list refused the send.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "502": {
+                        "$ref": "#/components/responses/Problem502"
+                    }
+                }
+            }
+        },
+        "/notifynl/emails": {
+            "post": {
+                "operationId": "notify-nl-send-email",
+                "summary": "Send one e-mail through NotifyNL",
+                "description": "Send one e-mail through NotifyNL, recorded in the outbound message log on channel notifynl with NotifyNL's id. Body: {to, templateId, personalisation, sourceApp, objectUri, category, caseRef, sourceSlug}. An address with no domain is refused 400 before anything is sent or recorded.",
+                "tags": [
+                    "notify-nl"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{id, reference, status}`: the outbound message, NotifyNL's id and `sent`.",
                         "headers": {
                             "API-Version": {
                                 "$ref": "#/components/headers/API-Version"
@@ -8325,6 +8878,102 @@
                 }
             }
         },
+        "/sharepoint/publication-intake": {
+            "post": {
+                "operationId": "sharepoint-setup-intake",
+                "summary": "Save a SharePoint to publication setup",
+                "description": "Creates one source, one mapping, one fetch_file rule and one synchronization from the `sharepoint-publications` set through the configuration import, filled with the credential, site, library, folder, catalogue and target the administrator picked. The source holds a broker reference and no secret; `requiresApproval` makes the first run pause for approval. Integriq administrators only.",
+                "tags": [
+                    "sharepoint"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "credentialId",
+                                    "siteId",
+                                    "driveId",
+                                    "catalog",
+                                    "register",
+                                    "schema"
+                                ],
+                                "properties": {
+                                    "credentialId": {
+                                        "type": "string",
+                                        "description": "The brokered credential's uuid."
+                                    },
+                                    "siteId": {
+                                        "type": "string",
+                                        "description": "The Graph site id."
+                                    },
+                                    "driveId": {
+                                        "type": "string",
+                                        "description": "The document library id."
+                                    },
+                                    "folderId": {
+                                        "type": "string",
+                                        "description": "The folder whose subfolders become publications; the library root when empty."
+                                    },
+                                    "folderName": {
+                                        "type": "string",
+                                        "description": "The folder's name, shown in the created objects' names."
+                                    },
+                                    "catalog": {
+                                        "type": "string",
+                                        "description": "The catalogue the publications are written into."
+                                    },
+                                    "register": {
+                                        "type": "string",
+                                        "description": "The target register."
+                                    },
+                                    "schema": {
+                                        "type": "string",
+                                        "description": "The target schema."
+                                    },
+                                    "requiresApproval": {
+                                        "type": "boolean",
+                                        "description": "Pause each run for approval before it writes."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The created objects by component.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
         "/sources/logs": {
             "get": {
                 "operationId": "sources-logs",
@@ -8687,6 +9336,57 @@
                         "in": "path",
                         "required": true,
                         "description": "The id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/sources/{id}/workspace-entries": {
+            "get": {
+                "operationId": "endpoint-workspace-index",
+                "summary": "List the sessions or devices the workspace manager behind a source reports",
+                "description": "List the sessions or devices the workspace manager behind a source reports, each with the Nextcloud user it maps to or none. Without a credential nothing is called.",
+                "tags": [
+                    "endpoint-workspace"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The entries, or that the credential is missing.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source's uuid.",
                         "schema": {
                             "type": "string"
                         }
@@ -10349,6 +11049,57 @@
                         "in": "path",
                         "required": true,
                         "description": "The source uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/intake/messages/{id}/assign": {
+            "post": {
+                "operationId": "intake-channels-assign",
+                "summary": "Assign an inbound message to a case a handler picks",
+                "description": "Assign an inbound message to a case a handler picks. The body names the case as `caseRef`; the message records it and who assigned it.",
+                "tags": [
+                    "intake-channels"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The assignment, or why it was refused.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The id.",
                         "schema": {
                             "type": "string"
                         }

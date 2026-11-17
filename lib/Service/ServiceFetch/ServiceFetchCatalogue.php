@@ -28,6 +28,7 @@ namespace OCA\Integriq\Service\ServiceFetch;
 
 use OCA\Integriq\Event\ServiceFetchRequestedEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Throwable;
 
@@ -36,7 +37,7 @@ use Throwable;
  *
  * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
  */
-class ServiceFetchCatalogue {
+class ServiceFetchCatalogue implements ServiceFetchCatalogueInterface {
 
 	/**
 	 * The register every object involved lives in.
@@ -152,7 +153,13 @@ class ServiceFetchCatalogue {
 	 */
 	public function source(string $id): ObjectEntity {
 		try {
-			$source = $this->objectService->find(id: $id, register: self::REGISTER, schema: 'source', _rbac: false, _multitenancy: false);
+			// Unscoped: the catalogue reads a fetch's source in system context (see the class docblock); callers check access first.
+			$source = $this->objectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'source'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $e) {
 			$source = null;
 		}

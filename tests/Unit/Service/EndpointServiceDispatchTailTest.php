@@ -228,17 +228,28 @@ class EndpointServiceDispatchTailTest extends TestCase {
 			}
 
 			/**
-			 * Record an update and fail it.
+			 * Record a full update (PUT) and fail it; recorded as the update it was before the split.
 			 *
-			 * @param mixed $id      The id.
-			 * @param array $object  The object.
-			 * @param bool  $updated The updated flag.
-			 * @param bool  $patch   Whether this is a patch.
+			 * @param mixed $id     The id.
+			 * @param array $object The object.
 			 *
 			 * @return never
 			 */
-			public function updateFromArray($id, array $object, bool $updated, bool $patch) {
-				$this->test->record(['mapper.updateFromArray', $id, $object, $patch]);
+			public function replaceFromArray($id, array $object) {
+				$this->test->record(['mapper.updateFromArray', $id, $object, false]);
+				throw new ValidationException('invalid');
+			}
+
+			/**
+			 * Record a partial update (PATCH) and fail it; recorded as the update it was before the split.
+			 *
+			 * @param mixed $id     The id.
+			 * @param array $object The object.
+			 *
+			 * @return never
+			 */
+			public function patchFromArray($id, array $object) {
+				$this->test->record(['mapper.updateFromArray', $id, $object, true]);
 				throw new ValidationException('invalid');
 			}
 

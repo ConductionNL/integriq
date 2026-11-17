@@ -290,12 +290,12 @@ export function sampleMessage(sampleText, heldMessage = null) {
  * pair gets two distinct values so the move is visible in the first match.
  *
  * @param {Array<object>} rules The listed rules of the channel, any order.
- * @param {object} rule The rule to move.
- * @param {string} direction 'up' or 'down'.
+ * @param {{rule: object, direction: string}} move The rule to move and where to: 'up' or 'down'.
  * @return {Array<{row: object, order: number}>} The rules to save with their new order; empty when it cannot move.
  * @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-an-administrator-writes-a-routing-rule-on-the-intake-routing-page-req-ire-001
  */
-export function moveWrites(rules, rule, direction) {
+export function moveWrites(rules, move) {
+	const { rule, direction } = move || {}
 	const id = ruleId(rule)
 	const sorted = (rules || [])
 		.filter((row) => text(row.channelId) === text(rule?.channelId))

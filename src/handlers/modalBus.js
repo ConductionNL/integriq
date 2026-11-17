@@ -52,6 +52,8 @@ export const EVENT_OPEN_SUBSCRIPTION_SIGNING = 'open-subscription-signing'
 export const EVENT_OPEN_CATALOG_ITEM_DETAIL = 'open-catalog-item-detail'
 export const EVENT_OPEN_CONFIGURATION_IMPORT = 'open-configuration-import'
 export const EVENT_OPEN_CONFIGURATION_EXPORT = 'open-configuration-export'
+// connectors-sharepoint-publication-intake: "Route to publications" from the SharePoint card.
+export const EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP = 'open-sharepoint-publication-setup'
 // environments-and-promotion: promote-configuration flow modal.
 export const EVENT_OPEN_PROMOTION = 'open-promotion'
 // connection-registry D9: link a source to a declared connection. Payload is `{ app }`.
@@ -60,6 +62,8 @@ export const EVENT_OPEN_LINK_SOURCE = 'open-link-source'
 export const EVENT_OPEN_REGISTRY_LOOKUP = 'open-registry-lookup'
 // statutory-gateways-and-frameworks: the gateway catalogue and where data goes.
 export const EVENT_OPEN_GATEWAY_CATALOGUE = 'open-gateway-catalogue'
+// form-submission-registration-targets D6: dry run of one registration target. Payload is `{ target }`.
+export const EVENT_OPEN_REGISTRATION_TEST = 'open-registration-test'
 // connections-declare-data-residency: set where a source sits. Payload is `{ source }`.
 export const EVENT_OPEN_SOURCE_RESIDENCY = 'open-source-residency'
 // connections-declare-data-residency: a residency was saved. Payload is `{ source, residency }`.

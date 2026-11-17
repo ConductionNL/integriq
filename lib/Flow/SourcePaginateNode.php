@@ -92,7 +92,7 @@ use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
@@ -108,7 +108,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#1-engine-steps-each-a-thin-adapter-over-a-kept-service
  */
-class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SourcePaginateNodeInterface {
+class SourcePaginateNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SourcePaginateNodeInterface {
 	use FlowNodePaletteDefaults;
 
 	/**
@@ -318,8 +318,8 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 
 		return $this->flowOwner->runAs(
 			user: $owner,
-			callback: function () use ($items, $config, $context) {
-				return $this->paginateForEachItem(items: $items, config: $config, context: $context);
+			callback: function () use ($call) {
+				return $this->paginateForEachItem(call: $call);
 			}
 		);
 
@@ -335,9 +335,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 * would not let us look" — the precise misreading that let nine shards
 	 * starve while the run reported success.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
@@ -345,7 +343,10 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	private function paginateForEachItem(array $items, array $config, array $context): array {
+	private function paginateForEachItem(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$reference = trim((string)$config['synchronization']);
 		$pageSize = (int)($config['pageSize'] ?? self::DEFAULT_PAGE_SIZE);
 		$maxPages = (int)($config['maxPages'] ?? self::DEFAULT_MAX_PAGES);

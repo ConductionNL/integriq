@@ -30,6 +30,7 @@ namespace OCA\Integriq\Auth\Idp;
 
 use OCA\Integriq\Exception\IdpRegistrationConflictException;
 use OCA\Integriq\Exception\IdpSecretRefusedException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -73,6 +74,38 @@ class IdpRegistrationService {
 	}//end __construct()
 
 	/**
+	 * Every registration, for the administrator's settings screen.
+	 *
+	 * Read with RBAC on (the schema is admin-only) and across organisations,
+	 * since one administrator configures the logins of every organisation.
+	 *
+	 * @return list<IdpRegistration>
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-beheer-authenticatie-configures-the-registrations-req-idpc-008
+	 */
+	public function all(): array {
+		$objects = $this->objectService->findAll(
+			config: [
+				'filters' => ['register' => self::REGISTER, 'schema' => self::SCHEMA],
+				'limit' => 500,
+			],
+			_rbac: true,
+			_multitenancy: false
+		);
+
+		$registrations = [];
+		foreach ($objects as $object) {
+			$registration = self::fromObject(object: $object);
+			if ($registration !== null) {
+				$registrations[] = $registration;
+			}
+		}
+
+		return $registrations;
+
+	}//end all()
+
+	/**
 	 * Every registration of one organisation and provider (there should be at most one).
 	 *
 	 * The read is system-level: the login path runs without an admin session,
@@ -90,6 +123,7 @@ class IdpRegistrationService {
 			return [];
 		}
 
+		// Unscoped: the login path reads the registration before any session exists, filtered on the organisation it names.
 		$objects = $this->objectService->findAll(
 			config: [
 				'filters' => [
@@ -163,9 +197,7 @@ class IdpRegistrationService {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuid
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuid)
 		);
 
 		return new IdpRegistration(id: (string)$saved->getUuid(), data: (array)$saved->getObject());

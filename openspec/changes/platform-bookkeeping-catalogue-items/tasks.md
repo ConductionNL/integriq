@@ -10,8 +10,8 @@ Kind: config. Size S. Half for shillinq `platform-integration-catalogue` (row sh
 - **acceptance_criteria**:
   - GIVEN an upgrade WHEN the catalogue is materialised THEN the four templates are `catalog_item` objects, dormant
 - [x] Implement
-- [ ] Test (PHPUnit on `CatalogRegistryService::collect()`; `occ upgrade` on a dev instance shows them on the Catalog page)
-  > PHPUnit done: `testTheBookkeepingConnectorsAreDormantTemplatesInTheirCategories`. The live `occ upgrade` is not run here.
+- [x] Test (PHPUnit on `CatalogRegistryService::collect()`; `occ upgrade` on a dev instance shows them on the Catalog page)
+  > PHPUnit done: `testTheBookkeepingConnectorsAreDormantTemplatesInTheirCategories`. The live `occ upgrade` is not run here. Live pass 2026-11-17: after `occ upgrade` on a fresh NC 34.0.6 instance the four are dormant `catalog_item` objects (Peppol access point under E-invoicing, PSD2 bank aggregator and Corporate card feed under Bank, Mollie payments under Payments) and all four show on the Marketplace page under Source templates.
 
 ### Task 2: Bookkeeping categories and their test
 - **spec_ref**: `openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001`

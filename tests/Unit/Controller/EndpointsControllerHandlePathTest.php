@@ -24,6 +24,7 @@ use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EndpointCacheService;
 use OCA\Integriq\Service\EndpointCorsPolicy;
 use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\Format\ArrayToXml;
 use OCA\Integriq\Service\ObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http\JSONResponse;
@@ -93,7 +94,7 @@ class EndpointsControllerHandlePathTest extends TestCase {
 		$l = $this->createMock(IL10N::class);
 		$l->method('t')->willReturnCallback(static fn (string $text, array $params = []): string => vsprintf($text, $params));
 
-		return new EndpointsController('integriq', $request, $endpoints, $bridge, $this->createMock(ObjectService::class), $cache, $this->createMock(LoggerInterface::class), $l, $policy);
+		return new EndpointsController('integriq', $request, $endpoints, $bridge, $this->createMock(ObjectService::class), $cache, $this->createMock(LoggerInterface::class), $l, $policy, xmlEncoder: new ArrayToXml());
 
 	}//end controller()
 
@@ -190,5 +191,36 @@ class EndpointsControllerHandlePathTest extends TestCase {
 		$this->assertSame($plain, $this->controller($this->endpoint([]), 'application/xml', $plain)->handlePath('p'));
 
 	}//end testOtherAnswersAreLeftAsServed()
+
+	/**
+	 * A path naming an `.xml` document is answered as XML without an XML
+	 * Accept header; a path that only contains `.xml` is not.
+	 *
+	 * @return void
+	 */
+	public function testAnXmlPathIsAnsweredAsXml(): void {
+		$feed = new class(['@root' => 'source', 'job' => [['title' => 'Developer']]]) extends JSONResponse {
+			/**
+			 * Headers without a running server.
+			 *
+			 * @return array
+			 */
+			public function getHeaders(): array {
+				return [];
+			}
+		};
+
+		$response = $this->controller($this->endpoint([]), '*/*', $feed)->handlePath('jobfeeds/indeed.XML');
+
+		$this->assertInstanceOf(XMLResponse::class, $response);
+		$this->assertSame('application/xml; charset=utf-8', $this->rawHeaders($response)['Content-Type']);
+		$this->assertStringContainsString('<source>', $response->render());
+		$this->assertStringContainsString('<job>', $response->render());
+		$this->assertStringContainsString('<title>Developer</title>', $response->render());
+
+		$json = new JSONResponse(['a' => 1]);
+		$this->assertSame($json, $this->controller($this->endpoint([]), '*/*', $json)->handlePath('files.xml/list'));
+
+	}//end testAnXmlPathIsAnsweredAsXml()
 
 }//end class

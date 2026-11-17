@@ -369,6 +369,35 @@ class IdpLoginServiceEdgesTest extends TestCase {
 	}//end testAnAssertionForAnotherOrganisationsEntityIdIsRefused()
 
 	/**
+	 * An `oidc-rp` registration's audience is its client id: an assertion naming it is accepted.
+	 *
+	 * @return void
+	 */
+	public function testAnOidcRegistrationsAudienceIsItsClientId(): void {
+		$this->registrationOverrides = ['kind' => 'oidc-rp', 'clientId' => self::ENTITY_ID, 'spEntityId' => 'urn:nl:gemeente-x:sp'];
+
+		$back = $this->login($this->digid('999993653', 'bsn'));
+
+		$this->assertStringContainsString('code=', $back);
+
+	}//end testAnOidcRegistrationsAudienceIsItsClientId()
+
+	/**
+	 * An assertion naming another client than the `oidc-rp` registration's is refused on the audience check.
+	 *
+	 * @return void
+	 */
+	public function testAnAssertionForAnotherOidcClientIsRefused(): void {
+		$this->registrationOverrides = ['kind' => 'oidc-rp', 'clientId' => 'client-gemeente-y'];
+
+		$back = $this->login($this->digid('999993653', 'bsn'));
+
+		$this->assertStringNotContainsString('code=', $back);
+		$this->assertStringContainsString('another audience', implode("\n", $this->logLines));
+
+	}//end testAnAssertionForAnotherOidcClientIsRefused()
+
+	/**
 	 * Without an enabled registration for the organisation and provider, no code is issued.
 	 *
 	 * @return void
@@ -503,4 +532,39 @@ class IdpLoginServiceEdgesTest extends TestCase {
 		return $secrets;
 
 	}//end secrets()
+	/**
+	 * A response that comes back on another provider than the login started on
+	 * earns no code: the browser is sent back with the login-failed error.
+	 *
+	 * @return void
+	 */
+	public function testAResponseOnAnotherProviderIsRefused(): void {
+		$adapter = new class('digid', []) extends ScriptedGovernmentIdpAdapter {
+			/**
+			 * The provider the adapter currently answers for.
+			 *
+			 * @var string
+			 */
+			public string $answersFor = 'digid';
+
+			/**
+			 * The provider id.
+			 *
+			 * @return string
+			 */
+			public function getProviderId(): string {
+				return $this->answersFor;
+			}
+		};
+		$adapter->assertion = $this->digid('pp-0123456789abcdef', 'bsn-pseudonym')->assertion;
+
+		$service = $this->service($adapter);
+		$service->start(provider: 'digid', params: $this->startParams());
+		$adapter->answersFor = 'eherkenning';
+
+		$back = $service->callback(provider: 'eherkenning', callback: ['inResponseTo' => $adapter->lastRequestId]);
+
+		$this->assertSame(self::RETURN_URL . '&error=' . IdpLoginService::ERROR_LOGIN_FAILED . '&relayState=relay-7', $back);
+		$this->assertStringContainsString('The response came back on another provider than it started on.', implode("\n", $this->logLines));
+	}//end testAResponseOnAnotherProviderIsRefused()
 }//end class
