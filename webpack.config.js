@@ -98,7 +98,9 @@ webpackConfig.resolve = {
 			__dirname,
 			'node_modules/vue/dist/vue.runtime.esm-bundler.js',
 		),
-		pinia$: path.resolve(__dirname, 'node_modules/pinia'),
+		// pinia 4 is ESM-only: exports maps '.' -> ./dist/pinia.js with no main,
+		// so a directory alias can't resolve it. Point at the explicit entry file.
+		pinia$: path.resolve(__dirname, 'node_modules/pinia/dist/pinia.js'),
 		// Dedupe vue-router to ONE copy (absolute file): a per-importer resolve
 		// gives @nextcloud/vue's RouterLink a different router instance than
 		// app.use(router) provided → NcAppNavigationItem's <router-link> crash.
