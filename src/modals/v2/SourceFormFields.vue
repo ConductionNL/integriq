@@ -511,6 +511,12 @@ export default {
 			)
 		},
 
+		/**
+		 * The picker option of the per-user source's provider, or null.
+		 *
+		 * @return {object|null} The selected option.
+		 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+		 */
 		selectedPerUserProvider() {
 			const id = readPerUserProvider(this.formData)
 			if (!id) return null

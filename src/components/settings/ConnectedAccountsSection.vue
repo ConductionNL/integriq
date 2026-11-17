@@ -125,6 +125,7 @@ export default {
 		 *
 		 * @param {string} value An ISO date-time.
 		 * @return {string} The date, or the value as given when it is not a date.
+		 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-user-sees-and-disconnects-their-own-accounts-req-puoa-003
 		 */
 		formatDate(value) {
 			const date = new Date(value)

@@ -4,7 +4,7 @@
  * Unit tests for ConnectAccountPrompt.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Http
+ * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,9 +18,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Http;
+namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\Integriq\Http\ConnectAccountPrompt;
+use OCA\Integriq\Service\ConnectAccountPrompt;
 use OCA\Integriq\Http\ProblemResponse;
 use OCA\Integriq\Service\PerUserAccountNotConnectedException;
 use OCP\IURLGenerator;

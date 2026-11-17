@@ -14,8 +14,8 @@
  * The start is a POST, so `connectUrl` is where a client posts, not a link a
  * browser follows on its own; it answers the provider's authorization URL.
  *
- * @category Http
- * @package  OCA\Integriq\Http
+ * @category Service
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,9 +31,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Http;
+namespace OCA\Integriq\Service;
 
-use OCA\Integriq\Service\PerUserAccountNotConnectedException;
+use OCA\Integriq\Http\ProblemResponse;
 use OCP\AppFramework\Http;
 use OCP\IURLGenerator;
 

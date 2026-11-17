@@ -38,6 +38,7 @@ export function disconnectUrl(id) {
  *
  * @param {object} account The `account` the broker stored with the token set.
  * @return {string} The identity, '' when the provider returned none.
+ * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-user-sees-and-disconnects-their-own-accounts-req-puoa-003
  */
 export function accountIdentity(account) {
 	const value = account && typeof account === 'object' ? account : {}

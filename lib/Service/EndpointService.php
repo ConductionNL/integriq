@@ -40,7 +40,6 @@ use OCA\OpenRegister\Service\File\FileUpload;
 use OC\AppFramework\Http;
 use OC\Files\Node\File;
 use OCA\Integriq\Exception\AuthenticationException;
-use OCA\Integriq\Http\ConnectAccountPrompt;
 use OCA\Integriq\Http\ProblemResponse;
 use OCA\Integriq\Rule\AvgBsnPolicyRuleInterface;
 use OCA\Integriq\Rule\CompositeFanoutRuleInterface;
