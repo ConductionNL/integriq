@@ -49,9 +49,11 @@ use OCA\Integriq\Service\Dso\DsoConnectorProviderInterface;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Portal\PortalRequestIntakeInterface;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -185,9 +187,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 						$request->getObject(),
 						['status' => 'failed', 'errorDetail' => $exception->getMessage()]
 					),
-					register: self::REGISTER,
-					schema: self::SCHEMA_VERZOEK,
-					uuid: $request->getUuid()
+					options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_VERZOEK, uuid: $request->getUuid())
 				),
 				actingUserId: $actingUserId
 			);
@@ -208,9 +208,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 		return $this->enqueueAttachmentFetch(
 			request: $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_VERZOEK,
-				uuid: $request->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_VERZOEK, uuid: $request->getUuid())
 			),
 			actingUserId: $actingUserId
 		);
@@ -298,8 +296,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 
 		return $this->objectService->saveObject(
 			object: $object,
-			register: self::REGISTER,
-			schema: self::SCHEMA_VERZOEK
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_VERZOEK)
 		);
 
 	}//end createReceived()
@@ -416,7 +413,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso_verzoek-lifecycle-with-per-verzoek-isolation-req-003
 	 */
 	public function getRequest(string $uuid): array {
-		$request = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
+		$request = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_VERZOEK));
 		if ($request instanceof ObjectEntity === false) {
 			throw new DsoTranslationException(message: 'No dso_verzoek found for uuid "' . $uuid . '".');
 		}
@@ -477,7 +474,10 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 			);
 		}
 
-		$request = $this->objectService->find(id: $requestUuid, register: self::REGISTER, schema: self::SCHEMA_VERZOEK);
+		$request = $this->objectService->find(
+			id: $requestUuid,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_VERZOEK)
+		);
 		if ($request instanceof ObjectEntity === false) {
 			throw new DsoTranslationException(message: 'No dso_verzoek found for uuid "' . $requestUuid . '".');
 		}
@@ -514,8 +514,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($status === 'failed') {
@@ -562,6 +561,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function resolveActiveSourceAsEngine(): ObjectEntity {
+		// Unscoped: the DSO ingest engine resolves its active source as the system.
 		$matches = $this->objectService->findAll(config: $this->activeSourceQuery(), _rbac: false, _multitenancy: false);
 		$results = ($matches['results'] ?? $matches);
 
@@ -576,11 +576,9 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 
 		$raw = $this->objectService->find(
 			id: $uuid,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SOURCE,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SOURCE, render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 		if ($raw instanceof ObjectEntity === false) {
 			return $results[0];

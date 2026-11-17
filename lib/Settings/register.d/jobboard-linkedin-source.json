@@ -1,0 +1,70 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-job-board-multiposting). The dormant LinkedIn job posting template and its mapping from humaniq's Vacancy, as one batch-create element of LinkedIn's simpleJobPostings call. No code: the openconnector.source-call and openconnector.apply-mapping flow nodes do the work, picked per board through a templated reference (jobboard-{{ json.channel }}).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "jobboard-linkedin"
+        },
+        "name": "LinkedIn job postings",
+        "description": "LinkedIn's job posting API for partners (POST /v2/simpleJobPostings with X-Restli-Method: batch_create). Posting through it needs acceptance into LinkedIn's Talent Solutions partner programme (Job Posting API): apply there first, then set the OAuth client of the accepted application, the credential and the organisation URN on the mapping, and enable. The answer is a posting task per element (its id is the task URN), which the humaniq flow records as the posting's reference.",
+        "type": "api",
+        "location": "https://api.linkedin.com/v2",
+        "auth": "oauth",
+        "documentation": "https://learn.microsoft.com/en-us/linkedin/talent/job-postings/api/create-jobs",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "X-Restli-Method": "batch_create",
+            "Authorization": "Bearer {{ oauthToken(source) }}"
+          },
+          "authentication": {
+            "grant_type": "client_credentials",
+            "authentication": "body",
+            "tokenUrl": "https://www.linkedin.com/oauth/v2/accessToken",
+            "scope": "",
+            "client_id": "",
+            "client_secret": {
+              "credentialRef": {
+                "credentialName": "jobboard-linkedin-client-secret"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "jobboard-linkedin"
+        },
+        "name": "humaniq Vacancy to a LinkedIn job posting",
+        "description": "One humaniq Vacancy (as the Vacature plaatsen flow passes it, one item per board, with vacancyId and channel) as the body of a LinkedIn simpleJobPostings batch create with one element. Before enabling, fill `elements.0.integrationContext` with your organisation URN (urn:li:organization:<id>) and `elements.0.companyApplyUrl` with the address candidates apply on, for example https://werken.example.nl/vacatures/{{ vacancyId }}. `listedAt` is the publication date in epoch milliseconds; the vacancy id is the external job posting id. The vacancy carries no place or contract type, so the location is the country and the employment status full time.",
+        "mapping": {
+          "elements.0.integrationContext": "",
+          "elements.0.companyApplyUrl": "",
+          "elements.0.externalJobPostingId": "{{ vacancyId }}",
+          "elements.0.jobPostingOperationType": "CREATE",
+          "elements.0.title": "{{ title }}",
+          "elements.0.description": "{{ description|default('') }}",
+          "elements.0.listedAt": "{{ (publishedDate|default('now'))|date('U', 'UTC') * 1000 }}",
+          "elements.0.employmentStatus": "FULL_TIME",
+          "elements.0.location": "Netherlands"
+        },
+        "unset": [],
+        "cast": {
+          "elements.0.listedAt": "int"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

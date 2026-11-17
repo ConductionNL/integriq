@@ -30,6 +30,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for CtiSourceResolver.
@@ -110,7 +111,13 @@ class CtiSourceResolverTest extends TestCase {
 	public function testFindsAnEnabledCtiSource(): void {
 		$source = ['type' => 'cti', 'configuration' => ['provider' => 'log']];
 		$this->objects->expects($this->once())->method('find')
-			->with('src-1', 'integriq', 'source', false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'src-1',
+				'register' => 'integriq',
+				'schema' => 'source',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))
 			->willReturn($this->entity($source));
 
 		$this->assertSame($source, $this->resolver()->find('src-1'));

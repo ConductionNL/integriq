@@ -4,6 +4,7 @@
     "OCA\\Integriq\\BackgroundJob\\ProcessEventJob::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Command\\Integration\\SynchronizationRun::$synchronization": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\Controller\\EventsController::$eventService": "OCA\\Integriq\\Service\\EventService",
+    "OCA\\Integriq\\Controller\\ProductChannelsController::$events": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Controller\\SynchronizationsController::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\EventListener\\CloudEventListener::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\EventListener\\DeliveryRequestedListener::$eventService": "OCA\\Integriq\\Service\\EventService",

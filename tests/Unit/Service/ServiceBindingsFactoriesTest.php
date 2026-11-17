@@ -66,7 +66,7 @@ use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IAppConfig;
-use OCP\IDBConnection;
+use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -120,16 +120,16 @@ class ServiceBindingsFactoriesTest extends TestCase {
 		$this->assertInstanceOf(EventLoopGuard::class, $factories[EventForwardingGuardInterface::class]());
 	}//end testTheOcsClientsResolveToTheirImplementations()
 
-	public function testTheSettingsServiceIsBuiltFromTheDatabaseConfigAndLogger(): void {
+	public function testTheSettingsServiceIsBuiltFromTheConfigRebaseSchedulerAndLogger(): void {
 		$container = $this->container();
 
 		$settings = $this->factories()[SettingsService::class]($container);
 
 		$this->assertInstanceOf(SettingsService::class, $settings);
-		foreach ([IDBConnection::class, IAppConfig::class, LoggerInterface::class] as $id) {
+		foreach ([IAppConfig::class, RetentionRebaseSchedulerInterface::class, LoggerInterface::class] as $id) {
 			$this->assertArrayHasKey($id, $this->resolved);
 		}
-	}//end testTheSettingsServiceIsBuiltFromTheDatabaseConfigAndLogger()
+	}//end testTheSettingsServiceIsBuiltFromTheConfigRebaseSchedulerAndLogger()
 
 	public function testBootHandsTheEightIntegrationProvidersToOpenRegisterInOrder(): void {
 		$registry = new class extends IntegrationRegistry {

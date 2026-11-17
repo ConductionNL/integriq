@@ -28,9 +28,11 @@ namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
 use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\PemKeyFile;
 use OCA\Integriq\Service\PemKeyFileRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Security\ICrypto;
@@ -158,14 +160,9 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		try {
 			return $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'integriq',
-				schema: $registrationType,
+				options: new ObjectFindOptions(register: 'integriq', schema: $registrationType, render: false),
 				_rbac: false,
-				_multitenancy: false,
-				// `signingKeys` is writeOnly (register.d/99-lti-*-secrets-writeonly.json)
-				// and the rendered read strips writeOnly unconditionally, also under
-				// `_rbac: false` (openregister#460). Unrendered, the keys are there.
-				_render: false
+				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
 			throw new LtiValidationException(
@@ -370,9 +367,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: $registrationType,
-			uuid: $registration->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 		);
 
 		$this->logger->info(
@@ -431,9 +426,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: $registrationType,
-			uuid: $registration->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 		);
 
 		$this->logger->info(
@@ -483,9 +476,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: $registrationType,
-			uuid: $registration->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 		);
 
 		$this->logger->info(
@@ -633,6 +624,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 					],
 				],
 				_rbac: false,
+				// Unscoped: background key rotation, no user session.
 				_multitenancy: false
 			);
 			$registrations = ($matches['results'] ?? $matches);
@@ -665,9 +657,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 					$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 					$this->orObjectService->saveObject(
 						object: $data,
-						register: 'integriq',
-						schema: $registrationType,
-						uuid: $registration->getUuid()
+						options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 					);
 				}
 			}//end foreach

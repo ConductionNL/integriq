@@ -280,6 +280,7 @@ class EndpointCacheService implements EndpointCacheServiceInterface {
 		$matches = $this->orObjectService->findAll(
 			config: ['filters' => ['register' => 'integriq', 'schema' => 'endpoint']],
 			_rbac: false,
+			// Unscoped: warms the routing cache with every endpoint, run as the system.
 			_multitenancy: false
 		);
 		$endpoints = ($matches['results'] ?? $matches);

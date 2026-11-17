@@ -76,6 +76,7 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// saved message and polling a mailbox both write `message` objects that
 		// other apps act on, so both sit behind the ADR-023 action matrix
 		// (`mail.import`, `mail.poll`), admin-only until an operator broadens it.
+		['name' => 'mailIntake#importOptions', 'url' => '/api/mail-intake/import/options', 'verb' => 'GET'],
 		['name' => 'mailIntake#import', 'url' => '/api/mail-intake/import', 'verb' => 'POST'],
 		['name' => 'mailIntake#poll', 'url' => '/api/mail-intake/sources/{id}/poll', 'verb' => 'POST'],
 
@@ -159,6 +160,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
 		// The registration targets an app may use, by slug, title and kind only (form-submission-registration-targets).
 		['name' => 'registrationTarget#index', 'url' => '/api/registration-targets', 'verb' => 'GET'],
+		// The administrator's dry run of one target: maps a sample hand-over and stops before the first write.
+		['name' => 'registrationTarget#test', 'url' => '/api/registration-targets/{slug}/test', 'verb' => 'POST'],
 		// Where a record was synchronized from, answered after a read check under OpenRegister's rights.
 		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 
@@ -438,6 +441,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
 		['name' => 'runSummary#show', 'url' => '/api/sources/{id}/run-summary', 'verb' => 'GET'],
+		// connectors-endpoint-workspace-adapters: the sessions or devices the workspace
+		// manager behind a source reports, each with the Nextcloud user it maps to. Admin only.
+		['name' => 'endpointWorkspace#index', 'url' => '/api/sources/{id}/workspace-entries', 'verb' => 'GET'],
 		// sources#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
@@ -448,9 +454,6 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Investigation window: store call bodies for a bounded time (outbound-call-log-investigation-window).
 		['name' => 'bodyCapture#open', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'POST'],
 		['name' => 'bodyCapture#close', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'DELETE'],
-		// connectors-endpoint-workspace-adapters: the sessions or devices the workspace
-		// manager behind a source reports, each with the Nextcloud user it maps to. Admin only.
-		['name' => 'endpointWorkspace#index', 'url' => '/api/sources/{id}/workspace-entries', 'verb' => 'GET'],
 
 		// dashboard-http-datasource: governed, read-only "resolve one value
 		// from a configured source" façade for dashboard/widget hosts
@@ -574,6 +577,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'executionTraces#index', 'url' => '/api/execution-traces', 'verb' => 'GET'],
 		['name' => 'executionTraces#show', 'url' => '/api/execution-traces/{id}', 'verb' => 'GET'],
 		['name' => 'executionTraces#replay', 'url' => '/api/execution-traces/{id}/replay', 'verb' => 'POST'],
+		// Save one step of a trace as a regression test case (automation-integration-regression-tests).
+		['name' => 'regressionSuite#record', 'url' => '/api/execution-traces/{id}/test-case', 'verb' => 'POST'],
 
 		// Logs sub-endpoints on SynchronizationsController
 		['name' => 'synchronizations#logsStatistics', 'url' => '/api/synchronizations/logs/statistics', 'verb' => 'GET'],
@@ -622,6 +627,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
 		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
+		['name' => 'productChannels#pull', 'url' => '/api/products/{productSlug}/channels/{channel}/events', 'verb' => 'GET'],
+		['name' => 'productChannels#subscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions', 'verb' => 'POST'],
+		['name' => 'productChannels#unsubscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions/{id}', 'verb' => 'DELETE'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/integriq/catalog_item (ADR-022);
@@ -633,6 +641,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// connectors-sharepoint-publication-intake REQ-SPPI-001: the Graph lookups behind
 		// the SharePoint to publication setup dialog (sites, libraries, folders).
 		['name' => 'sharePointSetup#lookup', 'url' => '/api/sharepoint/lookup', 'verb' => 'GET'],
+		// The setup's save: one source, mapping, rule and synchronization from the sharepoint-publications set.
+		['name' => 'sharePointSetup#intake', 'url' => '/api/sharepoint/publication-intake', 'verb' => 'POST'],
 
 		// registry-backed-field-source: openregister resolves a property that
 		// declares `x-openregister-property-source` through these routes, and the
@@ -678,6 +688,13 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// generic /api/objects/integriq/app_connection (ADR-022).
 		['name' => 'connections#link', 'url' => '/api/connections/{id}/link', 'verb' => 'POST'],
 
+		// Data residency (connections-declare-data-residency): every outbound
+		// destination with where it sits, EU-only mode, and an administrator's
+		// residency on a source. Admin only, checked in each method.
+		['name' => 'egressDestination#index', 'url' => '/api/egress/destinations', 'verb' => 'GET'],
+		['name' => 'egressDestination#setEuOnly', 'url' => '/api/egress/eu-only', 'verb' => 'PUT'],
+		['name' => 'egressDestination#setSourceResidency', 'url' => '/api/sources/{id}/residency', 'verb' => 'PUT'],
+
 		// Configuration import/export UI endpoints (connector-catalog-ui) — a
 		// thin, routed wrapper over the existing, already-tested
 		// ConfigurationService::exportConfiguration()/importConfiguration().
@@ -710,11 +727,14 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
 
 		// Settings endpoints
-		// Settings routes shrunk in chain-C OR-cutover:
 		// - GET /api/settings/stats — replaced by manifest dashboard widgets resolving against OR's aggregate endpoint
-		// - GET /api/settings + PUT /api/settings — replaced by OR's /api/settings/* surface
-		// Only the connector-specific rebase action remains. Postgres portability tracked at #822.
-		// rebase is admin-only (AuthorizedAdminSetting).
+		// - GET /api/settings + PUT /api/settings — integriq's log retention (platform-admin-defaults).
+		//   OpenRegister's /api/settings/retention reads and writes OpenRegister's own retention,
+		//   not the `integriq` / `retention` key, so it cannot stand in for these.
+		// - POST /api/settings/rebase — queues RetentionRebaseJob over the log objects.
+		// All three are admin-only (AuthorizedAdminSetting).
+		['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
+		['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
 
 		// ADR-023 action-authorization matrix (admin-only via #[AuthorizedAdminSetting])

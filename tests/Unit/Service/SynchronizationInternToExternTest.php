@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every branch of synchronizeInternToExtern(), recorded against a golden file:
@@ -130,7 +131,7 @@ class SynchronizationInternToExternTest extends TestCase {
 
 		$openRegisters = $this->createMock(ORObjectService::class);
 		$openRegisters->method('find')->willReturnCallback(
-			fn ($id, $_extend = []) => $this->lookup('openRegisters.find', [$id, $_extend])
+			fn (...$args) => $this->lookup('openRegisters.find', array_slice(LegacyObjectArgs::positional(method: 'find', args: $args), 0, 2))
 		);
 		$openRegisters->method('getMapper')->willReturn($mapper);
 		$objectService = $this->createMock(ObjectService::class);
