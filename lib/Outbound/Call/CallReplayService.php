@@ -36,7 +36,7 @@ namespace OCA\Integriq\Outbound\Call;
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\Integriq\Service\Helper\RegisterSave;
-use OCA\Integriq\Service\Security\PersonalDataMasker;
+use OCA\Integriq\Service\Security\PersonalDataFields;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Throwable;
@@ -630,7 +630,7 @@ class CallReplayService implements CallReplayServiceInterface {
 	 */
 	private static function holdsMaskedValue(mixed $value): bool {
 		if (is_string($value) === true) {
-			return str_contains($value, PersonalDataMasker::PLACEHOLDER);
+			return str_contains($value, PersonalDataFields::PLACEHOLDER);
 		}
 
 		if (is_array($value) === false) {

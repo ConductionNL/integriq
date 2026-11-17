@@ -25,7 +25,7 @@ namespace OCA\Integriq\Tests\Unit\Outbound;
 use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\CallRecorder;
-use OCA\Integriq\Service\Security\PersonalDataFieldList;
+use OCA\Integriq\Service\Security\PersonalDataFields;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
@@ -92,7 +92,7 @@ class CallRecorderPersonalDataTest extends TestCase {
 		$appConfig->method('getValueInt')->willReturnArgument(2);
 		$this->recorder = new CallRecorder(
 			$objectService,
-			new BodyRedactor(new PersonalDataFieldList()),
+			new BodyRedactor(new PersonalDataFields()),
 			new BodyCapturePolicy($appConfig),
 			new SensitiveFieldRegistry()
 		);

@@ -24,8 +24,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Service\Security\PersonalDataFieldList;
-use OCA\Integriq\Service\Security\PersonalDataMasker;
+use OCA\Integriq\Service\Security\PersonalDataFields;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -113,7 +112,7 @@ class PersonalDataSettingsController extends Controller {
 				continue;
 			}
 
-			if (mb_strlen($name) > self::MAX_NAME_LENGTH || PersonalDataMasker::normalise(name: $name) === '') {
+			if (mb_strlen($name) > self::MAX_NAME_LENGTH || PersonalDataFields::normalise(name: $name) === '') {
 				return new JSONResponse(
 					['error' => $this->l->t('"%s" is not a field name.', [mb_substr($name, 0, self::MAX_NAME_LENGTH)])],
 					Http::STATUS_BAD_REQUEST
@@ -124,13 +123,13 @@ class PersonalDataSettingsController extends Controller {
 		}
 
 		if ($names === []) {
-			$this->appConfig->deleteKey(AppIdentity::APP_ID, PersonalDataFieldList::CONFIG_KEY);
+			$this->appConfig->deleteKey(AppIdentity::APP_ID, PersonalDataFields::CONFIG_KEY);
 			return new JSONResponse($this->config());
 		}
 
 		$this->appConfig->setValueString(
 			AppIdentity::APP_ID,
-			PersonalDataFieldList::CONFIG_KEY,
+			PersonalDataFields::CONFIG_KEY,
 			(string)json_encode(array_values($names))
 		);
 
@@ -144,8 +143,8 @@ class PersonalDataSettingsController extends Controller {
 	 */
 	private function config(): array {
 		return [
-			'defaults' => PersonalDataFieldList::DEFAULT_FIELDS,
-			'added' => (new PersonalDataFieldList(appConfig: $this->appConfig))->addedPersonalDataFields(),
+			'defaults' => PersonalDataFields::defaults(),
+			'added' => (new PersonalDataFields(appConfig: $this->appConfig))->addedPersonalDataFields(),
 		];
 	}//end config()
 }//end class
