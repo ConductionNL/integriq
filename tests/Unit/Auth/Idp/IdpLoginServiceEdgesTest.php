@@ -369,6 +369,35 @@ class IdpLoginServiceEdgesTest extends TestCase {
 	}//end testAnAssertionForAnotherOrganisationsEntityIdIsRefused()
 
 	/**
+	 * An `oidc-rp` registration's audience is its client id: an assertion naming it is accepted.
+	 *
+	 * @return void
+	 */
+	public function testAnOidcRegistrationsAudienceIsItsClientId(): void {
+		$this->registrationOverrides = ['kind' => 'oidc-rp', 'clientId' => self::ENTITY_ID, 'spEntityId' => 'urn:nl:gemeente-x:sp'];
+
+		$back = $this->login($this->digid('999993653', 'bsn'));
+
+		$this->assertStringContainsString('code=', $back);
+
+	}//end testAnOidcRegistrationsAudienceIsItsClientId()
+
+	/**
+	 * An assertion naming another client than the `oidc-rp` registration's is refused on the audience check.
+	 *
+	 * @return void
+	 */
+	public function testAnAssertionForAnotherOidcClientIsRefused(): void {
+		$this->registrationOverrides = ['kind' => 'oidc-rp', 'clientId' => 'client-gemeente-y'];
+
+		$back = $this->login($this->digid('999993653', 'bsn'));
+
+		$this->assertStringNotContainsString('code=', $back);
+		$this->assertStringContainsString('another audience', implode("\n", $this->logLines));
+
+	}//end testAnAssertionForAnotherOidcClientIsRefused()
+
+	/**
 	 * Without an enabled registration for the organisation and provider, no code is issued.
 	 *
 	 * @return void

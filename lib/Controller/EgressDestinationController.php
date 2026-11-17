@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
-use OCA\Integriq\Service\Residency\EgressDestinationService;
+use OCA\Integriq\Service\Residency\EgressDestinationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -51,17 +51,17 @@ class EgressDestinationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                   $appName      The app id.
-	 * @param IRequest                 $request      The request.
-	 * @param EgressDestinationService $destinations The destinations and EU-only mode.
-	 * @param IUserSession             $userSession  The signed-in user.
-	 * @param IGroupManager            $groupManager Answers whether the user is an administrator.
-	 * @param IL10N                    $l10n         Translates the refusals.
+	 * @param string                            $appName      The app id.
+	 * @param IRequest                          $request      The request.
+	 * @param EgressDestinationServiceInterface $destinations The destinations and EU-only mode.
+	 * @param IUserSession                      $userSession  The signed-in user.
+	 * @param IGroupManager                     $groupManager Answers whether the user is an administrator.
+	 * @param IL10N                             $l10n         Translates the refusals.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly EgressDestinationService $destinations,
+		private readonly EgressDestinationServiceInterface $destinations,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly IL10N $l10n,
