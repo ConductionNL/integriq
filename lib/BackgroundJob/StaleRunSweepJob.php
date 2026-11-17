@@ -22,6 +22,9 @@ namespace OCA\Integriq\BackgroundJob;
 
 use DateTime;
 use OCA\Integriq\Service\SynchronizationRunProgressServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -229,13 +232,16 @@ class StaleRunSweepJob extends TimedJob {
 			// System path: the cron sweep closes abandoned runs of every organisation.
 			$this->objectService->saveObject(
 				object: $object,
-				register: SynchronizationRunProgressServiceInterface::REGISTER,
-				schema: SynchronizationRunProgressServiceInterface::SCHEMA,
-				uuid: $entity->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: SynchronizationRunProgressServiceInterface::REGISTER,
+							schema: SynchronizationRunProgressServiceInterface::SCHEMA
+						),
+					uuid: $entity->getUuid(),
+					policy: new SavePolicy(silent: true, validation: false)
+				),
 				_rbac: false,
-				_multitenancy: false,
-				silent: true,
-				_validation: false,
+				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
 			$this->logger->warning(

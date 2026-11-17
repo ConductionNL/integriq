@@ -37,6 +37,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Twig\Loader\ArrayLoader;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * A sibling runs an integriq mapping by slug, through the real MappingService
@@ -81,6 +82,7 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 		$this->orObjectService = $this->createMock(OrObjectService::class);
 		$this->orObjectService->method('find')->willReturnCallback(
 			function (...$args): ObjectEntity {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = (string)($args['id'] ?? $args[0]);
 				if (isset($this->stored[$id]) === false) {
 					// What OpenRegister does for an identifier it cannot resolve.

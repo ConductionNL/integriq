@@ -31,6 +31,7 @@ namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -149,7 +150,12 @@ class ProductDeliveryGate {
 		}
 
 		try {
-			return $this->objects->find(id: $id, register: 'integriq', schema: $schema, _rbac: false, _multitenancy: false);
+			return $this->objects->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: $schema),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $exception) {
 			$this->logger->info('integriq: ' . $schema . ' ' . $id . ' could not be read for a push delivery: ' . $exception->getMessage());
 			return null;

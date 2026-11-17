@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\AgentTools;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
@@ -63,8 +65,7 @@ class AgentActionStore implements AgentActionStoreInterface {
 		// Unscoped: the audit record of an agent action, written whatever organisation the caller is in.
 		$saved = $this->objectService->saveObject(
 			object: $record,
-			register: 'integriq',
-			schema: self::SCHEMA,
+			options: RegisterSave::options(register: 'integriq', schema: self::SCHEMA),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -85,8 +86,7 @@ class AgentActionStore implements AgentActionStoreInterface {
 			// Unscoped: re-reads an agent action record this store wrote, for the approval that follows it.
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: 'integriq', schema: self::SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -117,9 +117,7 @@ class AgentActionStore implements AgentActionStoreInterface {
 		// Unscoped: updates an agent action record this store wrote, as its approval resolves.
 		$this->objectService->saveObject(
 			object: $record,
-			register: 'integriq',
-			schema: self::SCHEMA,
-			uuid: $uuid,
+			options: RegisterSave::options(register: 'integriq', schema: self::SCHEMA, uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);

@@ -26,8 +26,10 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Registration\RegistrationService;
-use OCA\Integriq\Service\Registration\RegistrationStore;
+use OCA\Integriq\Service\Registration\RegistrationStoreInterface;
+use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -46,14 +48,16 @@ class RegistrationTargetController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest          $request The request.
-	 * @param RegistrationStore $store   Reads the targets.
+	 * @param IRequest                   $request       The request.
+	 * @param RegistrationStoreInterface $store         Reads the targets.
+	 * @param RegistrationService        $registrations Runs the dry run.
 	 *
 	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly RegistrationStore $store,
+		private readonly RegistrationStoreInterface $store,
+		private readonly RegistrationService $registrations,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -89,4 +93,24 @@ class RegistrationTargetController extends Controller {
 
 		return new JSONResponse(['results' => $results]);
 	}//end index()
+
+	/**
+	 * POST /api/registration-targets/{slug}/test: the administrator's dry run (design D6).
+	 *
+	 * Maps the given hand-over, or the sample one, for the target and answers
+	 * the mapped body. It stops before the first write: no record, no file
+	 * read, no outside call. A refusal is answered with HTTP 200 and its code,
+	 * like the command's own answer, so the page can show it.
+	 *
+	 * @param string              $slug     The target slug.
+	 * @param array<string,mixed> $handover The hand-over to map, or nothing for the sample.
+	 *
+	 * @return JSONResponse The dry-run answer.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function test(string $slug, array $handover = []): JSONResponse {
+		return new JSONResponse($this->registrations->dryRun(target: $slug, handover: $handover));
+	}//end test()
 }//end class

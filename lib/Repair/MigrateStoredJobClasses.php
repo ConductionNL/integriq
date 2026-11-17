@@ -92,6 +92,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\SystemWrite;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -447,9 +448,7 @@ class MigrateStoredJobClasses implements IRepairStep {
 
 			$orObjectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $item->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $item->getUuid())
 			);
 
 			return true;
