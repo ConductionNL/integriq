@@ -56,6 +56,7 @@ use OCA\Integriq\Service\Synchronization\FileFetchItem;
 use OCA\Integriq\Service\Synchronization\FileFetchRequest;
 use OCA\Integriq\Service\Synchronization\FileFetchRun;
 use OCA\Integriq\Service\Synchronization\SourcePage;
+use OCA\Integriq\Service\Synchronization\WildcardResultsPath;
 use OCA\Integriq\Service\Synchronization\ZipArchiveMembers;
 use OCA\Integriq\Service\Synchronization\OpenRegisterTargetWrite;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
@@ -10166,6 +10167,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// If position is root, return the array.
 			if ($position === '_root' || $position === '_object') {
 				return $array;
+			}
+
+			// A `*` or `**` segment reaches the objects in every repeated
+			// container (articles in each chapter of a law) where a fixed dot
+			// path reaches one place.
+			$wildcardPath = new WildcardResultsPath();
+			if ($wildcardPath->isWildcard(path: (string)$position) === true) {
+				return $wildcardPath->objects(data: $array, path: (string)$position);
 			}
 
 			// Use Dot notation to access nested array elements.

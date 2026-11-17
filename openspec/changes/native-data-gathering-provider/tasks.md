@@ -133,8 +133,14 @@
   until one watched live run confirms a month fits the memory cap
 - [ ] Open follow-up: N+1 two-hop (id-list then per-id detail fetch) → unblocks
   `italy_anac`, `saashub`, `sourceforge`
-- [ ] Open follow-up: wildcard / recursive `resultsPosition` → unblocks
-  `dutch_laws_bwb` lawArticle
+- [x] Open follow-up: wildcard / recursive `resultsPosition` → unblocks
+  `dutch_laws_bwb` lawArticle — landed in this change: a `resultsPosition`
+  with a `*` segment (each element of the list there; a single object counts
+  as one) or a `**` segment (any depth, each match once) is resolved by
+  `WildcardResultsPath` from `SynchronizationService::getAllObjectsFromArray()`;
+  a fixed dot path reads exactly as before. Pinned by `WildcardResultsPathTest`
+  and `SynchronizationWildcardPositionTest`. The `dutch_laws_bwb` draft itself
+  is still left (see the Wave-2 draft list below)
 - [ ] Open follow-up: incremental / since-watermark fetch cursor → high-volume
   daily feeds
 - [ ] Open follow-up (deferred, likely ETL): large-file streaming
