@@ -11,6 +11,7 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
   - GIVEN a developer in the developer group WHEN they open the portal THEN they see public products and their documentation, and no private product
 - [x] Implement (`PortalController::products()` behind `DeveloperPortalAccess`; page `DeveloperPortal` (custom `DeveloperPortalPage`, because a developer holds no register rights and the page reads the portal routes); admin section `DeveloperPortalSettings` with the group's member count; strings in `l10n/en.js`, `nl.js`, and the PHP ones in `en.json`, `nl.json`. A product's published OpenAPI description is linked when it carries `openApiUrl`; publishing it is `gateway-openapi-import-and-publish`)
 - [ ] Test (Playwright as a developer and as a user outside the group)
+  - Written, not yet run (needs a live instance): `tests/e2e/developer-portal.spec.ts` makes two developers and one account outside the group through the provisioning API, then lists the products and opens the portal page as a developer and as the outsider, each from an empty storage state with its own login.
 
 ### Task 2: Applications owned by a developer, and request access
 - **spec_ref**: `openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002`
@@ -20,6 +21,7 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 - [x] Implement (`PortalController` `applications`, `createApplication` and `requestAccess`, checking the developer group and `consumer.userId` with `ownerKind: developer`; `ProductSubscriptionService` is the one subscribe path, so a request opens the product's approval as an administrator's would)
 - [ ] Test (PHPUnit on the ownership check; Playwright for create application and request access)
   - PHPUnit done: `PortalControllerTest::testAnotherDevelopersApplicationIsOutOfReach` and the rest of `PortalControllerTest`, `ProductSubscriptionServiceTest`. Left: the Playwright run.
+  - Playwright written, not yet run: `tests/e2e/developer-portal.spec.ts` creates an application in the portal page, requests the approval tier of "Zaken API" (202, pending approval, listed under the application and in the approval queue) and has developer A ask with developer B's application (404, B's subscriptions unchanged).
 
 ### Task 3: Self-service keys in the portal
 - **spec_ref**: `openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003`
@@ -47,6 +49,7 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 - [x] Implement (`expiresAt`, `expiryReminderSentAt` and status `expired`; `ProductPolicyService::expiredOn()` refuses at request time; `SubscriptionExpiryJob` daily via `SubscriptionExpiryService`)
 - [ ] Test (PHPUnit for the check and the job; Newman for the refused call)
   - PHPUnit done: `ProductPolicyServiceTest`, `EndpointServiceTierPolicyTest::testAnEndedSubscriptionIsRefusedNamingItsEndDate`, `SubscriptionExpiryServiceTest`, `SubscriptionExpiryJobTest`. Left: the Newman run against a live instance.
+  - Newman written, not yet run: folder "17a — Developer portal: an ended subscription" in `tests/postman/integriq.postman_collection.json` builds an API-key rule, endpoint, consumer, product and a subscription that ended yesterday, expects 403 `subscription_expired` naming the date, and cleans up.
 
 ### Task 6: Seed data and documentation
 - **spec_ref**: `openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001`
@@ -58,5 +61,6 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 
 ## Verification
 - [ ] `openspec validate access-developer-portal-and-subscriptions --type change --strict` passes
+  - Run on 17 Nov: the only issue is the warning on the Status/Scope header above `## Purpose` in `specs/api-product-gateway/spec.md`, which `--strict` treats as an error; the header follows the app's spec layout, so it is left for the spec pass.
 - [ ] Hydra gates `no-admin-idor` and `route-auth` pass on the new routes
 - [ ] PHPUnit, Newman and Playwright run, exit codes read
