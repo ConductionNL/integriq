@@ -45,7 +45,7 @@ use OCP\IAppConfig;
  *
  * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-one-page-lists-every-outbound-destination-with-its-location-req-res-002
  */
-class EgressDestinationService {
+class EgressDestinationService implements EgressDestinationServiceInterface {
 
 	/**
 	 * The register sources and call logs live in.

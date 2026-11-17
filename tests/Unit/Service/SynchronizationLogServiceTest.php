@@ -35,6 +35,7 @@ use OCP\ISession;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Write-once / append-only regression coverage for the run-log service.
@@ -90,7 +91,10 @@ final class SynchronizationLogServiceTest extends TestCase {
 		$objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register, $schema, $uuid = null) use (&$captured): ObjectEntity {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$captured): ObjectEntity {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
+					$uuid = $options->uuid;
 					$captured = ['register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 					return $this->entity($object);
 				}
@@ -172,7 +176,10 @@ final class SynchronizationLogServiceTest extends TestCase {
 		$objectService = $this->createMock(OrObjectService::class);
 		$objectService->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register, $schema, $uuid = null) use (&$captured): ObjectEntity {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$captured): ObjectEntity {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
+					$uuid = $options->uuid;
 					$captured = $object;
 					return $this->entity($object);
 				}

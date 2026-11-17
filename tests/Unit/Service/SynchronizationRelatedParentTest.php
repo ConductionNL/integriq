@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every branch of resolveParentObjectForRelatedObjectTrigger(), recorded
@@ -78,7 +79,8 @@ class SynchronizationRelatedParentTest extends TestCase {
 
 		$openRegisters = $this->createMock(ORObjectService::class);
 		$openRegisters->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null) {
+			function (...$legacyArgs) {
+				[$id, $register, $schema] = LegacyObjectArgs::positional(method: 'find', args: $legacyArgs);
 				$this->log[] = ['openRegisters.find', $id, $register, $schema];
 				if (($this->case['find'] ?? 'object') === 'throws') {
 					throw new RuntimeException('not found');

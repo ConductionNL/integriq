@@ -66,6 +66,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Suspend, then approve and resume, or reject, one endpoint run.
@@ -142,7 +143,10 @@ class ApprovalRuleChainTest extends TestCase {
 		$objects = $this->createMock(OrObjectService::class);
 		$objects->method('find')->willReturnCallback(fn (mixed $id): ObjectEntity => $this->entity(uuid: (string)$id));
 		$objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+			function (mixed $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$uuid = ($uuid ?? ('approval-' . (count($this->store) + 1)));
 				$this->store[$uuid] = (array)$object;
 				return $this->entity(uuid: $uuid);

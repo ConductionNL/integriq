@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Pages, expiries, the success rule, the next run and the progress.
@@ -233,7 +234,10 @@ class RetentionRebaseJobTest extends TestCase {
 			}
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?string $register=null, ?string $schema=null, ?string $uuid=null) use ($failOn) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use ($failOn) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($uuid === $failOn) {
 					throw new RuntimeException('locked');
 				}

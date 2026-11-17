@@ -68,7 +68,7 @@ use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
@@ -90,7 +90,12 @@ use UnexpectedValueException;
  *   config and its fan-out can be wrong; splitting the class would move
  *   that branching, not remove it.
  */
-class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SynchronizationRunNodeInterface {
+class SynchronizationRunNode implements
+	ICallFlowNode,
+	IFlowNodeConfigKeys,
+	IFlowNodeConfigForm,
+	IFlowNodeLogActions,
+	SynchronizationRunNodeInterface {
 	use FlowNodePaletteDefaults;
 
 	/**
@@ -324,8 +329,8 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 
 		return $this->flowOwner->runAs(
 			user: $owner,
-			callback: function () use ($items, $config, $context) {
-				return $this->runForEachItem(items: $items, config: $config, context: $context);
+			callback: function () use ($call) {
+				return $this->runForEachItem(call: $call);
 			}
 		);
 
@@ -334,9 +339,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	/**
 	 * Run the synchronization for each input item, in the owner's context.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
@@ -344,7 +347,10 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function runForEachItem(array $items, array $config, array $context): array {
+	private function runForEachItem(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$run = $this->startRun(config: $config, context: $context);
 
 		foreach ($items as $index => $item) {

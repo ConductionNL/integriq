@@ -36,6 +36,8 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for FlowRunnerService::run()/resumeFromApproval().
@@ -107,7 +109,10 @@ class FlowRunnerServiceTest extends TestCase {
 
 		$this->loggedEntries = [];
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($schema === 'flow_run_log') {
 					$this->loggedEntries[] = $object;
 				}
@@ -473,7 +478,9 @@ class FlowRunnerServiceTest extends TestCase {
 		);
 
 		$this->orObjectService->method('find')->willReturnCallback(
-			function (string $id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true) use ($flowRunEntity, $flow) {
+			function (string $id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) use ($flowRunEntity, $flow) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'flow_run') {
 					return $flowRunEntity;
 				}
