@@ -131,8 +131,14 @@
   `ZipArchiveMembersTest` and `SynchronizationZipPageTest`. The
   `spain-placsp` draft now carries `zipMembers: "*.atom"` and stays disabled
   until one watched live run confirms a month fits the memory cap
-- [ ] Open follow-up: N+1 two-hop (id-list then per-id detail fetch) → unblocks
-  `italy_anac`, `saashub`, `sourceforge`
+- [x] Open follow-up: N+1 two-hop (id-list then per-id detail fetch) → unblocks
+  `italy_anac`, `saashub`, `sourceforge` — already on development: a
+  synchronization's `sourceConfig.extraDataConfigs` fetches a per-object
+  detail endpoint (`staticEndpoint` filled with the listed object's id, or
+  `dynamicEndpointLocation`) and merges it (`keyToSetExtraData` /
+  `mergeExtraData`) through `fetchExtraDataForObject()`
+  (synchronization-engine REQ-002). The `italy-anac` draft stays disabled
+  until its synchronization is switched to it and run live once
 - [x] Open follow-up: wildcard / recursive `resultsPosition` → unblocks
   `dutch_laws_bwb` lawArticle — landed in this change: a `resultsPosition`
   with a `*` segment (each element of the list there; a single object counts
@@ -141,8 +147,12 @@
   a fixed dot path reads exactly as before. Pinned by `WildcardResultsPathTest`
   and `SynchronizationWildcardPositionTest`. The `dutch_laws_bwb` draft itself
   is still left (see the Wave-2 draft list below)
-- [ ] Open follow-up: incremental / since-watermark fetch cursor → high-volume
-  daily feeds
+- [x] Open follow-up: incremental / since-watermark fetch cursor → high-volume
+  daily feeds — already on development: `syncMode: "incremental"` exposes the
+  stored `cursorWatermark` as `{{ cursor }}` to `sourceConfig.endpoint` and
+  `sourceConfig.query`, advances it only after a complete fetch and never runs
+  the deletion sweep (synchronization-engine REQ-016 to REQ-019); a feed opts
+  in per synchronization
 - [ ] Open follow-up (deferred, likely ETL): large-file streaming
   decompress/parse; JS-rendered SPA headless render (`fedramp`)
 - [ ] Ship each Wave-2 connector draft `isEnabled: false` with a `$comment`
