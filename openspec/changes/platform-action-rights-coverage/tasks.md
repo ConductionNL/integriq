@@ -23,6 +23,7 @@ Kind: code. Matrix rows `integriq:plt-action-matrix` and `integriq:plt-roles`.
   - `getMatrix()` returns the seed's `labels` and `areas`; the screen shows one section per area, each action's label with its name beneath.
 - [ ] Test (Playwright `tests/e2e/action-rights-coverage.spec.ts`)
   - Unit-level: `ActionMatrixControllerTest`, `tests/vitest/actionMatrixSections.spec.js`, `adminSettingsPanelsRender.spec.js`. The Playwright run (delegate, then member and non-member push) needs a live instance.
+  - `tests/e2e/action-rights-coverage.spec.ts` is written (listed under its area, delegate `stuf-zkn.push` through the screen, member push passes and non-member gets 403); not yet run against a live instance.
 
 ### Task 3: Measure today's object posture
 - **spec_ref**: openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
@@ -30,7 +31,9 @@ Kind: code. Matrix rows `integriq:plt-action-matrix` and `integriq:plt-roles`.
 - **acceptance_criteria**:
   - GIVEN a live instance WHEN a user in no group tries each verb on each of the nine schemas THEN the outcome is recorded, and the `object.*` seed values equal it
 - [ ] Implement
+  - Seeded from OpenRegister's rule for a schema without a block (every signed-in user, `authenticated`) and the three lockdown fragments (admin only); the live measurement is still to run.
 - [ ] Test (integration test against OpenRegister; the recorded posture goes in the PR body)
+  - `tests/Integration/ObjectRightsPostureTest.php` is written: a user in no group tries each verb on each schema through the object API and the outcome must equal the seed. It self-skips without `INTEGRIQ_POSTURE_BASE_URL` / `INTEGRIQ_POSTURE_ADMIN`; not yet run against a live instance.
 
 ### Task 4: Apply object rights on save and after import
 - **spec_ref**: openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-survive-a-register-import-req-arc-004
@@ -42,6 +45,7 @@ Kind: code. Matrix rows `integriq:plt-action-matrix` and `integriq:plt-roles`.
 - [x] Implement
   - `ObjectRightsService::apply()` writes each `object.<schema>.<verb>` row onto the schema's block (found by application and slug), always with `admin`, keeping keys the matrix does not govern. A row still at its seed is the register's own posture: `["admin"]` for source, rule and consumer, the verb removed (OpenRegister's default) for the six others, so an untouched matrix writes nothing. `setMatrix()` applies after storing and answers `notApplied` and a `warning` naming the schemas; `ApplyObjectRights` runs after InitializeRegister and InitializeActions in post-migration and install.
 - [ ] Test (PHPUnit on the service and repair step; Playwright for the mapping versus source scenario)
+  - PHPUnit `ObjectRightsServiceTest`, `ApplyObjectRightsTest`, `ActionMatrixControllerTest`; vitest `actionMatrixObjectRights.spec.js` for the screen. The Playwright scenario is in `tests/e2e/action-rights-coverage.spec.ts`, not yet run against a live instance.
 
 ## Verification
 
