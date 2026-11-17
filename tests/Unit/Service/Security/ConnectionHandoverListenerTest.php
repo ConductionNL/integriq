@@ -84,11 +84,13 @@ namespace OCA\Pipelinq\Event {
 
 namespace OCA\Integriq\Tests\Unit\Service\Security {
 
+	use OCA\Integriq\Service\Security\ConnectionHandoverEventHandler;
 	use OCA\Integriq\Service\Security\ConnectionHandoverListener;
 	use OCA\Integriq\Service\Security\ConnectionHandoverService;
 	use OCA\Pipelinq\Event\BrpConnectionHandoverEvent;
 	use OCP\EventDispatcher\Event;
 	use PHPUnit\Framework\Attributes\CoversClass;
+	use PHPUnit\Framework\Attributes\UsesClass;
 	use PHPUnit\Framework\MockObject\MockObject;
 	use PHPUnit\Framework\TestCase;
 	use Psr\Container\ContainerInterface;
@@ -99,6 +101,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Security {
 	 * Tests for the handover listener.
 	 */
 	#[CoversClass(ConnectionHandoverListener::class)]
+	#[UsesClass(ConnectionHandoverEventHandler::class)]
 	class ConnectionHandoverListenerTest extends TestCase {
 
 		/**
