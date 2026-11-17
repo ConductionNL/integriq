@@ -24,7 +24,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
 use OCA\Integriq\Adapters\Digikoppeling\WusProfileService;
 use OCA\Integriq\Exception\DigikoppelingException;
-use OCA\Integriq\Exception\DigipoortException;
+use OCA\Integriq\Service\Digipoort\DigipoortException;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\MtlsConfigurationException;
 use OCA\Integriq\Exception\MtlsTransportException;

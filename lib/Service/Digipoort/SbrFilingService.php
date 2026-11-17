@@ -34,7 +34,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Digipoort;
 
 use DateTime;
-use OCA\Integriq\Exception\DigipoortException;
 use OCA\Integriq\Service\CloudEventEmitterInterface;
 use OCA\Integriq\Service\UserFilePayloadReader;
 use OCA\OpenRegister\Db\ObjectEntity;

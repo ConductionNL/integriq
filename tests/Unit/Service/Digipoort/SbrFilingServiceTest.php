@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Digipoort;
 
-use OCA\Integriq\Exception\DigipoortException;
+use OCA\Integriq\Service\Digipoort\DigipoortException;
 use OCA\Integriq\Service\CloudEventEmitterInterface;
 use OCA\Integriq\Service\Digipoort\LogDigipoortProvider;
 use OCA\Integriq\Service\Digipoort\SbrDelivery;
