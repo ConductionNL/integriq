@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.10-unstable.20261117030000</version>
+	<version>0.4.10-unstable.20261117090000</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -305,10 +305,6 @@
 			     InitializeRegister, so the app_connection schema exists. Idempotent
 			     and never throws. -->
 			<step>OCA\Integriq\Repair\SyncConnectionDeclarations</step>
-			<!-- gateway-declared-data-feeds: every enabled app's
-			     lib/Settings/feeds.json becomes feed endpoints and an API product.
-			     After InitializeRegister. Idempotent and never throws. -->
-			<step>OCA\Integriq\Repair\SyncFeedDeclarations</step>
 			<!-- WRITTEN BUT NEVER REGISTERED until now, which meant it never
 			     ran anywhere. gate-98 (repair-step-registration) found it.
 
@@ -509,10 +505,6 @@
 			     InitializeRegister, so the app_connection schema exists. Idempotent
 			     and never throws. -->
 			<step>OCA\Integriq\Repair\SyncConnectionDeclarations</step>
-			<!-- gateway-declared-data-feeds: every enabled app's
-			     lib/Settings/feeds.json becomes feed endpoints and an API product.
-			     After InitializeRegister. Idempotent and never throws. -->
-			<step>OCA\Integriq\Repair\SyncFeedDeclarations</step>
 			<!-- The three inline-secret steps are deliberately NOT here. A first
 			     install has no sources, so they would have nothing to migrate,
 			     and RemoveMigratedSourceSecretFields is IRREVERSIBLE: it would
@@ -543,6 +535,8 @@
 		<command>OCA\Integriq\Command\MigrateInlineSecrets</command>
 		<!-- Reports source and rule secrets stored as the export placeholder; blanks them only with the apply option. -->
 		<command>OCA\Integriq\Command\BlankPlaceholderSecrets</command>
+		<!-- open-formulieren-submits-into-its-case: drains the staged Open Formulieren submissions into their cases; a dry run without the apply option. -->
+		<command>OCA\Integriq\Command\OpenFormulierenDrain</command>
 		<!-- ocon#232 (ocon#151 follow-up): audits the VESTIGIAL source
 		     authenticationConfig field. No code authenticates from it, so removal
 		     (not a credentialRef migration) is the correct treatment. The default
