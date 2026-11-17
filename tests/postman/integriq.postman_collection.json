@@ -2189,6 +2189,221 @@
       ]
     },
     {
+      "name": "18 — Message schema validation (mapping-message-schema-validation)",
+      "item": [
+        {
+          "name": "18.1 GET message schemas — both seeds listed",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{orBase}}/message_schema",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "message_schema"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('listed', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const rows = (pm.response.json().results || pm.response.json());",
+                  "const slugs = rows.map((r) => (r['@self'] && r['@self'].slug) || r.slug);",
+                  "pm.test('the JSON Schema seed is there', () => pm.expect(slugs).to.include('example-person-json'));",
+                  "pm.test('the XSD seed is there', () => pm.expect(slugs).to.include('example-person-xsd'));",
+                  "const person = rows.find((r) => ((r['@self'] && r['@self'].slug) || r.slug) === 'example-person-json');",
+                  "pm.collectionVariables.set('msvPersonSchema', person && ((person['@self'] && person['@self'].id) || person.uuid || person.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.2 POST message schema — a broken XSD is refused",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/message_schema",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "message_schema"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-broken-xsd\", \"kind\": \"xsd\", \"document\": \"<xs:schema xmlns:xs=\\\"http://www.w3.org/2001/XMLSchema\\\"><xs:element name=\\\"a\\\">\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused, nothing stored', () => pm.expect(pm.response.code).to.equal(400));",
+                  "pm.test('the parser says why', () => pm.expect(pm.response.text().length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.3 POST endpoint — request validation in refuse mode",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/endpoint",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"msv-endpoint\", \"endpoint\": \"msv-newman\", \"method\": \"POST\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"validation\": {\"mode\": \"refuse\", \"request\": {\"messageSchema\": \"{{msvPersonSchema}}\"}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('msvEndpointUuid', b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.4 POST /api/endpoint/msv-newman — a request without bsn is refused before dispatch",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/msv-newman",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "msv-newman"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"geslachtsnaam\": \"Jansen\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.expect(pm.response.code).to.equal(400));",
+                  "pm.test('problem+json', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                  "pm.test('names /bsn', () => pm.expect(pm.response.text()).to.include('/bsn'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.5 POST /api/endpoint/msv-newman — a valid request passes the check",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/msv-newman",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "msv-newman"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"bsn\": \"999990019\", \"geslachtsnaam\": \"Jansen\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('not refused by the message check', () => pm.expect(pm.response.code === 400 && pm.response.text().includes('/bsn')).to.equal(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.6 DELETE endpoint — msv fixture",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/endpoint/{{msvEndpointUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "{{msvEndpointUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "99 — Teardown (via OR)",
       "description": "Deletes the fixtures created in folder 01.",
       "item": [

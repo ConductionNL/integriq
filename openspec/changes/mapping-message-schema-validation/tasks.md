@@ -13,7 +13,7 @@ Kind: code. Matrix row `integriq:map-message-validation`.
   - A document that does not parse for its kind is refused on OpenRegister's own save path: `MessageSchemaDocumentListener` on `ObjectCreatingEvent` and `ObjectUpdatingEvent` asks `MessageValidationService::documentProblem()` and stops the save with the parser's message (400, nothing stored). An XSD must be well-formed with an `xs:schema` root; a JSON Schema must be a JSON object or boolean; an OpenAPI description must parse as JSON or YAML and carry a `paths` object. `register-schema` carries no document.
 - [ ] Test (`node tests/validate-register.js`, `node tests/validate-manifest.js`, Playwright `tests/e2e/message-schema-validation.spec.ts`)
   - Done: `tests/Unit/Settings/MessageSchemaRegisterFragmentTest.php` (fragment shape, admin-only, both seeds pass the real merged schema with Opis and check the same person with the real checkers, the page and menu) and `tests/Unit/EventListener/MessageSchemaDocumentListenerTest.php` (real OpenRegister events and real checkers: broken XSD refused with the parser's message, XML that is not an XSD, broken JSON Schema on update, OpenAPI without paths, good documents saved, the Application registration); `npm run check:specs` passes.
-  - Owed: the Playwright spec against a live instance (the page lists both seeds; a broken XSD save shows the parser's message).
+  - Written: `tests/e2e/message-schema-validation.spec.ts` (the page lists both seeds from the Automation menu, a partner's XSD is listed with its kind and version, a broken XSD is refused and not stored). Owed: a run against a live instance.
 
 ### Task 2: The validator service and its three checkers
 - **spec_ref**: openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
@@ -41,7 +41,7 @@ Kind: code. Matrix row `integriq:map-message-validation`.
   - `src/modals/v2/EndpointFormFields.vue` has a message validation section: mode, request schema, answer schema (picked from the `message_schema` objects). The `operationId` is kept when the schema changes; it is not edited on the form yet.
 - [ ] Test (PHPUnit on EndpointService; Newman requests in `tests/postman/`)
   - Done: `tests/Unit/Service/EndpointServiceMessageValidationTest.php` drives `handleRequest()` of a proxying endpoint with the real gate and the real checkers (refused 400 naming `/bsn` and not dispatched, record dispatched with the finding on the call log, answer refused 502, valid passes, no gate refuses 500, no validation unchanged); `MessageSchemaRegisterFragmentTest` checks the merged `endpoint` and `call_log` properties; `tests/vitest/endpointMessageValidation.spec.js` checks the form writes the block.
-  - Owed: the Newman requests in `tests/postman/` against a live instance.
+  - Written: folder 18 of `tests/postman/integriq.postman_collection.json` (seeds listed, broken XSD refused, an endpoint in refuse mode answers 400 problem+json naming `/bsn` without dispatch, a valid request passes the check). Owed: a run against a live instance.
 
 ### Task 4: Synchronization source and target validation
 - **spec_ref**: openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
@@ -55,7 +55,7 @@ Kind: code. Matrix row `integriq:map-message-validation`.
   - `src/views/Synchronization/SyncConfigWidget.vue` has a message validation section for an `api` source or target: message schema (picked from the `message_schema` objects) and mode. Clearing the schema removes the block; the `operationId` is kept when the schema changes and is not edited on the form yet.
 - [ ] Test (PHPUnit with a mocked CallService; Playwright for the dead-letter entry)
   - Done: `tests/Unit/Service/SynchronizationMessageValidationTest.php` runs `synchronize()` with the real gate, the real checkers, the seeded message schemas and the real `SyncItemDeadLetterService`, CallService mocked: refuse dead-letters 1 of 10 and writes 9, record writes 10 with one finding on the run log, an invalid target body is not sent and is dead-lettered, an XSD target body that does not match sends nothing, record sends every body with the finding, no gate refuses, no validation unchanged. `tests/vitest/syncMessageValidation.spec.js` checks the form writes the block.
-  - Owed: the Playwright dead-letter entry in `tests/e2e/message-schema-validation.spec.ts` against a live instance.
+  - Owed: the Playwright dead-letter entry. It is in `tests/e2e/message-schema-validation.spec.ts` as a skipped test with the reason: it needs a source page the server can fetch, and no programmable stub source is reachable from the server on the runner.
 
 ## Verification
 
