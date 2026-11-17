@@ -219,6 +219,28 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
 		}
 
+		// OpenRegister's form submit path and destination validator, and the save
+		// options of main's object API, as on main (open-formulieren-submits-into-its-case).
+		// Schema first: FormDestination takes one; the save options last.
+		$formStubs = [
+			'OCA\\OpenRegister\\Db\\Schema' => '/OCA/OpenRegister/Db/Schema.php',
+			'OCA\\OpenRegister\\Exception\\FormSubmitRefusedException' => '/OCA/OpenRegister/Exception/FormSubmitRefusedException.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmitter' => '/OCA/OpenRegister/Service/Form/FormSubmitter.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmission' => '/OCA/OpenRegister/Service/Form/FormSubmission.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormDestination' => '/OCA/OpenRegister/Service/Form/FormDestination.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormDestinationValidatorInterface' => '/OCA/OpenRegister/Service/Form/FormDestinationValidatorInterface.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmitServiceInterface' => '/OCA/OpenRegister/Service/Form/FormSubmitServiceInterface.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectFindTarget' => '/OCA/OpenRegister/Kernel/Contracts/Value/ObjectFindTarget.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\SavePolicy' => '/OCA/OpenRegister/Kernel/Contracts/Value/SavePolicy.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\SaveActor' => '/OCA/OpenRegister/Kernel/Contracts/Value/SaveActor.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectSaveOptions' => '/OCA/OpenRegister/Kernel/Contracts/Value/ObjectSaveOptions.php',
+		];
+		foreach ($formStubs as $formClass => $formFile) {
+			if (class_exists($formClass) === false && interface_exists($formClass) === false) {
+				require_once $stubsDir . $formFile;
+			}
+		}
+
 		// The shared task entity + service the HITL mirror writes through
 		// (hitl-on-shared-tasks). The entity must load before the service:
 		// the service's signatures reference it.

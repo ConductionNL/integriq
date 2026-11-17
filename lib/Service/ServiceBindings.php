@@ -145,6 +145,8 @@ use OCA\Integriq\Service\Objecten\ObjectenTokenServiceInterface;
 use OCA\Integriq\Service\Objecten\ObjectenWiring;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandlerInterface;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitter;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitterInterface;
 use OCA\Integriq\Service\Oso\LogOsoProvider;
 use OCA\Integriq\Service\Oso\OsoKennisnetClient;
 use OCA\Integriq\Service\Oso\OsoProviderRegistry;
@@ -280,6 +282,7 @@ final class ServiceBindings {
 		AuthenticationServiceInterface::class => AuthenticationService::class,
 		SoftwareCatalogueServiceInterface::class => SoftwareCatalogueService::class,
 		OpenFormulierenIntakeServiceInterface::class => OpenFormulierenIntakeService::class,
+		DestinationSubmitterInterface::class => DestinationSubmitter::class,
 		LtiKeyServiceInterface::class => LtiKeyService::class,
 		CardfeedSyncServiceInterface::class => CardfeedSyncService::class,
 		ExchangeJobServiceInterface::class => ExchangeJobService::class,
