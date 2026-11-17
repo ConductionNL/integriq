@@ -67,13 +67,13 @@ same envelope.
 
 ## What you configure
 
-Five settings under `integriq`, and one command per app:
+Two things: the hand-off to the apps that use the login, and one registration
+per organisation and provider.
+
+### The hand-off
 
 ```bash
 occ config:app:set integriq idp_broker_signing_key --value "<32 bytes or more>"
-occ config:app:set integriq idp_broker_salts --value '{"gemeente-x":"<32 bytes or more>"}'
-occ config:app:set integriq idp_broker_trust_aliases --value '{"digid":{"<urn>":"Hoog"}}'
-occ config:app:set integriq idp_broker_entity_ids --value '{"digid":"<your SP EntityID>"}'
 occ integriq:idp:consumer portaliq \
   --return-url=https://portal.example.nl/index.php/apps/portaliq/portal/api/session/broker/callback \
   --secret-ref=<credential id in the OpenRegister credential broker>
@@ -89,24 +89,89 @@ then `/index.php/apps/portaliq/portal/api/session/broker/callback`. Leave out
 `/index.php` when your Nextcloud runs with pretty URLs. The comparison is
 character for character, so one missing segment refuses every start.
 
-Integriq takes no sign-out address. Portaliq's sign-out now returns residents
-to `/apps/portaliq/site`, but only an organisation's own OIDC broker hears
-about that. Nothing changes in integriq. A return address must be https; plain http works for `localhost`
-only. Add `--secret-organisation=<organisation>` when the credential belongs to
-an organisation, and `--disable` to switch an app off.
+Integriq takes no sign-out address. A return address must be https; plain http
+works for `localhost` only. Add `--secret-organisation=<organisation>` when the
+credential belongs to an organisation, and `--disable` to switch an app off.
 
 The exchange secret stays in the credential broker. Integriq reads it when a
 code is redeemed and never copies it into app config.
 
-`idp_broker_entity_ids` names, per provider, the EntityID an assertion must be
-addressed to. Without it every assertion is refused.
-
-An app registered the older way, `{"portaliq":"<secret>"}` in
-`idp_broker_consumers`, can still redeem codes. It cannot start a login, because
-it has no return address. Run the command with `--secret-ref` to move it.
-
 Set the flag last. With it at `0` every endpoint answers 401 and no adapter
 authenticates anybody.
+
+### One registration per organisation and provider
+
+Each organisation has its own Service Provider (SAML) or Relying Party (OIDC)
+for each provider it offers, because that is how DigiD and eHerkenning
+contracts work: one contract per organisation. A registration is an
+`idpRegistration` object in the integriq register, readable by administrators
+only, and edited under *Beheer > Authenticatie*. There can be one per
+organisation and provider; a second one is refused.
+
+**A SAML registration** (`kind` `saml-sp`) needs:
+
+- `organisation` and `provider` (`digid`, `eherkenning` or `eidas`);
+- `idpMetadataUrl`, the metadata of the identity provider or your broker;
+- `spEntityId` only when your scheme assigns one. Otherwise the EntityID is
+  the metadata address below;
+- the `signing` credential: your SP private key and certificate. Add a
+  `decryption` credential when the identity provider encrypts assertions.
+
+**An OIDC registration** (`kind` `oidc-rp`) needs:
+
+- `organisation` and `provider`;
+- `issuer`. Integriq reads `{issuer}/.well-known/openid-configuration`;
+- `clientId` and `clientAuth`: `private_key_jwt` with a `signing` credential,
+  or `client_secret_basic` with a `clientSecret` credential.
+
+Both kinds also carry:
+
+- `subjectMapping`: which attribute or claim holds `bsn`, `pseudonym`, `kvk`,
+  `rsin`, `branch` and `eidasPersonIdentifier`. Nothing else is read;
+- `assuranceMapping`: the spelling your provider sends for each level, mapped
+  to a level in the table below;
+- `pseudonymisation`: `polymorphic` or `hmac` (the default), with the
+  `pseudonymKeys` or the `salt` credential that goes with it;
+- `enabled`, off by default.
+
+**Keys live in Keepiq.** A registration holds credential ids only, never a
+key. Integriq reads each one through the OpenRegister credential broker at the
+moment it is needed, for that organisation, and keeps it for that request
+only. Without Keepiq installed and enabled no key is read and no login starts:
+integriq does not fall back to another store. A key that cannot be read stops
+the login and is logged by registration and role, never by value.
+
+A registration is used only when it is ready: enabled, every property its kind
+needs filled in, and every credential it names readable. Anything less, and the
+provider stays on the adapter that logs the attempt and refuses.
+
+### The metadata address
+
+Give your identity provider or broker this address for each registration:
+
+```
+https://<your nextcloud>/index.php/apps/integriq/api/idp/metadata/<organisation>/<provider>
+```
+
+For a SAML registration it answers SP metadata with the EntityID, the public
+certificates, the callback `/apps/integriq/api/idp/<provider>/callback` for
+the POST and Redirect bindings, and the attributes the subject mapping reads.
+For an OIDC registration it answers the client id, the redirect address and,
+with `private_key_jwt`, the address of the public key set at
+`/apps/integriq/api/idp/jwks/<organisation>/<provider>`. No private key and no
+secret is ever in either.
+
+An unknown organisation, an unknown provider, a missing registration and a
+disabled one all answer the same 404, so the address does not tell anyone
+which organisations exist. A certificate that cannot be read answers 503.
+
+### Settings that no longer apply
+
+`idp_broker_entity_ids`, `idp_broker_salts` and `idp_broker_trust_aliases`
+are no longer read. Each organisation's EntityID, salt and level spellings now
+belong to its registration. An upgrade logs one warning for each of them that
+still holds a value. Put each salt in Keepiq, reference it from the
+registration, then delete the setting.
 
 **You need a shared cache.** Redis or Memcached, configured in Nextcloud as the
 distributed cache. Without one integriq refuses to issue a code at all, and
@@ -145,6 +210,12 @@ makes the whole pseudonym space brute-forceable.
 
 A level not in that table ends the login. It does not become `low`.
 
+**Substantial is the floor.** A level that maps to `low` is refused even when
+the app asked for `low`, and no setting lowers the floor. The person sees a
+page that names the level they used, the level needed and how to get it for
+that provider, with one button back to the app. The app receives
+`error=assurance_below_floor` and the relay state.
+
 **Your provider probably sends a URN, not a word.** The eHerkenning
 (`urn:etoegang:core:assurance-class:loa3`) and eIDAS
 (`http://eidas.europa.eu/LoA/high`) URNs are built in. DigiD's are not, on
@@ -152,8 +223,8 @@ purpose: they are deliberately left to your own metadata rather than guessed,
 because a wrong guess does not fail loudly. It either refuses every login,
 which you would notice, or it maps Hoog onto low, which you would not.
 
-Read the spellings off your tenant's metadata and put them in
-`idp_broker_trust_aliases`.
+Read the spellings off your tenant's metadata and put them in the
+registration's `assuranceMapping`.
 
 ## Trust never changes mid-session
 
@@ -163,17 +234,18 @@ claim in place.
 
 ## What is not built yet
 
-This is the half of the broker that needs no vendor. The other half does.
-
-- **The SAML Service Provider and the OIDC Relying Party.** Signature
-  verification, metadata, certificates and the broker contract itself. Until
-  those land, every provider binds to an adapter that logs the attempt and
-  refuses. The start and the callback are built and work against that
-  adapter's contract, so a start today ends on the error page.
-- **The Beheer > Authenticatie screen.** The settings above are the same ones
-  it will write.
+- **The SAML Service Provider and the OIDC Relying Party adapters.** Signing,
+  signature verification and the token exchange itself. Until they land, a
+  ready registration still binds to the adapter that logs the attempt and
+  refuses, so a start today ends on the error page. The metadata address is
+  built, so a broker can be registered ahead of them.
+- **The Beheer > Authenticatie screen.** Until it lands, registrations are
+  edited as `idpRegistration` objects in OpenRegister.
 - **Single logout.** Local logout in the consuming app works and always will.
   Propagating it to the provider depends on what the broker contract supports.
+- **Berichtenbox linkage.** Linking a login to the person's MijnOverheid
+  Berichtenbox is out of scope for the login. Letters to the Berichtenbox go
+  through the Berichtenbox adapter.
 
 ## Walk it once
 

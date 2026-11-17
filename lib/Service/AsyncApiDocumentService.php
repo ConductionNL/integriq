@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
  *
  * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
  */
-class AsyncApiDocumentService {
+class AsyncApiDocumentService implements AsyncApiDocumentServiceInterface {
 
 	/**
 	 * The AsyncAPI version the document follows.
