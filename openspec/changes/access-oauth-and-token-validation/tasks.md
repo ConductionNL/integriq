@@ -33,7 +33,7 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
   - An admin sets a consumer's secret with `POST /api/consumers/{id}/client-secret`. The secret is shown once and only its password hash is stored, as `clientSecretHash` (consumer 1.2.0).
   - `IntegriqConsumerSource` accepts integriq's own tokens, finding the consumer by `sub` and checking against the published key only.
 - [x] Implement
-- [ ] Test (PHPUnit for issue and refuse; Newman for the token endpoint; an assertion that the key is a credentialRef). The PHPUnit part is done in `tests/Unit/Service/OAuth/TokenIssuerTest.php`, including that the private key reaches only the broker. Newman is not done.
+- [ ] Test (PHPUnit for issue and refuse; Newman for the token endpoint; an assertion that the key is a credentialRef). The PHPUnit part is done in `tests/Unit/Service/OAuth/TokenIssuerTest.php`, including that the private key reaches only the broker. Newman is written in folder 18 of `tests/postman/integriq.postman_collection.json` (issuer key and key set without private members, client secret shown once and absent from the OpenRegister object, token issued as a JWS with the consumer's scopes, and the invalid_client, unsupported_grant_type and invalid_scope refusals); not run here: it needs a live instance.
 
 ### Task 4: Protected-resource metadata and the 401 header
 - **spec_ref**: `openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004`
@@ -45,7 +45,7 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
   - A call without a token to such an endpoint now gets 401 instead of 403, with `WWW-Authenticate: Bearer resource_metadata="…"`. A refused token gets the same header. Other authentication types keep their answers.
   - The file list named `lib/Controller/WellKnownController.php`, `lib/Service/EndpointService.php` and `appinfo/routes.php`. The document is built in the new `lib/Service/OAuth/ProtectedResourceMetadata.php`.
 - [x] Implement
-- [ ] Test (Newman: metadata document shape, 401 header, nothing for an open endpoint). PHPUnit covers the same three points in `tests/Unit/Service/OAuth/ProtectedResourceMetadataTest.php`. Newman is not done.
+- [ ] Test (Newman: metadata document shape, 401 header, nothing for an open endpoint). PHPUnit covers the same three points in `tests/Unit/Service/OAuth/ProtectedResourceMetadataTest.php`. Newman is written in folder 18 (the metadata document of a token-protected endpoint, 404 for an open one, and the 401 `Bearer resource_metadata` challenge); not run here: it needs a live instance.
 
 ### Task 5: Scopes on consumers and endpoints
 - **spec_ref**: `openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005`
@@ -53,7 +53,7 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
 - **acceptance_criteria**:
   - GIVEN an endpoint requiring zaken:write on POST WHEN a consumer with only zaken:read posts THEN it gets 403 naming zaken:write
 - [x] Implement. The backend is consumer `scopes` and the `requiredScopes` check in `EndpointService`. The consumer editor has a Scopes chip field (`consumerDraft.js` carries `scopes`, and an emptied list is sent as `[]`). The rule editor's authentication form has read and write scope lists (`requiredScopes.js`), which write a per-method map. The new strings are in en and nl.
-- [ ] Test. PHPUnit for the check is done, and vitest covers the draft (`consumerDraft.spec.js`) and the rule editor mapping (`requiredScopes.spec.js`). Playwright for editing scopes on a consumer is left.
+- [ ] Test. PHPUnit for the check is done, and vitest covers the draft (`consumerDraft.spec.js`) and the rule editor mapping (`requiredScopes.spec.js`). Playwright for editing scopes on a consumer is written in `tests/e2e/consumer-scopes.spec.ts`; not run here: it needs a live instance. The scenario's `tests/e2e/endpoint-required-scopes.spec.ts` waits for the save dialog listing the consumers a new requirement locks out, which is not built.
 
 ### Task 6: Seed data and documentation
 - **spec_ref**: `openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-consumer-can-accept-tokens-from-an-outside-openid-connect-provider-req-tokv-002`
