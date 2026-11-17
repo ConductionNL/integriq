@@ -206,6 +206,12 @@ use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCA\Integriq\Service\Mtls\MtlsTransportServiceInterface;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\Integriq\Service\NotificatiesSubscriberServiceInterface;
+use OCA\Integriq\Service\OAuth\IssuerKeyService;
+use OCA\Integriq\Service\OAuth\IssuerKeyServiceInterface;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadata;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadataInterface;
+use OCA\Integriq\Service\OAuth\TokenIssuer;
+use OCA\Integriq\Service\OAuth\TokenIssuerInterface;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandlerInterface;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
@@ -408,6 +414,9 @@ class ServiceRegistrarTest extends TestCase {
 		UwlrEduVServiceInterface::class => UwlrEduVService::class,
 		PaymentIntentServiceInterface::class => PaymentIntentService::class,
 		EudiIssuerKeyServiceInterface::class => EudiIssuerKeyService::class,
+		TokenIssuerInterface::class => TokenIssuer::class,
+		IssuerKeyServiceInterface::class => IssuerKeyService::class,
+		ProtectedResourceMetadataInterface::class => ProtectedResourceMetadata::class,
 		VerzuimloketServiceInterface::class => VerzuimloketService::class,
 		LtiPlatformLoginServiceInterface::class => LtiPlatformLoginService::class,
 		RodServiceInterface::class => RodService::class,

@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\OAuth\ProtectedResourceMetadata;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadataInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -47,16 +47,16 @@ class WellKnownController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName  The app name.
-	 * @param IRequest                  $request  The request.
-	 * @param ProtectedResourceMetadata $metadata Builds the document.
+	 * @param string                             $appName  The app name.
+	 * @param IRequest                           $request  The request.
+	 * @param ProtectedResourceMetadataInterface $metadata Builds the document.
 	 *
 	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ProtectedResourceMetadata $metadata,
+		private readonly ProtectedResourceMetadataInterface $metadata,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

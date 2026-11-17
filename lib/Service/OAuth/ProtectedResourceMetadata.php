@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
  */
-class ProtectedResourceMetadata {
+class ProtectedResourceMetadata implements ProtectedResourceMetadataInterface {
 
 	/**
 	 * The authentication rule types that require a bearer token.

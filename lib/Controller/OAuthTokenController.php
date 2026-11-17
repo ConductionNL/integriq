@@ -31,9 +31,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\OAuth\IssuerKeyService;
+use OCA\Integriq\Service\OAuth\IssuerKeyServiceInterface;
 use OCA\Integriq\Service\OAuth\OAuthError;
-use OCA\Integriq\Service\OAuth\TokenIssuer;
+use OCA\Integriq\Service\OAuth\TokenIssuerInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -56,19 +56,19 @@ class OAuthTokenController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string           $appName     The app name.
-	 * @param IRequest         $request     The request.
-	 * @param TokenIssuer      $issuer      Grants tokens and sets client secrets.
-	 * @param IssuerKeyService $issuerKey   The issuer key.
-	 * @param IUserSession     $userSession The admin who creates the key.
+	 * @param string                    $appName     The app name.
+	 * @param IRequest                  $request     The request.
+	 * @param TokenIssuerInterface      $issuer      Grants tokens and sets client secrets.
+	 * @param IssuerKeyServiceInterface $issuerKey   The issuer key.
+	 * @param IUserSession              $userSession The admin who creates the key.
 	 *
 	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TokenIssuer $issuer,
-		private readonly IssuerKeyService $issuerKey,
+		private readonly TokenIssuerInterface $issuer,
+		private readonly IssuerKeyServiceInterface $issuerKey,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);

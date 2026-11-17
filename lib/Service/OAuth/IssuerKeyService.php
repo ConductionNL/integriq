@@ -43,7 +43,7 @@ use Throwable;
  *
  * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
  */
-class IssuerKeyService {
+class IssuerKeyService implements IssuerKeyServiceInterface {
 
 	/**
 	 * The app config key of the broker credential that holds the private key.

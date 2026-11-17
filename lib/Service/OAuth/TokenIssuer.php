@@ -43,7 +43,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
  */
-class TokenIssuer {
+class TokenIssuer implements TokenIssuerInterface {
 
 	/**
 	 * The authorizationType of a consumer that may use the grant.
