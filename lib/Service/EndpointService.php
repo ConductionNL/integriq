@@ -47,6 +47,8 @@ use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
 use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
+use OCA\Integriq\Service\Endpoint\McpProxyCall;
+use OCA\Integriq\Service\Endpoint\McpProxyHandler;
 use OCA\Integriq\Service\Endpoint\UpstreamRequest;
 use OCA\Integriq\Service\Endpoint\UpstreamRouter;
 use OCA\Integriq\Service\Endpoint\UpstreamSelector;
@@ -238,6 +240,87 @@ class EndpointService implements EndpointServiceInterface {
 	}//end __construct()
 
 	/**
+	 * The `mcp` target handler, built from this service's collaborators on first use.
+	 *
+	 * @return McpProxyHandler The handler.
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 */
+	private function mcpProxyHandler(): McpProxyHandler {
+		if ($this->mcpProxyHandler === null) {
+			$this->mcpProxyHandler = new McpProxyHandler(
+				calls: $this->callService,
+				limits: $this->rateLimitService,
+				objects: $this->orObjectService,
+				logger: $this->logger
+			);
+		}
+
+		return $this->mcpProxyHandler;
+	}//end mcpProxyHandler()
+
+	/**
+	 * Relay a call of an `mcp` endpoint to its tool server.
+	 *
+	 * The consumer authentication, rate limit and quota already ran. The
+	 * source is resolved and bounded by the endpoint's organisation, and the
+	 * upstream path rendered, exactly as for an `api` endpoint; the answer is
+	 * then the upstream's own status, headers and body, relayed as it arrives.
+	 *
+	 * @param ObjectEntity $endpoint The `mcp` endpoint.
+	 * @param IRequest     $request  The inbound request.
+	 * @param string       $path     The path below the endpoint.
+	 *
+	 * @return Response The relaying answer, or a refusal.
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 */
+	private function handleMcpRequest(ObjectEntity $endpoint, IRequest $request, string $path): Response {
+		$endpointData = $endpoint->getObject();
+		$rawBody = $this->getRawContent();
+
+		// Unscoped, as for an api endpoint: the caller may not see the source; the endpoint's organisation bounds it.
+		$source = $this->orObjectService->find(
+			id: $endpointData['targetId'] ?? '',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+			_rbac: false,
+			_multitenancy: false
+		);
+		if ($source === null || $this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
+			return new JSONResponse(['error' => 'Source not found'], Http::STATUS_NOT_FOUND);
+		}
+
+		try {
+			$upstreamPath = $this->callService->renderEndpointPath(
+				endpoint: (string)($endpointData['endpoint'] ?? ''),
+				context: $this->buildUpstreamPathContext(endpointData: $endpointData, request: $request, path: $path, rawBody: $rawBody)
+			);
+		} catch (UnexpectedValueException $exception) {
+			$this->logger->warning('integriq: refused upstream path for MCP endpoint ' . $endpoint->getUuid() . ': ' . $exception->getMessage());
+			return new JSONResponse(['error' => 'The upstream path for this endpoint could not be resolved to a contained path'], Http::STATUS_BAD_REQUEST);
+		}
+
+		// The answer is the tool server's own, JSON-RPC errors included: never rewritten into a problem document.
+		$this->proxiedAnswer = true;
+		$consumerKey = 'ip:' . $request->getRemoteAddress();
+		$consumer = $this->authorizationService->getResolvedConsumer()?->getUuid();
+		if ($consumer !== null) {
+			$consumerKey = 'consumer:' . $consumer;
+		}
+
+		return $this->mcpProxyHandler()->handle(
+			call: new McpProxyCall(
+				endpoint: $endpoint,
+				request: $request,
+				source: $source,
+				upstreamPath: $upstreamPath,
+				rawBody: $rawBody,
+				consumerKey: $consumerKey
+			)
+		);
+	}//end handleMcpRequest()
+
+	/**
 	 * The router of endpoints with several targets; built from this service's own collaborators when not injected.
 	 *
 	 * @return UpstreamRouter The router.
@@ -300,6 +383,13 @@ class EndpointService implements EndpointServiceInterface {
 	 * @var UpstreamRouter|null
 	 */
 	private ?UpstreamRouter $upstreamRouter = null;
+
+	/**
+	 * The `mcp` target handler, built on first use.
+	 *
+	 * @var McpProxyHandler|null
+	 */
+	private ?McpProxyHandler $mcpProxyHandler = null;
 
 	/**
 	 * RFC 8594 `Deprecation`/`Sunset` response headers to attach to the
@@ -914,6 +1004,11 @@ class EndpointService implements EndpointServiceInterface {
 			$run->dryRun = $dryRun;
 
 			return $this->answerSchemaRequest(run: $run, result: $result);
+		}
+
+		if ($targetType === McpProxyHandler::TARGET_TYPE) {
+			// An outside MCP tool server, relayed as streamable HTTP (gateway-mcp-proxy REQ-MCPX-001).
+			return $this->handleMcpRequest(endpoint: $endpoint, request: $request, path: $path);
 		}
 
 		if ($this->isSourceTarget(targetType: $targetType) === true) {

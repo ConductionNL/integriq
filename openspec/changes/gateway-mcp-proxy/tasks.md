@@ -9,16 +9,18 @@ Kind: code. Size M. Row `integriq:acc-mcp-gateway`.
 - **files**: `lib/Service/EndpointService.php`, `lib/Service/Endpoint/McpProxyHandler.php`, `lib/Settings/integriq_register.json` (endpoint `targetType` description)
 - **acceptance_criteria**:
   - GIVEN an mcp endpoint WHEN a client sends initialize THEN the upstream's Mcp-Session-Id comes back and the next call carries it upstream
-- [ ] Implement
-- [ ] Test (PHPUnit against a local MCP fixture server for initialize, tools/list and tools/call)
+- [x] Implement
+- [x] Test (PHPUnit against a local MCP fixture server for initialize, tools/list and tools/call)
+  - Built: `McpProxyHandler` (forwarded headers `accept`, `content-type`, `mcp-session-id`, `mcp-protocol-version`, `last-event-id`; never the consumer's `Authorization` or cookies), dispatched from `EndpointService::handleMcpRequest()` after the consumer limits. The fixture is a CallService double that answers through the relay's own headers callback and sink (`McpProxyHandlerTest`, `EndpointServiceMcpTargetTest`).
 
 ### Task 2: Relay an event stream
 - **spec_ref**: `openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001`
 - **files**: `lib/Service/Endpoint/McpProxyHandler.php`, `lib/Http/StreamedProxyResponse.php`
 - **acceptance_criteria**:
   - GIVEN an upstream that answers text/event-stream WHEN a client calls THEN events arrive as they are sent, and the stream closes at the maximum duration
-- [ ] Implement
-- [ ] Test (PHPUnit with a fixture that emits three events; a manual run with the MCP inspector)
+- [x] Implement
+- [x] Test (PHPUnit with a fixture that emits three events; a manual run with the MCP inspector)
+  - Built: `CallService::relay()` streams into `McpRelayStream`, which flushes each chunk to the caller, and hands the upstream status and headers over before the first byte (`McpProxyResponse`, a callback response; placed in `lib/Service/Endpoint/` beside the handler rather than `lib/Http/`). The duration is the request timeout, `mcpMaxStreamSeconds` (default 60). PHPUnit covers three events and the relay (`CallServiceRelayTest`); the manual MCP inspector run needs a live tool server and is not done here.
 
 ### Task 3: Log the method and the tool
 - **spec_ref**: `openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002`
