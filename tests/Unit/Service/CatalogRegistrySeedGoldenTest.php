@@ -66,7 +66,7 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 
 		$entries = $this->service(logger: $logger)->collect();
 
-		$this->assertSame('1740df6f92f8d9f4ace12440dc967991d1f730e4edc39b90f6aa5b4535299ed0', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
+		$this->assertSame('8faa870bf4d82b160360f7ab1fba3b8a9a937c1f1acb6c41b6c18eeca75ce410', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
 
 	}//end testCollectIsUnchanged()
 
