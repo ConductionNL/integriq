@@ -31,6 +31,8 @@ class FtpsAdapter extends AbstractFileTransferAdapter {
 	 * Adapter id.
 	 *
 	 * @return string The id.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function getId(): string {
 		return 'data-infra-ftps';
@@ -41,6 +43,8 @@ class FtpsAdapter extends AbstractFileTransferAdapter {
 	 * Label.
 	 *
 	 * @return string The label.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function getLabel(): string {
 		return $this->l10n->t('FTPS server with explicit TLS');
@@ -51,6 +55,8 @@ class FtpsAdapter extends AbstractFileTransferAdapter {
 	 * The protocol.
 	 *
 	 * @return string The protocol.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function protocol(): string {
 		return 'ftps';
@@ -61,6 +67,8 @@ class FtpsAdapter extends AbstractFileTransferAdapter {
 	 * The default port.
 	 *
 	 * @return int The port.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	protected function defaultPort(): int {
 		return 21;
@@ -71,6 +79,8 @@ class FtpsAdapter extends AbstractFileTransferAdapter {
 	 * Whether a pinned key is mandatory.
 	 *
 	 * @return bool The answer.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	protected function requiresPin(): bool {
 		return false;

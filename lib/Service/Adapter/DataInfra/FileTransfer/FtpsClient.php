@@ -76,6 +76,8 @@ class FtpsClient implements RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the curl extension is missing.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function open(string $host, int $port): void {
 		if (function_exists('curl_init') === false) {
@@ -91,6 +93,8 @@ class FtpsClient implements RemoteFileClient {
 	 * FTPS is trusted through the certificate chain, not a pin.
 	 *
 	 * @return string Always empty: no fingerprint is pinned for FTPS.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function serverFingerprint(): string {
 		return '';
@@ -107,6 +111,8 @@ class FtpsClient implements RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the mode is not `basic` or the server refuses.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function login(string $username, string $secret, string $authMode): void {
 		if ($authMode !== 'basic') {
@@ -124,6 +130,8 @@ class FtpsClient implements RemoteFileClient {
 	 * @param string $path The folder.
 	 *
 	 * @return array<int,array{name:string,size:int,mtime:int}> The files.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function listFiles(string $path): array {
 		$listing = (string)$this->perform(
@@ -141,6 +149,8 @@ class FtpsClient implements RemoteFileClient {
 	 * @param string $listing The raw listing, one `facts; name` line per entry.
 	 *
 	 * @return array<int,array{name:string,size:int,mtime:int}> The regular files.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public static function parseMlsd(string $listing): array {
 		$files = [];
@@ -188,6 +198,8 @@ class FtpsClient implements RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the download fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function download(string $remotePath, string $localPath): void {
 		$handle = fopen($localPath, 'wb');
@@ -212,6 +224,8 @@ class FtpsClient implements RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the upload fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function upload(string $remotePath, string $localPath): void {
 		$handle = fopen($localPath, 'rb');
@@ -237,6 +251,8 @@ class FtpsClient implements RemoteFileClient {
 	 * @param string $to   The new path.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function rename(string $from, string $to): void {
 		$this->perform(path: '/', options: [CURLOPT_NOBODY => true, CURLOPT_QUOTE => ['RNFR ' . $from, 'RNTO ' . $to]]);
@@ -249,6 +265,8 @@ class FtpsClient implements RemoteFileClient {
 	 * @param string $path The file.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function delete(string $path): void {
 		$this->perform(path: '/', options: [CURLOPT_NOBODY => true, CURLOPT_QUOTE => ['DELE ' . $path]]);
@@ -259,6 +277,8 @@ class FtpsClient implements RemoteFileClient {
 	 * Nothing to close: curl opens a connection per operation.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function close(): void {
 		$this->userPassword = '';
@@ -274,6 +294,8 @@ class FtpsClient implements RemoteFileClient {
 	 * @return string|bool What curl returned.
 	 *
 	 * @throws RuntimeException When curl reports an error.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private function perform(string $path, array $options): string|bool {
 		$segments = array_map('rawurlencode', explode('/', ltrim($path, '/')));

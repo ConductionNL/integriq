@@ -35,6 +35,7 @@ use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use Throwable;
 
 /**
  * The first connection test shows the server's fingerprint; the administrator confirms it to pin it.
@@ -52,6 +53,8 @@ class FileServerSourcesController extends Controller {
 	 * @param SftpAdapter     $sftpAdapter     The SFTP adapter.
 	 * @param FtpsAdapter     $ftpsAdapter     The FTPS adapter.
 	 * @param IL10N           $l               Translations.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function __construct(
 		$appName,
@@ -91,7 +94,8 @@ class FileServerSourcesController extends Controller {
 	 * @param string $id          The source uuid.
 	 * @param string $fingerprint The fingerprint the administrator saw and confirmed.
 	 *
-	 * @return JSONResponse The saved pin, or why it was not saved.
+	 * @return JSONResponse The saved pin, or why it was not saved (409 when the server presents another
+	 *                      fingerprint, 500 when saving the source fails).
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
@@ -112,7 +116,14 @@ class FileServerSourcesController extends Controller {
 		}
 
 		$data['hostKeyFingerprint'] = $fingerprint;
-		$this->orObjectService->saveObject(object: $data, options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $id));
+		try {
+			$this->orObjectService->saveObject(object: $data, options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $id));
+		} catch (Throwable) {
+			return new JSONResponse(
+				['error' => $this->l->t('The source could not be saved. Nothing changed.')],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
 
 		return new JSONResponse(['hostKeyFingerprint' => $fingerprint]);
 
@@ -124,6 +135,8 @@ class FileServerSourcesController extends Controller {
 	 * @param string $id The source uuid.
 	 *
 	 * @return ObjectEntity|JSONResponse The source, or a 404 / 400 response.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private function fileServerSource(string $id): ObjectEntity|JSONResponse {
 		try {
@@ -155,6 +168,8 @@ class FileServerSourcesController extends Controller {
 	 * @param array<string,mixed> $source The source.
 	 *
 	 * @return AbstractFileTransferAdapter The adapter.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private function adapterFor(array $source): AbstractFileTransferAdapter {
 		if (($source['type'] ?? '') === 'ftps') {

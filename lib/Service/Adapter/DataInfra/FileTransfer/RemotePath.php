@@ -42,6 +42,8 @@ final class RemotePath {
 	 * @return string The absolute path, without a trailing slash (except `/`).
 	 *
 	 * @throws InvalidArgumentException When the path leaves the root or is malformed.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public static function resolve(string $rootPath, string $path): string {
 		$root = '/';
@@ -72,6 +74,8 @@ final class RemotePath {
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When the path holds one of them.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private static function assertClean(string $path): void {
 		if (str_contains($path, "\0") === true || str_contains($path, '\\') === true) {
@@ -89,6 +93,8 @@ final class RemotePath {
 	 * @param string $path An absolute or relative path without `..`.
 	 *
 	 * @return string The absolute normalised path.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private static function normalise(string $path): string {
 		$segments = array_filter(

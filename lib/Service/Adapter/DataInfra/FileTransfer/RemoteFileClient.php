@@ -43,6 +43,8 @@ interface RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the server cannot be reached.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function open(string $host, int $port): void;
 
@@ -50,6 +52,8 @@ interface RemoteFileClient {
 	 * The server's identity: an SSH host key or a TLS certificate, as a SHA-256 fingerprint.
 	 *
 	 * @return string The fingerprint, `SHA256:` followed by unpadded base64.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function serverFingerprint(): string;
 
@@ -63,6 +67,8 @@ interface RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the server refuses the login.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function login(string $username, string $secret, string $authMode): void;
 
@@ -72,6 +78,8 @@ interface RemoteFileClient {
 	 * @param string $path The folder.
 	 *
 	 * @return array<int,array{name:string,size:int,mtime:int}> The files.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function listFiles(string $path): array;
 
@@ -84,6 +92,8 @@ interface RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the download fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function download(string $remotePath, string $localPath): void;
 
@@ -96,6 +106,8 @@ interface RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the upload fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function upload(string $remotePath, string $localPath): void;
 
@@ -108,6 +120,8 @@ interface RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the move fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function rename(string $from, string $to): void;
 
@@ -119,6 +133,8 @@ interface RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the delete fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function delete(string $path): void;
 
@@ -126,6 +142,8 @@ interface RemoteFileClient {
 	 * Close the connection.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function close(): void;
 }//end interface

@@ -77,6 +77,8 @@ class FilePickupService {
 	 * @param MappingService                $mappingService Runs the synchronization's mapping.
 	 * @param ORObjectService               $objectService Loads the mapping, saves objects.
 	 * @param LoggerInterface               $logger        Logger.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	public function __construct(
 		private readonly SftpAdapter $sftpAdapter,
@@ -96,6 +98,8 @@ class FilePickupService {
 	 * @param array<string,mixed> $synchronization The synchronization.
 	 *
 	 * @return bool True for `sftp` and `ftps`.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	public static function handles(array $synchronization): bool {
 		return in_array(($synchronization['sourceType'] ?? null), ['sftp', 'ftps'], true);
@@ -111,6 +115,8 @@ class FilePickupService {
 	 * @param int|null            $now             The current time, for tests.
 	 *
 	 * @return array<string,mixed> `pickup` counts and `objects` counts.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	public function run(array $synchronization, array $source, bool $isTest = false, ?int $now = null): array {
 		$config = (array)($synchronization['sourceConfig'] ?? []);
@@ -171,6 +177,8 @@ class FilePickupService {
 	 * @param array<string,int>                        $objects         Object counts, updated.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	private function pickOne(
 		AbstractFileTransferAdapter $adapter,
@@ -228,6 +236,8 @@ class FilePickupService {
 	 * @param string              $localPath       The fetched file.
 	 *
 	 * @return int The number of objects saved (0 for target `files`).
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	private function writeLocally(array $synchronization, array $file, string $localPath): int {
 		$config = (array)($synchronization['sourceConfig'] ?? []);
@@ -251,6 +261,8 @@ class FilePickupService {
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When `move` has no archive path.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	private function archive(AbstractFileTransferAdapter $adapter, array $source, array $config, array $file): void {
 		$after = (string)($config['after'] ?? 'move');
@@ -283,6 +295,8 @@ class FilePickupService {
 	 *
 	 * @throws InvalidArgumentException When no owner or folder is configured.
 	 * @throws RuntimeException When the file cannot be read back.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	private function writeToFiles(array $config, string $name, string $localPath): void {
 		$owner = (string)($config['filesOwner'] ?? '');
@@ -328,6 +342,8 @@ class FilePickupService {
 	 * @param string $name   The wanted name.
 	 *
 	 * @return string A free name.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	private function freeName(Folder $folder, string $name): string {
 		$candidate = $name;
@@ -354,6 +370,8 @@ class FilePickupService {
 	 * @return int The number of objects saved.
 	 *
 	 * @throws InvalidArgumentException When the target or the format is unknown.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	private function writeObjects(array $synchronization, array $file, string $localPath): int {
 		[$register, $schema] = array_pad(explode('/', (string)($synchronization['targetId'] ?? '')), 2, '');
@@ -397,6 +415,8 @@ class FilePickupService {
 	 * @return array<int,array<string,mixed>> The records.
 	 *
 	 * @throws InvalidArgumentException When the format is not CSV, JSON or XML, or does not parse.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	public static function parseRecords(string $name, string $content): array {
 		$extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
@@ -436,6 +456,8 @@ class FilePickupService {
 	 * @param string $content The content.
 	 *
 	 * @return array<int,array<string,mixed>> The records.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	private static function parseCsv(string $content): array {
 		$lines = array_values(array_filter(preg_split('/\r\n|\n|\r/', $content), static fn (string $line): bool => trim($line) !== ''));
@@ -465,6 +487,8 @@ class FilePickupService {
 	 * @param string $protocol `sftp` or `ftps`.
 	 *
 	 * @return AbstractFileTransferAdapter The adapter.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	private function adapterFor(string $protocol): AbstractFileTransferAdapter {
 		if ($protocol === 'ftps') {

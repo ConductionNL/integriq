@@ -37,6 +37,8 @@ class HostKeyMismatchException extends RuntimeException {
 	 *
 	 * @param string $pinned    The fingerprint pinned on the source.
 	 * @param string $presented The fingerprint the server presented.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function __construct(
 		public readonly string $pinned,

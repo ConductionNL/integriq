@@ -37,6 +37,8 @@ class RemoteFileClientFactory {
 	 * @return RemoteFileClient The client.
 	 *
 	 * @throws InvalidArgumentException For any other protocol, plain FTP included.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function create(string $protocol): RemoteFileClient {
 		return match ($protocol) {

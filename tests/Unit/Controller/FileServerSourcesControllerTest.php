@@ -25,6 +25,7 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Unit\Service\Adapter\FileTransfer\FileTransferAdapterTestCase;
 use OCP\IL10N;
 use OCP\IRequest;
+use RuntimeException;
 
 class FileServerSourcesControllerTest extends FileTransferAdapterTestCase {
 
@@ -38,15 +39,20 @@ class FileServerSourcesControllerTest extends FileTransferAdapterTestCase {
 	/**
 	 * The controller over one stored source.
 	 *
-	 * @param array<string,mixed> $stored The stored source.
+	 * @param array<string,mixed> $stored    The stored source.
+	 * @param bool                $saveFails Whether saving the source throws.
 	 *
 	 * @return FileServerSourcesController The controller.
 	 */
-	private function controller(array $stored): FileServerSourcesController {
+	private function controller(array $stored, bool $saveFails = false): FileServerSourcesController {
 		$objects = ObjectServiceMockBuilder::make($this);
 		$objects->method('find')->willReturnCallback(fn ($id) => ObjectServiceMockBuilder::objectEntity($this, $stored, (string)$id));
 		$objects->method('saveObject')->willReturnCallback(
-			function (array $object) {
+			function (array $object) use ($saveFails) {
+				if ($saveFails === true) {
+					throw new RuntimeException('database gone');
+				}
+
 				$this->saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'source-1');
 			}
@@ -90,6 +96,20 @@ class FileServerSourcesControllerTest extends FileTransferAdapterTestCase {
 		$this->assertSame(409, $response->getStatus());
 		$this->assertSame([], $this->saved);
 	}//end testAFingerprintTheServerDoesNotPresentIsRefused()
+
+	/**
+	 * A pin that cannot be saved answers 500 with a message, never the raw exception.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+	 */
+	public function testAPinThatCannotBeSavedAnswersAnError(): void {
+		$response = $this->controller($this->source(['hostKeyFingerprint' => '']), saveFails: true)->pin('source-1', self::PIN);
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertSame(['error' => 'The source could not be saved. Nothing changed.'], $response->getData());
+	}//end testAPinThatCannotBeSavedAnswersAnError()
 
 	/**
 	 * Only SFTP and FTPS sources have a host key.

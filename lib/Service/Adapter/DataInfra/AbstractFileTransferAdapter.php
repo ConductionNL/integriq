@@ -69,6 +69,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @param ITempManager            $tempManager      Temporary files for fetched content.
 	 * @param ORObjectService         $objectService    Loads a source for the generic list().
 	 * @param IL10N                   $l10n             Translations.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function __construct(
 		CredentialBrokerService $credentialBroker,
@@ -89,6 +91,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * The protocol: `sftp` or `ftps`.
 	 *
 	 * @return string The protocol.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	abstract public function protocol(): string;
 
@@ -96,6 +100,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * The port used when the location names none.
 	 *
 	 * @return int The port.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	abstract protected function defaultPort(): int;
 
@@ -103,6 +109,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * Whether the protocol pins the server's key (SFTP does, FTPS checks the certificate chain).
 	 *
 	 * @return bool True when a pin is mandatory.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	abstract protected function requiresPin(): bool;
 
@@ -110,6 +118,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * Capabilities per REQ-DIC-002's vocabulary.
 	 *
 	 * @return array<int,string> The capabilities.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function getCapabilities(): array {
 		return ['read', 'write', 'bulk-import'];
@@ -120,6 +130,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * The adapter needs no app beyond integriq.
 	 *
 	 * @return string|null Always null.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function getRequiredApp(): ?string {
 		return null;
@@ -130,6 +142,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * Icon.
 	 *
 	 * @return string The MDI glyph.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function getIcon(): string {
 		return 'FolderNetwork';
@@ -140,6 +154,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * Credentials live on each source, so the adapter itself is always usable.
 	 *
 	 * @return bool Always true.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function isEnabled(): bool {
 		return true;
@@ -150,6 +166,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * Health: configured per source, never on the app.
 	 *
 	 * @return array<string,mixed> The health descriptor.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function health(): array {
 		return [
@@ -170,6 +188,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @param array<string,mixed> $source The source.
 	 *
 	 * @return array{fingerprint:string,pinned:string,matches:bool,connected:bool,message:string|null} The outcome.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function testConnection(array $source): array {
 		$pinned = (string)($source['hostKeyFingerprint'] ?? '');
@@ -212,6 +232,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @param string              $pattern A shell pattern such as `*.csv`.
 	 *
 	 * @return array<int,array{name:string,size:int,mtime:int,path:string}> The files.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function listFiles(array $source, string $path, string $pattern = '*'): array {
 		$folder = RemotePath::resolve(rootPath: $this->rootPath(source: $source), path: $path);
@@ -242,6 +264,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @param string              $path   The file.
 	 *
 	 * @return string The local temporary file; the caller removes it.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function fetch(array $source, string $path): string {
 		$remote = RemotePath::resolve(rootPath: $this->rootPath(source: $source), path: $path);
@@ -275,6 +299,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @param string              $localPath The local file.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function deliver(array $source, string $path, string $localPath): void {
 		$remote = RemotePath::resolve(rootPath: $this->rootPath(source: $source), path: $path);
@@ -293,6 +319,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @param string              $to     The new path.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function move(array $source, string $from, string $to): void {
 		$root = $this->rootPath(source: $source);
@@ -312,6 +340,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @param string              $path   The file.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function deleteFile(array $source, string $path): void {
 		$remote = RemotePath::resolve(rootPath: $this->rootPath(source: $source), path: $path);
@@ -333,6 +363,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @return array<int,array<string,mixed>> The files.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
 		$sourceId = (string)($filters['sourceId'] ?? '');
@@ -364,6 +396,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @param array<string,mixed> $source The source.
 	 *
 	 * @return string The root path, `/` when unset.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	protected function rootPath(array $source): string {
 		$root = (string)($source['rootPath'] ?? '');
@@ -382,6 +416,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @param callable            $operation Receives the client.
 	 *
 	 * @return mixed What the operation returned.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private function withConnection(array $source, callable $operation): mixed {
 		$client = $this->clientFactory->create(protocol: $this->protocol());
@@ -407,6 +443,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 *
 	 * @throws HostKeyMismatchException When the server's key differs from the pin.
 	 * @throws InvalidArgumentException When the source names no host or no pin.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private function openChecked(RemoteFileClient $client, array $source, bool $verifyPin): void {
 		[$host, $port] = $this->hostAndPort(source: $source);
@@ -440,6 +478,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When the source has no credential reference.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private function login(RemoteFileClient $client, array $source): void {
 		$authentication = ($source['configuration']['authentication'] ?? []);
@@ -461,6 +501,8 @@ abstract class AbstractFileTransferAdapter extends AbstractCategoryAdapterProvid
 	 * @return array{0:string,1:int} Host and port.
 	 *
 	 * @throws InvalidArgumentException When the location names no host.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private function hostAndPort(array $source): array {
 		$location = trim((string)($source['location'] ?? ''));

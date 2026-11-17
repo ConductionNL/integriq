@@ -65,6 +65,8 @@ class SftpClient implements RemoteFileClient {
 	 * @param int    $port The port.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function open(string $host, int $port): void {
 		$this->sftp = new SFTP(host: $host, port: $port, timeout: self::TIMEOUT);
@@ -77,6 +79,8 @@ class SftpClient implements RemoteFileClient {
 	 * @return string The fingerprint.
 	 *
 	 * @throws RuntimeException When the key exchange fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function serverFingerprint(): string {
 		$key = $this->connection()->getServerPublicHostKey();
@@ -94,6 +98,8 @@ class SftpClient implements RemoteFileClient {
 	 * @param string $publicKey `<type> <base64 blob>` as the server sends it.
 	 *
 	 * @return string `SHA256:` followed by the unpadded base64 digest of the blob.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public static function fingerprintOf(string $publicKey): string {
 		$parts = explode(' ', trim($publicKey));
@@ -116,6 +122,8 @@ class SftpClient implements RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the server refuses the login.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function login(string $username, string $secret, string $authMode): void {
 		$credential = $secret;
@@ -137,6 +145,8 @@ class SftpClient implements RemoteFileClient {
 	 * @return array<int,array{name:string,size:int,mtime:int}> The files.
 	 *
 	 * @throws RuntimeException When the folder cannot be read.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function listFiles(string $path): array {
 		$entries = $this->connection()->rawlist($path);
@@ -170,6 +180,8 @@ class SftpClient implements RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the download fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function download(string $remotePath, string $localPath): void {
 		if ($this->connection()->get($remotePath, $localPath) === false) {
@@ -187,6 +199,8 @@ class SftpClient implements RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the upload fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function upload(string $remotePath, string $localPath): void {
 		if ($this->connection()->put($remotePath, $localPath, SFTP::SOURCE_LOCAL_FILE) !== true) {
@@ -204,6 +218,8 @@ class SftpClient implements RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the move fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function rename(string $from, string $to): void {
 		if ($this->connection()->rename($from, $to) !== true) {
@@ -220,6 +236,8 @@ class SftpClient implements RemoteFileClient {
 	 * @return void
 	 *
 	 * @throws RuntimeException When the delete fails.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function delete(string $path): void {
 		if ($this->connection()->delete($path, false) !== true) {
@@ -232,6 +250,8 @@ class SftpClient implements RemoteFileClient {
 	 * Close the connection.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function close(): void {
 		$this->sftp?->disconnect();
@@ -245,6 +265,8 @@ class SftpClient implements RemoteFileClient {
 	 * @return SFTP The connection.
 	 *
 	 * @throws RuntimeException When open() was not called.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private function connection(): SFTP {
 		if ($this->sftp === null) {
