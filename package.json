@@ -68,7 +68,7 @@
     "vue": "^3.5.44",
     "vue-codemirror6": "^1.7.0",
     "vue-draggable-plus": "^0.6.1",
-    "vue-material-design-icons": "^5.3.1",
+    "vue-material-design-icons": "^5.4.0",
     "vue-router": "^4.6.4",
     "zod": "^4.5.4"
   },
