@@ -46,6 +46,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests exercising a real JWS sign/verify round trip against the launch
@@ -779,7 +780,10 @@ class LtiLaunchServiceTest extends TestCase {
 			}
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) use (&$registrations) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$registrations) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$registrations[$uuid] = $object;
 				$entity = new ObjectEntity();
 				$entity->setUuid($uuid);
@@ -833,7 +837,10 @@ class LtiLaunchServiceTest extends TestCase {
 			}
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) use (&$registrations) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$registrations) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$registrations[$uuid] = $object;
 				$entity = new ObjectEntity();
 				$entity->setUuid($uuid);

@@ -57,7 +57,7 @@ namespace OCA\Integriq\Flow;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
@@ -71,7 +71,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#1-engine-steps-each-a-thin-adapter-over-a-kept-service
  */
-class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, ContractMatchNodeInterface {
+class ContractMatchNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, ContractMatchNodeInterface {
 	use FlowNodePaletteDefaults;
 
 	/**

@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Kiss;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -97,10 +98,10 @@ class CtiSourceResolver {
 		}
 
 		try {
+			// Unscoped: CTI event intake resolves its source as the system, before any user is known.
 			$entity = $this->objectService->find(
 				id: $sourceId,
-				register: self::REGISTER,
-				schema: self::SCHEMA_SOURCE,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SOURCE),
 				_rbac: false,
 				_multitenancy: false
 			);

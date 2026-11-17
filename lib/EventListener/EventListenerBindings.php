@@ -36,6 +36,7 @@ use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
 use OCA\Integriq\Event\DocumentFetchRequestedEvent;
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
 use OCA\Integriq\Event\DocumentSearchRequestedEvent;
+use OCA\Integriq\Event\ExchangeRateRequestedEvent;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Event\GatewayDeliveryRequestedEvent;
@@ -308,6 +309,8 @@ final class EventListenerBindings {
 		// imowId; refused on OpenRegister's own save path.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoActivityMappingGuardListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoActivityMappingGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: ProductChannelSlugGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: ProductChannelSlugGuardListener::class);
 		// REQ-SOW-001 (signed-outbound-webhooks): the Webhooks page saves a
 		// subscription through OpenRegister's object API, so the signing
 		// default and the unsigned-needs-a-reason refusal run on its stoppable
@@ -382,6 +385,8 @@ final class EventListenerBindings {
 		// Connectors-graph-document-search D3: a sibling app (dossiq's Gather documents) searches and fetches Microsoft 365.
 		$dispatcher->addServiceListener(eventName: DocumentSearchRequestedEvent::class, className: DocumentSearchRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);
+		// Sources-ecb-exchange-rates D2: a sibling app (shillinq) asks for the rate of a currency pair on a date.
+		$dispatcher->addServiceListener(eventName: ExchangeRateRequestedEvent::class, className: ExchangeRateRequestedListener::class);
 		// Form-submission-registration-targets D2: portaliq registers a form submission at an outside system.
 		$dispatcher->addServiceListener(eventName: SubmissionRegistrationRequestedEvent::class, className: SubmissionRegistrationListener::class);
 	}//end registerSiblingRequestListeners()
