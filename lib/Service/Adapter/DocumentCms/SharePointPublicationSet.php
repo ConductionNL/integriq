@@ -37,7 +37,7 @@ use OCA\Integriq\Service\Zgw\ZgwSetCatalogue;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ZgwSetCatalogue is a catalogue of constants.
  */
-class SharePointPublicationSet {
+class SharePointPublicationSet implements SharePointPublicationSetInterface {
 
 	/**
 	 * The set's slug.

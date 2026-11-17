@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\ServiceFetch\ServiceFetchCatalogue;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchCatalogueInterface;
 use OCA\Integriq\Service\ServiceFetch\ServiceFetchService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -48,16 +48,16 @@ class ServiceFetchController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string              $appName The app name.
-	 * @param IRequest            $request The request.
-	 * @param ServiceFetchCatalogue $catalogue The service fetches.
-	 * @param LoggerInterface     $logger  Logger.
-	 * @param ServiceFetchService $fetches Runs a fetch for its administrator's test.
+	 * @param string                         $appName   The app name.
+	 * @param IRequest                       $request   The request.
+	 * @param ServiceFetchCatalogueInterface $catalogue The service fetches.
+	 * @param LoggerInterface                $logger    Logger.
+	 * @param ServiceFetchService            $fetches   Runs a fetch for its administrator's test.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ServiceFetchCatalogue $catalogue,
+		private readonly ServiceFetchCatalogueInterface $catalogue,
 		private readonly LoggerInterface $logger,
 		private readonly ServiceFetchService $fetches,
 	) {

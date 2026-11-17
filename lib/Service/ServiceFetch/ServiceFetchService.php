@@ -48,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
  */
-class ServiceFetchService {
+class ServiceFetchService implements ServiceFetchServiceInterface {
 
 	/**
 	 * The register every object involved lives in.

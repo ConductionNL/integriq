@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
  */
-class ProductPolicyService {
+class ProductPolicyService implements ProductPolicyServiceInterface {
 
 	/**
 	 * Constructor.
