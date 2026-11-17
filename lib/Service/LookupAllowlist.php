@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
  */
-class LookupAllowlist {
+class LookupAllowlist implements LookupAllowlistInterface {
 
 	/**
 	 * The app the list is stored under.

@@ -28,7 +28,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Settings\IntegriqAdmin;
-use OCA\Integriq\Service\LookupAllowlist;
+use OCA\Integriq\Service\LookupAllowlistInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -49,7 +49,7 @@ class MappingLookupController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest        $request      The request.
-	 * @param LookupAllowlist $allowlist    The list.
+	 * @param LookupAllowlistInterface $allowlist The list.
 	 * @param IUserSession    $userSession  Who is asking.
 	 * @param IGroupManager   $groupManager Whether they administer this instance.
 	 * @param LoggerInterface $logger       Where a change is recorded.
@@ -58,7 +58,7 @@ class MappingLookupController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly LookupAllowlist $allowlist,
+		private readonly LookupAllowlistInterface $allowlist,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,

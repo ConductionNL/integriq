@@ -33,7 +33,7 @@ use DOMDocument;
  *
  * @spec openspec/specs/xml-response/spec.md
  */
-class ArrayToXml {
+class ArrayToXml implements XmlEncoderInterface {
 
 	/**
 	 * Convert an array to XML.

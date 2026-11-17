@@ -49,7 +49,6 @@ use Exception;
 use InvalidArgumentException;
 use OCA\Integriq\Service\Format\MappingOutput;
 use OCA\Integriq\Twig\MappingExtension;
-use OCA\Integriq\Twig\MappingLookup;
 use OCA\Integriq\Twig\MappingRuntimeLoader;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;

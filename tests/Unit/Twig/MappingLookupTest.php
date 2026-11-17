@@ -27,7 +27,7 @@ use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\Integriq\Service\LookupAllowlist;
-use OCA\Integriq\Twig\MappingLookup;
+use OCA\Integriq\Service\MappingLookup;
 use OCA\Integriq\Twig\MappingRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;

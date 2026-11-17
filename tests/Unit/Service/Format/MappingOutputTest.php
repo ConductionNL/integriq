@@ -118,7 +118,7 @@ class MappingOutputTest extends TestCase {
 	 */
 	public function testTheWriterMatchesTheEndpointSerializer(): void {
 		$data = ['@root' => 'lijst', 'item' => [['n' => 1], ['n' => 2]], 'leeg' => []];
-		$response = new \OCA\Integriq\Controller\XMLResponse(['value' => $data]);
+		$response = new \OCA\Integriq\Controller\XMLResponse(['value' => $data], encoder: new ArrayToXml());
 
 		self::assertSame($response->arrayToXml(data: $data), (new ArrayToXml())->convert(data: $data));
 		self::assertStringContainsString("<item>\n    <n>1</n>\n  </item>\n  <item>\n    <n>2</n>\n  </item>\n  <leeg />", (new ArrayToXml())->convert(data: $data));
