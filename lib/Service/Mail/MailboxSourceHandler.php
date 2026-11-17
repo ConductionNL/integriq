@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Mail;
 
 use OCA\Integriq\Exception\MailboxTransportException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Mail\Transport\GraphMailboxTransport;
 use OCA\Integriq\Service\Mail\Transport\ImapMailboxTransport;
 use OCA\Integriq\Service\Mail\Transport\MailboxTransportInterface;
@@ -267,9 +268,7 @@ class MailboxSourceHandler implements MailboxSourceHandlerInterface {
 
 		$this->objectService->saveObject(
 			object: $object,
-			register: MailIntakeService::REGISTER,
-			schema: 'source',
-			uuid: (string)$source->getUuid(),
+			options: RegisterSave::options(register: MailIntakeService::REGISTER, schema: 'source', uuid: (string)$source->getUuid())
 		);
 
 		$this->logger->debug(

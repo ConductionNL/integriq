@@ -37,6 +37,7 @@ use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the approval_request state machine and authorization model.
@@ -628,7 +629,10 @@ class ApprovalServiceTest extends TestCase {
 
 		$captured = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$captured) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$captured) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$captured[$uuid] = $object;
 				return $this->entity($object, (string)$uuid);
 			}

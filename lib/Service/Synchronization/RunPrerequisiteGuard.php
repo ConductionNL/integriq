@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Synchronization;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 
 /**
@@ -129,7 +130,7 @@ class RunPrerequisiteGuard {
 	 */
 	private function mappingValues(string $mapping): ?array {
 		try {
-			$found = $this->objectService->find(id: $mapping, register: 'integriq', schema: 'mapping');
+			$found = $this->objectService->find(id: $mapping, options: new ObjectFindOptions(register: 'integriq', schema: 'mapping'));
 		} catch (\Throwable) {
 			return null;
 		}

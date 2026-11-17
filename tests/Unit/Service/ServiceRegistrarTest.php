@@ -24,6 +24,12 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSetInterface;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\EndpointWorkspaceListing;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\EndpointWorkspaceListingInterface;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
@@ -41,6 +47,8 @@ use OCA\Integriq\Service\ApprovalDecisionService;
 use OCA\Integriq\Service\ApprovalDecisionServiceInterface;
 use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Service\ApprovalServiceInterface;
+use OCA\Integriq\Service\AsyncApiDocumentService;
+use OCA\Integriq\Service\AsyncApiDocumentServiceInterface;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\AuthenticationServiceInterface;
 use OCA\Integriq\Service\BankfeedSyncService;
@@ -53,6 +61,8 @@ use OCA\Integriq\Service\CardfeedSyncService;
 use OCA\Integriq\Service\CardfeedSyncServiceInterface;
 use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\Integriq\Service\CatalogRegistryServiceInterface;
+use OCA\Integriq\Service\CertificateExpiryAlertService;
+use OCA\Integriq\Service\CertificateExpiryAlertServiceInterface;
 use OCA\Integriq\Service\CloudEventEmitterInterface;
 use OCA\Integriq\Service\ConfigurationImportPreviewService;
 use OCA\Integriq\Service\ConfigurationImportPreviewServiceInterface;
@@ -112,6 +122,8 @@ use OCA\Integriq\Service\EudiIssuerKeyService;
 use OCA\Integriq\Service\EudiIssuerKeyServiceInterface;
 use OCA\Integriq\Service\EudiStatusListService;
 use OCA\Integriq\Service\EudiStatusListServiceInterface;
+use OCA\Integriq\Service\Event\CloudEventReceiver;
+use OCA\Integriq\Service\Event\CloudEventReceiverInterface;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\Integriq\Service\Exchange\ExchangeJobRunner;
@@ -158,6 +170,8 @@ use OCA\Integriq\Service\Kiss\CallerSearchInterface;
 use OCA\Integriq\Service\Kiss\ConfiguredCallerSearch;
 use OCA\Integriq\Service\Kiss\CtiEventIntake;
 use OCA\Integriq\Service\Kiss\CtiEventIntakeInterface;
+use OCA\Integriq\Service\ListenerSchemaResolver;
+use OCA\Integriq\Service\ListenerSchemaResolverInterface;
 use OCA\Integriq\Service\Lti\LtiAgsService;
 use OCA\Integriq\Service\Lti\LtiAgsServiceInterface;
 use OCA\Integriq\Service\Lti\LtiKeyService;
@@ -202,12 +216,16 @@ use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandlerInterface;
 use OCA\Integriq\Service\OpenFormulierenIntakeService;
 use OCA\Integriq\Service\OpenFormulierenIntakeServiceInterface;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitter;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitterInterface;
 use OCA\Integriq\Service\OsoService;
 use OCA\Integriq\Service\OsoServiceInterface;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
+use OCA\Integriq\Service\Payment\PaymentSettlementService;
+use OCA\Integriq\Service\Payment\PaymentSettlementServiceInterface;
 use OCA\Integriq\Service\PaymentIntentService;
 use OCA\Integriq\Service\PaymentIntentServiceInterface;
 use OCA\Integriq\Service\PeppolTransmissionService;
@@ -221,10 +239,16 @@ use OCA\Integriq\Service\Portal\PortalRequestIntakeInterface;
 use OCA\Integriq\Service\Portal\PortalRequestParserInterface;
 use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\Integriq\Service\Portal\UnmappedActivitiesInterface;
+use OCA\Integriq\Service\ProductPolicyService;
+use OCA\Integriq\Service\ProductPolicyServiceInterface;
 use OCA\Integriq\Service\PromotionService;
 use OCA\Integriq\Service\PromotionServiceInterface;
+use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
+use OCA\Integriq\Service\RateLimit\InboundRateLimitServiceInterface;
 use OCA\Integriq\Service\RecordProvenanceService;
 use OCA\Integriq\Service\RecordProvenanceServiceInterface;
+use OCA\Integriq\Service\Registration\RegistrationStore;
+use OCA\Integriq\Service\Registration\RegistrationStoreInterface;
 use OCA\Integriq\Service\Registry\RegistryUpdateClient;
 use OCA\Integriq\Service\Registry\RegistryUpdateClientInterface;
 use OCA\Integriq\Service\Registry\SubscriptionRegistry;
@@ -233,6 +257,12 @@ use OCA\Integriq\Service\Registry\SubscriptionRequestHandler;
 use OCA\Integriq\Service\Registry\SubscriptionRequestHandlerInterface;
 use OCA\Integriq\Service\Registry\SubscriptionRoster;
 use OCA\Integriq\Service\Registry\SubscriptionRosterInterface;
+use OCA\Integriq\Service\Regression\TraceCaseRecorder;
+use OCA\Integriq\Service\Regression\TraceCaseRecorderInterface;
+use OCA\Integriq\Service\RegressionSuiteService;
+use OCA\Integriq\Service\RegressionSuiteServiceInterface;
+use OCA\Integriq\Service\Residency\EgressDestinationService;
+use OCA\Integriq\Service\Residency\EgressDestinationServiceInterface;
 use OCA\Integriq\Service\ResponseDecoder;
 use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCA\Integriq\Service\RodService;
@@ -261,6 +291,10 @@ use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
 use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchCatalogue;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchCatalogueInterface;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchService;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchServiceInterface;
 use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\Service\SettingsService;
 use OCA\Integriq\Service\SettingsServiceInterface;
@@ -359,6 +393,7 @@ class ServiceRegistrarTest extends TestCase {
 		AuthenticationServiceInterface::class => AuthenticationService::class,
 		SoftwareCatalogueServiceInterface::class => SoftwareCatalogueService::class,
 		OpenFormulierenIntakeServiceInterface::class => OpenFormulierenIntakeService::class,
+		DestinationSubmitterInterface::class => DestinationSubmitter::class,
 		LtiKeyServiceInterface::class => LtiKeyService::class,
 		CardfeedSyncServiceInterface::class => CardfeedSyncService::class,
 		ExchangeJobServiceInterface::class => ExchangeJobService::class,
@@ -451,6 +486,22 @@ class ServiceRegistrarTest extends TestCase {
 		EndpointCorsPolicyInterface::class => EndpointCorsPolicy::class,
 		SourceTestServiceInterface::class => SourceTestService::class,
 		SynchronizationLookupInterface::class => SynchronizationService::class,
+		EgressDestinationServiceInterface::class => EgressDestinationService::class,
+		ServiceFetchServiceInterface::class => ServiceFetchService::class,
+		SharePointOnlineAdapterInterface::class => SharePointOnlineAdapter::class,
+		SharePointPublicationSetInterface::class => SharePointPublicationSet::class,
+		AsyncApiDocumentServiceInterface::class => AsyncApiDocumentService::class,
+		RegressionSuiteServiceInterface::class => RegressionSuiteService::class,
+		CertificateExpiryAlertServiceInterface::class => CertificateExpiryAlertService::class,
+		InboundRateLimitServiceInterface::class => InboundRateLimitService::class,
+		TraceCaseRecorderInterface::class => TraceCaseRecorder::class,
+		PaymentSettlementServiceInterface::class => PaymentSettlementService::class,
+		CloudEventReceiverInterface::class => CloudEventReceiver::class,
+		ServiceFetchCatalogueInterface::class => ServiceFetchCatalogue::class,
+		ProductPolicyServiceInterface::class => ProductPolicyService::class,
+		ListenerSchemaResolverInterface::class => ListenerSchemaResolver::class,
+		RegistrationStoreInterface::class => RegistrationStore::class,
+		EndpointWorkspaceListingInterface::class => EndpointWorkspaceListing::class,
 		EgressGuardInterface::class => EgressGuard::class,
 		SecretRedactorInterface::class => SensitiveFieldRegistry::class,
 		SecurityServiceInterface::class => SecurityService::class,

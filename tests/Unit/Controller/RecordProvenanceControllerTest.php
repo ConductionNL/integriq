@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * 400 without the three parameters, 404 for a record outside the caller's rights, the provenance otherwise.
@@ -65,7 +66,13 @@ final class RecordProvenanceControllerTest extends TestCase {
 			$objects->method('find')->willThrowException($failure ?? new DoesNotExistException('not found'));
 		} else {
 			$objects->expects($this->once())->method('find')
-				->with('case-82', 'dossiq', 'case', true, true)
+				->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => 'case-82',
+					'register' => 'dossiq',
+					'schema' => 'case',
+					'_rbac' => true,
+					'_multitenancy' => true,
+				]))
 				->willReturn($record);
 		}
 

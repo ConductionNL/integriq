@@ -75,9 +75,9 @@ describe('regressionCases helpers', () => {
 
 	it('replaces a value in a copy and leaves the original alone', () => {
 		const original = { headers: { authorization: '***REDACTED***' } }
-		expect(withValueAt(original, 'headers.authorization', 'Bearer test')).toEqual({ headers: { authorization: 'Bearer test' } })
+		expect(withValueAt(original, { path: 'headers.authorization', value: 'Bearer test' })).toEqual({ headers: { authorization: 'Bearer test' } })
 		expect(original.headers.authorization).toBe('***REDACTED***')
-		expect(withValueAt(original, 'missing.path', 'x')).toEqual(original)
+		expect(withValueAt(original, { path: 'missing.path', value: 'x' })).toEqual(original)
 	})
 
 	it('splits ignored paths on commas and newlines', () => {

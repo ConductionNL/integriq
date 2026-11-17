@@ -67,9 +67,10 @@ use OCA\Integriq\Kernel\FlowNodeIds;
 use OCA\Integriq\Service\CallServiceInterface;
 use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
@@ -85,7 +86,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-2-sourcecallnode-source-targeting-per-item-execution-response-mapping
  */
-class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
+class SourceCallNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
 	use FlowNodePaletteDefaults;
 
 	/**
@@ -960,8 +961,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			// Unscoped: a flow node resolves the source its definition names, during a run that may have no user.
 			$source = $this->objectService->find(
 				id: $reference,
-				register: self::SOURCE_REGISTER,
-				schema: self::SOURCE_SCHEMA,
+				options: new ObjectFindOptions(register: self::SOURCE_REGISTER, schema: self::SOURCE_SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);

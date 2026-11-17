@@ -33,6 +33,8 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Drives synchronize() with the real guard over the real seeded Udemy Business set.
@@ -77,7 +79,9 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 
 		$orObjects = ObjectServiceMockBuilder::make($this);
 		$orObjects->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null) use ($seeds) {
+			function ($id, ?ObjectFindOptions $options = null) use ($seeds) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				// An object found by slug comes back with uuid-<slug>; a second lookup uses that.
 				$id = preg_replace('/^uuid-/', '', (string)$id);
 				if (isset($seeds[$schema][$id]) === false) {
@@ -89,7 +93,9 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 		);
 		$orObjects->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 		$orObjects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ...$rest) use (&$writes) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest) use (&$writes) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				if ($schema !== 'synchronization_log') {
 					$writes++;
 				}

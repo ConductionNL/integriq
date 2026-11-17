@@ -52,6 +52,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for EndpointService's api-product-gateway extensions: tier-policy
@@ -435,7 +436,10 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$captured = null;
 		$rbac = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null, bool $_rbac = true) use (&$captured, &$rbac) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) use (&$captured, &$rbac) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$captured = $object;
 				$rbac = $_rbac;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
@@ -482,7 +486,10 @@ class EndpointServiceTierPolicyTest extends TestCase {
 
 		$calls = [];
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null, bool $_rbac = true) use (&$calls) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) use (&$calls) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$calls[] = ['schema' => $schema, 'object' => $object, 'rbac' => $_rbac];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
 			}

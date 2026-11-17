@@ -50,6 +50,7 @@ use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * @covers \OCA\Integriq\Service\StufZkn\StufProviderReceiver
@@ -1035,7 +1036,9 @@ class StufProviderReceiverTest extends TestCase {
 
 		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register=null, ?string $schema=null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->assertSame('integriq', $register);
 				$this->assertSame('source', $schema);
 				return isset($this->sources[$id]) === true ? ObjectServiceMockBuilder::objectEntity($this, $this->sources[$id], $id) : null;

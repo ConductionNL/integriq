@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\Auth\Idp\IdpBrokerConfig;
+use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -49,9 +49,9 @@ class WarnSupersededIdpBrokerKeys implements IRepairStep {
 	 * @var array<string,string>
 	 */
 	public const SUPERSEDED = [
-		IdpBrokerConfig::KEY_ENTITY_IDS => 'the spEntityId of each identity provider registration',
-		IdpBrokerConfig::KEY_SALTS => 'a salt credential in Keepiq, referenced from each identity provider registration',
-		IdpBrokerConfig::KEY_TRUST_ALIASES => 'the assuranceMapping of each identity provider registration',
+		IdpBrokerConfigInterface::KEY_ENTITY_IDS => 'the spEntityId of each identity provider registration',
+		IdpBrokerConfigInterface::KEY_SALTS => 'a salt credential in Keepiq, referenced from each identity provider registration',
+		IdpBrokerConfigInterface::KEY_TRUST_ALIASES => 'the assuranceMapping of each identity provider registration',
 	];
 
 	/**
@@ -114,7 +114,7 @@ class WarnSupersededIdpBrokerKeys implements IRepairStep {
 	 */
 	private function holdsValue(string $key): bool {
 		try {
-			$value = trim($this->appConfig->getValueString(IdpBrokerConfig::APP_ID, $key, ''));
+			$value = trim($this->appConfig->getValueString(IdpBrokerConfigInterface::APP_ID, $key, ''));
 		} catch (Throwable $exception) {
 			// A key stored with another type still holds something worth a warning.
 			$this->logger->info('[integriq] ' . $key . ' could not be read as text (' . $exception::class . ')');

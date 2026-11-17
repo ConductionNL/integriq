@@ -40,6 +40,7 @@ use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the endpoint request handling service (OR cutover — no deleted Db types).
@@ -841,6 +842,7 @@ class EndpointServiceTest extends TestCase {
 
 		$this->orObjectService->method('find')->willReturnCallback(
 			static function (string $id, ...$rest) use ($skippedRule, $customRule) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				unset($rest);
 				return match ($id) {
 					'rule-skip' => $skippedRule,

@@ -54,13 +54,13 @@ export function savePayload(actions, matrix) {
  * area; an action without a label is labelled by its name.
  *
  * @param {Array<string>} actions The declared actions.
- * @param {object|null|undefined} areas Action name to area.
- * @param {object|null|undefined} labels Action name to label.
+ * @param {{areas?: object|null, labels?: object|null}} names Action name to area, and action name to label.
  * @return {Array<{area: string, actions: Array<{name: string, label: string}>}>} The sections.
  *
  * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
  */
-export function actionSections(actions, areas, labels) {
+export function actionSections(actions, names) {
+	const { areas, labels } = names || {}
 	const areaOf = areas && typeof areas === 'object' ? areas : {}
 	const labelOf = labels && typeof labels === 'object' ? labels : {}
 	const sections = new Map()

@@ -36,6 +36,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * REQ-DPA-004.
@@ -352,7 +353,12 @@ class BerichtenboxSettingsControllerTest extends TestCase {
 		$settings->method('live')->willReturn(true);
 		$objectService = $this->createMock(OrObjectService::class);
 		$objectService->expects($this->once())->method('saveObject')
-			->with(['applied' => true], ConnectionStoreInterface::REGISTER, 'source', 'src-9')
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['applied' => true],
+				'register' => ConnectionStoreInterface::REGISTER,
+				'schema' => 'source',
+				'uuid' => 'src-9',
+			]))
 			->willReturn($saved);
 
 		$response = $this->overDoubles($store, $objectService, $settings, null, ['cpaId' => 'cpa-2'])->setConfig('berichtenbox');
@@ -374,7 +380,12 @@ class BerichtenboxSettingsControllerTest extends TestCase {
 		$settings->method('apply')->willReturn(['data' => ['slug' => 'berichtenbox'], 'warnings' => []]);
 		$objectService = $this->createMock(OrObjectService::class);
 		$objectService->expects($this->once())->method('saveObject')
-			->with(['slug' => 'berichtenbox'], ConnectionStoreInterface::REGISTER, 'source', null)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['slug' => 'berichtenbox'],
+				'register' => ConnectionStoreInterface::REGISTER,
+				'schema' => 'source',
+				'uuid' => null,
+			]))
 			->willThrowException(new RuntimeException('schema missing'));
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('error')
