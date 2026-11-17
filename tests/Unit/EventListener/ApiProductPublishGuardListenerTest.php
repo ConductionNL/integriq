@@ -159,6 +159,23 @@ class ApiProductPublishGuardListenerTest extends TestCase {
 	}//end testACheckThatCannotRunRefuses()
 
 	/**
+	 * Without an OpenAPI publisher there is no description to check, so the change goes through unchecked.
+	 *
+	 * @return void
+	 */
+	public function testWithoutAnOpenApiPublisherTheChangeIsNotChecked(): void {
+		$this->check->method('publisherMissing')->willReturn(true);
+		$this->check->expects(self::never())->method('blockingFindings');
+		$event = new ObjectUpdatingEvent(self::object('active'), null);
+
+		$this->listener->handle($event);
+
+		self::assertFalse($event->isPropagationStopped());
+		self::assertSame([], $event->getErrors());
+
+	}//end testWithoutAnOpenApiPublisherTheChangeIsNotChecked()
+
+	/**
 	 * A product that stays active, one that is not made active, another schema and another event are not checked.
 	 *
 	 * @return void

@@ -145,6 +145,21 @@ class ApiProductDesignCheck {
 	}//end rank()
 
 	/**
+	 * Whether this installation has no OpenAPI publisher to write a product's description.
+	 *
+	 * The publisher ships with gateway-openapi-import-and-publish. Without it there is no
+	 * description to check, so there is nothing a design rule could refuse.
+	 *
+	 * @return bool True when the publisher class is not installed.
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 */
+	public function publisherMissing(): bool {
+		return class_exists(self::PUBLISH_SERVICE) === false;
+
+	}//end publisherMissing()
+
+	/**
 	 * The findings that refuse making this product active: a fresh check's open errors.
 	 *
 	 * @param ObjectEntity $product The api_product.

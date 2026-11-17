@@ -95,6 +95,13 @@ class ApiProductPublishGuardListener implements IEventListener {
 			return;
 		}
 
+		// No OpenAPI publisher installed: there is no description to check. A
+		// publisher that is installed but fails still refuses, below.
+		if ($this->check->publisherMissing() === true) {
+			$this->logger->info('[integriq] API product made active without a design check: no OpenAPI publisher is installed');
+			return;
+		}
+
 		try {
 			$blocking = $this->check->blockingFindings(product: $product);
 		} catch (Throwable $e) {

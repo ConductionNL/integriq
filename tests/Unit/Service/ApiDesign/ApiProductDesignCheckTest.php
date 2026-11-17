@@ -220,6 +220,19 @@ class ApiProductDesignCheckTest extends TestCase {
 	}//end testWithoutAPublishServiceTheCheckRefuses()
 
 	/**
+	 * The publisher counts as missing exactly when its class is not installed.
+	 *
+	 * @return void
+	 */
+	public function testThePublisherIsMissingWhenItsClassIsNotInstalled(): void {
+		self::assertSame(
+			class_exists(ApiProductDesignCheck::PUBLISH_SERVICE) === false,
+			$this->check(publisher: null)->publisherMissing()
+		);
+
+	}//end testThePublisherIsMissingWhenItsClassIsNotInstalled()
+
+	/**
 	 * An unknown product is refused.
 	 *
 	 * @return void
