@@ -191,4 +191,35 @@ class EndpointsControllerHandlePathTest extends TestCase {
 
 	}//end testOtherAnswersAreLeftAsServed()
 
+	/**
+	 * A path naming an `.xml` document is answered as XML without an XML
+	 * Accept header; a path that only contains `.xml` is not.
+	 *
+	 * @return void
+	 */
+	public function testAnXmlPathIsAnsweredAsXml(): void {
+		$feed = new class(['@root' => 'source', 'job' => [['title' => 'Developer']]]) extends JSONResponse {
+			/**
+			 * Headers without a running server.
+			 *
+			 * @return array
+			 */
+			public function getHeaders(): array {
+				return [];
+			}
+		};
+
+		$response = $this->controller($this->endpoint([]), '*/*', $feed)->handlePath('jobfeeds/indeed.XML');
+
+		$this->assertInstanceOf(XMLResponse::class, $response);
+		$this->assertSame('application/xml; charset=utf-8', $this->rawHeaders($response)['Content-Type']);
+		$this->assertStringContainsString('<source>', $response->render());
+		$this->assertStringContainsString('<job>', $response->render());
+		$this->assertStringContainsString('<title>Developer</title>', $response->render());
+
+		$json = new JSONResponse(['a' => 1]);
+		$this->assertSame($json, $this->controller($this->endpoint([]), '*/*', $json)->handlePath('files.xml/list'));
+
+	}//end testAnXmlPathIsAnsweredAsXml()
+
 }//end class

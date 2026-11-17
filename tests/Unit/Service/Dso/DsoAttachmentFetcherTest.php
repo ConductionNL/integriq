@@ -47,6 +47,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests the download, the retry, the size cap, the addFile() call shape and
@@ -162,7 +163,10 @@ class DsoAttachmentFetcherTest extends TestCase {
 		$objectService = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
 		$objectService->method('find')->willReturnCallback(fn () => $this->stored);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)$uuid);
 				$entity->setObject((array)$object);

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Every opt-out path of a delivery request, recorded against a golden file:
@@ -196,7 +197,10 @@ class EventServiceDeliveryIngestGoldenTest extends TestCase {
 	private function service(): EventService {
 		$objects = $this->createMock(ORObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null, $_rbac = true, $_multitenancy = true) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$masked = $object;
 				$masked['time'] = (preg_match('/^\d{4}-\d{2}-\d{2}T/', (string)$object['time']) === 1) ? '<date>' : $object['time'];
 				$this->log[] = ['or.saveObject', $masked, $register, $schema, $_rbac, $_multitenancy];

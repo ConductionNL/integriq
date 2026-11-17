@@ -47,6 +47,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Security;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -218,13 +219,12 @@ class InlineSecretMigrationPlanner implements InlineSecretMigrationPlannerInterf
 	 */
 	public function readRawSource(string $uuid, string $schema = self::SCHEMA): array {
 		try {
+			// Unscoped: the inline secret migration reads the raw stored object, run as the system.
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER,
-				schema: $schema,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: $schema, render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $e) {
 			// Secret-free: the uuid is not a secret, the exception text may not

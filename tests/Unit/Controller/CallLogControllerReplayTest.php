@@ -106,7 +106,7 @@ final class CallLogControllerReplayTest extends TestCase {
 	 * @return void
 	 */
 	public function testShowingAnUnknownCallIs404(): void {
-		$this->recorder->method('read')->willThrowException(new DoesNotExistException('gone'));
+		$this->recorder->method('readInOrganisation')->willThrowException(new DoesNotExistException('gone'));
 
 		$response = $this->controller()->show('nope');
 

@@ -1,4 +1,5 @@
 {
+    "deprecated": {"replacedBy": "sharepoint-publications", "reason": "Reads SharePoint's legacy REST API with secrets in the source and writes publication fields the publication schema no longer has. Use the SharePoint to publication set (Route to publications on the SharePoint card) instead."},
     "@context": {
         "schema": "http:\/\/schema.org",
         "register": "501"

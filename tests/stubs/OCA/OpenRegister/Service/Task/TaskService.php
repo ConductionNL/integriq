@@ -54,14 +54,14 @@ class TaskService {
 	/**
 	 * Apply a declared outcome to a task (real: idempotent on terminal rows).
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $outcome The declared outcome.
-	 * @param string $source The applying source.
-	 * @param string $reason The audited reason.
+	 * @param string              $uuid    The task uuid.
+	 * @param TimerOutcome|string $outcome The declared outcome, with its trigger.
+	 * @param string|null         $source  The applying source, for a string outcome.
+	 * @param string|null         $reason  The audited reason, for a string outcome.
 	 *
 	 * @return Task An empty task entity.
 	 */
-	public function applyTimerOutcome(string $uuid, string $outcome, string $source, string $reason): Task {
+	public function applyTimerOutcome(string $uuid, TimerOutcome|string $outcome, ?string $source = null, ?string $reason = null): Task {
 		return new Task();
 	}//end applyTimerOutcome()
 

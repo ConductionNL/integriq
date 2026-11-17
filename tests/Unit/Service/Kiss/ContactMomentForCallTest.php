@@ -57,6 +57,7 @@ use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Contact moment on request, and the 30-day call event log.
@@ -110,6 +111,7 @@ class ContactMomentForCallTest extends TestCase {
 
 		$objectService->method('saveObject')->willReturnCallback(
 			function (...$args): ObjectEntity {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				// Positional, as PHPUnit hands them over: object, register,
 				// schema, uuid, _rbac (OpenRegister's saveObject() order).
 				$object = $args[0];

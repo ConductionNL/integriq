@@ -29,6 +29,7 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests local export delegation, credentialRef scan/rebind (reference-only,
@@ -383,8 +384,8 @@ class PromotionServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->callback(
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->callback(
 					static function (array $payload): bool {
 						return ($payload['outcome'] ?? null) === 'success'
 							&& ($payload['callLogId'] ?? null) === 'calllog-77'
@@ -394,9 +395,9 @@ class PromotionServiceTest extends TestCase {
 							&& !array_key_exists('entities', $payload['previewSummary']);
 					}
 				),
-				'integriq',
-				'promotion_audit'
-			)
+					'register' => 'integriq',
+					'schema' => 'promotion_audit',
+				]))
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'audit-1'));
 
 		$result = $this->service->promote('cfg-1', 'acceptance', [], 'operator-uid');
@@ -468,6 +469,7 @@ class PromotionServiceTest extends TestCase {
 			$objects = ObjectServiceMockBuilder::make($this);
 			$objects->method('saveObject')->willReturnCallback(
 				function (...$args) use (&$seen) {
+					$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 					$payload = $args[0];
 					$payload['startedAt'] = isset($payload['startedAt']);
 					$payload['completedAt'] = isset($payload['completedAt']);
@@ -508,17 +510,17 @@ class PromotionServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->callback(
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->callback(
 					static function (array $payload): bool {
 						return ($payload['outcome'] ?? null) === 'failed'
 							&& ($payload['previewSummary'] ?? ['x']) === []
 							&& ($payload['callLogId'] ?? null) === 'calllog-404';
 					}
 				),
-				'integriq',
-				'promotion_audit'
-			)
+					'register' => 'integriq',
+					'schema' => 'promotion_audit',
+				]))
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'audit-2'));
 
 		$this->expectException(RuntimeException::class);
