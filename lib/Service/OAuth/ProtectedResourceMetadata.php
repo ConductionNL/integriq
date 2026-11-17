@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\OAuth;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IURLGenerator;
 use Throwable;
@@ -214,7 +215,12 @@ class ProtectedResourceMetadata {
 	 */
 	private function authenticationOf(string $ruleId): ?array {
 		try {
-			$rule = $this->objectService->find(id: $ruleId, register: self::REGISTER, schema: 'rule', _rbac: false, _multitenancy: false, _render: false);
+			$rule = $this->objectService->find(
+				id: $ruleId,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'rule', render: false),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $e) {
 			return null;
 		}

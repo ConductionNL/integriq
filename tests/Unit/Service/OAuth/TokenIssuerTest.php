@@ -29,6 +29,7 @@ use OCA\Integriq\Service\OAuth\OAuthError;
 use OCA\Integriq\Service\OAuth\TokenIssuer;
 use OCA\Integriq\Service\OrganisationBridgeService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -155,8 +156,8 @@ final class TokenIssuerTest extends TestCase {
 			$entity->method('getUuid')->willReturn((string) $id);
 			return $entity;
 		});
-		$this->objects->method('saveObject')->willReturnCallback(function (array $object, mixed $register = null, mixed $schema = null, ?string $uuid = null): ObjectEntity {
-			$this->consumers[(string) $uuid] = $object;
+		$this->objects->method('saveObject')->willReturnCallback(function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+			$this->consumers[(string) $options->uuid] = $object;
 			return $this->createMock(ObjectEntity::class);
 		});
 		$this->consumers['c-partner'] = ['name' => 'Partner', 'authorizationType' => 'client_credentials', 'scopes' => ['zaken:read', 'zaken:write']];

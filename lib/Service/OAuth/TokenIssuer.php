@@ -31,6 +31,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\OAuth;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use RuntimeException;
@@ -168,9 +170,7 @@ class TokenIssuer {
 		$consumer[self::SECRET_HASH_FIELD] = password_hash($secret, PASSWORD_DEFAULT);
 		$this->objectService->saveObject(
 			object: $consumer,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $consumerId,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $consumerId),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -225,7 +225,12 @@ class TokenIssuer {
 			return null;
 		}
 
-		$object = $this->objectService->find(id: $clientId, register: self::REGISTER, schema: self::SCHEMA, _rbac: false, _multitenancy: false);
+		$object = $this->objectService->find(
+			id: $clientId,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
+			_rbac: false,
+			_multitenancy: false
+		);
 		if (($object instanceof ObjectEntity) === false) {
 			return null;
 		}

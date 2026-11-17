@@ -24,6 +24,7 @@ use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\OAuth\IssuerKeyService;
 use OCA\Integriq\Service\OAuth\TokenIssuer;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\ObjectService;
@@ -168,7 +169,12 @@ class IntegriqConsumerSource implements ConsumerSource {
 			return null;
 		}
 
-		$object = $this->objectService->find(id: $subject, register: 'integriq', schema: 'consumer', _rbac: false, _multitenancy: false);
+		$object = $this->objectService->find(
+			id: $subject,
+			options: new ObjectFindOptions(register: 'integriq', schema: 'consumer'),
+			_rbac: false,
+			_multitenancy: false
+		);
 		if (($object instanceof ObjectEntity) === false) {
 			return null;
 		}
