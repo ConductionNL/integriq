@@ -43,6 +43,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\ConfigurationImportPreviewServiceInterface, OCA\\Integriq\\Service\\ConfigurationImportPreviewService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\ExecutionTraceServiceInterface, OCA\\Integriq\\Service\\ExecutionTraceService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\DocumentGeneration\\DocumentGenerationServiceInterface, OCA\\Integriq\\Service\\DocumentGeneration\\DocumentGenerationService)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\Digipoort\\SbrFilingServiceInterface, OCA\\Integriq\\Service\\Digipoort\\SbrFilingService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Objecten\\ObjectEndpointHandlerInterface, OCA\\Integriq\\Service\\Objecten\\ObjectEndpointHandler)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Exchange\\ExchangeJobRunnerInterface, OCA\\Integriq\\Service\\Exchange\\ExchangeJobRunner)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\ConnectionRegistryServiceInterface, OCA\\Integriq\\Service\\ConnectionRegistryService)",

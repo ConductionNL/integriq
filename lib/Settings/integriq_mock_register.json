@@ -7282,6 +7282,91 @@
       {
         "@self": {
           "register": "integriq",
+          "schema": "sbr_filing",
+          "slug": "sbr-filing-adviesbureau-kade-kvk-2025"
+        },
+        "objectUri": "/objects/annual-report/00000000-0000-0000-0000-0000000000b7",
+        "objectType": "AnnualReport",
+        "sourceApp": "shillinq",
+        "filingType": "kvk-deponering",
+        "recipient": "kvk",
+        "payloadFileUri": "/admin/files/Jaarverantwoording/Adviesbureau Kade BV jaarrekening 2025.xbrl",
+        "identityNumber": "12345678",
+        "identityType": "KvK",
+        "deliveryReference": "LOG-SBR-8C51E0B27A93",
+        "status": "delivered",
+        "statusHistory": [
+          {
+            "status": "delivered",
+            "code": "",
+            "description": "",
+            "at": "2026-11-12T15:41:19+01:00",
+            "errors": []
+          }
+        ],
+        "errors": [],
+        "attempts": [
+          {
+            "at": "2026-11-12T15:41:19+01:00",
+            "error": ""
+          }
+        ],
+        "channelStatusCount": 1
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "sbr_filing",
+          "slug": "sbr-filing-bakkerij-de-linde-ob-2026-q3"
+        },
+        "objectUri": "/objects/vat-return/00000000-0000-0000-0000-0000000000c4",
+        "objectType": "VATReturn",
+        "sourceApp": "shillinq",
+        "filingType": "ob-aangifte",
+        "recipient": "belastingdienst",
+        "payloadFileUri": "/admin/files/Belastingaangiften/Bakkerij De Linde OB 2026-Q3.xbrl",
+        "identityNumber": "007654321B01",
+        "identityType": "Fi",
+        "deliveryReference": "LOG-SBR-D4E7106B95C2",
+        "status": "rejected",
+        "statusHistory": [
+          {
+            "status": "delivered",
+            "code": "",
+            "description": "",
+            "at": "2026-10-30T09:02:48+01:00",
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "code": "410",
+            "description": "Verwerking mislukt",
+            "at": "2026-10-30T09:11:05+01:00",
+            "errors": [
+              {
+                "code": "BD-OB-0042",
+                "text": "Het totaal van de verschuldigde omzetbelasting sluit niet aan op de rubrieken."
+              }
+            ]
+          }
+        ],
+        "errors": [
+          {
+            "code": "BD-OB-0042",
+            "text": "Het totaal van de verschuldigde omzetbelasting sluit niet aan op de rubrieken."
+          }
+        ],
+        "attempts": [
+          {
+            "at": "2026-10-30T09:02:48+01:00",
+            "error": ""
+          }
+        ],
+        "channelStatusCount": 2
+      },
+      {
+        "@self": {
+          "register": "integriq",
           "schema": "api_product",
           "slug": "api-product-voorbeeld-name-1-1"
         },

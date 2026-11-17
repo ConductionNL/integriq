@@ -348,7 +348,7 @@ final class EventListenerBindings {
 		// CloudEvents (register `openconnector` — the OpenRegister register slug,
 		// frozen across the app-id rename; schema event) created by any app.
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: PeppolOutboundConsumer::class);
-		// connectors-digipoort-sbr-filing: reacts to nl.conduction.sbr.filing.requested
+		// Connectors-digipoort-sbr-filing: reacts to nl.conduction.sbr.filing.requested
 		// CloudEvents in the same register and `event` schema, and files the
 		// XBRL instance with Digipoort.
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: SbrFilingConsumer::class);

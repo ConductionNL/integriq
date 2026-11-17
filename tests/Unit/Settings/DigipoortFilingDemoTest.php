@@ -78,6 +78,36 @@ class DigipoortFilingDemoTest extends TestCase {
 	}//end testTheDemoFilingMatchesTheSchema()
 
 	/**
+	 * The demo register ships three filings, one per outcome a user meets, each valid against the schema.
+	 *
+	 * @return void
+	 */
+	public function testTheDemoFilingsCoverAcceptedDeliveredAndRejected(): void {
+		$mock    = json_decode((string)file_get_contents(__DIR__ . '/../../../lib/Settings/integriq_mock_register.json'), true);
+		$filings = array_values(
+			array_filter(
+				$mock['components']['objects'],
+				static fn (array $object): bool => ($object['@self']['schema'] ?? null) === 'sbr_filing'
+			)
+		);
+
+		$this->assertCount(3, $filings);
+		$statuses = array_column($filings, 'status');
+		sort($statuses);
+		$this->assertSame(['accepted', 'delivered', 'rejected'], $statuses);
+		$this->assertContains('kvk', array_column($filings, 'recipient'));
+
+		foreach ($filings as $filing) {
+			$slug = $filing['@self']['slug'];
+			unset($filing['@self']);
+			$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'sbr_filing', object: $filing), $slug);
+			if ($filing['status'] === 'rejected') {
+				$this->assertNotSame([], $filing['errors'], $slug . ' names why it was rejected.');
+			}
+		}
+	}//end testTheDemoFilingsCoverAcceptedDeliveredAndRejected()
+
+	/**
 	 * The demo register's copy of the schema is the shipped one.
 	 *
 	 * @return void
