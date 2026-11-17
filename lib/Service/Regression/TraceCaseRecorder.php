@@ -45,7 +45,7 @@ use OutOfBoundsException;
  *
  * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
  */
-class TraceCaseRecorder {
+class TraceCaseRecorder implements TraceCaseRecorderInterface {
 
 	/**
 	 * The register the cases live in.
