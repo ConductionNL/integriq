@@ -10,42 +10,64 @@
 						"description": "Set by the feed declaration sync: the declared dataset this endpoint serves. Edit the declaring app's feeds.json, not this value.",
 						"properties": {
 							"app": {
-								"type": "string"
+								"type": "string",
+								"title": "Declaring app",
+								"description": "The app that declares this feed in its lib/Settings/feeds.json."
 							},
 							"key": {
-								"type": "string"
+								"type": "string",
+								"title": "Feed key",
+								"description": "The dataset key: the last path segment of the feed address."
 							},
 							"title": {
-								"type": "string"
+								"type": "string",
+								"title": "Feed title",
+								"description": "The feed's name as its app declares it."
 							},
 							"register": {
-								"type": "string"
+								"type": "string",
+								"title": "Register",
+								"description": "The OpenRegister register the feed reads from."
 							},
 							"schema": {
-								"type": "string"
+								"type": "string",
+								"title": "Schema",
+								"description": "The OpenRegister schema the feed reads from."
 							},
 							"fields": {
 								"type": "array",
+								"title": "Fields",
+								"description": "The fields the feed answers with.",
 								"items": {
 									"type": "string"
 								}
 							},
 							"filter": {
-								"type": "object"
+								"type": "object",
+								"title": "Fixed filter",
+								"description": "Equality filters applied to every request of this feed."
 							},
 							"scope": {
 								"type": "object",
+								"title": "Scope",
+								"description": "The query parameter a consumer names its scope with, and the field it filters.",
 								"properties": {
 									"parameter": {
-										"type": "string"
+										"type": "string",
+										"title": "Scope parameter",
+										"description": "The query parameter that names the scope."
 									},
 									"field": {
-										"type": "string"
+										"type": "string",
+										"title": "Scope field",
+										"description": "The field the scope filters on."
 									}
 								}
 							},
 							"pageSize": {
 								"type": "integer",
+								"title": "Page size",
+								"description": "The most items one page of the feed answers with.",
 								"minimum": 1
 							}
 						}
