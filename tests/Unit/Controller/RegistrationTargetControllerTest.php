@@ -47,7 +47,7 @@ class RegistrationTargetControllerTest extends TestCase {
 	private function controller(array $targets): RegistrationTargetController {
 		$store = $this->createMock(RegistrationStore::class);
 		$store->method('findTargets')->willReturn($targets);
-		return new RegistrationTargetController($this->createMock(IRequest::class), $store);
+		return new RegistrationTargetController($this->createMock(IRequest::class), $store, $this->createMock(RegistrationService::class));
 	}//end controller()
 
 	/**
@@ -89,4 +89,48 @@ class RegistrationTargetControllerTest extends TestCase {
 		$method = new ReflectionMethod(RegistrationTargetController::class, 'index');
 		$this->assertCount(1, $method->getAttributes(NoAdminRequired::class));
 	}//end testTheListIsForSignedInUsers()
+	/**
+	 * The dry run is the service's answer, unchanged, for the slug and hand-over asked.
+	 *
+	 * @return void
+	 */
+	public function testTheDryRunAnswersTheServicesResult(): void {
+		$service = $this->createMock(RegistrationService::class);
+		$service->expects($this->once())
+			->method('dryRun')
+			->with('json-milieu', ['reference' => 'OF-1', 'answers' => []])
+			->willReturn(['ok' => true, 'dry' => true, 'kind' => 'json', 'mapped' => ['subject' => 'x']]);
+
+		$controller = new RegistrationTargetController($this->createMock(IRequest::class), $this->createMock(RegistrationStore::class), $service);
+		$response   = $controller->test('json-milieu', ['reference' => 'OF-1', 'answers' => []]);
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(['ok' => true, 'dry' => true, 'kind' => 'json', 'mapped' => ['subject' => 'x']], $response->getData());
+	}//end testTheDryRunAnswersTheServicesResult()
+
+	/**
+	 * Without a hand-over the controller asks the service for its sample (an empty hand-over).
+	 *
+	 * @return void
+	 */
+	public function testTheDryRunWithoutAHandoverAsksForTheSample(): void {
+		$service = $this->createMock(RegistrationService::class);
+		$service->expects($this->once())->method('dryRun')->with('json-milieu', [])->willReturn(['ok' => true, 'dry' => true]);
+
+		$controller = new RegistrationTargetController($this->createMock(IRequest::class), $this->createMock(RegistrationStore::class), $service);
+
+		$this->assertSame(['ok' => true, 'dry' => true], $controller->test('json-milieu')->getData());
+	}//end testTheDryRunWithoutAHandoverAsksForTheSample()
+
+	/**
+	 * The dry run is for administrators only: an admin-setting attribute, never NoAdminRequired.
+	 *
+	 * @return void
+	 */
+	public function testTheDryRunIsAdminOnly(): void {
+		$method = new ReflectionMethod(RegistrationTargetController::class, 'test');
+
+		$this->assertSame([], $method->getAttributes(NoAdminRequired::class));
+		$this->assertCount(1, $method->getAttributes(\OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting::class));
+	}//end testTheDryRunIsAdminOnly()
 }//end class

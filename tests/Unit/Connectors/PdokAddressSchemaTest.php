@@ -33,6 +33,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * What the PDOK write-through saves fits the integriq/addresses schema.
@@ -76,7 +78,7 @@ class PdokAddressSchemaTest extends TestCase {
 		$refused = [];
 		foreach ([null, 'uuid-1'] as $uuid) {
 			try {
-				$register['service']->saveObject(object: ['pdokId' => 'adr-1'], register: 'integriq', schema: 'addresses', uuid: $uuid);
+				$register['service']->saveObject(object: ['pdokId' => 'adr-1'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'addresses'), uuid: $uuid));
 			} catch (\RuntimeException $e) {
 				$refused[] = $e->getMessage();
 			}
@@ -175,11 +177,14 @@ class PdokAddressSchemaTest extends TestCase {
 		$objectService = $this->createMock(originalClassName: ObjectService::class);
 		$objectService->method('findAll')->willReturn(value: []);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true) use (
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) use (
 				$rules,
 				$groups,
 				$saves
 			): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$action = 'update';
 				if ($uuid === null) {
 					$action = 'create';
@@ -287,7 +292,9 @@ class PdokAddressSchemaTest extends TestCase {
 		$objectService = $this->createMock(originalClassName: ObjectService::class);
 		$objectService->method('findAll')->willReturn(value: []);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null) use (&$saves): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saves): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$saves[] = ['object' => $object, 'register' => $register, 'schema' => $schema];
 				return new ObjectEntity();
 			}

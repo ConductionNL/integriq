@@ -39,6 +39,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Every branch of dispatchMappingAction(), recorded against a golden file:
@@ -74,7 +76,9 @@ class EventServiceMappingActionTest extends TestCase {
 	private function service(): EventService {
 		$objects = $this->createMock(ORObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null) {
+			function ($id, ?ObjectFindOptions $options = null) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->log[] = ['or.find', $id, $schema];
 				$found = ($this->case['found'][$schema] ?? null);
 				if ($found === 'throws') {
@@ -89,7 +93,10 @@ class EventServiceMappingActionTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->log[] = ['or.saveObject', $object, $schema, $uuid];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}

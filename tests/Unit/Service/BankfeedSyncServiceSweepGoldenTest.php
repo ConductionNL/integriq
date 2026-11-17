@@ -34,6 +34,8 @@ use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Sweeps connections in every consent state through syncAll() and records
@@ -129,6 +131,7 @@ class BankfeedSyncServiceSweepGoldenTest extends TestCase {
 		);
 		$objects->method('find')->willReturnCallback(
 			function (...$args): ObjectEntity {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = (string)($args['id'] ?? $args[0]);
 				$sources = [
 					'psd2-log' => ['type' => 'psd2', 'configuration' => ['provider' => 'log', 'expiryWarningDays' => 7]],
@@ -140,7 +143,10 @@ class BankfeedSyncServiceSweepGoldenTest extends TestCase {
 		);
 		$batches = 0;
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) use (&$batches): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$batches): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->trace[] = ['save' => $schema, 'uuid' => $uuid, 'object' => $this->stable(value: $object)];
 				if ($uuid === null) {
 					$batches++;

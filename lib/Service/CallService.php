@@ -55,22 +55,30 @@ use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 use OCA\Integriq\Kernel\EndpointContainment;
-use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Call\CallPreparation;
 use OCA\Integriq\Service\Call\CallRequest;
+use OCA\Integriq\Service\Call\FeedSource;
 use OCA\Integriq\Service\Call\FinishedCall;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Residency\EgressResidencyPolicy;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
 use OCA\Integriq\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
@@ -801,8 +809,7 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: the log carries the source's organisation (stamped above), not the caller's.
 		return $this->objectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: 'call_log',
+			options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -859,9 +866,7 @@ class CallService implements CallServiceInterface {
 			// state.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $source->getUuid(),
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1157,7 +1162,7 @@ class CallService implements CallServiceInterface {
 		// passing its own class name: a bare true, or one set on a source's
 		// configuration, stores nothing (outbound-call-log REQ-OCD-010).
 		$caller  = ($config['logBody'] ?? null);
-		$logBody = (is_string($caller) === true && in_array($caller, BodyCapturePolicy::LOG_BODY_ALLOWLIST, true) === true);
+		$logBody = (is_string($caller) === true && in_array($caller, BodyCapturePolicyInterface::LOG_BODY_ALLOWLIST, true) === true);
 		unset($config['logBody']);
 
 		// We want to surpress guzzle exceptions and return the response instead.
@@ -1322,9 +1327,10 @@ class CallService implements CallServiceInterface {
 	/**
 	 * Answer a source that needs no HTTP request of its own, or null for any other.
 	 *
-	 * A soap source is answered by SOAPService; a case-system source by
+	 * A feed source is answered by {@see FeedSource} (connectors-job-board-multiposting,
+	 * design D2); a soap source by SOAPService; a case-system source by
 	 * {@see CaseSystemOperations} (case-system-operations-for-decidiq, design
-	 * D1). Both answer a PSR-7 response, so the call log, redaction and rate
+	 * D1). Each answers a PSR-7 response, so the call log, redaction and rate
 	 * limit run as for any source. An asynchronous caller receives the
 	 * case-system answer as a fulfilled promise.
 	 *
@@ -1339,6 +1345,10 @@ class CallService implements CallServiceInterface {
 	 */
 	private function dispatchInProcess(ObjectEntity $source, string $endpoint, array $config, bool $asynchronous): mixed {
 		$sourceType = ($source->getObject()['type'] ?? null);
+
+		if ($sourceType === FeedSource::SOURCE_TYPE) {
+			return $this->inProcessAnswer(response: (new FeedSource())->answer(source: $source), asynchronous: $asynchronous);
+		}
 
 		if ($sourceType === 'soap') {
 			// Warning: This functionality requires ext-soap and ext-xsd.
@@ -1360,12 +1370,26 @@ class CallService implements CallServiceInterface {
 			$response = $this->caseSystemOperations->handle(source: $source, endpoint: $endpoint, config: $config);
 		}
 
+		return $this->inProcessAnswer(response: $response, asynchronous: $asynchronous);
+	}//end dispatchInProcess()
+
+	/**
+	 * An in-process answer as the caller expects it: the response, or a fulfilled promise of it.
+	 *
+	 * @param ResponseInterface $response     The answer.
+	 * @param boolean           $asynchronous Whether the caller expects a promise.
+	 *
+	 * @return ResponseInterface|FulfilledPromise The answer, as a promise for an asynchronous caller.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-werknl-linkedin-and-indeed-are-job-board-templates-req-jbc-002
+	 */
+	private function inProcessAnswer(ResponseInterface $response, bool $asynchronous): ResponseInterface|FulfilledPromise {
 		if ($asynchronous === true) {
 			return new FulfilledPromise($response);
 		}
 
 		return $response;
-	}//end dispatchInProcess()
+	}//end inProcessAnswer()
 
 	/**
 	 * Assemble the options handed to Guzzle from the persisted request config
@@ -1636,6 +1660,27 @@ class CallService implements CallServiceInterface {
 	}//end redactResponseHeaders()
 
 	/**
+	 * The logged copy of a request or response with its personal data masked:
+	 * declared fields in the URL, the headers, the request options and a JSON
+	 * or XML body read `[afgeschermd]`. Runs right after the secret masking,
+	 * on the copy that is stored; the message that was sent is not touched.
+	 *
+	 * @param array $exchange The logged request or response.
+	 *
+	 * @return array The masked copy.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 */
+	private function maskPersonalData(array $exchange): array {
+		$masked = $this->sensitiveFieldRegistry->maskPersonalData(value: $exchange);
+		if (is_array($masked) === false) {
+			return $exchange;
+		}
+
+		return $masked;
+	}//end maskPersonalData()
+
+	/**
 	 * Returns true when a header/query/form key name looks like it carries a secret.
 	 *
 	 * Delegates to the shared {@see SensitiveFieldRegistry} (secret-hygiene) — a pure
@@ -1903,6 +1948,15 @@ class CallService implements CallServiceInterface {
 			$callLogData = $this->bodyCapturePolicy->withheldRecord(record: $callLogData);
 		}
 
+		// Personal data in the stored request and response is masked after the
+		// body policy ran, so `replayRequest` keeps what a replay sends; it is
+		// never listed (call-log-personal-data-masking REQ-PDM-001).
+		foreach (['request', 'response'] as $bag) {
+			if (is_array(($callLogData[$bag] ?? null)) === true) {
+				$callLogData[$bag] = $this->maskPersonalData(exchange: $callLogData[$bag]);
+			}
+		}
+
 		// A call kept for ever (retention 0) has no expiry. `expires` is a
 		// date-time string on call_log, and the register refuses a null in a
 		// string property, so the key is left out rather than written as null.
@@ -1932,12 +1986,12 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: the log carries the source's organisation, not the caller's, and a run may have no user.
 		$callLog = $this->objectService->saveObject(
 			object: $callLogData,
-			register: 'integriq',
-			schema: 'call_log',
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+				policy: new SavePolicy(silent: true, validation: false)
+			),
 			_rbac: false,
-			_multitenancy: false,
-			silent: true,
-			_validation: false
+			_multitenancy: false
 		);
 
 		// Set full response (with body) on the returned entity for processing.
@@ -2019,13 +2073,12 @@ class CallService implements CallServiceInterface {
 			// System write, unscoped: buffered logs carry their source's organisation, not the caller's.
 			$this->objectService->saveObjects(
 				objects: $batch,
-				register: 'integriq',
-				schema: 'call_log',
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: 'integriq', schema: 'call_log'),
+					audit: false
+				),
 				_rbac: false,
-				_multitenancy: false,
-				validation: false,
-				events: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
 			$this->logger->error(
@@ -2504,9 +2557,7 @@ class CallService implements CallServiceInterface {
 		// System write, unscoped: bookkeeping on a source the caller already reached in scope.
 		return $this->objectService->saveObject(
 			object: $sourceData,
-			register: 'integriq',
-			schema: 'source',
-			uuid: $source->getUuid(),
+			options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2872,11 +2923,9 @@ class CallService implements CallServiceInterface {
 			// System read, unscoped: re-reads the source already in hand, so a run without a user still dispatches.
 			$raw = $this->objectService->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
 			// A raw re-read failure must never break an outbound call that
@@ -3215,7 +3264,10 @@ class CallService implements CallServiceInterface {
 	 */
 	private function tracedExchange(FinishedCall $call): array {
 		$prepared = $call->prepared;
-		$traced = ['request' => $call->data['request'], 'response' => $this->redactResponseHeaders(response: $call->data['response'])];
+		$traced = [
+			'request' => $this->maskPersonalData(exchange: $call->data['request']),
+			'response' => $this->maskPersonalData(exchange: $this->redactResponseHeaders(response: $call->data['response'])),
+		];
 		if ($this->bodyCapturePolicy->captures(sourceData: $prepared['sourceData'], logBody: (bool)$prepared['logBody']) === false) {
 			$traced = $this->bodyCapturePolicy->strip(request: $traced['request'], response: $traced['response']);
 		}
@@ -3751,9 +3803,7 @@ class CallService implements CallServiceInterface {
 			// back to its own admin-owned source config on behalf of any caller.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $source->getUuid(),
+				options: RegisterSave::options(register: 'integriq', schema: 'source', uuid: $source->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);

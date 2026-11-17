@@ -34,6 +34,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the batch-level `requiresApproval` gate.
@@ -298,6 +299,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 		$target = ObjectServiceMockBuilder::objectEntity($this, ['id' => 'target-2', 'omschrijving' => 'Oud'], 'target-2');
 		$this->orObjectService->method('find')->willReturnCallback(
 			static function (...$args) use ($sourceEntity, $target) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = (string)($args['id'] ?? $args[0] ?? '');
 				if ($id === 'target-2') {
 					return $target;

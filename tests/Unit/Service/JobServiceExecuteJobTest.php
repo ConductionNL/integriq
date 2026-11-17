@@ -33,6 +33,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Pins the job log, the job timeline and the trace that executeJob writes.
@@ -67,6 +68,13 @@ class JobServiceExecuteJobTest extends TestCase {
 	private array $saved = [];
 
 	/**
+	 * The `_rbac` and `_multitenancy` flags of each save, keyed by schema, in call order.
+	 *
+	 * @var array<string, list<array{0: bool, 1: bool}>>
+	 */
+	private array $saveFlags = [];
+
+	/**
 	 * Arguments the job action received.
 	 *
 	 * @var array|null
@@ -91,7 +99,9 @@ class JobServiceExecuteJobTest extends TestCase {
 		$this->objectService = ObjectServiceMockBuilder::make($this);
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$this->saved[$args[2]][] = $args[0];
+				$this->saveFlags[$args[2]][] = [$args[4], $args[5]];
 				return ObjectServiceMockBuilder::objectEntity($this, $args[0], 'saved-' . $args[2]);
 			}
 		);
@@ -222,6 +232,23 @@ class JobServiceExecuteJobTest extends TestCase {
 		$this->assertTrue($job['isEnabled']);
 		$this->assertSame(['job_log', 'job'], array_keys($this->saved));
 	}//end testSuccessfulRunWritesSuccessLogAndAdvancesTimeline()
+
+	/**
+	 * A cron run has no user, so its log and its new schedule are system writes.
+	 *
+	 * Without them OpenRegister refuses the anonymous cron process ("User
+	 * 'Anonymous' does not have permission to 'create' objects in schema
+	 * 'JobLog'"), the job never records a run and runs again on every tick.
+	 *
+	 * @return void
+	 */
+	public function testACronRunRecordsItsLogAndScheduleAsSystemWrites(): void {
+		$this->actionOutcome = ['level' => 'INFO'];
+		$this->service->executeJob($this->job());
+
+		$this->assertSame([[false, false]], $this->saveFlags['job_log']);
+		$this->assertSame([[false, false]], $this->saveFlags['job']);
+	}//end testACronRunRecordsItsLogAndScheduleAsSystemWrites()
 
 	/**
 	 * Test that the result level, message and stack trace end up in the log.

@@ -30,7 +30,12 @@ use OCA\Integriq\Observability\Otel\SpanMapper;
 use OCA\Integriq\Observability\Otel\SpanMapperInterface;
 use OCA\Integriq\Observability\Otel\TraceExporterInterface;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
+use OCA\Integriq\Event\SpanExportRequestedEvent;
+use OCA\Integriq\Listener\SpanExportRequestedListener;
+use OCA\Integriq\Observability\Errors\ErrorSinkListener;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\Log\BeforeMessageLoggedEvent;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -61,11 +66,11 @@ class ObservabilityBindingsTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheBindingsRegisterEveryAlias(): void {
-		$context = $this->recordingContext($aliases);
+		$context = $this->recordingContext(aliases: $aliases);
 
 		(new ObservabilityBindings())->register(context: $context);
 
-		$this->assertSame(self::EXPECTED, $aliases);
+		$this->assertSame(expected: self::EXPECTED, actual: $aliases);
 	}//end testTheBindingsRegisterEveryAlias()
 
 	/**
@@ -74,11 +79,11 @@ class ObservabilityBindingsTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRegistrarRegistersTheSameAliases(): void {
-		$context = $this->recordingContext($aliases);
+		$context = $this->recordingContext(aliases: $aliases);
 
 		(new ObservabilityRegistrar())->register(context: $context);
 
-		$this->assertSame(self::EXPECTED, $aliases);
+		$this->assertSame(expected: self::EXPECTED, actual: $aliases);
 	}//end testTheRegistrarRegistersTheSameAliases()
 
 	/**
@@ -88,9 +93,25 @@ class ObservabilityBindingsTest extends TestCase {
 	 */
 	public function testEveryTargetImplementsItsInterface(): void {
 		foreach (array_slice(self::EXPECTED, 0, 4) as [$interface, $class]) {
-			$this->assertTrue(is_subclass_of($class, $interface), $class . ' implements ' . $interface);
+			$this->assertTrue(condition: is_subclass_of($class, $interface), message: $class . ' implements ' . $interface);
 		}
 	}//end testEveryTargetImplementsItsInterface()
+
+	/**
+	 * The error sink listener is registered for every logged message, and the
+	 * registrar puts the span command listener on the dispatcher.
+	 *
+	 * @return void
+	 */
+	public function testTheListenersAreRegistered(): void {
+		$context = $this->recordingContext(aliases: $aliases);
+		$context->expects($this->once())->method('registerEventListener')->with(BeforeMessageLoggedEvent::class, ErrorSinkListener::class);
+		(new ObservabilityRegistrar())->register(context: $context);
+
+		$dispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
+		$dispatcher->expects($this->once())->method('addServiceListener')->with(SpanExportRequestedEvent::class, SpanExportRequestedListener::class);
+		(new ObservabilityRegistrar())->registerListeners(dispatcher: $dispatcher);
+	}//end testTheListenersAreRegistered()
 
 	/**
 	 * A registration context that records the aliases and refuses anything else.
@@ -101,8 +122,8 @@ class ObservabilityBindingsTest extends TestCase {
 	 */
 	private function recordingContext(?array &$aliases): IRegistrationContext {
 		$aliases = [];
-		$context = $this->createMock(IRegistrationContext::class);
-		$context->expects($this->exactly(5))->method('registerServiceAlias')->willReturnCallback(
+		$context = $this->createMock(originalClassName: IRegistrationContext::class);
+		$context->expects($this->exactly(count: 5))->method('registerServiceAlias')->willReturnCallback(
 			static function (string $alias, string $target) use (&$aliases): void {
 				$aliases[] = [$alias, $target];
 			}

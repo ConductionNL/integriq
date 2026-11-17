@@ -44,6 +44,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the paths the main service test leaves out.
@@ -123,7 +124,10 @@ class DocumentGenerationServiceGapsTest extends TestCase {
 			->getMock();
 		$this->objectService->method('find')->willReturnCallback(fn () => $this->source);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register = '', string $schema = '', ?string $uuid = null): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register ?? '';
+				$schema = $options->target->schema ?? '';
+				$uuid = $options->uuid;
 				$this->saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'job-1'));
 			}

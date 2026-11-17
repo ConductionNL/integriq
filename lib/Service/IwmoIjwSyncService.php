@@ -34,6 +34,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\IwmoIjwProviderException;
 use OCA\Integriq\Exception\IwmoIjwTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\IwmoIjw\InboundReturnTranslator;
 use OCA\Integriq\Service\IwmoIjw\IStandardsClient;
 use OCA\Integriq\Service\IwmoIjw\IwmoIjwProviderInterface;
@@ -42,6 +43,7 @@ use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
 use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -175,7 +177,10 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 			$record['bsnHash'] = hash('sha256', (string)$input['bsn']);
 		}
 
-		$this->objectService->saveObject(object: $record, register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
+		$this->objectService->saveObject(
+			object: $record,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+		);
 
 		if ($status === 'failed') {
 			throw new IwmoIjwProviderException(message: (string)$error);
@@ -243,8 +248,7 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($outbound === null || $caseReference === null || $caseRegister === null || $caseSchema === null) {
@@ -349,9 +353,7 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 	}//end retryOne()
@@ -380,8 +382,7 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 		// class, not the stub.
 		$existing = $this->objectService->find(
 			id: $caseReference,
-			register: $caseRegister,
-			schema: $caseSchema
+			options: new ObjectFindOptions(register: $caseRegister, schema: $caseSchema)
 		);
 		if ($existing === null) {
 			$this->logger->warning(
@@ -403,9 +404,7 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: $caseRegister,
-			schema: $caseSchema,
-			uuid: $caseReference
+			options: RegisterSave::options(register: $caseRegister, schema: $caseSchema, uuid: $caseReference)
 		);
 
 	}//end updateLinkedCase()

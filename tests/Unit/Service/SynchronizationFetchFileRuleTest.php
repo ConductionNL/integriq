@@ -42,6 +42,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every branch of processFetchFileRule() and fetchFilesForObject() down to the
@@ -443,6 +444,7 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 		$orObjects = $this->createMock(ORObjectService::class);
 		$orObjects->method('find')->willReturnCallback(
 			function ($id, ...$rest) use ($sourceConfiguration) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				$this->record('source.find', [$id, ($rest['schema'] ?? null)]);
 				if ($this->answer('source.find') === 'missing') {
 					throw new DoesNotExistException('no source');

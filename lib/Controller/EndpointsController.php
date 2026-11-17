@@ -31,6 +31,7 @@ use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\Integriq\Service\EndpointCorsPolicyInterface;
 use OCA\Integriq\Service\EndpointServiceInterface;
+use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SearchServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -119,6 +120,7 @@ class EndpointsController extends Controller {
 	 * @param string $corsMethods Allowed CORS methods.
 	 * @param string $corsAllowedHeaders Allowed CORS headers.
 	 * @param integer $corsMaxAge CORS max age in seconds.
+	 * @param XmlEncoderInterface|null $xmlEncoder Writes an XML response; the container binds it.
 	 */
 	public function __construct(
 		$appName,
@@ -133,6 +135,7 @@ class EndpointsController extends Controller {
 		$corsMethods = 'PUT, POST, GET, DELETE, PATCH',
 		$corsAllowedHeaders = 'Authorization, Content-Type, Accept',
 		$corsMaxAge = 1728000,
+		private ?XmlEncoderInterface $xmlEncoder = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->corsMethods = $corsMethods;
@@ -258,17 +261,24 @@ class EndpointsController extends Controller {
 	}//end serve()
 
 	/**
-	 * The answer as XML when the Accept header asks for it and it is JSON;
-	 * otherwise as served.
+	 * The answer as XML when the Accept header asks for it, or the path names
+	 * an `.xml` document, and it is JSON; otherwise as served.
+	 *
+	 * A crawler that pulls a feed, such as a job board reading a vacancy feed,
+	 * sends no XML Accept header: the `.xml` path is how such an endpoint says
+	 * what it serves (connectors-job-board-multiposting D3).
 	 *
 	 * @param Response $response The served answer.
 	 * @param string   $path     The requested path.
 	 *
 	 * @return Response
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-werknl-linkedin-and-indeed-are-job-board-templates-req-jbc-002
 	 */
 	private function inRequestedFormat(Response $response, string $path): Response {
 		$acceptHeader = $this->request->getHeader('Accept');
-		if (stripos($acceptHeader, 'application/xml') === false || $response instanceof JSONResponse === false) {
+		$wantsXml = (stripos($acceptHeader, 'application/xml') !== false || str_ends_with(strtolower($path), '.xml') === true);
+		if ($wantsXml === false || $response instanceof JSONResponse === false) {
 			return $response;
 		}
 
@@ -277,7 +287,8 @@ class EndpointsController extends Controller {
 			data: $response->getData(),
 			status: $response->getStatus(),
 			headers: $response->getHeaders(),
-			path: $path
+			path: $path,
+			encoder: $this->xmlEncoder
 		);
 	}//end inRequestedFormat()
 

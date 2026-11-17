@@ -52,6 +52,8 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-inbound-notifications-are-normalized-into-the-existing-cloudevents-pipe-req-003
@@ -107,7 +109,9 @@ class NotificatiesCallbackTest extends TestCase {
 
 		$orObjectService = ObjectServiceMockBuilder::make($this);
 		$orObjectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($abonnement, $synchronization) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($abonnement, $synchronization) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'notificaties_abonnement') {
 					return $abonnement;
 				}
@@ -134,7 +138,7 @@ class NotificatiesCallbackTest extends TestCase {
 			}
 		);
 		$orObjectService->method('saveObject')->willReturnCallback(
-			fn (array $object, string $register, string $schema, ?string $uuid = null) => ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? ('generated-' . $schema)))
+			fn (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) => ObjectServiceMockBuilder::objectEntity($this, $object, (($options->uuid) ?? ('generated-' . ($options->target->schema))))
 		);
 
 		$logger = $this->createMock(LoggerInterface::class);
@@ -250,7 +254,7 @@ class NotificatiesCallbackTest extends TestCase {
 
 		$orObjectService = ObjectServiceMockBuilder::make($this);
 		$orObjectService->method('find')->willReturnCallback(
-			fn (string $id, string $register, string $schema) => ($schema === 'notificaties_abonnement') ? $abonnement : null
+			fn (string $id, ?ObjectFindOptions $options = null) => (($options?->schema) === 'notificaties_abonnement') ? $abonnement : null
 		);
 		$orObjectService->method('findAll')->willReturnCallback(
 			function (array $config = [], ...$rest) use ($consumer) {

@@ -40,6 +40,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The gate decision per channel, a refusal, a failed send and a missing message.
@@ -218,7 +219,11 @@ class IntakeReplyServiceGateTest extends TestCase {
 	private function objectService(array $object): MockObject {
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->method('find')
-			->with(self::UUID, IntakeRoutingService::REGISTER, IntakeRoutingService::SCHEMA_MESSAGE)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => self::UUID,
+				'register' => IntakeRoutingService::REGISTER,
+				'schema' => IntakeRoutingService::SCHEMA_MESSAGE,
+			]))
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, $object, self::UUID));
 		$objectService->method('saveObject')->willReturnCallback(
 			function (array $saved) {

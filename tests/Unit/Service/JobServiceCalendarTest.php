@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The clock is Tuesday 10 November 2026, 07:02 Amsterdam time, two minutes
@@ -85,6 +86,13 @@ class JobServiceCalendarTest extends TestCase {
 	private array $saved = [];
 
 	/**
+	 * The `_rbac` and `_multitenancy` flags of each save, per schema.
+	 *
+	 * @var array<string, list<array{0: bool, 1: bool}>>
+	 */
+	private array $saveFlags = [];
+
+	/**
 	 * The jobs findAll() serves.
 	 *
 	 * @var array<int, ObjectEntity>
@@ -116,7 +124,9 @@ class JobServiceCalendarTest extends TestCase {
 		$this->objects = ObjectServiceMockBuilder::make($this);
 		$this->objects->method('saveObject')->willReturnCallback(
 			function (...$args): ObjectEntity {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$this->saved[$args[2]][] = $args[0];
+				$this->saveFlags[$args[2]][] = [$args[4], $args[5]];
 				return ObjectServiceMockBuilder::objectEntity($this, $args[0], 'saved-' . $args[2]);
 			}
 		);
@@ -282,6 +292,7 @@ class JobServiceCalendarTest extends TestCase {
 		$this->assertSame(['job'], array_keys($this->saved));
 		$this->assertSame('2026-11-11T07:00:00+01:00', $this->saved['job'][0]['nextRun']);
 		$this->assertSame(self::fingerprintOf(), $this->saved['job'][0]['scheduleFingerprint']);
+		$this->assertSame([[false, false]], $this->saveFlags['job'], 'the cron pass that schedules it has no user');
 	}//end testACalendarJobWithoutANextRunIsScheduledNotRun()
 
 	/**

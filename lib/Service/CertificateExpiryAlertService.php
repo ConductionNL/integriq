@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTimeImmutable;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -39,7 +40,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
  */
-class CertificateExpiryAlertService {
+class CertificateExpiryAlertService implements CertificateExpiryAlertServiceInterface {
 
 	/**
 	 * The alert rule of a certificate expiry.
@@ -241,6 +242,7 @@ class CertificateExpiryAlertService {
 	 * @return array<int,object>
 	 */
 	private function read(string $schema, array $filters): array {
+		// Unscoped: the connection health job checks every source's certificate, as the system.
 		$result = $this->objectService->findAll(
 			config: [
 				'filters' => array_merge(['register' => ConnectionAlertService::REGISTER, 'schema' => $schema], $filters),
@@ -265,12 +267,9 @@ class CertificateExpiryAlertService {
 		try {
 			$this->objectService->saveObject(
 				object: $alert,
-				register: ConnectionAlertService::REGISTER,
-				schema: ConnectionAlertService::SCHEMA,
-				uuid: $uuid,
+				options: RegisterSave::options(register: ConnectionAlertService::REGISTER, schema: ConnectionAlertService::SCHEMA, uuid: $uuid),
 				_rbac: false,
-				// Unscoped: system write of an alert raised by the certificate expiry job.
-				_multitenancy: false,
+				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
 			$this->logger->warning(
