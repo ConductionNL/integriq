@@ -305,20 +305,7 @@ class FilePickupService {
 			throw new InvalidArgumentException(message: 'The pickup stores files but names no filesOwner or filesFolder.');
 		}
 
-		$folder = $this->rootFolder->getUserFolder($owner);
-		foreach (explode('/', $folderPath) as $segment) {
-			if ($folder->nodeExists($segment) === false) {
-				$folder = $folder->newFolder($segment);
-				continue;
-			}
-
-			$node = $folder->get($segment);
-			if (($node instanceof Folder) === false) {
-				throw new RuntimeException(message: 'The files folder path runs through a file: ' . $segment);
-			}
-
-			$folder = $node;
-		}
+		$folder = $this->filesFolder(owner: $owner, folderPath: $folderPath);
 
 		$handle = fopen($localPath, 'rb');
 		if ($handle === false) {
@@ -334,6 +321,38 @@ class FilePickupService {
 		}
 
 	}//end writeToFiles()
+
+	/**
+	 * The owner's files folder at a path, created segment by segment where missing.
+	 *
+	 * @param string $owner      The user whose files hold the pickup.
+	 * @param string $folderPath The folder path, without leading or trailing slash.
+	 *
+	 * @return Folder The folder.
+	 *
+	 * @throws RuntimeException When the path runs through a file.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	private function filesFolder(string $owner, string $folderPath): Folder {
+		$folder = $this->rootFolder->getUserFolder($owner);
+		foreach (explode('/', $folderPath) as $segment) {
+			if ($folder->nodeExists($segment) === false) {
+				$folder = $folder->newFolder($segment);
+				continue;
+			}
+
+			$node = $folder->get($segment);
+			if (($node instanceof Folder) === false) {
+				throw new RuntimeException(message: 'The files folder path runs through a file: ' . $segment);
+			}
+
+			$folder = $node;
+		}
+
+		return $folder;
+
+	}//end filesFolder()
 
 	/**
 	 * A name not yet taken in the folder: `name (2).ext` after `name.ext`.
@@ -379,25 +398,11 @@ class FilePickupService {
 			throw new InvalidArgumentException(message: 'The pickup maps files but the synchronization names no target register/schema.');
 		}
 
-		$mapping = null;
-		if (empty($synchronization['sourceTargetMapping']) === false) {
-			$mapping = $this->objectService->find(
-				id: (string)$synchronization['sourceTargetMapping'],
-				options: new ObjectFindOptions(register: 'integriq', schema: 'mapping')
-			);
-		}
+		$mapping = $this->pickupMapping(synchronization: $synchronization);
 
 		$saved = 0;
 		foreach (self::parseRecords(name: $file['name'], content: (string)file_get_contents($localPath)) as $record) {
-			$object = $record;
-			if ($mapping !== null) {
-				$object = $this->mappingService->executeMapping(mapping: $mapping, input: $record);
-			}
-
-			foreach (self::NEVER_SET as $field) {
-				unset($object[$field]);
-			}
-
+			$object = $this->toObject(record: $record, mapping: $mapping);
 			$this->objectService->saveObject(object: $object, options: RegisterSave::options(register: $register, schema: $schema));
 			$saved++;
 		}
@@ -405,6 +410,52 @@ class FilePickupService {
 		return $saved;
 
 	}//end writeObjects()
+
+	/**
+	 * The mapping the synchronization names, or null when it names none.
+	 *
+	 * @param array<string,mixed> $synchronization The synchronization.
+	 *
+	 * @return mixed The mapping, or null.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	private function pickupMapping(array $synchronization): mixed {
+		if (empty($synchronization['sourceTargetMapping']) === true) {
+			return null;
+		}
+
+		return $this->objectService->find(
+			id: (string)$synchronization['sourceTargetMapping'],
+			options: new ObjectFindOptions(register: 'integriq', schema: 'mapping')
+		);
+
+	}//end pickupMapping()
+
+	/**
+	 * One parsed record as the object to save: mapped when a mapping is set,
+	 * without the fields a pickup never sets.
+	 *
+	 * @param array<string,mixed> $record  The parsed record.
+	 * @param mixed               $mapping The mapping, or null.
+	 *
+	 * @return array<string,mixed> The object.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	private function toObject(array $record, mixed $mapping): array {
+		$object = $record;
+		if ($mapping !== null) {
+			$object = $this->mappingService->executeMapping(mapping: $mapping, input: $record);
+		}
+
+		foreach (self::NEVER_SET as $field) {
+			unset($object[$field]);
+		}
+
+		return $object;
+
+	}//end toObject()
 
 	/**
 	 * Records from a CSV, JSON or XML file.
@@ -425,30 +476,62 @@ class FilePickupService {
 		}
 
 		if ($extension === 'json') {
-			$decoded = json_decode($content, true);
-			if (is_array($decoded) === false) {
-				throw new InvalidArgumentException(message: 'The JSON file does not parse.');
-			}
-
-			if (array_is_list($decoded) === false) {
-				return [$decoded];
-			}
-
-			return $decoded;
+			return self::parseJson(content: $content);
 		}
 
 		if ($extension === 'xml') {
-			$document = SafeXmlParser::parse($content);
-			if ($document === false) {
-				throw new InvalidArgumentException(message: 'The XML file does not parse.');
-			}
-
-			return [(array)json_decode((string)json_encode($document), true)];
+			return self::parseXml(content: $content);
 		}
 
 		throw new InvalidArgumentException(message: 'A mapped pickup reads CSV, JSON or XML, not "' . $extension . '".');
 
 	}//end parseRecords()
+
+	/**
+	 * Records from a JSON file: a list of records, or one record.
+	 *
+	 * @param string $content The content.
+	 *
+	 * @return array<int,array<string,mixed>> The records.
+	 *
+	 * @throws InvalidArgumentException When the content does not parse.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	private static function parseJson(string $content): array {
+		$decoded = json_decode($content, true);
+		if (is_array($decoded) === false) {
+			throw new InvalidArgumentException(message: 'The JSON file does not parse.');
+		}
+
+		if (array_is_list($decoded) === false) {
+			return [$decoded];
+		}
+
+		return $decoded;
+
+	}//end parseJson()
+
+	/**
+	 * The one record an XML file holds.
+	 *
+	 * @param string $content The content.
+	 *
+	 * @return array<int,array<string,mixed>> The record, as a one-item list.
+	 *
+	 * @throws InvalidArgumentException When the content does not parse.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	private static function parseXml(string $content): array {
+		$document = SafeXmlParser::parse($content);
+		if ($document === false) {
+			throw new InvalidArgumentException(message: 'The XML file does not parse.');
+		}
+
+		return [(array)json_decode((string)json_encode($document), true)];
+
+	}//end parseXml()
 
 	/**
 	 * Records from a CSV file, the first line naming the fields; `;` or `,` separated.

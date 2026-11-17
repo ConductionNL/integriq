@@ -160,34 +160,62 @@ class FtpsClient implements RemoteFileClient {
 				continue;
 			}
 
-			$facts = [];
-			foreach (explode(';', strtolower(substr($line, 0, $split))) as $fact) {
-				if (str_contains($fact, '=') === true) {
-					[$key, $value] = explode('=', $fact, 2);
-					$facts[$key] = $value;
-				}
-			}
-
+			$facts = self::mlsdFacts(facts: substr($line, 0, $split));
 			if (($facts['type'] ?? '') !== 'file') {
 				continue;
-			}
-
-			$modified = DateTimeImmutable::createFromFormat('YmdHis', substr(($facts['modify'] ?? ''), 0, 14), new DateTimeZone('UTC'));
-			$mtime = 0;
-			if ($modified !== false) {
-				$mtime = $modified->getTimestamp();
 			}
 
 			$files[] = [
 				'name' => substr($line, ($split + 1)),
 				'size' => (int)($facts['size'] ?? 0),
-				'mtime' => $mtime,
+				'mtime' => self::mlsdTime(modify: ($facts['modify'] ?? '')),
 			];
 		}//end foreach
 
 		return $files;
 
 	}//end parseMlsd()
+
+	/**
+	 * The facts of one MLSD entry, keys lowercased.
+	 *
+	 * @param string $facts The `key=value;key=value;` part of the line.
+	 *
+	 * @return array<string,string> The facts.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+	 */
+	private static function mlsdFacts(string $facts): array {
+		$parsed = [];
+		foreach (explode(';', strtolower($facts)) as $fact) {
+			if (str_contains($fact, '=') === true) {
+				[$key, $value] = explode('=', $fact, 2);
+				$parsed[$key] = $value;
+			}
+		}
+
+		return $parsed;
+
+	}//end mlsdFacts()
+
+	/**
+	 * An MLSD `modify` fact (UTC `YmdHis`) as a timestamp, 0 when it does not parse.
+	 *
+	 * @param string $modify The fact's value.
+	 *
+	 * @return int The timestamp.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+	 */
+	private static function mlsdTime(string $modify): int {
+		$modified = DateTimeImmutable::createFromFormat('YmdHis', substr($modify, 0, 14), new DateTimeZone('UTC'));
+		if ($modified === false) {
+			return 0;
+		}
+
+		return $modified->getTimestamp();
+
+	}//end mlsdTime()
 
 	/**
 	 * Download a file straight to disk.
