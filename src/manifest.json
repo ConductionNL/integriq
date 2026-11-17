@@ -4153,7 +4153,7 @@
             "key": "recipientMsisdn",
             "label": "Recipient",
             "sortable": true,
-            "width": "18%"
+            "width": "14%"
           },
           {
             "key": "provider",
@@ -4162,10 +4162,16 @@
             "width": "13%"
           },
           {
+            "key": "sourceSlug",
+            "label": "Source",
+            "sortable": true,
+            "width": "12%"
+          },
+          {
             "key": "templateId",
             "label": "Template",
             "sortable": true,
-            "width": "18%"
+            "width": "10%"
           },
           {
             "key": "status",

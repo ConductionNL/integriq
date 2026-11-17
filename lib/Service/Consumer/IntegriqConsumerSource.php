@@ -22,6 +22,7 @@ namespace OCA\Integriq\Service\Consumer;
 
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\ObjectService;
@@ -193,8 +194,43 @@ class IntegriqConsumerSource implements ConsumerSource {
 			_multitenancy: false
 		);
 
-		return array_values(array_filter(($matches['results'] ?? $matches), static fn ($entry): bool => $entry instanceof ObjectEntity));
+		$found = array_values(array_filter(($matches['results'] ?? $matches), static fn ($entry): bool => $entry instanceof ObjectEntity));
+
+		return array_map(fn (ObjectEntity $consumer): ObjectEntity => $this->unrendered(consumer: $consumer), $found);
 	}//end consumers()
+
+	/**
+	 * The consumer as stored, with the credential a rendered read leaves out.
+	 *
+	 * `authorizationConfiguration` is writeOnly, and OpenRegister strips a
+	 * writeOnly property from every rendered row, an unscoped read included, so
+	 * the key or public key the check compares against is only on the stored row.
+	 *
+	 * @param ObjectEntity $consumer The consumer from the list read.
+	 *
+	 * @return ObjectEntity The stored consumer, or the listed one when it cannot be read.
+	 *
+	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 */
+	private function unrendered(ObjectEntity $consumer): ObjectEntity {
+		$uuid = $consumer->getUuid();
+		if ($uuid === null || $uuid === '') {
+			return $consumer;
+		}
+
+		$stored = $this->objectService->find(
+			id: $uuid,
+			options: new ObjectFindOptions(register: 'integriq', schema: 'consumer', render: false),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		if ($stored instanceof ObjectEntity) {
+			return $stored;
+		}
+
+		return $consumer;
+	}//end unrendered()
 
 	/**
 	 * Map a consumer object onto OpenRegister's resolved-consumer shape.

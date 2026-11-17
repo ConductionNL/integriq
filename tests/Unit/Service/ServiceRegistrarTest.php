@@ -303,6 +303,12 @@ use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
 use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
 use OCA\Integriq\Service\SmsDispatchService;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
+use OCA\Integriq\Service\NotifyNlEmailService;
+use OCA\Integriq\Service\NotifyNlEmailServiceInterface;
+use OCA\Integriq\Service\SmsStatusCallbackService;
+use OCA\Integriq\Service\SmsStatusCallbackServiceInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
+use OCA\Integriq\Service\Sms\SmsProviderRegistryInterface;
 use OCA\Integriq\Service\SoftwareCatalogueService;
 use OCA\Integriq\Service\SoftwareCatalogueServiceInterface;
 use OCA\Integriq\Service\SourceDestructionService;
@@ -396,6 +402,9 @@ class ServiceRegistrarTest extends TestCase {
 		IwmoIjwSyncServiceInterface::class => IwmoIjwSyncService::class,
 		StufZdsOutboundInterface::class => StufZdsOutbound::class,
 		SmsDispatchServiceInterface::class => SmsDispatchService::class,
+		NotifyNlEmailServiceInterface::class => NotifyNlEmailService::class,
+		SmsStatusCallbackServiceInterface::class => SmsStatusCallbackService::class,
+		SmsProviderRegistryInterface::class => SmsProviderRegistry::class,
 		StufProviderReceiverInterface::class => StufProviderReceiver::class,
 		DigitalPostServiceInterface::class => DigitalPostService::class,
 		ExchangeRejectionServiceInterface::class => ExchangeRejectionService::class,

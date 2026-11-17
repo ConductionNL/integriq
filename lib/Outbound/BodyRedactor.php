@@ -75,6 +75,14 @@ class BodyRedactor {
 	];
 
 	/**
+	 * A BSN-shaped number inside free text: nine digits, optionally split by
+	 * one separator each, not part of a longer run of digits.
+	 *
+	 * @var string
+	 */
+	private const BSN_PATTERN = '/(?<!\d)\d(?:[.\s_\-]?\d){8}(?!\d)/';
+
+	/**
 	 * Redact one rendered body.
 	 *
 	 * @param string $body The rendered body.
@@ -104,6 +112,26 @@ class BodyRedactor {
 		return $redacted;
 
 	}//end redactBody()
+
+	/**
+	 * Redact free text bound for a service outside Nextcloud, such as an
+	 * error sink. Removes the credential material {@see redactBody()}
+	 * removes, and every BSN-shaped number: nine digits, alone or with a
+	 * single dot, space, dash or underscore between them. A longer run of
+	 * digits, such as a timestamp, stays.
+	 *
+	 * @param string $text The text, for instance a log message.
+	 *
+	 * @return string The text with credentials and BSN-shaped numbers replaced.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 */
+	public function redactText(string $text): string {
+		$redacted = $this->redactBody(body: $text);
+
+		return (string)preg_replace(self::BSN_PATTERN, self::PLACEHOLDER, $redacted);
+
+	}//end redactText()
 
 	/**
 	 * Redact a render context, however deeply nested.
