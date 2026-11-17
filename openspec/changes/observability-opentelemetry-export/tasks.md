@@ -49,7 +49,7 @@ Kind: code. Matrix row `integriq:obs-otel`.
   - GIVEN a failed trace and a sampling ratio of 0 WHEN persisted THEN it is still queued
 - [x] Implement. `OtelSettings` (`otel_*` app settings), `OtelSettingsController` (`/api/admin/otel`, admin only), `src/views/admin/OtelSettings.vue` in the admin page, en and nl strings.
 - [x] Test. PHPUnit `OtelExportTest::testAFailedTraceIsAlwaysSampled`, `::testAnAdministratorSwitchesExportOn`.
-- [ ] Playwright `tests/e2e/opentelemetry-export.spec.ts` (written; not run: Playwright runs in the nightly job, not locally).
+- [x] Playwright `tests/e2e/opentelemetry-export.spec.ts`: 2 of 2 pass on a fresh NC 34.0.6 + OpenRegister main instance (live pass 2026-11-17). The switch-on test first timed out: NcTextField and NcCheckboxRadioSwitch put `data-testid` on the input itself, so `.locator('input')` under it found nothing; the spec now targets the input directly.
 
 ## Verification
 
