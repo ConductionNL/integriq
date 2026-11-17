@@ -80,6 +80,10 @@
             "description": "Admin-only link-and-probe endpoint for connection rows"
         },
         {
+            "name": "data-residency",
+            "description": "Where each connection sends data: the residency zone of every egress destination, the EU-only switch, and a source's declared residency"
+        },
+        {
             "name": "datasource",
             "description": "Controller for the `dashboard-http-datasource` resolve endpoint"
         },
@@ -110,6 +114,10 @@
         {
             "name": "dso-pki-settings",
             "description": "Admin-only controller for the DSO connection (`dso-stam` consumer)"
+        },
+        {
+            "name": "endpoint-workspace",
+            "description": "Lists the sessions or devices a workspace manager behind a source reports"
         },
         {
             "name": "endpoints",
@@ -1934,6 +1942,101 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/registration-targets/{slug}/test": {
+            "post": {
+                "operationId": "registration-targets-test",
+                "summary": "Dry run of one registration target",
+                "description": "Administrators only. Maps the given hand-over, or a sample one, for the target and answers the mapped body. Stops before the first write: no record is written, no file is read and no outside system is called. A refusal is answered with its code, like the registration command's own answer (form-submission-registration-targets, design D6).",
+                "tags": [
+                    "registration-targets"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "The target slug."
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "handover": {
+                                        "type": "object",
+                                        "description": "A hand-over of the submission; empty or absent maps the sample hand-over."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The mapped body, or a refusal with its code and retryable flag.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "dry": {
+                                            "type": "boolean"
+                                        },
+                                        "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                                "zgw",
+                                                "objects-api",
+                                                "stuf-zds",
+                                                "json"
+                                            ]
+                                        },
+                                        "mapped": {
+                                            "type": "object"
+                                        },
+                                        "code": {
+                                            "type": "string",
+                                            "enum": [
+                                                "unknown-target",
+                                                "invalid-handover",
+                                                "mapping-failed",
+                                                "source-unavailable"
+                                            ]
+                                        },
+                                        "retryable": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
                     }
                 }
             }
@@ -3818,6 +3921,96 @@
                 ]
             }
         },
+        "/execution-traces/{id}/test-case": {
+            "post": {
+                "operationId": "regressionSuite-record",
+                "summary": "Save a step of a traced execution as a test case",
+                "description": "Copies the input and output of one mapping or synchronization step of the trace into a new integration_test_case, replacing whatever the body edits (name, description, input, expectedOutput, ignoredPaths). The answer lists the paths that still carry the redaction marker. Needs the action regression-suite.record.",
+                "tags": [
+                    "regression-suites"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "step"
+                                ],
+                                "properties": {
+                                    "step": {
+                                        "type": "integer",
+                                        "description": "The order of the step in the trace."
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "input": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    },
+                                    "expectedOutput": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    },
+                                    "ignoredPaths": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The case as stored, with `redactedPaths`; an `error` with 400, 401, 403 or 404 otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The trace's id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/flows/{id}/run": {
             "post": {
                 "operationId": "flows-run",
@@ -4455,6 +4648,70 @@
                         }
                     }
                 ]
+            }
+        },
+        "/jobs/schedule-preview": {
+            "post": {
+                "operationId": "jobs-schedule-preview",
+                "summary": "The next five run times of a calendar, for the job form's preview",
+                "description": "The next five run times of a calendar schedule, computed by the same calculator the run loop uses. Requires the action job.schedule-preview.",
+                "tags": [
+                    "jobs"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "schedule"
+                                ],
+                                "properties": {
+                                    "schedule": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The run times, ascending, as ISO 8601 date-times.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "runs": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
             }
         },
         "/jobs/run/{id}": {
@@ -5192,6 +5449,55 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/mail-intake/import/options": {
+            "get": {
+                "operationId": "mail-intake-import-options",
+                "summary": "Whether the signed-in user may import a mail file, and into which mailboxes",
+                "description": "Whether the signed-in user may import a mail file, and into which mailboxes.",
+                "tags": [
+                    "mail-intake"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`allowed` and the mailbox sources by name.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowed": {
+                                            "type": "boolean"
+                                        },
+                                        "mailboxes": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
                     }
                 }
             }
@@ -7228,6 +7534,238 @@
                 ]
             }
         },
+        "/products/{productSlug}/channels/{channel}/events": {
+            "get": {
+                "operationId": "product-channels-pull",
+                "summary": "Pull a consumer's pending events on an API product channel",
+                "description": "The consumer authenticates with a JWT and needs an active subscription to the product (403 `subscription_required` otherwise). Each pull spends the subscription tier's budget under the same counter as the product's endpoints; a deprecated version adds Deprecation and Sunset headers. The first pull opens the consumer's pull subscription on the channel.",
+                "tags": [
+                    "product-subscriptions"
+                ],
+                "security": [],
+                "parameters": [
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The productSlug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "channel",
+                        "in": "path",
+                        "required": true,
+                        "description": "The channel.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "required": false,
+                        "description": "The last message id read.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "description": "How many messages, at most 100.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The messages and the cursor to read on from.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "429": {
+                        "description": "The subscription tier's rate limit or quota is spent; Retry-After says when to try again."
+                    }
+                }
+            }
+        },
+        "/products/{productSlug}/channels/{channel}/subscriptions": {
+            "post": {
+                "operationId": "product-channels-subscribe",
+                "summary": "Register a push subscription on an API product channel",
+                "description": "Filters on the channel's CloudEvent types, is signed (the secret is returned once) and names the product subscription it rides on. A sink that is not https or that resolves to a loopback, link-local, private or metadata address is refused with 400.",
+                "tags": [
+                    "product-subscriptions"
+                ],
+                "security": [],
+                "parameters": [
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The productSlug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "channel",
+                        "in": "path",
+                        "required": true,
+                        "description": "The channel.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "sink": {
+                                        "type": "string",
+                                        "format": "uri"
+                                    }
+                                },
+                                "required": [
+                                    "sink"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The subscription, with its signing secret.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "429": {
+                        "description": "The subscription tier's rate limit or quota is spent; Retry-After says when to try again."
+                    }
+                }
+            }
+        },
+        "/products/{productSlug}/channels/{channel}/subscriptions/{id}": {
+            "delete": {
+                "operationId": "product-channels-unsubscribe",
+                "summary": "End a push subscription on an API product channel",
+                "description": "Only a subscription riding on the caller's own product subscription, on this channel, can be ended; any other id answers 404.",
+                "tags": [
+                    "product-subscriptions"
+                ],
+                "security": [],
+                "parameters": [
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The productSlug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "channel",
+                        "in": "path",
+                        "required": true,
+                        "description": "The channel.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ended.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "429": {
+                        "description": "The subscription tier's rate limit or quota is spent; Retry-After says when to try again."
+                    }
+                }
+            }
+        },
         "/promotions": {
             "post": {
                 "operationId": "promotion-confirm",
@@ -7692,6 +8230,69 @@
                 ]
             }
         },
+        "/settings": {
+            "get": {
+                "operationId": "settings-index",
+                "summary": "Read the log retention",
+                "description": "The retention every log kind gets now in milliseconds, its default, and the progress of the last rebase.  Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.",
+                "tags": [
+                    "settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The settings.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "settings-update",
+                "summary": "Change the log retention",
+                "description": "Change the retention of one or more log kinds. The body is `retention`, an object of setting key to whole milliseconds, 0 keeping a log indefinitely. A refused value answers 400 naming the field.  Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.",
+                "tags": [
+                    "settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The settings after the change.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
         "/service-fetches": {
             "get": {
                 "operationId": "service-fetch-index",
@@ -7737,14 +8338,14 @@
         "/settings/rebase": {
             "post": {
                 "operationId": "settings-rebase",
-                "summary": "Rebase all logs with current retention settings",
-                "description": "Rebase all logs with current retention settings.  Recomputes deletion timestamps for CallLog/JobLog/SynchronizationLog rows based on the current retention windows. This is the integriq-specific action that has no OR equivalent (OR's archival workflow uses ISO durations + per-object retention; the connector mixes service-level constants with per-source overrides, see local ADR-004).  Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.",
+                "summary": "Queue the retention rebase of existing logs",
+                "description": "Queue the job that applies the current retention to existing logs. The body may name `kinds` (callLog, jobLog, syncLog, syncContractLog); none means all. The job pages through the OpenRegister log objects and sets `expires` from `created`; its progress is in the settings read.  Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.",
                 "tags": [
                     "settings"
                 ],
                 "responses": {
-                    "200": {
-                        "description": "JSON response with the rebase result.",
+                    "202": {
+                        "description": "What was queued.",
                         "headers": {
                             "API-Version": {
                                 "$ref": "#/components/headers/API-Version"
@@ -7758,6 +8359,12 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
                     },
                     "500": {
                         "$ref": "#/components/responses/Problem500"
@@ -7964,6 +8571,102 @@
                     },
                     "502": {
                         "$ref": "#/components/responses/Problem502"
+                    }
+                }
+            }
+        },
+        "/sharepoint/publication-intake": {
+            "post": {
+                "operationId": "sharepoint-setup-intake",
+                "summary": "Save a SharePoint to publication setup",
+                "description": "Creates one source, one mapping, one fetch_file rule and one synchronization from the `sharepoint-publications` set through the configuration import, filled with the credential, site, library, folder, catalogue and target the administrator picked. The source holds a broker reference and no secret; `requiresApproval` makes the first run pause for approval. Integriq administrators only.",
+                "tags": [
+                    "sharepoint"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "credentialId",
+                                    "siteId",
+                                    "driveId",
+                                    "catalog",
+                                    "register",
+                                    "schema"
+                                ],
+                                "properties": {
+                                    "credentialId": {
+                                        "type": "string",
+                                        "description": "The brokered credential's uuid."
+                                    },
+                                    "siteId": {
+                                        "type": "string",
+                                        "description": "The Graph site id."
+                                    },
+                                    "driveId": {
+                                        "type": "string",
+                                        "description": "The document library id."
+                                    },
+                                    "folderId": {
+                                        "type": "string",
+                                        "description": "The folder whose subfolders become publications; the library root when empty."
+                                    },
+                                    "folderName": {
+                                        "type": "string",
+                                        "description": "The folder's name, shown in the created objects' names."
+                                    },
+                                    "catalog": {
+                                        "type": "string",
+                                        "description": "The catalogue the publications are written into."
+                                    },
+                                    "register": {
+                                        "type": "string",
+                                        "description": "The target register."
+                                    },
+                                    "schema": {
+                                        "type": "string",
+                                        "description": "The target schema."
+                                    },
+                                    "requiresApproval": {
+                                        "type": "boolean",
+                                        "description": "Pause each run for approval before it writes."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The created objects by component.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
                     }
                 }
             }
@@ -8330,6 +9033,57 @@
                         "in": "path",
                         "required": true,
                         "description": "The id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/sources/{id}/workspace-entries": {
+            "get": {
+                "operationId": "endpoint-workspace-index",
+                "summary": "List the sessions or devices the workspace manager behind a source reports",
+                "description": "List the sessions or devices the workspace manager behind a source reports, each with the Nextcloud user it maps to or none. Without a credential nothing is called.",
+                "tags": [
+                    "endpoint-workspace"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The entries, or that the credential is missing.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source's uuid.",
                         "schema": {
                             "type": "string"
                         }
@@ -9884,6 +10638,119 @@
                         "$ref": "#/components/responses/Problem501"
                     }
                 }
+            }
+        },
+        "/egress/destinations": {
+            "get": {
+                "operationId": "egressDestination-index",
+                "summary": "List every outbound destination with its location and the verdict",
+                "description": "Every enabled source and every host in the call log of the last 30 days, with host, sourceId, country, basis, evidence, zone and lastCallAt, plus the verdict (eu-only or not-proven), the counts per zone and whether EU-only mode is on. Admin only. The same answer is the auditor's JSON export.",
+                "tags": [
+                    "data-residency"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{destinations, verdict, counts, euOnly}`; an `error` with 403 for a non-administrator.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/egress/eu-only": {
+            "put": {
+                "operationId": "egressDestination-setEuOnly",
+                "summary": "Switch EU-only mode",
+                "description": "Body `enabled` (boolean). Switching on is refused with 409 while any destination is not shown to be in the EU, naming those destinations. Admin only.",
+                "tags": [
+                    "data-residency"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{euOnly}`; an `error` with 403 or 409 otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    }
+                }
+            }
+        },
+        "/sources/{id}/residency": {
+            "put": {
+                "operationId": "egressDestination-setSourceResidency",
+                "summary": "Record where a source sits",
+                "description": "Body `country` (ISO 3166-1 alpha-2) and `evidence`. Stored with basis set-by-admin, the administrator's user id and the time. Admin only.",
+                "tags": [
+                    "data-residency"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{residency}`; an `error` with 400, 403 or 404 otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
             }
         }
     },

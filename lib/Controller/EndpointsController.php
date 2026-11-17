@@ -258,17 +258,24 @@ class EndpointsController extends Controller {
 	}//end serve()
 
 	/**
-	 * The answer as XML when the Accept header asks for it and it is JSON;
-	 * otherwise as served.
+	 * The answer as XML when the Accept header asks for it, or the path names
+	 * an `.xml` document, and it is JSON; otherwise as served.
+	 *
+	 * A crawler that pulls a feed, such as a job board reading a vacancy feed,
+	 * sends no XML Accept header: the `.xml` path is how such an endpoint says
+	 * what it serves (connectors-job-board-multiposting D3).
 	 *
 	 * @param Response $response The served answer.
 	 * @param string   $path     The requested path.
 	 *
 	 * @return Response
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-werknl-linkedin-and-indeed-are-job-board-templates-req-jbc-002
 	 */
 	private function inRequestedFormat(Response $response, string $path): Response {
 		$acceptHeader = $this->request->getHeader('Accept');
-		if (stripos($acceptHeader, 'application/xml') === false || $response instanceof JSONResponse === false) {
+		$wantsXml = (stripos($acceptHeader, 'application/xml') !== false || str_ends_with(strtolower($path), '.xml') === true);
+		if ($wantsXml === false || $response instanceof JSONResponse === false) {
 			return $response;
 		}
 

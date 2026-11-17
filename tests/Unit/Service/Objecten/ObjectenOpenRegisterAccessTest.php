@@ -32,6 +32,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * @covers \OCA\Integriq\Service\Objecten\ObjectenOpenRegisterAccess
@@ -140,6 +142,7 @@ class ObjectenOpenRegisterAccessTest extends TestCase {
 			}
 
 			public function find(mixed ...$args): mixed {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$this->calls[] = $args;
 				if ($this->stored instanceof \Throwable) {
 					throw $this->stored;
@@ -208,7 +211,10 @@ class ObjectenOpenRegisterAccessTest extends TestCase {
 			public function __construct(private mixed $answer) {
 			}
 
-			public function deleteObject(string $uuid, string $register, string $schema): mixed {
+			public function deleteObject(ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): mixed {
+				$uuid = $deletion->uuid;
+				$register = $deletion->target->register;
+				$schema = $deletion->target->schema;
 				$this->deleted[] = ['uuid' => $uuid, 'register' => $register, 'schema' => $schema];
 				return $this->answer;
 			}

@@ -129,6 +129,67 @@ class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterfac
 	}//end submitDocument()
 
 	/**
+	 * {@inheritDoc}
+	 *
+	 * A reference that is an absolute URL is fetched only when it is on the
+	 * Access Point's own host, so the brokered credential never goes to
+	 * another server; any other reference is a document id under
+	 * `{baseUrl}/documents/`.
+	 *
+	 * @param array $sourceConfiguration The Peppol source's `configuration` object.
+	 * @param string $reference The Access Point's reference to the document.
+	 *
+	 * @return string The UBL document.
+	 *
+	 * @throws PeppolProviderException When the reference is empty or foreign, or the fetch fails.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
+	 */
+	public function fetchInboundDocument(array $sourceConfiguration, string $reference): string {
+		$document = $this->dispatch(
+			sourceConfiguration: $sourceConfiguration,
+			call: new BrokeredCall(method: 'GET', url: $this->documentUrl(sourceConfiguration: $sourceConfiguration, reference: $reference))
+		);
+		if (trim($document) === '') {
+			throw new PeppolProviderException(message: 'The Peppol Access Point returned an empty document for ' . $reference . '.');
+		}
+
+		return $document;
+	}//end fetchInboundDocument()
+
+	/**
+	 * The URL of an inbound document on the Access Point.
+	 *
+	 * @param array $sourceConfiguration The Peppol source's `configuration` object.
+	 * @param string $reference The Access Point's reference to the document.
+	 *
+	 * @return string The URL.
+	 *
+	 * @throws PeppolProviderException When the reference is empty or names another host.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
+	 */
+	private function documentUrl(array $sourceConfiguration, string $reference): string {
+		$reference = trim($reference);
+		if ($reference === '') {
+			throw new PeppolProviderException(message: 'The inbound notification named no document to fetch.');
+		}
+
+		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
+		if (preg_match('#^https?://#i', $reference) !== 1) {
+			return $baseUrl . '/documents/' . rawurlencode($reference);
+		}
+
+		$referenceHost = strtolower((string)parse_url($reference, PHP_URL_HOST));
+		$baseHost = strtolower((string)parse_url($baseUrl, PHP_URL_HOST));
+		if ($referenceHost === '' || $referenceHost !== $baseHost) {
+			throw new PeppolProviderException(message: 'The inbound document is not on the Access Point\'s host: ' . $reference);
+		}
+
+		return $reference;
+	}//end documentUrl()
+
+	/**
 	 * The transmissionId the Access Point assigned to a submission.
 	 *
 	 * @param string $response The submission answer body.

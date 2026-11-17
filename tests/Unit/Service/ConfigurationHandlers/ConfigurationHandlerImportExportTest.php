@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\Entity;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The handlers over the real redaction registry; OpenRegister is the double.
@@ -69,7 +70,10 @@ class ConfigurationHandlerImportExportTest extends TestCase {
 		$this->saves = [];
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->assertSame('integriq', $register);
 				$this->saves[] = [$schema, $uuid, $object];
 				$entity = new ObjectEntity();

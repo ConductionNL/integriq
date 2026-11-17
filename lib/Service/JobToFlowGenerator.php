@@ -81,6 +81,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use InvalidArgumentException;
 use OCA\Integriq\Exception\EntityNotMigratableException;
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Kernel\FlowNodeIds;
@@ -167,6 +168,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @param IL10N $l10n Translations.
 	 * @param IAppConfig $appConfig Reads the configured acting account.
 	 * @param IUserManager $userManager Proves that account exists before a flow claims it.
+	 * @param JobCalendarSchedule|null $calendar Translates a calendar schedule into a cron expression.
 	 */
 	public function __construct(
 		private readonly MigrationEntityReader $reader,
@@ -175,6 +177,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 		private readonly IL10N $l10n,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserManager $userManager,
+		private readonly ?JobCalendarSchedule $calendar = null,
 	) {
 
 	}//end __construct()
@@ -243,7 +246,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 		}
 
 		$reference = $this->subject->referenceOf(entity: $job);
-		$cron = (string)$this->cadence->cronFor(seconds: $this->intervalOf(job: $job));
+		$cron = $this->cronOf(job: $job);
 		$nodes = $this->nodesFor(job: $job, cron: $cron);
 
 		return [
@@ -363,13 +366,75 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function scheduleRefusals(array $job): array {
+		$cadence = $this->intervalRefusals(job: $job);
+		if ($this->calendar()->isCalendar(jobData: $job) === true) {
+			$cadence = $this->calendarRefusals(job: $job);
+		}
+
 		return array_merge(
-			$this->intervalRefusals(job: $job),
+			$cadence,
 			$this->delayedStartRefusals(job: $job),
 			$this->singleRunRefusals(job: $job),
 			$this->runIdentityRefusals(job: $job)
 		);
 	}//end scheduleRefusals()
+
+	/**
+	 * Refusals about a calendar schedule a cron would have to say.
+	 *
+	 * A calendar with weekdays and whole times becomes `m h * * d`. Every other
+	 * field is refused by name and never rounded or dropped: a flow that ran on
+	 * the 31st instead of the last working day would be a different job.
+	 *
+	 * @param array $job The job's serialised record.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
+	 */
+	private function calendarRefusals(array $job): array {
+		try {
+			$fields = $this->calendar()->cronRefusals(calendar: $job['schedule'], serverZone: date_default_timezone_get());
+		} catch (InvalidArgumentException $e) {
+			return [$this->l10n->t('schedule: the calendar is not valid (%1$s).', [$e->getMessage()])];
+		}
+
+		return array_map(
+			fn (string $field): string => $this->l10n->t(
+				'%1$s: a five-field cron says weekdays and times of day in the server\'s time zone, with one '
+				. 'minute for all times; it cannot say this part of the calendar, and dropping it would change '
+				. 'when the job runs.',
+				[$field]
+			),
+			$fields
+		);
+	}//end calendarRefusals()
+
+	/**
+	 * The cron the generated flow runs on.
+	 *
+	 * @param array $job The job's serialised record, already free of refusals.
+	 *
+	 * @return string The five-field cron.
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
+	 */
+	private function cronOf(array $job): string {
+		if ($this->calendar()->isCalendar(jobData: $job) === true) {
+			return $this->calendar()->cronFor(calendar: $job['schedule']);
+		}
+
+		return (string)$this->cadence->cronFor(seconds: $this->intervalOf(job: $job));
+	}//end cronOf()
+
+	/**
+	 * The calendar calculator.
+	 *
+	 * @return JobCalendarSchedule The calculator.
+	 */
+	private function calendar(): JobCalendarSchedule {
+		return ($this->calendar ?? new JobCalendarSchedule());
+	}//end calendar()
 
 	/**
 	 * Refusals about the interval a schedule trigger would need as a cron.
@@ -736,6 +801,15 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function describe(array $job, string $reference, string $cron): string {
+		if ($this->calendar()->isCalendar(jobData: $job) === true) {
+			return $this->l10n->t(
+				'Generated from job "%1$s" (%2$s) by the flow-native-synchronization migration. It is disabled '
+				. 'until a human has reviewed it, and the job it was generated from is untouched — enable one or '
+				. 'the other, never both. The job\'s calendar became the cron "%3$s".',
+				[$this->subject->labelOf(entity: $job), $reference, $cron]
+			);
+		}
+
 		return $this->l10n->t(
 			'Generated from job "%1$s" (%2$s) by the flow-native-synchronization migration. It is disabled '
 			. 'until a human has reviewed it, and the job it was generated from is untouched — enable one or '

@@ -40,6 +40,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * A synchronization checks each source object before it is mapped and each
@@ -143,7 +145,9 @@ class SynchronizationMessageValidationTest extends TestCase {
 
 		$orObjects = ObjectServiceMockBuilder::make($this);
 		$orObjects->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null) use ($schemas): ?ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null) use ($schemas): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'message_schema') {
 					$this->schemaReads++;
 					if (isset($schemas[$id]) === false) {
@@ -162,7 +166,9 @@ class SynchronizationMessageValidationTest extends TestCase {
 		);
 		$orObjects->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 		$orObjects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ...$rest): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				if ($schema === 'sync_item_dead_letter') {
 					$this->deadLetters[] = (array)$object;
 				}

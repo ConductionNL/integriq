@@ -244,6 +244,39 @@ class SpanMapperTest extends TestCase {
 	}//end testFormattedIdentifiersAndOpaqueTokensAreMaskedRouteWordsStay()
 
 	/**
+	 * A called URL without a host (relative, malformed or empty) exports no
+	 * url.full attribute at all, so nothing of its path reaches the collector;
+	 * the method and status code are still exported.
+	 *
+	 * @return void
+	 */
+	public function testAUrlWithoutAHostExportsNoUrlAttribute(): void {
+		$urls = ['/ingeschrevenpersonen/999993653', 'brp.example.org/ingeschrevenpersonen/999993653', 'http:///999993653', ''];
+
+		$trace = $this->trace();
+		$trace['steps'] = [];
+		foreach ($urls as $index => $url) {
+			$trace['steps'][] = [
+				'order' => ($index + 1), 'type' => 'call', 'name' => 'svc', 'status' => 'success', 'durationMs' => 1,
+				'input' => ['method' => 'delete', 'url' => $url], 'output' => ['statusCode' => 204],
+			];
+		}
+
+		$spans = $this->spans($trace);
+		foreach (array_keys($urls) as $index) {
+			$attrs = $this->attrs($spans[($index + 1)]);
+			$this->assertArrayNotHasKey('url.full', $attrs, (string)$index);
+			$this->assertSame('DELETE', $attrs['http.request.method']);
+			$this->assertSame('204', $attrs['http.response.status_code']);
+		}
+
+		$payload = json_encode((new SpanMapper(new TraceParent()))->map(trace: $trace, serviceName: 'integriq'));
+		$this->assertStringNotContainsString('999993653', $payload);
+		$this->assertStringNotContainsString('ingeschrevenpersonen', $payload);
+
+	}//end testAUrlWithoutAHostExportsNoUrlAttribute()
+
+	/**
 	 * Steps counted but not kept are the root's `integriq.steps.dropped`
 	 * attribute, not a span; a trace without micro times falls back to the
 	 * whole-second times.

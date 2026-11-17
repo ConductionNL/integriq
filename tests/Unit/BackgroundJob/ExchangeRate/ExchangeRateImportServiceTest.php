@@ -32,6 +32,7 @@ use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Runs the import against an in-memory object store and an HTTP client that
@@ -153,7 +154,10 @@ class ExchangeRateImportServiceTest extends TestCase {
 			}
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null, $_rbac = true) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->rows[]  = $object;
 				$this->saves[] = ['register' => $register, 'schema' => $schema, 'rbac' => $_rbac];
 				$entity = new ObjectEntity();

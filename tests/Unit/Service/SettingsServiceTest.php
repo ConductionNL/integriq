@@ -1,19 +1,21 @@
 <?php
 
 /**
- * Unit tests for the error sink settings on SettingsService (REQ-OTEL-008).
+ * Unit tests for the retention read, its update and the queued rebase.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license   EUPL-1.2
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+ * @link https://www.integriq.nl
+ *
+ * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
  */
 
 declare(strict_types=1);
@@ -21,239 +23,177 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use InvalidArgumentException;
-use LogicException;
-use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
+use OCA\Integriq\BackgroundJob\RetentionRebaseJob;
+use OCA\Integriq\BackgroundJob\RetentionRebaseJobScheduler;
+use OCA\Integriq\Service\RetentionDefaults;
 use OCA\Integriq\Service\SettingsService;
+use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
-use OCP\IDBConnection;
-use OCP\IL10N;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
- * The error sink is stored under `errorsink_*` keys, and a bad save stores nothing.
+ * Read, change and rebase the retention over an in-memory app config.
+ *
+ * @covers \OCA\Integriq\Service\SettingsService
+ * @uses   \OCA\Integriq\Service\RetentionSettings
+ * @uses   \OCA\Integriq\BackgroundJob\RetentionRebaseJobScheduler
  */
 class SettingsServiceTest extends TestCase {
 
 	/**
-	 * Stored app settings, as an in-memory IAppConfig.
+	 * The in-memory `integriq` app config.
 	 *
-	 * @var array<string, mixed>
+	 * @var array<string,string>
 	 */
-	private array $config = [];
+	private array $stored = [];
 
 	/**
-	 * The service over an in-memory IAppConfig.
+	 * The job list double.
+	 *
+	 * @var IJobList&MockObject
+	 */
+	private IJobList $jobList;
+
+	/**
+	 * Set up the doubles.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->stored = [];
+		$this->jobList = $this->createMock(IJobList::class);
+	}//end setUp()
+
+	/**
+	 * The read reports each value, the defaults beside them, and no rebase yet.
+	 *
+	 * @return void
+	 */
+	public function testTheReadReportsValuesAndDefaults(): void {
+		$this->stored['retention'] = '{"callLogRetention":7776000000}';
+
+		$settings = $this->service()->getSettings();
+
+		$this->assertSame(7776000000, $settings['retention']['callLogRetention']);
+		$this->assertSame(RetentionDefaults::SYNC_LOG, $settings['retention']['syncLogRetention']);
+		$this->assertSame(RetentionDefaults::BY_SETTING, $settings['defaults']);
+		$this->assertSame([], $settings['rebase']);
+	}//end testTheReadReportsValuesAndDefaults()
+
+	/**
+	 * An administrator keeps call logs for 90 days: the value is stored in
+	 * milliseconds beside what was there, and read back.
+	 *
+	 * @return void
+	 */
+	public function testAnUpdateIsStoredAndReadBack(): void {
+		$this->stored['retention'] = '{"jobLogRetention":86400000,"legacyKey":1}';
+
+		$settings = $this->service()->updateSettings(['retention' => ['callLogRetention' => 7776000000, 'successLogRetention' => '0']]);
+
+		$this->assertSame(
+			['jobLogRetention' => 86400000, 'legacyKey' => 1, 'callLogRetention' => 7776000000, 'successLogRetention' => 0],
+			json_decode($this->stored['retention'], true)
+		);
+		$this->assertSame(7776000000, $settings['retention']['callLogRetention']);
+		$this->assertSame(86400000, $settings['retention']['jobLogRetention']);
+		$this->assertSame(0, $settings['retention']['successLogRetention']);
+	}//end testAnUpdateIsStoredAndReadBack()
+
+	/**
+	 * A negative, fractional or non-numeric value, or a key that is not a
+	 * retention, refuses the update by name and stores nothing.
+	 *
+	 * @return void
+	 */
+	public function testABadValueIsRefusedNamingTheField(): void {
+		$cases = [
+			'callLogRetention: must be a whole number of milliseconds, 0 or more.' => ['callLogRetention' => -1],
+			'jobLogRetention: must be a whole number of milliseconds, 0 or more.' => ['jobLogRetention' => 'thirty days'],
+			'syncLogRetention: must be a whole number of milliseconds, 0 or more.' => ['syncLogRetention' => 1.5],
+			'auditLogRetention: not a retention setting.' => ['auditLogRetention' => 1],
+			'retention: send an object of retention values.' => null,
+		];
+		foreach ($cases as $message => $retention) {
+			try {
+				$this->service()->updateSettings(['retention' => $retention]);
+				$this->fail('Accepted: ' . $message);
+			} catch (InvalidArgumentException $exception) {
+				$this->assertSame($message, $exception->getMessage());
+			}
+		}
+
+		$this->assertArrayNotHasKey('retention', $this->stored);
+	}//end testABadValueIsRefusedNamingTheField()
+
+	/**
+	 * A rebase queues the job for the chosen kinds and records it as queued.
+	 *
+	 * @return void
+	 */
+	public function testARebaseQueuesTheJob(): void {
+		$this->jobList->expects($this->once())
+			->method('add')
+			->with(RetentionRebaseJob::class, ['kinds' => ['callLog'], 'kind' => 0, 'offset' => 0]);
+
+		$result = $this->service()->rebase(['callLog', 'callLog']);
+
+		$this->assertSame(['queued' => true, 'kinds' => ['callLog']], $result);
+		$this->assertSame(
+			['status' => 'queued', 'kinds' => ['callLog'], 'processed' => 0, 'updated' => 0],
+			json_decode($this->stored[RetentionRebaseJob::PROGRESS_KEY], true)
+		);
+		$this->assertSame('queued', $this->service()->getSettings()['rebase']['status']);
+	}//end testARebaseQueuesTheJob()
+
+	/**
+	 * No kinds named means every kind with an expiry.
+	 *
+	 * @return void
+	 */
+	public function testARebaseWithoutKindsCoversEveryLogWithAnExpiry(): void {
+		$this->jobList->expects($this->once())
+			->method('add')
+			->with(RetentionRebaseJob::class, ['kinds' => ['callLog', 'jobLog', 'syncLog', 'syncContractLog'], 'kind' => 0, 'offset' => 0]);
+
+		$this->service()->rebase();
+	}//end testARebaseWithoutKindsCoversEveryLogWithAnExpiry()
+
+	/**
+	 * A kind without an expiry to rebase is refused and nothing is queued.
+	 *
+	 * @return void
+	 */
+	public function testAKindWithoutAnExpiryIsRefused(): void {
+		$this->jobList->expects($this->never())->method('add');
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('kinds: "eventMessage" is not a log kind that can be rebased.');
+
+		$this->service()->rebase(['callLog', 'eventMessage']);
+	}//end testAKindWithoutAnExpiryIsRefused()
+
+	/**
+	 * The service over the in-memory config.
 	 *
 	 * @return SettingsService
 	 */
 	private function service(): SettingsService {
-		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
-		$get = fn (string $app, string $key, $default) => ($this->config[$key] ?? $default);
-		$set = function (string $app, string $key, $value): bool {
-			$this->assertSame(expected: 'integriq', actual: $app);
-			$this->config[$key] = $value;
-			return true;
-		};
-		foreach (['getValueBool', 'getValueString', 'getValueInt'] as $getter) {
-			$appConfig->method($getter)->willReturnCallback($get);
-		}
-
-		foreach (['setValueBool', 'setValueString', 'setValueInt'] as $setter) {
-			$appConfig->method($setter)->willReturnCallback($set);
-		}
-
-		$l10n = $this->createMock(originalClassName: IL10N::class);
-		$l10n->method('t')->willReturnArgument(0);
-
-		return new SettingsService(
-			db: $this->createMock(originalClassName: IDBConnection::class),
-			config: $appConfig,
-			logger: $this->createMock(originalClassName: LoggerInterface::class),
-			errorSink: new ErrorSinkSettings(appConfig: $appConfig, l: $l10n)
+		$config = $this->createMock(IAppConfig::class);
+		$config->method('getValueString')->willReturnCallback(
+			fn (string $app, string $key, string $default=''): string => ($this->stored[$key] ?? $default)
+		);
+		$config->method('setValueString')->willReturnCallback(
+			function (string $app, string $key, string $value): bool {
+				$this->assertSame('integriq', $app);
+				$this->stored[$key] = $value;
+				return true;
+			}
 		);
 
+		return new SettingsService(config: $config, rebaseScheduler: new RetentionRebaseJobScheduler(jobList: $this->jobList), logger: new NullLogger());
 	}//end service()
-
-	/**
-	 * Assert one save is refused with a reason containing the given text,
-	 * and stores nothing.
-	 *
-	 * @param array<string, mixed> $values The submitted values.
-	 * @param string $reason Text the reason contains.
-	 *
-	 * @return void
-	 */
-	private function assertRefused(array $values, string $reason): void {
-		$this->config = [];
-		try {
-			$this->service()->saveErrorSinkSettings(values: $values);
-			$this->fail(message: 'The save was taken: ' . json_encode($values));
-		} catch (InvalidArgumentException $e) {
-			$this->assertStringContainsString(needle: $reason, haystack: $e->getMessage());
-		}
-
-		$this->assertSame(expected: [], actual: $this->config, message: 'A refused save stores nothing.');
-
-	}//end assertRefused()
-
-	/**
-	 * The sink switched on with an empty endpoint is refused, naming the endpoint.
-	 *
-	 * @return void
-	 */
-	public function testAnEnabledErrorSinkNeedsAnEndpoint(): void {
-		$this->assertRefused(values: ['enabled' => true, 'kind' => 'sentry', 'endpoint' => '  '], reason: 'endpoint');
-
-		$stored = $this->service()->saveErrorSinkSettings(values: ['enabled' => false, 'endpoint' => '']);
-		$this->assertFalse(condition: $stored['enabled']);
-
-	}//end testAnEnabledErrorSinkNeedsAnEndpoint()
-
-	/**
-	 * An `http` endpoint is refused unless the service is marked internal.
-	 *
-	 * @return void
-	 */
-	public function testAnHttpErrorSinkNeedsTheInternalMark(): void {
-		$values = ['enabled' => true, 'kind' => 'otlp-logs', 'endpoint' => 'http://otel.internal:4318'];
-		$this->assertRefused(values: $values, reason: 'must use https');
-
-		$stored = $this->service()->saveErrorSinkSettings(values: ($values + ['allowLocal' => true]));
-		$this->assertTrue(condition: $stored['enabled']);
-		$this->assertTrue(condition: $stored['allowLocal']);
-
-	}//end testAnHttpErrorSinkNeedsTheInternalMark()
-
-	/**
-	 * A Sentry sink with its DSN and the default apps is stored under the
-	 * `errorsink_*` keys and read back.
-	 *
-	 * @return void
-	 */
-	public function testAnErrorSinkIsStoredUnderErrorsinkKeys(): void {
-		$service = $this->service();
-		$this->assertSame(
-			expected: [
-				'enabled' => false,
-				'kind' => 'sentry',
-				'endpoint' => '',
-				'allowLocal' => false,
-				'minLevel' => 3,
-				'apps' => ['integriq', 'openregister', 'opencatalogi'],
-				'headerName' => 'Authorization',
-				'credentialName' => '',
-			],
-			actual: $service->getErrorSinkSettings()
-		);
-
-		$stored = $service->saveErrorSinkSettings(
-			values: [
-				'enabled' => true,
-				'kind' => 'sentry',
-				'endpoint' => 'https://key@sentry.example.org/42/',
-				'apps' => 'integriq, openregister,openregister ,opencatalogi',
-			]
-		);
-
-		$this->assertSame(
-			expected: [
-				'errorsink_enabled' => true,
-				'errorsink_kind' => 'sentry',
-				'errorsink_endpoint' => 'https://key@sentry.example.org/42',
-				'errorsink_allow_local' => false,
-				'errorsink_min_level' => 3,
-				'errorsink_apps' => 'integriq,openregister,opencatalogi',
-				'errorsink_header_name' => '',
-				'errorsink_credential_name' => '',
-			],
-			actual: $this->config
-		);
-		$this->assertTrue(condition: $stored['enabled']);
-		$this->assertSame(expected: $stored, actual: $service->getErrorSinkSettings());
-
-		$settings = new ErrorSinkSettings(
-			appConfig: $this->createConfiguredMock(originalClassName: IAppConfig::class, configuration: []),
-			l: $this->createMock(originalClassName: IL10N::class)
-		);
-		$this->assertSame(expected: 'sentry', actual: $settings->kind());
-
-	}//end testAnErrorSinkIsStoredUnderErrorsinkKeys()
-
-	/**
-	 * A wrong kind, level, app id, DSN or login is refused.
-	 *
-	 * @return void
-	 */
-	public function testMalformedErrorSinkValuesAreRefused(): void {
-		$this->assertRefused(values: ['kind' => 'syslog'], reason: 'kind');
-		$this->assertRefused(values: ['minLevel' => 7], reason: 'minimum level');
-		$this->assertRefused(values: ['minLevel' => 'high'], reason: 'minimum level');
-		$this->assertRefused(values: ['apps' => ['openregister', 'Open Register']], reason: 'app id');
-		$this->assertRefused(values: ['endpoint' => 'ftp://sentry.example.org/42'], reason: 'full http or https');
-		$this->assertRefused(values: ['endpoint' => 'https://sentry.example.org/42'], reason: 'Sentry DSN');
-		$this->assertRefused(values: ['endpoint' => 'https://key@sentry.example.org/project'], reason: 'Sentry DSN');
-		$this->assertRefused(values: ['endpoint' => 'https://key:pass@sentry.example.org/42'], reason: 'password');
-		$this->assertRefused(values: ['kind' => 'otlp-logs', 'endpoint' => 'https://otel.example.org?token=x'], reason: 'query');
-		$this->assertRefused(values: ['kind' => 'otlp-logs', 'endpoint' => 'https://user@otel.example.org'], reason: 'login');
-
-	}//end testMalformedErrorSinkValuesAreRefused()
-
-	/**
-	 * The sink forwards a listed app at or above the minimum level, and only
-	 * while it is on with an endpoint.
-	 *
-	 * @return void
-	 */
-	public function testTheSinkForwardsListedAppsAtTheMinimumLevel(): void {
-		$service = $this->service();
-		$service->saveErrorSinkSettings(
-			values: [
-				'enabled' => true,
-				'kind' => 'otlp-logs',
-				'endpoint' => 'https://otel.example.org',
-				'minLevel' => 2,
-				'apps' => ['dossiq'],
-				'credentialName' => 'otel',
-				'headerName' => 'X-Token',
-			]
-		);
-
-		$l10n = $this->createMock(originalClassName: IL10N::class);
-		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
-		$get = fn (string $app, string $key, $default) => ($this->config[$key] ?? $default);
-		foreach (['getValueBool', 'getValueString', 'getValueInt'] as $getter) {
-			$appConfig->method($getter)->willReturnCallback($get);
-		}
-
-		$settings = new ErrorSinkSettings(appConfig: $appConfig, l: $l10n);
-		$this->assertTrue(condition: $settings->forwards(app: 'dossiq', level: 2));
-		$this->assertFalse(condition: $settings->forwards(app: 'dossiq', level: 1));
-		$this->assertFalse(condition: $settings->forwards(app: 'openregister', level: 4));
-		$this->assertSame(expected: 'otlp-logs', actual: $settings->kind());
-		$this->assertSame(expected: 'X-Token', actual: $settings->headerName());
-		$this->assertSame(expected: 'otel', actual: $settings->credentialName());
-
-		$this->config['errorsink_endpoint'] = '';
-		$this->assertFalse(condition: $settings->forwards(app: 'dossiq', level: 4));
-
-	}//end testTheSinkForwardsListedAppsAtTheMinimumLevel()
-
-	/**
-	 * A service built without the error sink store says so instead of
-	 * pretending the sink is off.
-	 *
-	 * @return void
-	 */
-	public function testWithoutTheStoreTheErrorSinkIsNotAvailable(): void {
-		$service = new SettingsService(
-			db: $this->createMock(originalClassName: IDBConnection::class),
-			config: $this->createMock(originalClassName: IAppConfig::class),
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
-		);
-
-		$this->expectException(exception: LogicException::class);
-		$service->getErrorSinkSettings();
-
-	}//end testWithoutTheStoreTheErrorSinkIsNotAvailable()
 }//end class

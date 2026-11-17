@@ -39,6 +39,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the render service.
@@ -142,7 +143,10 @@ class DocumentGenerationServiceTest extends TestCase {
 			->getMock();
 		$this->objectService->method('find')->willReturn($source);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register = '', string $schema = '', ?string $uuid = null): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register ?? '';
+				$schema = $options->target->schema ?? '';
+				$uuid = $options->uuid;
 				$this->saved[] = $object;
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'job-1'));

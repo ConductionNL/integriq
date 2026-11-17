@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Callers are looked up in the klantinteracties source the CTI source names, and nowhere else.
@@ -88,13 +89,13 @@ class ConfiguredCallerSearchTest extends TestCase {
 	private function sourceIs(array $source): void {
 		$entity = $this->createMock(ObjectEntity::class);
 		$entity->method('getObject')->willReturn($source);
-		$this->objects->expects($this->once())->method('find')->with(
-			'kiss-1',
-			'integriq',
-			'source',
-			false,
-			false
-		)->willReturn($entity);
+		$this->objects->expects($this->once())->method('find')->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'kiss-1',
+				'register' => 'integriq',
+				'schema' => 'source',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))->willReturn($entity);
 
 	}//end sourceIs()
 
