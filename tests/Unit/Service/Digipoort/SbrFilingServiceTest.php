@@ -28,6 +28,7 @@ use OCA\Integriq\Service\Digipoort\SbrFilingService;
 use OCA\Integriq\Service\Digipoort\WusDigipoortProvider;
 use OCA\Integriq\Service\UserFilePayloadReader;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -104,8 +105,8 @@ class SbrFilingServiceTest extends TestCase {
 			fn (array $config = [], bool $_rbac = true, bool $_multitenancy = true): array => $this->findAll(config: $config)
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			fn (mixed $object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity
-				=> $this->store(data: $object, schema: (string)$schema, uuid: $uuid)
+			fn (mixed $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity
+				=> $this->store(data: $object, schema: (string)$options->target->schema, uuid: $options->uuid)
 		);
 
 		$events = $this->createMock(CloudEventEmitterInterface::class);
@@ -455,8 +456,8 @@ class SbrFilingServiceTest extends TestCase {
 			fn (array $config = [], bool $_rbac = true, bool $_multitenancy = true): array => $this->findAll(config: $config)
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			fn (mixed $object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity
-				=> $this->store(data: $object, schema: (string)$schema, uuid: $uuid)
+			fn (mixed $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity
+				=> $this->store(data: $object, schema: (string)$options->target->schema, uuid: $options->uuid)
 		);
 		$events = $this->createMock(CloudEventEmitterInterface::class);
 		$this->service = new SbrFilingService(

@@ -38,6 +38,8 @@ use OCA\Integriq\Exception\DigipoortException;
 use OCA\Integriq\Service\CloudEventEmitterInterface;
 use OCA\Integriq\Service\UserFilePayloadReader;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -606,9 +608,10 @@ class SbrFilingService {
 	private function save(array $data, ?string $uuid): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_FILING,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_FILING),
+				uuid: $uuid
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
