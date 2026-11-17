@@ -1660,6 +1660,27 @@ class CallService implements CallServiceInterface {
 	}//end redactResponseHeaders()
 
 	/**
+	 * The logged copy of a request or response with its personal data masked:
+	 * declared fields in the URL, the headers, the request options and a JSON
+	 * or XML body read `[afgeschermd]`. Runs right after the secret masking,
+	 * on the copy that is stored; the message that was sent is not touched.
+	 *
+	 * @param array $exchange The logged request or response.
+	 *
+	 * @return array The masked copy.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 */
+	private function maskPersonalData(array $exchange): array {
+		$masked = $this->sensitiveFieldRegistry->maskPersonalData(value: $exchange);
+		if (is_array($masked) === false) {
+			return $exchange;
+		}
+
+		return $masked;
+	}//end maskPersonalData()
+
+	/**
 	 * Returns true when a header/query/form key name looks like it carries a secret.
 	 *
 	 * Delegates to the shared {@see SensitiveFieldRegistry} (secret-hygiene) — a pure
@@ -1925,6 +1946,15 @@ class CallService implements CallServiceInterface {
 		$callLogData = $this->bodyCapturePolicy->apply(record: $callLogData, sourceData: $sourceData, logBody: $logBody, errorExpires: $errorExpires);
 		if ($withholdBodies === true) {
 			$callLogData = $this->bodyCapturePolicy->withheldRecord(record: $callLogData);
+		}
+
+		// Personal data in the stored request and response is masked after the
+		// body policy ran, so `replayRequest` keeps what a replay sends; it is
+		// never listed (call-log-personal-data-masking REQ-PDM-001).
+		foreach (['request', 'response'] as $bag) {
+			if (is_array(($callLogData[$bag] ?? null)) === true) {
+				$callLogData[$bag] = $this->maskPersonalData(exchange: $callLogData[$bag]);
+			}
 		}
 
 		// A call kept for ever (retention 0) has no expiry. `expires` is a
@@ -3234,7 +3264,10 @@ class CallService implements CallServiceInterface {
 	 */
 	private function tracedExchange(FinishedCall $call): array {
 		$prepared = $call->prepared;
-		$traced = ['request' => $call->data['request'], 'response' => $this->redactResponseHeaders(response: $call->data['response'])];
+		$traced = [
+			'request' => $this->maskPersonalData(exchange: $call->data['request']),
+			'response' => $this->maskPersonalData(exchange: $this->redactResponseHeaders(response: $call->data['response'])),
+		];
 		if ($this->bodyCapturePolicy->captures(sourceData: $prepared['sourceData'], logBody: (bool)$prepared['logBody']) === false) {
 			$traced = $this->bodyCapturePolicy->strip(request: $traced['request'], response: $traced['response']);
 		}
