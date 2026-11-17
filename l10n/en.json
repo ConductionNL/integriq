@@ -3914,7 +3914,9 @@
         "The tool could not be opened": "The tool could not be opened",
         "The launch could not be completed.": "The launch could not be completed.",
         "Failed check: %s": "Failed check: %s",
-        "If the tool opens inside the page, try opening it in a new tab.": "If the tool opens inside the page, try opening it in a new tab."
+        "If the tool opens inside the page, try opening it in a new tab.": "If the tool opens inside the page, try opening it in a new tab.",
+        "API design rules": "API design rules",
+        "Test cases": "Test cases"
     },
     "plurals": {}
 }

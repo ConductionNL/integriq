@@ -12924,6 +12924,71 @@
       {
         "@self": {
           "register": "integriq",
+          "schema": "api_design_ruleset",
+          "slug": "api-design-ruleset-regio-beveiliging"
+        },
+        "name": "Regionale beveiligingsregels voor API's",
+        "version": "2.1",
+        "source": "custom",
+        "enabled": true,
+        "rules": [
+          {
+            "id": "regio/security-schemes",
+            "title": "Every API declares a security scheme",
+            "severity": "error",
+            "given": "$.components",
+            "then": {
+              "field": "securitySchemes",
+              "function": "truthy"
+            },
+            "message": "The API description declares no security scheme."
+          },
+          {
+            "id": "regio/info-license",
+            "title": "Every API names its licence",
+            "severity": "warning",
+            "given": "$.info",
+            "then": {
+              "field": "license",
+              "function": "truthy"
+            },
+            "message": "The API description names no licence."
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_ruleset",
+          "slug": "api-design-ruleset-documentatie-concept"
+        },
+        "name": "Documentatieregels (concept)",
+        "version": "0.9",
+        "source": "custom",
+        "enabled": false,
+        "rules": [
+          {
+            "id": "documentatie/info-description",
+            "title": "Every API has a description",
+            "severity": "info",
+            "given": "$.info",
+            "then": {
+              "field": "description",
+              "function": "truthy"
+            },
+            "message": "The API description has no description text."
+          },
+          {
+            "id": "documentatie/plain-language-review",
+            "title": "A writer checked the texts for plain language",
+            "severity": "info",
+            "manual": true
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
           "schema": "api_design_finding",
           "slug": "api-design-finding-voorbeeld-1-trailing-slash"
         },
