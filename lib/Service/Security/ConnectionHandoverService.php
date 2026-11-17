@@ -29,7 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Security;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -447,9 +449,7 @@ class ConnectionHandoverService {
 		try {
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: (string)$source->getUuid(),
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: (string)$source->getUuid()),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -542,11 +542,9 @@ class ConnectionHandoverService {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA, render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $e) {
 			$this->logFailure(step: 'read', part: '', e: $e);
