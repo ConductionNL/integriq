@@ -41,7 +41,7 @@ use OCP\IUserSession;
 /**
  * Describes the SMS bindings this instance carries.
  *
- * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+ * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
  */
 class SmsProvidersController extends Controller {
 

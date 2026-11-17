@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Keeps an SMS source's callback token and signing key in their stored shape.
  *
- * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+ * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
  *
  * @template-implements IEventListener<Event>
  */

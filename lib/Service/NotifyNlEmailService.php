@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Sends NotifyNL e-mail and applies NotifyNL's mail delivery callbacks.
  *
- * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+ * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
  */
 class NotifyNlEmailService implements NotifyNlEmailServiceInterface {
 

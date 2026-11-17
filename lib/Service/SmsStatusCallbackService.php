@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Checks a vendor's SMS status callback and applies it.
  *
- * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+ * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
  */
 class SmsStatusCallbackService implements SmsStatusCallbackServiceInterface {
 

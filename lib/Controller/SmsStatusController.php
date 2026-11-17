@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Receives vendor SMS delivery callbacks.
  *
- * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+ * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
  */
 class SmsStatusController extends Controller {
 
@@ -156,6 +156,8 @@ class SmsStatusController extends Controller {
 	 * Read the raw request body bytes for signature verification.
 	 *
 	 * @return string The raw request body.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	protected function getRawContent(): string {
 		$content = file_get_contents(filename: 'php://input');

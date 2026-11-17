@@ -36,7 +36,7 @@ interface SmsProviderRegistryInterface {
 	 * @return list<array{providerId: string, name: string, configSchema: array<string, mixed>, statusCallback: array{signed: bool}|null}>
 	 *         One entry per binding, log first.
 	 *
-	 * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 */
 	public function describeAll(): array;
 }//end interface
