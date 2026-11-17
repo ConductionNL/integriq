@@ -52,4 +52,4 @@ Kind: code. Size M. Row `integriq:acc-mcp-gateway`.
 ## Verification
 - [ ] `openspec validate gateway-mcp-proxy --type change --strict` passes
 - [ ] PHPUnit and Newman run, exit codes read
-- [ ] An api endpoint's behaviour is unchanged, asserted by the existing endpoint tests
+- [x] An api endpoint's behaviour is unchanged, asserted by the existing endpoint tests (the unit suite fails the same 7 cases as development, none of them endpoint tests; `EndpointServiceMcpTargetTest::testAnApiEndpointIsUnchanged`)

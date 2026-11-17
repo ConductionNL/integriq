@@ -3944,7 +3944,12 @@
         "MCP method": "MCP method",
         "MCP tool": "MCP tool",
         "Maximum stream duration (seconds)": "Maximum stream duration (seconds)",
-        "Tool limits": "Tool limits"
+        "Tool limits": "Tool limits",
+        "Session start": "Session start",
+        "Tool list": "Tool list",
+        "Tool call": "Tool call",
+        "Resource request": "Resource request",
+        "Prompt request": "Prompt request"
     },
     "plurals": {}
 }

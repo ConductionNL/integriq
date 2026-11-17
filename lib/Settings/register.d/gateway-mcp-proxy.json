@@ -5,6 +5,7 @@
 			"endpoint": {
 				"properties": {
 					"targetType": {
+						"title": "Target Type",
 						"description": "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `mcp` (a source that is an MCP tool server over streamable HTTP, relayed with its session headers and event streams), `job`, `synchronization`."
 					},
 					"mcpToolLimits": {

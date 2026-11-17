@@ -2673,7 +2673,12 @@
         "MCP method": "MCP-methode",
         "MCP tool": "MCP-tool",
         "Maximum stream duration (seconds)": "Maximale streamduur (seconden)",
-        "Tool limits": "Toollimieten"
+        "Tool limits": "Toollimieten",
+        "Session start": "Start van de sessie",
+        "Tool list": "Lijst van tools",
+        "Tool call": "Toolaanroep",
+        "Resource request": "Resourceverzoek",
+        "Prompt request": "Promptverzoek"
     },
     "plurals": {}
 }
