@@ -94,6 +94,7 @@ final class OutboundBindings {
 		$context->registerServiceAlias(LastContactQueryInterface::class, LastContactQuery::class);
 		$context->registerServiceAlias(BodyCapturePolicyInterface::class, BodyCapturePolicy::class);
 		$context->registerServiceAlias(MessageBodyReaderInterface::class, MessageBodyReader::class);
+		$context->registerServiceAlias(MessageRecorderInterface::class, MessageRecorder::class);
 		$this->registerAppOwnedBindings(context: $context);
 	}
 	/**
