@@ -10627,6 +10627,11 @@
                 "responses": {
                     "200": {
                         "description": "The token.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -10658,6 +10663,11 @@
                 "responses": {
                     "201": {
                         "description": "The public JWK.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -10694,6 +10704,11 @@
                 "responses": {
                     "201": {
                         "description": "The client id and secret, shown once.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
                         "content": {
                             "application/json": {
                                 "schema": {
