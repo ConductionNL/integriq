@@ -781,6 +781,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
 		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
 		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],
+		// The lookup allowlist (mapping-formats-and-lookups): admin only.
+		['name' => 'mappingLookup#index',  'url' => '/api/admin/mapping-lookups', 'verb' => 'GET'],
+		['name' => 'mappingLookup#add',    'url' => '/api/admin/mapping-lookups', 'verb' => 'POST'],
+		['name' => 'mappingLookup#remove', 'url' => '/api/admin/mapping-lookups/{register}/{schema}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 
@@ -800,6 +804,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'berichtenboxSettings#setConfig', 'url' => '/api/admin/berichtenbox/{slug}', 'verb' => 'PUT'],
 		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
 		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
+		// Field names an administrator adds to the personal data masked in logged bodies (call-log-personal-data-masking REQ-PDM-001). Admin-only via #[AuthorizedAdminSetting].
+		['name' => 'personalDataSettings#getConfig', 'url' => '/api/admin/personal-data-fields', 'verb' => 'GET'],
+		['name' => 'personalDataSettings#setConfig', 'url' => '/api/admin/personal-data-fields', 'verb' => 'PUT'],
 		// OpenTelemetry trace export settings (observability-opentelemetry-export REQ-OTEL-005).
 		['name' => 'otelSettings#getConfig', 'url' => '/api/admin/otel', 'verb' => 'GET'],
 		['name' => 'otelSettings#setConfig', 'url' => '/api/admin/otel', 'verb' => 'PUT'],
