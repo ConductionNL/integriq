@@ -1,8 +1,10 @@
 # digikoppeling-adapter Specification
 
 ## Purpose
-TBD - created by archiving change digikoppeling-adapter. Update Purpose after archive.
+Integriq talks to government services over Digikoppeling, the Dutch standard for exchanging messages between public bodies. The adapter is one catalogue entry that covers the WUS synchronous profile, ebMS2 reliable messaging and Grote Berichten for large payloads, signs and encrypts SOAP messages with WS-Security, and takes its PKIoverheid keys from the credential broker instead of storing them in plain text.
+
 ## Requirements
+
 ### Requirement: Digikoppeling adapter is a catalogue entry, not a menu (REQ-DK-001)
 
 The Digikoppeling adapter MUST be delivered as a catalogue entry in the
@@ -128,3 +130,16 @@ config error and MUST NOT fall back to a plaintext key on disk.
 - **AND** no plaintext-key-on-disk fallback SHALL be used
 - @e2e exclude backend credential brokering — covered by PHPUnit
 
+### Requirement: A SOAP source encrypts its body and decrypts the answer (REQ-WSE-001)
+
+A SOAP source MUST be able to switch on WS-Security encryption. When it is on, integriq MUST encrypt the SOAP body with XML Encryption for the partner's certificate held on the source, after signing it, and MUST decrypt an encrypted answer with the organisation's private key from the credential broker before it verifies the signature. An answer that cannot be decrypted MUST fail the call with the reason, and MUST NOT be passed on as an empty body.
+
+#### Scenario: a partner that demands encryption receives an encrypted body
+- GIVEN a SOAP source with encryption on and the partner's certificate set
+- WHEN integriq calls it
+- THEN the SOAP body on the wire is an `EncryptedData` element and the signature still verifies after decryption
+
+#### Scenario: an answer that cannot be decrypted fails the call
+- GIVEN an encrypted answer for a different key
+- WHEN integriq receives it
+- THEN the call fails naming the decryption error and nothing is mapped
