@@ -213,7 +213,8 @@ class SubscriptionExpiryService {
 	private function save(ObjectEntity $subscription, array $data): void {
 		$this->orObjectService->saveObject(
 			object: $data,
-			options: RegisterSave::options(register: self::REGISTER, schema: 'api_product_subscription', uuid: $subscription->getUuid())
+			options: RegisterSave::options(register: self::REGISTER, schema: 'api_product_subscription', uuid: $subscription->getUuid()),
+			_rbac: false
 		);
 	}//end save()
 }//end class

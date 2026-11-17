@@ -420,9 +420,15 @@
       "product_change_notice": {
         "slug": "product_change_notice",
         "title": "Product Change Notice",
-        "icon": "BellAlertOutline",
+        "icon": "BellOutline",
         "version": "1.0.0",
         "summary": "A notice to one subscriber that an API product they use changed, or that their subscription is about to end",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
         "description": "One row per active subscription, written when an administrator deprecates a product, sets or moves its sunset date, publishes a new version or retires it, and fourteen days before a subscription ends. The row is the record of who was told what and when; its created trigger sends the Nextcloud notification and the mail. See openspec/changes/access-developer-portal-and-subscriptions/design.md D5 and D6.",
         "required": ["product", "recipientUserId", "kind"],
         "type": "object",
@@ -501,7 +507,7 @@
             "channels": ["nc-notification", "email"],
             "recipients": [{ "kind": "field", "field": "recipientUserId" }],
             "subject": {
-              "nl": "Wijziging in een API die u gebruikt: {{productName}}",
+              "nl": "Wijziging in een API die je gebruikt: {{productName}}",
               "en": "A change to an API you use: {{productName}}"
             },
             "message": "{{message}}"

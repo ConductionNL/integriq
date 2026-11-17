@@ -3931,7 +3931,21 @@
         "The tool could not be opened": "The tool could not be opened",
         "The launch could not be completed.": "The launch could not be completed.",
         "Failed check: %s": "Failed check: %s",
-        "If the tool opens inside the page, try opening it in a new tab.": "If the tool opens inside the page, try opening it in a new tab."
+        "If the tool opens inside the page, try opening it in a new tab.": "If the tool opens inside the page, try opening it in a new tab.",
+        "%1$s is deprecated and is retired on %2$s.": "%1$s is deprecated and is retired on %2$s.",
+        "%s is deprecated.": "%s is deprecated.",
+        "%1$s is retired on %2$s.": "%1$s is retired on %2$s.",
+        "%s is retired. Its endpoints no longer answer.": "%s is retired. Its endpoints no longer answer.",
+        "%1$s has a new version: %2$s.": "%1$s has a new version: %2$s.",
+        "Your subscription to %1$s ends on %2$s.": "Your subscription to %1$s ends on %2$s.",
+        "Give the application a name.": "Give the application a name.",
+        "The application could not be created.": "The application could not be created.",
+        "No such application": "No such application",
+        "No such API product": "No such API product",
+        "The access request could not be saved.": "The access request could not be saved.",
+        "The developer portal is open to members of the developer group only.": "The developer portal is open to members of the developer group only.",
+        "Unknown tier: %s": "Unknown tier: %s",
+        "Developer portal": "Developer portal"
     },
     "plurals": {}
 }

@@ -59,6 +59,7 @@ import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.v
 import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
 import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
 import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
+import DeveloperPortalPage from './views/DeveloperPortal/DeveloperPortalPage.vue'
 import EgressDestinationsPage from './views/EgressDestinations/EgressDestinationsPage.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
@@ -303,6 +304,12 @@ export default {
 	ApprovalsIndex,
 	ApprovalDetail,
 
+	// Developer portal (custom page): public API products and the developer's
+	// own applications, read from the developer-group-checked /api/portal
+	// routes because a developer holds no register rights. See
+	// access-developer-portal-and-subscriptions.
+	DeveloperPortalPage,
+
 	// API Products gateway detail (custom page): endpoint picker, tier
 	// editor, gateway analytics panel, and pending-subscription approve/
 	// reject actions for one api_product. Not expressible as a generic
@@ -394,6 +401,7 @@ export const registry = {
 	},
 	EventDeliveriesPage: { kind: 'page', component: EventDeliveriesPage },
 	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
+	DeveloperPortalPage: { kind: 'page', component: DeveloperPortalPage },
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
 	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
 	EgressDestinationsPage: { kind: 'page', component: EgressDestinationsPage },

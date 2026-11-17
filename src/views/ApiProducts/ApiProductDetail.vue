@@ -387,6 +387,8 @@
 					</li>
 				</ul>
 			</section>
+
+			<ProductChangeNotices :productId="productId" class="apiProductDetail__section" />
 		</div>
 
 		<NcEmptyContent
@@ -407,8 +409,9 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import { usageLabel, usageSplits } from './productUsage.js'
+import ProductChangeNotices from './ProductChangeNotices.vue'
 import { channelsOf, draftOf, withChannel, withoutChannel } from './productChannels.js'
+import { usageLabel, usageSplits } from './productUsage.js'
 
 let uidCounter = 0
 
@@ -421,6 +424,7 @@ export default {
 		NcLoadingIcon,
 		NcSelect,
 		AlertCircleOutline,
+		ProductChangeNotices,
 	},
 
 	data() {

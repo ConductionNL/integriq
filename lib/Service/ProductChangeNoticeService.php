@@ -270,9 +270,12 @@ class ProductChangeNoticeService {
 		}
 
 		try {
+			// System work: a notice is written from the product save of an
+			// administrator and from the daily expiry job, which has no user.
 			return $this->orObjectService->saveObject(
 				object: $notice,
-				options: RegisterSave::options(register: self::REGISTER, schema: 'product_change_notice')
+				options: RegisterSave::options(register: self::REGISTER, schema: 'product_change_notice'),
+				_rbac: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

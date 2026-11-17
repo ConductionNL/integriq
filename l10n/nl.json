@@ -2660,7 +2660,21 @@
         "The tool could not be opened": "De tool kon niet worden geopend",
         "The launch could not be completed.": "De launch kon niet worden voltooid.",
         "Failed check: %s": "Mislukte controle: %s",
-        "If the tool opens inside the page, try opening it in a new tab.": "Als de tool binnen de pagina opent, probeer hem dan in een nieuw tabblad te openen."
+        "If the tool opens inside the page, try opening it in a new tab.": "Als de tool binnen de pagina opent, probeer hem dan in een nieuw tabblad te openen.",
+        "%1$s is deprecated and is retired on %2$s.": "%1$s is verouderd en wordt op %2$s uitgefaseerd.",
+        "%s is deprecated.": "%s is verouderd.",
+        "%1$s is retired on %2$s.": "%1$s wordt op %2$s uitgefaseerd.",
+        "%s is retired. Its endpoints no longer answer.": "%s is uitgefaseerd. De endpoints antwoorden niet meer.",
+        "%1$s has a new version: %2$s.": "Er is een nieuwe versie van %1$s: %2$s.",
+        "Your subscription to %1$s ends on %2$s.": "Je abonnement op %1$s loopt af op %2$s.",
+        "Give the application a name.": "Geef de applicatie een naam.",
+        "The application could not be created.": "De applicatie kon niet worden aangemaakt.",
+        "No such application": "Applicatie niet gevonden",
+        "No such API product": "API-product niet gevonden",
+        "The access request could not be saved.": "Het toegangsverzoek kon niet worden opgeslagen.",
+        "The developer portal is open to members of the developer group only.": "Het ontwikkelaarsportaal is alleen open voor leden van de ontwikkelaarsgroep.",
+        "Unknown tier: %s": "Onbekende tier: %s",
+        "Developer portal": "Ontwikkelaarsportaal"
     },
     "plurals": {}
 }

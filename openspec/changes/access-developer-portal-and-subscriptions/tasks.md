@@ -9,7 +9,7 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 - **files**: `lib/Controller/PortalController.php`, `appinfo/routes.php`, `src/manifest.json` (page `DeveloperPortal`), admin settings, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN a developer in the developer group WHEN they open the portal THEN they see public products and their documentation, and no private product
-- [ ] Implement
+- [x] Implement (`PortalController::products()` behind `DeveloperPortalAccess`; page `DeveloperPortal` (custom `DeveloperPortalPage`, because a developer holds no register rights and the page reads the portal routes); admin section `DeveloperPortalSettings` with the group's member count; strings in `l10n/en.js`, `nl.js`, and the PHP ones in `en.json`, `nl.json`. A product's published OpenAPI description is linked when it carries `openApiUrl`; publishing it is `gateway-openapi-import-and-publish`)
 - [ ] Test (Playwright as a developer and as a user outside the group)
 
 ### Task 2: Applications owned by a developer, and request access
@@ -26,6 +26,7 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 - **files**: `lib/Controller/PortalController.php`, the portal application page
 - **acceptance_criteria**:
   - GIVEN a developer's application WHEN they generate a key THEN it is shown once, and they can revoke it later without an administrator
+- **blocked_on**: the credential routes of `access-consumer-credentials` (D4 wraps them), which are on branch `quality/build-access-consumer-credentials` and not yet on development. The ownership check they need is `PortalController::owns()`.
 - [ ] Implement
 - [ ] Test (Playwright; PHPUnit on the ownership wrapper)
 
@@ -52,7 +53,7 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 - **files**: `lib/Settings/register.d/api-product-gateway.json` (`x-openregister-seed`), `docs/`
 - **acceptance_criteria**:
   - GIVEN a fresh install WHEN the seeded developer opens the portal THEN the two seeded products and their application are there
-- [ ] Implement
+- [x] Implement (seeds `zaken-api`, `besluiten-api`, `example-developer-app` owned by `developer1`, its subscriptions and one `deprecated` notice; `docs/features/developer-portal.md`)
 - [ ] Test (docs walked once against the seed)
 
 ## Verification
