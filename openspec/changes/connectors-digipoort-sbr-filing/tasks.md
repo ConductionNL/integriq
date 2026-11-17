@@ -17,7 +17,7 @@ Kind: code. Size M. Half for shillinq `tax-digipoort-filing` (rows shillinq `tax
 
 ### Task 2: The filing consumer and record
 - **spec_ref**: `openspec/changes/connectors-digipoort-sbr-filing/specs/digipoort-sbr-connector/spec.md#requirement-a-filing-request-becomes-one-delivery-req-dps-002`
-- **files**: `lib/Service/Digipoort/SbrFilingService.php`, `lib/Service/SbrFilingConsumer.php`, `lib/AppInfo/Application.php`, `lib/Settings/integriq_register.json` (`sbr_filing`)
+- **files**: `lib/Service/Digipoort/SbrFilingService.php`, `lib/EventListener/SbrFilingConsumer.php`, `lib/AppInfo/Application.php`, `lib/Settings/integriq_register.json` (`sbr_filing`)
 - **acceptance_criteria**:
   - GIVEN a request for OB aangifte 2026 Q3 WHEN it is consumed twice THEN one `sbr_filing` and one delivery exist
 - [x] Implement

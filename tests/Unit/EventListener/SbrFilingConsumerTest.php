@@ -18,11 +18,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\EventListener;
 
 use OCA\Integriq\Service\Digipoort\SbrFilingService;
 use OCA\Integriq\Service\ListenerSchemaResolver;
-use OCA\Integriq\Service\SbrFilingConsumer;
+use OCA\Integriq\EventListener\SbrFilingConsumer;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;

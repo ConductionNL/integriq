@@ -54,7 +54,6 @@ use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
 use OCA\Integriq\Event\StufZdsConfirmationReceivedEvent;
 use OCA\Integriq\Event\SubmissionRegistrationRequestedEvent;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
-use OCA\Integriq\Service\SbrFilingConsumer;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;

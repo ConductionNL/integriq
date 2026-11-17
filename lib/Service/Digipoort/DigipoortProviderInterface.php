@@ -27,7 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Digipoort;
 
-
 /**
  * Delivers an XBRL instance to Digipoort and reads its processing statuses.
  *
