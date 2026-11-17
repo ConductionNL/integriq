@@ -1321,6 +1321,8 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
 	 * @spec openspec/specs/consumer-management/spec.md#requirement-per-product-tier-policy-takes-precedence-over-the-consumer-level-rate-limit-req-con-sub-002
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	private function enforceInboundRateLimit(IRequest $request, ObjectEntity $endpoint): ?JSONResponse {
 		$consumer = $this->authorizationService->getResolvedConsumer();
@@ -1335,6 +1337,17 @@ class EndpointService implements EndpointServiceInterface {
 
 		$product = $this->resolveProductForEndpoint(endpoint: $endpoint);
 		if ($product !== null) {
+			if ($this->productPolicy()->isRetired(product: $product) === true) {
+				// REQ-DEVP-004: a retired product is gone for its subscribers.
+				return new JSONResponse(
+					[
+						'error' => 'product_retired',
+						'message' => 'This API product is retired: ' . (string)($product->getObject()['name'] ?? $product->getUuid()),
+					],
+					Http::STATUS_GONE
+				);
+			}
+
 			$subscription = $this->productPolicy()->resolveActiveSubscription(
 				consumerUuid: $consumerKey,
 				productUuid: (string)$product->getUuid()
@@ -1347,6 +1360,20 @@ class EndpointService implements EndpointServiceInterface {
 					[
 						'error' => 'subscription_required',
 						'message' => 'No active subscription to this API product',
+					],
+					Http::STATUS_FORBIDDEN
+				);
+			}
+
+			$endedOn = $this->productPolicy()->expiredOn(subscription: $subscription);
+			if ($endedOn !== null) {
+				// REQ-DEVP-005: refused from the end date on, before the daily
+				// job has marked it expired, naming the date.
+				return new JSONResponse(
+					[
+						'error' => 'subscription_expired',
+						'message' => 'Your subscription to this API product ended on ' . $endedOn,
+						'expiresAt' => $endedOn,
 					],
 					Http::STATUS_FORBIDDEN
 				);

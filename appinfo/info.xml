@@ -125,6 +125,9 @@
 		<job>OCA\Integriq\BackgroundJob\EudiStatusListRefreshJob</job>
 		<job>OCA\Integriq\BackgroundJob\KissPullJob</job>
 		<job>OCA\Integriq\BackgroundJob\ApprovalTimeoutSweepJob</job>
+		<!-- access-developer-portal-and-subscriptions D6: daily, mark ended
+		     product subscriptions expired and remind owners fourteen days ahead. -->
+		<job>OCA\Integriq\BackgroundJob\SubscriptionExpiryJob</job>
 		<job>OCA\Integriq\BackgroundJob\IwmoIjwRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\RodRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\VerzuimloketRetryJob</job>

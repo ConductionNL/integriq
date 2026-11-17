@@ -315,6 +315,10 @@ final class EventListenerBindings {
 		// checked against its destination schema before it may be active.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: OpenFormulierenMappingGuardListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: OpenFormulierenMappingGuardListener::class);
+		// Access-developer-portal-and-subscriptions D5: a deprecated, re-dated,
+		// retired or newly versioned API product tells its subscribers.
+		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ProductChangeNoticeListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ProductChangeNoticeListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: ProductChannelSlugGuardListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: ProductChannelSlugGuardListener::class);
 		// REQ-SOW-001 (signed-outbound-webhooks): the Webhooks page saves a

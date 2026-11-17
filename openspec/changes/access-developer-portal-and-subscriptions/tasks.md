@@ -33,16 +33,18 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 - **files**: `lib/Settings/register.d/api-product-gateway.json` (schema `product_change_notice`, `retired` status), `lib/Service/ProductChangeNoticeService.php`, `lib/Service/EndpointService.php`, `src/manifest.json` (notice list on `ApiProductDetail`)
 - **acceptance_criteria**:
   - GIVEN a product with two active subscriptions WHEN an administrator deprecates it THEN two notices are written and both owners get a notification
-- [ ] Implement
+- [x] Implement (`product_change_notice` with a `created` notification over `nc-notification` and `email` to `recipientUserId`; `ProductChangeNoticeListener` on product updates and creates; `retired` answers 410 in `EndpointService`)
 - [ ] Test (PHPUnit for notice fan-out and the 410; one notification observed in the Nextcloud notifications list)
+  - PHPUnit done: `ProductChangeNoticeServiceTest`, `ProductChangeNoticeListenerTest`, `EndpointServiceTierPolicyTest::testARetiredProductAnswersGone`. Left: observing the notification on a live instance.
 
 ### Task 5: Subscription end dates
 - **spec_ref**: `openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005`
 - **files**: `lib/Settings/register.d/api-product-gateway.json` (`expiresAt`, `expired`), `lib/Service/EndpointService.php`, `lib/BackgroundJob/SubscriptionExpiryJob.php`, `appinfo/info.xml`
 - **acceptance_criteria**:
   - GIVEN a subscription that expired yesterday WHEN its consumer calls THEN the answer is 403 naming the date
-- [ ] Implement
+- [x] Implement (`expiresAt`, `expiryReminderSentAt` and status `expired`; `ProductPolicyService::expiredOn()` refuses at request time; `SubscriptionExpiryJob` daily via `SubscriptionExpiryService`)
 - [ ] Test (PHPUnit for the check and the job; Newman for the refused call)
+  - PHPUnit done: `ProductPolicyServiceTest`, `EndpointServiceTierPolicyTest::testAnEndedSubscriptionIsRefusedNamingItsEndDate`, `SubscriptionExpiryServiceTest`, `SubscriptionExpiryJobTest`. Left: the Newman run against a live instance.
 
 ### Task 6: Seed data and documentation
 - **spec_ref**: `openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001`
