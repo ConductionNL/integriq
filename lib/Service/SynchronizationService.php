@@ -4063,6 +4063,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return $contract;
 		}
 
+		// Shortcut for a file pickup from an SFTP or FTPS server (REQ-SFTP-002):
+		// files are not objects, so the object pipeline (and its removal of
+		// objects a run did not see) never runs for them.
+		if (FilePickupService::handles(synchronization: $synchronization) === true) {
+			return $this->runFilePickup(run: $run, ownsTrace: $ownsTrace);
+		}
+
 		// Handle full extern-to-intern sync.
 		$run->log = $this->createRunLog(run: $run, type: 'externToIntern');
 		$this->startRunProgress(run: $run, triggeredBy: $triggeredBy);
@@ -4446,6 +4453,54 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return $maxCursor;
 	}//end computeCursorWatermark()
+
+	/**
+	 * Run a file pickup and record it as one run log.
+	 *
+	 * @param ExternSyncRun $run       The run: its synchronization, test flag and trace.
+	 * @param bool          $ownsTrace Whether this run persists the trace.
+	 *
+	 * @return array<string,mixed> The pickup result.
+	 *
+	 * @throws Exception When the source cannot be loaded.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	private function runFilePickup(ExternSyncRun $run, bool $ownsTrace): array {
+		$synchronization = $run->synchronization;
+		$pickup = $this->containerInterface->get(FilePickupService::class);
+		$sourceEntity = $this->orObjectService->find(
+			id: (string)($synchronization['sourceId'] ?? ''),
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+			_rbac: false,
+			_multitenancy: false
+		);
+		if (($sourceEntity instanceof ObjectEntity) === false) {
+			throw new Exception('The pickup\'s source does not exist.');
+		}
+
+		$source = $sourceEntity->getObject();
+		$source['id'] = $sourceEntity->getUuid();
+		$result = $pickup->run(synchronization: $synchronization, source: $source, isTest: (bool)$run->isTest);
+
+		$runLog = $this->createRunLog(run: $run, type: 'filePickup');
+		$logResult = $runLog->getResult();
+		$logResult['objects'] = array_merge($logResult['objects'], $result['objects']);
+		$logResult['pickup'] = $result['pickup'];
+		$runLog->setResult(result: $logResult);
+		$this->synchronizationLogService->persist(log: $runLog);
+
+		if ($ownsTrace === true) {
+			$status = 'error';
+			if ($result['pickup']['failed'] === []) {
+				$status = 'success';
+			}
+
+			$this->persistOwnedTrace(trace: $run->trace, status: $status);
+		}
+
+		return $result;
+	}//end runFilePickup()
 
 	/**
 	 * Clear a Synchronization's stored cursor watermark (REQ-019, change

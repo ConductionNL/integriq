@@ -9015,6 +9015,111 @@
                 ]
             }
         },
+        "/sources/{id}/host-key": {
+            "post": {
+                "operationId": "sources-host-key-pin",
+                "summary": "Pin the host key fingerprint of an SFTP source",
+                "description": "Pin the fingerprint the administrator confirmed, if the server still presents it. Administrators only.",
+                "tags": [
+                    "sources"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The saved pin.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/sources/{id}/host-key/test": {
+            "post": {
+                "operationId": "sources-host-key-test",
+                "summary": "Test the connection to an SFTP or FTPS source",
+                "description": "Test the connection: the fingerprint the server presents, the pinned one, and whether it connected. Administrators only.",
+                "tags": [
+                    "sources"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The fingerprint, the pin, and whether it connected.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/sources/test/{id}": {
             "post": {
                 "operationId": "sources-test",

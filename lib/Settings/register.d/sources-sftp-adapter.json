@@ -1,0 +1,22 @@
+{
+	"$comment": "ADR-037 register fragment (sources-sftp-adapter, row integriq:src-sftp). A source of type `sftp` or `ftps` is a partner's file server: `location` names the host (optionally `sftp://host:port`), `rootPath` confines every path, and `hostKeyFingerprint` pins the SFTP host key. Credentials stay a `configuration.authentication.credentialRef` resolved through the credential broker. A synchronization with `sourceType` `sftp` or `ftps` is a pickup; its `sourceConfig` keys are documented on FilePickupService.",
+	"components": {
+		"schemas": {
+			"source": {
+				"properties": {
+					"hostKeyFingerprint": {
+						"type": "string",
+						"title": "Host key fingerprint",
+						"description": "The SHA-256 fingerprint of the SFTP server's host key, as OpenSSH prints it (SHA256:...). Set it by confirming the fingerprint the first connection test shows. A server that presents another key is refused.",
+						"pattern": "^(SHA256:[A-Za-z0-9+/]{43})?$"
+					},
+					"rootPath": {
+						"type": "string",
+						"title": "Root path",
+						"description": "The folder on the file server every path stays inside. Paths with .. are refused."
+					}
+				}
+			}
+		}
+	}
+}

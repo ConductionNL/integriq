@@ -27,7 +27,9 @@ namespace OCA\Integriq\Service;
 
 use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
 use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
+use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Adapter\DataInfra\SftpAdapter;
 use OCA\Integriq\Service\Format\ArrayToXml;
 use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
@@ -483,6 +485,8 @@ final class ServiceBindings {
 	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
 	 *   - IntuneAdapter, JamfProAdapter, CitrixDaasAdapter — the endpoint-workspace
 	 *     adapters of connectors-endpoint-workspace-adapters (REQ-EWC-008).
+	 *   - SftpAdapter, FtpsAdapter: a partner's file server as a data-infra source
+	 *     (sources-sftp-adapter).
 	 *
 	 * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
 	 * integriq is loaded but openregister isn't enabled yet) so boot
@@ -511,6 +515,8 @@ final class ServiceBindings {
 			$registry->addProvider($container->get(SharePointOnlineAdapter::class));
 			$registry->addProvider($container->get(Microsoft365Adapter::class));
 			$registry->addProvider($container->get(S3Adapter::class));
+			$registry->addProvider($container->get(SftpAdapter::class));
+			$registry->addProvider($container->get(FtpsAdapter::class));
 		} catch (\Throwable $e) {
 			// Don't crash boot — log and continue. The provider just won't appear
 			// in object sidebars on this instance until the registry resolves.
