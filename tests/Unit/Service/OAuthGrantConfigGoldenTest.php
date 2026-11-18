@@ -68,7 +68,7 @@ class OAuthGrantConfigGoldenTest extends TestCase {
 			'client basic' => [
 				'createClientCredentialConfig',
 				$client + ['authentication' => 'basic_auth'],
-				['form_params' => ['grant_type' => 'client_credentials', 'scope' => 's'], 'auth' => ['username' => 'id', 'password' => 'sec']],
+				['form_params' => ['grant_type' => 'client_credentials', 'scope' => 's'], 'auth' => ['id', 'sec']],
 			],
 			'client other' => [
 				'createClientCredentialConfig',
@@ -88,7 +88,7 @@ class OAuthGrantConfigGoldenTest extends TestCase {
 			'password basic' => [
 				'createPasswordConfig',
 				$password + ['authentication' => 'basic_auth'],
-				['form_params' => ['grant_type' => 'password', 'scope' => 's'], 'auth' => ['username' => 'u', 'password' => 'p']],
+				['form_params' => ['grant_type' => 'password', 'scope' => 's'], 'auth' => ['u', 'p']],
 			],
 			'password other' => [
 				'createPasswordConfig',
