@@ -142,6 +142,44 @@ class EgressDestinationControllerTest extends TestCase {
 	}//end testAnAdminReadsTheList()
 
 	/**
+	 * The routes the destinations page calls resolve, by their names in
+	 * appinfo/routes.php, to this controller, and the list answers through
+	 * the method the route names.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-one-page-lists-every-outbound-destination-with-its-location-req-res-002
+	 */
+	public function testTheRoutesNameThisController(): void {
+		$declared = require dirname(__DIR__, 3) . '/appinfo/routes.php';
+		$byName = [];
+		foreach ($declared['routes'] as $route) {
+			$byName[$route['name']] = $route;
+		}
+
+		$expected = [
+			'egressDestination#index' => ['GET', '/api/egress/destinations'],
+			'egressDestination#setEuOnly' => ['PUT', '/api/egress/eu-only'],
+			'egressDestination#setSourceResidency' => ['PUT', '/api/sources/{id}/residency'],
+		];
+		foreach ($expected as $name => [$verb, $url]) {
+			$this->assertArrayHasKey($name, $byName, $name);
+			$this->assertSame($verb, $byName[$name]['verb'], $name);
+			$this->assertSame($url, $byName[$name]['url'], $name);
+			[$controller, $method] = explode('#', $name);
+			$this->assertSame(EgressDestinationController::class, 'OCA\\Integriq\\Controller\\' . ucfirst($controller) . 'Controller');
+			$this->assertTrue(method_exists(EgressDestinationController::class, $method), $name . ' names a method that does not exist');
+		}
+
+		$list = ['destinations' => [], 'verdict' => 'eu-only', 'counts' => [], 'euOnly' => false];
+		$this->destinations->method('list')->willReturn($list);
+		[, $method] = explode('#', 'egressDestination#index');
+		$response = $this->controller(admin: true)->{$method}();
+
+		$this->assertSame(expected: $list, actual: $response->getData());
+	}//end testTheRoutesNameThisController()
+
+	/**
 	 * Switching on over a gap answers 409 naming the blocking destinations.
 	 *
 	 * @return void
