@@ -85,7 +85,9 @@ Task 6: `POST /api/sms/{provider}/status/{token}` (`SmsStatusController`) is a s
 
 Task 7: `RestNotifyNlProvider::sendEmail()` posts to `/v2/notifications/email`. `POST /api/notifynl/emails` (action `notifynl.email`) goes through `NotifyNlEmailService`: the address is checked first (nothing sent or recorded for an address without a domain), the opt-out list is asked on channel `mail`, the outbound log row is opened on channel `notifynl`, its uuid is sent as NotifyNL's `reference`, and the row is handed over with NotifyNL's id. `notifyNl#inbound` looks the id up in `sms_message` first; for anything else it uses the callback's `reference` to find the log row and moves the recipient NotifyNL's id was handed over for (`deliveryReported()` or `recipientFailed()`).
 
-Left open: the three e2e tests in `tests/e2e/sms-providers.spec.ts` (browser tests against a live instance) and the live send per vendor under Verification.
+Round 2: `tests/e2e/sms-providers.spec.ts` is written from the spec's five e2e scenarios: the provider picker of a new SMS source (and CM.com's fields), a mistyped provider stored `failed` naming the value, a signed Twilio receipt posted from a context with no session marking the message `delivered` on the SMS page, a MessageBird send listed with provider and source, and a NotifyNL mail logged with NotifyNL's reference. The last two reach a real vendor and skip unless the instance names a test account (`E2E_MESSAGEBIRD_CREDENTIAL_REF`, `E2E_SMS_RECIPIENT`, `E2E_NOTIFYNL_*`). The file lints, type-checks and lists; it has not been run against a live instance, so the three e2e boxes stay unticked.
+
+Left open: running those e2e tests against a live instance, and the live send per vendor under Verification.
 
 ## Verification
 
