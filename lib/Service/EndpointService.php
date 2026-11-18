@@ -29,6 +29,7 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadata;
 use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
@@ -200,6 +201,9 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param ProductPolicyService|null $productPolicyService The API product policy shared with product
 	 *                                                        channels; built from the object service and
 	 *                                                        logger when not injected.
+	 * @param ProtectedResourceMetadata|null $resourceMetadata Names the metadata address in the 401 of a
+	 *                                                         token-protected endpoint (REQ-TOKV-004);
+	 *                                                         without it the 401 carries no challenge.
 	 *
 	 * @return void
 	 */
@@ -232,6 +236,7 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly ?EndpointMessageGate $messageGate = null,
 		?UpstreamRouter $upstreamRouter = null,
 		?ProductPolicyService $productPolicyService = null,
+		private readonly ?ProtectedResourceMetadata $resourceMetadata = null,
 	) {
 		$this->productPolicy = $productPolicyService;
 		$this->upstreamRouter = $upstreamRouter;
@@ -3389,7 +3394,11 @@ class EndpointService implements EndpointServiceInterface {
 		$flowToken = $context->flowToken;
 		$handlers = [
 			'save_object' => fn () => $this->processSaveObjectRule(rule: $rule, data: $data),
-			'authentication' => fn () => $this->processAuthenticationRule(rule: $rule, data: $data),
+			'authentication' => fn () => $this->processAuthenticationRule(
+				rule: $rule,
+				data: $data,
+				endpointPath: trim((string)($context->endpointData['endpoint'] ?? ''), '/')
+			),
 			'error' => fn () => $this->processErrorRule(rule: $rule, data: $data),
 			'mapping' => fn () => $this->processMappingRule(rule: $rule, data: $data),
 			'synchronization' => fn () => $this->processSyncRule(
@@ -3680,12 +3689,13 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @param ObjectEntity $rule The rule to process
 	 * @param array $data The data of the request
+	 * @param string $endpointPath The endpoint's path, for the metadata address a token-protected 401 names (REQ-TOKV-004)
 	 *
 	 * @return array|JSONResponse the unchanged $data array if authentication succeeds, or a JSONResponse containing an error on authentication.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function processAuthenticationRule(ObjectEntity $rule, array $data): array|JSONResponse {
+	private function processAuthenticationRule(ObjectEntity $rule, array $data, string $endpointPath = ''): array|JSONResponse {
 		$configuration = $rule->getObject()['configuration'] ?? [];
 
 		// Normalise all incoming header keys to lowercase once so all subsequent
@@ -3734,6 +3744,12 @@ class EndpointService implements EndpointServiceInterface {
 			$header = ($normalisedHeaders[$lookupKey] ?? null);
 		}
 
+		$challenge = $this->tokenChallenge(authentication: (array)$configuration['authentication'], endpointPath: $endpointPath);
+		$missingToken = self::missingTokenResponse(header: $header, challenge: $challenge);
+		if ($missingToken !== null) {
+			return $missingToken;
+		}
+
 		if ($header === '' || $header === null) {
 			return new JSONResponse(
 				['error' => 'forbidden', 'details' => 'you are not allowed to access this endpoint unauththenticated'],
@@ -3754,7 +3770,7 @@ class EndpointService implements EndpointServiceInterface {
 				try {
 					$this->authorizationService->authorizeJwt(authorization: $header);
 				} catch (AuthenticationException $exception) {
-					return $this->unauthenticated(exception: $exception);
+					return $this->unauthenticated(exception: $exception, challenge: $challenge);
 				}
 				break;
 			case 'basic':
@@ -3795,6 +3811,32 @@ class EndpointService implements EndpointServiceInterface {
 
 		return $data;
 	}//end processAuthenticationRule()
+
+	/**
+	 * The 401 of a token-protected endpoint called without a token, or null when a token was sent or none is required.
+	 *
+	 * REQ-TOKV-004: the answer carries the address that says where to get one (RFC 9728).
+	 *
+	 * @param mixed       $header    The Authorization header, as read from the request.
+	 * @param string|null $challenge The endpoint's `WWW-Authenticate` value; null when it is not token-protected.
+	 *
+	 * @return JSONResponse|null
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
+	 */
+	private static function missingTokenResponse(mixed $header, ?string $challenge): ?JSONResponse {
+		if ($challenge === null || ($header !== '' && $header !== null)) {
+			return null;
+		}
+
+		$response = new JSONResponse(
+			['error' => 'unauthorized', 'details' => 'This endpoint requires a bearer token'],
+			Http::STATUS_UNAUTHORIZED
+		);
+		$response->addHeader('WWW-Authenticate', $challenge);
+
+		return $response;
+	}//end missingTokenResponse()
 
 	/**
 	 * Refuse an authenticated caller that lacks a scope the rule requires for this method.
@@ -3848,17 +3890,44 @@ class EndpointService implements EndpointServiceInterface {
 	 * The 401 answer to a refused credential, with the refusal's message and details.
 	 *
 	 * @param AuthenticationException $exception The refusal.
+	 * @param string|null             $challenge The `WWW-Authenticate` value of a token-protected endpoint, or null.
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function unauthenticated(AuthenticationException $exception): JSONResponse {
-		return new JSONResponse(
+	private function unauthenticated(AuthenticationException $exception, ?string $challenge = null): JSONResponse {
+		$response = new JSONResponse(
 			data: ['error' => $exception->getMessage(), 'details' => $exception->getDetails()],
 			statusCode: 401
 		);
+		if ($challenge !== null) {
+			$response->addHeader('WWW-Authenticate', $challenge);
+		}
+
+		return $response;
 	}//end unauthenticated()
+
+	/**
+	 * The `WWW-Authenticate` challenge of a token-protected endpoint, or null for any other authentication.
+	 *
+	 * @param array<string,mixed> $authentication The rule's authentication configuration.
+	 * @param string              $endpointPath   The endpoint's path.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
+	 */
+	private function tokenChallenge(array $authentication, string $endpointPath): ?string {
+		if (isset($this->resourceMetadata) === false
+			|| $endpointPath === ''
+			|| ProtectedResourceMetadata::requiresToken(authentication: $authentication) === false
+		) {
+			return null;
+		}
+
+		return $this->resourceMetadata->challenge(endpointPath: $endpointPath);
+	}//end tokenChallenge()
 
 	/**
 	 * Processes an error rule.
