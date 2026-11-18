@@ -196,6 +196,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// authoritative status from the provider.
 		['name' => 'payments#create', 'url' => '/api/payments', 'verb' => 'POST'],
 		['name' => 'payments#webhook', 'url' => '/api/payments/webhook', 'verb' => 'POST'],
+		// Payments review (openspec/changes/messaging-payments-review).
+		['name' => 'payments#providers', 'url' => '/api/payments/providers', 'verb' => 'GET'],
+		['name' => 'payments#check', 'url' => '/api/payments/providers/check', 'verb' => 'POST'],
+		['name' => 'payments#refresh', 'url' => '/api/payments/{id}/refresh', 'verb' => 'POST'],
 		// The point-of-sale terminals of a payment source (REQ-LPP-009), for an
 		// administrator registering a device; gated by the payments.create action.
 		['name' => 'payments#terminals', 'url' => '/api/payments/sources/{slug}/terminals', 'verb' => 'GET'],
