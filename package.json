@@ -60,7 +60,7 @@
     "@vueuse/core": "^15.0.0",
     "dexie": "^4.4.6",
     "dompurify": "^3.4.17",
-    "gridstack": "^14.0.0",
+    "gridstack": "^14.1.0",
     "lodash": "^4.17.21",
     "marked": "^18.2.0",
     "mitt": "^3.0.1",
