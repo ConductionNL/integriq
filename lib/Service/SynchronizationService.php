@@ -29,6 +29,7 @@ use Adbar\Dot;
 use DateTime;
 use DateTimeInterface;
 use Exception;
+use RuntimeException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Promise\Each;
 use GuzzleHttp\Promise\FulfilledPromise;
@@ -55,6 +56,8 @@ use OCA\Integriq\Service\Synchronization\FileFetchItem;
 use OCA\Integriq\Service\Synchronization\FileFetchRequest;
 use OCA\Integriq\Service\Synchronization\FileFetchRun;
 use OCA\Integriq\Service\Synchronization\SourcePage;
+use OCA\Integriq\Service\Synchronization\WildcardResultsPath;
+use OCA\Integriq\Service\Synchronization\ZipArchiveMembers;
 use OCA\Integriq\Service\Synchronization\OpenRegisterTargetWrite;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\Synchronization\PagedFetch;
@@ -8581,6 +8584,28 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$page->body = $this->decodePageBody(page: $page);
 
+		// A `.zip` archive holds many files where gzip holds one (a bulk
+		// source publishing one feed per day inside one archive). Each member
+		// is read as its own page body and the objects are joined.
+		if ($this->isZipPayload(page: $page) === true) {
+			return $this->readZipPage(page: $page);
+		}
+
+		return $this->readDecodedPage(page: $page);
+	}//end fetchSinglePageData()
+
+	/**
+	 * Reads a decoded page body with the parser its source or synchronization declares.
+	 *
+	 * @param SourcePage $page The page, with its body decoded.
+	 *
+	 * @return array The page, an empty page, or a failed page.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function readDecodedPage(SourcePage $page): array {
+		$source = $page->source;
+
 		// #107: markdown- and HTML-shaped sources (spectr's keyless catalog/
 		// standards connectors — awesome_selfhosted, openalternative,
 		// don_oss_register, wikipedia_comparisons — have no JSON/XML API at
@@ -8602,17 +8627,100 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			);
 		}
 
-		// mapping-formats-and-lookups REQ-MFL-001: a synchronization reading a
+		// Mapping-formats-and-lookups REQ-MFL-001: a synchronization reading a
 		// CSV response hands one array per row to the mapping. Per
 		// synchronization, like `jsonl`, because the same source can serve
 		// several formats.
-		if (($synchronization['sourceConfig']['format'] ?? null) === 'csv') {
-			$rows = $this->decodeCsvPage(body: (string)$page->body, sourceConfig: $synchronization['sourceConfig']);
+		if (($page->synchronization['sourceConfig']['format'] ?? null) === 'csv') {
+			$rows = $this->decodeCsvPage(body: (string)$page->body, sourceConfig: $page->synchronization['sourceConfig']);
 			return ['objects' => $rows, 'result' => $rows];
 		}
 
 		return ($this->readYamlPage(page: $page, sourceFormat: $sourceFormat) ?? $this->readParsedPage(page: $page));
-	}//end fetchSinglePageData()
+	}//end readDecodedPage()
+
+	/**
+	 * Whether a decoded page body is a zip archive.
+	 *
+	 * Any one signal is enough: an explicit `Source.configuration.decompress:
+	 * "zip"`, a `.zip`-suffixed endpoint, or a body that starts with the zip
+	 * signature (no JSON, XML, CSV or YAML body does).
+	 *
+	 * @param SourcePage $page The page, with its body decoded.
+	 *
+	 * @return bool True when the body is to be read as an archive.
+	 *
+	 * @spec openspec/changes/native-data-gathering-provider/tasks.md
+	 */
+	private function isZipPayload(SourcePage $page): bool {
+		if (is_string($page->body) === false) {
+			return false;
+		}
+
+		if (strtolower((string)($page->source['configuration']['decompress'] ?? '')) === 'zip') {
+			return true;
+		}
+
+		if ($this->endpointSuggestsSuffix(endpoint: $page->endpoint, suffix: '.zip') === true) {
+			return true;
+		}
+
+		return (new ZipArchiveMembers())->looksLikeZip(bytes: $page->body);
+	}//end isZipPayload()
+
+	/**
+	 * Reads every member of a zip page and joins their objects.
+	 *
+	 * A member no parser can read, or an archive that cannot be opened or is
+	 * over its limits, fails the whole page: a partly read archive reported as
+	 * complete would let the stale sweep delete what was not read.
+	 * `Source.configuration.zipMembers` (a shell pattern such as `*.atom`)
+	 * narrows which members are read.
+	 *
+	 * @param SourcePage $page The page, with its body decoded.
+	 *
+	 * @return array The page with every member's objects, or a failed page.
+	 *
+	 * @spec openspec/changes/native-data-gathering-provider/tasks.md
+	 */
+	private function readZipPage(SourcePage $page): array {
+		$pattern = $page->source['configuration']['zipMembers'] ?? null;
+		if (is_string($pattern) === false) {
+			$pattern = null;
+		}
+
+		try {
+			$members = (new ZipArchiveMembers())->read(bytes: $page->body, pattern: $pattern);
+		} catch (RuntimeException $exception) {
+			$this->logger->error(
+				'SynchronizationService: source {endpoint} answered with a zip archive that could not be read '
+				. '({reason}). Treating the page as FAILED rather than empty.',
+				['endpoint' => $page->endpoint, 'reason' => $exception->getMessage()]
+			);
+
+			return $this->failedPage(page: $page);
+		}
+
+		$objects = [];
+		foreach ($members as $member) {
+			$memberPage = new SourcePage(source: $page->source, endpoint: $page->endpoint.'#'.$member['name']);
+			$memberPage->synchronization = $page->synchronization;
+			$memberPage->response = $page->response;
+			$memberPage->statusCode = $page->statusCode;
+			$memberPage->body = $member['body'];
+
+			$read = $this->readDecodedPage(page: $memberPage);
+			if (($read['failed'] ?? false) === true) {
+				return $this->failedPage(page: $page);
+			}
+
+			foreach ($read['objects'] as $object) {
+				$objects[] = $object;
+			}
+		}
+
+		return ['objects' => $objects, 'result' => $objects];
+	}//end readZipPage()
 
 	/**
 	 * The rows of a CSV page, with the synchronization's delimiter, enclosure and header flag.
@@ -10114,6 +10222,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// If position is root, return the array.
 			if ($position === '_root' || $position === '_object') {
 				return $array;
+			}
+
+			// A `*` or `**` segment reaches the objects in every repeated
+			// container (articles in each chapter of a law) where a fixed dot
+			// path reaches one place.
+			$wildcardPath = new WildcardResultsPath();
+			if ($wildcardPath->isWildcard(path: (string)$position) === true) {
+				return $wildcardPath->objects(data: $array, path: (string)$position);
 			}
 
 			// Use Dot notation to access nested array elements.
