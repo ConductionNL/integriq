@@ -27324,8 +27324,8 @@
     {
       "type": "library",
       "name": "vue-material-design-icons",
-      "version": "5.3.1",
-      "bom-ref": "integriq@1.0.0|vue-material-design-icons@5.3.1",
+      "version": "5.4.0",
+      "bom-ref": "integriq@1.0.0|vue-material-design-icons@5.4.0",
       "licenses": [
         {
           "license": {
@@ -27333,15 +27333,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/vue-material-design-icons@5.3.1",
+      "purl": "pkg:npm/vue-material-design-icons@5.4.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/vue-material-design-icons/-/vue-material-design-icons-5.3.1.tgz",
+          "url": "https://registry.npmjs.org/vue-material-design-icons/-/vue-material-design-icons-5.4.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "e94344ca1953ce509e4fc65e5f959ba541854d33d26cea1341ea00493bfb5f8625874a5ef2f96d8fedfa54c2b9e8a334806f04415a0c2bf430ffa7af6a583c94"
+              "content": "36a2935a7fb8727583883d8feb178aa9a2e0d6219a8e5d1555470c6dcbf96834685c53eeef486a379e6c052ac629ab6478fe4cd5a0d9fd80a20a0064afdaa1d4"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
