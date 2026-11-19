@@ -10156,6 +10156,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return array An array of items extracted from the response body.
 	 * @throws Exception If the position of objects in the return body cannot be determined.
+	 *
+	 * @spec openspec/changes/native-data-gathering-provider/tasks.md
 	 */
 	public function getAllObjectsFromArray(array $array, array $synchronization): array {
 		// Get the source configuration from the synchronization object.
