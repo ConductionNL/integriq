@@ -92,6 +92,32 @@ class OrganisationBridgeService {
 	}//end getOrganisationService()
 
 	/**
+	 * The uuid of OpenRegister's default organisation, or null when there is none or OpenRegister is absent.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
+	 */
+	public function getDefaultOrganisationUuid(): ?string {
+		$organisationService = $this->getOrganisationService();
+		if ($organisationService === null) {
+			return null;
+		}
+
+		try {
+			$uuid = $organisationService->getDefaultOrganisationUuid();
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		if (is_string($uuid) === false || $uuid === '') {
+			return null;
+		}
+
+		return $uuid;
+	}//end getDefaultOrganisationUuid()
+
+	/**
 	 * Check if organization functionality is available
 	 *
 	 * @return bool True if OpenRegister is installed and OrganisationService is available

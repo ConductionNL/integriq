@@ -31,6 +31,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\DeliveryRequestedEvent;
+use OCA\Integriq\Outbound\RecipientResolver;
+use OCA\Integriq\Outbound\RecipientSelectionRefusedException;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -54,12 +56,14 @@ class DeliveryRequestedListener implements IEventListener {
 	 *
 	 * @param EventServiceInterface $eventService The CloudEvents pipeline entry point.
 	 * @param LoggerInterface $logger Logger for ingest failures.
+	 * @param RecipientResolver $recipientResolver Resolves the per-message recipient decision.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly EventServiceInterface $eventService,
 		private readonly LoggerInterface $logger,
+		private readonly RecipientResolver $recipientResolver,
 	) {
 	}//end __construct()
 
@@ -74,6 +78,10 @@ class DeliveryRequestedListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof DeliveryRequestedEvent) === false) {
+			return;
+		}
+
+		if ($this->resolveRecipients(event: $event) === false) {
 			return;
 		}
 
@@ -101,4 +109,39 @@ class DeliveryRequestedListener implements IEventListener {
 
 		$event->setHandled(handled: true);
 	}//end handle()
+
+	/**
+	 * Resolve the request's recipient decision in integriq, before anything is
+	 * recorded or sent. A refused decision answers the request as refused and
+	 * handled: nothing is sent and no record of a send is written.
+	 *
+	 * @param DeliveryRequestedEvent $event The request.
+	 *
+	 * @return bool True when the ingest may proceed.
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 */
+	private function resolveRecipients(DeliveryRequestedEvent $event): bool {
+		$decision = $event->getRecipientDecision();
+		if ($this->recipientResolver->isDecision(decision: $decision) === false) {
+			return true;
+		}
+
+		try {
+			$event->setRecipientSelection(
+				selection: $this->recipientResolver->resolve(decision: $decision, userId: (string)$event->getUserId())
+			);
+		} catch (RecipientSelectionRefusedException $e) {
+			$this->logger->info(
+				'Delivery request refused: its recipient decision cannot be honoured',
+				['sourceApp' => $event->getSourceApp(), 'correlationId' => $event->getCorrelationId(), 'code' => $e->getRefusalCode()]
+			);
+			$event->setRefusal(reason: $e->getMessage(), code: $e->getRefusalCode());
+			$event->setHandled(handled: true);
+			return false;
+		}
+
+		return true;
+
+	}//end resolveRecipients()
 }//end class

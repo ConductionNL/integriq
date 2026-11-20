@@ -48,6 +48,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -62,6 +63,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -76,6 +78,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -90,6 +93,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -104,6 +108,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -124,6 +129,7 @@
 				"10.0.0.2"
 			],
 			"authorizationType": "apiKey",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": 60,
 			"rateLimitWindowSeconds": 30,
 			"quotaLimit": 1000,
@@ -138,6 +144,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -152,6 +159,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -166,6 +174,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "custom-x",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -180,6 +189,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -194,6 +204,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -208,6 +219,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -222,6 +234,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": 5,
@@ -236,6 +249,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -250,6 +264,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": 9,
@@ -264,6 +279,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -278,6 +294,7 @@
 			"domains": [],
 			"ips": [],
 			"authorizationType": "none",
+			"scopes": [],
 			"rateLimitRequestsPerWindow": null,
 			"rateLimitWindowSeconds": null,
 			"quotaLimit": null,
@@ -293,6 +310,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -302,6 +320,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -314,6 +333,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -323,6 +343,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -335,6 +356,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -344,6 +366,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -367,7 +390,8 @@
 			"ips": [
 				"10.0.0.1"
 			],
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"name",
@@ -377,7 +401,8 @@
 			"quota",
 			"domains",
 			"ips",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": false
 	},
@@ -401,6 +426,7 @@
 				"10.0.0.1"
 			],
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -412,6 +438,7 @@
 			"domains",
 			"ips",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -436,6 +463,7 @@
 				"10.0.0.1"
 			],
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": {
 				"key": "new"
 			}
@@ -449,6 +477,7 @@
 			"domains",
 			"ips",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -461,6 +490,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -470,6 +500,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -482,6 +513,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -491,6 +523,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -503,6 +536,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -512,6 +546,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -524,6 +559,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -533,6 +569,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -545,6 +582,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -554,6 +592,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -566,6 +605,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -575,6 +615,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -587,6 +628,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -596,6 +638,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -608,6 +651,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -617,6 +661,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -629,6 +674,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -638,6 +684,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -649,7 +696,8 @@
 			"authorizationType": "custom-x",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"name",
@@ -657,7 +705,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": false
 	},
@@ -669,6 +718,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -678,6 +728,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -690,6 +741,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": {
 				"key": "new"
 			}
@@ -701,6 +753,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -713,6 +766,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -722,6 +776,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -734,6 +789,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -743,6 +799,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -755,6 +812,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -764,6 +822,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -776,6 +835,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -785,6 +845,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -797,6 +858,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -806,6 +868,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -818,6 +881,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -827,6 +891,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -842,6 +907,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -854,6 +920,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -869,7 +936,8 @@
 			"authorizationType": "none",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -881,7 +949,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -896,7 +965,8 @@
 			"authorizationType": "none",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -908,7 +978,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -934,7 +1005,8 @@
 				"limit": 100,
 				"period": "hour"
 			},
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -947,7 +1019,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": false
 	},
@@ -974,7 +1047,8 @@
 				"limit": 100,
 				"period": "hour"
 			},
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -988,7 +1062,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1017,7 +1092,8 @@
 				"limit": 100,
 				"period": "hour"
 			},
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1031,7 +1107,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1046,6 +1123,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -1058,6 +1136,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -1073,7 +1152,8 @@
 			"authorizationType": "none",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1085,7 +1165,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1100,7 +1181,8 @@
 			"authorizationType": "none",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1112,7 +1194,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1127,6 +1210,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -1139,6 +1223,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -1154,7 +1239,8 @@
 			"authorizationType": "none",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1166,7 +1252,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1181,7 +1268,8 @@
 			"authorizationType": "none",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1193,7 +1281,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1208,6 +1297,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -1220,6 +1310,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -1235,7 +1326,8 @@
 			"authorizationType": " NONE ",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1247,7 +1339,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1262,7 +1355,8 @@
 			"authorizationType": " NONE ",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1274,7 +1368,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1288,7 +1383,8 @@
 			"authorizationType": "custom-x",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1299,7 +1395,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": false
 	},
@@ -1314,7 +1411,8 @@
 			"authorizationType": "custom-x",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1326,7 +1424,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1343,7 +1442,8 @@
 			"authorizationType": "custom-x",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1355,7 +1455,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1370,6 +1471,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -1382,6 +1484,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -1397,7 +1500,8 @@
 			"authorizationType": "none",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1409,7 +1513,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1424,7 +1529,8 @@
 			"authorizationType": "none",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1436,7 +1542,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1451,6 +1558,7 @@
 			"rateLimit": null,
 			"quota": null,
 			"feedScopes": {},
+			"scopes": [],
 			"authorizationConfiguration": null
 		},
 		"keys": [
@@ -1463,6 +1571,7 @@
 			"rateLimit",
 			"quota",
 			"feedScopes",
+			"scopes",
 			"authorizationConfiguration"
 		],
 		"hasAuthKey": true
@@ -1478,7 +1587,8 @@
 			"authorizationType": "none",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1490,7 +1600,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	},
@@ -1505,7 +1616,8 @@
 			"authorizationType": "none",
 			"rateLimit": null,
 			"quota": null,
-			"feedScopes": {}
+			"feedScopes": {},
+			"scopes": []
 		},
 		"keys": [
 			"id",
@@ -1517,7 +1629,8 @@
 			"authorizationType",
 			"rateLimit",
 			"quota",
-			"feedScopes"
+			"feedScopes",
+			"scopes"
 		],
 		"hasAuthKey": true
 	}

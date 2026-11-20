@@ -21,6 +21,13 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// Metrics and health
 		// First-time setup wizard (ADR-042) - the standard CnSetupWizard contract.
+		// access-oauth-and-token-validation (REQ-TOKV-003): the client credentials token endpoint, the key set, and the admin acts behind them.
+		['name' => 'oAuthToken#token',           'url' => '/api/oauth/token',                'verb' => 'POST'],
+		['name' => 'oAuthToken#jwks',            'url' => '/.well-known/jwks.json',          'verb' => 'GET'],
+		// access-oauth-and-token-validation (REQ-TOKV-004): RFC 9728 metadata of a token-protected endpoint.
+		['name' => 'wellKnown#protectedResource', 'url' => '/.well-known/oauth-protected-resource/{_path}', 'verb' => 'GET', 'requirements' => ['_path' => '.+']],
+		['name' => 'oAuthToken#createIssuerKey', 'url' => '/api/oauth/issuer-key',           'verb' => 'POST'],
+		['name' => 'oAuthToken#clientSecret',    'url' => '/api/consumers/{id}/client-secret', 'verb' => 'POST'],
 		['name' => 'setup#status',    'url' => '/api/setup/status',            'verb' => 'GET'],
 		['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST', 'requirements' => ['actionId' => '[a-z0-9\\-]+']],
 		['name' => 'setup#saveConfig', 'url' => '/api/setup/config',           'verb' => 'POST'],
@@ -128,6 +135,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'outboundLog#retry', 'url' => '/api/outbound/messages/retry', 'verb' => 'POST', 'postfix' => 'bulk'],
 		['name' => 'outboundLog#forward', 'url' => '/api/outbound/messages/{id}/forward', 'verb' => 'POST'],
 		['name' => 'outboundLog#lastContact', 'url' => '/api/outbound/last-contact', 'verb' => 'GET'],
+		// One-off and suppressed recipients: the send screen's preview of who receives a message.
+		['name' => 'outboundRecipients#preview', 'url' => '/api/outbound/recipients/preview', 'verb' => 'POST'],
 
 		// Sender identity and deliverability
 		// (openspec/changes/outbound-sender-identity-and-deliverability). An
@@ -140,6 +149,7 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'senderIdentity#index', 'url' => '/api/outbound/identities', 'verb' => 'GET'],
 		['name' => 'senderIdentity#checkAlignment', 'url' => '/api/outbound/identities/{id}/alignment', 'verb' => 'POST'],
 		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
+		['name' => 'senderIdentity#release', 'url' => '/api/outbound/messages/{id}/release', 'verb' => 'POST'],
 		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
 		// opt-out-before-send: GET only shows the page, POST writes (also the
 		// RFC 8058 one-click), and an SMS carries a short id resolved here.
@@ -471,6 +481,14 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Investigation window: store call bodies for a bounded time (outbound-call-log-investigation-window).
 		['name' => 'bodyCapture#open', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'POST'],
 		['name' => 'bodyCapture#close', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'DELETE'],
+		// Database sources (sources-database-adapter): schema discovery and a test run of a declared read statement, admin only.
+		['name' => 'databaseSource#schema', 'url' => '/api/sources/{id}/database/schema', 'verb' => 'GET'],
+		[
+			'name' => 'databaseSource#testStatement',
+			'url' => '/api/sources/{id}/database/statements/{name}/test',
+			'verb' => 'POST',
+			'requirements' => ['name' => '[A-Za-z0-9][A-Za-z0-9_.-]{0,99}'],
+		],
 
 		// dashboard-http-datasource: governed, read-only "resolve one value
 		// from a configured source" façade for dashboard/widget hosts
@@ -643,8 +661,20 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'productSubscriptions#analytics', 'url' => '/api/products/{productId}/analytics', 'verb' => 'GET'],
 		// forms-service-fetch-for-apps (REQ-SF-003): the service fetches an app may call, for a form designer.
 		['name' => 'serviceFetch#index', 'url' => '/api/service-fetches', 'verb' => 'GET'],
+		// An administrator's test run of one fetch (forms-service-fetch-for-apps, REQ-SF-001).
+		['name' => 'serviceFetch#test', 'url' => '/api/service-fetches/{slug}/test', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+		// Developer portal (access-developer-portal-and-subscriptions D1-D3): members of
+		// the developer group browse public products, create applications they own and
+		// request access through the product's approval. The group check and the
+		// ownership check run in PortalController; the settings pair is admin only.
+		['name' => 'portal#products', 'url' => '/api/portal/products', 'verb' => 'GET'],
+		['name' => 'portal#applications', 'url' => '/api/portal/applications', 'verb' => 'GET'],
+		['name' => 'portal#createApplication', 'url' => '/api/portal/applications', 'verb' => 'POST'],
+		['name' => 'portal#requestAccess', 'url' => '/api/portal/applications/{consumerId}/subscriptions', 'verb' => 'POST'],
+		['name' => 'portal#getSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'GET'],
+		['name' => 'portal#setSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'PUT'],
 		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
 		['name' => 'productChannels#pull', 'url' => '/api/products/{productSlug}/channels/{channel}/events', 'verb' => 'GET'],
 		['name' => 'productChannels#subscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions', 'verb' => 'POST'],
@@ -778,6 +808,20 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'objectenApi#replaceObject',     'url' => '/api/v2/objects/{uuid}', 'verb' => 'PUT', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'objectenApi#updateObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'objectenApi#deleteObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
+		// zgw-catalogi-served: the VNG Catalogi API 1.3 read half (catalogussen,
+		// informatieobjecttypen). #[PublicPage] and CSRF-free like the Objecten
+		// routes: CatalogiGate checks the binding, the ZGW JWT and the
+		// catalogi.lezen scope before any document type is read. Writes answer 405.
+		['name' => 'catalogiApi#catalogussen',          'url' => '/catalogi/api/v1/catalogussen', 'verb' => 'GET'],
+		['name' => 'catalogiApi#catalogus',             'url' => '/catalogi/api/v1/catalogussen/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'catalogiApi#informatieobjecttypen', 'url' => '/catalogi/api/v1/informatieobjecttypen', 'verb' => 'GET'],
+		['name' => 'catalogiApi#informatieobjecttype',  'url' => '/catalogi/api/v1/informatieobjecttypen/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}', 'verb' => 'POST', 'postfix' => 'create', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'PUT', 'postfix' => 'replace', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'PATCH', 'postfix' => 'update', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'DELETE', 'postfix' => 'delete', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		// The Woo starter set, administrator only (AuthorizedAdminSetting and a check in the method).
+		['name' => 'catalogiAdmin#wooStarterSet', 'url' => '/api/catalogi/woo-starter-set', 'verb' => 'POST'],
 		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
 		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
 		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],
