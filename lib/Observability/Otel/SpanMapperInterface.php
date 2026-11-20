@@ -51,4 +51,29 @@ interface SpanMapperInterface {
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-trace-context-travels-in-and-out-as-w3c-traceparent-req-otel-004
 	 */
 	public function stepSpanId(array $step, string $traceId): string;
+
+	/**
+	 * Check and clean one span another app handed in.
+	 *
+	 * @param array<array-key, mixed> $span The span as the other app sent it.
+	 *
+	 * @return array The clean span.
+	 *
+	 * @throws \InvalidArgumentException When a field is malformed; the message starts with the field name.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
+	 */
+	public function foreignSpan(array $span): array;
+
+	/**
+	 * Map clean spans of another app to an OTLP JSON payload.
+	 *
+	 * @param list<array<string, mixed>> $spans The clean spans.
+	 * @param string $serviceName The dispatching app id.
+	 *
+	 * @return array The OTLP JSON payload.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
+	 */
+	public function mapForeign(array $spans, string $serviceName): array;
 }

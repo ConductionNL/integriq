@@ -1,0 +1,109 @@
+{
+  "$comment": "ADR-037 register fragment (gateway-federated-api-discovery Tasks 2-3, REQ-FEDG-002). Dormant discovery of the APIs of one Azure API Management service, read daily into external_api through Azure Resource Manager (api-version 2022-08-01). Auth is OAuth 2.0 client credentials against Microsoft Entra ID, the client secret held by the credential broker.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "azure-apim-discovery"
+        },
+        "name": "Azure API Management (API discovery)",
+        "description": "One Azure API Management service through Azure Resource Manager (https://learn.microsoft.com/en-us/rest/api/apimanagement/apis/list-by-service). List call: GET <location>/apis?api-version=2022-08-01, the APIs in `value`. Set the location to https://management.azure.com/subscriptions/<subscription>/resourceGroups/<group>/providers/Microsoft.ApiManagement/service/<name>, fill the tenant in the token URL and the client id of an app registration with Reader on the service, add the client secret to the credential broker, then enable the source and the job.",
+        "type": "api",
+        "location": "https://management.azure.com",
+        "auth": "oauth",
+        "documentation": "https://learn.microsoft.com/en-us/rest/api/apimanagement/apis/list-by-service",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "Bearer {{ oauthToken(source) }}"
+          },
+          "authentication": {
+            "grant_type": "client_credentials",
+            "authentication": "body",
+            "tokenUrl": "https://login.microsoftonline.com/<tenant>/oauth2/v2.0/token",
+            "scope": "https://management.azure.com/.default",
+            "client_id": "",
+            "client_secret": {
+              "credentialRef": {
+                "credentialName": "azure-apim-discovery-client-secret"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "azure-apim-discovery-to-external-api"
+        },
+        "name": "Azure API Management API to external_api",
+        "description": "One API of the API Management service as an external_api. The base URL is the service URL the gateway publishes the API on; a revision other than the current one is its environment.",
+        "mapping": {
+          "gateway": "azure-apim-discovery",
+          "vendor": "azure-apim",
+          "name": "{{ properties.displayName|default(name) }}",
+          "version": "{{ properties.apiVersion|default('') }}",
+          "baseUrl": "{{ properties.serviceUrl|default('') }}",
+          "environment": "{{ properties.isCurrent is defined and properties.isCurrent is same as(false) ? 'revision ' ~ properties.apiRevision|default('') : '' }}",
+          "gatewayApiId": "{{ id }}",
+          "gatewayUrl": "https://portal.azure.com/#resource{{ id }}",
+          "lastSeen": "{{ 'now'|date('Y-m-d\\\\TH:i:sP', 'UTC') }}"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "azure-apim-discovery"
+        },
+        "name": "Azure API Management APIs to the API inventory",
+        "description": "Reads every API of the API Management service into the API inventory. An API the service stops returning is marked no longer seen (`markEnded`), never deleted.",
+        "sourceId": "azure-apim-discovery",
+        "sourceType": "api",
+        "sourceTargetMapping": "azure-apim-discovery-to-external-api",
+        "sourceConfig": {
+          "endpoint": "/apis",
+          "query": {
+            "api-version": "2022-08-01"
+          },
+          "idPosition": "id",
+          "resultsPosition": "value",
+          "maxPages": 20,
+          "disappearancePolicy": "markEnded"
+        },
+        "conditions": [],
+        "targetId": "integriq/external_api",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "job",
+          "slug": "azure-apim-discovery-daily"
+        },
+        "name": "Azure API Management discovery, daily",
+        "description": "Runs the Azure API Management discovery synchronization once a day. Off until the source has its location, client id and credential.",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "azure-apim-discovery"
+        },
+        "interval": 86400,
+        "isEnabled": false,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

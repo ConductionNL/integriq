@@ -34,19 +34,31 @@
             "key": "text",
             "label": "Message",
             "sortable": false,
-            "width": "25%"
+            "width": "15%"
           },
           {
             "key": "ruleName",
             "label": "Rule",
             "sortable": true,
-            "width": "15%"
+            "width": "13%"
           },
           {
             "key": "reason",
             "label": "Reason",
             "sortable": false,
-            "width": "18%"
+            "width": "12%"
+          },
+          {
+            "key": "targetRef",
+            "label": "Case",
+            "sortable": false,
+            "width": "10%"
+          },
+          {
+            "key": "assignedBy",
+            "label": "Assigned by",
+            "sortable": true,
+            "width": "8%"
           },
           {
             "key": "status",
@@ -61,7 +73,8 @@
                 "routed": "success",
                 "held": "warning",
                 "failed": "error",
-                "rejected": "error"
+                "rejected": "error",
+                "assigned": "success"
               }
             }
           }

@@ -34,6 +34,7 @@ import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
 import Broadcast from 'vue-material-design-icons/Broadcast.vue'
 import CalendarClock from 'vue-material-design-icons/CalendarClock.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CardAccountDetailsOutline from 'vue-material-design-icons/CardAccountDetailsOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckboxMarkedCircleOutline from 'vue-material-design-icons/CheckboxMarkedCircleOutline.vue'
@@ -42,6 +43,7 @@ import CheckDecagramOutline from 'vue-material-design-icons/CheckDecagramOutline
 import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
 import ClockTimeFour from 'vue-material-design-icons/ClockTimeFour.vue'
 import Cloud from 'vue-material-design-icons/Cloud.vue'
+import CloudSearchOutline from 'vue-material-design-icons/CloudSearchOutline.vue'
 import CloudSyncOutline from 'vue-material-design-icons/CloudSyncOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
@@ -153,6 +155,7 @@ export default {
 	BookOpenVariantOutline,
 	Broadcast,
 	CalendarClock,
+	Cancel,
 	CardAccountDetailsOutline,
 	ChartBoxOutline,
 	CheckCircleOutline,
@@ -161,6 +164,7 @@ export default {
 	ClockOutline,
 	ClockTimeFour,
 	Cloud,
+	CloudSearchOutline,
 	CloudSyncOutline,
 	CloudUploadOutline,
 	Cog,

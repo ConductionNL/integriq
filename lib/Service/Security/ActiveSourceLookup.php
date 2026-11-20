@@ -61,18 +61,7 @@ final class ActiveSourceLookup {
 	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
 	 */
 	public function first(string $sourceType): ?ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => RawSourceResolver::REGISTER,
-					'schema' => RawSourceResolver::SCHEMA,
-					'type' => $sourceType,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
+		$results = self::resultsOf(matches: $this->objectService->findAll(config: self::enabledQuery(sourceType: $sourceType, limit: 1)));
 
 		if (empty($results) === true) {
 			return null;
@@ -80,4 +69,48 @@ final class ActiveSourceLookup {
 
 		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
 	}//end first()
+
+	/**
+	 * The search for the enabled sources of one adapter type.
+	 *
+	 * @param string $sourceType The adapter's source type, e.g. `rod`.
+	 * @param int    $limit      How many sources to read at most.
+	 *
+	 * @return array<string, mixed> The `findAll` config.
+	 *
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+	 */
+	public static function enabledQuery(string $sourceType, int $limit): array {
+		return [
+			'filters' => [
+				'register' => RawSourceResolver::REGISTER,
+				'schema' => RawSourceResolver::SCHEMA,
+				'type' => $sourceType,
+				'isEnabled' => true,
+			],
+			'limit' => $limit,
+		];
+	}//end enabledQuery()
+
+	/**
+	 * The rows of a `findAll` answer, paginated or plain; an empty list for anything else.
+	 *
+	 * @param mixed $matches The answer.
+	 *
+	 * @return array<int|string, mixed> The rows.
+	 *
+	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
+	 */
+	public static function resultsOf(mixed $matches): array {
+		if (is_array($matches) === false) {
+			return [];
+		}
+
+		$results = ($matches['results'] ?? $matches);
+		if (is_array($results) === false) {
+			return [];
+		}
+
+		return $results;
+	}//end resultsOf()
 }//end class

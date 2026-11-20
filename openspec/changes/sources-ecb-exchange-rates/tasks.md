@@ -11,7 +11,7 @@ Kind: code. Size S. Half for shillinq `banking-fx-at-booking` (row shillinq `bnk
   - GIVEN the stored daily file WHEN the synchronization runs twice THEN one `exchange_rate` per currency exists for that date
 - [x] Implement
 - [x] Test (PHPUnit against the stored files)
-- [ ] One live run on a dev instance, count recorded in the PR
+- [x] One live run on a dev instance, count recorded in the PR: on a fresh NC 34.0.6 + OpenRegister main instance (live pass 2026-11-17) the job, forced three times, holds 1,856 `exchange_rate` objects, 29 currencies over 64 working days up to 2026-11-16, with no duplicate (date, currency) pair.
 
 ### Task 2: The rate request
 - **spec_ref**: `openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002`

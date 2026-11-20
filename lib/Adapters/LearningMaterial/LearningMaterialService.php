@@ -33,7 +33,7 @@ namespace OCA\Integriq\Adapters\LearningMaterial;
  *
  * @spec openspec/specs/edurep-source/spec.md#requirement-the-source-is-a-connection-with-health-and-settings
  */
-class LearningMaterialService {
+class LearningMaterialService implements LearningMaterialServiceInterface {
 	public const UNAVAILABLE_REASON = 'Edurep antwoordt niet';
 
 	/**

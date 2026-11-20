@@ -37,6 +37,15 @@ use OCA\Integriq\Exception\PaymentProviderException;
  */
 interface PaymentProviderInterface {
 	/**
+	 * The id a payment source names this provider by in `configuration.provider`.
+	 *
+	 * @return string The provider id, e.g. `mollie` or `log`.
+	 *
+	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 */
+	public function getProviderId(): string;
+
+	/**
 	 * Create a payment against the configured provider.
 	 *
 	 * @param array $sourceConfiguration The payment source's `configuration` object
