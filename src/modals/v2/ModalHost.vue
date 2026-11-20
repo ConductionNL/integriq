@@ -26,6 +26,10 @@
 			:open="testMapping.open"
 			:mapping="testMapping.mapping"
 			@close="closeTestMapping" />
+		<TestServiceFetchModal
+			:open="testServiceFetch.open"
+			:fetch="testServiceFetch.fetch"
+			@close="closeTestServiceFetch" />
 		<TestSourceModal
 			:open="testSource.open"
 			:source="testSource.source"
@@ -69,6 +73,9 @@
 		<GatewayCatalogueDialog
 			:open="gatewayCatalogue.open"
 			@close="closeGatewayCatalogue" />
+		<OpenApiImportDialog
+			:open="openApiImport.open"
+			@close="closeOpenApiImport" />
 		<RegistrationTargetTestModal
 			:open="registrationTest.open"
 			:target="registrationTest.target"
@@ -92,6 +99,7 @@ import ExportConfigurationDialog from '../../dialogs/ExportConfigurationDialog.v
 import GatewayCatalogueDialog from '../../dialogs/GatewayCatalogueDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
 import LinkSourceDialog from '../../dialogs/LinkSourceDialog.vue'
+import OpenApiImportDialog from '../../dialogs/OpenApiImportDialog.vue'
 import RegistryLookupDialog from '../../dialogs/RegistryLookupDialog.vue'
 import SharePointPublicationSetupDialog from '../../dialogs/SharePointPublicationSetupDialog.vue'
 import SourceResidencyDialog from '../../dialogs/SourceResidencyDialog.vue'
@@ -102,6 +110,7 @@ import SubscriptionSigningModal from '../Subscription/SubscriptionSigningModal.v
 import AddEndpointRuleModal from './AddEndpointRuleModal.vue'
 import RunActionModal from './RunActionModal.vue'
 import TestMappingModal from './TestMappingModal.vue'
+import TestServiceFetchModal from './TestServiceFetchModal.vue'
 import TestSourceModal from './TestSourceModal.vue'
 import {
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
@@ -111,6 +120,7 @@ import {
 	EVENT_OPEN_DIRECTORY_RUN,
 	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
+	EVENT_OPEN_OPENAPI_IMPORT,
 	EVENT_OPEN_PROMOTION,
 	EVENT_OPEN_REGISTRATION_TEST,
 	EVENT_OPEN_REGISTRY_LOOKUP,
@@ -119,6 +129,7 @@ import {
 	EVENT_OPEN_SOURCE_RESIDENCY,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_TEST_MAPPING,
+	EVENT_OPEN_TEST_SERVICE_FETCH,
 	EVENT_OPEN_TEST_SOURCE,
 	EVENT_SOURCE_RESIDENCY_SAVED,
 	modalBus,
@@ -129,6 +140,7 @@ export default {
 
 	components: {
 		TestMappingModal,
+		TestServiceFetchModal,
 		TestSourceModal,
 		AddEndpointRuleModal,
 		RunActionModal,
@@ -142,6 +154,7 @@ export default {
 		LinkSourceDialog,
 		RegistryLookupDialog,
 		GatewayCatalogueDialog,
+		OpenApiImportDialog,
 		RegistrationTargetTestModal,
 		SourceResidencyDialog,
 	},
@@ -149,6 +162,7 @@ export default {
 	data() {
 		return {
 			testMapping: { open: false, mapping: null },
+			testServiceFetch: { open: false, fetch: null },
 			testSource: { open: false, source: null },
 			addEndpointRule: { open: false, endpoint: null },
 			runAction: { open: false, target: '', mode: '', item: null },
@@ -161,6 +175,7 @@ export default {
 			sharePointPublicationSetup: { open: false },
 			registryLookup: { open: false },
 			gatewayCatalogue: { open: false },
+			openApiImport: { open: false },
 			sourceResidency: { open: false, source: null },
 			linkSource: { open: false, app: '' },
 			registrationTest: { open: false, target: null },
@@ -201,6 +216,7 @@ export default {
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	mounted() {
 		modalBus.on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
+		modalBus.on(EVENT_OPEN_TEST_SERVICE_FETCH, this.openTestServiceFetch)
 		modalBus.on(EVENT_OPEN_TEST_SOURCE, this.openTestSource)
 		modalBus.on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
 		modalBus.on(EVENT_OPEN_RUN_ACTION, this.openRunAction)
@@ -213,6 +229,7 @@ export default {
 		modalBus.on(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 		modalBus.on(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.on(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
+		modalBus.on(EVENT_OPEN_OPENAPI_IMPORT, this.openOpenApiImport)
 		modalBus.on(EVENT_OPEN_REGISTRATION_TEST, this.openRegistrationTest)
 		modalBus.on(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 		modalBus.on(EVENT_OPEN_SOURCE_RESIDENCY, this.openSourceResidency)
@@ -221,6 +238,7 @@ export default {
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	beforeUnmount() {
 		modalBus.off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
+		modalBus.off(EVENT_OPEN_TEST_SERVICE_FETCH, this.openTestServiceFetch)
 		modalBus.off(EVENT_OPEN_TEST_SOURCE, this.openTestSource)
 		modalBus.off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
 		modalBus.off(EVENT_OPEN_RUN_ACTION, this.openRunAction)
@@ -233,6 +251,7 @@ export default {
 		modalBus.off(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 		modalBus.off(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.off(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
+		modalBus.off(EVENT_OPEN_OPENAPI_IMPORT, this.openOpenApiImport)
 		modalBus.off(EVENT_OPEN_REGISTRATION_TEST, this.openRegistrationTest)
 		modalBus.off(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 		modalBus.off(EVENT_OPEN_SOURCE_RESIDENCY, this.openSourceResidency)
@@ -250,6 +269,19 @@ export default {
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		closeTestMapping() {
 			this.testMapping = { open: false, mapping: null }
+		},
+
+		/**
+		 * @param {{fetch: object}} payload The row.
+		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 */
+		openTestServiceFetch(payload) {
+			this.testServiceFetch = { open: true, fetch: payload?.fetch ?? null }
+		},
+
+		/** @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001 */
+		closeTestServiceFetch() {
+			this.testServiceFetch = { open: false, fetch: null }
 		},
 
 		/**
@@ -405,6 +437,16 @@ export default {
 		/** @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008 */
 		closeGatewayCatalogue() {
 			this.gatewayCatalogue = { open: false }
+		},
+
+		/** @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001 */
+		openOpenApiImport() {
+			this.openApiImport = { open: true }
+		},
+
+		/** @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001 */
+		closeOpenApiImport() {
+			this.openApiImport = { open: false }
 		},
 
 		/**

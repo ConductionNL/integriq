@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
@@ -82,4 +83,27 @@ interface ProductPolicyServiceInterface {
 	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
 	 */
 	public function buildDeprecationHeaders(ObjectEntity $product): array;
+
+	/**
+	 * The date a subscription ended on, when its `expiresAt` has passed, else null.
+	 *
+	 * @param ObjectEntity            $subscription The api_product_subscription.
+	 * @param DateTimeInterface|null  $now          The moment to judge at; now when null.
+	 *
+	 * @return string|null The end date as `Y-m-d`, or null while the subscription runs.
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 */
+	public function expiredOn(ObjectEntity $subscription, ?DateTimeInterface $now=null): ?string;
+
+	/**
+	 * Whether a product is retired, so its endpoints answer 410 Gone.
+	 *
+	 * @param ObjectEntity $product The api_product.
+	 *
+	 * @return bool True when its status is `retired`.
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 */
+	public function isRetired(ObjectEntity $product): bool;
 }

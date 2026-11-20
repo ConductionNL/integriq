@@ -198,6 +198,35 @@
 					}}
 				</div>
 				<template v-else>
+					<!-- sources-per-user-oauth: each user's own account next to one shared credential. -->
+					<NcCheckboxRadioSwitch
+						:modelValue="perUserEnabled"
+						type="switch"
+						@update:modelValue="onTogglePerUser">
+						{{ t('integriq', 'Each user\'s own account') }}
+					</NcCheckboxRadioSwitch>
+					<template v-if="perUserEnabled">
+						<label
+							for="cn-source-form-peruser-provider"
+							class="cn-source-form-fields__label">
+							{{ t('integriq', 'Account provider') }}
+						</label>
+						<NcSelect
+							inputId="cn-source-form-peruser-provider"
+							:inputLabel="t('integriq', 'Account provider')"
+							:aria-label-combobox="t('integriq', 'Account provider')"
+							:modelValue="selectedPerUserProvider"
+							:options="perUserProviders"
+							:loading="perUserProvidersLoading"
+							:clearable="false"
+							:placeholder="t('integriq', 'Select the provider each user connects')"
+							@update:modelValue="onPerUserProviderPick" />
+						<span class="cn-source-form-fields__helper">
+							{{ t('integriq', 'Every call is made with the signed-in user\'s own account at this provider. A user who has not connected one is asked to connect it; background jobs cannot call this source.') }}
+						</span>
+					</template>
+				</template>
+				<template v-if="!brokerUnavailable && !perUserEnabled">
 					<label
 						for="cn-source-form-credentialref"
 						class="cn-source-form-fields__label">
@@ -368,9 +397,13 @@ import {
 	EMBEDDED_SECRET_FIELDS,
 	extractCredentialResults,
 	isBrokered,
+	isPerUser,
 	mapCredentialOptions,
+	perUserProviderOptions,
 	readCredentialId,
+	readPerUserProvider,
 	writeCredentialRef,
+	writePerUserRef,
 } from './sourceCredentialRef.js'
 
 /**
@@ -437,6 +470,10 @@ export default {
 			brokerUnavailable: false,
 			credentialOptions: [],
 			credentialsLoading: false,
+			/** Local mirror of the per-user switch (sources-per-user-oauth). */
+			perUserEnabled: isPerUser(this.formData),
+			perUserProviders: [],
+			perUserProvidersLoading: false,
 			/** Digital post bindings this instance carries, from the registry. */
 			digitalPostProviders: [],
 			digitalPostLoading: false,
@@ -583,6 +620,18 @@ export default {
 		},
 
 		/**
+		 * The picker option of the per-user source's provider, or null.
+		 *
+		 * @return {object|null} The selected option.
+		 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+		 */
+		selectedPerUserProvider() {
+			const id = readPerUserProvider(this.formData)
+			if (!id) return null
+			return this.perUserProviders.find((option) => option.id === id) ?? { id, label: id }
+		},
+
+		/**
 		 * Whether this source sends text messages, and so needs the SMS picker.
 		 *
 		 * @return {boolean} True for an SMS source.
@@ -710,6 +759,7 @@ export default {
 		 */
 		formData() {
 			this.brokeredEnabled = isBrokered(this.formData)
+			this.perUserEnabled = isPerUser(this.formData)
 
 			// The type can be switched after the form opened. Without this the
 			// picker would render with an empty list and read as "no binding
@@ -738,6 +788,10 @@ export default {
 	created() {
 		if (this.brokeredEnabled) {
 			this.fetchCredentials()
+		}
+
+		if (this.perUserEnabled) {
+			this.fetchPerUserProviders()
 		}
 
 		if (this.showsDigitalPostPicker) {
@@ -873,6 +927,54 @@ export default {
 				)
 			} finally {
 				this.digitalPostLoading = false
+			}
+		},
+
+		/**
+		 * Switch between one shared credential and each user's own account.
+		 * Either way the other reference is cleared, so a source never carries both.
+		 *
+		 * @param {boolean} value The new switch state.
+		 * @return {void}
+		 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+		 */
+		onTogglePerUser(value) {
+			this.perUserEnabled = value
+			this.updateField('configuration', clearCredentialRef(this.formData?.configuration))
+			if (value && this.perUserProviders.length === 0) {
+				this.fetchPerUserProviders()
+			}
+		},
+
+		/**
+		 * Write `credentialRef = { provider, perUser: true }` for the picked provider.
+		 *
+		 * @param {object|null} option The picked provider option.
+		 * @return {void}
+		 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+		 */
+		onPerUserProviderPick(option) {
+			if (!option?.id) return
+			this.updateField('configuration', writePerUserRef(this.formData?.configuration, String(option.id)))
+		},
+
+		/**
+		 * Load the broker catalogue's OAuth 2.0 providers; only those can back a per-user source.
+		 *
+		 * @return {Promise<void>} Resolves once the options are loaded.
+		 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+		 */
+		async fetchPerUserProviders() {
+			this.perUserProvidersLoading = true
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/credentials/providers'))
+				this.perUserProviders = perUserProviderOptions(response.data?.results ?? response.data)
+			} catch (err) {
+				this.perUserProviders = []
+				// eslint-disable-next-line no-console
+				console.warn('[SourceFormFields] provider catalogue fetch failed', err)
+			} finally {
+				this.perUserProvidersLoading = false
 			}
 		},
 

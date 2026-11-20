@@ -76,3 +76,50 @@ export function actionSections(actions, names) {
 		.sort(([one], [two]) => (one === '') - (two === '') || one.localeCompare(two))
 		.map(([area, entries]) => ({ area, actions: entries }))
 }
+
+/**
+ * OpenRegister's reserved group for every signed-in user, used by the object
+ * rights of the configuration schemas that carry no authorization block.
+ */
+export const EVERY_SIGNED_IN_USER = 'authenticated'
+
+/**
+ * Whether an action is an object right on a configuration schema.
+ *
+ * @param {string} name The action name.
+ * @return {boolean} True for `object.<schema>.<verb>`.
+ *
+ * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+ */
+export function isObjectRight(name) {
+	return typeof name === 'string' && /^object\.[a-z_]+\.(create|read|update|delete)$/.test(name)
+}
+
+/**
+ * The group columns of one section: `admin` first, then, for a section that
+ * holds object rights, every signed-in user, then the Nextcloud groups.
+ *
+ * @param {{actions: Array<{name: string}>}} section The section.
+ * @param {Array<string>} groups The Nextcloud group ids.
+ * @return {Array<string>} The columns.
+ *
+ * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+ */
+export function sectionColumns(section, groups) {
+	const rest = (Array.isArray(groups) ? groups : []).filter((g) => g !== 'admin' && g !== EVERY_SIGNED_IN_USER)
+	const objectRights = Array.isArray(section && section.actions) && section.actions.some((action) => isObjectRight(action.name))
+	return objectRights ? ['admin', EVERY_SIGNED_IN_USER, ...rest] : ['admin', ...rest]
+}
+
+/**
+ * Whether granting an action exposes a schema whose records hold secrets:
+ * reading sources or consumers.
+ *
+ * @param {string} name The action name.
+ * @return {boolean} True when the screen warns on the row.
+ *
+ * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+ */
+export function warnsOnGrant(name) {
+	return name === 'object.source.read' || name === 'object.consumer.read'
+}

@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "integriq demo data",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Demo data covering every schema this app supplies, offered as the first step of the app's setup walkthrough. Generated from the schemas themselves, so every object satisfies the schema that will validate it."
   },
   "x-openregister": {
@@ -21,6 +21,214 @@
       }
     },
     "schemas": {
+      "sbr_filing": {
+        "slug": "sbr_filing",
+        "title": "SBR Filing",
+        "icon": "FileSendOutline",
+        "version": "1.0.0",
+        "summary": "One XBRL filing delivered to the Belastingdienst or the KvK through Digipoort",
+        "description": "A filing tracks one XBRL instance a sending app asked integriq to file, from the request through the delivery to Digipoort and every processing status the recipient reports. One filing exists per filed object and filing type. See openspec/changes/connectors-digipoort-sbr-filing/specs/digipoort-sbr-connector/spec.md.",
+        "required": [
+          "objectUri",
+          "filingType",
+          "recipient",
+          "status"
+        ],
+        "type": "object",
+        "authorization": {
+          "create": [],
+          "read": [],
+          "update": [],
+          "delete": []
+        },
+        "properties": {
+          "objectUri": {
+            "type": "string",
+            "title": "Object URI",
+            "description": "The object the filing is for, as the sending app named it."
+          },
+          "objectType": {
+            "type": "string",
+            "title": "Object type",
+            "description": "The kind of object the filing is for, for example a VAT return."
+          },
+          "sourceApp": {
+            "type": "string",
+            "title": "Source app",
+            "description": "The app that asked for the filing."
+          },
+          "filingType": {
+            "type": "string",
+            "title": "Filing type",
+            "description": "What is filed: ob-aangifte for the VAT return, kvk-deponering for the KvK deposit."
+          },
+          "recipient": {
+            "type": "string",
+            "enum": [
+              "belastingdienst",
+              "kvk"
+            ],
+            "title": "Recipient",
+            "description": "Who receives the filing."
+          },
+          "payloadFileUri": {
+            "type": "string",
+            "title": "Instance file",
+            "description": "The XBRL instance in Nextcloud Files: a file id as nextcloud-file:<id> or a path in a user's files."
+          },
+          "identityNumber": {
+            "type": "string",
+            "title": "Identity number",
+            "description": "The number of the party the filing is for, such as its tax number or KvK number."
+          },
+          "identityType": {
+            "type": "string",
+            "title": "Identity type",
+            "description": "The kind of identity number, as Digipoort names it."
+          },
+          "deliveryReference": {
+            "type": "string",
+            "title": "Delivery reference",
+            "description": "The kenmerk Digipoort gave the delivery. Empty until the filing is delivered."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "delivered",
+              "accepted",
+              "rejected",
+              "failed"
+            ],
+            "title": "Status",
+            "description": "Queued until delivered, then accepted or rejected by the recipient. Failed when delivery kept failing."
+          },
+          "statusHistory": {
+            "type": "array",
+            "title": "Status history",
+            "description": "Every status the filing reached, oldest first, with its time and errors.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "title": "Status",
+                  "description": "The status reached."
+                },
+                "code": {
+                  "type": "string",
+                  "title": "Status code",
+                  "description": "Digipoort's own status code, when Digipoort reported it."
+                },
+                "description": {
+                  "type": "string",
+                  "title": "Status description",
+                  "description": "Digipoort's description of the status."
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "title": "Time",
+                  "description": "When the status was reached."
+                },
+                "errors": {
+                  "type": "array",
+                  "title": "Errors",
+                  "description": "The recipient's error codes and texts, or the reason the delivery failed.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "title": "Error code",
+                        "description": "The recipient's error code."
+                      },
+                      "text": {
+                        "type": "string",
+                        "title": "Error text",
+                        "description": "The recipient's explanation of the error."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "errors": {
+            "type": "array",
+            "title": "Errors",
+            "description": "The recipient's error codes and texts, or the reason the delivery failed.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "title": "Error code",
+                  "description": "The recipient's error code."
+                },
+                "text": {
+                  "type": "string",
+                  "title": "Error text",
+                  "description": "The recipient's explanation of the error."
+                }
+              }
+            }
+          },
+          "attempts": {
+            "type": "array",
+            "title": "Attempts",
+            "description": "Every delivery attempt, with the error of each one that failed.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "title": "Attempt time",
+                  "description": "When the delivery was tried."
+                },
+                "error": {
+                  "type": "string",
+                  "title": "Attempt error",
+                  "description": "Why the attempt failed. Empty when it succeeded."
+                }
+              }
+            }
+          },
+          "channelStatusCount": {
+            "type": "integer",
+            "title": "Statuses read",
+            "description": "How many statuses Digipoort reported that integriq has already read."
+          }
+        },
+        "x-openregister-notifications": {
+          "filing-failed": {
+            "trigger": {
+              "type": "updated",
+              "condition": {
+                "field": "status",
+                "operator": "equals",
+                "value": "failed"
+              }
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
+              }
+            ],
+            "subject": {
+              "nl": "Digipoort-aanlevering mislukt: {{filingType}} ({{objectUri}})",
+              "en": "Digipoort filing failed: {{filingType}} ({{objectUri}})"
+            }
+          }
+        },
+        "x-openregister-seed": []
+      },
       "source": {
         "_comment": "ocon#151 PHASE D — DO NOT REMOVE apikey/secret/password/jwt/authenticationConfig from this schema descriptor. These five inline-secret fields MUST stay declared here even though the RemoveMigratedSourceSecretFields repair step deletes the first four from the LIVE schema per-instance. WHY: OpenRegister's Schema::hydrate() applies `properties` via setProperties() — a WHOLESALE REPLACE — so a version-bumping register import (ImportHandler::handleSchema -> updateFromArray, verified at OR origin/development) PRUNES any property ABSENT from this JSON, UNGATED by an instance's migration state. Removing a field here would therefore drop it fleet-wide on the next upgrade that bumps the source schema version, orphaning every un-migrated inline secret. Removal happens ONLY in the repair step, per-instance, gated on a verified-clean raw scan. Permanently deleting these four from this JSON is a FUTURE change, valid only once the whole fleet has converged (tracked in ocon#232, the ocon#151 follow-up). ocon#232 UPDATE — authenticationConfig: it is now established that authenticationConfig is VESTIGIAL (no code authenticates from it; AuthenticationRuntime moved to configuration.authentication.* in b6470597, 2024-11-19). It is therefore NOT migrated to a credentialRef — a minted ref would never be resolved by anything — but REMOVED. That removal is per-instance and human-gated behind `occ openconnector:authentication-config --remove-authentication-config`, and deliberately NOT part of any repair step: the four fields above were migrated (their values survive in the broker) so an unattended on-upgrade drop loses nothing, whereas clearing authenticationConfig DELETES the only copy and must require human intent every time. authenticationConfig MUST STAY DECLARED HERE for exactly the same setProperties() prune reason as the four — an instance that never opted in must not have the property pruned from under it by a version-bumping import.",
         "slug": "source",
@@ -7033,6 +7241,132 @@
       {
         "@self": {
           "register": "integriq",
+          "schema": "sbr_filing",
+          "slug": "sbr-filing-adviesbureau-kade-ob-2026-q3"
+        },
+        "objectUri": "/objects/vat-return/00000000-0000-0000-0000-0000000000a3",
+        "objectType": "VATReturn",
+        "sourceApp": "shillinq",
+        "filingType": "ob-aangifte",
+        "recipient": "belastingdienst",
+        "payloadFileUri": "/admin/files/Belastingaangiften/Adviesbureau Kade BV OB 2026-Q3.xbrl",
+        "identityNumber": "001234567B01",
+        "identityType": "Fi",
+        "deliveryReference": "LOG-SBR-3F2A9C41D07E",
+        "status": "accepted",
+        "statusHistory": [
+          {
+            "status": "delivered",
+            "code": "",
+            "description": "",
+            "at": "2026-10-28T10:14:02+01:00",
+            "errors": []
+          },
+          {
+            "status": "accepted",
+            "code": "500",
+            "description": "Verwerking gelukt",
+            "at": "2026-10-28T10:24:37+01:00",
+            "errors": []
+          }
+        ],
+        "errors": [],
+        "attempts": [
+          {
+            "at": "2026-10-28T10:14:02+01:00",
+            "error": ""
+          }
+        ],
+        "channelStatusCount": 2
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "sbr_filing",
+          "slug": "sbr-filing-adviesbureau-kade-kvk-2025"
+        },
+        "objectUri": "/objects/annual-report/00000000-0000-0000-0000-0000000000b7",
+        "objectType": "AnnualReport",
+        "sourceApp": "shillinq",
+        "filingType": "kvk-deponering",
+        "recipient": "kvk",
+        "payloadFileUri": "/admin/files/Jaarverantwoording/Adviesbureau Kade BV jaarrekening 2025.xbrl",
+        "identityNumber": "12345678",
+        "identityType": "KvK",
+        "deliveryReference": "LOG-SBR-8C51E0B27A93",
+        "status": "delivered",
+        "statusHistory": [
+          {
+            "status": "delivered",
+            "code": "",
+            "description": "",
+            "at": "2026-11-12T15:41:19+01:00",
+            "errors": []
+          }
+        ],
+        "errors": [],
+        "attempts": [
+          {
+            "at": "2026-11-12T15:41:19+01:00",
+            "error": ""
+          }
+        ],
+        "channelStatusCount": 1
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "sbr_filing",
+          "slug": "sbr-filing-bakkerij-de-linde-ob-2026-q3"
+        },
+        "objectUri": "/objects/vat-return/00000000-0000-0000-0000-0000000000c4",
+        "objectType": "VATReturn",
+        "sourceApp": "shillinq",
+        "filingType": "ob-aangifte",
+        "recipient": "belastingdienst",
+        "payloadFileUri": "/admin/files/Belastingaangiften/Bakkerij De Linde OB 2026-Q3.xbrl",
+        "identityNumber": "007654321B01",
+        "identityType": "Fi",
+        "deliveryReference": "LOG-SBR-D4E7106B95C2",
+        "status": "rejected",
+        "statusHistory": [
+          {
+            "status": "delivered",
+            "code": "",
+            "description": "",
+            "at": "2026-10-30T09:02:48+01:00",
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "code": "410",
+            "description": "Verwerking mislukt",
+            "at": "2026-10-30T09:11:05+01:00",
+            "errors": [
+              {
+                "code": "BD-OB-0042",
+                "text": "Het totaal van de verschuldigde omzetbelasting sluit niet aan op de rubrieken."
+              }
+            ]
+          }
+        ],
+        "errors": [
+          {
+            "code": "BD-OB-0042",
+            "text": "Het totaal van de verschuldigde omzetbelasting sluit niet aan op de rubrieken."
+          }
+        ],
+        "attempts": [
+          {
+            "at": "2026-10-30T09:02:48+01:00",
+            "error": ""
+          }
+        ],
+        "channelStatusCount": 2
+      },
+      {
+        "@self": {
+          "register": "integriq",
           "schema": "api_product",
           "slug": "api-product-voorbeeld-name-1-1"
         },
@@ -12877,6 +13211,290 @@
         "environment": "1",
         "gatewayApiId": "vergunningen",
         "lastSeen": "2026-11-13T06:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "catalogi_binding",
+          "slug": "catalogi-binding-catalogi-binding-1-1"
+        },
+        "publishedUuid": "00000000-0000-4000-8000-000000000000",
+        "register": "Voorbeeld Register 1",
+        "schema": "Voorbeeld Schema 1",
+        "domein": "Voorb",
+        "rsin": "012345678",
+        "naam": "Voorbeeld Naam 1",
+        "fieldMap": {},
+        "clients": [
+          {
+            "clientId": "Voorbeeld Clientid 1",
+            "scopes": [
+              "Voorbeeld Scopes 1"
+            ],
+            "concepts": false
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "catalogi_binding",
+          "slug": "catalogi-binding-catalogi-binding-2-2"
+        },
+        "publishedUuid": "00000000-0000-4000-8000-000000000001",
+        "register": "Voorbeeld Register 2",
+        "schema": "Voorbeeld Schema 2",
+        "domein": "Voorb",
+        "rsin": "123456789",
+        "naam": "Voorbeeld Naam 2",
+        "fieldMap": {},
+        "clients": [
+          {
+            "clientId": "Voorbeeld Clientid 2",
+            "scopes": [
+              "Voorbeeld Scopes 2"
+            ],
+            "concepts": false
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "catalogi_binding",
+          "slug": "catalogi-binding-catalogi-binding-3-3"
+        },
+        "publishedUuid": "00000000-0000-4000-8000-000000000002",
+        "register": "Voorbeeld Register 3",
+        "schema": "Voorbeeld Schema 3",
+        "domein": "Voorb",
+        "rsin": "234567890",
+        "naam": "Voorbeeld Naam 3",
+        "fieldMap": {},
+        "clients": [
+          {
+            "clientId": "Voorbeeld Clientid 3",
+            "scopes": [
+              "Voorbeeld Scopes 3"
+            ],
+            "concepts": false
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "product_change_notice",
+          "slug": "product-change-notice-product-change-notice-1-1"
+        },
+        "product": "00000000-0000-4000-8000-000000000000",
+        "recipientUserId": "Voorbeeld Recipientuserid 1",
+        "kind": "deprecated",
+        "uuid": "Voorbeeld Uuid 1",
+        "productName": "Voorbeeld Productname 1",
+        "subscription": "00000000-0000-4000-8000-000000000000",
+        "message": "Voorbeeld Message 1",
+        "effectiveDate": "2026-03-01T09:00:00+00:00",
+        "sentAt": "2026-03-01T09:00:00+00:00",
+        "created": "2026-03-01T09:00:00+00:00",
+        "updated": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "product_change_notice",
+          "slug": "product-change-notice-product-change-notice-2-2"
+        },
+        "product": "00000000-0000-4000-8000-000000000001",
+        "recipientUserId": "Voorbeeld Recipientuserid 2",
+        "kind": "sunset-date-set",
+        "uuid": "Voorbeeld Uuid 2",
+        "productName": "Voorbeeld Productname 2",
+        "subscription": "00000000-0000-4000-8000-000000000001",
+        "message": "Voorbeeld Message 2",
+        "effectiveDate": "2026-03-02T09:00:00+00:00",
+        "sentAt": "2026-03-02T09:00:00+00:00",
+        "created": "2026-03-02T09:00:00+00:00",
+        "updated": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "product_change_notice",
+          "slug": "product-change-notice-product-change-notice-3-3"
+        },
+        "product": "00000000-0000-4000-8000-000000000002",
+        "recipientUserId": "Voorbeeld Recipientuserid 3",
+        "kind": "new-version",
+        "uuid": "Voorbeeld Uuid 3",
+        "productName": "Voorbeeld Productname 3",
+        "subscription": "00000000-0000-4000-8000-000000000002",
+        "message": "Voorbeeld Message 3",
+        "effectiveDate": "2026-03-03T09:00:00+00:00",
+        "sentAt": "2026-03-03T09:00:00+00:00",
+        "created": "2026-03-03T09:00:00+00:00",
+        "updated": "2026-03-03T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_ruleset",
+          "slug": "api-design-ruleset-gemeente-aanvullend"
+        },
+        "name": "Gemeentelijke aanvullende API-regels",
+        "version": "1.0",
+        "source": "custom",
+        "enabled": true,
+        "rules": [
+          {
+            "id": "gemeente/info-contact",
+            "title": "Every API names a contact",
+            "severity": "warning",
+            "given": "$.info",
+            "then": {
+              "field": "contact",
+              "function": "truthy"
+            },
+            "message": "The API description has no contact."
+          },
+          {
+            "id": "gemeente/servers-https",
+            "title": "Servers use https",
+            "severity": "error",
+            "given": "$.servers[*].url",
+            "then": {
+              "function": "pattern",
+              "functionOptions": {
+                "match": "^https://"
+              }
+            },
+            "message": "A server URL does not use https."
+          },
+          {
+            "id": "gemeente/privacy-review",
+            "title": "A privacy officer reviewed the API",
+            "severity": "info",
+            "manual": true
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_ruleset",
+          "slug": "api-design-ruleset-regio-beveiliging"
+        },
+        "name": "Regionale beveiligingsregels voor API's",
+        "version": "2.1",
+        "source": "custom",
+        "enabled": true,
+        "rules": [
+          {
+            "id": "regio/security-schemes",
+            "title": "Every API declares a security scheme",
+            "severity": "error",
+            "given": "$.components",
+            "then": {
+              "field": "securitySchemes",
+              "function": "truthy"
+            },
+            "message": "The API description declares no security scheme."
+          },
+          {
+            "id": "regio/info-license",
+            "title": "Every API names its licence",
+            "severity": "warning",
+            "given": "$.info",
+            "then": {
+              "field": "license",
+              "function": "truthy"
+            },
+            "message": "The API description names no licence."
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_ruleset",
+          "slug": "api-design-ruleset-documentatie-concept"
+        },
+        "name": "Documentatieregels (concept)",
+        "version": "0.9",
+        "source": "custom",
+        "enabled": false,
+        "rules": [
+          {
+            "id": "documentatie/info-description",
+            "title": "Every API has a description",
+            "severity": "info",
+            "given": "$.info",
+            "then": {
+              "field": "description",
+              "function": "truthy"
+            },
+            "message": "The API description has no description text."
+          },
+          {
+            "id": "documentatie/plain-language-review",
+            "title": "A writer checked the texts for plain language",
+            "severity": "info",
+            "manual": true
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_finding",
+          "slug": "api-design-finding-voorbeeld-1-trailing-slash"
+        },
+        "product": "00000000-0000-4000-8000-000000000000",
+        "productVersion": "1.0.0",
+        "ruleset": "nl-api-design-rules",
+        "ruleId": "/core/no-trailing-slash",
+        "severity": "error",
+        "path": "/paths/~1zaken~1",
+        "message": "Leave off trailing slashes from URIs",
+        "url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/no-trailing-slash",
+        "status": "open",
+        "checkedAt": "2026-11-12T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_finding",
+          "slug": "api-design-finding-voorbeeld-1-version-header"
+        },
+        "product": "00000000-0000-4000-8000-000000000000",
+        "productVersion": "1.0.0",
+        "ruleset": "nl-api-design-rules",
+        "ruleId": "/core/version-header",
+        "severity": "warning",
+        "path": "/paths/~1zaken/get/responses/200/headers",
+        "message": "Return the full version number in a response header",
+        "url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/version-header",
+        "status": "waived",
+        "waivedBy": "admin",
+        "waiveReason": "The gateway adds the API-Version header to every response.",
+        "waivedAt": "2026-11-12T10:15:00+00:00",
+        "checkedAt": "2026-11-12T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_finding",
+          "slug": "api-design-finding-voorbeeld-3-contact"
+        },
+        "product": "00000000-0000-4000-8000-000000000002",
+        "productVersion": "1.0.0",
+        "ruleset": "Gemeentelijke aanvullende API-regels",
+        "ruleId": "gemeente/info-contact",
+        "severity": "warning",
+        "path": "/info",
+        "message": "The API description has no contact.",
+        "status": "open",
+        "checkedAt": "2026-11-13T08:30:00+00:00"
       }
     ]
   }

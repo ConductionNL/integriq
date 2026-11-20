@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Consumer;
 
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\Auth\ClientCertificate;
+use OCA\Integriq\Service\OAuth\IssuerKeyService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\AuthenticationException as OpenRegisterAuthenticationException;
 use OCA\OpenRegister\Service\AuthorizationService;
@@ -51,6 +53,10 @@ use OCP\IUserSession;
  * or looser check.
  *
  * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ *
+ * It bridges to each of OpenRegister's credential checks, so it depends on each of them.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterface {
 
@@ -98,13 +104,17 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 * @param AuthorizationService $authorization OpenRegister's credential checks.
 	 * @param ObjectService        $objectService OpenRegister's object service, read by the consumer source.
 	 * @param IUserSession         $userSession   Nextcloud user session, cleared when the lifetime cap refuses.
-	 * @param ConsumerKeySourceResolver|null $keySources Resolves the key of a consumer with key source `jwks` or `oidc`.
+	 * @param ConsumerCredentials|null       $credentials The consumers' credentials list rules.
+	 * @param ConsumerKeySourceResolver|null $keySources  Resolves the key of a consumer with key source `jwks` or `oidc`.
+	 * @param IssuerKeyService|null          $ownIssuer   Integriq's own issuer, so a token it issued is accepted (REQ-TOKV-003).
 	 */
 	public function __construct(
 		private readonly AuthorizationService $authorization,
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
+		private readonly ?ConsumerCredentials $credentials = null,
 		private readonly ?ConsumerKeySourceResolver $keySources = null,
+		private readonly ?IssuerKeyService $ownIssuer = null,
 	) {
 	}//end __construct()
 
@@ -166,6 +176,58 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 
 		$this->resolvedConsumer = $this->record();
 	}//end authorizeApiKey()
+
+	/**
+	 * Check a web-server-verified client certificate against the consumers' pinned certificates.
+	 *
+	 * OpenRegister has no certificate check, so integriq matches the
+	 * certificate against its consumers' `clientCertificate` credentials and
+	 * records the consumer it belongs to as the resolved one, for rate limits,
+	 * quotas and scopes.
+	 *
+	 * @param ClientCertificate|null $certificate The verified certificate, or null when the request carried none.
+	 * @param array                  $consumers   Consumers allowed on the endpoint, by name or uuid; empty allows any.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When there is no certificate, it is pinned to no consumer, or that consumer is not allowed.
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	public function authorizeClientCertificate(?ClientCertificate $certificate, array $consumers = []): void {
+		$this->resolvedConsumer = null;
+		if ($certificate === null) {
+			throw new AuthenticationException(message: 'No verified client certificate', details: []);
+		}
+
+		$consumer = $this->pinnedConsumer(certificate: $certificate);
+		if ($consumer === null) {
+			throw new AuthenticationException(
+				message: 'The client certificate is not pinned to a consumer',
+				details: ['fingerprint' => $certificate->fingerprint]
+			);
+		}
+
+		(new ConsumerAllowList())->assertAllowed(consumer: $consumer, consumers: $consumers);
+
+		$this->resolvedConsumer = $consumer;
+	}//end authorizeClientCertificate()
+
+	/**
+	 * The consumer a credential of which pins the certificate, or null.
+	 *
+	 * @param ClientCertificate $certificate The verified certificate.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function pinnedConsumer(ClientCertificate $certificate): ?ObjectEntity {
+		$source = $this->source();
+		if (($source instanceof IntegriqConsumerSource) === false) {
+			return null;
+		}
+
+		return $source->findByClientCertificate(certificate: $certificate);
+	}//end pinnedConsumer()
 
 	/**
 	 * Check HTTP Basic credentials against Nextcloud's users.
@@ -388,7 +450,12 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	private function source(): ConsumerSource {
 		$this->assertEntryPoints();
 		if ($this->consumerSource === null) {
-			$this->consumerSource = new IntegriqConsumerSource(objectService: $this->objectService, keySources: $this->keySources);
+			$this->consumerSource = new IntegriqConsumerSource(
+				objectService: $this->objectService,
+				credentials: $this->credentials,
+				keySources: $this->keySources,
+				ownIssuer: $this->ownIssuer
+			);
 		}
 
 		return $this->consumerSource;

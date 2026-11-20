@@ -1,0 +1,44 @@
+{
+	"openapi": "3.0.3",
+	"info": {
+		"title": "Besluiten API",
+		"version": "1.2.0",
+		"contact": {"name": "Gemeente Voorbeeld", "email": "api@voorbeeld.nl", "url": "https://voorbeeld.nl/api"}
+	},
+	"servers": [{"url": "https://api.voorbeeld.nl/besluiten/v1"}],
+	"paths": {
+		"/besluiten": {
+			"summary": "Besluiten",
+			"get": {
+				"parameters": [{"name": "zaakType", "in": "query", "schema": {"type": "string"}}],
+				"responses": {
+					"200": {"$ref": "#/components/responses/BesluitenLijst"},
+					"400": {"$ref": "#/components/responses/Probleem"}
+				}
+			},
+			"post": {
+				"responses": {
+					"201": {"headers": {"API-Version": {"schema": {"type": "string"}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Besluit"}}}},
+					"400": {"$ref": "#/components/responses/Probleem"}
+				}
+			}
+		},
+		"/besluiten/{id}/_publiceer": {
+			"put": {
+				"responses": {
+					"204": {"headers": {"api-version": {"schema": {"type": "string"}}}},
+					"400": {"$ref": "#/components/responses/Probleem"}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"Besluit": {"type": "object", "properties": {"id": {"type": "string"}}}
+		},
+		"responses": {
+			"BesluitenLijst": {"headers": {"API-Version": {"schema": {"type": "string"}}}, "content": {"application/json": {"schema": {"type": "object"}}}},
+			"Probleem": {"content": {"application/problem+json": {"schema": {"type": "object"}}}}
+		}
+	}
+}

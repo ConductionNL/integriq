@@ -1,0 +1,95 @@
+{
+	"_comment": "ADR-037 register fragment for openspec/changes/gateway-declared-data-feeds. `endpoint.feed` holds the dataset an app declared in its lib/Settings/feeds.json; FeedDeclarationService writes it with targetType `feed`, and EndpointService answers such an endpoint through FeedRequestHandler (GET only, declared fields, paging). `consumer.feedScopes` binds a consumer, per declaring app, to the scope values it may read (for shillinq: administration ids); a consumer without a binding for an app is refused on every feed of that app (REQ-DDF-003). No version bump: other fragments set these schemas' versions later in file order, and the import's content-differs path picks the new properties up.",
+	"components": {
+		"schemas": {
+			"endpoint": {
+				"properties": {
+					"feed": {
+						"type": "object",
+						"title": "Data feed",
+						"description": "Set by the feed declaration sync: the declared dataset this endpoint serves. Edit the declaring app's feeds.json, not this value.",
+						"properties": {
+							"app": {
+								"type": "string",
+								"title": "Declaring app",
+								"description": "The app that declares this feed in its lib/Settings/feeds.json."
+							},
+							"key": {
+								"type": "string",
+								"title": "Feed key",
+								"description": "The dataset key: the last path segment of the feed address."
+							},
+							"title": {
+								"type": "string",
+								"title": "Feed title",
+								"description": "The feed's name as its app declares it."
+							},
+							"register": {
+								"type": "string",
+								"title": "Register",
+								"description": "The OpenRegister register the feed reads from."
+							},
+							"schema": {
+								"type": "string",
+								"title": "Schema",
+								"description": "The OpenRegister schema the feed reads from."
+							},
+							"fields": {
+								"type": "array",
+								"title": "Fields",
+								"description": "The fields the feed answers with.",
+								"items": {
+									"type": "string"
+								}
+							},
+							"filter": {
+								"type": "object",
+								"title": "Fixed filter",
+								"description": "Equality filters applied to every request of this feed."
+							},
+							"scope": {
+								"type": "object",
+								"title": "Scope",
+								"description": "The query parameter a consumer names its scope with, and the field it filters.",
+								"properties": {
+									"parameter": {
+										"type": "string",
+										"title": "Scope parameter",
+										"description": "The query parameter that names the scope."
+									},
+									"field": {
+										"type": "string",
+										"title": "Scope field",
+										"description": "The field the scope filters on."
+									}
+								}
+							},
+							"pageSize": {
+								"type": "integer",
+								"title": "Page size",
+								"description": "The most items one page of the feed answers with.",
+								"minimum": 1
+							}
+						}
+					}
+				}
+			},
+			"consumer": {
+				"properties": {
+					"feedScopes": {
+						"type": "object",
+						"title": "Feed scopes",
+						"description": "Per declaring app, the scope values this consumer may read through that app's data feeds, e.g. {\"shillinq\": [\"<administration id>\"]}. Without an entry for an app every feed of that app answers 403.",
+						"additionalProperties": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"minLength": 1
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
