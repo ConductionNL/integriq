@@ -9,7 +9,7 @@
   personal_data_fields). The default list (BSN, name, address, date of birth,
   e-mail address, telephone number) always applies and is shown read-only.
 
-  @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+  @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 -->
 <template>
 	<section
@@ -78,7 +78,7 @@ export default {
 	computed: {
 		/**
 		 * @return {string} The setting endpoint.
-		 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+		 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 		 */
 		settingUrl() {
 			return URL
@@ -93,7 +93,7 @@ export default {
 		 *
 		 * @param {object|null} data The stored setting.
 		 * @return {void}
-		 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+		 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 		 */
 		applyStored(data) {
 			this.defaults = Array.isArray(data?.defaults) ? data.defaults : []
@@ -104,7 +104,7 @@ export default {
 		 * What to store.
 		 *
 		 * @return {object} The request body.
-		 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+		 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 		 */
 		settingBody() {
 			return {

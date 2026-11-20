@@ -91,7 +91,7 @@ class BodyRedactor {
 	 *                                                 administrator's additions; the default
 	 *                                                 list when null.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function __construct(
 		private readonly ?PersonalDataFields $sensitiveFields = null,
@@ -108,7 +108,7 @@ class BodyRedactor {
 	 *
 	 * @return string The body with credential material replaced.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function redactBody(string $body, bool $personalData = true): string {
 		// Personal data in the same pass (REQ-PDM-001), first, while a JSON or
@@ -169,7 +169,7 @@ class BodyRedactor {
 	 *
 	 * @return array<string,mixed> The redacted context.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function redactContext(array $context, bool $personalData = true): array {
 		$redacted = [];
@@ -211,7 +211,7 @@ class BodyRedactor {
 	 *
 	 * @return array<string,mixed> The masked copy.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function maskPersonalData(array $context): array {
 		$masked = $this->registry()->maskPersonalData(value: $context);

@@ -371,7 +371,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return ProductPolicyService The policy.
 	 *
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	private function productPolicy(): ProductPolicyService {
 		if ($this->productPolicy === null) {

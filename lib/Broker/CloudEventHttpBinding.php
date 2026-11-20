@@ -129,7 +129,7 @@ class CloudEventHttpBinding implements CloudEventHttpBindingInterface {
 	 *
 	 * @throws CloudEventRefusedException When the event cannot be read or misses a required attribute.
 	 *
-	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 	 */
 	public function decode(string $body, callable $headerOf): array {
 		$contentType = trim((string)$headerOf('Content-Type'));

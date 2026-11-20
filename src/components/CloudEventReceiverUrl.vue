@@ -11,7 +11,7 @@
   Without a source id (the endpoint page) it shows the URL pattern and says
   where the exact URL is found.
 
-  @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+  @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 -->
 <template>
 	<section class="cloudEventReceiverUrl" data-testid="cloudevent-receiver-url">
@@ -76,7 +76,7 @@ export default {
 		 * Whether a source is known, so its exact URL can be shown.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+		 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 		 */
 		hasSource() {
 			return /^[A-Za-z0-9-]+$/.test(this.sourceId || '')
@@ -86,7 +86,7 @@ export default {
 		 * The absolute receiver URL of the source, or the pattern without one.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+		 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 		 */
 		url() {
 			const path = this.hasSource
@@ -101,7 +101,7 @@ export default {
 		 * Forget a previous copy when another source is shown.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+		 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 		 */
 		sourceId() {
 			this.copied = false
@@ -115,7 +115,7 @@ export default {
 		 * Copy the exact receiver URL.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+		 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 		 */
 		async copy() {
 			try {

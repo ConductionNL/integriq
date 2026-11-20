@@ -629,7 +629,7 @@ class EventsController extends Controller {
 	 * @return JSONResponse|null A 400 naming the refused rule, or null when the
 	 *                           body has no sink or its sink may be called.
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private function refuseUnsafeSink(array $data): ?JSONResponse {
 		$sink = ($data['sink'] ?? null);

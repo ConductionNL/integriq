@@ -15,7 +15,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+ * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ interface CloudEventReceiverInterface {
 	 *
 	 * @throws \Exception When the event cannot be stored or routed.
 	 *
-	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 	 */
 	public function receive(string $receiver, array $cloudEvent): ?ObjectEntity;
 }

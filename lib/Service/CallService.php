@@ -1679,7 +1679,7 @@ class CallService implements CallServiceInterface {
 	 *
 	 * @return array The masked copy.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	private function maskPersonalData(array $exchange): array {
 		$masked = $this->sensitiveFieldRegistry->maskPersonalData(value: $exchange);

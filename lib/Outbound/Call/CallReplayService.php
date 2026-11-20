@@ -626,7 +626,7 @@ class CallReplayService implements CallReplayServiceInterface {
 	 *
 	 * @return bool True when a string in it holds the mask placeholder.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	private static function holdsMaskedValue(mixed $value): bool {
 		if (is_string($value) === true) {

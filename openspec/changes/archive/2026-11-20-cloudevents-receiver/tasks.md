@@ -9,4 +9,4 @@
 ## 2. Hand-over
 
 - [x] 2.1 `@spec` tags and an e2e test or a reason-bearing `@e2e exclude` per scenario.
-- [ ] 2.2 When archiving, set `cloud-event-management` REQ-CE-001 to point at this requirement; its spec says `status: implemented` while no receiver existed.
+- [x] 2.2 When archiving, set `cloud-event-management` REQ-CE-001 to point at this requirement; its spec says `status: implemented` while no receiver existed.

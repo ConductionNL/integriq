@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/events-async-api-products/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-5
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
  * CloudEvents 1.0 envelope as payload, and each channel gets a push and a
  * pull operation.
  *
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
  */
 class AsyncApiDocumentService implements AsyncApiDocumentServiceInterface {
 
@@ -58,7 +58,7 @@ class AsyncApiDocumentService implements AsyncApiDocumentServiceInterface {
 	 *
 	 * @return ObjectEntity|null The row, or null when there is none.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
 	 */
 	public function latestVersion(array $versions): ?ObjectEntity {
 		$latest = null;
@@ -83,7 +83,7 @@ class AsyncApiDocumentService implements AsyncApiDocumentServiceInterface {
 	 *
 	 * @return array<string,mixed> The document.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
 	 */
 	public function build(ObjectEntity $product, string $baseUrl): array {
 		$data = $product->getObject();

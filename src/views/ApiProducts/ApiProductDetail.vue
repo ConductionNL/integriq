@@ -473,12 +473,12 @@ export default {
 				: []
 		},
 
-		/** @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001 */
+		/** @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001 */
 		productChannels() {
 			return channelsOf(this.product)
 		},
 
-		/** @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004 */
+		/** @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004 */
 		asyncApiUrl() {
 			return generateUrl(`/apps/integriq/api/products/${encodeURIComponent(this.product?.productSlug || '')}/asyncapi.json`)
 		},
@@ -753,7 +753,7 @@ export default {
 		 * Add the channel in the form, or save the one being edited.
 		 *
 		 * @return {Promise<void>} Resolves once the product has been saved and reloaded.
-		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
 		 */
 		async saveChannel() {
 			const result = withChannel(this.productChannels, { draft: this.newChannel, editing: this.editingChannel })
@@ -776,7 +776,7 @@ export default {
 		 *
 		 * @param {object} channel The channel.
 		 * @return {void}
-		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
 		 */
 		editChannel(channel) {
 			this.newChannel = draftOf(channel)
@@ -789,7 +789,7 @@ export default {
 		 *
 		 * @param {string} slug The channel slug.
 		 * @return {Promise<void>} Resolves once the product has been saved and reloaded.
-		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
 		 */
 		async removeChannel(slug) {
 			await this.saveProductField('channels', withoutChannel(this.productChannels, slug))
@@ -802,7 +802,7 @@ export default {
 		 * Empty the channel form.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
 		 */
 		resetChannelForm() {
 			this.newChannel = draftOf(null)

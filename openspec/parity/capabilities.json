@@ -5580,8 +5580,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "Not built: no inbound CloudEvents receiver exists (decisions 389 and 392). No dedicated inbound CloudEvents decoder exists: lib/Broker/CloudEventHttpBinding.php only has render() (outbound encoding), no decode/parse method (`grep -n 'function ' lib/Broker/CloudEventHttpBinding.php` shows render/dataContentType/binaryBody/headerValue only). The generic inbound path is an Endpoint + Rule (lib/Service/EndpointService.php handleRuleProcessing()): any outside system can POST a body (including a CloudEvent JSON payload) to an Endpoint, and a Rule can act on it (mapping/synchronization/job/etc). lib/Controller/NotificatiesSubscriberController.php's callback() is the one purpose-built inbound-notification-to-CloudEvent normalizer, but it is ZGW-specific (see evt-zgw-subscribe).",
 				"spec": "openspec/specs/events-cloudevents",
-				"requirement": "openspec/changes/cloudevents-receiver/specs/events-cloudevents :: Outside systems SHALL send CloudEvents to a receiver that checks and routes them (REQ-017)",
-				"plan": "openspec/changes/cloudevents-receiver"
+				"requirement": "openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents :: Outside systems SHALL send CloudEvents to a receiver that checks and routes them (REQ-017)",
+				"plan": "openspec/changes/archive/2026-11-20-cloudevents-receiver"
 			},
 			"reachedOn": "generic: any registered Endpoint URL, acted on via its attached Rules",
 			"note": "There is no CloudEvents-aware inbound receiver that validates ce-id/ce-type/ce-source and turns it into an integriq event/subscription match; only generic endpoint+rule handling, or the ZGW-specific Notificaties callback.",
@@ -6080,11 +6080,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "`grep -in 'kafka\\|topic\\|asyncapi\\|stream' src/views/ApiProducts/ApiProductDetail.vue lib/Controller/ApiProduct*.php lib/Service/ApiProduct*.php` = 0 hits. The API Products/gateway feature (api-product-gateway) governs REST endpoints only; no AsyncAPI-style governance of the Kafka/RabbitMQ broker transports (evt-broker) exists. Specified in openspec/changes/events-async-api-products/ (OpenSpec pass 2026-09-27).",
+				"evidence": "`grep -in 'kafka\\|topic\\|asyncapi\\|stream' src/views/ApiProducts/ApiProductDetail.vue lib/Controller/ApiProduct*.php lib/Service/ApiProduct*.php` = 0 hits. The API Products/gateway feature (api-product-gateway) governs REST endpoints only; no AsyncAPI-style governance of the Kafka/RabbitMQ broker transports (evt-broker) exists. Specified in openspec/changes/archive/2026-11-20-events-async-api-products/ (OpenSpec pass 2026-09-27).",
 				"change": "events-async-api-products",
 				"requirement": [
-					"openspec/changes/events-async-api-products/specs/api-product-gateway :: An API product can declare event channels (REQ-AAPI-001)",
-					"openspec/changes/events-async-api-products/specs/api-product-gateway :: A consumer reaches a channel under the product's policies (REQ-AAPI-002)"
+					"openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway :: An API product can declare event channels (REQ-AAPI-001)",
+					"openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway :: A consumer reaches a channel under the product's policies (REQ-AAPI-002)"
 				]
 			},
 			"reachedOn": "nothing reaches it",
@@ -6673,11 +6673,11 @@
 				"evidence": "Not built: lib/Service/Security/SensitiveFieldRegistry.php masks secret-shaped fields only (token, key, secret, password); a BSN, name or address in a logged body is stored as plain text. Planned in call-log-personal-data-masking (decision 389, verify round 2026-11-12). Code that exists: lib/Outbound/BodyRedactor.php: 'Removes credential material from a body before it is stored... Redaction runs before the write, never on read... Mirrors the snapshot redaction of execution-trace REQ-003.' Used by lib/Outbound/MessageRecorder.php and lib/Outbound/Call/CallRecorder.php. TraceDetail's own step timeline separately redacts input/output before storage (src/manifest.json:3266).",
 				"spec": "openspec/specs/http-call-engine",
 				"requirement": [
-					"openspec/changes/call-log-personal-data-masking/specs/outbound-call-log :: Personal data is masked before a body is logged (REQ-PDM-001)",
+					"openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log :: Personal data is masked before a body is logged (REQ-PDM-001)",
 					"openspec/specs/http-call-engine :: REQ-006 — CallLog request/response redaction before persistence"
 				],
 				"change": "call-log-personal-data-masking",
-				"plan": "openspec/changes/call-log-personal-data-masking"
+				"plan": "openspec/changes/archive/2026-11-20-call-log-personal-data-masking"
 			},
 			"reachedOn": "automatic on write, no toggle needed; redacted values are what SourceLogs/EndpointLogs/OutboundMessages/TraceDetail ever display",
 			"provider": "integriq",
@@ -8713,8 +8713,8 @@
 				"state": "built",
 				"owner": "nextcloud/server",
 				"evidence": "Integriq's own routes (e.g. appinfo/routes.php:584-585 user#login/logout) and its admin settings page (src/main.js:178 registers /settings/admin/integriq) sit entirely behind Nextcloud's own session/auth middleware; no integriq-specific login bypass or custom auth guard was found anywhere in lib/Controller/ or lib/AppInfo/Application.php.",
-				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The admin pages sit behind the Nextcloud login (REQ-PLTP-003)"
+				"spec": "openspec/specs/platform-properties",
+				"requirement": "openspec/specs/platform-properties :: The admin pages sit behind the Nextcloud login (REQ-PLTP-003)"
 			},
 			"reachedOn": "the standard Nextcloud login page/SSO redirect (user_oidc/user_saml, if enabled), then Beheer > Integriq at /settings/admin/integriq",
 			"note": "This is platform behaviour inherited from Nextcloud, not integriq-specific code; not independently verified beyond confirming no custom bypass exists.",
@@ -9990,8 +9990,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/info.xml:4 id integriq, :90 nextcloud min 32 max 35, :42 php 8.3; licence EUPL-1.2 (info.xml:23); hard dependency on openregister recorded in the comment at info.xml:34-41",
-				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The app runs on the customer's own Nextcloud (REQ-PLTP-001)"
+				"spec": "openspec/specs/platform-properties",
+				"requirement": "openspec/specs/platform-properties :: The app runs on the customer's own Nextcloud (REQ-PLTP-001)"
 			},
 			"reachedOn": "Nextcloud app install (apps page / occ app:enable integriq)",
 			"note": "Runs inside any self-hosted Nextcloud 32 to 35 with OpenRegister installed; the openregister dependency is not enforced by info.xml, so installing without it leaves every entity without storage.",
@@ -10028,8 +10028,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/info.xml:43 pgsql min 10, :44 sqlite, :45 mysql min 8.0; storage is OpenRegister objects (single migration lib/Migration/Version2Date20260908000000.php); lib/Service/SettingsService.php:80 branches PostgreSQL vs DATE_ADD for the rebase SQL",
-				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The app runs on the Nextcloud database (REQ-PLTP-002)"
+				"spec": "openspec/specs/platform-properties",
+				"requirement": "openspec/specs/platform-properties :: The app runs on the Nextcloud database (REQ-PLTP-002)"
 			},
 			"reachedOn": "Nextcloud install on any of the three databases",
 			"note": "All three are declared and data lives in OpenRegister tables. The one raw-SQL path, SettingsService rebase, emits DATE_ADD for every non-Postgres platform (SQLite has no DATE_ADD) and targets legacy openconnector_* tables, but no page calls it.",

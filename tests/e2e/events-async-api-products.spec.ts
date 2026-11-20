@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md
  * (REQ-AAPI-001, the administrator adds a channel on the product detail page).
  *
  * The consumer routes (403 subscription_required, the shared tier budget, the
@@ -119,7 +119,7 @@ test.describe('API product channels', () => {
 		}
 	})
 
-	// @e2e openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#scenario-an-administrator-adds-a-publications-channel
+	// @e2e openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#scenario-an-administrator-adds-a-publications-channel
 	test('an administrator adds a publications channel and it is listed with its type', async ({
 		page,
 		request,
@@ -151,7 +151,7 @@ test.describe('API product channels', () => {
 		await expect(reloaded.getByRole('row').filter({ hasText: CHANNEL_TITLE })).toBeVisible()
 	})
 
-	// @e2e openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+	// @e2e openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
 	test('a second channel with the same slug is refused and nothing changes', async ({
 		page,
 		request,

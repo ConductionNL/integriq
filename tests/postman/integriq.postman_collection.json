@@ -5027,7 +5027,7 @@
     },
     {
       "name": "18 — Product channels (events-async-api-products)",
-      "description": "openspec/changes/events-async-api-products (REQ-AAPI-002, REQ-AAPI-003, REQ-AAPI-004). Hermetic: seeds its own product (one channel, a tier of 2 requests per 60 s), a JWT consumer and a product subscription, and deletes them at the end. The tier budget is shared by the channel routes: the pull and the refused subscribe spend it, the next pull is 429. That endpoints and channels share the one counter is pinned by PHPUnit on ProductPolicyService.",
+      "description": "openspec/changes/archive/2026-11-20-events-async-api-products (REQ-AAPI-002, REQ-AAPI-003, REQ-AAPI-004). Hermetic: seeds its own product (one channel, a tier of 2 requests per 60 s), a JWT consumer and a product subscription, and deletes them at the end. The tier budget is shared by the channel routes: the pull and the refused subscribe spend it, the next pull is 429. That endpoints and channels share the one counter is pinned by PHPUnit on ProductPolicyService.",
       "item": [
         {
           "name": "POST api_product with a publications channel and a 2-request tier",

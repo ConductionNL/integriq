@@ -16,7 +16,7 @@
  *
  * @link https://github.com/ConductionNL/integriq
  *
- * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+ * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCP\IRequest;
 /**
  * Reads and writes the app setting `personal_data_fields`. Admin only.
  *
- * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+ * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
  */
 class PersonalDataSettingsController extends Controller {
 
@@ -70,7 +70,7 @@ class PersonalDataSettingsController extends Controller {
 	 *
 	 * @return JSONResponse `{"defaults": [...], "added": [...]}`.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getConfig(): JSONResponse {
@@ -85,7 +85,7 @@ class PersonalDataSettingsController extends Controller {
 	 *
 	 * @return JSONResponse The stored setting, or 400 naming the field that is refused.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(): JSONResponse {

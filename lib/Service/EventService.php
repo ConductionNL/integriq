@@ -1017,7 +1017,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @return bool True when the delivery was held.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private function holdForProduct(ObjectEntity $message, array $subscriptionData): bool {
 		$held = $this->productGate?->hold(subscriptionData: $subscriptionData);
@@ -1046,7 +1046,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private function deferForQuota(ObjectEntity $message, array $held): void {
 		$messageData = $message->getObject();
@@ -1075,7 +1075,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @return string|null The refusal reason, or null when the sink may be called.
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private function refuseUnsafeSink(ObjectEntity $message, array $subscriptionData): ?string {
 		try {

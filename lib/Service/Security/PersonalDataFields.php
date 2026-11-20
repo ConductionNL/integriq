@@ -15,7 +15,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+ * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ use OCP\IAppConfig;
  * The one entry the outbound log and the settings page use, so the masker and
  * the list behind it stay inside the service layer.
  *
- * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+ * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
  */
 final class PersonalDataFields {
 
@@ -69,7 +69,7 @@ final class PersonalDataFields {
 	 *
 	 * @return mixed The masked copy.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function maskPersonalData(mixed $value): mixed {
 		return $this->list->maskPersonalData(value: $value);
@@ -82,7 +82,7 @@ final class PersonalDataFields {
 	 *
 	 * @return bool True when its value is masked.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function isPersonalDataName(string $name): bool {
 		return $this->list->isPersonalDataName(name: $name);
@@ -93,7 +93,7 @@ final class PersonalDataFields {
 	 *
 	 * @return array<int, string> The names.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function addedPersonalDataFields(): array {
 		return $this->list->addedPersonalDataFields();
@@ -104,7 +104,7 @@ final class PersonalDataFields {
 	 *
 	 * @return array<int, string> The names.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public static function defaults(): array {
 		return PersonalDataFieldList::DEFAULT_FIELDS;
@@ -117,7 +117,7 @@ final class PersonalDataFields {
 	 *
 	 * @return string The normalised name.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public static function normalise(string $name): string {
 		return PersonalDataMasker::normalise(name: $name);

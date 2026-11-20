@@ -9,7 +9,7 @@
  * exact receiver URL with a copy action, the endpoint page shows the pattern,
  * and the manifest places the widget on both pages.
  *
- * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+ * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
