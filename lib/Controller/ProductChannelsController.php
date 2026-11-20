@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/events-async-api-products/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-5
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -57,7 +57,7 @@ use Throwable;
  * subscription to the product; without one the answer is 403
  * `subscription_required`, the same refusal a product endpoint gives.
  *
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One product channel surface: the AsyncAPI
  *  document, pull, subscribe and unsubscribe share the consumer, subscription and tier-budget
@@ -109,7 +109,7 @@ class ProductChannelsController extends Controller {
 	 * @return JSONResponse 200 with the document, 403 for a private product without a subscribed consumer,
 	 *                      401 for a credential that does not authenticate, 404 for an unknown product.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -147,7 +147,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return JSONResponse `{messages, cursor}`, or 401/403/404/429.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -206,7 +206,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return JSONResponse 201 with the subscription and its signing secret, or 400/401/403/404/429.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -237,7 +237,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return array<string, mixed>|null The answer, or null when it could not be saved.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private function savePushSubscription(array $data): ?array {
 		try {
@@ -278,7 +278,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return JSONResponse 200, or 401/403/404/429.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -317,7 +317,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return array<string, mixed>|JSONResponse `product`, `channel`, `consumer`, `subscription` and `headers`, or the refusal.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	private function channelAccess(string $productSlug, string $channel): array|JSONResponse {
 		$product = $this->documents->latestVersion(versions: $this->versionsOf(productSlug: $productSlug));
@@ -404,7 +404,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return JSONResponse|null The 400, or null when the sink may be called.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private function refuseSink(string $sink): ?JSONResponse {
 		if ($this->isHttpsUrl(sink: $sink) === false) {
@@ -510,7 +510,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private static function matches(mixed $row, array $wanted): bool {
 		if ($row instanceof ObjectEntity === false) {
@@ -584,7 +584,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return array{consumer: ObjectEntity, subscription: ObjectEntity}|JSONResponse
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	private function subscriber(ObjectEntity $product): array|JSONResponse {
 		return (new ProductSubscriber(credentials: $this->credentials, policy: $this->policy))->resolve(

@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+ * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Stores a received CloudEvent once per source and id, then routes it.
  *
- * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+ * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
 class CloudEventReceiver implements CloudEventReceiverInterface {
 
@@ -75,7 +75,7 @@ class CloudEventReceiver implements CloudEventReceiverInterface {
 	 *
 	 * @throws \Exception When the event cannot be stored or routed.
 	 *
-	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 	 */
 	public function receive(string $receiver, array $cloudEvent): ?ObjectEntity {
 		$uuid = $this->uuidFor(receiver: $receiver, cloudEvent: $cloudEvent);
@@ -104,7 +104,7 @@ class CloudEventReceiver implements CloudEventReceiverInterface {
 	 *
 	 * @return string The uuid.
 	 *
-	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 	 */
 	public function uuidFor(string $receiver, array $cloudEvent): string {
 		return (string)Uuid::v5(

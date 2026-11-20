@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Decides whether a product channel's push delivery may go now.
  *
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
  */
 class ProductDeliveryGate {
 
@@ -51,7 +51,7 @@ class ProductDeliveryGate {
 	 * @param InboundRateLimitService $rateLimits The tier counters the product's endpoints spend.
 	 * @param LoggerInterface         $logger     The logger.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	public function __construct(
 		private readonly ORObjectService $objects,
@@ -72,7 +72,7 @@ class ProductDeliveryGate {
 	 * @return array{reason: string, abandon: bool, retryAfter: ?int}|null Null when the delivery may go;
 	 *   `abandon` true stops it for good, false defers it by `retryAfter` seconds.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	public function hold(array $subscriptionData): ?array {
 		$riddenOn = trim((string)($subscriptionData['productSubscription'] ?? ''));
@@ -112,7 +112,7 @@ class ProductDeliveryGate {
 	 *
 	 * @return array{reason: string, abandon: bool, retryAfter: ?int}|null Null when the delivery may go.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private function spend(ObjectEntity $product, ObjectEntity $subscription): ?array {
 		$tier = $this->policy->resolveTierPolicy(product: $product, subscription: $subscription);

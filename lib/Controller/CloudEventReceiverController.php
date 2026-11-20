@@ -22,7 +22,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+ * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
 /**
  * Receives CloudEvents from outside systems.
  *
- * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+ * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
 class CloudEventReceiverController extends Controller {
 
@@ -80,7 +80,7 @@ class CloudEventReceiverController extends Controller {
 	 *                      400 naming what is wrong, 401 without a valid signature or credential,
 	 *                      503 when it could not be stored.
 	 *
-	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

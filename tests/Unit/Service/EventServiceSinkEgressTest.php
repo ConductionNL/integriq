@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/events-async-api-products/design.md
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -42,7 +42,7 @@ use Psr\Log\LoggerInterface;
  *
  * The guard is the real one, fed IP literals, so no name is resolved.
  *
- * @spec openspec/changes/events-async-api-products/design.md
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
  */
 class EventServiceSinkEgressTest extends TestCase {
 

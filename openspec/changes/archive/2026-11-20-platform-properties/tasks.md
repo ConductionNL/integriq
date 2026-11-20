@@ -7,4 +7,4 @@
 
 ## 2. Matrix
 - [x] 2.1 Rows `plt-self-host`, `plt-databases` and `id-admin-sso` cite `built.change: platform-properties` and their requirement in `openspec/parity/capabilities.json`
-- [ ] 2.2 After merge, archive this change and repoint the three rows to `built.spec: openspec/specs/platform-properties`
+- [x] 2.2 After merge, archive this change and repoint the three rows to `built.spec: openspec/specs/platform-properties`

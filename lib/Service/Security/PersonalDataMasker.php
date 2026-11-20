@@ -23,7 +23,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+ * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ namespace OCA\Integriq\Service\Security;
  * `email`. Names match exactly, never as a substring: `zaaktypeNaam` is not a
  * name of a person.
  *
- * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+ * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
  */
 final class PersonalDataMasker {
 
@@ -94,7 +94,7 @@ final class PersonalDataMasker {
 	 *
 	 * @return string The normalised name; empty when nothing is left.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public static function normalise(string $name): string {
 		$local = $name;
@@ -113,7 +113,7 @@ final class PersonalDataMasker {
 	 *
 	 * @return boolean True when its value is masked.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function isPersonalDataName(string $name): bool {
 		return isset($this->names[self::normalise(name: $name)]);
@@ -128,7 +128,7 @@ final class PersonalDataMasker {
 	 *
 	 * @return mixed The masked copy.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function mask(mixed $value): mixed {
 		if (is_array($value) === true) {
@@ -149,7 +149,7 @@ final class PersonalDataMasker {
 	 *
 	 * @return array The masked copy.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function maskArray(array $data): array {
 		foreach ($data as $key => $value) {
@@ -173,7 +173,7 @@ final class PersonalDataMasker {
 	 *
 	 * @return string The masked body.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function maskBody(string $body): string {
 		if ($this->names === []) {
@@ -200,7 +200,7 @@ final class PersonalDataMasker {
 	 *
 	 * @return string The masked body.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function maskJson(string $body): string {
 		// Decoded without assoc so an empty object stays `{}` when written back.
@@ -233,7 +233,7 @@ final class PersonalDataMasker {
 	 *
 	 * @return string The masked body.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function maskXml(string $body): string {
 		$masked = preg_replace_callback(
@@ -262,7 +262,7 @@ final class PersonalDataMasker {
 	 *
 	 * @return string The masked URL.
 	 *
-	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
 	public function maskUrl(string $url): string {
 		$queryStart = strpos($url, '?');

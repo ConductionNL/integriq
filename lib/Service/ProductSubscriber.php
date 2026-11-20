@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use OCP\AppFramework\Http\JSONResponse;
 /**
  * The subscriber of an API product behind a bearer token.
  *
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
  */
 class ProductSubscriber {
 
@@ -60,7 +60,7 @@ class ProductSubscriber {
 	 *
 	 * @return array{consumer: ObjectEntity, subscription: ObjectEntity}|JSONResponse
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	public function resolve(string $authorization, ObjectEntity $product): array|JSONResponse {
 		$subscriptionRequired = new JSONResponse(

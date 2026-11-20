@@ -4,7 +4,7 @@
  * The channel list of an API product: a channel needs a slug in the pattern, a
  * title and a type, and a slug is unique within the version.
  *
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
  */
 import { describe, expect, it } from 'vitest'
 import { channelsOf, draftOf, parseTypes, withChannel, withoutChannel } from '../../src/views/ApiProducts/productChannels.js'

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/events-async-api-products/design.md
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  * The rules of integriq#2212: https only, and never an internal or metadata
  * address, judged on every address the host resolves to.
  *
- * @spec openspec/changes/events-async-api-products/design.md
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
  */
 class EgressGuardTest extends TestCase {
 

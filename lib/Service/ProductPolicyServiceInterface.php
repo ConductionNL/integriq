@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -38,7 +38,7 @@ interface ProductPolicyServiceInterface {
 	 * @return string The key `product:<product uuid>:consumer:<consumer uuid>`.
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	public function counterKey(ObjectEntity $product, string $consumerUuid): string;
 
@@ -53,7 +53,7 @@ interface ProductPolicyServiceInterface {
 	 * @return ObjectEntity|null The active subscription, or null.
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	public function resolveActiveSubscription(string $consumerUuid, string $productUuid): ?ObjectEntity;
 
@@ -67,7 +67,7 @@ interface ProductPolicyServiceInterface {
 	 * @return array{rateLimit: array|null, quota: array|null}|null
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	public function resolveTierPolicy(ObjectEntity $product, ObjectEntity $subscription): ?array;
 
@@ -80,7 +80,7 @@ interface ProductPolicyServiceInterface {
 	 * @return array<string, string>
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-deprecated-product-version-carries-sunset-and-deprecation-headers-req-apg-006
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	public function buildDeprecationHeaders(ObjectEntity $product): array;
 

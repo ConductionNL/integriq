@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/events-async-api-products/design.md
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -40,7 +40,7 @@ use PHPUnit\Framework\TestCase;
  * given, so a sink on the metadata address was stored and later posted to.
  * They now refuse it with a 400 before anything is saved.
  *
- * @spec openspec/changes/events-async-api-products/design.md
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
  */
 class EventsControllerSinkEgressTest extends TestCase {
 

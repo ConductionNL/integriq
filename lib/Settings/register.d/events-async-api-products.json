@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (events-async-api-products). Deep-merges `channels` onto api_product, so a product carries event channels next to its endpoints and one product subscription covers both (design.md D1), and `productSubscription`/`productChannel` onto event_subscription, so a consumer's channel push subscription names the product subscription it rides on (REQ-AAPI-003). See openspec/changes/events-async-api-products/design.md and specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001.",
+  "$comment": "ADR-037 register fragment (events-async-api-products). Deep-merges `channels` onto api_product, so a product carries event channels next to its endpoints and one product subscription covers both (design.md D1), and `productSubscription`/`productChannel` onto event_subscription, so a consumer's channel push subscription names the product subscription it rides on (REQ-AAPI-003). See openspec/changes/archive/2026-11-20-events-async-api-products/design.md and specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001.",
   "components": {
     "schemas": {
       "api_product": {

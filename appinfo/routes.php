@@ -96,7 +96,7 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// puts a citizen's message on a case.
 		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
 		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
-		// CloudEvents from outside systems (openspec/changes/cloudevents-receiver).
+		// CloudEvents from outside systems (openspec/changes/archive/2026-11-20-cloudevents-receiver).
 		// One receiver URL per source, public and gated by that source's webhook
 		// signature or credential over the raw bytes before the body is read.
 		['name' => 'cloudEventReceiver#receive', 'url' => '/api/cloudevents/sources/{source}', 'verb' => 'POST', 'requirements' => ['source' => '[A-Za-z0-9\\-]+']],
