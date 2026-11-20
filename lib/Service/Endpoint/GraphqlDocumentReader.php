@@ -56,16 +56,9 @@ class GraphqlDocumentReader {
 	/**
 	 * The tokens of the document being read.
 	 *
-	 * @var list<array{0: string, 1: string}>
+	 * @var GraphqlTokenStream
 	 */
-	private array $tokens = [];
-
-	/**
-	 * The position of the next token.
-	 *
-	 * @var int
-	 */
-	private int $pos = 0;
+	private GraphqlTokenStream $stream;
 
 	/**
 	 * Read the operation a request runs.
@@ -84,8 +77,7 @@ class GraphqlDocumentReader {
 			throw new UnexpectedValueException('The GraphQL document is too large.');
 		}
 
-		$this->tokens = (new GraphqlLexer())->tokenize(source: $document);
-		$this->pos    = 0;
+		$this->stream = new GraphqlTokenStream(tokens: (new GraphqlLexer())->tokenize(source: $document));
 
 		[$operations, $fragments] = $this->definitions();
 
@@ -103,7 +95,7 @@ class GraphqlDocumentReader {
 	private function definitions(): array {
 		$operations = [];
 		$fragments  = [];
-		while ($this->peek() !== null) {
+		while ($this->stream->peek() !== null) {
 			$definition = $this->definition();
 			if ($definition['kind'] !== 'fragment') {
 				$operations[] = $definition;
@@ -129,7 +121,7 @@ class GraphqlDocumentReader {
 	 * @throws UnexpectedValueException On anything else, such as a type system definition.
 	 */
 	private function definition(): array {
-		$token = $this->peek();
+		$token = $this->stream->peek();
 		if ($token === ['punct', '{']) {
 			return ['kind' => 'operation', 'type' => 'query', 'name' => null, 'selections' => $this->selectionSet(nesting: 0)];
 		}
@@ -156,14 +148,14 @@ class GraphqlDocumentReader {
 	 * @throws UnexpectedValueException On a malformed operation.
 	 */
 	private function operationDefinition(string $type): array {
-		$this->pos++;
+		$this->stream->skip();
 		$name = null;
-		if ($this->peek() !== null && $this->peek()[0] === 'name') {
-			$name = $this->next()[1];
+		if ($this->stream->peek() !== null && $this->stream->peek()[0] === 'name') {
+			$name = $this->stream->next()[1];
 		}
 
-		$this->skipArguments();
-		$this->directives();
+		$this->stream->skipArguments();
+		$this->stream->directives();
 
 		return ['kind' => 'operation', 'type' => $type, 'name' => $name, 'selections' => $this->selectionSet(nesting: 0)];
 
@@ -177,15 +169,15 @@ class GraphqlDocumentReader {
 	 * @throws UnexpectedValueException On a malformed fragment.
 	 */
 	private function fragmentDefinition(): array {
-		$this->pos++;
-		$name = $this->expectName();
+		$this->stream->skip();
+		$name = $this->stream->expectName();
 		if ($name === 'on') {
 			throw new UnexpectedValueException('A fragment cannot be named "on".');
 		}
 
-		$this->expect(kind: 'name', value: 'on');
-		$this->expectName();
-		$this->directives();
+		$this->stream->expect(kind: 'name', value: 'on');
+		$this->stream->expectName();
+		$this->stream->directives();
 
 		return ['kind' => 'fragment', 'name' => $name, 'selections' => $this->selectionSet(nesting: 0)];
 
@@ -205,17 +197,17 @@ class GraphqlDocumentReader {
 			throw new UnexpectedValueException('The GraphQL document nests too deep to read.');
 		}
 
-		$this->expect(kind: 'punct', value: '{');
+		$this->stream->expect(kind: 'punct', value: '{');
 		$selections = [];
-		while ($this->peek() !== ['punct', '}']) {
-			if ($this->peek() === null) {
+		while ($this->stream->peek() !== ['punct', '}']) {
+			if ($this->stream->peek() === null) {
 				throw new UnexpectedValueException('The GraphQL document ends inside a selection.');
 			}
 
 			$selections[] = $this->selection(nesting: $nesting);
 		}
 
-		$this->pos++;
+		$this->stream->skip();
 		if ($selections === []) {
 			throw new UnexpectedValueException('A selection set cannot be empty.');
 		}
@@ -234,21 +226,21 @@ class GraphqlDocumentReader {
 	 * @throws UnexpectedValueException On a malformed selection.
 	 */
 	private function selection(int $nesting): array {
-		if ($this->peek() === ['punct', '...']) {
-			$this->pos++;
+		if ($this->stream->peek() === ['punct', '...']) {
+			$this->stream->skip();
 			return $this->spreadSelection(nesting: $nesting);
 		}
 
-		$name = $this->expectName();
-		if ($this->peek() === ['punct', ':']) {
-			$this->pos++;
-			$name = $this->expectName();
+		$name = $this->stream->expectName();
+		if ($this->stream->peek() === ['punct', ':']) {
+			$this->stream->skip();
+			$name = $this->stream->expectName();
 		}
 
-		$this->skipArguments();
-		$this->directives();
+		$this->stream->skipArguments();
+		$this->stream->directives();
 		$selections = [];
-		if ($this->peek() === ['punct', '{']) {
+		if ($this->stream->peek() === ['punct', '{']) {
 			$selections = $this->selectionSet(nesting: ($nesting + 1));
 		}
 
@@ -266,138 +258,22 @@ class GraphqlDocumentReader {
 	 * @throws UnexpectedValueException On a malformed selection.
 	 */
 	private function spreadSelection(int $nesting): array {
-		$next = $this->peek();
+		$next = $this->stream->peek();
 		if ($next !== null && $next[0] === 'name' && $next[1] !== 'on') {
-			$this->pos++;
-			$this->directives();
+			$this->stream->skip();
+			$this->stream->directives();
 			return ['kind' => 'spread', 'name' => $next[1]];
 		}
 
 		if ($next === ['name', 'on']) {
-			$this->pos++;
-			$this->expectName();
+			$this->stream->skip();
+			$this->stream->expectName();
 		}
 
-		$this->directives();
+		$this->stream->directives();
 
 		return ['kind' => 'inline', 'selections' => $this->selectionSet(nesting: ($nesting + 1))];
 
 	}//end spreadSelection()
-
-	/**
-	 * Skip an argument or variable list when one follows.
-	 *
-	 * @return void
-	 *
-	 * @throws UnexpectedValueException When the list does not close.
-	 */
-	private function skipArguments(): void {
-		if ($this->peek() === ['punct', '(']) {
-			$this->skipBalanced(open: '(', close: ')');
-		}
-
-	}//end skipArguments()
-
-	/**
-	 * Skip directives: `@name(arguments)?` any number of times.
-	 *
-	 * @return void
-	 */
-	private function directives(): void {
-		while ($this->peek() === ['punct', '@']) {
-			$this->pos++;
-			$this->expectName();
-			$this->skipArguments();
-		}
-
-	}//end directives()
-
-	/**
-	 * Skip a balanced group of tokens, such as arguments or variable definitions.
-	 *
-	 * Strings are single tokens, so a bracket inside a string never counts.
-	 *
-	 * @param string $open  The opening punctuator.
-	 * @param string $close The closing punctuator.
-	 *
-	 * @return void
-	 *
-	 * @throws UnexpectedValueException When the group does not close.
-	 */
-	private function skipBalanced(string $open, string $close): void {
-		$level = 0;
-		do {
-			$token = $this->next();
-			if ($token === null) {
-				throw new UnexpectedValueException('The GraphQL document ends inside "' . $open . '".');
-			}
-
-			if ($token === ['punct', $open]) {
-				$level++;
-			} elseif ($token === ['punct', $close]) {
-				$level--;
-			}
-		} while ($level > 0);
-
-	}//end skipBalanced()
-
-	/**
-	 * The next token without taking it.
-	 *
-	 * @return array{0: string, 1: string}|null The token, or null at the end.
-	 */
-	private function peek(): ?array {
-		return ($this->tokens[$this->pos] ?? null);
-
-	}//end peek()
-
-	/**
-	 * Take the next token.
-	 *
-	 * @return array{0: string, 1: string}|null The token, or null at the end.
-	 */
-	private function next(): ?array {
-		$token = $this->peek();
-		if ($token !== null) {
-			$this->pos++;
-		}
-
-		return $token;
-
-	}//end next()
-
-	/**
-	 * Take a token of this kind and value, or refuse the document.
-	 *
-	 * @param string $kind  The token kind.
-	 * @param string $value The token value.
-	 *
-	 * @return void
-	 *
-	 * @throws UnexpectedValueException When the next token is another.
-	 */
-	private function expect(string $kind, string $value): void {
-		if ($this->next() !== [$kind, $value]) {
-			throw new UnexpectedValueException('The GraphQL document is malformed: expected "' . $value . '".');
-		}
-
-	}//end expect()
-
-	/**
-	 * Take a name token, or refuse the document.
-	 *
-	 * @return string The name.
-	 *
-	 * @throws UnexpectedValueException When the next token is not a name.
-	 */
-	private function expectName(): string {
-		$token = $this->next();
-		if ($token === null || $token[0] !== 'name') {
-			throw new UnexpectedValueException('The GraphQL document is malformed: expected a name.');
-		}
-
-		return $token[1];
-
-	}//end expectName()
 
 }//end class
