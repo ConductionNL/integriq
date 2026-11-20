@@ -206,6 +206,7 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param ProtectedResourceMetadata|null $resourceMetadata Names the metadata address in the 401 of a
 	 *                                                         token-protected endpoint (REQ-TOKV-004);
 	 *                                                         without it the 401 carries no challenge.
+	 * @param ConnectAccountPrompt|null $connectPrompt The connect prompt; built from the URL generator when not injected.
 	 *
 	 * @return void
 	 */
@@ -239,7 +240,9 @@ class EndpointService implements EndpointServiceInterface {
 		?UpstreamRouter $upstreamRouter = null,
 		?ProductPolicyService $productPolicyService = null,
 		private readonly ?ProtectedResourceMetadata $resourceMetadata = null,
+		?ConnectAccountPrompt $connectPrompt = null,
 	) {
+		$this->connectPrompt = ($connectPrompt ?? new ConnectAccountPrompt(urlGenerator: $urlGenerator));
 		$this->productPolicy = $productPolicyService;
 		$this->upstreamRouter = $upstreamRouter;
 	}//end __construct()
@@ -381,6 +384,13 @@ class EndpointService implements EndpointServiceInterface {
 	 * @var ProductPolicyService|null
 	 */
 	private ?ProductPolicyService $productPolicy = null;
+
+	/**
+	 * Answers a per-user source's caller who has not connected an account (sources-per-user-oauth).
+	 *
+	 * @var ConnectAccountPrompt
+	 */
+	private readonly ConnectAccountPrompt $connectPrompt;
 
 	/**
 	 * Routes an endpoint with several targets; built from this service's own collaborators when not injected.
@@ -2820,38 +2830,31 @@ class EndpointService implements EndpointServiceInterface {
 		}//end try
 
 		// Proxy the request to the source via CallService, or to the target the
-		// router picks (gateway-upstream-routing REQ-UPRT-001/002).
-		if ($routed === true) {
-			$callLog = $this->upstreamRouter()->call(
-				request: new UpstreamRequest(
-					endpoint: $endpoint,
-					method: $request->getMethod(),
-					upstreamPath: $upstreamPath,
-					parameters: $request->getParams(),
-					headers: $headers,
-					rawBody: $rawBody,
-					consumer: $this->authorizationService->getResolvedConsumer()?->getUuid()
-				),
-				trace: $trace
-			);
-			if ($callLog instanceof JSONResponse === true) {
-				return $callLog;
-			}
-		} else {
-			$callLog = $this->callService->call(
+		// router picks (gateway-upstream-routing REQ-UPRT-001/002). A per-user
+		// source whose caller has not connected their account answers the
+		// connect prompt (sources-per-user-oauth REQ-PUOA-002).
+		try {
+			$callLog = $this->proxyCall(
+				routed: $routed,
+				endpoint: $endpoint,
 				source: $source,
-				endpoint: $upstreamPath,
-				method: $request->getMethod(),
-				config: [
-					'query' => $request->getParams(),
-					'headers' => $headers,
-					'body' => $rawBody,
-					// A gateway call is live: it waits only briefly for a paced turn (REQ-RLPC-002).
-					'pacing' => 'live',
-				],
+				request: $request,
+				upstreamPath: $upstreamPath,
+				headers: $headers,
+				rawBody: $rawBody,
 				trace: $trace
 			);
-		}//end if
+		} catch (PerUserAccountNotConnectedException $exception) {
+			return $this->connectPrompt->respond(
+				exception: $exception,
+				returnUrl: (string)$request->getHeader('Referer'),
+				instance: $this->requestId->getId()
+			);
+		}
+
+		if ($callLog instanceof JSONResponse === true) {
+			return $callLog;
+		}
 
 		$callLogData = $callLog->getObject();
 
@@ -2910,6 +2913,64 @@ class EndpointService implements EndpointServiceInterface {
 
 		return $response;
 	}//end pacedRefusal()
+
+	/**
+	 * Send the request to the source through CallService, or to the target the router picks.
+	 *
+	 * @param bool                       $routed       Whether the endpoint has several targets.
+	 * @param ObjectEntity               $endpoint     The endpoint.
+	 * @param mixed                      $source       The source, when not routed.
+	 * @param IRequest                   $request      The incoming request.
+	 * @param string                     $upstreamPath The path at the upstream.
+	 * @param array                      $headers      The forwarded headers.
+	 * @param mixed                      $rawBody      The raw body.
+	 * @param ExecutionTraceContext|null $trace        The active execution trace.
+	 *
+	 * @return mixed The call log, or the router's own answer.
+	 *
+	 * @throws PerUserAccountNotConnectedException When a per-user source's caller has no connected account.
+	 *
+	 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-user-without-a-connected-account-is-sent-to-connect-it-req-puoa-002
+	 */
+	private function proxyCall(
+		bool $routed,
+		ObjectEntity $endpoint,
+		mixed $source,
+		IRequest $request,
+		string $upstreamPath,
+		array $headers,
+		mixed $rawBody,
+		?ExecutionTraceContext $trace,
+	): mixed {
+		if ($routed === true) {
+			return $this->upstreamRouter()->call(
+				request: new UpstreamRequest(
+					endpoint: $endpoint,
+					method: $request->getMethod(),
+					upstreamPath: $upstreamPath,
+					parameters: $request->getParams(),
+					headers: $headers,
+					rawBody: $rawBody,
+					consumer: $this->authorizationService->getResolvedConsumer()?->getUuid()
+				),
+				trace: $trace
+			);
+		}
+
+		return $this->callService->call(
+			source: $source,
+			endpoint: $upstreamPath,
+			method: $request->getMethod(),
+			config: [
+				'query' => $request->getParams(),
+				'headers' => $headers,
+				'body' => $rawBody,
+				// A gateway call is live: it waits only briefly for a paced turn (REQ-RLPC-002).
+				'pacing' => 'live',
+			],
+			trace: $trace
+		);
+	}//end proxyCall()
 
 	/**
 	 * Point an A2A agent card at the gateway when the call asked for one.
