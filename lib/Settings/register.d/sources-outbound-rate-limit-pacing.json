@@ -1,0 +1,74 @@
+{
+  "$comment": "ADR-037 register fragment (sources-outbound-rate-limit-pacing). Merges a `pace` object onto `source`: calls per window held in a budget every worker shares (lib/Service/Call/SourcePacer.php), with how long a live gateway call and background work may wait for their turn (design D2, D3). Merges `pacedMs` (the time a call waited for its turn) and `retryAfter` (the seconds a refused call was told to wait) onto `call_log`, with the `pacedMsPerSource` aggregation the source page reads (design D4). Does NOT edit lib/Settings/integriq_register.json.",
+  "components": {
+    "schemas": {
+      "source": {
+        "properties": {
+          "pace": {
+            "type": "object",
+            "title": "Pace",
+            "description": "Spread calls to this source over its window instead of spending the budget at once. Calls wait for their turn; a live gateway call waits at most a short time, then answers 429 with Retry-After",
+            "properties": {
+              "maxCalls": {
+                "type": "integer",
+                "minimum": 1,
+                "title": "Calls",
+                "description": "How many calls the source allows per window"
+              },
+              "perSeconds": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "title": "Per seconds",
+                "description": "The window in seconds, for example 60 for calls per minute"
+              },
+              "burst": {
+                "type": "integer",
+                "minimum": 1,
+                "default": 1,
+                "title": "Burst",
+                "description": "How many calls may go back to back before spacing starts"
+              },
+              "maxLiveWaitMs": {
+                "type": "integer",
+                "minimum": 0,
+                "default": 2000,
+                "title": "Longest live wait (ms)",
+                "description": "How long a live gateway call may wait for its turn before it answers 429"
+              },
+              "maxBackgroundWaitSeconds": {
+                "type": "integer",
+                "minimum": 0,
+                "default": 900,
+                "title": "Longest background wait (s)",
+                "description": "How long a synchronization, job or flow may wait for one call; beyond it a synchronization stops and resumes on its next run"
+              }
+            }
+          }
+        }
+      },
+      "call_log": {
+        "properties": {
+          "pacedMs": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Paced (ms)",
+            "description": "How long the call waited for its turn under the source's pace"
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Retry after (s)",
+            "description": "For a call refused because its paced turn was too far away: the seconds until its turn"
+          }
+        },
+        "x-openregister-aggregations": {
+          "pacedMsPerSource": {
+            "metric": "sum",
+            "field": "pacedMs",
+            "groupBy": ["source"]
+          }
+        }
+      }
+    }
+  }
+}
