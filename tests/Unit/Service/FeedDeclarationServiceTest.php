@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\Feed\FeedDeclarationShape;
+use OCA\Integriq\Service\Feed\FeedDeclarationReader;
 use OCA\Integriq\Service\Feed\FeedDeclarationValidator;
 use OCA\Integriq\Service\Feed\FeedSchemaFieldsInterface;
 use OCA\Integriq\Service\FeedDeclarationService;
@@ -40,6 +41,7 @@ use Psr\Log\LoggerInterface;
  * shillinq's fixture declaration (tests/fixtures/feeds/shillinq) against an in-memory object store.
  */
 #[CoversClass(FeedDeclarationService::class)]
+#[UsesClass(FeedDeclarationReader::class)]
 #[UsesClass(FeedDeclarationValidator::class)]
 #[UsesClass(FeedDeclarationShape::class)]
 class FeedDeclarationServiceTest extends TestCase {
@@ -150,12 +152,12 @@ class FeedDeclarationServiceTest extends TestCase {
 			}
 		);
 
+		$logger = $this->createMock(LoggerInterface::class);
+
 		return new FeedDeclarationService(
-			$appManager,
-			new FeedDeclarationValidator(),
-			$fields,
+			new FeedDeclarationReader($appManager, new FeedDeclarationValidator(), $fields, $logger),
 			$objects,
-			$this->createMock(LoggerInterface::class)
+			$logger
 		);
 	}//end service()
 

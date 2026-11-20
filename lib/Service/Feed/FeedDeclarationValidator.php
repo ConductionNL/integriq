@@ -43,13 +43,6 @@ class FeedDeclarationValidator {
 	private const KEY_PATTERN = '/^[a-z0-9]+(-[a-z0-9]+)*$/';
 
 	/**
-	 * A field or parameter name.
-	 *
-	 * @var string
-	 */
-	private const NAME_PATTERN = '/^[A-Za-z_][A-Za-z0-9_]*$/';
-
-	/**
 	 * The keys a feed may carry.
 	 *
 	 * @var array<int, string>
@@ -71,6 +64,19 @@ class FeedDeclarationValidator {
 	public const MAX_PAGE_SIZE = 5000;
 
 	/**
+	 * Constructor for FeedDeclarationValidator.
+	 *
+	 * @param FeedSelectionValidator $parts Checks the fields, filter and scope of a feed.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly FeedSelectionValidator $parts = new FeedSelectionValidator(),
+	) {
+
+	}//end __construct()
+
+	/**
 	 * The problems of a whole declaration file: the top level only.
 	 *
 	 * A problem inside one feed is reported by {@see feedErrors()}, so one
@@ -87,7 +93,7 @@ class FeedDeclarationValidator {
 			return ['the file is not a JSON object'];
 		}
 
-		$errors = $this->unknownKeyErrors(data: $data, known: ['$schema', 'app', 'feeds'], prefix: '');
+		$errors = $this->parts->unknownKeyErrors(data: $data, known: ['$schema', 'app', 'feeds'], prefix: '');
 		if (array_key_exists('app', $data) === true && is_string($data['app']) === false) {
 			$errors[] = '"app" is not a string';
 		}
@@ -124,7 +130,7 @@ class FeedDeclarationValidator {
 
 		return array_merge(
 			$errors,
-			$this->unknownKeyErrors(data: $feed, known: self::FEED_KEYS, prefix: $where . ' has an '),
+			$this->parts->unknownKeyErrors(data: $feed, known: self::FEED_KEYS, prefix: $where . ' has an '),
 			$this->valueErrors(feed: $feed, where: $where)
 		);
 	}//end feedErrors()
@@ -140,9 +146,14 @@ class FeedDeclarationValidator {
 	 */
 	private function valueErrors(array $feed, string $where): array {
 		$errors = array_merge($this->keyErrors(feed: $feed, where: $where), $this->textErrors(feed: $feed, where: $where));
-		foreach (['fields' => 'fieldErrors', 'filter' => 'filterErrors', 'scope' => 'scopeErrors'] as $key => $check) {
+		$checks = [
+			'fields' => fn (mixed $value): array => $this->parts->fieldErrors(fields: $value, where: $where),
+			'filter' => fn (mixed $value): array => $this->parts->filterErrors(filter: $value, where: $where),
+			'scope'  => fn (mixed $value): array => $this->parts->scopeErrors(scope: $value, where: $where),
+		];
+		foreach ($checks as $key => $check) {
 			if (array_key_exists($key, $feed) === true) {
-				$errors = array_merge($errors, $this->$check($feed[$key], $where));
+				$errors = array_merge($errors, $check($feed[$key]));
 			}
 		}
 
@@ -205,100 +216,6 @@ class FeedDeclarationValidator {
 	}//end pageSizeErrors()
 
 	/**
-	 * The problems of a feed's field list.
-	 *
-	 * @param mixed  $fields The list.
-	 * @param string $where  The feed's position.
-	 *
-	 * @return array<int, string> The problems.
-	 */
-	private function fieldErrors(mixed $fields, string $where): array {
-		if ($this->isList(value: $fields) === false || $fields === []) {
-			return [$where . '.fields must be a non-empty list'];
-		}
-
-		$errors = [];
-		foreach ($fields as $field) {
-			if ($this->matches(value: $field, pattern: self::NAME_PATTERN) === false) {
-				$errors[] = sprintf('%s.fields holds "%s", which is not a field name', $where, $this->shown(value: $field));
-			}
-		}
-
-		if (count($fields) !== count(array_unique(array_map('strval', array_filter($fields, 'is_scalar'))))) {
-			$errors[] = $where . '.fields lists a field twice';
-		}
-
-		return $errors;
-	}//end fieldErrors()
-
-	/**
-	 * The problems of a feed's fixed filter.
-	 *
-	 * @param mixed  $filter The filter.
-	 * @param string $where  The feed's position.
-	 *
-	 * @return array<int, string> The problems.
-	 */
-	private function filterErrors(mixed $filter, string $where): array {
-		if (is_array($filter) === false || ($filter !== [] && array_is_list($filter) === true)) {
-			return [$where . '.filter must be an object'];
-		}
-
-		$errors = [];
-		foreach ($filter as $field => $value) {
-			// A string, a number or a boolean: exactly the scalars.
-			if (is_scalar($value) === false) {
-				$errors[] = sprintf('%s.filter.%s must be a string, number or boolean', $where, (string)$field);
-			}
-		}
-
-		return $errors;
-	}//end filterErrors()
-
-	/**
-	 * The problems of a feed's scope.
-	 *
-	 * @param mixed  $scope The scope.
-	 * @param string $where The feed's position.
-	 *
-	 * @return array<int, string> The problems.
-	 */
-	private function scopeErrors(mixed $scope, string $where): array {
-		if (is_array($scope) === false) {
-			return [$where . '.scope must be an object'];
-		}
-
-		$errors = [];
-		foreach (['parameter', 'field'] as $key) {
-			if ($this->matches(value: ($scope[$key] ?? null), pattern: self::NAME_PATTERN) === false) {
-				$errors[] = sprintf('%s.scope.%s must be a field name', $where, $key);
-			}
-		}
-
-		return array_merge($errors, $this->unknownKeyErrors(data: $scope, known: ['parameter', 'field'], prefix: $where . '.scope has an '));
-	}//end scopeErrors()
-
-	/**
-	 * One problem per key that is not one of the known ones.
-	 *
-	 * @param array              $data   The object.
-	 * @param array<int, string> $known  The keys it may carry.
-	 * @param string             $prefix The start of the message, before `unknown key`.
-	 *
-	 * @return array<int, string> The problems.
-	 */
-	private function unknownKeyErrors(array $data, array $known, string $prefix): array {
-		$errors = [];
-		foreach (array_keys($data) as $key) {
-			if (in_array($key, $known, true) === false) {
-				$errors[] = sprintf('%sunknown key "%s"', $prefix, (string)$key);
-			}
-		}
-
-		return $errors;
-	}//end unknownKeyErrors()
-
-	/**
 	 * Whether a value is a JSON object: an array that is not a non-empty list.
 	 *
 	 * @param mixed $value The value.
@@ -343,18 +260,4 @@ class FeedDeclarationValidator {
 		return is_string($value) === true && trim($value) !== '';
 	}//end isFilledString()
 
-	/**
-	 * A value as a message shows it: a scalar as itself, anything else by its type.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string
-	 */
-	private function shown(mixed $value): string {
-		if (is_scalar($value) === true) {
-			return (string)$value;
-		}
-
-		return gettype($value);
-	}//end shown()
 }//end class

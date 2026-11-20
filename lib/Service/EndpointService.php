@@ -204,7 +204,6 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param ProductPolicyService|null $productPolicyService The API product policy shared with product
 	 *                                                        channels; built from the object service and
 	 *                                                        logger when not injected.
-	 * @param FeedRequestHandler|null $feedRequestHandler Answers a declared data feed (gateway-declared-data-feeds).
 	 * @param ProtectedResourceMetadata|null $resourceMetadata Names the metadata address in the 401 of a
 	 *                                                         token-protected endpoint (REQ-TOKV-004);
 	 *                                                         without it the 401 carries no challenge.
@@ -241,7 +240,6 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly ?EndpointMessageGate $messageGate = null,
 		?UpstreamRouter $upstreamRouter = null,
 		?ProductPolicyService $productPolicyService = null,
-		private readonly ?FeedRequestHandler $feedRequestHandler = null,
 		private readonly ?ProtectedResourceMetadata $resourceMetadata = null,
 		?ConnectAccountPrompt $connectPrompt = null,
 	) {
@@ -793,8 +791,9 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
 	 */
 	private function handleFeedRequest(ObjectEntity $endpoint, IRequest $request, bool $enforceRateLimit): Response {
-		$feed = ($endpoint->getObject()['feed'] ?? null);
-		if ($this->feedRequestHandler === null || is_array($feed) === false) {
+		$feed    = ($endpoint->getObject()['feed'] ?? null);
+		$handler = $this->feedRequestHandler();
+		if ($handler === null || is_array($feed) === false) {
 			return new JSONResponse(['error' => 'This feed is not available.'], Http::STATUS_NOT_FOUND);
 		}
 
@@ -807,60 +806,46 @@ class EndpointService implements EndpointServiceInterface {
 			return $consumer;
 		}
 
-		$query = $this->feedQuery(request: $request);
-		$refusal = $this->feedRefusal(
-			endpoint: $endpoint,
-			request: $request,
-			feed: $feed,
-			consumer: $consumer,
-			query: $query,
-			enforceRateLimit: $enforceRateLimit
-		);
+		$query   = $this->feedQuery(request: $request);
+		$refusal = $this->enforceConsumerScope(request: $request)
+			?? $handler->scopeRefusal(feed: $feed, consumer: $consumer, query: $query);
+		if ($refusal === null && $enforceRateLimit === true) {
+			$refusal = $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint);
+		}
+
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		return $this->feedRequestHandler->answer(
+		return $handler->answer(
 			feed: $feed,
-			bound: $this->feedRequestHandler->boundScope(feed: $feed, consumer: $consumer),
+			bound: $handler->boundScope(feed: $feed, consumer: $consumer),
 			query: $query,
 			baseUrl: $this->feedBaseUrl(request: $request)
 		);
 	}//end handleFeedRequest()
 
 	/**
-	 * Why a feed read is refused, checked in order: the consumer's scope on the
-	 * endpoint, the feed scope it is bound to, then the inbound rate limit.
+	 * The handler that answers declared data feeds, or null when it cannot be resolved.
 	 *
-	 * @param ObjectEntity      $endpoint         The feed endpoint.
-	 * @param IRequest          $request          The request.
-	 * @param array             $feed             The feed declaration.
-	 * @param ObjectEntity|null $consumer         The consumer, null when anonymous.
-	 * @param array             $query            The query.
-	 * @param bool              $enforceRateLimit Whether the rate limit applies.
+	 * @return FeedRequestHandler|null
 	 *
-	 * @return Response|null The refusal, or null when the read may go ahead.
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-feed-answers-only-its-declared-fields-page-by-page-req-ddf-002
 	 */
-	private function feedRefusal(
-		ObjectEntity $endpoint,
-		IRequest $request,
-		array $feed,
-		?ObjectEntity $consumer,
-		array $query,
-		bool $enforceRateLimit
-	): ?Response {
-		$refusal = $this->enforceConsumerScope(request: $request);
-		if ($refusal !== null) {
-			return $refusal;
+	private function feedRequestHandler(): ?FeedRequestHandler {
+		try {
+			$handler = $this->containerInterface->get(FeedRequestHandler::class);
+		} catch (\Throwable) {
+			return null;
 		}
 
-		$refusal = $this->feedRequestHandler->scopeRefusal(feed: $feed, consumer: $consumer, query: $query);
-		if ($refusal !== null || $enforceRateLimit === false) {
-			return $refusal;
+		if ($handler instanceof FeedRequestHandler === false) {
+			return null;
 		}
 
-		return $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint);
-	}//end feedRefusal()
+		return $handler;
+
+	}//end feedRequestHandler()
 
 	/**
 	 * The consumer a feed request comes from: the one the endpoint's
@@ -1138,19 +1123,9 @@ class EndpointService implements EndpointServiceInterface {
 	): Response {
 		$endpointData = $endpoint->getObject();
 
-		if ($ruleResult instanceof JSONResponse === true) {
-			return $this->transformError(result: $ruleResult, request: $request);
-		}
-
-		if (($endpointData['targetType'] ?? '') === FeedDeclarationService::TARGET_TYPE) {
-			return $this->handleFeedRequest(endpoint: $endpoint, request: $request, enforceRateLimit: $enforceRateLimit);
-		}
-
-		if ($enforceRateLimit === true) {
-			$refusal = $this->enforceConsumerLimits(request: $request, endpoint: $endpoint);
-			if ($refusal !== null) {
-				return $refusal;
-			}
+		$early = $this->answerBeforeTarget(endpoint: $endpoint, request: $request, ruleResult: $ruleResult, enforceRateLimit: $enforceRateLimit);
+		if ($early !== null) {
+			return $early;
 		}
 
 		// Update request data with rule processing results.
@@ -1200,6 +1175,34 @@ class EndpointService implements EndpointServiceInterface {
 		// Invalid endpoint configuration.
 		throw new Exception('Endpoint must specify either a schema or source connection');
 	}//end dispatchAfterBeforeRules()
+
+	/**
+	 * The answer a request gets before its target is called: a rule's error, a
+	 * declared feed's answer, or a consumer-limit refusal; null to go on.
+	 *
+	 * @param ObjectEntity   $endpoint         The endpoint.
+	 * @param IRequest       $request          The inbound request.
+	 * @param array|Response $ruleResult       What the before-rules produced.
+	 * @param bool           $enforceRateLimit Whether consumer limits are enforced on this call.
+	 *
+	 * @return Response|null
+	 */
+	private function answerBeforeTarget(ObjectEntity $endpoint, IRequest $request, array|Response $ruleResult, bool $enforceRateLimit): ?Response {
+		if ($ruleResult instanceof JSONResponse === true) {
+			return $this->transformError(result: $ruleResult, request: $request);
+		}
+
+		if (($endpoint->getObject()['targetType'] ?? '') === FeedDeclarationService::TARGET_TYPE) {
+			return $this->handleFeedRequest(endpoint: $endpoint, request: $request, enforceRateLimit: $enforceRateLimit);
+		}
+
+		if ($enforceRateLimit === false) {
+			return null;
+		}
+
+		return $this->enforceConsumerLimits(request: $request, endpoint: $endpoint);
+
+	}//end answerBeforeTarget()
 
 	/**
 	 * Whether a target type proxies to a source: `api`, or `a2a` for a

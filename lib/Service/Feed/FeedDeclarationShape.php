@@ -61,7 +61,7 @@ final class FeedDeclarationShape {
 	 *
 	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-an-app-declares-its-data-feeds-in-a-file-req-ddf-001
 	 */
-	public static function normalize(mixed $data): mixed {
+	public function normalize(mixed $data): mixed {
 		if (is_array($data) === false
 			|| array_key_exists('feeds', $data) === true
 			|| array_key_exists('datasets', $data) === false

@@ -105,6 +105,13 @@ class EndpointServiceFeedTest extends TestCase {
 		$this->rateLimit = $this->createMock(InboundRateLimitService::class);
 		$this->objects = $this->createMock(ORObjectService::class);
 		$logger = $this->createMock(LoggerInterface::class);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			fn (string $id): mixed => match ($id) {
+				FeedRequestHandler::class => new FeedRequestHandler($this->objects),
+				default => throw new \RuntimeException('not in this test: ' . $id),
+			}
+		);
 
 		$this->service = new EndpointService(
 			$this->createMock(ObjectService::class),
@@ -116,7 +123,7 @@ class EndpointServiceFeedTest extends TestCase {
 			$this->createMock(IConfig::class),
 			$this->createMock(StorageService::class),
 			$this->auth,
-			$this->createMock(ContainerInterface::class),
+			$container,
 			$this->createMock(SynchronizationService::class),
 			$this->createMock(RuleService::class),
 			new WebhookSignatureService($logger),
@@ -130,10 +137,6 @@ class EndpointServiceFeedTest extends TestCase {
 			$this->allowlist,
 			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
 			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
-			null,
-			null,
-			null,
-			feedRequestHandler: new FeedRequestHandler($this->objects),
 		);
 	}//end setUp()
 

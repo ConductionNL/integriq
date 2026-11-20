@@ -59,7 +59,7 @@ class FeedDeclarationShapeTest extends TestCase {
 	 * @return void
 	 */
 	public function testDatasetsBecomeFeedsScopedByTheirBinding(): void {
-		$normalized = FeedDeclarationShape::normalize(
+		$normalized = (new FeedDeclarationShape())->normalize(
 			data: ['_meta' => ['change' => 'reporting-data-delivery'], 'app' => 'shillinq', 'version' => '1.0.0', 'datasets' => [self::dataset()]]
 		);
 
@@ -77,7 +77,7 @@ class FeedDeclarationShapeTest extends TestCase {
 	public function testAFileInTheFeedShapeIsUntouched(): void {
 		$file = ['app' => 'shillinq', 'feeds' => [['key' => 'a']], 'datasets' => [self::dataset()], 'version' => '1'];
 
-		$this->assertSame($file, FeedDeclarationShape::normalize(data: $file));
+		$this->assertSame($file, (new FeedDeclarationShape())->normalize(data: $file));
 	}//end testAFileInTheFeedShapeIsUntouched()
 
 	/**
@@ -86,9 +86,9 @@ class FeedDeclarationShapeTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnythingElseIsReturnedAsItCame(): void {
-		$this->assertNull(FeedDeclarationShape::normalize(data: null));
-		$this->assertSame('text', FeedDeclarationShape::normalize(data: 'text'));
-		$this->assertSame(['app' => 'shillinq'], FeedDeclarationShape::normalize(data: ['app' => 'shillinq']));
+		$this->assertNull((new FeedDeclarationShape())->normalize(data: null));
+		$this->assertSame('text', (new FeedDeclarationShape())->normalize(data: 'text'));
+		$this->assertSame(['app' => 'shillinq'], (new FeedDeclarationShape())->normalize(data: ['app' => 'shillinq']));
 	}//end testAnythingElseIsReturnedAsItCame()
 
 	/**
@@ -102,7 +102,7 @@ class FeedDeclarationShapeTest extends TestCase {
 		$twice = self::dataset();
 		$twice['binding']['accountType'] = 'credential.accountType';
 
-		$normalized = FeedDeclarationShape::normalize(data: ['app' => 'shillinq', 'datasets' => [$scoped, $twice, 'not a dataset']]);
+		$normalized = (new FeedDeclarationShape())->normalize(data: ['app' => 'shillinq', 'datasets' => [$scoped, $twice, 'not a dataset']]);
 
 		$this->assertSame([$scoped, $twice, 'not a dataset'], $normalized['feeds']);
 	}//end testOnlyAOneFieldBindingWithoutAScopeIsRead()
@@ -119,7 +119,7 @@ class FeedDeclarationShapeTest extends TestCase {
 		);
 		$validator = new FeedDeclarationValidator();
 
-		$normalized = FeedDeclarationShape::normalize(data: $file);
+		$normalized = (new FeedDeclarationShape())->normalize(data: $file);
 
 		$this->assertSame([], $validator->fileErrors(data: $normalized));
 		$this->assertCount(4, $normalized['feeds']);

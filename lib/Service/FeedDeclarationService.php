@@ -27,17 +27,13 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\Service\Feed\FeedDeclarationShape;
-use OCA\Integriq\Service\Feed\FeedDeclarationValidator;
-use OCA\Integriq\Service\Feed\FeedSchemaFieldsInterface;
+use OCA\Integriq\Service\Feed\FeedDeclarationReader;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
-use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Syncs feed declarations into endpoint and api_product objects.
@@ -82,16 +78,12 @@ class FeedDeclarationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager               $appManager   Finds enabled apps and their paths.
-	 * @param FeedDeclarationValidator  $validator    Checks a declaration file.
-	 * @param FeedSchemaFieldsInterface $schemaFields Reads the fields a schema declares.
-	 * @param ORObjectService           $objectService Reads and writes endpoints and products.
-	 * @param LoggerInterface           $logger       Logs refused files and datasets.
+	 * @param FeedDeclarationReader $reader        Reads and checks the apps' declarations.
+	 * @param ORObjectService       $objectService Reads and writes endpoint and api_product objects.
+	 * @param LoggerInterface       $logger        Logs refused declarations.
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
-		private readonly FeedDeclarationValidator $validator,
-		private readonly FeedSchemaFieldsInterface $schemaFields,
+		private readonly FeedDeclarationReader $reader,
 		private readonly ORObjectService $objectService,
 		private readonly LoggerInterface $logger,
 	) {
@@ -139,11 +131,11 @@ class FeedDeclarationService {
 	 */
 	public function sync(?string $app = null): array {
 		$summary = ['created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'refused' => []];
-		$enabled = array_map('strval', $this->appManager->getEnabledApps());
+		$enabled = $this->reader->enabledApps();
 		$existing = $this->feedEndpoints();
 
 		foreach ($this->appsToSync(app: $app, enabled: $enabled) as $appId) {
-			$entries = $this->entriesOf(app: $appId, enabled: $enabled, summary: $summary);
+			$entries = $this->reader->entriesOf(app: $appId, enabled: $enabled, summary: $summary);
 			if ($entries === null) {
 				// A file that cannot be read changes nothing: what was served stays.
 				continue;
@@ -207,13 +199,14 @@ class FeedDeclarationService {
 		$served = [];
 		foreach ($entries as $index => $entry) {
 			$key = (string)($entry['key'] ?? ('#' . $index));
-			$refusal = $this->refusalOf(entry: $entry, index: (int)$index);
+			$refusal = $this->reader->refusalOf(entry: $entry, index: (int)$index);
 			if ($refusal === null) {
 				$served[$key] = $this->upsert(app: $app, entry: $entry, existing: ($existing[$key] ?? null), summary: $summary);
 				continue;
 			}
 
-			$served = array_replace($served, $this->refuseEntry(app: $app, key: $key, refusal: $refusal, existing: $existing, summary: $summary));
+			$summary['refused'][$app . '/' . $key] = $refusal;
+			$served = array_replace($served, $this->refuseEntry(app: $app, key: $key, refusal: $refusal, existing: $existing));
 		}
 
 		$summary['deleted'] += $this->deleteUnserved(existing: $existing, served: $served);
@@ -232,12 +225,10 @@ class FeedDeclarationService {
 	 * @param string                      $key      The feed key.
 	 * @param string                      $refusal  Why it is refused.
 	 * @param array<string, ObjectEntity> $existing The app's endpoints by feed key.
-	 * @param array                       $summary  The running summary.
 	 *
 	 * @return array<string, string> The kept endpoint by key, or none.
 	 */
-	private function refuseEntry(string $app, string $key, string $refusal, array $existing, array &$summary): array {
-		$summary['refused'][$app . '/' . $key] = $refusal;
+	private function refuseEntry(string $app, string $key, string $refusal, array $existing): array {
 		$this->logger->error(
 			'Integriq refused the feed {feed} of {declaringApp}: {reason}',
 			['app' => 'integriq', 'declaringApp' => $app, 'feed' => $key, 'reason' => $refusal]
@@ -270,34 +261,6 @@ class FeedDeclarationService {
 	}//end deleteUnserved()
 
 	/**
-	 * Why a dataset is refused, or null when it can be served.
-	 *
-	 * @param mixed   $entry The dataset.
-	 * @param integer $index Its position in the file.
-	 *
-	 * @return string|null The reason.
-	 */
-	private function refusalOf(mixed $entry, int $index): ?string {
-		$errors = $this->validator->feedErrors(feed: $entry, index: $index);
-		if ($errors !== []) {
-			return implode('; ', $errors);
-		}
-
-		$declared = $this->schemaFields->fieldsOf(register: (string)$entry['register'], schema: (string)$entry['schema']);
-		if ($declared === null) {
-			return sprintf('the register "%s" has no schema "%s"', $entry['register'], $entry['schema']);
-		}
-
-		$needed = array_merge($entry['fields'], [$entry['scope']['field']], array_keys(($entry['filter'] ?? [])));
-		$missing = array_values(array_unique(array_diff($needed, $declared)));
-		if ($missing !== []) {
-			return sprintf('the schema "%s" does not declare %s', $entry['schema'], implode(', ', $missing));
-		}
-
-		return null;
-	}//end refusalOf()
-
-	/**
 	 * Create or update the endpoint of one dataset.
 	 *
 	 * @param string               $app      The app id.
@@ -322,11 +285,12 @@ class FeedDeclarationService {
 			)
 		);
 
+		$outcome = 'updated';
 		if ($existing === null) {
-			$summary['created']++;
-		} else {
-			$summary['updated']++;
+			$outcome = 'created';
 		}
+
+		$summary[$outcome]++;
 
 		return (string)$saved->getUuid();
 	}//end upsert()
@@ -409,95 +373,6 @@ class FeedDeclarationService {
 			)
 		);
 	}//end keepProduct()
-
-	/**
-	 * Read and check an app's declaration file.
-	 *
-	 * @param string               $app     The app id.
-	 * @param array<string, mixed> $summary The running summary; a refused file is recorded in it.
-	 *
-	 * @return array<int, mixed>|null The datasets; [] when the app ships no file; null when the file is refused.
-	 */
-	private function readDeclaration(string $app, array &$summary): ?array {
-		$file = $this->declarationPath(app: $app);
-		if ($file === null) {
-			return [];
-		}
-
-		$data = FeedDeclarationShape::normalize(data: json_decode((string)file_get_contents($file), true));
-		$errors = $this->declarationErrors(app: $app, data: $data);
-		if ($errors !== []) {
-			$summary['refused'][$app] = implode('; ', $errors);
-			$this->logger->error(
-				'Integriq skipped the feeds.json of {declaringApp}: {errors}',
-				['app' => 'integriq', 'declaringApp' => $app, 'errors' => implode('; ', $errors)]
-			);
-			return null;
-		}
-
-		return $data['feeds'];
-	}//end readDeclaration()
-
-	/**
-	 * The problems of a decoded declaration file: not JSON, malformed, or
-	 * claiming another app's id. Call right after json_decode().
-	 *
-	 * @param string $app  The declaring app.
-	 * @param mixed  $data The decoded file.
-	 *
-	 * @return array<int, string> The problems.
-	 */
-	private function declarationErrors(string $app, mixed $data): array {
-		$errors = $this->validator->fileErrors(data: $data);
-		if (json_last_error() !== JSON_ERROR_NONE) {
-			return ['it is not valid JSON (' . json_last_error_msg() . ')'];
-		}
-
-		if ($errors === [] && isset($data['app']) === true && $data['app'] !== $app) {
-			return [sprintf('it claims the app id "%s"', $data['app'])];
-		}
-
-		return $errors;
-	}//end declarationErrors()
-
-	/**
-	 * The feeds an app declares: none for an app that is not enabled, null
-	 * when its file cannot be read.
-	 *
-	 * @param string             $app     The app.
-	 * @param array<int, string> $enabled The enabled apps.
-	 * @param array              $summary The running summary.
-	 *
-	 * @return array|null The feed entries.
-	 */
-	private function entriesOf(string $app, array $enabled, array &$summary): ?array {
-		if (in_array($app, $enabled, true) === false) {
-			return [];
-		}
-
-		return $this->readDeclaration(app: $app, summary: $summary);
-	}//end entriesOf()
-
-	/**
-	 * The declaration file of an app, or null when it ships none.
-	 *
-	 * @param string $app The app id.
-	 *
-	 * @return string|null The path.
-	 */
-	private function declarationPath(string $app): ?string {
-		try {
-			$path = rtrim($this->appManager->getAppPath($app), '/') . '/' . self::DECLARATION_FILE;
-		} catch (Throwable $e) {
-			return null;
-		}
-
-		if (is_file($path) === false || is_readable($path) === false) {
-			return null;
-		}
-
-		return $path;
-	}//end declarationPath()
 
 	/**
 	 * Every feed endpoint, by declaring app and dataset key.
