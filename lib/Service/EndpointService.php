@@ -47,9 +47,11 @@ use OCA\Integriq\Service\Feed\FeedRequestHandler;
 use OCA\Integriq\Rule\AvgBsnPolicyRuleInterface;
 use OCA\Integriq\Rule\CompositeFanoutRuleInterface;
 use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
+use OCA\Integriq\Service\Auth\ClientCertificateReader;
 use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
+use OCA\Integriq\Service\Endpoint\EndpointResponseCache;
 use OCA\Integriq\Service\Endpoint\GraphqlHttpRequest;
 use OCA\Integriq\Service\Endpoint\GraphqlOperation;
 use OCA\Integriq\Service\Endpoint\GraphqlOperationLimiter;
@@ -212,6 +214,11 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param ProductPolicyService|null $productPolicyService The API product policy shared with product
 	 *                                                        channels; built from the object service and
 	 *                                                        logger when not injected.
+	 * @param EndpointResponseCache|null $responseCache The endpoints' response cache
+	 *                                                  (gateway-response-cache-and-problem-errors);
+	 *                                                  nullable like the others, and without it no
+	 *                                                  answer is cached.
+	 * @param ClientCertificateReader|null $certificateReader Reads the web-server-verified client certificate for `mtls` rules.
 	 * @param ProtectedResourceMetadata|null $resourceMetadata Names the metadata address in the 401 of a
 	 *                                                         token-protected endpoint (REQ-TOKV-004);
 	 *                                                         without it the 401 carries no challenge.
@@ -248,6 +255,8 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly ?EndpointMessageGate $messageGate = null,
 		?UpstreamRouter $upstreamRouter = null,
 		?ProductPolicyService $productPolicyService = null,
+		private readonly ?EndpointResponseCache $responseCache = null,
+		private readonly ?ClientCertificateReader $certificateReader = null,
 		private readonly ?ProtectedResourceMetadata $resourceMetadata = null,
 		?ConnectAccountPrompt $connectPrompt = null,
 	) {
@@ -386,6 +395,15 @@ class EndpointService implements EndpointServiceInterface {
 	 * @var bool
 	 */
 	private bool $proxiedAnswer = false;
+
+	/**
+	 * Whether an authentication rule ran for the current request. A cached
+	 * answer of an endpoint that does not share answers is kept per caller,
+	 * so an authenticated caller without a resolved consumer is not cached.
+	 *
+	 * @var bool
+	 */
+	private bool $callerAuthenticated = false;
 
 	/**
 	 * The API product policy (subscription, tier, counter key, deprecation), shared with product channels.
@@ -577,6 +595,7 @@ class EndpointService implements EndpointServiceInterface {
 		$this->rateLimitHeaders = [];
 		$this->deprecationHeaders = [];
 		$this->proxiedAnswer = false;
+		$this->callerAuthenticated = false;
 		$startTime = microtime(true);
 
 		// Resolve the endpoint's api_product (if any) once, up front, so both
@@ -3019,6 +3038,18 @@ class EndpointService implements EndpointServiceInterface {
 			);
 		}//end try
 
+		// A cached answer is served without reaching the source
+		// (REQ-RCPE-001). The authentication and rate limit rules ran before
+		// this point, so a hit never reaches a caller that could not have
+		// made the call.
+		$cache = $this->responseCacheOf(endpointData: $endpointData, request: $request, path: $path);
+		if ($cache !== null) {
+			$hit = $this->responseCache?->lookup(endpointId: (string)$endpoint->getUuid(), settings: $cache['settings'], request: $cache['request']);
+			if ($hit !== null) {
+				return $this->answerFromCache(endpoint: $endpoint, source: $source, hit: $hit);
+			}
+		}
+
 		// Proxy the request to the source via CallService, or to the target the
 		// router picks (gateway-upstream-routing REQ-UPRT-001/002). A per-user
 		// source whose caller has not connected their account answers the
@@ -3082,8 +3113,136 @@ class EndpointService implements EndpointServiceInterface {
 			$answer = $this->pointAgentCardAtGateway(answer: $answer, source: $source, path: $path);
 		}
 
-		return new JSONResponse($answer, $callLogData['statusCode'] ?? 200);
+		$response = new JSONResponse($answer, $callLogData['statusCode'] ?? 200);
+		if ($cache !== null) {
+			$this->responseCache?->store(
+				endpointId: (string)$endpoint->getUuid(),
+				settings: $cache['settings'],
+				request: $cache['request'],
+				status: (int)($callLogData['statusCode'] ?? 200),
+				answer: $answer
+			);
+			$response->addHeader(EndpointResponseCache::HEADER, 'MISS');
+		}
+
+		return $response;
 	}//end handleSourceRequest()
+
+	/**
+	 * The endpoint's cache settings and the request as the cache keys it, or
+	 * null when the endpoint does not cache this request.
+	 *
+	 * @param array    $endpointData The endpoint object.
+	 * @param IRequest $request      The incoming request.
+	 * @param string   $path         The inbound sub-path.
+	 *
+	 * @return array{settings: array<string, mixed>, request: array<string, mixed>}|null
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 */
+	private function responseCacheOf(array $endpointData, IRequest $request, string $path): ?array {
+		$settings = $this->responseCache?->settings(endpointData: $endpointData);
+		if ($settings === null || $this->responseCache->cachesMethod(settings: $settings, method: $request->getMethod()) === false) {
+			return null;
+		}
+
+		$caller = $this->cacheCaller(settings: $settings);
+		if ($caller === null) {
+			return null;
+		}
+
+		$headers = [];
+		foreach ($settings['varyHeaders'] as $name) {
+			$headers[$name] = (string)$request->getHeader($name);
+		}
+
+		return [
+			'settings' => $settings,
+			'request' => [
+				'method' => $request->getMethod(),
+				'path' => $path,
+				'query' => $request->getParams(),
+				'headers' => $headers,
+				'consumer' => $caller,
+			],
+		];
+	}//end responseCacheOf()
+
+	/**
+	 * Who the cache keeps an answer for: the resolved consumer, `anonymous`
+	 * on an endpoint without authentication (every caller may ask it), or
+	 * null when an authenticated caller has no consumer to key on (basic,
+	 * oauth, nc-session), so their answers are not cached at all. An
+	 * endpoint that shares answers across consumers keys on no caller.
+	 *
+	 * @param array<string, mixed> $settings The endpoint's cache settings.
+	 *
+	 * @return string|null The caller, or null to not cache this request.
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 */
+	private function cacheCaller(array $settings): ?string {
+		if (($settings['sharedAcrossConsumers'] ?? false) === true) {
+			return '';
+		}
+
+		$consumer = (string)($this->authorizationService->getResolvedConsumer()?->getUuid() ?? '');
+		if ($consumer !== '') {
+			return $consumer;
+		}
+
+		if ($this->callerAuthenticated === false) {
+			return 'anonymous';
+		}
+
+		return null;
+	}//end cacheCaller()
+
+	/**
+	 * Answer from the cache: the stored status and answer with `X-Cache: HIT`,
+	 * and a call log entry marking the hit, with no upstream request.
+	 *
+	 * @param ObjectEntity                                   $endpoint The endpoint served.
+	 * @param ObjectEntity|null                              $source   The source it targets, null when routed.
+	 * @param array{status: int, answer: array<string, mixed>} $hit    The cached answer.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 */
+	private function answerFromCache(ObjectEntity $endpoint, ?ObjectEntity $source, array $hit): JSONResponse {
+		$log = [
+			'statusCode' => $hit['status'],
+			'statusMessage' => 'Answered from the endpoint response cache',
+			'direction' => 'inbound',
+			'endpoint' => (string)$endpoint->getUuid(),
+			'cacheHit' => true,
+			'created' => (new DateTime())->format('c'),
+		];
+		if ($source !== null) {
+			$log['source'] = (string)$source->getUuid();
+		}
+
+		try {
+			// System write, unscoped: the log carries the endpoint's organisation; an inbound caller has none.
+			$this->orObjectService->saveObject(
+				object: $log + $this->organisationSelf(object: $endpoint),
+				options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
+				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning('integriq: failed to record a response cache hit: ' . $e->getMessage());
+		}
+
+		$this->proxiedAnswer = true;
+
+		$response = new JSONResponse($hit['answer'], $hit['status']);
+		$response->addHeader(EndpointResponseCache::HEADER, 'HIT');
+
+		return $response;
+	}//end answerFromCache()
 
 	/**
 	 * Read and govern the GraphQL operation of a request to a graphql endpoint.
@@ -4263,14 +4422,113 @@ class EndpointService implements EndpointServiceInterface {
 			$normalisedHeaders[strtolower((string)$key)] = $value;
 		}
 
-		// Default to the Authorization header (lowercase-normalised lookup).
-		$header = ($normalisedHeaders['authorization'] ?? '');
-
 		if (isset($configuration['authentication']) === false) {
 			return $data;
 		}
 
-		$authenticationType = (string)($configuration['authentication']['type'] ?? '');
+		$this->callerAuthenticated = true;
+
+		$anyOf = ($configuration['authentication']['anyOf'] ?? null);
+		if (is_array($anyOf) === true && $anyOf !== []) {
+			return $this->authenticateAnyOf(
+				methods: $anyOf,
+				normalisedHeaders: $normalisedHeaders,
+				data: $data,
+				requiredScopes: ($configuration['authentication']['requiredScopes'] ?? null)
+			);
+		}
+
+		$refusal = $this->authenticateOne(
+			authentication: (array)$configuration['authentication'],
+			normalisedHeaders: $normalisedHeaders,
+			method: (string)($data['method'] ?? 'GET'),
+			endpointPath: $endpointPath
+		);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $data;
+	}//end processAuthenticationRule()
+
+	/**
+	 * Pass when any one of several authentication methods passes (`anyOf`).
+	 *
+	 * The methods are tried in order and the first success passes the call.
+	 * When none passes, the 401 gives each method's reason, keyed by its
+	 * position and type.
+	 *
+	 * `requiredScopes` on the rule applies to every method that does not set
+	 * its own, so moving a method into `anyOf` never drops a scope check.
+	 *
+	 * @param array $methods           The `anyOf` list of method configurations.
+	 * @param array $normalisedHeaders The request headers, keys lowercased.
+	 * @param array $data              The request data.
+	 * @param mixed $requiredScopes    The rule's own `requiredScopes`, if any.
+	 *
+	 * @return array|JSONResponse The unchanged data, or the 401.
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-accepts-any-one-of-several-login-methods-req-cred-005
+	 */
+	private function authenticateAnyOf(array $methods, array $normalisedHeaders, array $data, mixed $requiredScopes=null): array|JSONResponse {
+		$reasons = [];
+		foreach (array_values($methods) as $position => $method) {
+			if (is_array($method) === false || isset($method['anyOf']) === true) {
+				$reasons[] = ['method' => $position . ':invalid', 'error' => 'The authentication method is not supported'];
+				continue;
+			}
+
+			if ($requiredScopes !== null && isset($method['requiredScopes']) === false) {
+				$method['requiredScopes'] = $requiredScopes;
+			}
+
+			$refusal = $this->authenticateOne(
+				authentication: $method,
+				normalisedHeaders: $normalisedHeaders,
+				method: (string)($data['method'] ?? 'GET')
+			);
+			if ($refusal === null) {
+				return $data;
+			}
+
+			$body = $refusal->getData();
+			if (is_array($body) === false) {
+				$body = [];
+			}
+
+			$reasons[] = [
+				'method'  => $position . ':' . (string)($method['type'] ?? ''),
+				'error'   => ($body['error'] ?? ''),
+				'details' => ($body['details'] ?? null),
+			];
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'unauthorized', 'details' => ['anyOf' => $reasons]],
+			statusCode: Http::STATUS_UNAUTHORIZED
+		);
+	}//end authenticateAnyOf()
+
+	/**
+	 * Check one authentication method configuration.
+	 *
+	 * After a header-based method passes, a caller that lacks a scope the
+	 * configuration's `requiredScopes` asks for this HTTP method is refused.
+	 *
+	 * @param array  $authentication    The method configuration (`type`, `header`, `keys`, `users`, `groups`, `requiredScopes`).
+	 * @param array  $normalisedHeaders The request headers, keys lowercased.
+	 * @param string $method            The request's HTTP method, for `requiredScopes`.
+	 * @param string $endpointPath      The endpoint's path, for the metadata address a token-protected 401 names (REQ-TOKV-004).
+	 *
+	 * @return JSONResponse|null Null when the call passes, else the refusal.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function authenticateOne(array $authentication, array $normalisedHeaders, string $method, string $endpointPath = ''): ?JSONResponse {
+		// Default to the Authorization header (lowercase-normalised lookup).
+		$header = ($normalisedHeaders['authorization'] ?? '');
+
+		$authenticationType = (string)($authentication['type'] ?? '');
 
 		// The `nc-session` type authorises the CURRENT Nextcloud session user
 		// (ocon#1068). It is dispatched BEFORE the header-presence guard below
@@ -4285,24 +4543,45 @@ class EndpointService implements EndpointServiceInterface {
 		if ($authenticationType === 'nc-session') {
 			try {
 				$this->authorizationService->authorizeNcSession(
-					users: ($configuration['authentication']['users'] ?? []),
-					groups: ($configuration['authentication']['groups'] ?? [])
+					users: ($authentication['users'] ?? []),
+					groups: ($authentication['groups'] ?? [])
 				);
 			} catch (AuthenticationException $exception) {
 				return $this->unauthenticated(exception: $exception);
 			}
 
-			return $data;
+			return null;
 		}//end if
 
-		if (isset($configuration['authentication']['header']) === true) {
+		// The `mtls` type presents no header either: the web server verified a
+		// client certificate, which the reader takes from the server
+		// environment or, only from a trusted proxy, its forwarding header.
+		if ($authenticationType === 'mtls') {
+			try {
+				$this->authorizationService->authorizeClientCertificate(
+					certificate: $this->certificateReader?->fromRequest(),
+					consumers: (array)($authentication['consumers'] ?? [])
+				);
+			} catch (AuthenticationException $exception) {
+				return $this->unauthenticated(exception: $exception);
+			}
+
+			return $this->refuseMissingScopes(
+				authentication: $authentication,
+				authenticationType: $authenticationType,
+				header: '',
+				method: $method
+			);
+		}//end if
+
+		if (isset($authentication['header']) === true) {
 			// Convert configured header name to lowercase + underscore variant
 			// for a single normalised lookup against $normalisedHeaders.
-			$lookupKey = strtolower((string)$configuration['authentication']['header']);
+			$lookupKey = strtolower((string)$authentication['header']);
 			$header = ($normalisedHeaders[$lookupKey] ?? null);
 		}
 
-		$challenge = $this->tokenChallenge(authentication: (array)$configuration['authentication'], endpointPath: $endpointPath);
+		$challenge = $this->tokenChallenge(authentication: $authentication, endpointPath: $endpointPath);
 		$missingToken = self::missingTokenResponse(header: $header, challenge: $challenge);
 		if ($missingToken !== null) {
 			return $missingToken;
@@ -4318,7 +4597,7 @@ class EndpointService implements EndpointServiceInterface {
 		switch ($authenticationType) {
 			case 'apikey':
 				try {
-					$this->authorizationService->authorizeApiKey(header: $header, keys: $configuration['authentication']['keys']);
+					$this->authorizationService->authorizeApiKey(header: $header, keys: $authentication['keys']);
 				} catch (AuthenticationException $exception) {
 					return $this->unauthenticated(exception: $exception);
 				}
@@ -4335,8 +4614,8 @@ class EndpointService implements EndpointServiceInterface {
 				try {
 					$this->authorizationService->authorizeBasic(
 						$header,
-						$configuration['authentication']['users'],
-						$configuration['authentication']['groups']
+						$authentication['users'],
+						$authentication['groups']
 					);
 				} catch (AuthenticationException $exception) {
 					return $this->unauthenticated(exception: $exception);
@@ -4346,8 +4625,8 @@ class EndpointService implements EndpointServiceInterface {
 				try {
 					$this->authorizationService->authorizeOAuth(
 						$header,
-						$configuration['authentication']['users'],
-						$configuration['authentication']['groups']
+						$authentication['users'],
+						$authentication['groups']
 					);
 				} catch (AuthenticationException $exception) {
 					return $this->unauthenticated(exception: $exception);
@@ -4357,18 +4636,13 @@ class EndpointService implements EndpointServiceInterface {
 				return new JSONResponse(data: ['error' => 'The authentication method is not supported'], statusCode: Http::STATUS_NOT_IMPLEMENTED);
 		}//end switch
 
-		$refusal = $this->refuseMissingScopes(
-			authentication: (array)$configuration['authentication'],
+		return $this->refuseMissingScopes(
+			authentication: $authentication,
 			authenticationType: $authenticationType,
 			header: (string)$header,
-			method: (string)($data['method'] ?? 'GET')
+			method: $method
 		);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
-		return $data;
-	}//end processAuthenticationRule()
+	}//end authenticateOne()
 
 	/**
 	 * The 401 of a token-protected endpoint called without a token, or null when a token was sent or none is required.
