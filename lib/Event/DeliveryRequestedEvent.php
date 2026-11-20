@@ -81,6 +81,13 @@ class DeliveryRequestedEvent extends Event {
 	private ?array $refusal = null;
 
 	/**
+	 * The resolved recipient decision, set by integriq's listener before ingest.
+	 *
+	 * @var array<string,mixed>|null
+	 */
+	private ?array $recipientSelection = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $sourceApp The requesting app id (e.g. `dossiq`).
@@ -94,6 +101,10 @@ class DeliveryRequestedEvent extends Event {
 	 * @param string $correlationId Caller-generated id echoed on the concluded event.
 	 * @param string|null $externalReference Optional external reference (e.g. besluit identificatie).
 	 * @param string|null $userId The acting Nextcloud user, or null for system-produced requests.
+	 * @param array<string,mixed> $recipientDecision The per-message recipient decision: `standing`
+	 *                                               (`{address, name, accountId, required, requiredBy}`),
+	 *                                               `added` (`{address, name, accountId}`) and `suppressed`
+	 *                                               (`{address, reason, user, at}`). Empty: none.
 	 *
 	 * @return void
 	 */
@@ -109,6 +120,7 @@ class DeliveryRequestedEvent extends Event {
 		private readonly string $correlationId,
 		private readonly ?string $externalReference = null,
 		private readonly ?string $userId = null,
+		private readonly array $recipientDecision = [],
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -330,4 +342,39 @@ class DeliveryRequestedEvent extends Event {
 	public function getRefusal(): ?array {
 		return $this->refusal;
 	}//end getRefusal()
+
+	/**
+	 * The per-message recipient decision the caller handed over.
+	 *
+	 * @return array<string,mixed> The decision, or [] when the caller made none.
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 */
+	public function getRecipientDecision(): array {
+		return $this->recipientDecision;
+	}//end getRecipientDecision()
+
+	/**
+	 * Record the resolved recipient decision (integriq's listener).
+	 *
+	 * @param array<string,mixed> $selection The standing, added, suppressed and resolved parts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 */
+	public function setRecipientSelection(array $selection): void {
+		$this->recipientSelection = $selection;
+	}//end setRecipientSelection()
+
+	/**
+	 * The resolved recipient decision, or null when none was resolved.
+	 *
+	 * @return array<string,mixed>|null
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 */
+	public function getRecipientSelection(): ?array {
+		return $this->recipientSelection;
+	}//end getRecipientSelection()
 }//end class

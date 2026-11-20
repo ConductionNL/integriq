@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.2.1"
+    "version": "1.2.2"
   },
   "x-openregister": {
     "type": "application",
@@ -566,7 +566,7 @@
           },
           "authorizationType": {
             "type": "string",
-            "description": "Auth strategy used by this consumer",
+            "description": "Auth strategy used by this consumer. client_credentials: integriq issues it tokens at /api/oauth/token for its client secret.",
             "title": "Authorization Type"
           },
           "authorizationConfiguration": {
@@ -651,6 +651,11 @@
             },
             "default": []
           },
+          "clientSecretHash": {
+              "type": "string",
+              "title": "Client secret hash",
+              "description": "The password hash of a client_credentials consumer's secret (access-oauth-and-token-validation). Set by an admin through POST /api/consumers/{id}/client-secret, which shows the secret once; the secret itself is never stored."
+          },
           "scopes": {
             "type": "array",
             "items": {
@@ -675,6 +680,13 @@
             "type": "string",
             "description": "The Nextcloud account this consumer acts as. AuthorizationService::authorizeApiKey() makes it the active user, and the DSO STAM intake writes every verzoek as it (dso-stam consumers). Empty: an apiKey consumer authenticates as itself; a dso-stam consumer refuses pushes with 503.",
             "title": "User ID"
+          },
+          "ownerKind": {
+            "type": "string",
+            "enum": ["admin", "developer"],
+            "default": "admin",
+            "description": "Who owns this consumer: 'developer' for an application a developer created in the developer portal (its userId is that developer, and only they reach it through the portal), 'admin' for one an administrator created (access-developer-portal-and-subscriptions D2)",
+            "title": "Owner Kind"
           },
           "rateLimit": {
             "type": "object",
@@ -4764,7 +4776,7 @@
         "slug": "sms_message",
         "title": "SMS Message",
         "icon": "MessageTextOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Audit + lifecycle record for one outbound SMS sent through a configured SMS channel source",
         "description": "An SMS Message tracks one outbound message submitted through a configured SMS channel source (NotifyNL, or the log/sandbox provider), from queued through provider acceptance and any delivery-status poll or inbound callback. See openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback.",
         "required": [
@@ -4795,8 +4807,13 @@
           },
           "provider": {
             "type": "string",
-            "description": "The provider binding that handled this message (log|notifynl)",
+            "description": "The provider binding that handled this message (log|notifynl|cmcom|messagebird|twilio)",
             "title": "Provider"
+          },
+          "sourceSlug": {
+            "type": "string",
+            "description": "Slug of the SMS source that sent this message: the one the caller named, else the first enabled SMS source",
+            "title": "Source"
           },
           "providerMessageId": {
             "type": "string",
@@ -5414,7 +5431,7 @@
         "slug": "outbound_message",
         "title": "Outbound Message",
         "icon": "SendOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "authorization": {
           "create": [
             "digitale-post-verzenders"
@@ -5435,6 +5452,79 @@
         ],
         "type": "object",
         "properties": {
+          "holdStatus": {
+            "type": "string",
+            "enum": [
+              "held",
+              "due",
+              "withdrawn",
+              "review",
+              "released"
+            ],
+            "description": "Where the message stands on hold, mirrored from hold.status so a list can filter on it: held (waiting out its identity's window) | due (the window passed) | withdrawn (taken back, not sent) | review (a send check refused it and it waits for a person) | released (a person released it to be sent)",
+            "title": "Hold Status"
+          },
+          "hold": {
+            "type": "object",
+            "description": "The message's hold: its identity's window, or the send check that stopped it and what a person did about that",
+            "properties": {
+              "status": {
+                "type": "string",
+                "description": "held, due, withdrawn, review or released",
+                "title": "Status"
+              },
+              "check": {
+                "type": "string",
+                "description": "The send check that stopped the message",
+                "title": "Check"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why the check stopped it",
+                "title": "Reason"
+              },
+              "heldAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was held",
+                "title": "Held At"
+              },
+              "releasedBy": {
+                "type": "string",
+                "description": "Who released it",
+                "title": "Released By"
+              },
+              "releasedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was released",
+                "title": "Released At"
+              },
+              "withdrawnBy": {
+                "type": "string",
+                "description": "Who withdrew it",
+                "title": "Withdrawn By"
+              },
+              "withdrawnAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was withdrawn",
+                "title": "Withdrawn At"
+              },
+              "windowSeconds": {
+                "type": "integer",
+                "description": "The identity's hold window in seconds",
+                "title": "Window Seconds"
+              },
+              "releaseAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the window closes",
+                "title": "Release At"
+              }
+            },
+            "title": "Hold"
+          },
           "subjectRef": {
             "type": "string",
             "description": "What the message is about, as the sending app references it. The log answers questions per subject, never by writing a field onto the sending app's record",
@@ -5730,6 +5820,37 @@
             "type": "string",
             "description": "Who forwarded it",
             "title": "Forwarded By"
+          },
+          "recipientSelection": {
+            "type": "object",
+            "description": "The per-message recipient decision, when there was one: the standing recipients the calling app passed, the ones added for this message only, and the ones suppressed for this message only, each kept on its own",
+            "properties": {
+              "standing": {
+                "type": "array",
+                "description": "The standing recipients as the calling app passed them, with the required marker and what requires it",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Standing"
+              },
+              "added": {
+                "type": "array",
+                "description": "Recipients added for this message only. They are written nowhere else",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Added"
+              },
+              "suppressed": {
+                "type": "array",
+                "description": "Recipients suppressed for this message only. Each reads suppressed, carries the typed reason, the user and the time, and has no delivery state",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Suppressed"
+              }
+            },
+            "title": "Recipient Selection"
           },
           "forwardedTo": {
             "type": "array",

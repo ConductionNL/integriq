@@ -221,17 +221,26 @@ function occ(): OccRunner {
 		dir = path.dirname(dir)
 	}
 
-	// 3. A running container — the dev-container layout.
-	const container = process.env.NC_CONTAINER ?? 'nextcloud'
-	let running
-	try {
-		running = execFileSync(
-			'docker',
-			['inspect', '-f', '{{.State.Running}}', container],
-			{ encoding: 'utf8' },
-		).trim()
-	} catch {
-		running = ''
+	// 3. A running container the caller NAMED — the dev-container layout.
+	//    There is no default name: `nextcloud` is the shared dev container,
+	//    and the commands below run the FlowRunWorker and write flows there.
+	const container = (
+		process.env.NC_CONTAINER
+		?? process.env.INTEGRIQ_E2E_CONTAINER
+		?? process.env.NEXTCLOUD_CONTAINER
+		?? ''
+	).trim()
+	let running = ''
+	if (container !== '') {
+		try {
+			running = execFileSync(
+				'docker',
+				['inspect', '-f', '{{.State.Running}}', container],
+				{ encoding: 'utf8' },
+			).trim()
+		} catch {
+			running = ''
+		}
 	}
 	if (running === 'true') {
 		occRunner = {
@@ -248,7 +257,7 @@ function occ(): OccRunner {
 
 	throw new Error(
 		'occ could not be resolved: no OCC_CMD, no `occ` file within six levels above '
-			+ `${__dirname}, and no running container named "${container}". This spec drives the `
+			+ `${__dirname}, and no running container named in NC_CONTAINER ("${container}"). This spec drives the `
 			+ "migration generator and OpenRegister's FlowRunWorker through occ, so there is nothing "
 			+ 'left to assert without it. Set OCC_CMD or NC_CONTAINER rather than skipping.',
 	)

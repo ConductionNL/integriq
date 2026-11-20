@@ -210,6 +210,11 @@
 			</template>
 		</div>
 
+		<McpEndpointFields
+			v-if="isMcpTarget"
+			:formData="formData"
+			:updateField="updateField" />
+
 		<!-- REQ-MSV-002: the message schemas the request and the proxied
 		     answer must match, and whether a mismatch is refused or recorded. -->
 		<fieldset class="cn-endpoint-form-fields__validation">
@@ -318,6 +323,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import McpEndpointFields from './McpEndpointFields.vue'
 
 /** HTTP methods the method select offers, in display order. */
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({
@@ -331,7 +337,14 @@ const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({
  * documents `api`, `job` and `synchronization` too, but authoring those needs a
  * different target input than a register/schema pair — kept out until asked for.
  */
-const TARGET_TYPE_OPTIONS = [{ id: 'register/schema', label: 'register/schema' }]
+const TARGET_TYPE_OPTIONS = [
+	{ id: 'register/schema', label: 'register/schema' },
+	// An outside MCP tool server behind the gateway (gateway-mcp-proxy); its fields are McpEndpointFields.
+	{ id: 'mcp', label: 'mcp' },
+]
+
+/** The endpoint properties McpEndpointFields edits, kept out of the generic field list. */
+const MCP_FIELDS = ['mcpToolLimits', 'mcpMaxStreamSeconds', 'mcpStoreArguments']
 
 /**
  * Example values shown as placeholders. `endpoint` and `endpointArray` describe
@@ -361,6 +374,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcButton,
 		CnFieldHelper,
+		McpEndpointFields,
 	},
 
 	mixins: [messageSchemaOptions],
@@ -463,7 +477,8 @@ export default {
 				(field) =>
 					field.key !== 'targetId'
 					&& field.key !== 'validation'
-					&& field.key !== 'cache',
+					&& field.key !== 'cache'
+					&& MCP_FIELDS.includes(field.key) === false,
 			)
 		},
 
@@ -505,6 +520,16 @@ export default {
 		 */
 		isRegisterSchemaTarget() {
 			return this.formData?.targetType === 'register/schema'
+		},
+
+		/**
+		 * Whether the endpoint relays to an outside MCP tool server.
+		 *
+		 * @return {boolean} True when Target Type is `mcp`.
+		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+		 */
+		isMcpTarget() {
+			return this.formData?.targetType === 'mcp'
 		},
 
 		/**

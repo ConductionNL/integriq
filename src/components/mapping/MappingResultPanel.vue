@@ -103,6 +103,22 @@
 			{{ emptyText }}
 		</p>
 
+		<!-- The result as the mapping writes it (mapping-formats-and-lookups):
+		     only for an XML or CSV mapping, read-only. -->
+		<template v-if="renderedOutput">
+			<p class="cn-mapping-result__rendered-label">
+				{{
+					t('integriq', 'Written as {format}', {
+						format: renderedOutput.format.toUpperCase(),
+					})
+				}}
+			</p>
+			<pre
+				class="cn-mapping-result__pre"
+				data-testid="mapping-rendered-output"><!--
+				-->{{ renderedOutput.body }}</pre>
+		</template>
+
 		<!-- Persist the transformed result as an OpenRegister object -->
 		<div v-if="showSaveBlock" class="cn-mapping-result__save">
 			<h4 class="cn-mapping-result__save-title">
@@ -247,6 +263,8 @@ export default {
 			running: false,
 			runError: '',
 			result: null,
+			// The XML or CSV text of the result, null for a JSON mapping.
+			renderedOutput: null,
 			isValid: true,
 			validationErrors: null,
 			savingResult: false,
@@ -586,6 +604,10 @@ export default {
 		 */
 		applyMappingTestResult(data) {
 			this.result = data?.resultObject ?? data ?? null
+			this.renderedOutput =
+				typeof data?.renderedOutput?.body === 'string'
+					? data.renderedOutput
+					: null
 			this.isValid = data?.isValid !== false
 			this.validationErrors = data?.validationErrors ?? null
 			this.validatedSchemaId = this.selectedSchema?.id ?? null
@@ -626,6 +648,7 @@ export default {
 			this.running = false
 			this.runError = ''
 			this.result = null
+			this.renderedOutput = null
 			this.isValid = true
 			this.validationErrors = null
 			this.validatedSchemaId = null

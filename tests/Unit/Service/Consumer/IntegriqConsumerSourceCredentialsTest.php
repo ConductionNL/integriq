@@ -192,14 +192,22 @@ final class IntegriqConsumerSourceCredentialsTest extends TestCase {
 				return ['results' => $all];
 			}
 		);
+		// The first raw read is the unrendered re-read of the list (development);
+		// a later one is the re-read before the write, which $rawOverride changes.
+		$reads = [];
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) use ($entity, $rawOverride): ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) use ($entity, $rawOverride, &$reads): ObjectEntity {
 				$register = $options?->register;
 				$schema   = $options?->schema;
 				$_render  = ($options?->render ?? true);
 				$this->assertFalse($_render);
 				$this->assertSame(['integriq', 'consumer'], [$register, $schema]);
-				return $entity((string)$id, ($rawOverride ?? $this->stored[$id]));
+				$reads[$id] = (($reads[$id] ?? 0) + 1);
+				if ($rawOverride !== null && $reads[$id] > 1) {
+					return $entity((string)$id, $rawOverride);
+				}
+
+				return $entity((string)$id, $this->stored[$id]);
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(

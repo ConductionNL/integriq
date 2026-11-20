@@ -29,6 +29,7 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadata;
 use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
@@ -49,6 +50,8 @@ use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Endpoint\EndpointResponseCache;
+use OCA\Integriq\Service\Endpoint\McpProxyCall;
+use OCA\Integriq\Service\Endpoint\McpProxyHandler;
 use OCA\Integriq\Service\Endpoint\UpstreamRequest;
 use OCA\Integriq\Service\Endpoint\UpstreamRouter;
 use OCA\Integriq\Service\Endpoint\UpstreamSelector;
@@ -207,6 +210,10 @@ class EndpointService implements EndpointServiceInterface {
 	 *                                                  nullable like the others, and without it no
 	 *                                                  answer is cached.
 	 * @param ClientCertificateReader|null $certificateReader Reads the web-server-verified client certificate for `mtls` rules.
+	 * @param ProtectedResourceMetadata|null $resourceMetadata Names the metadata address in the 401 of a
+	 *                                                         token-protected endpoint (REQ-TOKV-004);
+	 *                                                         without it the 401 carries no challenge.
+	 * @param ConnectAccountPrompt|null $connectPrompt The connect prompt; built from the URL generator when not injected.
 	 *
 	 * @return void
 	 */
@@ -241,10 +248,94 @@ class EndpointService implements EndpointServiceInterface {
 		?ProductPolicyService $productPolicyService = null,
 		private readonly ?EndpointResponseCache $responseCache = null,
 		private readonly ?ClientCertificateReader $certificateReader = null,
+		private readonly ?ProtectedResourceMetadata $resourceMetadata = null,
+		?ConnectAccountPrompt $connectPrompt = null,
 	) {
+		$this->connectPrompt = ($connectPrompt ?? new ConnectAccountPrompt(urlGenerator: $urlGenerator));
 		$this->productPolicy = $productPolicyService;
 		$this->upstreamRouter = $upstreamRouter;
 	}//end __construct()
+
+	/**
+	 * The `mcp` target handler, built from this service's collaborators on first use.
+	 *
+	 * @return McpProxyHandler The handler.
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 */
+	private function mcpProxyHandler(): McpProxyHandler {
+		if ($this->mcpProxyHandler === null) {
+			$this->mcpProxyHandler = new McpProxyHandler(
+				calls: $this->callService,
+				limits: $this->rateLimitService,
+				objects: $this->orObjectService,
+				logger: $this->logger
+			);
+		}
+
+		return $this->mcpProxyHandler;
+	}//end mcpProxyHandler()
+
+	/**
+	 * Relay a call of an `mcp` endpoint to its tool server.
+	 *
+	 * The consumer authentication, rate limit and quota already ran. The
+	 * source is resolved and bounded by the endpoint's organisation, and the
+	 * upstream path rendered, exactly as for an `api` endpoint; the answer is
+	 * then the upstream's own status, headers and body, relayed as it arrives.
+	 *
+	 * @param ObjectEntity $endpoint The `mcp` endpoint.
+	 * @param IRequest     $request  The inbound request.
+	 * @param string       $path     The path below the endpoint.
+	 *
+	 * @return Response The relaying answer, or a refusal.
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 */
+	private function handleMcpRequest(ObjectEntity $endpoint, IRequest $request, string $path): Response {
+		$endpointData = $endpoint->getObject();
+		$rawBody = $this->getRawContent();
+
+		// Unscoped, as for an api endpoint: the caller may not see the source; the endpoint's organisation bounds it.
+		$source = $this->orObjectService->find(
+			id: $endpointData['targetId'] ?? '',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+			_rbac: false,
+			_multitenancy: false
+		);
+		if ($source === null || $this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
+			return new JSONResponse(['error' => 'Source not found'], Http::STATUS_NOT_FOUND);
+		}
+
+		try {
+			$upstreamPath = $this->callService->renderEndpointPath(
+				endpoint: (string)($endpointData['endpoint'] ?? ''),
+				context: $this->buildUpstreamPathContext(endpointData: $endpointData, request: $request, path: $path, rawBody: $rawBody)
+			);
+		} catch (UnexpectedValueException $exception) {
+			$this->logger->warning('integriq: refused upstream path for MCP endpoint ' . $endpoint->getUuid() . ': ' . $exception->getMessage());
+			return new JSONResponse(['error' => 'The upstream path for this endpoint could not be resolved to a contained path'], Http::STATUS_BAD_REQUEST);
+		}
+
+		// The answer is the tool server's own, JSON-RPC errors included: never rewritten into a problem document.
+		$this->proxiedAnswer = true;
+		$consumerKey = 'ip:' . $request->getRemoteAddress();
+		$consumer = $this->authorizationService->getResolvedConsumer()?->getUuid();
+		if ($consumer !== null) {
+			$consumerKey = 'consumer:' . $consumer;
+		}
+
+		return $this->mcpProxyHandler()->handle(
+			call: new McpProxyCall(
+				endpoint: $endpoint,
+				request: $request,
+				source: $source,
+				upstreamPath: $upstreamPath,
+				rawBody: $rawBody,
+				consumerKey: $consumerKey
+			)
+		);
+	}//end handleMcpRequest()
 
 	/**
 	 * The router of endpoints with several targets; built from this service's own collaborators when not injected.
@@ -313,11 +404,25 @@ class EndpointService implements EndpointServiceInterface {
 	private ?ProductPolicyService $productPolicy = null;
 
 	/**
+	 * Answers a per-user source's caller who has not connected an account (sources-per-user-oauth).
+	 *
+	 * @var ConnectAccountPrompt
+	 */
+	private readonly ConnectAccountPrompt $connectPrompt;
+
+	/**
 	 * Routes an endpoint with several targets; built from this service's own collaborators when not injected.
 	 *
 	 * @var UpstreamRouter|null
 	 */
 	private ?UpstreamRouter $upstreamRouter = null;
+
+	/**
+	 * The `mcp` target handler, built on first use.
+	 *
+	 * @var McpProxyHandler|null
+	 */
+	private ?McpProxyHandler $mcpProxyHandler = null;
 
 	/**
 	 * RFC 8594 `Deprecation`/`Sunset` response headers to attach to the
@@ -935,6 +1040,11 @@ class EndpointService implements EndpointServiceInterface {
 			return $this->answerSchemaRequest(run: $run, result: $result);
 		}
 
+		if ($targetType === McpProxyHandler::TARGET_TYPE) {
+			// An outside MCP tool server, relayed as streamable HTTP (gateway-mcp-proxy REQ-MCPX-001).
+			return $this->handleMcpRequest(endpoint: $endpoint, request: $request, path: $path);
+		}
+
 		if ($this->isSourceTarget(targetType: $targetType) === true) {
 			// Proxy request to source via CallService. An `a2a` target is a
 			// source holding an A2A agent, proxied the same way; its agent
@@ -1340,6 +1450,8 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
 	 * @spec openspec/specs/consumer-management/spec.md#requirement-per-product-tier-policy-takes-precedence-over-the-consumer-level-rate-limit-req-con-sub-002
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	private function enforceInboundRateLimit(IRequest $request, ObjectEntity $endpoint): ?JSONResponse {
 		$consumer = $this->authorizationService->getResolvedConsumer();
@@ -1354,6 +1466,17 @@ class EndpointService implements EndpointServiceInterface {
 
 		$product = $this->resolveProductForEndpoint(endpoint: $endpoint);
 		if ($product !== null) {
+			if ($this->productPolicy()->isRetired(product: $product) === true) {
+				// REQ-DEVP-004: a retired product is gone for its subscribers.
+				return new JSONResponse(
+					[
+						'error' => 'product_retired',
+						'message' => 'This API product is retired: ' . (string)($product->getObject()['name'] ?? $product->getUuid()),
+					],
+					Http::STATUS_GONE
+				);
+			}
+
 			$subscription = $this->productPolicy()->resolveActiveSubscription(
 				consumerUuid: $consumerKey,
 				productUuid: (string)$product->getUuid()
@@ -1366,6 +1489,20 @@ class EndpointService implements EndpointServiceInterface {
 					[
 						'error' => 'subscription_required',
 						'message' => 'No active subscription to this API product',
+					],
+					Http::STATUS_FORBIDDEN
+				);
+			}
+
+			$endedOn = $this->productPolicy()->expiredOn(subscription: $subscription);
+			if ($endedOn !== null) {
+				// REQ-DEVP-005: refused from the end date on, before the daily
+				// job has marked it expired, naming the date.
+				return new JSONResponse(
+					[
+						'error' => 'subscription_expired',
+						'message' => 'Your subscription to this API product ended on ' . $endedOn,
+						'expiresAt' => $endedOn,
 					],
 					Http::STATUS_FORBIDDEN
 				);
@@ -1639,6 +1776,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md#requirement-inbound-observability-logging-for-api-product-scoped-endpoints-req-ep-009
 	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
 	 */
 	public function recordInboundCallLog(ObjectEntity $endpoint, ObjectEntity $product, int $statusCode, float $durationMs): void {
 		try {
@@ -1652,8 +1790,9 @@ class EndpointService implements EndpointServiceInterface {
 					'endpoint' => (string)$endpoint->getUuid(),
 					'responseTime' => (int)round($durationMs),
 					'created' => (new DateTime())->format('c'),
-				] + $this->organisationSelf(object: $endpoint),
+				] + $this->consumerField() + $this->organisationSelf(object: $endpoint),
 				options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
+				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1664,6 +1803,29 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 	}//end recordInboundCallLog()
+
+	/**
+	 * The `consumer` field of an inbound call_log row: the uuid of the consumer
+	 * the request authenticated as, or nothing when no consumer was resolved
+	 * (a public endpoint, an anonymous caller).
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 */
+	private function consumerField(): array {
+		$consumer = $this->authorizationService->getResolvedConsumer();
+		if ($consumer === null) {
+			return [];
+		}
+
+		$uuid = (string)($consumer->getUuid() ?? ($consumer->getObject()['uuid'] ?? ''));
+		if ($uuid === '') {
+			return [];
+		}
+
+		return ['consumer' => $uuid];
+	}//end consumerField()
 
 	/**
 	 * Record an inbound rate-limit/quota 429 on the CallLog observability surface.
@@ -2726,38 +2888,39 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		// Proxy the request to the source via CallService, or to the target the
-		// router picks (gateway-upstream-routing REQ-UPRT-001/002).
-		if ($routed === true) {
-			$callLog = $this->upstreamRouter()->call(
-				request: new UpstreamRequest(
-					endpoint: $endpoint,
-					method: $request->getMethod(),
-					upstreamPath: $upstreamPath,
-					parameters: $request->getParams(),
-					headers: $headers,
-					rawBody: $rawBody,
-					consumer: $this->authorizationService->getResolvedConsumer()?->getUuid()
-				),
-				trace: $trace
-			);
-			if ($callLog instanceof JSONResponse === true) {
-				return $callLog;
-			}
-		} else {
-			$callLog = $this->callService->call(
+		// router picks (gateway-upstream-routing REQ-UPRT-001/002). A per-user
+		// source whose caller has not connected their account answers the
+		// connect prompt (sources-per-user-oauth REQ-PUOA-002).
+		try {
+			$callLog = $this->proxyCall(
+				routed: $routed,
+				endpoint: $endpoint,
 				source: $source,
-				endpoint: $upstreamPath,
-				method: $request->getMethod(),
-				config: [
-					'query' => $request->getParams(),
-					'headers' => $headers,
-					'body' => $rawBody,
-				],
+				request: $request,
+				upstreamPath: $upstreamPath,
+				headers: $headers,
+				rawBody: $rawBody,
 				trace: $trace
 			);
-		}//end if
+		} catch (PerUserAccountNotConnectedException $exception) {
+			return $this->connectPrompt->respond(
+				exception: $exception,
+				returnUrl: (string)$request->getHeader('Referer'),
+				instance: $this->requestId->getId()
+			);
+		}
+
+		if ($callLog instanceof JSONResponse === true) {
+			return $callLog;
+		}
 
 		$callLogData = $callLog->getObject();
+
+		// REQ-RLPC-002: the source's paced turn was further away than a live
+		// call may wait, so nothing was sent. Tell the consumer when to come back.
+		if ((int)($callLogData['statusCode'] ?? 0) === Http::STATUS_TOO_MANY_REQUESTS && isset($callLogData['retryAfter']) === true) {
+			return $this->pacedRefusal(retryAfter: (int)$callLogData['retryAfter']);
+		}
 
 		// REQ-MSV-002: the proxied answer is checked against the endpoint's
 		// answer schema. Mode refuse answers 502, the fault being upstream.
@@ -2916,6 +3079,84 @@ class EndpointService implements EndpointServiceInterface {
 
 		return $response;
 	}//end answerFromCache()
+
+	/**
+	 * The answer to a live call whose paced turn was too far away: 429 with
+	 * `Retry-After`, the seconds until its turn (REQ-RLPC-002).
+	 *
+	 * @param int $retryAfter The seconds until the call's turn.
+	 *
+	 * @return JSONResponse The 429.
+	 *
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 */
+	private function pacedRefusal(int $retryAfter): JSONResponse {
+		$response = new JSONResponse(
+			['error' => 'The source behind this endpoint is busy. Try again later.'],
+			Http::STATUS_TOO_MANY_REQUESTS
+		);
+		$response->addHeader('Retry-After', (string)max(1, $retryAfter));
+
+		return $response;
+	}//end pacedRefusal()
+
+	/**
+	 * Send the request to the source through CallService, or to the target the router picks.
+	 *
+	 * @param bool                       $routed       Whether the endpoint has several targets.
+	 * @param ObjectEntity               $endpoint     The endpoint.
+	 * @param mixed                      $source       The source, when not routed.
+	 * @param IRequest                   $request      The incoming request.
+	 * @param string                     $upstreamPath The path at the upstream.
+	 * @param array                      $headers      The forwarded headers.
+	 * @param mixed                      $rawBody      The raw body.
+	 * @param ExecutionTraceContext|null $trace        The active execution trace.
+	 *
+	 * @return mixed The call log, or the router's own answer.
+	 *
+	 * @throws PerUserAccountNotConnectedException When a per-user source's caller has no connected account.
+	 *
+	 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-user-without-a-connected-account-is-sent-to-connect-it-req-puoa-002
+	 */
+	private function proxyCall(
+		bool $routed,
+		ObjectEntity $endpoint,
+		mixed $source,
+		IRequest $request,
+		string $upstreamPath,
+		array $headers,
+		mixed $rawBody,
+		?ExecutionTraceContext $trace,
+	): mixed {
+		if ($routed === true) {
+			return $this->upstreamRouter()->call(
+				request: new UpstreamRequest(
+					endpoint: $endpoint,
+					method: $request->getMethod(),
+					upstreamPath: $upstreamPath,
+					parameters: $request->getParams(),
+					headers: $headers,
+					rawBody: $rawBody,
+					consumer: $this->authorizationService->getResolvedConsumer()?->getUuid()
+				),
+				trace: $trace
+			);
+		}
+
+		return $this->callService->call(
+			source: $source,
+			endpoint: $upstreamPath,
+			method: $request->getMethod(),
+			config: [
+				'query' => $request->getParams(),
+				'headers' => $headers,
+				'body' => $rawBody,
+				// A gateway call is live: it waits only briefly for a paced turn (REQ-RLPC-002).
+				'pacing' => 'live',
+			],
+			trace: $trace
+		);
+	}//end proxyCall()
 
 	/**
 	 * Point an A2A agent card at the gateway when the call asked for one.
@@ -3523,7 +3764,11 @@ class EndpointService implements EndpointServiceInterface {
 		$flowToken = $context->flowToken;
 		$handlers = [
 			'save_object' => fn () => $this->processSaveObjectRule(rule: $rule, data: $data),
-			'authentication' => fn () => $this->processAuthenticationRule(rule: $rule, data: $data),
+			'authentication' => fn () => $this->processAuthenticationRule(
+				rule: $rule,
+				data: $data,
+				endpointPath: trim((string)($context->endpointData['endpoint'] ?? ''), '/')
+			),
 			'error' => fn () => $this->processErrorRule(rule: $rule, data: $data),
 			'mapping' => fn () => $this->processMappingRule(rule: $rule, data: $data),
 			'synchronization' => fn () => $this->processSyncRule(
@@ -3814,12 +4059,13 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @param ObjectEntity $rule The rule to process
 	 * @param array $data The data of the request
+	 * @param string $endpointPath The endpoint's path, for the metadata address a token-protected 401 names (REQ-TOKV-004)
 	 *
 	 * @return array|JSONResponse the unchanged $data array if authentication succeeds, or a JSONResponse containing an error on authentication.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function processAuthenticationRule(ObjectEntity $rule, array $data): array|JSONResponse {
+	private function processAuthenticationRule(ObjectEntity $rule, array $data, string $endpointPath = ''): array|JSONResponse {
 		$configuration = $rule->getObject()['configuration'] ?? [];
 
 		// Normalise all incoming header keys to lowercase once so all subsequent
@@ -3848,7 +4094,8 @@ class EndpointService implements EndpointServiceInterface {
 		$refusal = $this->authenticateOne(
 			authentication: (array)$configuration['authentication'],
 			normalisedHeaders: $normalisedHeaders,
-			method: (string)($data['method'] ?? 'GET')
+			method: (string)($data['method'] ?? 'GET'),
+			endpointPath: $endpointPath
 		);
 		if ($refusal !== null) {
 			return $refusal;
@@ -3924,12 +4171,13 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param array  $authentication    The method configuration (`type`, `header`, `keys`, `users`, `groups`, `requiredScopes`).
 	 * @param array  $normalisedHeaders The request headers, keys lowercased.
 	 * @param string $method            The request's HTTP method, for `requiredScopes`.
+	 * @param string $endpointPath      The endpoint's path, for the metadata address a token-protected 401 names (REQ-TOKV-004).
 	 *
 	 * @return JSONResponse|null Null when the call passes, else the refusal.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function authenticateOne(array $authentication, array $normalisedHeaders, string $method): ?JSONResponse {
+	private function authenticateOne(array $authentication, array $normalisedHeaders, string $method, string $endpointPath = ''): ?JSONResponse {
 		// Default to the Authorization header (lowercase-normalised lookup).
 		$header = ($normalisedHeaders['authorization'] ?? '');
 
@@ -3986,6 +4234,12 @@ class EndpointService implements EndpointServiceInterface {
 			$header = ($normalisedHeaders[$lookupKey] ?? null);
 		}
 
+		$challenge = $this->tokenChallenge(authentication: $authentication, endpointPath: $endpointPath);
+		$missingToken = self::missingTokenResponse(header: $header, challenge: $challenge);
+		if ($missingToken !== null) {
+			return $missingToken;
+		}
+
 		if ($header === '' || $header === null) {
 			return new JSONResponse(
 				['error' => 'forbidden', 'details' => 'you are not allowed to access this endpoint unauththenticated'],
@@ -4006,7 +4260,7 @@ class EndpointService implements EndpointServiceInterface {
 				try {
 					$this->authorizationService->authorizeJwt(authorization: $header);
 				} catch (AuthenticationException $exception) {
-					return $this->unauthenticated(exception: $exception);
+					return $this->unauthenticated(exception: $exception, challenge: $challenge);
 				}
 				break;
 			case 'basic':
@@ -4042,6 +4296,32 @@ class EndpointService implements EndpointServiceInterface {
 			method: $method
 		);
 	}//end authenticateOne()
+
+	/**
+	 * The 401 of a token-protected endpoint called without a token, or null when a token was sent or none is required.
+	 *
+	 * REQ-TOKV-004: the answer carries the address that says where to get one (RFC 9728).
+	 *
+	 * @param mixed       $header    The Authorization header, as read from the request.
+	 * @param string|null $challenge The endpoint's `WWW-Authenticate` value; null when it is not token-protected.
+	 *
+	 * @return JSONResponse|null
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
+	 */
+	private static function missingTokenResponse(mixed $header, ?string $challenge): ?JSONResponse {
+		if ($challenge === null || ($header !== '' && $header !== null)) {
+			return null;
+		}
+
+		$response = new JSONResponse(
+			['error' => 'unauthorized', 'details' => 'This endpoint requires a bearer token'],
+			Http::STATUS_UNAUTHORIZED
+		);
+		$response->addHeader('WWW-Authenticate', $challenge);
+
+		return $response;
+	}//end missingTokenResponse()
 
 	/**
 	 * Refuse an authenticated caller that lacks a scope the rule requires for this method.
@@ -4095,17 +4375,44 @@ class EndpointService implements EndpointServiceInterface {
 	 * The 401 answer to a refused credential, with the refusal's message and details.
 	 *
 	 * @param AuthenticationException $exception The refusal.
+	 * @param string|null             $challenge The `WWW-Authenticate` value of a token-protected endpoint, or null.
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
-	private function unauthenticated(AuthenticationException $exception): JSONResponse {
-		return new JSONResponse(
+	private function unauthenticated(AuthenticationException $exception, ?string $challenge = null): JSONResponse {
+		$response = new JSONResponse(
 			data: ['error' => $exception->getMessage(), 'details' => $exception->getDetails()],
 			statusCode: 401
 		);
+		if ($challenge !== null) {
+			$response->addHeader('WWW-Authenticate', $challenge);
+		}
+
+		return $response;
 	}//end unauthenticated()
+
+	/**
+	 * The `WWW-Authenticate` challenge of a token-protected endpoint, or null for any other authentication.
+	 *
+	 * @param array<string,mixed> $authentication The rule's authentication configuration.
+	 * @param string              $endpointPath   The endpoint's path.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
+	 */
+	private function tokenChallenge(array $authentication, string $endpointPath): ?string {
+		if (isset($this->resourceMetadata) === false
+			|| $endpointPath === ''
+			|| ProtectedResourceMetadata::requiresToken(authentication: $authentication) === false
+		) {
+			return null;
+		}
+
+		return $this->resourceMetadata->challenge(endpointPath: $endpointPath);
+	}//end tokenChallenge()
 
 	/**
 	 * Processes an error rule.

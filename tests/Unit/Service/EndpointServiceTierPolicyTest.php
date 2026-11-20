@@ -167,10 +167,11 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		array $tiers,
 		?ObjectEntity $subscription,
 		string $productUuid = 'product-uuid-1',
+		string $status = 'active',
 	): void {
 		$product = ObjectServiceMockBuilder::objectEntity(
 			$this,
-			['endpoints' => [$endpointUuid], 'tiers' => $tiers, 'status' => 'active'],
+			['endpoints' => [$endpointUuid], 'tiers' => $tiers, 'status' => $status, 'name' => 'Zaken API'],
 			$productUuid
 		);
 
@@ -311,6 +312,92 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
 	}//end testNoActiveSubscriptionReturns403WithoutCallingRateLimiter()
+
+	/**
+	 * REQ-DEVP-005: a subscription whose end date has passed is refused with
+	 * 403 naming the date, even while its status still reads active.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 */
+	public function testAnEndedSubscriptionIsRefusedNamingItsEndDate(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['method' => 'GET'], 'endpoint-uuid-1');
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, ['authorizationType' => 'apikey'], 'consumer-uuid-1');
+		$subscription = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['tier' => 'free', 'status' => 'active', 'expiresAt' => '2026-01-31T23:59:59+00:00'],
+			'sub-uuid-1'
+		);
+
+		$this->withProductAndSubscription(
+			endpointUuid: 'endpoint-uuid-1',
+			tiers: ['free' => ['rateLimit' => ['requestsPerWindow' => 2, 'windowSeconds' => 60]]],
+			subscription: $subscription
+		);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn($consumer);
+		$this->rateLimitService->expects($this->never())->method('enforce');
+
+		$response = $this->enforceMethod()->invoke($this->service, $this->createMock(IRequest::class), $endpoint);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame('subscription_expired', $response->getData()['error']);
+		$this->assertSame('2026-01-31', $response->getData()['expiresAt']);
+		$this->assertStringContainsString('2026-01-31', $response->getData()['message']);
+	}//end testAnEndedSubscriptionIsRefusedNamingItsEndDate()
+
+	/**
+	 * REQ-DEVP-004: a retired product answers 410 Gone before any subscription is looked at.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 */
+	public function testARetiredProductAnswersGone(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['method' => 'GET'], 'endpoint-uuid-1');
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, ['authorizationType' => 'apikey'], 'consumer-uuid-1');
+		$subscription = ObjectServiceMockBuilder::objectEntity($this, ['tier' => 'free', 'status' => 'active'], 'sub-uuid-1');
+
+		$this->withProductAndSubscription(
+			endpointUuid: 'endpoint-uuid-1',
+			tiers: ['free' => []],
+			subscription: $subscription,
+			status: 'retired'
+		);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn($consumer);
+		$this->rateLimitService->expects($this->never())->method('enforce');
+
+		$response = $this->enforceMethod()->invoke($this->service, $this->createMock(IRequest::class), $endpoint);
+
+		$this->assertSame(Http::STATUS_GONE, $response->getStatus());
+		$this->assertSame('product_retired', $response->getData()['error']);
+		$this->assertStringContainsString('Zaken API', $response->getData()['message']);
+	}//end testARetiredProductAnswersGone()
+
+	/**
+	 * A subscription whose end date is still ahead passes the gate to the tier policy.
+	 *
+	 * @return void
+	 */
+	public function testASubscriptionBeforeItsEndDateReachesTheTierPolicy(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['method' => 'GET'], 'endpoint-uuid-1');
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, ['authorizationType' => 'apikey'], 'consumer-uuid-1');
+		$subscription = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['tier' => 'free', 'status' => 'active', 'expiresAt' => '2999-01-01T00:00:00+00:00'],
+			'sub-uuid-1'
+		);
+
+		$this->withProductAndSubscription(
+			endpointUuid: 'endpoint-uuid-1',
+			tiers: ['free' => ['rateLimit' => ['requestsPerWindow' => 2, 'windowSeconds' => 60]]],
+			subscription: $subscription
+		);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn($consumer);
+		$this->rateLimitService->expects($this->once())->method('enforce')->willReturn(new RateLimitDecision(allowed: true));
+
+		$this->assertNull($this->enforceMethod()->invoke($this->service, $this->createMock(IRequest::class), $endpoint));
+	}//end testASubscriptionBeforeItsEndDateReachesTheTierPolicy()
 
 	/**
 	 * REQ-APG-005 scenario "a non-product endpoint is unaffected" — when the
@@ -456,6 +543,36 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		// call_log is admin-only (REQ-OCD-012); an inbound caller is never admin.
 		$this->assertFalse($rbac, 'The inbound call_log must be written with _rbac: false');
 	}//end testRecordInboundCallLogPersistsRowWithProductAndEndpoint()
+
+	/**
+	 * REQ-APGU-001: the inbound call_log row names the consumer the request
+	 * authenticated as, so the analytics can split per consumer; without a
+	 * resolved consumer the row carries no consumer at all.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 */
+	public function testRecordInboundCallLogNamesTheResolvedConsumer(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, [], 'endpoint-uuid-1');
+		$product = ObjectServiceMockBuilder::objectEntity($this, [], 'product-uuid-1');
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Partner'], 'consumer-uuid-1');
+
+		$captured = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$captured) {
+				$captured[] = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
+			}
+		);
+		$this->authorizationService->method('getResolvedConsumer')->willReturnOnConsecutiveCalls($consumer, null);
+
+		$this->service->recordInboundCallLog(endpoint: $endpoint, product: $product, statusCode: 200, durationMs: 5.0);
+		$this->service->recordInboundCallLog(endpoint: $endpoint, product: $product, statusCode: 200, durationMs: 5.0);
+
+		$this->assertSame('consumer-uuid-1', $captured[0]['consumer']);
+		$this->assertArrayNotHasKey('consumer', $captured[1]);
+	}//end testRecordInboundCallLogNamesTheResolvedConsumer()
 
 	/**
 	 * REQ-EP-009 — a call_log write failure never blocks the response

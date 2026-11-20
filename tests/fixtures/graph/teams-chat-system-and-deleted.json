@@ -1,0 +1,138 @@
+{
+ "chat": {
+  "id": "19:d4e5@thread.v2",
+  "topic": "",
+  "chatType": "oneOnOne"
+ },
+ "members": {
+  "value": [
+   {
+    "id": "m-1",
+    "userId": "u-1",
+    "displayName": "P. Jansen"
+   },
+   {
+    "id": "m-2",
+    "userId": "u-2",
+    "displayName": "S. Bakker"
+   }
+  ]
+ },
+ "pages": [
+  {
+   "value": [
+    {
+     "id": "c7",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:07:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Graag gedaan"
+     }
+    },
+    {
+     "id": "c6",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:06:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Dank"
+     }
+    },
+    {
+     "id": "c5",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:05:00Z",
+     "deletedDateTime": "2025-03-03T09:06:00Z",
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": ""
+     }
+    },
+    {
+     "id": "c4",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:04:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Tekening Stationsplein staat in de map"
+     }
+    },
+    {
+     "id": "c3",
+     "messageType": "systemEventMessage",
+     "createdDateTime": "2025-03-03T09:03:00Z",
+     "deletedDateTime": null,
+     "from": null,
+     "body": {
+      "contentType": "html",
+      "content": "<systemEventMessage/>"
+     },
+     "eventDetail": {
+      "@odata.type": "#microsoft.graph.membersAddedEventMessageDetail"
+     }
+    },
+    {
+     "id": "c2",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:02:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Ik zoek hem op"
+     }
+    },
+    {
+     "id": "c1",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:01:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Wie heeft de tekening?"
+     }
+    }
+   ]
+  }
+ ],
+ "hitId": "c4"
+}

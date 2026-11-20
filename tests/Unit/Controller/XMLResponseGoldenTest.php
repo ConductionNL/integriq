@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\XMLResponse;
+use OCA\Integriq\Service\Format\ArrayToXml;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -65,7 +66,7 @@ class XMLResponseGoldenTest extends TestCase {
 			'geen' => ['@attributes' => 'plain', '#text' => 5],
 		];
 
-		$xml = (new XMLResponse([]))->arrayToXml($data);
+		$xml = (new XMLResponse([], encoder: new ArrayToXml()))->arrayToXml($data);
 
 		$this->assertSame(
 			'<?xml version="1.0" encoding="UTF-8"?>' . "\n"

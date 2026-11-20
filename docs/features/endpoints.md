@@ -11,6 +11,7 @@ An **Endpoint** is a URL path exposed by Integriq that can act as a reverse prox
 | `source` | Proxy requests to an external Source |
 | `register/schema` | Read and write OpenRegister objects |
 | `fixed` | Return a static response |
+| `mcp` | Relay an outside MCP tool server over streamable HTTP, see [MCP tool servers behind the gateway](mcp-gateway.md) |
 
 ## HTTP Methods
 

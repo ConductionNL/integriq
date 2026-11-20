@@ -22,6 +22,7 @@ namespace OCA\Integriq\Service\Consumer;
 
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\Auth\ClientCertificate;
+use OCA\Integriq\Service\OAuth\IssuerKeyService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\AuthenticationException as OpenRegisterAuthenticationException;
 use OCA\OpenRegister\Service\AuthorizationService;
@@ -52,6 +53,10 @@ use OCP\IUserSession;
  * or looser check.
  *
  * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ *
+ * It bridges to each of OpenRegister's credential checks, so it depends on each of them.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterface {
 
@@ -101,6 +106,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 * @param IUserSession         $userSession   Nextcloud user session, cleared when the lifetime cap refuses.
 	 * @param ConsumerCredentials|null       $credentials The consumers' credentials list rules.
 	 * @param ConsumerKeySourceResolver|null $keySources  Resolves the key of a consumer with key source `jwks` or `oidc`.
+	 * @param IssuerKeyService|null          $ownIssuer   Integriq's own issuer, so a token it issued is accepted (REQ-TOKV-003).
 	 */
 	public function __construct(
 		private readonly AuthorizationService $authorization,
@@ -108,6 +114,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 		private readonly IUserSession $userSession,
 		private readonly ?ConsumerCredentials $credentials = null,
 		private readonly ?ConsumerKeySourceResolver $keySources = null,
+		private readonly ?IssuerKeyService $ownIssuer = null,
 	) {
 	}//end __construct()
 
@@ -481,7 +488,8 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 			$this->consumerSource = new IntegriqConsumerSource(
 				objectService: $this->objectService,
 				credentials: $this->credentials,
-				keySources: $this->keySources
+				keySources: $this->keySources,
+				ownIssuer: $this->ownIssuer
 			);
 		}
 

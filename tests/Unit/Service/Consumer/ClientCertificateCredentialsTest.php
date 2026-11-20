@@ -197,7 +197,11 @@ final class ClientCertificateCredentialsTest extends TestCase {
 		[$other, $pinned] = $this->consumers();
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('findAll')->willReturn(['results' => [$other, $pinned]]);
-		$objects->expects($this->once())->method('find')->with('consumer-1')->willReturn($pinned);
+		// The list read re-reads each consumer unrendered (development), and the
+		// use is recorded on a fresh read of the pinned one.
+		$objects->method('find')->willReturnCallback(
+			static fn (string $id): ObjectEntity => ['consumer-0' => $other, 'consumer-1' => $pinned][$id]
+		);
 		$saved = null;
 		$objects->expects($this->once())->method('saveObject')->willReturnCallback(
 			static function (array $object) use (&$saved, $pinned): ObjectEntity {
