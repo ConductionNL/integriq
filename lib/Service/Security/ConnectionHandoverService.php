@@ -29,13 +29,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Security;
 
-use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Service\Credential\CredentialMint;
-use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -117,25 +114,18 @@ class ConnectionHandoverService {
 	private const SCHEMA = 'source';
 
 	/**
-	 * The register the credential broker keeps its credential objects in.
-	 *
-	 * @var string
-	 */
-	private const BROKER_REGISTER = 'credential-broker';
-
-	/**
-	 * The schema of a brokered credential object.
-	 *
-	 * @var string
-	 */
-	private const BROKER_SCHEMA = 'brokeredcredential';
-
-	/**
 	 * References minted and verified in this run, by part, waiting for the save.
 	 *
 	 * @var array<string, array{credentialRef: array{credentialId: string}}>
 	 */
 	private array $pendingRefs = [];
+
+	/**
+	 * Mints, verifies and revokes the broker credentials of the secret parts.
+	 *
+	 * @var VerifiedCredentialMinter
+	 */
+	private readonly VerifiedCredentialMinter $minter;
 
 	/**
 	 * Constructor.
@@ -147,10 +137,11 @@ class ConnectionHandoverService {
 	 */
 	public function __construct(
 		private readonly OrObjectService $objectService,
-		private readonly ContainerInterface $container,
+		ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly NestedValuePath $paths = new NestedValuePath(),
 	) {
+		$this->minter = new VerifiedCredentialMinter(objectService: $objectService, container: $container, logger: $logger);
 
 	}//end __construct()
 
@@ -232,21 +223,35 @@ class ConnectionHandoverService {
 	private function takePart(ObjectEntity $source, array $data, string $part, string $value): array {
 		if (isset(self::PLAIN_PARTS[$part]) === true) {
 			$outcome = $this->plainOutcome(data: $data, part: $part, value: $value);
-			$path    = self::PLAIN_PARTS[$part];
-			$stored  = $value;
-		} else {
-			$outcome = $this->takeSecret(source: $source, data: $data, part: $part, secret: $value);
-			$path    = self::SECRET_PARTS[$part][0];
-			$stored  = ($this->pendingRefs[$part] ?? null);
+			return $this->placeTaken(outcome: $outcome, data: $data, path: self::PLAIN_PARTS[$part], stored: $value);
 		}
 
+		$outcome = $this->takeSecret(source: $source, data: $data, part: $part, secret: $value);
+
+		return $this->placeTaken(outcome: $outcome, data: $data, path: self::SECRET_PARTS[$part][0], stored: ($this->pendingRefs[$part] ?? null));
+
+	}//end takePart()
+
+	/**
+	 * Write a taken value into the source data; any other outcome leaves the data as it is.
+	 *
+	 * @param string               $outcome The outcome for the part.
+	 * @param array<string, mixed> $data    The source data so far.
+	 * @param list<string>         $path    Where the part lives on a source.
+	 * @param mixed                $stored  The value to write when the part is taken.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>} The outcome and the (filled) data.
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private function placeTaken(string $outcome, array $data, array $path, mixed $stored): array {
 		if ($outcome !== self::TAKEN) {
 			return [$outcome, $data];
 		}
 
 		return [$outcome, $this->paths->set(data: $data, path: $path, value: $stored)];
 
-	}//end takePart()
+	}//end placeTaken()
 
 	/**
 	 * The non-empty string parts of a handover that this service knows.
@@ -338,159 +343,18 @@ class ConnectionHandoverService {
 	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function mintFor(ObjectEntity $source, array $data, string $part, string $secret): ?string {
-		$organisation = trim((string)($source->getOrganisation() ?? ''));
-		$broker       = $this->broker();
-		if ($organisation === '' || $broker === null) {
-			// Infrastructure is never minted at personal scope, nor without a broker.
-			$this->logFailure(step: 'no-organisation-or-broker', part: $part, e: null);
-			return null;
-		}
-
 		$mint = [
 			'label'        => (string)($data['name'] ?? $source->getUuid()) . ' — ' . $part,
 			'provider'     => self::SECRET_PARTS[$part][1],
 			'owner'        => trim((string)($source->getOwner() ?? '')),
-			'organisation' => $organisation,
+			'organisation' => trim((string)($source->getOrganisation() ?? '')),
 			'part'         => $part,
 			'secret'       => $secret,
 		];
 
-		return $this->mintAndVerify(broker: $broker, mint: $mint);
+		return $this->minter->mint(mint: $mint);
 
 	}//end mintFor()
-
-	/**
-	 * Mint an organisation-scoped credential and resolve it back byte for byte.
-	 *
-	 * @param object                $broker The credential broker.
-	 * @param array<string, string> $mint   The mint fields: label, provider, owner, organisation, part (for the secret-free log) and secret.
-	 *
-	 * @return string|null The credential id, or null when the mint or the verify failed.
-	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
-	 */
-	private function mintAndVerify(object $broker, array $mint): ?string {
-		try {
-			$credentialId = self::mintCredential(broker: $broker, mint: $mint);
-		} catch (Throwable $e) {
-			$this->logFailure(step: 'mint', part: $mint['part'], e: $e);
-			return null;
-		}
-
-		if ($credentialId === '') {
-			$this->logFailure(step: 'mint-no-uuid', part: $mint['part'], e: null);
-			return null;
-		}
-
-		try {
-			$verified = $broker->resolveInjectable($credentialId, InlineSecretMigrationExecutor::APP_ID, null, $mint['organisation']);
-		} catch (Throwable $e) {
-			// The credential exists but cannot be resolved back: remove it, so
-			// none stays behind in keepiq unreferenced.
-			$this->logFailure(step: 'verify', part: $mint['part'], e: $e);
-			$this->revokeCredential(credentialId: $credentialId, part: $mint['part']);
-			return null;
-		}
-
-		if (self::isSameSecret(secret: $mint['secret'], verified: $verified) === false) {
-			$this->logFailure(step: 'verify-mismatch', part: $mint['part'], e: null);
-			$this->revokeCredential(credentialId: $credentialId, part: $mint['part']);
-			return null;
-		}
-
-		return $credentialId;
-
-	}//end mintAndVerify()
-
-	/**
-	 * Mint the credential and return its uuid, or '' when the broker returned no entity.
-	 *
-	 * @param object                $broker The credential broker.
-	 * @param array<string, string> $mint   The mint fields.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
-	 */
-	private static function mintCredential(object $broker, array $mint): string {
-		if (self::hasValueMint(broker: $broker) === true) {
-			// OpenRegister main: the mint takes the credential and its options as value objects.
-			$credential = $broker->mintCredential(
-				new CredentialMint(name: $mint['label'], provider: $mint['provider'], owner: $mint['owner']),
-				new CredentialMintOptions(
-					allowedApps: [InlineSecretMigrationExecutor::APP_ID],
-					secret: $mint['secret'],
-					scope: InlineSecretMigrationExecutor::SCOPE_ORGANISATION,
-					organisation: $mint['organisation']
-				)
-			);
-
-			return self::credentialIdOf(credential: $credential);
-		}
-
-		// Positional: the broker is a duck-typed cross-app class.
-		$credential = $broker->mint(
-			$mint['label'],
-			$mint['provider'],
-			$mint['owner'],
-			[InlineSecretMigrationExecutor::APP_ID],
-			$mint['secret'],
-			InlineSecretMigrationExecutor::SCOPE_ORGANISATION,
-			$mint['organisation']
-		);
-
-		return self::credentialIdOf(credential: $credential);
-
-	}//end mintCredential()
-
-	/**
-	 * Whether the broker mints through OpenRegister main's value-object API.
-	 *
-	 * @param object $broker The credential broker.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
-	 */
-	private static function hasValueMint(object $broker): bool {
-		return method_exists($broker, 'mintCredential') === true
-			&& class_exists(CredentialMint::class) === true
-			&& class_exists(CredentialMintOptions::class) === true;
-
-	}//end hasValueMint()
-
-	/**
-	 * The uuid of a minted credential, or '' when the broker returned no entity.
-	 *
-	 * @param mixed $credential What the broker's mint returned.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
-	 */
-	private static function credentialIdOf(mixed $credential): string {
-		if ($credential instanceof ObjectEntity === true) {
-			return (string)$credential->getUuid();
-		}
-
-		return '';
-
-	}//end credentialIdOf()
-
-	/**
-	 * Whether the broker resolved exactly the secret that was minted.
-	 *
-	 * @param string $secret   The handed-over secret.
-	 * @param mixed  $verified What the broker resolved.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
-	 */
-	private static function isSameSecret(string $secret, mixed $verified): bool {
-		return is_string($verified) === true && hash_equals($secret, $verified) === true;
-
-	}//end isSameSecret()
 
 	/**
 	 * Save the filled source; on failure every pending part fails.
@@ -508,7 +372,10 @@ class ConnectionHandoverService {
 		try {
 			$this->objectService->saveObject(
 				object: $data,
-				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: (string)$source->getUuid()),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+					uuid: (string)$source->getUuid()
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -556,38 +423,10 @@ class ConnectionHandoverService {
 				continue;
 			}
 
-			$this->revokeCredential(credentialId: $credentialId, part: $part);
+			$this->minter->revoke(credentialId: $credentialId, part: $part);
 		}
 
 	}//end revokeMinted()
-
-	/**
-	 * Remove one credential minted for a part that was not taken over.
-	 *
-	 * Best effort: a removal that fails is logged without any secret.
-	 *
-	 * @param string $credentialId The credential id.
-	 * @param string $part         The part name, for the secret-free log.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
-	 */
-	private function revokeCredential(string $credentialId, string $part): void {
-		try {
-			$this->objectService->deleteObject(
-				deletion: new ObjectDeletion(
-					uuid: $credentialId,
-					target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
-				),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			$this->logFailure(step: 'revoke', part: $part, e: $e);
-		}
-
-	}//end revokeCredential()
 
 	/**
 	 * The source with the given slug, read raw so secrets already set are visible.
@@ -687,44 +526,6 @@ class ConnectionHandoverService {
 		return $entity;
 
 	}//end readRaw()
-
-	/**
-	 * The credential broker, or null when it is absent or cannot mint and verify.
-	 *
-	 * @return object|null
-	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
-	 */
-	private function broker(): ?object {
-		try {
-			$broker = $this->container->get(InlineSecretMigrationExecutor::BROKER_CLASS);
-		} catch (Throwable) {
-			return null;
-		}
-
-		if (self::canMintAndVerify(broker: $broker) === false) {
-			return null;
-		}
-
-		return $broker;
-
-	}//end broker()
-
-	/**
-	 * Whether a container entry is an object offering a mint (mint or mintCredential) and resolveInjectable.
-	 *
-	 * @param mixed $broker The container entry.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
-	 */
-	private static function canMintAndVerify(mixed $broker): bool {
-		return is_object($broker) === true
-			&& (method_exists($broker, 'mint') === true || self::hasValueMint(broker: $broker) === true)
-			&& method_exists($broker, 'resolveInjectable') === true;
-
-	}//end canMintAndVerify()
 
 	/**
 	 * Log a failure without any secret.
