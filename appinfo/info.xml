@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.4.10-unstable.20261117090000</version>
+	<version>0.4.20-unstable.20261120080000</version>
 	<licence>EUPL-1.2</licence>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>Integriq</namespace>
@@ -170,6 +170,10 @@
 		     exchange_rate objects, four runs a day so the 16:00 CET file lands
 		     the same day. -->
 		<job>OCA\Integriq\BackgroundJob\ExchangeRateSyncJob</job>
+		<!-- connectors-digipoort-sbr-filing: every ten minutes, retries a Digipoort
+		     delivery that failed with budget left and asks the status service
+		     about every filing that has not reached a final status. -->
+		<job>OCA\Integriq\BackgroundJob\SbrFilingStatusJob</job>
 	</background-jobs>
 
 	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order
@@ -278,6 +282,12 @@
 			     the old names stay resolvable through MovedJobClasses aliases. -->
 			<step>OCA\Integriq\Repair\MigrateMovedJobClasses</step>
 			<step>OCA\Integriq\Repair\InitializeActions</step>
+			<!-- platform-action-rights-coverage REQ-ARC-004: writes the stored
+			     object.<schema>.<verb> rights back onto the configuration schemas
+			     after the register import above reset their authorization blocks.
+			     AFTER InitializeRegister and InitializeActions; an untouched matrix
+			     writes what the register declares. Never throws. -->
+			<step>OCA\Integriq\Repair\ApplyObjectRights</step>
 			<!-- D33: broadens exchange.read only on an instance that still has the
 			     untouched ["admin"] default. AFTER InitializeActions, so a fresh install
 			     is seeded first and this step then has nothing to do. Never throws. -->
@@ -497,6 +507,12 @@
 			     the old names stay resolvable through MovedJobClasses aliases. -->
 			<step>OCA\Integriq\Repair\MigrateMovedJobClasses</step>
 			<step>OCA\Integriq\Repair\InitializeActions</step>
+			<!-- platform-action-rights-coverage REQ-ARC-004: writes the stored
+			     object.<schema>.<verb> rights back onto the configuration schemas
+			     after the register import above reset their authorization blocks.
+			     AFTER InitializeRegister and InitializeActions; an untouched matrix
+			     writes what the register declares. Never throws. -->
+			<step>OCA\Integriq\Repair\ApplyObjectRights</step>
 			<!-- D33: broadens exchange.read only on an instance that still has the
 			     untouched ["admin"] default. AFTER InitializeActions, so a fresh install
 			     is seeded first and this step then has nothing to do. Never throws. -->
@@ -529,6 +545,8 @@
 		<!-- Chain B storage migration: operator entrypoint for the legacy → OpenRegister
 		     row migration (dry-run, per-entity retry, verify). -->
 		<command>OCA\Integriq\Command\MigrateToOpenRegister</command>
+		<!-- platform-connector-extension-kit: what each extension app contributed, and what was refused. -->
+		<command>OCA\Integriq\Command\ExtensionsList</command>
 		<!-- ocon#151 phase C / ADR-064: reports which sources still hold an inline
 		     secret and what each would become in the credential broker. The dry-run
 		     mode writes nothing and emits the "clean" gate phase D must check before

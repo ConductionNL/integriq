@@ -570,7 +570,7 @@ exports[`ExtendExternalInputForm > renders a config as recorded 1`] = `
     <div class="NcTextField" data-label="Schema ID" data-value="s" data-placeholder="contact">
       <!---->
       <!---->
-    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"></path></svg></span>
       <!---->
     </button>
   </div>
@@ -582,7 +582,7 @@ exports[`ExtendExternalInputForm > renders a config as recorded 1`] = `
     <div class="NcTextField" data-label="Schema ID" data-value="" data-placeholder="contact">
       <!---->
       <!---->
-    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"></path></svg></span>
       <!---->
     </button>
   </div>
@@ -594,10 +594,10 @@ exports[`ExtendExternalInputForm > renders a config as recorded 1`] = `
     <div class="NcTextField" data-label="Schema ID" data-value="" data-placeholder="contact">
       <!---->
       <!---->
-    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"></path></svg></span>
       <!---->
     </button>
-  </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button>
+  </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path></svg></span> Add property</button>
 </div>"
 `;
 
@@ -605,7 +605,7 @@ exports[`ExtendExternalInputForm > renders an empty config as recorded 1`] = `
 "<div class="action-form">
   <div class="NcCheckboxRadioSwitch" data-value="false">
     <!---->Validate fetched object against schema
-  </div><label class="action-form__label">Properties to fetch</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button>
+  </div><label class="action-form__label">Properties to fetch</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path></svg></span> Add property</button>
 </div>"
 `;
 
@@ -613,7 +613,7 @@ exports[`ExtendExternalInputForm > renders properties that are not a list as rec
 "<div class="action-form">
   <div class="NcCheckboxRadioSwitch" data-value="false">
     <!---->Validate fetched object against schema
-  </div><label class="action-form__label">Properties to fetch</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button>
+  </div><label class="action-form__label">Properties to fetch</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path></svg></span> Add property</button>
 </div>"
 `;
 
@@ -1090,7 +1090,7 @@ exports[`ExtendInputForm > renders a config as recorded 1`] = `
     <div class="NcTextField" data-label="Extends (comma-separated paths, optional)" data-value="x,y" data-placeholder="x.y,z">
       <!---->
       <!---->
-    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"></path></svg></span>
       <!---->
     </button>
   </div>
@@ -1102,7 +1102,7 @@ exports[`ExtendInputForm > renders a config as recorded 1`] = `
     <div class="NcTextField" data-label="Extends (comma-separated paths, optional)" data-value="" data-placeholder="x.y,z">
       <!---->
       <!---->
-    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"></path></svg></span>
       <!---->
     </button>
   </div>
@@ -1114,13 +1114,13 @@ exports[`ExtendInputForm > renders a config as recorded 1`] = `
     <div class="NcTextField" data-label="Extends (comma-separated paths, optional)" data-value="" data-placeholder="x.y,z">
       <!---->
       <!---->
-    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"><!--v-if--></path></svg></span>
+    </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon close-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"></path></svg></span>
       <!---->
     </button>
-  </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button>
+  </div><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path></svg></span> Add property</button>
 </div>"
 `;
 
-exports[`ExtendInputForm > renders an empty config as recorded 1`] = `"<div class="action-form"><label class="action-form__label">Properties to extend</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button></div>"`;
+exports[`ExtendInputForm > renders an empty config as recorded 1`] = `"<div class="action-form"><label class="action-form__label">Properties to extend</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path></svg></span> Add property</button></div>"`;
 
-exports[`ExtendInputForm > renders properties that are not a list as recorded 1`] = `"<div class="action-form"><label class="action-form__label">Properties to extend</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"><!--v-if--></path></svg></span> Add property</button></div>"`;
+exports[`ExtendInputForm > renders properties that are not a list as recorded 1`] = `"<div class="action-form"><label class="action-form__label">Properties to extend</label><button class="NcButton" data-value=""><span aria-hidden="true" class="material-design-icon plus-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path></svg></span> Add property</button></div>"`;

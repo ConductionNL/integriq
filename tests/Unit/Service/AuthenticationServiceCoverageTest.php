@@ -188,13 +188,8 @@ class AuthenticationServiceCoverageTest extends TestCase {
 			)
 		);
 
-		// The credentials are kept out of the form and an Authorization header
-		// is sent. Its VALUE is not asserted: the service passes Guzzle's `auth`
-		// option as ['username' => .., 'password' => ..] where Guzzle reads a
-		// list [0, 1], so today the header carries empty credentials ("Basic Og==").
-		// Reported as a production bug rather than pinned here.
-		$this->assertTrue($request->hasHeader('Authorization'));
-		$this->assertStringStartsWith('Basic ', $request->getHeaderLine('Authorization'));
+		// The credentials are kept out of the form and sent as a Basic header.
+		$this->assertSame('Basic ' . base64_encode('client-1:s3cret'), $request->getHeaderLine('Authorization'));
 		$this->assertSame(['grant_type' => 'client_credentials', 'scope' => 'api'], self::form(request: $request));
 	}//end testClientCredentialsWithBasicAuthUseTheAuthorizationHeader()
 
@@ -286,13 +281,8 @@ class AuthenticationServiceCoverageTest extends TestCase {
 			)
 		);
 
-		// The credentials are kept out of the form and an Authorization header
-		// is sent. Its VALUE is not asserted: the service passes Guzzle's `auth`
-		// option as ['username' => .., 'password' => ..] where Guzzle reads a
-		// list [0, 1], so today the header carries empty credentials ("Basic Og==").
-		// Reported as a production bug rather than pinned here.
-		$this->assertTrue($request->hasHeader('Authorization'));
-		$this->assertStringStartsWith('Basic ', $request->getHeaderLine('Authorization'));
+		// The credentials are kept out of the form and sent as a Basic header.
+		$this->assertSame('Basic ' . base64_encode('alice:secret'), $request->getHeaderLine('Authorization'));
 		$this->assertSame(['grant_type' => 'password', 'scope' => 'openid'], self::form(request: $request));
 	}//end testAPasswordGrantWithBasicAuthUsesTheAuthorizationHeader()
 

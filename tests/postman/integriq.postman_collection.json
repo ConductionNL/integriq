@@ -2579,6 +2579,2491 @@
       ]
     },
     {
+      "name": "18 — OAuth client credentials and protected-resource metadata (access-oauth-and-token-validation)",
+      "description": "REQ-TOKV-003 and REQ-TOKV-004: the issuer key and its public key set, a consumer's client secret (write-only in OpenRegister), the client credentials token endpoint and its refusals, the RFC 9728 metadata document of a token-protected endpoint, and the 401 that names it. Own fixtures, removed at the end of the folder.",
+      "item": [
+        {
+          "name": "POST /oauth/issuer-key — admin creates the signing key",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/oauth/issuer-key"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201: the key is created', () => pm.response.to.have.status(201));",
+                  "const jwk = pm.response.json();",
+                  "pm.test('a public JWK with a kid', () => { pm.expect(jwk.kid).to.be.a('string'); pm.expect(jwk.kty).to.be.a('string'); });",
+                  "pm.test('no private key member', () => ['d','p','q','dp','dq','qi'].forEach((k) => pm.expect(jwk).to.not.have.property(k)));",
+                  "pm.collectionVariables.set('fxIssuerKid', jwk.kid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /.well-known/jwks.json — public, the new key listed",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/integriq/.well-known/jwks.json"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 without a login', () => pm.response.to.have.status(200));",
+                  "const set = pm.response.json();",
+                  "pm.test('lists the issuer key', () => pm.expect(set.keys.map((k) => k.kid)).to.include(pm.collectionVariables.get('fxIssuerKid')));",
+                  "pm.test('no private key member on any key', () => set.keys.forEach((jwk) => ['d','p','q','dp','dq','qi'].forEach((k) => pm.expect(jwk).to.not.have.property(k))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST consumer — client credentials fixture",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/consumer"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-oauth-client\", \"description\": \"Newman client credentials fixture\", \"authorizationType\": \"client_credentials\", \"scopes\": [\"zaken:read\"]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('fxOAuthConsumerUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /consumers/{id}/client-secret — shown once, not cached",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/consumers/{{fxOAuthConsumerUuid}}/client-secret"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('the client id is the consumer and a secret is returned', () => { pm.expect(b.clientId).to.eql(pm.collectionVariables.get('fxOAuthConsumerUuid')); pm.expect(b.clientSecret).to.be.a('string').and.not.empty; });",
+                  "pm.test('Cache-Control: no-store', () => pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store'));",
+                  "pm.collectionVariables.set('fxOAuthClientSecret', b.clientSecret);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /consumers/{id}/client-secret — an unknown consumer is 404",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/consumers/00000000-0000-4000-8000-000000000000/client-secret"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET consumer — no secret or key material in the OpenRegister object",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{orBase}}/consumer/{{fxOAuthConsumerUuid}}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const text = pm.response.text();",
+                  "pm.test('the client secret does not appear', () => pm.expect(text).to.not.include(pm.collectionVariables.get('fxOAuthClientSecret')));",
+                  "pm.test('no private key material appears', () => pm.expect(text).to.not.match(/PRIVATE KEY/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /oauth/token — no client credentials is 401 invalid_client",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/oauth/token"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "grant_type=client_credentials"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('invalid_client', () => pm.expect(pm.response.json().error).to.eql('invalid_client'));",
+                  "pm.test('a Basic challenge', () => pm.expect(pm.response.headers.get('WWW-Authenticate')).to.match(/^Basic /));",
+                  "pm.test('Cache-Control: no-store', () => pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /oauth/token — a wrong secret is 401 invalid_client",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/oauth/token"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "grant_type=client_credentials"
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{fxOAuthConsumerUuid}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "not-the-secret",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('invalid_client', () => pm.expect(pm.response.json().error).to.eql('invalid_client'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /oauth/token — another grant type is 400 unsupported_grant_type",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/oauth/token"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "grant_type=password"
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{fxOAuthConsumerUuid}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{fxOAuthClientSecret}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('unsupported_grant_type', () => pm.expect(pm.response.json().error).to.eql('unsupported_grant_type'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /oauth/token — client credentials issues a signed JWT with the consumer's scopes",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/oauth/token"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "grant_type=client_credentials"
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{fxOAuthConsumerUuid}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{fxOAuthClientSecret}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('a Bearer token with its lifetime', () => { pm.expect(b.token_type).to.eql('Bearer'); pm.expect(b.expires_in).to.be.a('number').and.above(0); });",
+                  "pm.test('the scopes the consumer holds', () => pm.expect(b.scope).to.eql('zaken:read'));",
+                  "const parts = String(b.access_token).split('.');",
+                  "pm.test('a JWS in three parts', () => pm.expect(parts).to.have.lengthOf(3));",
+                  "const decode = (s) => { const b64 = s.replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4))); };",
+                  "const header = decode(parts[0]);",
+                  "const claims = decode(parts[1]);",
+                  "pm.test('signed with the published issuer key', () => pm.expect(header.kid).to.eql(pm.collectionVariables.get('fxIssuerKid')));",
+                  "pm.test('not an HMAC token', () => pm.expect(header.alg).to.not.match(/^HS/));",
+                  "pm.test('issued to this client', () => { pm.expect(claims.sub).to.eql(pm.collectionVariables.get('fxOAuthConsumerUuid')); pm.expect(claims.client_id).to.eql(claims.sub); pm.expect(claims.scope).to.eql('zaken:read'); pm.expect(claims.exp).to.be.above(claims.iat); });",
+                  "pm.test('Cache-Control: no-store', () => pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /oauth/token — a scope the consumer does not hold is 400 invalid_scope",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/oauth/token"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "grant_type=client_credentials&scope=zaken%3Awrite"
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{fxOAuthConsumerUuid}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{fxOAuthClientSecret}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "const b = pm.response.json();",
+                  "pm.test('invalid_scope naming the scope', () => { pm.expect(b.error).to.eql('invalid_scope'); pm.expect(b.error_description).to.include('zaken:write'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST rule — token-protected fixture",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/rule"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-oauth-rule\", \"type\": \"authentication\", \"order\": 1, \"timing\": \"before\", \"isEnabled\": true, \"configuration\": {\"authentication\": {\"type\": \"jwt\", \"requiredScopes\": {\"GET\": [\"zaken:read\"], \"POST\": [\"zaken:write\"]}}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('fxOAuthRuleUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST endpoint — token-protected fixture",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/endpoint"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-oauth-endpoint\", \"endpoint\": \"newman-oauth\", \"method\": \"GET\", \"targetType\": \"api\", \"targetId\": \"{{fxSourceUuid}}\", \"rules\": [\"{{fxOAuthRuleUuid}}\"], \"isEnabled\": true}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('fxOAuthEndpointUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /.well-known/oauth-protected-resource/newman-oauth — the metadata document",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/integriq/.well-known/oauth-protected-resource/newman-oauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 without a login', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('names the endpoint as the resource', () => pm.expect(b.resource).to.match(/\\/apps\\/integriq\\/api\\/endpoint\\/newman-oauth$/));",
+                  "pm.test('one authorization server', () => pm.expect(b.authorization_servers).to.be.an('array').with.lengthOf(1));",
+                  "pm.test('the scopes the rule asks for, sorted', () => pm.expect(b.scopes_supported).to.eql(['zaken:read', 'zaken:write']));",
+                  "pm.test('bearer in the header', () => pm.expect(b.bearer_methods_supported).to.eql(['header']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /.well-known/oauth-protected-resource/newman-fixture — nothing for an open endpoint",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/integriq/.well-known/oauth-protected-resource/newman-fixture"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('not_found', () => pm.expect(pm.response.json().error).to.eql('not_found'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /endpoint/newman-oauth — without a token the 401 names the metadata URL",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/newman-oauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "const challenge = pm.response.headers.get('WWW-Authenticate') || '';",
+                  "pm.test('a Bearer challenge with resource_metadata', () => pm.expect(challenge).to.match(/^Bearer resource_metadata=\"[^\"]+\\/apps\\/integriq\\/\\.well-known\\/oauth-protected-resource\\/newman-oauth\"$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE endpoint — token-protected fixture",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/endpoint/{{fxOAuthEndpointUuid}}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE rule — token-protected fixture",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/rule/{{fxOAuthRuleUuid}}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE consumer — client credentials fixture",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/consumer/{{fxOAuthConsumerUuid}}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "16a — Objecten and Objecttypen API (objecten-api-facade)",
+      "description": "REQ-OAF-001 to 005 over the two VNG APIs: a published objecttype, the token matrix (none, unknown, foreign objecttype, read against write), create, read, data_attrs, geometry search, partial update and delete. Self-contained: its own schema, register, objecttype, credentials and tokens, removed at the end.",
+      "item": [
+        {
+          "name": "Setup: schema for the objects (OR)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "objecten-api-facade: a schema of its own, so the checks touch no real data.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Newman boom\",\"slug\":\"newman-boom-{{objStamp}}\",\"properties\":{\"soort\":{\"type\":\"string\"},\"hoogte\":{\"type\":\"number\"}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.collectionVariables.set('objStamp', String(stamp));",
+                  "pm.collectionVariables.set('objTypeUuid', pm.variables.replaceIn('{{$guid}}'));",
+                  "pm.collectionVariables.set('objReadKey', 'newman-read-' + stamp + '-' + Math.random().toString(36).slice(2));",
+                  "pm.collectionVariables.set('objWriteKey', 'newman-write-' + stamp + '-' + Math.random().toString(36).slice(2));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(id, 'the created id').to.not.be.undefined;",
+                  "pm.collectionVariables.set('objSchema', String(id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setup: register holding the schema (OR)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Newman objecten\",\"slug\":\"newman-objecten-{{objStamp}}\",\"schemas\":[\"{{objSchema}}\"]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(id, 'the created id').to.not.be.undefined;",
+                  "pm.collectionVariables.set('objRegister', String(id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setup: publish the schema as an objecttype (OR)",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/objecttype",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "REQ-OAF-001: an objecttype is a schema named on purpose, under a stable published uuid.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"publishedUuid\":\"{{objTypeUuid}}\",\"name\":\"newman-boom\",\"register\":\"newman-objecten-{{objStamp}}\",\"schema\":\"newman-boom-{{objStamp}}\",\"versions\":[\"1\",\"2\"]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(id, 'the created id').to.not.be.undefined;",
+                  "pm.collectionVariables.set('objTypeObject', String(id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setup: credential for the read token (OR broker)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/openregister/api/credentials",
+            "header": [
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "The token's key lives in the credential broker; the token only names the credential.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-objecten-read-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objReadKey}}\", \"allowedApps\": [\"openconnector\"]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(id, 'the created id').to.not.be.undefined;",
+                  "pm.collectionVariables.set('objReadCred', String(id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setup: credential for the write token (OR broker)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/openregister/api/credentials",
+            "header": [
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "The token's key lives in the credential broker; the token only names the credential.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-objecten-write-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objWriteKey}}\", \"allowedApps\": [\"openconnector\"]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(id, 'the created id').to.not.be.undefined;",
+                  "pm.collectionVariables.set('objWriteCred', String(id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setup: objecten_token with read (OR)",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/objecten_token",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-objecten-read\",\"credential\":\"{{objReadCred}}\",\"principal\":\"{{admin_user}}\",\"permissions\":{\"{{objTypeUuid}}\":\"read\"}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(id, 'the created id').to.not.be.undefined;",
+                  "pm.collectionVariables.set('objReadToken', String(id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setup: objecten_token with read_write (OR)",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/objecten_token",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-objecten-write\",\"credential\":\"{{objWriteCred}}\",\"principal\":\"{{admin_user}}\",\"permissions\":{\"{{objTypeUuid}}\":\"read_write\"}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(id, 'the created id').to.not.be.undefined;",
+                  "pm.collectionVariables.set('objWriteToken', String(id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecttypen: the list holds the published objecttype",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objecttypes",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('listed', () => pm.response.to.have.status(200));",
+                  "pm.test('the objecttype is in the list', () => pm.expect(pm.response.text()).to.include(pm.collectionVariables.get('objTypeUuid')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecttypen: one objecttype carries the schema's jsonSchema",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objecttypes/{{objTypeUuid}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('found', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('its name and jsonSchema', () => {",
+                  "  pm.expect(b.name).to.eql('newman-boom');",
+                  "  pm.expect(JSON.stringify(b)).to.include('soort');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecttypen: a version the objecttype does not list is a 404",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objecttypes/{{objTypeUuid}}/versions/999",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('not found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: no token is a 401",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects?type={{objTypeUuid}}",
+            "header": [],
+            "description": "REQ-OAF-005: both checks start closed."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: an unknown key is a 401",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects?type={{objTypeUuid}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token newman-not-a-key"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.response.to.have.status(401));",
+                  "pm.test('the answer does not say why the key is unknown', () => pm.expect(pm.response.text()).to.not.include('newman-not-a-key'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: an objecttype the token does not name is a 403",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects?type={{$guid}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: a list without a type is refused",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              }
+            ],
+            "description": "A token holds a permission per objecttype, so a list across every type is refused."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.expect([400, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: a read token cannot write",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\":\"{{objTypeUuid}}\",\"record\":{\"typeVersion\":1,\"data\":{\"soort\":\"eik\",\"hoogte\":12}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: create an object",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objWriteKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "REQ-OAF-004: a write goes through the object service, so the schema validates it.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\":\"{{objTypeUuid}}\",\"record\":{\"typeVersion\":1,\"data\":{\"soort\":\"eik\",\"hoogte\":12},\"geometry\":{\"type\":\"Point\",\"coordinates\":[5.1214,52.0907]}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('rendered as an Objecten record', () => {",
+                  "  pm.expect(b.uuid).to.be.a('string');",
+                  "  pm.expect(b.url).to.include('/api/v2/objects/' + b.uuid);",
+                  "  pm.expect(b.type).to.include(pm.collectionVariables.get('objTypeUuid'));",
+                  "  pm.expect(b.record.data.soort).to.eql('eik');",
+                  "});",
+                  "pm.collectionVariables.set('objObject', b.uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: a write without record.data is a 400",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objWriteKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\":\"{{objTypeUuid}}\",\"record\":{\"typeVersion\":1}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: read the object",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('found', () => pm.response.to.have.status(200));",
+                  "pm.test('its data', () => pm.expect(pm.response.json().record.data.hoogte).to.eql(12));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: data_attrs finds the object",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects?type={{objTypeUuid}}&data_attrs=soort__exact__eik",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              }
+            ],
+            "description": "REQ-OAF-003: the query half of the standard."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('listed', () => pm.response.to.have.status(200));",
+                  "pm.test('the object is in the page', () => pm.expect(pm.response.json().results.map((o) => o.uuid)).to.include(pm.collectionVariables.get('objObject')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: data_attrs that match nothing",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects?type={{objTypeUuid}}&data_attrs=soort__exact__beuk",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('listed', () => pm.response.to.have.status(200));",
+                  "pm.test('the object is not in the page', () => pm.expect(pm.response.json().results.map((o) => o.uuid)).to.not.include(pm.collectionVariables.get('objObject')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: a geometry search within a circle finds the object",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/search?type={{objTypeUuid}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"geometry\":{\"within\":{\"type\":\"Point\",\"coordinates\":[5.1215,52.0908],\"radius\":500}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('searched', () => pm.response.to.have.status(200));",
+                  "pm.test('the object near the point is found', () => pm.expect(pm.response.json().results.map((o) => o.uuid)).to.include(pm.collectionVariables.get('objObject')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: a geometry search far away finds nothing of it",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/search?type={{objTypeUuid}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"geometry\":{\"within\":{\"type\":\"Point\",\"coordinates\":[6.5665,53.2194],\"radius\":500}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('searched', () => pm.response.to.have.status(200));",
+                  "pm.test('the object is not found', () => pm.expect(pm.response.json().results.map((o) => o.uuid)).to.not.include(pm.collectionVariables.get('objObject')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: a search without within is a 400",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/search?type={{objTypeUuid}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"geometry\":{}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: partial update",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objWriteKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\":\"{{objTypeUuid}}\",\"record\":{\"typeVersion\":1,\"data\":{\"hoogte\":14}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('updated', () => pm.response.to.have.status(200));",
+                  "pm.test('the new value, the rest kept', () => {",
+                  "  const d = pm.response.json().record.data;",
+                  "  pm.expect(d.hoogte).to.eql(14);",
+                  "  pm.expect(d.soort).to.eql('eik');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: a read token cannot delete",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "DELETE",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: delete the object",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "DELETE",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objWriteKey}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objecten: the deleted object is a 404",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Token {{objReadKey}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('gone', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the read token",
+          "request": {
+            "method": "DELETE",
+            "url": "{{orBase}}/objecten_token/{{objReadToken}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the write token",
+          "request": {
+            "method": "DELETE",
+            "url": "{{orBase}}/objecten_token/{{objWriteToken}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the read credential",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/index.php/apps/openregister/api/credentials/{{objReadCred}}",
+            "header": [
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the write credential",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/index.php/apps/openregister/api/credentials/{{objWriteCred}}",
+            "header": [
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the objecttype",
+          "request": {
+            "method": "DELETE",
+            "url": "{{orBase}}/objecttype/{{objTypeObject}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the register",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{objRegister}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the schema",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{objSchema}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "18 — Message schema validation (mapping-message-schema-validation)",
+      "item": [
+        {
+          "name": "18.1 GET message schemas — both seeds listed",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{orBase}}/message_schema",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "message_schema"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('listed', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const rows = (pm.response.json().results || pm.response.json());",
+                  "const slugs = rows.map((r) => (r['@self'] && r['@self'].slug) || r.slug);",
+                  "pm.test('the JSON Schema seed is there', () => pm.expect(slugs).to.include('example-person-json'));",
+                  "pm.test('the XSD seed is there', () => pm.expect(slugs).to.include('example-person-xsd'));",
+                  "const person = rows.find((r) => ((r['@self'] && r['@self'].slug) || r.slug) === 'example-person-json');",
+                  "pm.collectionVariables.set('msvPersonSchema', person && ((person['@self'] && person['@self'].id) || person.uuid || person.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.2 POST message schema — a broken XSD is refused",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/message_schema",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "message_schema"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-broken-xsd\", \"kind\": \"xsd\", \"document\": \"<xs:schema xmlns:xs=\\\"http://www.w3.org/2001/XMLSchema\\\"><xs:element name=\\\"a\\\">\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused, nothing stored', () => pm.expect(pm.response.code).to.equal(400));",
+                  "pm.test('the parser says why', () => pm.expect(pm.response.text().length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.3 POST endpoint — request validation in refuse mode",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/endpoint",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"msv-endpoint\", \"endpoint\": \"msv-newman\", \"method\": \"POST\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"validation\": {\"mode\": \"refuse\", \"request\": {\"messageSchema\": \"{{msvPersonSchema}}\"}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('msvEndpointUuid', b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.4 POST /api/endpoint/msv-newman — a request without bsn is refused before dispatch",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/msv-newman",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "msv-newman"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"geslachtsnaam\": \"Jansen\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.expect(pm.response.code).to.equal(400));",
+                  "pm.test('problem+json', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                  "pm.test('names /bsn', () => pm.expect(pm.response.text()).to.include('/bsn'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.5 POST /api/endpoint/msv-newman — a valid request passes the check",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/msv-newman",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "msv-newman"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"bsn\": \"999990019\", \"geslachtsnaam\": \"Jansen\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('not refused by the message check', () => pm.expect(pm.response.code === 400 && pm.response.text().includes('/bsn')).to.equal(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.6 DELETE endpoint — msv fixture",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/endpoint/{{msvEndpointUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "{{msvEndpointUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "18 — Product channels (events-async-api-products)",
+      "description": "openspec/changes/events-async-api-products (REQ-AAPI-002, REQ-AAPI-003, REQ-AAPI-004). Hermetic: seeds its own product (one channel, a tier of 2 requests per 60 s), a JWT consumer and a product subscription, and deletes them at the end. The tier budget is shared by the channel routes: the pull and the refused subscribe spend it, the next pull is 429. That endpoints and channels share the one counter is pinned by PHPUnit on ProductPolicyService.",
+      "item": [
+        {
+          "name": "POST api_product with a publications channel and a 2-request tier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/api_product"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Newman channel product\", \"productSlug\": \"{{chProductSlug}}\", \"version\": \"2.0.0\", \"visibility\": \"public\", \"status\": \"active\", \"endpoints\": [], \"tiers\": {\"free\": {\"rateLimit\": {\"requestsPerWindow\": 2, \"windowSeconds\": 60}}}, \"channels\": [{\"slug\": \"publications\", \"title\": \"Publicaties\", \"types\": [\"nl.woo.publication.created\"], \"description\": \"Nieuwe Woo-publicaties\"}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = Date.now() + '-' + Math.floor(Math.random() * 1e6);",
+                  "pm.collectionVariables.set('chProductSlug', 'newman-channels-' + run);",
+                  "pm.collectionVariables.set('chConsumerName', 'newman-channel-consumer-' + run);",
+                  "// A throwaway HS256 secret for this run only, longer than the 32-byte minimum.",
+                  "pm.collectionVariables.set('chConsumerSecret', 'newman-' + run + '-' + CryptoJS.lib.WordArray.random(24).toString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('chProductUuid', uuid);",
+                  "pm.test('the channel is stored', () => pm.expect((b.channels || []).map((c) => c.slug)).to.eql(['publications']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET asyncapi.json of a public product without a session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/asyncapi.json"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 without authentication', () => pm.response.to.have.status(200));",
+                  "const doc = pm.response.json();",
+                  "pm.test('an AsyncAPI 3.0 document', () => pm.expect(doc.asyncapi).to.eql('3.0.0'));",
+                  "pm.test('lists channel publications', () => pm.expect(doc.channels).to.have.property('publications'));",
+                  "pm.test('carries message nl.woo.publication.created', () => pm.expect(doc.components.messages).to.have.property('nl.woo.publication.created'));",
+                  "pm.test('has operations', () => pm.expect(Object.keys(doc.operations || {})).to.not.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET asyncapi.json of an unknown product is 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/newman-no-such-product/asyncapi.json"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET channel events without a credential is 403 subscription_required",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('subscription_required', () => pm.expect(pm.response.json().error).to.eql('subscription_required'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST consumer with an HS256 JWT credential",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/consumer"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"{{chConsumerName}}\", \"description\": \"newman product channel consumer\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{chConsumerSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('chConsumerUuid', uuid);",
+                  "pm.test('the secret is not returned', () => pm.expect(JSON.stringify(b)).to.not.include(pm.collectionVariables.get('chConsumerSecret')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET channel events with a valid JWT and no product subscription is 403 subscription_required",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{chJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('chConsumerName'), sub: pm.collectionVariables.get('chConsumerName'), iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-' + now + '-' + Math.floor(Math.random() * 1e6) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('chConsumerSecret')));",
+                  "pm.collectionVariables.set('chJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('subscription_required', () => pm.expect(pm.response.json().error).to.eql('subscription_required'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET an undeclared channel is 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/no-such-channel/events"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{chJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('chConsumerName'), sub: pm.collectionVariables.get('chConsumerName'), iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-' + now + '-' + Math.floor(Math.random() * 1e6) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('chConsumerSecret')));",
+                  "pm.collectionVariables.set('chJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('not_found', () => pm.expect(pm.response.json().error).to.eql('not_found'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST api_product_subscription on tier free",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/api_product_subscription"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"product\": \"{{chProductUuid}}\", \"consumer\": \"{{chConsumerUuid}}\", \"tier\": \"free\", \"status\": \"active\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('chSubscriptionUuid', uuid);",
+                  "pm.test('active', () => pm.expect(b.status).to.eql('active'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET channel events with a subscription is 200 (request 1 of the tier budget of 2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{chJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('chConsumerName'), sub: pm.collectionVariables.get('chConsumerName'), iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-' + now + '-' + Math.floor(Math.random() * 1e6) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('chConsumerSecret')));",
+                  "pm.collectionVariables.set('chJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('a page of messages', () => pm.expect(b.messages).to.be.an('array'));",
+                  "pm.test('a cursor key', () => pm.expect(b).to.have.property('cursor'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST a push subscription to a metadata address is 400 and creates nothing (request 2 of 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/subscriptions"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sink\": \"http://169.254.169.254/latest\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{chJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('chConsumerName'), sub: pm.collectionVariables.get('chConsumerName'), iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-' + now + '-' + Math.floor(Math.random() * 1e6) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('chConsumerSecret')));",
+                  "pm.collectionVariables.set('chJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('invalid_sink', () => pm.expect(pm.response.json().error).to.eql('invalid_sink'));",
+                  "pm.sendRequest({",
+                  "  url: pm.variables.replaceIn('{{orBase}}') + '/event_subscription?style=push&productSubscription=' + pm.collectionVariables.get('chSubscriptionUuid'),",
+                  "  method: 'GET',",
+                  "  header: { 'OCS-APIRequest': 'true', Authorization: 'Basic ' + btoa(pm.environment.get('admin_user') + ':' + pm.environment.get('admin_password')) },",
+                  "}, (err, res) => {",
+                  "  pm.test('no push subscription was created', () => {",
+                  "    pm.expect(err).to.eql(null);",
+                  "    const rows = (res.json().results || []).filter((r) => r.productSubscription === pm.collectionVariables.get('chSubscriptionUuid') && r.style === 'push');",
+                  "    pm.expect(rows).to.have.length(0);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET channel events once the shared tier budget is spent is 429 with Retry-After",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{chJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('chConsumerName'), sub: pm.collectionVariables.get('chConsumerName'), iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-' + now + '-' + Math.floor(Math.random() * 1e6) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('chConsumerSecret')));",
+                  "pm.collectionVariables.set('chJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('429', () => pm.response.to.have.status(429));",
+                  "pm.test('rate_limited', () => pm.expect(pm.response.json().error).to.eql('rate_limited'));",
+                  "pm.test('Retry-After', () => pm.expect(pm.response.headers.has('Retry-After')).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the channel subscriptions, the product subscription, the consumer and the product",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/api_product/{{chProductUuid}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const auth = 'Basic ' + btoa(pm.environment.get('admin_user') + ':' + pm.environment.get('admin_password'));",
+                  "const or = pm.variables.replaceIn('{{orBase}}');",
+                  "const headers = { 'OCS-APIRequest': 'true', Authorization: auth };",
+                  "const ps = pm.collectionVariables.get('chSubscriptionUuid');",
+                  "if (ps) {",
+                  "  pm.sendRequest({ url: or + '/event_subscription?limit=100&productSubscription=' + ps, method: 'GET', header: headers }, (err, res) => {",
+                  "    if (err) { return; }",
+                  "    (res.json().results || []).filter((r) => r.productSubscription === ps).forEach((r) => {",
+                  "      pm.sendRequest({ url: or + '/event_subscription/' + (r.id || r.uuid || (r['@self'] && r['@self'].id)), method: 'DELETE', header: headers }, () => {});",
+                  "    });",
+                  "    pm.sendRequest({ url: or + '/api_product_subscription/' + ps, method: 'DELETE', header: headers }, () => {});",
+                  "  });",
+                  "}",
+                  "const consumer = pm.collectionVariables.get('chConsumerUuid');",
+                  "if (consumer) { pm.sendRequest({ url: or + '/consumer/' + consumer, method: 'DELETE', header: headers }, () => {}); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('product deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "99 — Teardown (via OR)",
       "description": "Deletes the fixtures created in folder 01.",
       "item": [
