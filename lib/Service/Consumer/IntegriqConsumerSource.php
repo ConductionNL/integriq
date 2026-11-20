@@ -140,57 +140,20 @@ class IntegriqConsumerSource implements ConsumerSource {
 
 		$consumers = $this->consumers(filters: ['name' => $issuer]);
 		if ($this->keySources === null) {
-			return $this->firstResolved(consumers: $consumers);
+			if ($consumers === []) {
+				return null;
+			}
+
+			return $this->resolve(consumer: $consumers[0]);
 		}
 
-		$named = self::firstWithStaticKey(consumers: $consumers);
-		if ($named !== null) {
-			return $this->resolve(consumer: $named);
-		}
-
-		return $this->byConfiguredIssuer(wanted: rtrim($issuer, '/'));
-	}//end findByIssuer()
-
-	/**
-	 * The first consumer resolved, or null when there is none.
-	 *
-	 * @param array<int, ObjectEntity> $consumers The consumers.
-	 *
-	 * @return ResolvedConsumer|null
-	 */
-	private function firstResolved(array $consumers): ?ResolvedConsumer {
-		if ($consumers === []) {
-			return null;
-		}
-
-		return $this->resolve(consumer: $consumers[0]);
-	}//end firstResolved()
-
-	/**
-	 * The first consumer whose key source is a static key, or null.
-	 *
-	 * @param array<int, ObjectEntity> $consumers The consumers.
-	 *
-	 * @return ObjectEntity|null
-	 */
-	private static function firstWithStaticKey(array $consumers): ?ObjectEntity {
 		foreach ($consumers as $consumer) {
 			if (ConsumerKeySourceResolver::keySourceOf(configuration: self::configurationOf(consumer: $consumer)) === ConsumerKeySourceResolver::STATIC) {
-				return $consumer;
+				return $this->resolve(consumer: $consumer);
 			}
 		}
 
-		return null;
-	}//end firstWithStaticKey()
-
-	/**
-	 * The consumer whose configured issuer is the wanted one, resolved, or null.
-	 *
-	 * @param string $wanted The issuer without a trailing slash.
-	 *
-	 * @return ResolvedConsumer|null
-	 */
-	private function byConfiguredIssuer(string $wanted): ?ResolvedConsumer {
+		$wanted = rtrim($issuer, '/');
 		foreach ($this->consumers(filters: []) as $consumer) {
 			if (ConsumerKeySourceResolver::configuredIssuerOf(configuration: self::configurationOf(consumer: $consumer)) === $wanted) {
 				return $this->resolve(consumer: $consumer);
@@ -198,7 +161,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 		}
 
 		return null;
-	}//end byConfiguredIssuer()
+	}//end findByIssuer()
 
 	/**
 	 * The consumer a token integriq issued itself names, checked against integriq's own public key.
