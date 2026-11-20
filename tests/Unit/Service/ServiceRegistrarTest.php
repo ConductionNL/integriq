@@ -98,6 +98,8 @@ use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistryInterface;
+use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
+use OCA\Integriq\Service\Extension\ConnectorExtensionsInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
@@ -547,6 +549,7 @@ class ServiceRegistrarTest extends TestCase {
 		ExchangeTargetCatalogueInterface::class => ExchangeTargetCatalogue::class,
 		MessageValidationServiceInterface::class => MessageValidationService::class,
 		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
+		ConnectorExtensionsInterface::class => ConnectorExtensionCollector::class,
 		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
 		SubscriptionRegistryInterface::class => SubscriptionRegistry::class,
 		DocumentProviderRegistryInterface::class => DocumentGenerationProviderRegistry::class,
@@ -569,6 +572,7 @@ class ServiceRegistrarTest extends TestCase {
 		'OCA\\Integriq\\Service\\SettingsService',
 		'OCA\\Integriq\\Service\\Registry\\SubscriptionRegistry',
 		'OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistry',
+		'OCA\\Integriq\\Service\\Payment\\PaymentProviderRegistry',
 		'OCA\\Integriq\\Service\\Rod\\RodProviderRegistry',
 		'OCA\\Integriq\\Service\\Verzuimloket\\VerzuimloketProviderRegistry',
 		'OCA\\Integriq\\Service\\Oso\\OsoProviderRegistry',

@@ -3212,6 +3212,7 @@ OC.L10N.register(
         "Superseded by": "Superseded by",
         "Generated from the API directory of {date}": "Generated from the API directory of {date}",
         "Checked against a published interface": "Checked against a published interface",
+        "Provided by {app}": "Provided by {app}",
         "Checked templates": "Checked templates",
         "Generated templates": "Generated templates",
         "Checked against": "Checked against",

@@ -1861,6 +1861,7 @@ OC.L10N.register(
         "Superseded by": "Vervangen door",
         "Generated from the API directory of {date}": "Gegenereerd uit de API-catalogus van {date}",
         "Checked against a published interface": "Gecontroleerd tegen een gepubliceerde koppelvlakbeschrijving",
+        "Provided by {app}": "Geleverd door {app}",
         "Checked templates": "Gecontroleerde sjablonen",
         "Generated templates": "Gegenereerde sjablonen",
         "Checked against": "Gecontroleerd tegen",

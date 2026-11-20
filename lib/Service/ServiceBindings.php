@@ -69,6 +69,11 @@ use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettingsInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
+use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
+use OCA\Integriq\Service\Extension\ConnectorExtensionsInterface;
+use OCA\Integriq\Service\Payment\LogPaymentProvider;
+use OCA\Integriq\Service\Payment\MolliePaymentProvider;
+use OCA\Integriq\Service\Payment\PaymentProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistryInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
@@ -452,6 +457,7 @@ final class ServiceBindings {
 		ExchangeTargetCatalogueInterface::class => ExchangeTargetCatalogue::class,
 		MessageValidationServiceInterface::class => MessageValidationService::class,
 		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
+		ConnectorExtensionsInterface::class => ConnectorExtensionCollector::class,
 		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
 		SubscriptionRegistryInterface::class => SubscriptionRegistry::class,
 		DocumentProviderRegistryInterface::class => DocumentGenerationProviderRegistry::class,
@@ -616,7 +622,23 @@ final class ServiceBindings {
 						$c->get(BerichtenboxProvider::class),
 						$c->get(PostexProvider::class),
 						$c->get(LogDigitalPostProvider::class),
-					]
+					],
+					extensions: $c->get(ConnectorExtensionCollector::class)
+				);
+			}
+		);
+
+		// The payment provider bindings: integriq's own first, then what an
+		// extension app contributes (platform-connector-extension-kit D3).
+		$context->registerService(
+			PaymentProviderRegistry::class,
+			static function ($c): PaymentProviderRegistry {
+				return new PaymentProviderRegistry(
+					providers: [
+						$c->get(MolliePaymentProvider::class),
+						$c->get(LogPaymentProvider::class),
+					],
+					extensions: $c->get(ConnectorExtensionCollector::class)
 				);
 			}
 		);
