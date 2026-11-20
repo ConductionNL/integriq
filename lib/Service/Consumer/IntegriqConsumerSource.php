@@ -20,7 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Consumer;
 
+use Exception;
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\OAuth\IssuerKeyService;
+use OCA\Integriq\Service\OAuth\TokenIssuer;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
@@ -70,10 +73,13 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 * @param ObjectService                  $objectService OpenRegister's object service.
 	 * @param ConsumerKeySourceResolver|null $keySources    Resolves the key of a `jwks` or `oidc` consumer; without it
 	 *                                                      the lookup is by name only, as before.
+	 * @param IssuerKeyService|null          $ownIssuer     Integriq's own issuer, whose tokens name their consumer as `sub`
+	 *                                                      (access-oauth-and-token-validation, REQ-TOKV-003).
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
 		private readonly ?ConsumerKeySourceResolver $keySources = null,
+		private readonly ?IssuerKeyService $ownIssuer = null,
 	) {
 	}//end __construct()
 
@@ -107,6 +113,11 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 * @spec openspec/changes/access-oauth-and-token-validation/tasks.md#task-2
 	 */
 	public function findByIssuer(string $issuer): ?ResolvedConsumer {
+		$own = $this->ownTokenConsumer(issuer: $issuer);
+		if ($own !== null) {
+			return $own;
+		}
+
 		$consumers = $this->consumers(filters: ['name' => $issuer]);
 		if ($this->keySources === null) {
 			if ($consumers === []) {
@@ -131,6 +142,81 @@ class IntegriqConsumerSource implements ConsumerSource {
 
 		return null;
 	}//end findByIssuer()
+
+	/**
+	 * The consumer a token integriq issued itself names, checked against integriq's own public key.
+	 *
+	 * Only a token whose `iss` is integriq's issuer URL is considered, its `sub`
+	 * must be a consumer of authorizationType `client_credentials`, and the
+	 * configuration OpenRegister verifies against pins RS256 and the published
+	 * public key; nothing the token says can choose another key.
+	 *
+	 * @param string $issuer The `iss` claim.
+	 *
+	 * @return ResolvedConsumer|null The consumer, or null when the token is not integriq's own.
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
+	 */
+	private function ownTokenConsumer(string $issuer): ?ResolvedConsumer {
+		if ($this->ownIssuer === null
+			|| rtrim($issuer, '/') !== $this->ownIssuer->issuerUrl()
+			|| $this->ownIssuer->publicPem() === ''
+		) {
+			return null;
+		}
+
+		$object = $this->clientCredentialsConsumer(subject: ($this->tokenPayload['sub'] ?? ''));
+		if ($object === null) {
+			return null;
+		}
+
+		$data = $object->getObject();
+
+		return new ResolvedConsumer(
+			source: self::SOURCE,
+			uuid: self::uuidOf(consumer: $object, data: $data),
+			name: (string)($data['name'] ?? ''),
+			userId: self::stringOrNull(value: ($data['userId'] ?? null)),
+			authorizationType: TokenIssuer::CLIENT_CREDENTIALS,
+			configuration: ['algorithm' => IssuerKeyService::ALGORITHM, 'publicKey' => $this->ownIssuer->publicPem()],
+			record: $object,
+		);
+	}//end ownTokenConsumer()
+
+	/**
+	 * The client credentials consumer a token of integriq's own issuer names as its subject.
+	 *
+	 * @param mixed $subject The token's `sub` claim.
+	 *
+	 * @return ObjectEntity|null The consumer, or null when the subject names no client credentials consumer.
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
+	 */
+	private function clientCredentialsConsumer(mixed $subject): ?ObjectEntity {
+		if (is_string($subject) === false || $subject === '') {
+			return null;
+		}
+
+		try {
+			$object = $this->objectService->find(
+				id: $subject,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'consumer'),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Exception) {
+			// OpenRegister throws when no object has this id: not a known consumer.
+			return null;
+		}
+
+		if (($object instanceof ObjectEntity) === false
+			|| strtolower((string)self::typeOf(data: $object->getObject())) !== TokenIssuer::CLIENT_CREDENTIALS
+		) {
+			return null;
+		}
+
+		return $object;
+	}//end clientCredentialsConsumer()
 
 	/**
 	 * The API-key consumer whose configured key equals the presented one.

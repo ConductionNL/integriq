@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Integriq",
-        "version": "0.4.10-unstable.20261011120000",
+        "version": "0.4.20-unstable.20261119125330",
         "description": "The JSON API of Integriq, the integration hub for Nextcloud: sources, endpoints, mappings, synchronisations, jobs and their logs, and the connectors to government and education standards (DSO, StUF, ZGW Notificaties, SCIM, LTI, OpenID4VCI, Peppol and others). The sources, mappings and other objects themselves are stored in OpenRegister and read and written through its API; this document covers the endpoints Integriq adds on top. Endpoints that implement an external protocol keep that protocol's error format.\n\nEvery path is served under `/api/v1/`, the version this document describes. The unversioned `/api/` paths keep working, are deprecated, and name their `/api/v1/` successor in a `Link` header next to a `Deprecation` header. Errors are RFC 9457 problem details (`application/problem+json`), and every response carries an `API-Version` header. Paths that implement an external standard keep the formats of that standard and are not described here; where this app documents them, openapi.standards.json does.",
         "contact": {
             "name": "Conduction B.V.",
@@ -360,8 +360,16 @@
             "description": "Translate one ZGW resource payload between `1.0` and `1.6`"
         },
         {
+            "name": "catalogi",
+            "description": "The Catalogi API facade's administrator actions."
+        },
+        {
             "name": "registration-targets",
             "description": "Where a sibling app may register form submissions."
+        },
+        {
+            "name": "oauth",
+            "description": "Integriq as an OAuth 2.0 authorization server for its consumers."
         }
     ],
     "paths": {
@@ -901,6 +909,69 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/Problem400"
+                    }
+                }
+            }
+        },
+        "/catalogi/woo-starter-set": {
+            "post": {
+                "operationId": "catalogi-woo-starter-set",
+                "summary": "Create one document type per missing Woo information category",
+                "description": "Creates, in the schema the Catalogi binding names, one document type per Woo information category (TOOI scheme in OpenRegister's concept register) that no existing type carries. Existing types are never changed. Administrators only.",
+                "tags": [
+                    "catalogi"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "How many types were created and skipped.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "created": {
+                                            "type": "integer"
+                                        },
+                                        "skipped": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "description": "No catalogue is configured (catalogue-not-configured).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The TOOI scheme cannot be read (tooi-scheme-missing); nothing was created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -6835,6 +6906,64 @@
                 ]
             }
         },
+        "/outbound/recipients/preview": {
+            "post": {
+                "operationId": "outbound-recipients-preview",
+                "summary": "Resolve a message's recipients without sending",
+                "description": "Resolve the standing, added and suppressed recipients of one message the way the send would, without recording or sending anything.",
+                "tags": [
+                    "outbound-log"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "standing": {
+                                        "type": "array",
+                                        "items": {}
+                                    },
+                                    "added": {
+                                        "type": "array",
+                                        "items": {}
+                                    },
+                                    "suppressed": {
+                                        "type": "array",
+                                        "items": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The standing, added, suppressed and resolved recipients.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
         "/outbound/last-contact": {
             "get": {
                 "operationId": "outbound-log-last-contact",
@@ -7092,6 +7221,57 @@
                     },
                     "409": {
                         "$ref": "#/components/responses/Problem409"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/outbound/messages/{id}/release": {
+            "post": {
+                "operationId": "sender-identity-release",
+                "summary": "Release a message a send check held for review, and send it",
+                "description": "Release a message a send check held for review, and send it.",
+                "tags": [
+                    "sender-identity"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The release and the send's outcome.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
                     }
                 },
                 "parameters": [
@@ -8018,6 +8198,264 @@
                 ]
             }
         },
+        "/portal/products": {
+            "get": {
+                "operationId": "portal-products",
+                "summary": "The public API products a developer may see",
+                "description": "The public API products, with their versions, tiers and documentation; private and retired products are not listed. Members of the developer group only.",
+                "tags": [
+                    "portal"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{results}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/portal/applications": {
+            "get": {
+                "operationId": "portal-applications",
+                "summary": "The developer's own applications",
+                "description": "The developer's own applications, each with its subscriptions. Members of the developer group only.",
+                "tags": [
+                    "portal"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{results}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "portal-create-application",
+                "summary": "Create an application the developer owns",
+                "description": "Create an application: a consumer owned by the developer.",
+                "tags": [
+                    "portal"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The application.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/portal/applications/{consumerId}/subscriptions": {
+            "post": {
+                "operationId": "portal-request-access",
+                "summary": "Request access to a product tier for one of the developer's applications",
+                "description": "Opens the product's approval for a gated tier, or activates an open tier at once. An application the developer does not own, or a product that is not public, answers 404 and nothing is written.",
+                "tags": [
+                    "portal"
+                ],
+                "parameters": [
+                    {
+                        "name": "consumerId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "productId"
+                                ],
+                                "properties": {
+                                    "productId": {
+                                        "type": "string"
+                                    },
+                                    "tier": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The active subscription; 202 when it waits for approval.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "202": {
+                        "description": "The subscription waits for the product's approvers."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/admin/developer-portal": {
+            "get": {
+                "operationId": "developer-portal-settings-get",
+                "summary": "The developer group and how many accounts are in it",
+                "description": "The developer group and its member count; members is null when the group does not exist.",
+                "tags": [
+                    "portal"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{group, members}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "developer-portal-settings-set",
+                "summary": "Name the developer group, or clear it to put the default back",
+                "description": "Name the developer group, or clear it to put `integriq-developers` back.",
+                "tags": [
+                    "portal"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "group": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`{group, members}`, or 400 naming a group that does not exist.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    }
+                }
+            }
+        },
         "/products/{productSlug}/asyncapi.json": {
             "get": {
                 "operationId": "product-channels-asyncapi",
@@ -8868,6 +9306,70 @@
                 ]
             }
         },
+        "/service-fetches/{slug}/test": {
+            "post": {
+                "operationId": "service-fetch-test",
+                "summary": "Test one service fetch with sample inputs (administrators only)",
+                "description": "Runs one service fetch with sample inputs for its administrator and returns the source's raw answer next to the mapped outputs, or the refusal of the first step that refused. Skips the allowed-apps check and the output cache (forms-service-fetch-for-apps, REQ-SF-001).",
+                "tags": [
+                    "service-fetch"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The service fetch.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "inputs": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
         "/settings/rebase": {
             "post": {
                 "operationId": "settings-rebase",
@@ -9526,6 +10028,121 @@
                         }
                     }
                 }
+            }
+        },
+        "/sources/{id}/database/schema": {
+            "get": {
+                "operationId": "database_source-schema",
+                "summary": "The tables and views of a database source, with their columns",
+                "description": "The tables and views of a database source's database, with their columns. Administrators only.",
+                "tags": [
+                    "database_source"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{tables[], durationMs}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/sources/{id}/database/statements/{name}/test": {
+            "post": {
+                "operationId": "database_source-test_statement",
+                "summary": "Run a declared read statement once and show its first page",
+                "description": "Runs a read statement the source declares, with `parameters` from the body, and answers its first page (at most 50 rows) and how long it took. A write statement is never run here. Administrators only.",
+                "tags": [
+                    "database_source"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "parameters": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`{statement, rows[], rowCount, more, durationMs}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "required": true,
+                        "description": "The statement's name.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
             }
         },
         "/sources/{id}/run-summary": {
@@ -11169,6 +11786,146 @@
                     },
                     "501": {
                         "$ref": "#/components/responses/Problem501"
+                    }
+                }
+            }
+        },
+        "/oauth/token": {
+            "post": {
+                "operationId": "oauth-token",
+                "summary": "Get a client credentials access token",
+                "description": "The OAuth 2.0 client credentials grant (RFC 6749 section 4.4) for a consumer of authorizationType client_credentials. The client authenticates with HTTP Basic or the client_id and client_secret form fields; the answer is a five-minute RS256 JWT whose sub is the consumer and whose scope is the granted scopes. Public: it needs no login.",
+                "tags": [
+                    "oauth"
+                ],
+                "security": [],
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "grant_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "client_credentials"
+                                        ]
+                                    },
+                                    "client_id": {
+                                        "type": "string"
+                                    },
+                                    "client_secret": {
+                                        "type": "string"
+                                    },
+                                    "scope": {
+                                        "type": "string"
+                                    },
+                                    "resource": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "grant_type"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The token.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "An RFC 6749 error: unsupported_grant_type or invalid_scope."
+                    },
+                    "401": {
+                        "description": "invalid_client."
+                    },
+                    "503": {
+                        "description": "No issuer key has been created."
+                    }
+                }
+            }
+        },
+        "/oauth/issuer-key": {
+            "post": {
+                "operationId": "oauth-issuer-key-create",
+                "summary": "Create or replace integriq's token-signing key",
+                "description": "Create or replace the issuer key. The private key is minted into OpenRegister's credential broker; the answer is the public JWK. Needs a Nextcloud admin.",
+                "tags": [
+                    "oauth"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The public JWK.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "No credential broker or default organisation."
+                    }
+                }
+            }
+        },
+        "/consumers/{id}/client-secret": {
+            "post": {
+                "operationId": "oauth-consumer-client-secret",
+                "summary": "Set a new client secret on a client credentials consumer",
+                "description": "Set a new client secret on a client credentials consumer and show it once; only its hash is stored. Needs a Nextcloud admin.",
+                "tags": [
+                    "oauth"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The consumer uuid, its client id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The client id and secret, shown once.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No client credentials consumer with this id."
                     }
                 }
             }

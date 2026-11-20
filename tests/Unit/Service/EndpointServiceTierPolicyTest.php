@@ -167,10 +167,11 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		array $tiers,
 		?ObjectEntity $subscription,
 		string $productUuid = 'product-uuid-1',
+		string $status = 'active',
 	): void {
 		$product = ObjectServiceMockBuilder::objectEntity(
 			$this,
-			['endpoints' => [$endpointUuid], 'tiers' => $tiers, 'status' => 'active'],
+			['endpoints' => [$endpointUuid], 'tiers' => $tiers, 'status' => $status, 'name' => 'Zaken API'],
 			$productUuid
 		);
 
@@ -311,6 +312,92 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
 	}//end testNoActiveSubscriptionReturns403WithoutCallingRateLimiter()
+
+	/**
+	 * REQ-DEVP-005: a subscription whose end date has passed is refused with
+	 * 403 naming the date, even while its status still reads active.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 */
+	public function testAnEndedSubscriptionIsRefusedNamingItsEndDate(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['method' => 'GET'], 'endpoint-uuid-1');
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, ['authorizationType' => 'apikey'], 'consumer-uuid-1');
+		$subscription = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['tier' => 'free', 'status' => 'active', 'expiresAt' => '2026-01-31T23:59:59+00:00'],
+			'sub-uuid-1'
+		);
+
+		$this->withProductAndSubscription(
+			endpointUuid: 'endpoint-uuid-1',
+			tiers: ['free' => ['rateLimit' => ['requestsPerWindow' => 2, 'windowSeconds' => 60]]],
+			subscription: $subscription
+		);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn($consumer);
+		$this->rateLimitService->expects($this->never())->method('enforce');
+
+		$response = $this->enforceMethod()->invoke($this->service, $this->createMock(IRequest::class), $endpoint);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame('subscription_expired', $response->getData()['error']);
+		$this->assertSame('2026-01-31', $response->getData()['expiresAt']);
+		$this->assertStringContainsString('2026-01-31', $response->getData()['message']);
+	}//end testAnEndedSubscriptionIsRefusedNamingItsEndDate()
+
+	/**
+	 * REQ-DEVP-004: a retired product answers 410 Gone before any subscription is looked at.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 */
+	public function testARetiredProductAnswersGone(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['method' => 'GET'], 'endpoint-uuid-1');
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, ['authorizationType' => 'apikey'], 'consumer-uuid-1');
+		$subscription = ObjectServiceMockBuilder::objectEntity($this, ['tier' => 'free', 'status' => 'active'], 'sub-uuid-1');
+
+		$this->withProductAndSubscription(
+			endpointUuid: 'endpoint-uuid-1',
+			tiers: ['free' => []],
+			subscription: $subscription,
+			status: 'retired'
+		);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn($consumer);
+		$this->rateLimitService->expects($this->never())->method('enforce');
+
+		$response = $this->enforceMethod()->invoke($this->service, $this->createMock(IRequest::class), $endpoint);
+
+		$this->assertSame(Http::STATUS_GONE, $response->getStatus());
+		$this->assertSame('product_retired', $response->getData()['error']);
+		$this->assertStringContainsString('Zaken API', $response->getData()['message']);
+	}//end testARetiredProductAnswersGone()
+
+	/**
+	 * A subscription whose end date is still ahead passes the gate to the tier policy.
+	 *
+	 * @return void
+	 */
+	public function testASubscriptionBeforeItsEndDateReachesTheTierPolicy(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['method' => 'GET'], 'endpoint-uuid-1');
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, ['authorizationType' => 'apikey'], 'consumer-uuid-1');
+		$subscription = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['tier' => 'free', 'status' => 'active', 'expiresAt' => '2999-01-01T00:00:00+00:00'],
+			'sub-uuid-1'
+		);
+
+		$this->withProductAndSubscription(
+			endpointUuid: 'endpoint-uuid-1',
+			tiers: ['free' => ['rateLimit' => ['requestsPerWindow' => 2, 'windowSeconds' => 60]]],
+			subscription: $subscription
+		);
+		$this->authorizationService->method('getResolvedConsumer')->willReturn($consumer);
+		$this->rateLimitService->expects($this->once())->method('enforce')->willReturn(new RateLimitDecision(allowed: true));
+
+		$this->assertNull($this->enforceMethod()->invoke($this->service, $this->createMock(IRequest::class), $endpoint));
+	}//end testASubscriptionBeforeItsEndDateReachesTheTierPolicy()
 
 	/**
 	 * REQ-APG-005 scenario "a non-product endpoint is unaffected" — when the

@@ -21,10 +21,12 @@
 			<ExpressionSourceSettings />
 			<MappingLookupSettings />
 			<ConnectionAlertSettings />
+			<DeveloperPortalSettings />
 			<PersonalDataFieldsSettings />
 			<OtelSettings />
 			<ErrorSinkSettings />
 			<RetentionSettings />
+			<WooStarterSetSettings />
 		</div>
 	</CnAdminSettingsShell>
 </template>
@@ -34,6 +36,7 @@ import { CnAdminSettingsShell } from '@conduction/nextcloud-vue'
 import ActionAuthMatrix from './ActionAuthMatrix.vue'
 import BerichtenboxSettings from './BerichtenboxSettings.vue'
 import ConnectionAlertSettings from './ConnectionAlertSettings.vue'
+import DeveloperPortalSettings from './DeveloperPortalSettings.vue'
 import DigitalPostAccountSettings from './DigitalPostAccountSettings.vue'
 import DsoActivityMappingSettings from './DsoActivityMappingSettings.vue'
 import DsoPkiSettings from './DsoPkiSettings.vue'
@@ -46,6 +49,7 @@ import OtelSettings from './OtelSettings.vue'
 import PersonalDataFieldsSettings from './PersonalDataFieldsSettings.vue'
 import RetentionSettings from './RetentionSettings.vue'
 import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
+import WooStarterSetSettings from './WooStarterSetSettings.vue'
 
 /**
  * Root admin settings panel for Integriq.
@@ -84,6 +88,7 @@ export default {
 		ActionAuthMatrix,
 		BerichtenboxSettings,
 		ConnectionAlertSettings,
+		DeveloperPortalSettings,
 		DigitalPostAccountSettings,
 		DsoActivityMappingSettings,
 		DsoPkiSettings,
@@ -96,6 +101,7 @@ export default {
 		PersonalDataFieldsSettings,
 		RetentionSettings,
 		WebhookConnectionsSettings,
+		WooStarterSetSettings,
 	},
 }
 </script>
