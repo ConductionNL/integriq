@@ -219,16 +219,19 @@ class PortalController extends Controller {
 		}
 
 		$consumer = $this->findOne(id: $consumerId, schema: 'consumer');
-		if ($consumer === null || $this->owns(user: $user, consumer: $consumer) === false) {
+		if ($this->owns(user: $user, consumer: $consumer) === false) {
 			return new JSONResponse(['error' => $this->l->t('No such application')], Http::STATUS_NOT_FOUND);
 		}
 
 		$product = $this->findOne(id: (string)$this->request->getParam('productId', ''), schema: 'api_product');
-		if ($product === null || self::isOffered(product: $product) === false) {
+		if (self::isOffered(product: $product) === false) {
 			return new JSONResponse(['error' => $this->l->t('No such API product')], Http::STATUS_NOT_FOUND);
 		}
 
-		$tier = $this->requestedTier(product: $product);
+		$tier = (string)$this->request->getParam('tier', '');
+		if ($tier === '') {
+			$tier = (string)($product->getObject()['defaultTier'] ?? '');
+		}
 
 		try {
 			$result = $this->subscriptions->subscribe(
@@ -244,32 +247,13 @@ class PortalController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('The access request could not be saved.')], Http::STATUS_BAD_REQUEST);
 		}
 
-		// 202 while the access waits for approval, 201 once it is granted.
-		$status = match ($result['pending']) {
-			true => Http::STATUS_ACCEPTED,
-			default => Http::STATUS_CREATED,
-		};
+		$status = Http::STATUS_CREATED;
+		if ($result['pending'] === true) {
+			$status = Http::STATUS_ACCEPTED;
+		}
 
 		return new JSONResponse(self::subscriptionSummary(subscription: $result['subscription']), $status);
 	}//end requestAccess()
-
-	/**
-	 * The tier the developer asked for, or the product's default tier.
-	 *
-	 * @param ObjectEntity $product The product.
-	 *
-	 * @return string The tier name, empty when neither is set.
-	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
-	 */
-	private function requestedTier(ObjectEntity $product): string {
-		$tier = (string)$this->request->getParam('tier', '');
-		if ($tier === '') {
-			$tier = (string)($product->getObject()['defaultTier'] ?? '');
-		}
-
-		return $tier;
-	}//end requestedTier()
 
 	/**
 	 * The developer group and how many accounts are in it.
@@ -330,15 +314,18 @@ class PortalController extends Controller {
 	/**
 	 * Whether a consumer is an application the developer owns.
 	 *
-	 * @param IUser        $user     The developer.
-	 * @param ObjectEntity $consumer The consumer.
+	 * @param IUser             $user     The developer.
+	 * @param ObjectEntity|null $consumer The consumer, or null when there is none.
 	 *
 	 * @return bool True when its owner is this developer.
 	 *
+	 * @phpstan-assert-if-true ObjectEntity $consumer
+	 * @psalm-assert-if-true ObjectEntity $consumer
+	 *
 	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
 	 */
-	private function owns(IUser $user, ObjectEntity $consumer): bool {
-		$data = $consumer->getObject();
+	private function owns(IUser $user, ?ObjectEntity $consumer): bool {
+		$data = ($consumer?->getObject() ?? []);
 
 		return ($data['ownerKind'] ?? '') === 'developer' && (string)($data['userId'] ?? '') === $user->getUID();
 	}//end owns()
@@ -346,14 +333,17 @@ class PortalController extends Controller {
 	/**
 	 * Whether a product is offered in the portal: public and not retired.
 	 *
-	 * @param ObjectEntity $product The product.
+	 * @param ObjectEntity|null $product The product, or null when there is none.
 	 *
 	 * @return bool True when a developer may see and request it.
+	 *
+	 * @phpstan-assert-if-true ObjectEntity $product
+	 * @psalm-assert-if-true ObjectEntity $product
 	 */
-	private static function isOffered(ObjectEntity $product): bool {
-		$data = $product->getObject();
+	private static function isOffered(?ObjectEntity $product): bool {
+		$data = $product?->getObject();
 
-		return ($data['visibility'] ?? 'public') === 'public' && ($data['status'] ?? 'active') !== 'retired';
+		return $data !== null && ($data['visibility'] ?? 'public') === 'public' && ($data['status'] ?? 'active') !== 'retired';
 	}//end isOffered()
 
 	/**
