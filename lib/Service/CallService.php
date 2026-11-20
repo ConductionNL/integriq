@@ -96,6 +96,11 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/http-call-engine/spec.md
  * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+ *
+ * relay() is the streaming entry point next to call(); both are the public
+ * surface the endpoint handlers use.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class CallService implements CallServiceInterface {
 	use OrganisationBoundary;
@@ -1665,6 +1670,27 @@ class CallService implements CallServiceInterface {
 	}//end redactResponseHeaders()
 
 	/**
+	 * The logged copy of a request or response with its personal data masked:
+	 * declared fields in the URL, the headers, the request options and a JSON
+	 * or XML body read `[afgeschermd]`. Runs right after the secret masking,
+	 * on the copy that is stored; the message that was sent is not touched.
+	 *
+	 * @param array $exchange The logged request or response.
+	 *
+	 * @return array The masked copy.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 */
+	private function maskPersonalData(array $exchange): array {
+		$masked = $this->sensitiveFieldRegistry->maskPersonalData(value: $exchange);
+		if (is_array($masked) === false) {
+			return $exchange;
+		}
+
+		return $masked;
+	}//end maskPersonalData()
+
+	/**
 	 * Returns true when a header/query/form key name looks like it carries a secret.
 	 *
 	 * Delegates to the shared {@see SensitiveFieldRegistry} (secret-hygiene) — a pure
@@ -1936,6 +1962,15 @@ class CallService implements CallServiceInterface {
 		$callLogData = $this->bodyCapturePolicy->apply(record: $callLogData, sourceData: $sourceData, logBody: $logBody, errorExpires: $errorExpires);
 		if ($withholdBodies === true) {
 			$callLogData = $this->bodyCapturePolicy->withheldRecord(record: $callLogData);
+		}
+
+		// Personal data in the stored request and response is masked after the
+		// body policy ran, so `replayRequest` keeps what a replay sends; it is
+		// never listed (call-log-personal-data-masking REQ-PDM-001).
+		foreach (['request', 'response'] as $bag) {
+			if (is_array(($callLogData[$bag] ?? null)) === true) {
+				$callLogData[$bag] = $this->maskPersonalData(exchange: $callLogData[$bag]);
+			}
 		}
 
 		// A call kept for ever (retention 0) has no expiry. `expires` is a
@@ -2422,6 +2457,7 @@ class CallService implements CallServiceInterface {
 					asynchronous: false,
 					brokeredCredential: $prepared['brokeredCredential'],
 					sink: $prepared['request']->sink,
+					onHeaders: $prepared['request']->onHeaders,
 				);
 			} catch (\Throwable $exception) {
 				// Note: dispatchRequest() already converts a Guzzle
@@ -3304,7 +3340,10 @@ class CallService implements CallServiceInterface {
 	 */
 	private function tracedExchange(FinishedCall $call): array {
 		$prepared = $call->prepared;
-		$traced = ['request' => $call->data['request'], 'response' => $this->redactResponseHeaders(response: $call->data['response'])];
+		$traced = [
+			'request' => $this->maskPersonalData(exchange: $call->data['request']),
+			'response' => $this->maskPersonalData(exchange: $this->redactResponseHeaders(response: $call->data['response'])),
+		];
 		if ($this->bodyCapturePolicy->captures(sourceData: $prepared['sourceData'], logBody: (bool)$prepared['logBody']) === false) {
 			$traced = $this->bodyCapturePolicy->strip(request: $traced['request'], response: $traced['response']);
 		}
@@ -3484,6 +3523,61 @@ class CallService implements CallServiceInterface {
 		return $this->finalizeCall(prepared: $prepared, dispatched: $dispatched);
 
 	}//end call()
+
+	/**
+	 * Relay one call to a source straight to the caller, as it arrives.
+	 *
+	 * The call takes the same path as {@see call()} (the source's credential,
+	 * the SSRF containment, retries, the circuit breaker and the call log),
+	 * with two differences: the response body streams into `$sink` instead of
+	 * being buffered, and `$onHeaders` gets the upstream response as soon as
+	 * its status and headers arrive, before the first body byte. The MCP
+	 * gateway uses it to pass an answer, an event stream included, through
+	 * unchanged (gateway-mcp-proxy D2). The call log records no response body.
+	 *
+	 * @param ObjectEntity               $source         The source to call.
+	 * @param string                     $endpoint       The path on the source.
+	 * @param string                     $method         The HTTP method.
+	 * @param array<string, mixed>       $config         The request configuration (headers, body, timeout).
+	 * @param mixed                      $sink           A writable PSR-7 stream the body is relayed into.
+	 * @param callable                   $onHeaders      Called with the PSR-7 response once its headers arrived.
+	 * @param bool                       $withholdBodies When true, the call log keeps no request body either.
+	 * @param ExecutionTraceContext|null $trace          The active execution trace context, when any.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 */
+	public function relay(
+		ObjectEntity $source,
+		string $endpoint,
+		string $method,
+		array $config,
+		mixed $sink,
+		callable $onHeaders,
+		bool $withholdBodies = true,
+		?ExecutionTraceContext $trace = null,
+	): ObjectEntity {
+		$prepared = $this->prepareCall(
+			source: $source,
+			request: new CallRequest(
+				endpoint: $endpoint,
+				method: $method,
+				config: $config,
+				sink: $sink,
+				trace: $trace,
+				onHeaders: $onHeaders,
+				withholdBodies: $withholdBodies,
+			)
+		);
+		if ($prepared['shortCircuit'] !== null) {
+			return $prepared['shortCircuit'];
+		}
+
+		$prepared = $this->withTraceParent(prepared: $prepared, trace: $trace);
+		$dispatched = $this->dispatchWithRetry(prepared: $prepared);
+		return $this->finalizeCall(prepared: $prepared, dispatched: $dispatched);
+	}//end relay()
 
 	/**
 	 * Give an outbound call made during a trace a W3C traceparent naming the

@@ -26,7 +26,13 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
+use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DatabaseConnectionFactoryInterface;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DbalDatabaseConnectionFactory;
+use OCA\Integriq\Service\Adapter\DataInfra\DatabaseAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Format\ArrayToXml;
+use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
@@ -49,6 +55,8 @@ use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
 use OCA\Integriq\Service\AgentTools\DeadLetterProjectionInterface;
 use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
 use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
+use OCA\Integriq\Service\Chat\TalkMessageSource;
+use OCA\Integriq\Service\Chat\TalkMessageSourceInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
@@ -136,6 +144,12 @@ use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolverInterface;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCA\Integriq\Service\Mtls\MtlsTransportServiceInterface;
+use OCA\Integriq\Service\OAuth\IssuerKeyService;
+use OCA\Integriq\Service\OAuth\IssuerKeyServiceInterface;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadata;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadataInterface;
+use OCA\Integriq\Service\OAuth\TokenIssuer;
+use OCA\Integriq\Service\OAuth\TokenIssuerInterface;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandlerInterface;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
@@ -209,6 +223,8 @@ use OCA\Integriq\Service\ServiceFetch\ServiceFetchService;
 use OCA\Integriq\Service\ServiceFetch\ServiceFetchServiceInterface;
 use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
 use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
+use OCA\Integriq\Service\Sms\SmsProviderRegistryInterface;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClient;
@@ -291,6 +307,9 @@ final class ServiceBindings {
 		IwmoIjwSyncServiceInterface::class => IwmoIjwSyncService::class,
 		StufZdsOutboundInterface::class => StufZdsOutbound::class,
 		SmsDispatchServiceInterface::class => SmsDispatchService::class,
+		NotifyNlEmailServiceInterface::class => NotifyNlEmailService::class,
+		SmsStatusCallbackServiceInterface::class => SmsStatusCallbackService::class,
+		SmsProviderRegistryInterface::class => SmsProviderRegistry::class,
 		StufProviderReceiverInterface::class => StufProviderReceiver::class,
 		DigitalPostServiceInterface::class => DigitalPostService::class,
 		ExchangeRejectionServiceInterface::class => ExchangeRejectionService::class,
@@ -306,6 +325,9 @@ final class ServiceBindings {
 		UwlrEduVServiceInterface::class => UwlrEduVService::class,
 		PaymentIntentServiceInterface::class => PaymentIntentService::class,
 		EudiIssuerKeyServiceInterface::class => EudiIssuerKeyService::class,
+		TokenIssuerInterface::class => TokenIssuer::class,
+		IssuerKeyServiceInterface::class => IssuerKeyService::class,
+		ProtectedResourceMetadataInterface::class => ProtectedResourceMetadata::class,
 		VerzuimloketServiceInterface::class => VerzuimloketService::class,
 		LtiPlatformLoginServiceInterface::class => LtiPlatformLoginService::class,
 		RodServiceInterface::class => RodService::class,
@@ -320,6 +342,7 @@ final class ServiceBindings {
 		BerichtenboxSourceSettingsInterface::class => BerichtenboxSourceSettings::class,
 		ConnectionMonitorServiceInterface::class => ConnectionMonitorService::class,
 		TablesSyncAdapterInterface::class => TablesSyncAdapter::class,
+		DatabaseConnectionFactoryInterface::class => DbalDatabaseConnectionFactory::class,
 	];
 
 	/**
@@ -361,11 +384,13 @@ final class ServiceBindings {
 		UnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
 		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
+		TalkMessageSourceInterface::class => TalkMessageSource::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
 		CallerSearchInterface::class => ConfiguredCallerSearch::class,
 		IntakeGroupsInterface::class => IntakeGroups::class,
 		ObjecttypeEndpointHandlerInterface::class => ObjecttypeEndpointHandler::class,
 		ActionAuthServiceInterface::class => ActionAuthService::class,
+		ObjectRightsServiceInterface::class => ObjectRightsService::class,
 		LtiNrpsServiceInterface::class => LtiNrpsService::class,
 		RecordProvenanceServiceInterface::class => RecordProvenanceService::class,
 		SubscriptionRequestHandlerInterface::class => SubscriptionRequestHandler::class,
@@ -433,6 +458,8 @@ final class ServiceBindings {
 		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
 		PhoneNumberNormaliserInterface::class => E164PhoneNumberNormaliser::class,
 		CloudEventEmitterInterface::class => EventService::class,
+		LookupAllowlistInterface::class => LookupAllowlist::class,
+		XmlEncoderInterface::class => ArrayToXml::class,
 	];
 	/**
 	 * Register the contract aliases on the app's registration context.
@@ -471,6 +498,8 @@ final class ServiceBindings {
 	 *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
 	 *     proving the `AbstractCategoryAdapterProvider` registration pattern
 	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
+	 *   - DatabaseAdapter — the relational database data-infra adapter
+	 *     (sources-database-adapter).
 	 *   - IntuneAdapter, JamfProAdapter, CitrixDaasAdapter — the endpoint-workspace
 	 *     adapters of connectors-endpoint-workspace-adapters (REQ-EWC-008).
 	 *
@@ -501,6 +530,7 @@ final class ServiceBindings {
 			$registry->addProvider($container->get(SharePointOnlineAdapter::class));
 			$registry->addProvider($container->get(Microsoft365Adapter::class));
 			$registry->addProvider($container->get(S3Adapter::class));
+			$registry->addProvider($container->get(DatabaseAdapter::class));
 		} catch (\Throwable $e) {
 			// Don't crash boot — log and continue. The provider just won't appear
 			// in object sidebars on this instance until the registry resolves.
@@ -532,7 +562,8 @@ final class ServiceBindings {
 				return new SettingsService(
 					config: $c->get('OCP\IAppConfig'),
 					rebaseScheduler: $c->get(RetentionRebaseSchedulerInterface::class),
-					logger: $c->get('Psr\Log\LoggerInterface')
+					logger: $c->get('Psr\Log\LoggerInterface'),
+					errorSink: $c->get(ErrorSinkSettings::class)
 				);
 			}
 		);

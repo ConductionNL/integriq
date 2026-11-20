@@ -8,10 +8,12 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 |---------|-------------|--------|
 | [Sources](sources.md) | External API connections with multi-protocol authentication | Implemented |
 | [Endpoints](endpoints.md) | Expose reverse-proxy API paths with rule-based logic | Implemented |
+| [MCP tool servers](mcp-gateway.md) | Publish an outside MCP tool server behind the gateway, with per-tool limits and a call log by tool | Implemented |
 | [Mappings](mappings.md) | Twig-powered data transformation between schemas | Implemented |
 | [Synchronizations](synchronizations.md) | Scheduled and event-driven source-to-target sync | Implemented |
 | [Reliability](reliability.md) | Retry policy, per-Source circuit breaker, sync dead letters | Implemented |
 | [Rules](rules.md) | Authentication, file handling, locking, and audit trail rules | Implemented |
+| [Consumer tokens](consumer-tokens.md) | OpenID Connect and JWKS key sources, client credentials tokens from integriq, protected-resource metadata and scopes | Implemented |
 | [Approvals](approvals.md) | Pause an endpoint call or a synchronization until a person approves it | Implemented |
 | [Jobs](jobs.md) | Cron-based scheduled task execution | Implemented |
 | [Data gathering](data-gathering.md) | Scheduled feeds filled into a register: the connector contract, the ten shipped connectors, and gathering versus leaf providers | Implemented |
@@ -28,6 +30,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Configuration Management](configuration-management.md) | Import/export, configuration groups, slug-based references | Implemented |
 | [StUF Adapter](stuf-adapter.md) | REST/ZGW to StUF-BG/ZKN SOAP translation | Partial |
 | [Prometheus Metrics](prometheus-metrics.md) | Prometheus exposition format metrics + health endpoint | Implemented |
+| [OpenTelemetry and error sink](opentelemetry.md) | Traces to an OpenTelemetry collector, errors to a Sentry compatible or OTLP logs service, and the span command for other apps | Implemented |
 | [DSO / Omgevingsloket Adapter](dso-omgevingsloket.md) | DSO-LV STAM koppelvlak integration | Implemented |
 | [iBabs & NotuBiz Connector](ibabs-notubiz-connector.md) | RIS integration for bestuurlijke besluitvorming | Implemented |
 | [AI agent tools](ai-agent-tools.md) | A Hermiq agent runs, tests and replays on a person's approval, and never reconfigures | Implemented |
@@ -37,6 +40,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [ZGW consumer sets](zgw-sets.md) | Read a ZGW store (Zaken, Documenten, Catalogi, Besluiten, Objecten) into a schema you choose, in the store's own shape, and write changes back | Partial |
 | [Case system for meeting apps](case-system.md) | A `case-system` source answers a meeting app's five case operations through the ZGW Zaken and Documenten APIs, or from test data | Implemented |
 | [ECB exchange rates](exchange-rates.md) | The daily euro reference rates of the European Central Bank, stored as objects and answered to a sibling app for a currency pair on a date | Implemented |
+| [Connection calls and route distance](connection-calls.md) | Other apps call a connection they declared, and ask the road distance between two postcodes, without holding a credential | Implemented |
 | [Web shop orders](webshop-orders.md) | WooCommerce and Shopify orders arrive in shillinq as web shop orders, refunds included | Partial |
 | [Documents to the case system](case-system-document-delivery.md) | Two seeded synchronizations send a filinq document, or its anonymised copy, to the case system as a new document, and write the outcome back | Partial |
 | [Registering form submissions](submission-registration.md) | A sibling app registers a form submission at an outside system (JSON endpoint, Objects API) with one typed command, once per submission | Partial |

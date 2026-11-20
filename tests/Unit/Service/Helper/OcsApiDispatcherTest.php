@@ -9,7 +9,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Helper;
 
-use GuzzleHttp\Exception\TransferException;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Psr7\Request;
 use OCA\Integriq\Exception\TablesNotFoundException;
 use OCA\Integriq\Exception\TablesPermissionDeniedException;
 use OCA\Integriq\Exception\TablesUpstreamException;
@@ -120,7 +121,7 @@ final class OcsApiDispatcherTest extends TestCase {
 	}
 
 	public function testATransportFailureIsLoggedAndRaisedAsUpstream(): void {
-		$this->callService->method('call')->willThrowException(new TransferException('connection refused'));
+		$this->callService->method('call')->willThrowException(new ConnectException('connection refused', new Request('GET', 'apps/tables/api/2/tables')));
 		$this->logger->expects($this->once())->method('warning')->with(
 			'TablesOcsClient: transport failure calling Tables API',
 			['endpoint' => 'apps/tables/api/2/tables', 'method' => 'GET', 'error' => 'connection refused']

@@ -1507,6 +1507,12 @@
             "colSpan": 12
           },
           {
+            "id": "src-database",
+            "component": "DatabaseSourcePanel",
+            "placement": "after-data",
+            "colSpan": 12
+          },
+          {
             "id": "src-document-generation",
             "component": "DocumentGenerationSourcePanel",
             "placement": "after-data",
@@ -1596,6 +1602,18 @@
               "labelKey": "name",
               "valueKey": "uuid"
             }
+          },
+          {
+            "key": "mcpMethod",
+            "label": "MCP method",
+            "type": "select",
+            "options": [
+              { "label": "Session start", "filter": { "mcpMethod": "initialize" } },
+              { "label": "Tool list", "filter": { "mcpMethod": "tools/list" } },
+              { "label": "Tool call", "filter": { "mcpMethod": "tools/call" } },
+              { "label": "Resource request", "filter": { "mcpMethod": "resources/read" } },
+              { "label": "Prompt request", "filter": { "mcpMethod": "prompts/get" } }
+            ]
           },
           {
             "key": "direction",
@@ -1689,8 +1707,14 @@
             "key": "request.url",
             "label": "URL",
             "sortable": false,
-            "width": "40%",
+            "width": "28%",
             "cellClass": "cn-cell--truncate"
+          },
+          {
+            "key": "mcpTool",
+            "label": "MCP tool",
+            "sortable": true,
+            "width": "12%"
           },
           {
             "key": "response.responseTime",
@@ -4197,7 +4221,7 @@
             "key": "recipientMsisdn",
             "label": "Recipient",
             "sortable": true,
-            "width": "18%"
+            "width": "14%"
           },
           {
             "key": "provider",
@@ -4206,10 +4230,16 @@
             "width": "13%"
           },
           {
+            "key": "sourceSlug",
+            "label": "Source",
+            "sortable": true,
+            "width": "12%"
+          },
+          {
             "key": "templateId",
             "label": "Template",
             "sortable": true,
-            "width": "18%"
+            "width": "10%"
           },
           {
             "key": "status",
