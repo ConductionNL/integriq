@@ -76,4 +76,22 @@ final class CallPreparation {
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Phase 1c: whether the caller is live (a gateway request, or the
+	 * interactive test) or background work. It decides how long a paced call
+	 * may wait for its turn (REQ-RLPC-002). Pulled out of the config like the
+	 * retry policy, so it never reaches the request.
+	 *
+	 * @return bool True for a live caller.
+	 *
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 */
+	public function takePacingMode(): bool {
+		$live = (($this->config['pacing'] ?? null) === 'live' || $this->request->persistLog === false);
+		unset($this->config['pacing']);
+		$this->prepared['config'] = $this->config;
+
+		return $live;
+	}//end takePacingMode()
 }//end class

@@ -120,6 +120,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'servicenow' => 'Service management',
 		'glpi' => 'Service management',
 		'cmcom-sms' => 'Messaging',
+		'smtp-mail' => 'Messaging',
 		'messagebird-sms' => 'Messaging',
 		'twilio-sms' => 'Messaging',
 		'whatsapp-bsp' => 'Messaging',
@@ -134,6 +135,10 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		// GitHub for the publiccode harvest (sources-github-publiccode).
 		'github-api' => 'Code hosting',
 		'github-raw' => 'Code hosting',
+		// Vehicle register and route planners for sibling apps (sources-route-distance-and-rdw-lookup).
+		'rdw-open-data' => 'Government registers',
+		'route-planner-openrouteservice' => 'Geo / Maps',
+		'route-planner-tomtom' => 'Geo / Maps',
 		// Web shops whose orders go to shillinq (connectors-webshop-orders D4).
 		'woocommerce-shop' => 'Commerce',
 		'shopify-shop' => 'Commerce',
@@ -147,6 +152,10 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'digipoort-sbr' => 'Tax filing',
 		// The ECB euro reference rates, credential-free (sources-ecb-exchange-rates D4).
 		'ecb-eurofxref-daily' => 'Bank',
+		// Other vendors' gateways whose APIs integriq lists (gateway-federated-api-discovery).
+		'kong-gateway-discovery' => 'API gateways',
+		'azure-apim-discovery' => 'API gateways',
+		'aws-apigateway-discovery' => 'API gateways',
 	];
 
 	/**
@@ -218,6 +227,21 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'icon' => 'MapMarkerOutline',
 		],
 		[
+			'slug' => 'adapter:digid-eherkenning-auth-adapter',
+			'name' => 'DigiD, eHerkenning and eIDAS login',
+			'description' => 'Signs residents and businesses in through DigiD, eHerkenning or eIDAS for an app such as portaliq, '
+				. 'which receives a signed pseudonymous envelope, never a BSN. Each organisation gets its own SAML Service Provider '
+				. 'or OIDC Relying Party registration, configured under Beheer > Authenticatie; this entry creates no configuration '
+				. 'of its own. Keys stay in Keepiq. Substantial is the lowest level accepted. Dormant until `idp_broker_enabled` is 1.',
+			'category' => 'Identity',
+			'kind' => 'adapter',
+			'mechanism' => 'flag-gated',
+			'flagKey' => 'idp_broker_enabled',
+			'sourceTemplateSlug' => '',
+			'standards' => ['SAML 2.0', 'OpenID Connect', 'DigiD', 'eHerkenning', 'eIDAS'],
+			'icon' => 'AccountKeyOutline',
+		],
+		[
 			'slug' => 'adapter:digikoppeling',
 			'name' => 'Digikoppeling',
 			'description' => 'Dutch government messaging standard (WUS profile, ebMS2 reliable messaging, WS-Security signing, '
@@ -247,6 +271,22 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'sourceTemplateSlug' => '',
 			'standards' => ['Digikoppeling ebMS2', 'Digikoppeling WUS', 'PKIoverheid'],
 			'icon' => 'EmailOutline',
+		],
+		[
+			'slug' => 'adapter:digipoort-sbr',
+			'name' => 'Digipoort (SBR filing)',
+			'description' => 'Files XBRL instances with the Belastingdienst and the KvK through Digipoort: a sibling app such as '
+				. 'shillinq raises a filing request, integriq delivers the instance once, polls the processing status and '
+				. 'reports every status back as an event. Ships on the log provider, which answers without a network call. '
+				. 'The live WUS provider signs with your PKIoverheid certificate from the credential broker and sends over '
+				. 'two-way TLS; without the certificate it refuses and sends nothing.',
+			'category' => 'Tax filing',
+			'kind' => 'adapter',
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => 'digipoort-sbr',
+			'standards' => ['Digipoort WUS', 'SBR', 'PKIoverheid'],
+			'icon' => 'FileSendOutline',
 		],
 		[
 			'slug' => 'adapter:smartdocuments',
@@ -322,6 +362,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'sharepoint-online' => 'Document / CMS',
 		'microsoft-365' => 'SaaS productivity',
 		'data-infra-s3' => 'Data infrastructure',
+		'data-infra-database' => 'Data infrastructure',
 	];
 
 	/**

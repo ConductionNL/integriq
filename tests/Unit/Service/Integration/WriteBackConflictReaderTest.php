@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Conflict detection over a mocked OpenRegister ObjectService.
@@ -100,7 +101,11 @@ class WriteBackConflictReaderTest extends TestCase {
 			]
 		);
 		$this->objectService->expects($this->once())->method('find')
-			->with('obj-1', 'crm', 'contact')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'obj-1',
+				'register' => 'crm',
+				'schema' => 'contact',
+			]))
 			->willReturn($this->entity(['writeBack' => 'conflict']));
 
 		$reader = new WriteBackConflictReader(objectService: $this->objectService);

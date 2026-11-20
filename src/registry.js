@@ -39,6 +39,7 @@ import CallLogDetail from './components/callLog/CallLogDetail.vue'
 import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import DatabaseSourcePanel from './components/DatabaseSourcePanel.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
 import IntakeMessageActions from './components/intake/IntakeMessageActions.vue'
 import IntakeMessageRowActions from './components/intake/IntakeMessageRowActions.vue'
@@ -87,6 +88,7 @@ import {
 	setSourceResidencyHandler,
 	testJobHandler,
 	testMappingModalHandler,
+	testRegistrationTargetHandler,
 	testSourceHandler,
 	testSynchronizationHandler,
 	viewLogsHandler,
@@ -122,6 +124,9 @@ export default {
 	// Webhook signing-secret manager (opens SubscriptionSigningModal via
 	// the modal bus). See openconnector-webhook-signing.
 	manageSigningHandler,
+	// Registration target dry run (form-submission-registration-targets D6):
+	// opens RegistrationTargetTestModal, which owns the POST.
+	testRegistrationTargetHandler,
 	// Query-aware navigation handler for "View logs" row actions on
 	// parent index pages (#837). Pushes `?<queryParam>=<rowId>` onto the
 	// destination *Logs route. Will be retired once nc-vue#330 lands a
@@ -170,6 +175,12 @@ export default {
 	// and #activate). Renders nothing for any other kind of source.
 	// document-generation-vendor-adapter REQ-DGV-004.
 	DocumentGenerationSourcePanel,
+
+	// SourceDetail body widget for a database source: its declared statements,
+	// a test run of a read statement (first page and duration) and the tables
+	// and columns (databaseSource#testStatement and #schema). Renders nothing
+	// for any other kind of source. sources-database-adapter REQ-DBSF-001.
+	DatabaseSourcePanel,
 
 	// SourceDetail body widget: the source's pulls per day and its latest
 	// runs, with Run again on a failed one. Reads runSummary#show.
@@ -222,8 +233,8 @@ export default {
 	// hide the embedded-secret fields while brokered (integriq#102).
 	SourceFormFields,
 
-	// The Endpoints page wires `form-fields` to EndpointFormFields to restore
-	// the field set the pre-manifest EditEndpoint modal had: Register + Schema
+	// The Endpoints page wires `form-fields` to EndpointFormFields for the
+	// fields the schema-driven form cannot express: Register + Schema
 	// pickers composing the polymorphic `targetId`, `endpointArray` as a
 	// comma-separated list, method/targetType selects (the schema declares both
 	// as plain strings, no enum), and a configurations multiselect.
@@ -267,9 +278,9 @@ export default {
 	// The Rules page wires `form-dialog` to RuleEditorModal for the same reason:
 	// it hosts RuleConditionGroup, whose leaf rows lay out field + operator +
 	// value and whose operator select alone carries `min-width: 220px`, so the
-	// dialog has to be wider than NcDialog's `normal`. It restores the field set
-	// the pre-manifest EditRule modal had — conditions, order and the error
-	// response were all unreachable through the schema-driven form (enum-less
+	// dialog has to be wider than NcDialog's `normal`. It carries
+	// conditions, order and the error response, which are all unreachable
+	// through the schema-driven form (enum-less
 	// `action`/`timing`/`type` strings, a `type: object` conditions property
 	// that fieldsFromSchema drops, and a nested `configuration.error.*` path).
 	// Per-type parameters beyond `error` stay on RuleDetailPage, which already

@@ -173,12 +173,12 @@ export function readBrokerConnection(formData) {
  * saving the form moves the subscription onto the credential.
  *
  * @param {object} protocolSettings The current protocolSettings.
- * @param {object} patch The changed connection fields.
- * @param {string|null} brokerId The picked broker.
+ * @param {{patch: object, brokerId: string|null}} change The changed connection fields, and the picked broker.
  * @return {object} The new protocolSettings.
  * @spec openspec/specs/events-cloudevents/spec.md#requirement-broker-credentials-are-a-credential-reference-resolved-at-publish-req-ebsc-003
  */
-export function buildBrokerSettings(protocolSettings, patch, brokerId) {
+export function buildBrokerSettings(protocolSettings, change) {
+	const { patch, brokerId } = change
 	const settings = objectOrEmpty(protocolSettings)
 	const current = objectOrEmpty(settings.broker)
 	const next = {

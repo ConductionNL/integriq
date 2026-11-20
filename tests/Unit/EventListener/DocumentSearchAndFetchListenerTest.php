@@ -20,9 +20,14 @@ use OCA\Integriq\EventListener\DocumentFetchRequestedListener;
 use OCA\Integriq\EventListener\DocumentSearchRequestedListener;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
+use OCA\Integriq\Service\Chat\TalkMessageSource;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCP\App\IAppManager;
+use OCP\Comments\ICommentsManager;
 use OCP\EventDispatcher\Event;
+use OCP\IUserManager;
+use Psr\Container\ContainerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -31,6 +36,9 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\Integriq\EventListener\DocumentFetchRequestedListener
  * @covers \OCA\Integriq\Event\DocumentSearchRequestedEvent
  * @covers \OCA\Integriq\Event\DocumentFetchRequestedEvent
+ * @uses \OCA\Integriq\Service\Chat\TalkMessageSource
+ * @uses \OCA\Integriq\Service\Chat\ThreadTranscript
+ * @uses \OCA\Integriq\Service\Chat\TalkThreadReader
  */
 class DocumentSearchAndFetchListenerTest extends TestCase {
 
@@ -48,13 +56,27 @@ class DocumentSearchAndFetchListenerTest extends TestCase {
 		return $guard;
 	}//end linked()
 
+	/**
+	 * The Talk source as it is where Talk is not installed.
+	 *
+	 * @return TalkMessageSource
+	 */
+	private function talkAbsent(): TalkMessageSource {
+		return new TalkMessageSource(
+			$this->createMock(IAppManager::class),
+			$this->createMock(ContainerInterface::class),
+			$this->createMock(IUserManager::class),
+			$this->createMock(ICommentsManager::class)
+		);
+	}//end talkAbsent()
+
 	public function testASearchFromAnUnlinkedAppIsRefusedWithoutAGraphCall(): void {
 		$adapter = $this->createMock(Microsoft365Adapter::class);
 		$adapter->method('isConnected')->willReturn(true);
 		$adapter->expects(self::never())->method('search');
 
 		$event = new DocumentSearchRequestedEvent('rogue-app', '', 'pjansen', 'Stationsplein');
-		(new DocumentSearchRequestedListener($adapter, $this->linked(false), $this->createMock(LoggerInterface::class)))->handle($event);
+		(new DocumentSearchRequestedListener($adapter, $this->linked(false), $this->createMock(LoggerInterface::class), $this->talkAbsent()))->handle($event);
 
 		self::assertSame(['hits' => [], 'moreCount' => 0, 'notices' => ['not-linked']], $event->getResult());
 	}//end testASearchFromAnUnlinkedAppIsRefusedWithoutAGraphCall()
@@ -64,7 +86,7 @@ class DocumentSearchAndFetchListenerTest extends TestCase {
 		$adapter->expects(self::never())->method('fetch');
 
 		$event = new DocumentFetchRequestedEvent('rogue-app', '', 'pjansen', 'driveItem:d1:i1');
-		(new DocumentFetchRequestedListener($adapter, $this->linked(false), $this->createMock(LoggerInterface::class)))->handle($event);
+		(new DocumentFetchRequestedListener($adapter, $this->linked(false), $this->createMock(LoggerInterface::class), $this->talkAbsent()))->handle($event);
 
 		self::assertFalse($event->isHandled());
 		self::assertNull($event->getResult());
@@ -118,7 +140,7 @@ class DocumentSearchAndFetchListenerTest extends TestCase {
 			->willReturn(['hits' => [['remoteId' => 'driveItem:d1:i1']], 'moreCount' => 0, 'notices' => []]);
 
 		$event = new DocumentSearchRequestedEvent('dossiq', '', 'pjansen', 'Stationsplein', '2025-01-01', '2026-06-30');
-		(new DocumentSearchRequestedListener($adapter, $this->linked(true), $this->createMock(LoggerInterface::class)))->handle($event);
+		(new DocumentSearchRequestedListener($adapter, $this->linked(true), $this->createMock(LoggerInterface::class), $this->talkAbsent()))->handle($event);
 
 		self::assertTrue($event->isHandled());
 		self::assertSame('driveItem:d1:i1', $event->getResult()['hits'][0]['remoteId']);
@@ -132,9 +154,10 @@ class DocumentSearchAndFetchListenerTest extends TestCase {
 		$adapter->expects(self::never())->method('search');
 
 		$event = new DocumentSearchRequestedEvent('dossiq', '', 'pjansen', 'x');
-		(new DocumentSearchRequestedListener($adapter, $this->linked(true), $this->createMock(LoggerInterface::class)))->handle($event);
+		(new DocumentSearchRequestedListener($adapter, $this->linked(true), $this->createMock(LoggerInterface::class), $this->talkAbsent()))->handle($event);
 
-		self::assertSame(['hits' => [], 'moreCount' => 0, 'notices' => ['not-connected']], $event->getResult());
+		// Talk is not installed in the unit container, so the Talk part answers its notice beside it.
+		self::assertSame(['hits' => [], 'moreCount' => 0, 'notices' => ['not-connected', 'talk-not-installed']], $event->getResult());
 	}//end testWithoutAConnectionTheSearchSaysSo()
 
 	public function testAFetchHandsOverTheFileAndLeavesAnUnknownHandleUnhandled(): void {
@@ -142,7 +165,7 @@ class DocumentSearchAndFetchListenerTest extends TestCase {
 		$adapter->method('fetch')->willReturnCallback(
 			static fn (string $handle, string $userId): ?array => ($handle === 'driveItem:d1:i1') ? ['fileName' => 'a.docx', 'mimeType' => 'application/msword', 'content' => 'BYTES'] : null
 		);
-		$listener = new DocumentFetchRequestedListener($adapter, $this->linked(true), $this->createMock(LoggerInterface::class));
+		$listener = new DocumentFetchRequestedListener($adapter, $this->linked(true), $this->createMock(LoggerInterface::class), $this->talkAbsent());
 
 		$found = new DocumentFetchRequestedEvent('dossiq', '', 'pjansen', 'driveItem:d1:i1');
 		$listener->handle($found);
@@ -160,7 +183,7 @@ class DocumentSearchAndFetchListenerTest extends TestCase {
 		$adapter = $this->createMock(Microsoft365Adapter::class);
 		$adapter->method('isConnected')->willReturn(true);
 		$adapter->method('search')->willThrowException(new \RuntimeException('graph down'));
-		$listener = new DocumentSearchRequestedListener($adapter, $this->linked(true), $this->createMock(LoggerInterface::class));
+		$listener = new DocumentSearchRequestedListener($adapter, $this->linked(true), $this->createMock(LoggerInterface::class), $this->talkAbsent());
 
 		$listener->handle(new Event());
 		$event = new DocumentSearchRequestedEvent('dossiq', '', 'pjansen', 'x');
@@ -188,7 +211,7 @@ class DocumentSearchAndFetchListenerTest extends TestCase {
 				$logged[] = [$level, $message, $context];
 			});
 		}
-		$listener = new DocumentSearchRequestedListener($adapter, $guard, $logger);
+		$listener = new DocumentSearchRequestedListener($adapter, $guard, $logger, $this->talkAbsent());
 
 		$refused = new DocumentSearchRequestedEvent('dossiq', 'conn-1', 'pjansen', 'x');
 		$listener->handle($refused);

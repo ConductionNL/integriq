@@ -214,6 +214,17 @@ describe('applyMappingTestResult', () => {
 		expect(ctx.validatedSchemaId).toBe('s-1')
 	})
 
+	it('keeps the XML or CSV text of a mapping that writes one, and none otherwise', () => {
+		const { ctx } = context()
+		const rendered = { format: 'xml', contentType: 'application/xml', body: '<persoon />' }
+		ctx.applyMappingTestResult({ resultObject: { naam: 'Jan' }, renderedOutput: rendered })
+		expect(ctx.renderedOutput).toEqual(rendered)
+		ctx.applyMappingTestResult({ resultObject: { naam: 'Jan' } })
+		expect(ctx.renderedOutput).toBeNull()
+		ctx.applyMappingTestResult({ resultObject: {}, renderedOutput: { format: 'csv', body: null } })
+		expect(ctx.renderedOutput).toBeNull()
+	})
+
 	it('uses the bare body as the result and counts it valid', () => {
 		const { ctx } = context()
 		ctx.applyMappingTestResult({ a: 3 })
@@ -336,6 +347,7 @@ describe('reset', () => {
 		ctx.running = true
 		ctx.runError = 'x'
 		ctx.result = { a: 1 }
+		ctx.renderedOutput = { format: 'xml', body: '<a />' }
 		ctx.isValid = false
 		ctx.validationErrors = { a: ['x'] }
 		ctx.validatedSchemaId = 's-1'
@@ -345,6 +357,7 @@ describe('reset', () => {
 		expect(ctx.running).toBe(false)
 		expect(ctx.runError).toBe('')
 		expect(ctx.result).toBeNull()
+		expect(ctx.renderedOutput).toBeNull()
 		expect(ctx.isValid).toBe(true)
 		expect(ctx.validationErrors).toBeNull()
 		expect(ctx.validatedSchemaId).toBeNull()

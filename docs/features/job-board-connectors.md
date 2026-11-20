@@ -57,6 +57,14 @@ To go live:
 2. In the mapping `jobboard-indeed-feed`, fill `publisher` and
    `publisherurl`.
 3. Register the feed URL with Indeed under its terms for employer feeds.
+4. In the source `jobboard-indeed`, set the location to the full feed URL
+   of this instance and enable it.
+
+The source `jobboard-indeed` is a feed source (type `feed`): a flow step that
+posts a vacancy to it sends nothing. It answers `published in feed` with the
+feed URL as its link, so humaniq's flow records the posting as placed, the
+same as for a board that takes a push. The vacancy appears in the feed once its
+channels include `indeed`.
 
 ## Related
 

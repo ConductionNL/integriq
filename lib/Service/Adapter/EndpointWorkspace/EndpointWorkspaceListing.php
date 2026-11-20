@@ -34,7 +34,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
  */
-class EndpointWorkspaceListing {
+class EndpointWorkspaceListing implements EndpointWorkspaceListingInterface {
 
 	/**
 	 * Constructor.

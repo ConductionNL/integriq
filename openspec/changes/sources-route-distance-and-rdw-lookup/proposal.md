@@ -44,7 +44,7 @@ Rows in the humaniq matrix:
 
 ## Impact
 
-- New: two events and their listeners, `lib/Service/RouteDistanceService.php`, three seed fragments.
+- New: two events and their listeners, `lib/EventListener/RouteDistanceService.php`, three seed fragments.
 - Changed: `lib/AppInfo/Application.php`, `lib/Service/CatalogRegistryService.php` (categories).
 
 ## Cross-project dependencies

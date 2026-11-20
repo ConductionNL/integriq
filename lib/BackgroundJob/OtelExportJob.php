@@ -91,9 +91,10 @@ class OtelExportJob extends QueuedJob {
 	}//end __construct()
 
 	/**
-	 * Send the trace named in the argument.
+	 * Send the trace named in the argument, or the span another app handed
+	 * in (REQ-OTEL-007), under that app's `service.name`.
 	 *
-	 * @param mixed $argument `{traceId, attempt, notBefore?}`.
+	 * @param mixed $argument `{traceId, attempt, notBefore?}` or `{appId, span, attempt, notBefore?}`.
 	 *
 	 * @return void
 	 *
@@ -104,7 +105,7 @@ class OtelExportJob extends QueuedJob {
 		$traceId = $argument['traceId'];
 
 		// Export switched off since the trace was queued: nothing to send.
-		if ($traceId === '' || $this->settings->isEnabled() === false) {
+		if (($traceId === '' && $argument['span'] === []) || $this->settings->isEnabled() === false) {
 			return;
 		}
 
@@ -112,7 +113,8 @@ class OtelExportJob extends QueuedJob {
 		if ($argument['notBefore'] > $now) {
 			// A retry picked up before it is due (a job row from before retries
 			// were scheduled) waits until then instead of being runnable at once.
-			$this->jobList->scheduleAfter(self::class, $argument['notBefore'], $argument);
+			$stored = $this->stored(argument: $argument, attempt: $argument['attempt'], notBefore: $argument['notBefore']);
+			$this->jobList->scheduleAfter(self::class, $argument['notBefore'], $stored);
 			return;
 		}
 
@@ -121,14 +123,15 @@ class OtelExportJob extends QueuedJob {
 			// Sends are paused: wait for the pause to end without using up
 			// an attempt, since nothing was sent.
 			$argument['notBefore'] = $pausedUntil;
-			$this->jobList->scheduleAfter(self::class, $pausedUntil, $argument);
+			$stored = $this->stored(argument: $argument, attempt: $argument['attempt'], notBefore: $pausedUntil);
+			$this->jobList->scheduleAfter(self::class, $pausedUntil, $stored);
 			return;
 		}
 
 		try {
-			$this->send(traceId: $traceId, now: $now);
+			$this->send(argument: $argument, now: $now);
 		} catch (Throwable $e) {
-			$this->retryOrDrop(traceId: $traceId, attempt: $argument['attempt'], now: $now, reason: $e->getMessage());
+			$this->retryOrDrop(argument: $argument, now: $now, reason: $e->getMessage());
 		}
 
 	}//end run()
@@ -138,15 +141,22 @@ class OtelExportJob extends QueuedJob {
 	 *
 	 * @param mixed $argument The raw argument.
 	 *
-	 * @return array{traceId: string, attempt: int, notBefore: int}
+	 * @return array{traceId: string, appId: string, span: array, attempt: int, notBefore: int}
 	 */
 	private function argument(mixed $argument): array {
 		if (is_array($argument) === false) {
 			$argument = [];
 		}
 
+		$span = ($argument['span'] ?? []);
+		if (is_array($span) === false || (string)($argument['appId'] ?? '') === '') {
+			$span = [];
+		}
+
 		$normalised = [
 			'traceId' => (string)($argument['traceId'] ?? ''),
+			'appId' => (string)($argument['appId'] ?? ''),
+			'span' => $span,
 			'attempt' => (int)($argument['attempt'] ?? 0),
 			'notBefore' => (int)($argument['notBefore'] ?? 0),
 		];
@@ -156,23 +166,23 @@ class OtelExportJob extends QueuedJob {
 	}//end argument()
 
 	/**
-	 * Send one trace.
+	 * Send one trace, or one span of another app.
 	 *
-	 * @param string $traceId The trace to send.
+	 * @param array{traceId: string, appId: string, span: array, attempt: int, notBefore: int} $argument The normalised argument.
 	 * @param int $now The current unix time.
 	 *
 	 * @return void
 	 *
 	 * @throws RuntimeException When the collector failed.
 	 */
-	private function send(string $traceId, int $now): void {
-		$trace = $this->traces->findForExport(traceId: $traceId);
-		if ($trace === null) {
+	private function send(array $argument, int $now): void {
+		$payload = $this->payload(argument: $argument);
+		if ($payload === null) {
 			return;
 		}
 
 		try {
-			$this->exporter->export(payload: $this->mapper->map(trace: $trace, serviceName: $this->settings->serviceName()));
+			$this->exporter->export(payload: $payload);
 		} catch (Throwable $e) {
 			$this->breaker->recordFailure(now: $now);
 			throw new RuntimeException($e->getMessage(), 0, $e);
@@ -183,29 +193,68 @@ class OtelExportJob extends QueuedJob {
 	}//end send()
 
 	/**
+	 * The OTLP payload to send: the persisted trace mapped under integriq's
+	 * service name, or the other app's span under that app's id.
+	 *
+	 * @param array{traceId: string, appId: string, span: array, attempt: int, notBefore: int} $argument The normalised argument.
+	 *
+	 * @return array|null The payload, or null when the trace is gone.
+	 */
+	private function payload(array $argument): ?array {
+		if ($argument['span'] !== []) {
+			return $this->mapper->mapForeign(spans: [$argument['span']], serviceName: $argument['appId']);
+		}
+
+		$trace = $this->traces->findForExport(traceId: $argument['traceId']);
+		if ($trace === null) {
+			return null;
+		}
+
+		return $this->mapper->map(trace: $trace, serviceName: $this->settings->serviceName());
+
+	}//end payload()
+
+	/**
+	 * The argument a rescheduled job is stored with: the trace id, or the
+	 * other app's id and span, then the attempt and when it is due.
+	 *
+	 * @param array{traceId: string, appId: string, span: array, attempt: int, notBefore: int} $argument The normalised argument.
+	 * @param int $attempt The attempt the rescheduled job makes.
+	 * @param int $notBefore When it is due.
+	 *
+	 * @return array<string, mixed> The stored argument.
+	 */
+	private function stored(array $argument, int $attempt, int $notBefore): array {
+		$stored = ['traceId' => $argument['traceId']];
+		if ($argument['span'] !== []) {
+			$stored = ['appId' => $argument['appId'], 'span' => $argument['span']];
+		}
+
+		return $stored + ['attempt' => $attempt, 'notBefore' => $notBefore];
+
+	}//end stored()
+
+	/**
 	 * Queue a later retry, five, ten and twenty minutes out, or drop the
 	 * trace with one log line once the retries are spent.
 	 *
-	 * @param string $traceId The trace.
-	 * @param int $attempt The attempt that just failed.
+	 * @param array{traceId: string, appId: string, span: array, attempt: int, notBefore: int} $argument The argument of the failed send.
 	 * @param int $now The current unix time.
 	 * @param string $reason Why the send failed.
 	 *
 	 * @return void
 	 */
-	private function retryOrDrop(string $traceId, int $attempt, int $now, string $reason): void {
+	private function retryOrDrop(array $argument, int $now, string $reason): void {
+		$attempt = $argument['attempt'];
 		if ($attempt < self::MAX_RETRIES) {
 			$notBefore = ($now + (self::RETRY_DELAY_SECONDS * (2 ** $attempt)));
-			$this->jobList->scheduleAfter(
-				self::class,
-				$notBefore,
-				[
-					'traceId' => $traceId,
-					'attempt' => ($attempt + 1),
-					'notBefore' => $notBefore,
-				]
-			);
+			$this->jobList->scheduleAfter(self::class, $notBefore, $this->stored(argument: $argument, attempt: ($attempt + 1), notBefore: $notBefore));
 			return;
+		}
+
+		$traceId = $argument['traceId'];
+		if ($traceId === '') {
+			$traceId = (string)($argument['span']['traceId'] ?? '');
 		}
 
 		$this->logger->warning(

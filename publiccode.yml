@@ -2,8 +2,9 @@ publiccodeYmlVersion: '0.4'
 
 name: Open Connector
 url: https://github.com/ConductionNL/integriq
-softwareVersion: '0.2.10'
-releaseDate: '2026-05-26'
+logo: img/app-store.svg
+softwareVersion: '0.4.4'
+releaseDate: '2026-09-12'
 developmentStatus: stable
 softwareType: addon
 
@@ -23,6 +24,7 @@ description:
       It provides an ESB-framework for working together in an open data
       ecosystem: synchronise external data sources, emit cloud events,
       and translate API calls through configurable mappings.
+      Conduction maintains this component on behalf of OpenWoo.app.
     features:
       - Data source synchronisation
       - Cloud event publishing
@@ -36,6 +38,7 @@ description:
       Het levert een ESB-raamwerk voor samenwerking in een open data-ecosysteem:
       synchroniseer externe databronnen, publiceer cloud events en vertaal
       API-aanroepen via configureerbare mappings.
+      Conduction onderhoudt dit component in opdracht van OpenWoo.app.
     features:
       - Synchronisatie van databronnen
       - Publiceren van cloud events
@@ -47,7 +50,12 @@ legal:
   repoOwner: ConductionNL
 
 maintenance:
-  type: internal
+  type: contract
+  contractors:
+    - name: Conduction B.V.
+      until: "2027-12-31"
+      email: info@conduction.nl
+      website: https://conduction.nl
   contacts:
     - name: Conduction Development Team
       email: info@conduction.nl

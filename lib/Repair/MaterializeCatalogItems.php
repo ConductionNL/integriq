@@ -32,9 +32,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\SystemWrite;
 use OCA\Integriq\Service\CatalogRegistryServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -145,9 +147,7 @@ class MaterializeCatalogItems implements IRepairStep {
 				try {
 					$orObjectService->saveObject(
 						object: $payload,
-						register: 'integriq',
-						schema: 'catalog_item',
-						uuid: ($existingBySlug[$slug] ?? null)
+						options: RegisterSave::options(register: 'integriq', schema: 'catalog_item', uuid: $existingBySlug[$slug] ?? null)
 					);
 					$upserted++;
 				} catch (\Throwable $e) {
@@ -235,7 +235,7 @@ class MaterializeCatalogItems implements IRepairStep {
 			}
 
 			try {
-				$orObjectService->deleteObject(uuid: $uuid);
+				$orObjectService->deleteObject(new ObjectDeletion(uuid: $uuid));
 			} catch (\Throwable $e) {
 				$this->logger->warning('Integriq: could not remove stale catalog_item', ['slug' => $slug, 'exception' => $e->getMessage()]);
 			}
