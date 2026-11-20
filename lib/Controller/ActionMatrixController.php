@@ -28,6 +28,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\ObjectRightsServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -49,11 +50,13 @@ class ActionMatrixController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IGroupManager $groupManager The group manager.
+	 * @param ObjectRightsServiceInterface $objectRights Writes the object rights onto the schemas.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IGroupManager $groupManager,
+		private readonly ObjectRightsServiceInterface $objectRights,
 	) {
 		parent::__construct(
 			appName: AppIdentity::APP_ID,
@@ -112,11 +115,16 @@ class ActionMatrixController extends Controller {
 	 * Persist the action matrix.
 	 *
 	 * Reads the `matrix` parameter from the request body and writes it through
-	 * the action authorization service (which normalizes the shape).
+	 * the action authorization service (which normalizes the shape), then
+	 * writes the stored `object.*` rows onto the configuration schemas'
+	 * OpenRegister authorization blocks. A schema whose update did not go
+	 * through is named in `notApplied` and in `warning`; the matrix is stored
+	 * all the same and the ApplyObjectRights repair step retries it.
 	 *
-	 * @return JSONResponse The normalized matrix after the write.
+	 * @return JSONResponse The normalized matrix after the write, and the schemas not applied.
 	 *
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
+	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setMatrix(): JSONResponse {
@@ -134,7 +142,16 @@ class ActionMatrixController extends Controller {
 			);
 		}
 
-		return new JSONResponse(['matrix' => $this->actionAuth->getMatrix()]);
+		$stored     = $this->actionAuth->getMatrix();
+		$notApplied = $this->objectRights->apply(matrix: $stored);
+
+		$body = ['matrix' => $stored, 'notApplied' => $notApplied];
+		if ($notApplied !== []) {
+			$body['warning'] = 'The object rights of these schemas were not applied: '
+				. implode(', ', $notApplied) . '. They are applied again on the next upgrade.';
+		}
+
+		return new JSONResponse($body);
 	}//end setMatrix()
 
 	/**

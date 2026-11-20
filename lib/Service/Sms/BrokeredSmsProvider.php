@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
  */
-abstract class BrokeredSmsProvider implements SmsProviderInterface {
+abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCallbackInterface {
 
 	/**
 	 * Constructor.
@@ -239,4 +239,56 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface {
 			previous: $exception
 		);
 	}//end unexpectedFailure()
+	/**
+	 * The refusal of a callback whose signature is missing or wrong.
+	 *
+	 * @return SmsProviderException The refusal; never says which part of the check failed.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	protected function badSignature(): SmsProviderException {
+		return new SmsProviderException(
+			message: 'The ' . $this->getProviderId() . ' status callback signature did not verify.',
+			errorCode: 'bad_signature'
+		);
+
+	}//end badSignature()
+
+	/**
+	 * The first non-empty string among a callback's parameters, by name in any case.
+	 *
+	 * @param array<string, mixed> $params The callback's parameters.
+	 * @param list<string>         $names  The parameter names, in order of preference.
+	 *
+	 * @return string The value, or an empty string.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	protected static function callbackField(array $params, array $names): string {
+		$lower = array_change_key_case($params, CASE_LOWER);
+		foreach ($names as $name) {
+			$value = ($lower[strtolower($name)] ?? null);
+			if (is_scalar($value) === true && trim((string)$value) !== '') {
+				return trim((string)$value);
+			}
+		}
+
+		return '';
+
+	}//end callbackField()
+
+	/**
+	 * The refusal of a callback that names no message.
+	 *
+	 * @return SmsProviderException The refusal.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	protected function unreadableCallback(): SmsProviderException {
+		return new SmsProviderException(
+			message: 'The ' . $this->getProviderId() . ' status callback names no message.',
+			errorCode: 'unreadable_callback'
+		);
+
+	}//end unreadableCallback()
 }//end class

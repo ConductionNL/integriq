@@ -1,0 +1,289 @@
+{
+  "info": {
+    "name": "Integriq — job board feed (connectors-job-board-multiposting)",
+    "description": "Newman test of task 3 of openspec/changes/connectors-job-board-multiposting: the endpoint jobboard-indeed-feed (GET /api/endpoint/jobfeeds/indeed.xml) lists the published humaniq vacancies whose channels include indeed, anonymously and as XML, without applicant data.\n\nIt seeds two published vacancies in humaniq's register through OpenRegister, one listing indeed and one listing only linkedin, and deletes them again in teardown. humaniq is optional on a test instance: when its register is not installed the seeding answers 404 and the two checks that need the vacancies are skipped (reported as skipped, not passed). The shape checks (anonymous 200, XML, the <source> root, no applicant data) always run.\n\nSPDX-License-Identifier: EUPL-1.2\nSPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Setup (via OpenRegister)",
+      "item": [
+        {
+          "name": "Seed a published vacancy that lists indeed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/humaniq/vacancy",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Newman feed vacature Indeed\",\n  \"description\": \"Newman job-board feed fixture. Geen echte vacature.\",\n  \"department\": \"Newman\",\n  \"status\": \"gepubliceerd\",\n  \"publishedDate\": \"2026-11-02\",\n  \"closingDate\": \"2026-12-31\",\n  \"channels\": [\n    \"indeed\",\n    \"werk-nl\"\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// humaniq is optional on this instance. A 404 means its register or the Vacancy",
+                  "// schema is not installed; the feed checks that need its vacancies are then skipped.",
+                  "if (pm.response.code === 404) {",
+                  "    pm.collectionVariables.set('humaniqPresent', 'false');",
+                  "    pm.test.skip('Setup: Newman feed vacature Indeed seeded (humaniq not installed)', () => {});",
+                  "    return;",
+                  "}",
+                  "pm.test('Setup: Newman feed vacature Indeed seeded', () => pm.expect(pm.response.code).to.be.below(300));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('feedIndeedVacancyId', b.id || (b['@self'] || {}).id || '');",
+                  "pm.collectionVariables.set('humaniqPresent', 'true');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seed a published vacancy that lists only linkedin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/humaniq/vacancy",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Newman feed vacature LinkedIn\",\n  \"description\": \"Newman job-board feed fixture. Geen echte vacature.\",\n  \"department\": \"Newman\",\n  \"status\": \"gepubliceerd\",\n  \"publishedDate\": \"2026-11-02\",\n  \"closingDate\": \"2026-12-31\",\n  \"channels\": [\n    \"linkedin\"\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// humaniq is optional on this instance. A 404 means its register or the Vacancy",
+                  "// schema is not installed; the feed checks that need its vacancies are then skipped.",
+                  "if (pm.response.code === 404) {",
+                  "    pm.collectionVariables.set('humaniqPresent', 'false');",
+                  "    pm.test.skip('Setup: Newman feed vacature LinkedIn seeded (humaniq not installed)', () => {});",
+                  "    return;",
+                  "}",
+                  "pm.test('Setup: Newman feed vacature LinkedIn seeded', () => pm.expect(pm.response.code).to.be.below(300));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('feedLinkedinVacancyId', b.id || (b['@self'] || {}).id || '');",
+                  "pm.collectionVariables.set('humaniqPresent', 'true');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Indeed feed (anonymous)",
+      "item": [
+        {
+          "name": "GET the Indeed feed without credentials or an Accept header",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/jobfeeds/indeed.xml",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Feed answers anonymously: 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Feed is XML because the path ends in .xml', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.match(/xml/));",
+                  "const body = pm.response.text();",
+                  "pm.test('Feed root is Indeed\\'s <source> with a publisher', () => {",
+                  "    pm.expect(body).to.match(/<source>/);",
+                  "    pm.expect(body).to.match(/<publisher>[^<]*<\\/publisher>/);",
+                  "});",
+                  "// No element of the feed holds data about people who applied; descriptions are free text,",
+                  "// so the check is on element names, not on words.",
+                  "pm.test('Feed carries no applicant data', () => {",
+                  "    pm.expect(body).to.not.match(/<(applicants?|applications?|candidates?|sollicita\\w*|email|phone|bsn)[\\s>\\/]/i);",
+                  "});",
+                  "const present = pm.collectionVariables.get('humaniqPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('The published vacancy that lists indeed is in the feed', () => {",
+                  "    pm.expect(body).to.include('Newman feed vacature Indeed');",
+                  "    pm.expect(body).to.include(pm.collectionVariables.get('feedIndeedVacancyId'));",
+                  "});",
+                  "check('The vacancy that lists only linkedin is not in the feed', () => {",
+                  "    pm.expect(body).to.not.include('Newman feed vacature LinkedIn');",
+                  "    pm.expect(body).to.not.include(pm.collectionVariables.get('feedLinkedinVacancyId') || 'no-linkedin-id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Teardown (via OpenRegister)",
+      "item": [
+        {
+          "name": "Delete the indeed vacancy",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/humaniq/vacancy/{{feedIndeedVacancyId}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: removed, already gone, or never seeded', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the linkedin vacancy",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/humaniq/vacancy/{{feedLinkedinVacancyId}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: removed, already gone, or never seeded', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "humaniqPresent",
+      "value": "false"
+    },
+    {
+      "key": "feedIndeedVacancyId",
+      "value": ""
+    },
+    {
+      "key": "feedLinkedinVacancyId",
+      "value": ""
+    }
+  ]
+}

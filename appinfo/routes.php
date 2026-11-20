@@ -21,6 +21,13 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// Metrics and health
 		// First-time setup wizard (ADR-042) - the standard CnSetupWizard contract.
+		// access-oauth-and-token-validation (REQ-TOKV-003): the client credentials token endpoint, the key set, and the admin acts behind them.
+		['name' => 'oAuthToken#token',           'url' => '/api/oauth/token',                'verb' => 'POST'],
+		['name' => 'oAuthToken#jwks',            'url' => '/.well-known/jwks.json',          'verb' => 'GET'],
+		// access-oauth-and-token-validation (REQ-TOKV-004): RFC 9728 metadata of a token-protected endpoint.
+		['name' => 'wellKnown#protectedResource', 'url' => '/.well-known/oauth-protected-resource/{_path}', 'verb' => 'GET', 'requirements' => ['_path' => '.+']],
+		['name' => 'oAuthToken#createIssuerKey', 'url' => '/api/oauth/issuer-key',           'verb' => 'POST'],
+		['name' => 'oAuthToken#clientSecret',    'url' => '/api/consumers/{id}/client-secret', 'verb' => 'POST'],
 		['name' => 'setup#status',    'url' => '/api/setup/status',            'verb' => 'GET'],
 		['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST', 'requirements' => ['actionId' => '[a-z0-9\\-]+']],
 		['name' => 'setup#saveConfig', 'url' => '/api/setup/config',           'verb' => 'POST'],
@@ -101,6 +108,13 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// provider picker is built from the registry rather than from a list
 		// written beside it and left to go stale.
 		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
+		// The SMS bindings this instance has, for the provider picker of a source
+		// of type sms (messaging-sms-providers-and-notifynl-mail, REQ-SMSP-003).
+		['name' => 'smsProviders#providers', 'url' => '/api/sms/providers', 'verb' => 'GET'],
+		// A CM.com, MessageBird or Twilio delivery callback (REQ-SMSP-004). Public:
+		// the per-source token in the URL and, where the vendor signs, its
+		// signature are the check; see SmsStatusController::status().
+		['name' => 'smsStatus#status', 'url' => '/api/sms/{provider}/status/{token}', 'verb' => 'POST', 'requirements' => ['provider' => '[a-z]+', 'token' => '[A-Za-z0-9]+']],
 		// Test a draft rule against a sample and route held messages again
 		// (openspec/changes/messaging-intake-routing-rules D2, D3), behind `intake.rules`.
 		['name' => 'intakeChannels#testRule', 'url' => '/api/intake/routing-rules/test', 'verb' => 'POST'],
@@ -201,6 +215,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'notifyNl#send', 'url' => '/api/notifynl/messages', 'verb' => 'POST'],
 		['name' => 'notifyNl#status', 'url' => '/api/notifynl/messages/{id}', 'verb' => 'GET'],
 		['name' => 'notifyNl#inbound', 'url' => '/api/notifynl/inbound', 'verb' => 'POST'],
+		// A NotifyNL e-mail (REQ-SMSP-005), behind the notifynl.email action.
+		['name' => 'notifyNl#sendEmail', 'url' => '/api/notifynl/emails', 'verb' => 'POST'],
 
 		// KISS (Klantinteractie Servicesysteem) KCC bridge (openspec/changes/kiss-kcc-bridge).
 		// Push is an authenticated NC-session call (production binding for sibling
@@ -462,6 +478,14 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Investigation window: store call bodies for a bounded time (outbound-call-log-investigation-window).
 		['name' => 'bodyCapture#open', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'POST'],
 		['name' => 'bodyCapture#close', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'DELETE'],
+		// Database sources (sources-database-adapter): schema discovery and a test run of a declared read statement, admin only.
+		['name' => 'databaseSource#schema', 'url' => '/api/sources/{id}/database/schema', 'verb' => 'GET'],
+		[
+			'name' => 'databaseSource#testStatement',
+			'url' => '/api/sources/{id}/database/statements/{name}/test',
+			'verb' => 'POST',
+			'requirements' => ['name' => '[A-Za-z0-9][A-Za-z0-9_.-]{0,99}'],
+		],
 
 		// dashboard-http-datasource: governed, read-only "resolve one value
 		// from a configured source" façade for dashboard/widget hosts
@@ -772,6 +796,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
 		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
 		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],
+		// The lookup allowlist (mapping-formats-and-lookups): admin only.
+		['name' => 'mappingLookup#index',  'url' => '/api/admin/mapping-lookups', 'verb' => 'GET'],
+		['name' => 'mappingLookup#add',    'url' => '/api/admin/mapping-lookups', 'verb' => 'POST'],
+		['name' => 'mappingLookup#remove', 'url' => '/api/admin/mapping-lookups/{register}/{schema}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 
@@ -791,9 +819,15 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'berichtenboxSettings#setConfig', 'url' => '/api/admin/berichtenbox/{slug}', 'verb' => 'PUT'],
 		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
 		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
+		// Field names an administrator adds to the personal data masked in logged bodies (call-log-personal-data-masking REQ-PDM-001). Admin-only via #[AuthorizedAdminSetting].
+		['name' => 'personalDataSettings#getConfig', 'url' => '/api/admin/personal-data-fields', 'verb' => 'GET'],
+		['name' => 'personalDataSettings#setConfig', 'url' => '/api/admin/personal-data-fields', 'verb' => 'PUT'],
 		// OpenTelemetry trace export settings (observability-opentelemetry-export REQ-OTEL-005).
 		['name' => 'otelSettings#getConfig', 'url' => '/api/admin/otel', 'verb' => 'GET'],
 		['name' => 'otelSettings#setConfig', 'url' => '/api/admin/otel', 'verb' => 'PUT'],
+		// Error sink settings (observability-opentelemetry-export-errors-and-app-spans REQ-OTEL-008).
+		['name' => 'errorSinkSettings#getConfig', 'url' => '/api/admin/errorsink', 'verb' => 'GET'],
+		['name' => 'errorSinkSettings#setConfig', 'url' => '/api/admin/errorsink', 'verb' => 'PUT'],
 		// DSO activities that no dso_activity_mapping row maps (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'dsoActivityMapping#unmapped', 'url' => '/api/admin/dso-activities/unmapped', 'verb' => 'GET'],
 		// Every DSO activity row with its last arrival, then the unmapped ones (admin only)

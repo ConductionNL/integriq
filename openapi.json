@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Integriq",
-        "version": "0.4.10-unstable.20261011120000",
+        "version": "0.4.20-unstable.20261119125330",
         "description": "The JSON API of Integriq, the integration hub for Nextcloud: sources, endpoints, mappings, synchronisations, jobs and their logs, and the connectors to government and education standards (DSO, StUF, ZGW Notificaties, SCIM, LTI, OpenID4VCI, Peppol and others). The sources, mappings and other objects themselves are stored in OpenRegister and read and written through its API; this document covers the endpoints Integriq adds on top. Endpoints that implement an external protocol keep that protocol's error format.\n\nEvery path is served under `/api/v1/`, the version this document describes. The unversioned `/api/` paths keep working, are deprecated, and name their `/api/v1/` successor in a `Link` header next to a `Deprecation` header. Errors are RFC 9457 problem details (`application/problem+json`), and every response carries an `API-Version` header. Paths that implement an external standard keep the formats of that standard and are not described here; where this app documents them, openapi.standards.json does.",
         "contact": {
             "name": "Conduction B.V.",
@@ -96,6 +96,10 @@
             "description": "Describes the digital post bindings this instance carries"
         },
         {
+            "name": "sms-providers",
+            "description": "Describes the SMS bindings this instance carries"
+        },
+        {
             "name": "directory-sync",
             "description": "Admin-only REST surface for directory connections and their runs"
         },
@@ -154,6 +158,10 @@
         {
             "name": "expression-source",
             "description": "Reads and edits the environment allowlist, and lists the registered sources"
+        },
+        {
+            "name": "mapping-lookup",
+            "description": "The register schemas a mapping's lookup() may read."
         },
         {
             "name": "flows",
@@ -232,6 +240,10 @@
             "description": "Reads and stores the OpenTelemetry export settings"
         },
         {
+            "name": "error-sink-settings",
+            "description": "Reads and stores the error sink settings"
+        },
+        {
             "name": "outbound-log",
             "description": "Body, retry, forward and last-contact endpoints for the outbound log"
         },
@@ -250,6 +262,10 @@
         {
             "name": "peppol",
             "description": "Peppol participant lookup + signed inbound receive webhook"
+        },
+        {
+            "name": "personal-data-settings",
+            "description": "Reads and sets the app setting `personal_data_fields`, admin only"
         },
         {
             "name": "product-subscriptions",
@@ -346,6 +362,10 @@
         {
             "name": "registration-targets",
             "description": "Where a sibling app may register form submissions."
+        },
+        {
+            "name": "oauth",
+            "description": "Integriq as an OAuth 2.0 authorization server for its consumers."
         }
     ],
     "paths": {
@@ -486,6 +506,81 @@
                         }
                     }
                 ]
+            }
+        },
+        "/admin/personal-data-fields": {
+            "get": {
+                "operationId": "personal-data-settings-get-config",
+                "summary": "The default personal data fields and the ones an administrator added",
+                "description": "The default personal data fields and the ones an administrator added. Their values are masked in logged bodies.",
+                "tags": [
+                    "personal-data-settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{defaults, added}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "personal-data-settings-set-config",
+                "summary": "Replace the added personal data field names",
+                "description": "Replace the added personal data field names; an empty list removes every addition. The default list always applies.",
+                "tags": [
+                    "personal-data-settings"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "fields": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`{defaults, added}`, or 400 naming a value that is not a field name.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    }
+                }
             }
         },
         "/admin/connection-alert-group": {
@@ -933,6 +1028,151 @@
                 ]
             }
         },
+        "/admin/mapping-lookups": {
+            "get": {
+                "operationId": "mapping-lookup-index",
+                "summary": "The schemas a mapping may look up in",
+                "description": "The schemas a mapping may look up in. Instance administrators only.",
+                "tags": [
+                    "mapping-lookup"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "mapping-lookup-add",
+                "summary": "Add a schema to the lookup allowlist",
+                "description": "Add a schema to the lookup allowlist. Instance administrators only.",
+                "tags": [
+                    "mapping-lookup"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "schema"
+                                ],
+                                "properties": {
+                                    "schema": {
+                                        "type": "string",
+                                        "description": "The schema, as register/schema."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/admin/mapping-lookups/{register}/{schema}": {
+            "delete": {
+                "operationId": "mapping-lookup-remove",
+                "summary": "Remove a schema from the lookup allowlist",
+                "description": "Remove a schema from the lookup allowlist. Instance administrators only.",
+                "tags": [
+                    "mapping-lookup"
+                ],
+                "parameters": [
+                    {
+                        "name": "register",
+                        "in": "path",
+                        "required": true,
+                        "description": "The register.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "schema",
+                        "in": "path",
+                        "required": true,
+                        "description": "The schema.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
         "/admin/open-formulieren-connection": {
             "get": {
                 "operationId": "open-formulieren-settings-get-config",
@@ -1029,6 +1269,63 @@
                 "description": "Store the settings; 400 with the reason when a value is refused.",
                 "tags": [
                     "otel-settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The stored settings, or `{error}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    }
+                }
+            }
+        },
+        "/admin/errorsink": {
+            "get": {
+                "operationId": "error-sink-settings-get-config",
+                "summary": "The stored settings",
+                "description": "The stored settings.",
+                "tags": [
+                    "error-sink-settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The settings.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "error-sink-settings-set-config",
+                "summary": "Store the settings; 400 with the reason when a value is refused",
+                "description": "Store the settings; 400 with the reason when a value is refused.",
+                "tags": [
+                    "error-sink-settings"
                 ],
                 "responses": {
                     "200": {
@@ -2108,6 +2405,37 @@
                 "responses": {
                     "200": {
                         "description": "The provider descriptions.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/sms/providers": {
+            "get": {
+                "operationId": "sms-providers-providers",
+                "summary": "Every SMS binding on this instance, with its name and the configuration it needs",
+                "description": "Every SMS binding on this instance, with its name and the configuration it needs.",
+                "tags": [
+                    "sms-providers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{providers: [{providerId, name, configSchema}]}`.",
                         "headers": {
                             "API-Version": {
                                 "$ref": "#/components/headers/API-Version"
@@ -5968,6 +6296,46 @@
                 }
             }
         },
+        "/notifynl/emails": {
+            "post": {
+                "operationId": "notify-nl-send-email",
+                "summary": "Send one e-mail through NotifyNL",
+                "description": "Send one e-mail through NotifyNL, recorded in the outbound message log on channel notifynl with NotifyNL's id. Body: {to, templateId, personalisation, sourceApp, objectUri, category, caseRef, sourceSlug}. An address with no domain is refused 400 before anything is sent or recorded.",
+                "tags": [
+                    "notify-nl"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{id, reference, status}`: the outbound message, NotifyNL's id and `sent`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "502": {
+                        "$ref": "#/components/responses/Problem502"
+                    }
+                }
+            }
+        },
         "/notifynl/messages/{id}": {
             "get": {
                 "operationId": "notify-nl-status",
@@ -8998,6 +9366,121 @@
                 }
             }
         },
+        "/sources/{id}/database/schema": {
+            "get": {
+                "operationId": "database_source-schema",
+                "summary": "The tables and views of a database source, with their columns",
+                "description": "The tables and views of a database source's database, with their columns. Administrators only.",
+                "tags": [
+                    "database_source"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{tables[], durationMs}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/sources/{id}/database/statements/{name}/test": {
+            "post": {
+                "operationId": "database_source-test_statement",
+                "summary": "Run a declared read statement once and show its first page",
+                "description": "Runs a read statement the source declares, with `parameters` from the body, and answers its first page (at most 50 rows) and how long it took. A write statement is never run here. Administrators only.",
+                "tags": [
+                    "database_source"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "parameters": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`{statement, rows[], rowCount, more, durationMs}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "required": true,
+                        "description": "The statement's name.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/sources/{id}/run-summary": {
             "get": {
                 "operationId": "run-summary-show",
@@ -10639,6 +11122,146 @@
                     },
                     "501": {
                         "$ref": "#/components/responses/Problem501"
+                    }
+                }
+            }
+        },
+        "/oauth/token": {
+            "post": {
+                "operationId": "oauth-token",
+                "summary": "Get a client credentials access token",
+                "description": "The OAuth 2.0 client credentials grant (RFC 6749 section 4.4) for a consumer of authorizationType client_credentials. The client authenticates with HTTP Basic or the client_id and client_secret form fields; the answer is a five-minute RS256 JWT whose sub is the consumer and whose scope is the granted scopes. Public: it needs no login.",
+                "tags": [
+                    "oauth"
+                ],
+                "security": [],
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "grant_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "client_credentials"
+                                        ]
+                                    },
+                                    "client_id": {
+                                        "type": "string"
+                                    },
+                                    "client_secret": {
+                                        "type": "string"
+                                    },
+                                    "scope": {
+                                        "type": "string"
+                                    },
+                                    "resource": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "grant_type"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The token.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "An RFC 6749 error: unsupported_grant_type or invalid_scope."
+                    },
+                    "401": {
+                        "description": "invalid_client."
+                    },
+                    "503": {
+                        "description": "No issuer key has been created."
+                    }
+                }
+            }
+        },
+        "/oauth/issuer-key": {
+            "post": {
+                "operationId": "oauth-issuer-key-create",
+                "summary": "Create or replace integriq's token-signing key",
+                "description": "Create or replace the issuer key. The private key is minted into OpenRegister's credential broker; the answer is the public JWK. Needs a Nextcloud admin.",
+                "tags": [
+                    "oauth"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The public JWK.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "No credential broker or default organisation."
+                    }
+                }
+            }
+        },
+        "/consumers/{id}/client-secret": {
+            "post": {
+                "operationId": "oauth-consumer-client-secret",
+                "summary": "Set a new client secret on a client credentials consumer",
+                "description": "Set a new client secret on a client credentials consumer and show it once; only its hash is stored. Needs a Nextcloud admin.",
+                "tags": [
+                    "oauth"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The consumer uuid, its client id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The client id and secret, shown once.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No client credentials consumer with this id."
                     }
                 }
             }
