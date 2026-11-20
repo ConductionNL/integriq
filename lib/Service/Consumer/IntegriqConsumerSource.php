@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Consumer;
 
-use DateTimeImmutable;
-use Exception;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\Auth\ClientCertificate;
 use OCA\Integriq\Service\OAuth\IssuerKeyService;
@@ -31,10 +29,6 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\ObjectService;
-use Throwable;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 
 /**
  * Reads integriq's `consumer` schema objects for OpenRegister's AuthorizationService.
@@ -74,6 +68,20 @@ class IntegriqConsumerSource implements ConsumerSource {
 	private array $tokenPayload = [];
 
 	/**
+	 * Finds the client credentials consumer a token of integriq's own issuer names.
+	 *
+	 * @var ClientCredentialsConsumerLookup
+	 */
+	private readonly ClientCredentialsConsumerLookup $clientCredentials;
+
+	/**
+	 * Matches and records the use of a consumer's listed credentials; null checks the single stored key only.
+	 *
+	 * @var ConsumerCredentialUse|null
+	 */
+	private ?ConsumerCredentialUse $credentialUse = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectService                  $objectService OpenRegister's object service.
@@ -85,10 +93,14 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		private readonly ?ConsumerCredentials $credentials = null,
+		?ConsumerCredentials $credentials = null,
 		private readonly ?ConsumerKeySourceResolver $keySources = null,
 		private readonly ?IssuerKeyService $ownIssuer = null,
 	) {
+		$this->clientCredentials = new ClientCredentialsConsumerLookup(objectService: $objectService);
+		if ($credentials !== null) {
+			$this->credentialUse = new ConsumerCredentialUse(objectService: $objectService, credentials: $credentials);
+		}
 	}//end __construct()
 
 	/**
@@ -210,7 +222,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 			return null;
 		}
 
-		$object = $this->clientCredentialsConsumer(subject: ($this->tokenPayload['sub'] ?? ''));
+		$object = $this->clientCredentials->find(subject: ($this->tokenPayload['sub'] ?? ''));
 		if ($object === null) {
 			return null;
 		}
@@ -229,41 +241,6 @@ class IntegriqConsumerSource implements ConsumerSource {
 	}//end ownTokenConsumer()
 
 	/**
-	 * The client credentials consumer a token of integriq's own issuer names as its subject.
-	 *
-	 * @param mixed $subject The token's `sub` claim.
-	 *
-	 * @return ObjectEntity|null The consumer, or null when the subject names no client credentials consumer.
-	 *
-	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
-	 */
-	private function clientCredentialsConsumer(mixed $subject): ?ObjectEntity {
-		if (is_string($subject) === false || $subject === '') {
-			return null;
-		}
-
-		try {
-			$object = $this->objectService->find(
-				id: $subject,
-				options: new ObjectFindOptions(register: 'integriq', schema: 'consumer'),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Exception) {
-			// OpenRegister throws when no object has this id: not a known consumer.
-			return null;
-		}
-
-		if (($object instanceof ObjectEntity) === false
-			|| strtolower((string)self::typeOf(data: $object->getObject())) !== TokenIssuer::CLIENT_CREDENTIALS
-		) {
-			return null;
-		}
-
-		return $object;
-	}//end clientCredentialsConsumer()
-
-	/**
 	 * The API-key consumer whose configured key equals the presented one.
 	 *
 	 * Only consumers of authorizationType `apiKey` take part, an empty key never
@@ -280,9 +257,8 @@ class IntegriqConsumerSource implements ConsumerSource {
 			return null;
 		}
 
-		$now = new DateTimeImmutable();
 		foreach ($this->consumers(filters: []) as $consumer) {
-			if ($this->presentsApiKey(consumer: $consumer, apiKey: $apiKey, now: $now) === true) {
+			if ($this->presentsApiKey(consumer: $consumer, apiKey: $apiKey) === true) {
 				return $this->resolve(consumer: $consumer);
 			}
 		}
@@ -296,42 +272,18 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 *
 	 * @param ObjectEntity      $consumer The consumer.
 	 * @param string            $apiKey   The presented key.
-	 * @param DateTimeImmutable $now      The moment of the call.
 	 *
 	 * @return bool
 	 */
-	private function presentsApiKey(ObjectEntity $consumer, string $apiKey, DateTimeImmutable $now): bool {
+	private function presentsApiKey(ObjectEntity $consumer, string $apiKey): bool {
 		$data = $consumer->getObject();
-		if ($this->matchesKeyCredential(consumer: $consumer, data: $data, apiKey: $apiKey, now: $now) === true) {
+		$uuid = (string)self::uuidOf(consumer: $consumer, data: $data);
+		if ($this->credentialUse?->matchesApiKey(consumer: $consumer, uuid: $uuid, apiKey: $apiKey) === true) {
 			return true;
 		}
 
 		return self::holdsApiKey(data: $data, apiKey: $apiKey);
 	}//end presentsApiKey()
-
-	/**
-	 * Whether a live hashed API key credential of the consumer matches, recording its use.
-	 *
-	 * @param ObjectEntity         $consumer The consumer.
-	 * @param array<string, mixed> $data     The consumer's data.
-	 * @param string               $apiKey   The presented key.
-	 * @param DateTimeImmutable    $now      The moment of the call.
-	 *
-	 * @return bool
-	 */
-	private function matchesKeyCredential(ObjectEntity $consumer, array $data, string $apiKey, DateTimeImmutable $now): bool {
-		if ($this->credentials === null) {
-			return false;
-		}
-
-		$index = $this->credentials->matchingApiKey(credentials: ($data[ConsumerCredentials::FIELD] ?? null), key: $apiKey, now: $now);
-		if ($index === null) {
-			return false;
-		}
-
-		$this->recordUse(consumer: $consumer, index: $index, now: $now);
-		return true;
-	}//end matchesKeyCredential()
 
 	/**
 	 * The consumer a client certificate credential of which pins the certificate, or null.
@@ -345,112 +297,8 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
 	 */
 	public function findByClientCertificate(ClientCertificate $certificate): ?ObjectEntity {
-		if ($this->credentials === null) {
-			return null;
-		}
-
-		$now = new DateTimeImmutable();
-		foreach ($this->consumers(filters: []) as $consumer) {
-			$index = $this->credentials->matchingCertificate(
-				credentials: ($consumer->getObject()[ConsumerCredentials::FIELD] ?? null),
-				certificate: $certificate,
-				now: $now
-			);
-			if ($index !== null) {
-				$this->recordUse(consumer: $consumer, index: $index, now: $now);
-				return $consumer;
-			}
-		}
-
-		return null;
+		return $this->credentialUse?->certificateHolder(consumers: $this->consumers(filters: []), certificate: $certificate);
 	}//end findByClientCertificate()
-
-	/**
-	 * Write `lastUsedAt` on the credential a call used, at most once a minute.
-	 *
-	 * A failed write never refuses the call: the key matched, and when it was
-	 * last used is bookkeeping for the administrator.
-	 *
-	 * @param ObjectEntity      $consumer The consumer the key belongs to.
-	 * @param int               $index    The credential's index in the list.
-	 * @param DateTimeImmutable $now      The moment of the call.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-key-can-be-replaced-without-downtime-req-cred-003
-	 */
-	private function recordUse(ObjectEntity $consumer, int $index, DateTimeImmutable $now): void {
-		$credential = ($consumer->getObject()[ConsumerCredentials::FIELD][$index] ?? null);
-		$touched    = $this->touchedCredential(credential: $credential, now: $now);
-		if ($touched === null) {
-			return;
-		}
-
-		$uuid = self::uuidOf(consumer: $consumer, data: $consumer->getObject());
-		if (is_string($uuid) === false || $uuid === '') {
-			return;
-		}
-
-		try {
-			$this->writeLastUsed(uuid: $uuid, index: $index, credentialId: ($credential['id'] ?? null), lastUsedAt: $touched['lastUsedAt']);
-		} catch (Throwable) {
-			return;
-		}
-	}//end recordUse()
-
-	/**
-	 * The credential with `lastUsedAt` moved to now, or null when there is nothing to write.
-	 *
-	 * @param mixed             $credential The stored credential.
-	 * @param DateTimeImmutable $now        The moment of the call.
-	 *
-	 * @return array<string, mixed>|null
-	 */
-	private function touchedCredential(mixed $credential, DateTimeImmutable $now): ?array {
-		if ($this->credentials === null || is_array($credential) === false) {
-			return null;
-		}
-
-		return $this->credentials->touched(credential: $credential, now: $now);
-	}//end touchedCredential()
-
-	/**
-	 * Write `lastUsedAt` on the credential at the index, when it is still the same credential.
-	 *
-	 * Written from the raw object: the list is saved whole, so a rendered read
-	 * without the hashes would drop every other key.
-	 *
-	 * @param string $uuid         The consumer's uuid.
-	 * @param int    $index        The credential's index in the list.
-	 * @param mixed  $credentialId The credential's id as it was matched.
-	 * @param mixed  $lastUsedAt   The new `lastUsedAt`.
-	 *
-	 * @return void
-	 */
-	private function writeLastUsed(string $uuid, int $index, mixed $credentialId, mixed $lastUsedAt): void {
-		$raw  = $this->objectService->find(
-			id: $uuid,
-			options: new ObjectFindOptions(register: 'integriq', schema: 'consumer', render: false),
-			_rbac: false,
-			_multitenancy: false
-		);
-		$data = $raw?->getObject();
-		if (is_array($data) === false || (($data[ConsumerCredentials::FIELD][$index]['id'] ?? null) !== $credentialId)) {
-			return;
-		}
-
-		$data[ConsumerCredentials::FIELD][$index]['lastUsedAt'] = $lastUsedAt;
-		$this->objectService->saveObject(
-			object: $data,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: 'integriq', schema: 'consumer'),
-				uuid: $uuid,
-				policy: new SavePolicy(silent: true)
-			),
-			_rbac: false,
-			_multitenancy: false
-		);
-	}//end writeLastUsed()
 
 	/**
 	 * Whether an API-key consumer stores exactly this key (compared in constant time).
@@ -588,7 +436,12 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 * @return array<string,mixed> The configuration, empty when absent.
 	 */
 	private static function configurationOf(ObjectEntity $consumer): array {
-		return self::arrayOrEmpty(value: ($consumer->getObject()['authorizationConfiguration'] ?? []));
+		$configuration = ($consumer->getObject()['authorizationConfiguration'] ?? []);
+		if (is_array($configuration) === false) {
+			return [];
+		}
+
+		return $configuration;
 	}//end configurationOf()
 
 	/**
@@ -643,21 +496,4 @@ class IntegriqConsumerSource implements ConsumerSource {
 
 		return (string)$data['authorizationType'];
 	}//end typeOf()
-
-	/**
-	 * An array value, or an empty array for anything else.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return array<mixed>
-	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
-	 */
-	private static function arrayOrEmpty(mixed $value): array {
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		return $value;
-	}//end arrayOrEmpty()
 }//end class
