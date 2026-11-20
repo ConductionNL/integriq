@@ -109,6 +109,7 @@ class CatalogiOpenRegisterAccess {
 	 * @spec openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-integriq-serves-catalogussen-and-informatieobjecttypen-read-only-req-zcs-001
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) CatalogiBinding::resolve() is the value object's named constructor.
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) resolve() calls schemaExists with (register, schema); this register is fixed.
 	 */
 	public function binding(): ?CatalogiBinding {
 		return CatalogiBinding::resolve(

@@ -13211,6 +13211,75 @@
         "environment": "1",
         "gatewayApiId": "vergunningen",
         "lastSeen": "2026-11-13T06:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "catalogi_binding",
+          "slug": "catalogi-binding-catalogi-binding-1-1"
+        },
+        "publishedUuid": "00000000-0000-4000-8000-000000000000",
+        "register": "Voorbeeld Register 1",
+        "schema": "Voorbeeld Schema 1",
+        "domein": "Voorb",
+        "rsin": "012345678",
+        "naam": "Voorbeeld Naam 1",
+        "fieldMap": {},
+        "clients": [
+          {
+            "clientId": "Voorbeeld Clientid 1",
+            "scopes": [
+              "Voorbeeld Scopes 1"
+            ],
+            "concepts": false
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "catalogi_binding",
+          "slug": "catalogi-binding-catalogi-binding-2-2"
+        },
+        "publishedUuid": "00000000-0000-4000-8000-000000000001",
+        "register": "Voorbeeld Register 2",
+        "schema": "Voorbeeld Schema 2",
+        "domein": "Voorb",
+        "rsin": "123456789",
+        "naam": "Voorbeeld Naam 2",
+        "fieldMap": {},
+        "clients": [
+          {
+            "clientId": "Voorbeeld Clientid 2",
+            "scopes": [
+              "Voorbeeld Scopes 2"
+            ],
+            "concepts": false
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "catalogi_binding",
+          "slug": "catalogi-binding-catalogi-binding-3-3"
+        },
+        "publishedUuid": "00000000-0000-4000-8000-000000000002",
+        "register": "Voorbeeld Register 3",
+        "schema": "Voorbeeld Schema 3",
+        "domein": "Voorb",
+        "rsin": "234567890",
+        "naam": "Voorbeeld Naam 3",
+        "fieldMap": {},
+        "clients": [
+          {
+            "clientId": "Voorbeeld Clientid 3",
+            "scopes": [
+              "Voorbeeld Scopes 3"
+            ],
+            "concepts": false
+          }
+        ]
       }
     ]
   }
