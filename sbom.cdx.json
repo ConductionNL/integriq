@@ -24471,8 +24471,8 @@
     {
       "type": "library",
       "name": "sass",
-      "version": "1.107.1",
-      "bom-ref": "integriq@1.0.0|sass@1.107.1",
+      "version": "1.108.2",
+      "bom-ref": "integriq@1.0.0|sass@1.108.2",
       "licenses": [
         {
           "license": {
@@ -24480,15 +24480,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/sass@1.107.1",
+      "purl": "pkg:npm/sass@1.108.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/sass/-/sass-1.107.1.tgz",
+          "url": "https://registry.npmjs.org/sass/-/sass-1.108.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "689d7f2efc4e39bd386219a2063cd99f78d5c1d1caa25f8e561a0c57a7c5974d9f17d4f78bee4c83d97f0a7ceab4cf8d5f9267e68de501bb3f6498af4c22c77d"
+              "content": "92e80af1d8e8b671bd1d044f4ce7f7e9ab0a625c60f2b596b0d2d81ce8160c854e89942a9517ca0601785d733a91fc35e3a9080ccbe6e7b07818892f0d2c93cc"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
