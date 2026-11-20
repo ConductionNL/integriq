@@ -52,6 +52,10 @@ use OCP\IUserSession;
  * or looser check.
  *
  * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ *
+ * It bridges to each of OpenRegister's credential checks, so it depends on each of them.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterface {
 

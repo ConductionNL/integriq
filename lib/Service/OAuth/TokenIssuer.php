@@ -194,6 +194,8 @@ class TokenIssuer implements TokenIssuerInterface {
 	 * @return string|null The secret, or null when the consumer does not exist or is not a client credentials consumer.
 	 *
 	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RegisterSave::options() is the shared save-options builder.
 	 */
 	public function setClientSecret(string $consumerId): ?string {
 		$consumer = $this->client(clientId: $consumerId);
