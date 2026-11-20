@@ -165,6 +165,8 @@ class PortalController extends Controller {
 	 * @return JSONResponse 201 with the application, 400 without a name, or 403 outside the developer group.
 	 *
 	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RegisterSave::options() is the shared save-options builder.
 	 */
 	#[NoAdminRequired]
 	public function createApplication(): JSONResponse {
@@ -226,10 +228,7 @@ class PortalController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('No such API product')], Http::STATUS_NOT_FOUND);
 		}
 
-		$tier = (string)$this->request->getParam('tier', '');
-		if ($tier === '') {
-			$tier = (string)($product->getObject()['defaultTier'] ?? '');
-		}
+		$tier = $this->requestedTier(product: $product);
 
 		try {
 			$result = $this->subscriptions->subscribe(
@@ -245,13 +244,32 @@ class PortalController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('The access request could not be saved.')], Http::STATUS_BAD_REQUEST);
 		}
 
-		$status = Http::STATUS_CREATED;
-		if ($result['pending'] === true) {
-			$status = Http::STATUS_ACCEPTED;
-		}
+		// 202 while the access waits for approval, 201 once it is granted.
+		$status = match ($result['pending']) {
+			true => Http::STATUS_ACCEPTED,
+			default => Http::STATUS_CREATED,
+		};
 
 		return new JSONResponse(self::subscriptionSummary(subscription: $result['subscription']), $status);
 	}//end requestAccess()
+
+	/**
+	 * The tier the developer asked for, or the product's default tier.
+	 *
+	 * @param ObjectEntity $product The product.
+	 *
+	 * @return string The tier name, empty when neither is set.
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+	 */
+	private function requestedTier(ObjectEntity $product): string {
+		$tier = (string)$this->request->getParam('tier', '');
+		if ($tier === '') {
+			$tier = (string)($product->getObject()['defaultTier'] ?? '');
+		}
+
+		return $tier;
+	}//end requestedTier()
 
 	/**
 	 * The developer group and how many accounts are in it.
@@ -281,10 +299,10 @@ class PortalController extends Controller {
 
 		if ($group === '') {
 			$this->appConfig->deleteKey(AppIdentity::APP_ID, DeveloperPortalAccess::CONFIG_KEY);
-		} else {
-			$this->appConfig->setValueString(AppIdentity::APP_ID, DeveloperPortalAccess::CONFIG_KEY, $group);
+			return $this->getSettings();
 		}
 
+		$this->appConfig->setValueString(AppIdentity::APP_ID, DeveloperPortalAccess::CONFIG_KEY, $group);
 		return $this->getSettings();
 	}//end setSettings()
 

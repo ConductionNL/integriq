@@ -239,6 +239,8 @@ class ProductChangeNoticeService {
 	 * @param string       $effectiveDate The date the notice is about, or ''.
 	 *
 	 * @return ObjectEntity|null The notice, or null when nobody owns the subscription or the save failed.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RegisterSave::options() is the shared save-options builder.
 	 */
 	private function writeNotice(
 		ObjectEntity $product,

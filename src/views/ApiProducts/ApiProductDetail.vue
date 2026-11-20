@@ -1007,9 +1007,11 @@ export default {
 .apiProductDetail__loading {
 	margin: 32px auto;
 }
+
 .apiProductDetail__error {
 	color: var(--color-error-text);
 }
+
 .apiProductDetail__hint {
 	color: var(--color-text-maxcontrast);
 }

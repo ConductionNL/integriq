@@ -68,6 +68,12 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Reload when the product changes.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+		 */
 		productId() {
 			this.load()
 		},

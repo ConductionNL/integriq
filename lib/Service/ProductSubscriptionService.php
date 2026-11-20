@@ -87,6 +87,8 @@ class ProductSubscriptionService {
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-consumer-subscribes-to-an-api-product-at-a-tier-req-apg-003
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
 	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RegisterSave::options() is the shared save-options builder.
 	 */
 	public function subscribe(ObjectEntity $product, string $consumerId, string $tierName, ?string $requesterUserId): array {
 		$tier = $this->tierOf(product: $product, tierName: $tierName);
@@ -136,6 +138,8 @@ class ProductSubscriptionService {
 	 * @throws ValidationException When OpenRegister refuses the save.
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RegisterSave::options() is the shared save-options builder.
 	 */
 	public function activate(ObjectEntity $subscription, DateTime $activatedAt): ObjectEntity {
 		$data = $subscription->getObject();

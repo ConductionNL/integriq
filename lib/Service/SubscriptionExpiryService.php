@@ -100,6 +100,8 @@ class SubscriptionExpiryService {
 	 * @return array{expired: int, reminded: int} How many were marked expired and how many owners reminded.
 	 *
 	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface() is PHP's own converter.
 	 */
 	public function sweep(?DateTimeInterface $now=null): array {
 		$now = DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable());
@@ -209,6 +211,8 @@ class SubscriptionExpiryService {
 	 * @param array<string, mixed> $data         Its new data.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RegisterSave::options() is the shared save-options builder.
 	 */
 	private function save(ObjectEntity $subscription, array $data): void {
 		$this->orObjectService->saveObject(
