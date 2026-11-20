@@ -78,7 +78,13 @@
 
 ## 11. Hold a message that fails a send check
 
-- [ ] 11.1 Call `HoldQueue::hold()` from the send gate when a check refuses a message (REQ-OSI-010).
+- [x] 11.1 Call `HoldQueue::hold()` from the send gate when a check refuses a message (REQ-OSI-010).
       `lib/Outbound/OutboundSendGate.php`, `lib/Outbound/Identity/HoldQueue.php`.
       Row `integriq:msg-hold-queue`.
-- [ ] 11.2 List held messages with their reason, and offer release and withdraw to the send right.
+- [x] 11.2 List held messages with their reason, and offer release and withdraw to the send right.
+      `OutboundSendGate::recordRefusal()` now calls `HoldQueue::holdForReview()`, which keeps the
+      check and reason on `hold` and mirrors `holdStatus` for the list. The Held messages page
+      (`src/manifest.d/held-messages.json`) lists `holdStatus: review`; release goes through
+      `POST /api/outbound/messages/{id}/release` (action `outbound.release`), which records the
+      releaser and sends through the retry pipeline, which asks the opt-out list again; withdraw
+      reuses `POST .../withdraw`, recorded as not sent with its actor.

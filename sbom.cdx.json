@@ -3339,10 +3339,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/polyfill-php85-1.43.0.0",
+      "bom-ref": "symfony/polyfill-php85-1.44.0.0",
       "type": "library",
       "name": "polyfill-php85",
-      "version": "v1.43.0",
+      "version": "v1.44.0",
       "group": "symfony",
       "description": "Symfony polyfill backporting some PHP 8.5+ features to lower PHP versions",
       "author": "Nicolas Grekas, Symfony Community",
@@ -3353,17 +3353,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/polyfill-php85@v1.43.0",
+      "purl": "pkg:composer/symfony/polyfill-php85@v1.44.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/polyfill-php85/zipball/86a42cbcc07adc331481a5ab310a4024bfc227f6",
-          "comment": "dist reference: 86a42cbcc07adc331481a5ab310a4024bfc227f6"
+          "url": "https://api.github.com/repos/symfony/polyfill-php85/zipball/94c794cb5ba51784bc259f11e9f128593297d8dc",
+          "comment": "dist reference: 94c794cb5ba51784bc259f11e9f128593297d8dc"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/polyfill-php85.git",
-          "comment": "source reference: 86a42cbcc07adc331481a5ab310a4024bfc227f6"
+          "comment": "source reference: 94c794cb5ba51784bc259f11e9f128593297d8dc"
         },
         {
           "type": "website",
@@ -3372,18 +3372,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/polyfill-php85/tree/v1.43.0",
+          "url": "https://github.com/symfony/polyfill-php85/tree/v1.44.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "86a42cbcc07adc331481a5ab310a4024bfc227f6"
+          "value": "94c794cb5ba51784bc259f11e9f128593297d8dc"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "86a42cbcc07adc331481a5ab310a4024bfc227f6"
+          "value": "94c794cb5ba51784bc259f11e9f128593297d8dc"
         },
         {
           "name": "cdx:composer:package:type",
@@ -28472,7 +28472,7 @@
       "ref": "symfony/error-handler-7.4.22.0",
       "dependsOn": [
         "psr/log-3.0.2.0",
-        "symfony/polyfill-php85-1.43.0.0",
+        "symfony/polyfill-php85-1.44.0.0",
         "symfony/var-dumper-7.4.22.0"
       ]
     },
@@ -28539,7 +28539,7 @@
       "ref": "symfony/polyfill-php82-1.38.1.0"
     },
     {
-      "ref": "symfony/polyfill-php85-1.43.0.0"
+      "ref": "symfony/polyfill-php85-1.44.0.0"
     },
     {
       "ref": "symfony/polyfill-uuid-1.33.0.0"
