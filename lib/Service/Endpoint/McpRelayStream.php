@@ -34,6 +34,12 @@ use RuntimeException;
  * Relays the upstream body to the caller's output, flushing each chunk.
  *
  * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+ *
+ * PSR-7's StreamInterface fixes the public methods and their parameters; a
+ * write-only relay ignores seek offsets and read lengths it cannot honour.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 final class McpRelayStream implements StreamInterface {
 

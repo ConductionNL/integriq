@@ -95,6 +95,11 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/http-call-engine/spec.md
  * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+ *
+ * relay() is the streaming entry point next to call(); both are the public
+ * surface the endpoint handlers use.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class CallService implements CallServiceInterface {
 	use OrganisationBoundary;

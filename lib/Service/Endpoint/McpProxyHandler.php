@@ -48,6 +48,11 @@ use Throwable;
  * The `mcp` target type of an endpoint.
  *
  * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md
+ *
+ * It wires the endpoint, the consumer check, the upstream call and the relay
+ * together, so it depends on each of them.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class McpProxyHandler {
 
