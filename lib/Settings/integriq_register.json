@@ -523,7 +523,7 @@
         "slug": "consumer",
         "title": "Consumer",
         "icon": "AccountGroup",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An outbound event-bus subscriber identity",
         "description": "A Consumer is an event-bus subscriber (webhook target, AMQP queue, etc.). Paired with EventSubscription (filter) and EventMessage (delivery record). See local ADR-013 for the event-bus model.",
         "required": [
@@ -566,13 +566,18 @@
           },
           "authorizationType": {
             "type": "string",
-            "description": "Auth strategy used by this consumer",
+            "description": "Auth strategy used by this consumer. client_credentials: integriq issues it tokens at /api/oauth/token for its client secret.",
             "title": "Authorization Type"
           },
           "authorizationConfiguration": {
             "type": "object",
             "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. `keySource` says where a JWT consumer's key comes from: `static` (default, the stored `publicKey`/`algorithm`, issuer matched on the consumer name), `jwks` (`issuer` the tokens' `iss`, `jwksUri` the published key set; the key is chosen by the token's `kid`) or `oidc` (`issuerUrl`, `audience` and optional `requiredClaims`, a list of claim names or a map of claim to value; the JWKS address and issuer come from the provider's discovery document). `jwks` and `oidc` accept RS and PS algorithms only. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
+          },
+          "clientSecretHash": {
+              "type": "string",
+              "title": "Client secret hash",
+              "description": "The password hash of a client_credentials consumer's secret (access-oauth-and-token-validation). Set by an admin through POST /api/consumers/{id}/client-secret, which shows the secret once; the secret itself is never stored."
           },
           "scopes": {
             "type": "array",
@@ -5274,7 +5279,7 @@
         "slug": "outbound_message",
         "title": "Outbound Message",
         "icon": "SendOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "authorization": {
           "create": [
             "digitale-post-verzenders"
@@ -5295,6 +5300,79 @@
         ],
         "type": "object",
         "properties": {
+          "holdStatus": {
+            "type": "string",
+            "enum": [
+              "held",
+              "due",
+              "withdrawn",
+              "review",
+              "released"
+            ],
+            "description": "Where the message stands on hold, mirrored from hold.status so a list can filter on it: held (waiting out its identity's window) | due (the window passed) | withdrawn (taken back, not sent) | review (a send check refused it and it waits for a person) | released (a person released it to be sent)",
+            "title": "Hold Status"
+          },
+          "hold": {
+            "type": "object",
+            "description": "The message's hold: its identity's window, or the send check that stopped it and what a person did about that",
+            "properties": {
+              "status": {
+                "type": "string",
+                "description": "held, due, withdrawn, review or released",
+                "title": "Status"
+              },
+              "check": {
+                "type": "string",
+                "description": "The send check that stopped the message",
+                "title": "Check"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why the check stopped it",
+                "title": "Reason"
+              },
+              "heldAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was held",
+                "title": "Held At"
+              },
+              "releasedBy": {
+                "type": "string",
+                "description": "Who released it",
+                "title": "Released By"
+              },
+              "releasedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was released",
+                "title": "Released At"
+              },
+              "withdrawnBy": {
+                "type": "string",
+                "description": "Who withdrew it",
+                "title": "Withdrawn By"
+              },
+              "withdrawnAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was withdrawn",
+                "title": "Withdrawn At"
+              },
+              "windowSeconds": {
+                "type": "integer",
+                "description": "The identity's hold window in seconds",
+                "title": "Window Seconds"
+              },
+              "releaseAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the window closes",
+                "title": "Release At"
+              }
+            },
+            "title": "Hold"
+          },
           "subjectRef": {
             "type": "string",
             "description": "What the message is about, as the sending app references it. The log answers questions per subject, never by writing a field onto the sending app's record",
@@ -5590,6 +5668,37 @@
             "type": "string",
             "description": "Who forwarded it",
             "title": "Forwarded By"
+          },
+          "recipientSelection": {
+            "type": "object",
+            "description": "The per-message recipient decision, when there was one: the standing recipients the calling app passed, the ones added for this message only, and the ones suppressed for this message only, each kept on its own",
+            "properties": {
+              "standing": {
+                "type": "array",
+                "description": "The standing recipients as the calling app passed them, with the required marker and what requires it",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Standing"
+              },
+              "added": {
+                "type": "array",
+                "description": "Recipients added for this message only. They are written nowhere else",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Added"
+              },
+              "suppressed": {
+                "type": "array",
+                "description": "Recipients suppressed for this message only. Each reads suppressed, carries the typed reason, the user and the time, and has no delivery state",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Suppressed"
+              }
+            },
+            "title": "Recipient Selection"
           },
           "forwardedTo": {
             "type": "array",

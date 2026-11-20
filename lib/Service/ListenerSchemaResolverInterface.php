@@ -38,4 +38,16 @@ interface ListenerSchemaResolverInterface {
 	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-the-outbound-consumer-reacts-only-to-integriqs-own-event-schema-req-007
 	 */
 	public function isOwnRegister(?object $entity): bool;
+
+	/**
+	 * Whether an entity is an object of the named schema in integriq's register.
+	 *
+	 * @param object|null $entity       The OpenRegister ObjectEntity from the event.
+	 * @param string      $expectedSlug The schema slug to match (for example `event`).
+	 *
+	 * @return bool True only when the entity sits in integriq's register and its schema is that slug.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-the-outbound-consumer-reacts-only-to-integriqs-own-event-schema-req-007
+	 */
+	public function matchesSchema(?object $entity, string $expectedSlug): bool;
 }
