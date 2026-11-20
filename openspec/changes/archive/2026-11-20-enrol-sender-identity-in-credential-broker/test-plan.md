@@ -7,7 +7,7 @@ log — which is why they are specified rather than left to judgement.
 ## Test Cases
 
 ### TC-1: The private key is gone from an administrator's read
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
 - **type**: security
 - **persona**: Sem (developer/operator with admin rights)
 - **preconditions**: A `sender_identity` carrying an inline `smimePrivateKey`; the write-only fragment deployed
@@ -17,7 +17,7 @@ log — which is why they are specified rather than left to judgement.
 - **why as an administrator**: `writeOnly` stripping is unconditional, so an admin-visible key means the fragment is not in effect. A non-admin read passes whether the fragment works or not, and would prove nothing.
 
 ### TC-2: Signing still obtains key material after the field is write-only
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered`
 - **type**: regression
 - **persona**: Sem
 - **preconditions**: An identity with `signOutgoing: true` whose key is held in the broker; the write-only fragment deployed; `SenderIdentityService` reading with `_rbac: false`
@@ -27,7 +27,7 @@ log — which is why they are specified rather than left to judgement.
 - **why it matters**: this is the regression that ships silently. Without the system-context read the key reads as empty, `protect()` returns `signed: false` with *"This identity is set to sign but carries no S/MIME certificate and key"*, and the message **still sends** — unsigned, under a reason that reads like an operator's misconfiguration. Nothing fails. Nothing logs an error.
 
 ### TC-3: An unresolvable key is reported differently from an absent one
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered`
 - **type**: functional
 - **persona**: Sem
 - **preconditions**: Two identities — one whose `smimePrivateKeyRef` the broker cannot resolve, one with no key configured at all
@@ -37,7 +37,7 @@ log — which is why they are specified rather than left to judgement.
 - **why it matters**: TC-2's failure is only detectable if these two causes do not share a message. If they do, a stripped field is indistinguishable from an unconfigured identity for as long as nobody checks — which is exactly how the original defect survived review.
 
 ### TC-4: A mint that does not verify changes nothing
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
 - **type**: security
 - **persona**: Sem
 - **preconditions**: An identity holding an inline key; a broker double whose resolve returns material differing by one byte
@@ -47,7 +47,7 @@ log — which is why they are specified rather than left to judgement.
 - **why it matters**: verify-before-null is the entire safety property. A later refactor that finds the verification redundant would destroy keys, so the test exists to refuse that refactor.
 
 ### TC-5: The `source` migration path is unchanged by the generalisation
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
 - **type**: regression
 - **persona**: Sem
 - **preconditions**: The existing `source` inline-secret tests, unmodified
@@ -57,7 +57,7 @@ log — which is why they are specified rather than left to judgement.
 - **why it matters**: the generalisation touches working, shipped code protecting live credentials. Needing to edit these tests to make them pass would mean the `source` path changed behaviour, which is out of scope.
 
 ### TC-6: The PEM guard refuses key material and accepts a reference
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs`
 - **type**: functional
 - **persona**: Henk (operator configuring an identity)
 - **preconditions**: None — the guard is a schema `pattern`, so there is no debug exemption to configure
@@ -67,7 +67,7 @@ log — which is why they are specified rather than left to judgement.
 - **why both halves**: a guard tested only on the refusal can be trivially over-broad. (b) is what stops it refusing legitimate references and training operators to route around it.
 
 ### TC-7: Migration reporting reflects the estate
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
 - **type**: functional
 - **persona**: Sem
 - **preconditions**: One identity with an inline key, one already migrated

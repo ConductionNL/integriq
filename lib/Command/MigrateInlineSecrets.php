@@ -178,7 +178,7 @@ class MigrateInlineSecrets extends Command {
 	 *
 	 * @return integer Command::SUCCESS.
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	private function renderEstate(SymfonyStyle $io, array $estate): int {
 		foreach ((array)($estate['schemas'] ?? []) as $schema => $plan) {
@@ -289,7 +289,7 @@ class MigrateInlineSecrets extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	private function renderSchemaOutcomes(SymfonyStyle $io, array $schemas): void {
 		$rows = [];

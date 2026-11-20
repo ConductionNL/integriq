@@ -8,7 +8,7 @@
 ## Implementation Tasks
 
 ### Task 1: Declare the readable reference and close the disclosure
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
 - **files**: `lib/Settings/integriq_register.json`, `lib/Settings/register.d/99-sender-identity-secrets-writeonly.json`, `lib/Settings/register.d/99-sender-identity-lockdown.json`
 - **acceptance_criteria**:
   - GIVEN the deployed schema WHEN a `sender_identity` is read as an administrator THEN no S/MIME private key appears in the body, in `@self.relations`, or in a list or search response
@@ -21,7 +21,7 @@
 - [x] Test
 
 ### Task 2: Resolve through the broker in system context, and report failure honestly
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered`
 - **files**: `lib/Outbound/Identity/SenderIdentityService.php`, `lib/Outbound/Identity/OutboundSecurityService.php`
 - **acceptance_criteria**:
   - GIVEN the write-only fragment from Task 1 is deployed WHEN a message is protected THEN signing still obtains key material — `SenderIdentityService` reads with `_rbac: false` AND `_render: false`, because write-only stripping happens in the render pass and is computed from the schema alone — it has no `_rbac` term, and `find()` renders by default
@@ -33,7 +33,7 @@
 - [x] Test
 
 ### Task 3: Generalise the migration machinery to a second schema
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
 - **files**: `lib/Service/Security/InlineSecretMigrationPlanner.php`, `lib/Service/Security/InlineSecretMigrationExecutor.php`, `lib/Command/MigrateInlineSecrets.php`, `lib/Repair/RecordInlineSecretMigrationStatus.php`
 - **acceptance_criteria**:
   - Replace the hardcoded `SCHEMA = 'source'` with a schema→fields→providers map per design.md; do NOT add a parallel planner, so verify-before-null stays implemented once
@@ -48,7 +48,7 @@
 - [x] Test
 
 ### Task 4: Refuse key material written where a reference belongs
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs`
 - **files**: `lib/Settings/integriq_register.json` — implemented as a JSON Schema `pattern`, not a PHP guard; integriq has no write hook (see design.md, Implementation deviations)
 - **acceptance_criteria**:
   - WHEN a write places `-----BEGIN` PEM material in `smimePrivateKeyRef` THEN the write is refused by schema validation, which names `smimePrivateKeyRef` as the property that failed. There is no debug exemption — nothing was built for one and none is wanted — and a JSON-Schema error cannot name a DIFFERENT property as the one to use instead, so the requirement no longer asks for either
@@ -60,7 +60,7 @@
 - [x] Test
 
 ### Task 5: Seed data for the modified schema
-- **spec_ref**: `openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
+- **spec_ref**: `openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register`
 - **files**: `lib/Settings/integriq_register.json`
 - **acceptance_criteria**:
   - Three `sender_identity` objects per the design's Seed Data table (`algemeen`, `vergunningen`, `no-reply-nieuwsbrief`), each with the `@self` envelope (`register`, `schema`, `slug`)
