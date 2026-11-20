@@ -64,6 +64,8 @@ export const EVENT_OPEN_LINK_SOURCE = 'open-link-source'
 export const EVENT_OPEN_REGISTRY_LOOKUP = 'open-registry-lookup'
 // statutory-gateways-and-frameworks: the gateway catalogue and where data goes.
 export const EVENT_OPEN_GATEWAY_CATALOGUE = 'open-gateway-catalogue'
+// gateway-openapi-import-and-publish: import a vendor's OpenAPI document as a source and endpoints.
+export const EVENT_OPEN_OPENAPI_IMPORT = 'open-openapi-import'
 // form-submission-registration-targets D6: dry run of one registration target. Payload is `{ target }`.
 export const EVENT_OPEN_REGISTRATION_TEST = 'open-registration-test'
 // connections-declare-data-residency: set where a source sits. Payload is `{ source }`.

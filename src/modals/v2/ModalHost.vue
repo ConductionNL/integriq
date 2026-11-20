@@ -73,6 +73,9 @@
 		<GatewayCatalogueDialog
 			:open="gatewayCatalogue.open"
 			@close="closeGatewayCatalogue" />
+		<OpenApiImportDialog
+			:open="openApiImport.open"
+			@close="closeOpenApiImport" />
 		<RegistrationTargetTestModal
 			:open="registrationTest.open"
 			:target="registrationTest.target"
@@ -96,6 +99,7 @@ import ExportConfigurationDialog from '../../dialogs/ExportConfigurationDialog.v
 import GatewayCatalogueDialog from '../../dialogs/GatewayCatalogueDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
 import LinkSourceDialog from '../../dialogs/LinkSourceDialog.vue'
+import OpenApiImportDialog from '../../dialogs/OpenApiImportDialog.vue'
 import RegistryLookupDialog from '../../dialogs/RegistryLookupDialog.vue'
 import SharePointPublicationSetupDialog from '../../dialogs/SharePointPublicationSetupDialog.vue'
 import SourceResidencyDialog from '../../dialogs/SourceResidencyDialog.vue'
@@ -116,6 +120,7 @@ import {
 	EVENT_OPEN_DIRECTORY_RUN,
 	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
+	EVENT_OPEN_OPENAPI_IMPORT,
 	EVENT_OPEN_PROMOTION,
 	EVENT_OPEN_REGISTRATION_TEST,
 	EVENT_OPEN_REGISTRY_LOOKUP,
@@ -149,6 +154,7 @@ export default {
 		LinkSourceDialog,
 		RegistryLookupDialog,
 		GatewayCatalogueDialog,
+		OpenApiImportDialog,
 		RegistrationTargetTestModal,
 		SourceResidencyDialog,
 	},
@@ -169,6 +175,7 @@ export default {
 			sharePointPublicationSetup: { open: false },
 			registryLookup: { open: false },
 			gatewayCatalogue: { open: false },
+			openApiImport: { open: false },
 			sourceResidency: { open: false, source: null },
 			linkSource: { open: false, app: '' },
 			registrationTest: { open: false, target: null },
@@ -222,6 +229,7 @@ export default {
 		modalBus.on(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 		modalBus.on(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.on(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
+		modalBus.on(EVENT_OPEN_OPENAPI_IMPORT, this.openOpenApiImport)
 		modalBus.on(EVENT_OPEN_REGISTRATION_TEST, this.openRegistrationTest)
 		modalBus.on(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 		modalBus.on(EVENT_OPEN_SOURCE_RESIDENCY, this.openSourceResidency)
@@ -243,6 +251,7 @@ export default {
 		modalBus.off(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 		modalBus.off(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.off(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
+		modalBus.off(EVENT_OPEN_OPENAPI_IMPORT, this.openOpenApiImport)
 		modalBus.off(EVENT_OPEN_REGISTRATION_TEST, this.openRegistrationTest)
 		modalBus.off(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 		modalBus.off(EVENT_OPEN_SOURCE_RESIDENCY, this.openSourceResidency)
@@ -428,6 +437,16 @@ export default {
 		/** @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008 */
 		closeGatewayCatalogue() {
 			this.gatewayCatalogue = { open: false }
+		},
+
+		/** @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001 */
+		openOpenApiImport() {
+			this.openApiImport = { open: true }
+		},
+
+		/** @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001 */
+		closeOpenApiImport() {
+			this.openApiImport = { open: false }
 		},
 
 		/**

@@ -24,13 +24,13 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Service\AsyncApiDocumentServiceInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\ProductPolicyServiceInterface;
+use OCA\Integriq\Service\ProductSubscriber;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitServiceInterface;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
@@ -587,33 +587,10 @@ class ProductChannelsController extends Controller {
 	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	private function subscriber(ObjectEntity $product): array|JSONResponse {
-		$subscriptionRequired = new JSONResponse(
-			['error' => 'subscription_required', 'message' => 'No active subscription to this API product'],
-			Http::STATUS_FORBIDDEN
+		return (new ProductSubscriber(credentials: $this->credentials, policy: $this->policy))->resolve(
+			authorization: (string)$this->request->getHeader('Authorization'),
+			product: $product
 		);
-
-		$header = (string)$this->request->getHeader('Authorization');
-		if (str_starts_with($header, 'Bearer ') === false || substr_count($header, '.') !== 2) {
-			return $subscriptionRequired;
-		}
-
-		try {
-			$this->credentials->authorizeJwt(authorization: $header);
-		} catch (AuthenticationException $exception) {
-			return new JSONResponse(['error' => 'unauthorized', 'message' => $exception->getMessage()], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$consumer = $this->credentials->getResolvedConsumer();
-		if ($consumer === null) {
-			return $subscriptionRequired;
-		}
-
-		$subscription = $this->policy->resolveActiveSubscription(consumerUuid: (string)$consumer->getUuid(), productUuid: (string)$product->getUuid());
-		if ($subscription === null) {
-			return $subscriptionRequired;
-		}
-
-		return ['consumer' => $consumer, 'subscription' => $subscription];
 	}//end subscriber()
 
 	/**

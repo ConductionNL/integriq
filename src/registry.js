@@ -80,6 +80,7 @@ import {
 	openConfigurationImportHandler,
 	openGatewayCatalogueHandler,
 	openLinkSourceHandler,
+	openOpenApiImportHandler,
 	openPromotionHandler,
 	openRegistryLookupHandler,
 	previewDirectorySyncHandler,
@@ -154,6 +155,9 @@ export default {
 	// Sources page header action (statutory-gateways-and-frameworks): the
 	// gateway catalogue and where data goes.
 	openGatewayCatalogueHandler,
+	// Sources page header action (gateway-openapi-import-and-publish): import
+	// a vendor's OpenAPI document as a source and endpoints.
+	openOpenApiImportHandler,
 	// Intake routing page row actions (messaging-intake-routing-rules REQ-IRE-001):
 	// reorder and enable/disable a rule, each written through saveRule() so
 	// its validation runs on every write.

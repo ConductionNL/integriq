@@ -676,6 +676,14 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'portal#getSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'GET'],
 		['name' => 'portal#setSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'PUT'],
 		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
+		// OpenAPI import and publish (openspec/changes/gateway-openapi-import-and-publish).
+		// /api/openapi.json stays the app's own API contract; the gateway's published
+		// document has its own path. Import is admin-only (#[AuthorizedAdminSetting]);
+		// both documents are public routes, a private product's checked in the controller.
+		['name' => 'openApiImport#preview', 'url' => '/api/openapi/import/preview', 'verb' => 'POST'],
+		['name' => 'openApiImport#import', 'url' => '/api/openapi/import', 'verb' => 'POST'],
+		['name' => 'gatewayOpenApi#gateway', 'url' => '/api/gateway/openapi.json', 'verb' => 'GET'],
+		['name' => 'gatewayOpenApi#product', 'url' => '/api/products/{id}/openapi.json', 'verb' => 'GET'],
 		['name' => 'productChannels#pull', 'url' => '/api/products/{productSlug}/channels/{channel}/events', 'verb' => 'GET'],
 		['name' => 'productChannels#subscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions', 'verb' => 'POST'],
 		['name' => 'productChannels#unsubscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions/{id}', 'verb' => 'DELETE'],

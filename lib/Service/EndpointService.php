@@ -56,6 +56,7 @@ use OCA\Integriq\Service\Endpoint\GraphqlOperationLimiter;
 use OCA\Integriq\Service\Endpoint\GraphqlProxyHandler;
 use OCA\Integriq\Service\Endpoint\McpProxyCall;
 use OCA\Integriq\Service\Endpoint\McpProxyHandler;
+use OCA\Integriq\Service\Endpoint\UpstreamPathTemplate;
 use OCA\Integriq\Service\Endpoint\UpstreamRequest;
 use OCA\Integriq\Service\Endpoint\UpstreamRouter;
 use OCA\Integriq\Service\Endpoint\UpstreamSelector;
@@ -2996,7 +2997,7 @@ class EndpointService implements EndpointServiceInterface {
 		// never a dispatched request.
 		try {
 			$upstreamPath = $this->callService->renderEndpointPath(
-				endpoint: (string)($endpointData['endpoint'] ?? ''),
+				endpoint: (new UpstreamPathTemplate())->forEndpoint(endpointData: $endpointData),
 				context: $this->buildUpstreamPathContext(
 					endpointData: $endpointData,
 					request: $request,
