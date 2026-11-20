@@ -24,6 +24,8 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\ObjectRightsService;
+use OCA\Integriq\Service\ObjectRightsServiceInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
@@ -488,6 +490,7 @@ class ServiceRegistrarTest extends TestCase {
 		IntakeGroupsInterface::class => IntakeGroups::class,
 		ObjecttypeEndpointHandlerInterface::class => ObjecttypeEndpointHandler::class,
 		ActionAuthServiceInterface::class => ActionAuthService::class,
+		ObjectRightsServiceInterface::class => ObjectRightsService::class,
 		LtiNrpsServiceInterface::class => LtiNrpsService::class,
 		RecordProvenanceServiceInterface::class => RecordProvenanceService::class,
 		SubscriptionRequestHandlerInterface::class => SubscriptionRequestHandler::class,
