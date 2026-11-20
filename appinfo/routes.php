@@ -663,6 +663,16 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'serviceFetch#test', 'url' => '/api/service-fetches/{slug}/test', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+		// Developer portal (access-developer-portal-and-subscriptions D1-D3): members of
+		// the developer group browse public products, create applications they own and
+		// request access through the product's approval. The group check and the
+		// ownership check run in PortalController; the settings pair is admin only.
+		['name' => 'portal#products', 'url' => '/api/portal/products', 'verb' => 'GET'],
+		['name' => 'portal#applications', 'url' => '/api/portal/applications', 'verb' => 'GET'],
+		['name' => 'portal#createApplication', 'url' => '/api/portal/applications', 'verb' => 'POST'],
+		['name' => 'portal#requestAccess', 'url' => '/api/portal/applications/{consumerId}/subscriptions', 'verb' => 'POST'],
+		['name' => 'portal#getSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'GET'],
+		['name' => 'portal#setSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'PUT'],
 		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
 		['name' => 'productChannels#pull', 'url' => '/api/products/{productSlug}/channels/{channel}/events', 'verb' => 'GET'],
 		['name' => 'productChannels#subscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions', 'verb' => 'POST'],

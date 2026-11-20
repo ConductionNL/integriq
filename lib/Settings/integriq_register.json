@@ -604,6 +604,13 @@
             "description": "The Nextcloud account this consumer acts as. AuthorizationService::authorizeApiKey() makes it the active user, and the DSO STAM intake writes every verzoek as it (dso-stam consumers). Empty: an apiKey consumer authenticates as itself; a dso-stam consumer refuses pushes with 503.",
             "title": "User ID"
           },
+          "ownerKind": {
+            "type": "string",
+            "enum": ["admin", "developer"],
+            "default": "admin",
+            "description": "Who owns this consumer: 'developer' for an application a developer created in the developer portal (its userId is that developer, and only they reach it through the portal), 'admin' for one an administrator created (access-developer-portal-and-subscriptions D2)",
+            "title": "Owner Kind"
+          },
           "rateLimit": {
             "type": "object",
             "description": "Optional inbound short-window burst limiter. Absent = unlimited. When set, requests from this consumer are counted per window and receive HTTP 429 (with Retry-After) once requestsPerWindow is exceeded within windowSeconds.",

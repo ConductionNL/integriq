@@ -13280,6 +13280,60 @@
             "concepts": false
           }
         ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "product_change_notice",
+          "slug": "product-change-notice-product-change-notice-1-1"
+        },
+        "product": "00000000-0000-4000-8000-000000000000",
+        "recipientUserId": "Voorbeeld Recipientuserid 1",
+        "kind": "deprecated",
+        "uuid": "Voorbeeld Uuid 1",
+        "productName": "Voorbeeld Productname 1",
+        "subscription": "00000000-0000-4000-8000-000000000000",
+        "message": "Voorbeeld Message 1",
+        "effectiveDate": "2026-03-01T09:00:00+00:00",
+        "sentAt": "2026-03-01T09:00:00+00:00",
+        "created": "2026-03-01T09:00:00+00:00",
+        "updated": "2026-03-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "product_change_notice",
+          "slug": "product-change-notice-product-change-notice-2-2"
+        },
+        "product": "00000000-0000-4000-8000-000000000001",
+        "recipientUserId": "Voorbeeld Recipientuserid 2",
+        "kind": "sunset-date-set",
+        "uuid": "Voorbeeld Uuid 2",
+        "productName": "Voorbeeld Productname 2",
+        "subscription": "00000000-0000-4000-8000-000000000001",
+        "message": "Voorbeeld Message 2",
+        "effectiveDate": "2026-03-02T09:00:00+00:00",
+        "sentAt": "2026-03-02T09:00:00+00:00",
+        "created": "2026-03-02T09:00:00+00:00",
+        "updated": "2026-03-02T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "product_change_notice",
+          "slug": "product-change-notice-product-change-notice-3-3"
+        },
+        "product": "00000000-0000-4000-8000-000000000002",
+        "recipientUserId": "Voorbeeld Recipientuserid 3",
+        "kind": "new-version",
+        "uuid": "Voorbeeld Uuid 3",
+        "productName": "Voorbeeld Productname 3",
+        "subscription": "00000000-0000-4000-8000-000000000002",
+        "message": "Voorbeeld Message 3",
+        "effectiveDate": "2026-03-03T09:00:00+00:00",
+        "sentAt": "2026-03-03T09:00:00+00:00",
+        "created": "2026-03-03T09:00:00+00:00",
+        "updated": "2026-03-03T09:00:00+00:00"
       }
     ]
   }

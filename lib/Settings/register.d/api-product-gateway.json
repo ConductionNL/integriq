@@ -52,9 +52,9 @@
           },
           "status": {
             "type": "string",
-            "enum": ["active", "deprecated"],
+            "enum": ["active", "deprecated", "retired"],
             "default": "active",
-            "description": "When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594)",
+            "description": "When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594). When 'retired', the product's endpoints answer 410 Gone to subscribers. Deprecating, moving the sunset date or retiring writes one product_change_notice per active subscription (access-developer-portal-and-subscriptions D5)",
             "title": "Status"
           },
           "sunsetDate": {
@@ -214,6 +214,44 @@
               "gold": { "rateLimit": { "requestsPerWindow": 1000, "windowSeconds": 60 }, "requiresApproval": true, "approverGroup": "gateway-approvers" }
             },
             "defaultTier": "gold"
+          },
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "api_product",
+              "slug": "api-product-zaken-api-v1"
+            },
+            "name": "Zaken API",
+            "description": "Create and read cases (zaken) of the municipality. Seeded for the developer portal.",
+            "productSlug": "zaken-api",
+            "version": "1.0.0",
+            "visibility": "public",
+            "status": "active",
+            "endpoints": ["@ref:endpoint:ping"],
+            "tiers": {
+              "basic": { "rateLimit": { "requestsPerWindow": 60, "windowSeconds": 60 } },
+              "premium": { "rateLimit": { "requestsPerWindow": 600, "windowSeconds": 60 }, "requiresApproval": true, "approverGroup": "gateway-approvers" }
+            },
+            "defaultTier": "basic"
+          },
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "api_product",
+              "slug": "api-product-besluiten-api-v1"
+            },
+            "name": "Besluiten API",
+            "description": "Read decisions (besluiten). Deprecated: it is retired on its sunset date. Seeded for the developer portal.",
+            "productSlug": "besluiten-api",
+            "version": "1.0.0",
+            "visibility": "public",
+            "status": "deprecated",
+            "sunsetDate": "2027-01-01T00:00:00+00:00",
+            "endpoints": ["@ref:endpoint:version"],
+            "tiers": {
+              "basic": { "rateLimit": { "requestsPerWindow": 60, "windowSeconds": 60 } }
+            },
+            "defaultTier": "basic"
           }
         ],
         "appendOnly": false,
@@ -257,7 +295,7 @@
           },
           "status": {
             "type": "string",
-            "enum": ["pending_approval", "active", "rejected", "revoked"],
+            "enum": ["pending_approval", "active", "rejected", "revoked", "expired"],
             "default": "pending_approval",
             "description": "State machine: pending_approval -> active|rejected, or active -> revoked. A subscription that is not active does not receive its tier's rate-limit/quota policy.",
             "title": "Status"
@@ -292,6 +330,18 @@
             "format": "date-time",
             "description": "Timestamp the subscription was revoked, when applicable",
             "title": "Revoked At"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional end of the subscription. After it, calls through the subscription are refused with 403 naming the date, and SubscriptionExpiryJob marks it expired; its owner is reminded fourteen days before (access-developer-portal-and-subscriptions D6). Absent: the subscription does not end on its own",
+            "title": "Expires At"
+          },
+          "expiryReminderSentAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When SubscriptionExpiryJob wrote the fourteen-days-ahead subscription-expiring notice, so the reminder goes out once",
+            "title": "Expiry Reminder Sent At"
           },
           "created": {
             "type": "string",
@@ -333,6 +383,151 @@
             "status": "pending_approval",
             "requesterUserId": "admin",
             "createdAt": "2026-07-14T10:00:00+00:00"
+          },
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "api_product_subscription",
+              "slug": "sub-example-developer-app-zaken-basic"
+            },
+            "product": "@ref:api_product:api-product-zaken-api-v1",
+            "consumer": "@ref:consumer:example-developer-app",
+            "tier": "basic",
+            "status": "active",
+            "requesterUserId": "developer1",
+            "createdAt": "2026-11-01T09:00:00+00:00",
+            "activatedAt": "2026-11-01T09:00:00+00:00",
+            "expiresAt": "2026-12-31T23:59:59+00:00"
+          },
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "api_product_subscription",
+              "slug": "sub-example-developer-app-besluiten-basic"
+            },
+            "product": "@ref:api_product:api-product-besluiten-api-v1",
+            "consumer": "@ref:consumer:example-developer-app",
+            "tier": "basic",
+            "status": "active",
+            "requesterUserId": "developer1",
+            "createdAt": "2026-11-01T09:00:00+00:00",
+            "activatedAt": "2026-11-01T09:00:00+00:00"
+          }
+        ],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "product_change_notice": {
+        "slug": "product_change_notice",
+        "title": "Product Change Notice",
+        "icon": "BellOutline",
+        "version": "1.0.0",
+        "summary": "A notice to one subscriber that an API product they use changed, or that their subscription is about to end",
+        "authorization": {
+          "create": ["admin"],
+          "read": ["admin"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "description": "One row per active subscription, written when an administrator deprecates a product, sets or moves its sunset date, publishes a new version or retires it, and fourteen days before a subscription ends. The row is the record of who was told what and when; its created trigger sends the Nextcloud notification and the mail. See openspec/changes/access-developer-portal-and-subscriptions/design.md D5 and D6.",
+        "required": ["product", "recipientUserId", "kind"],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "product": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/api_product",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the api_product the notice is about",
+            "title": "Product"
+          },
+          "productName": {
+            "type": "string",
+            "description": "The product's name when the notice was written, so the notification can name it",
+            "title": "Product Name"
+          },
+          "subscription": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/api_product_subscription",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the subscription whose owner was told",
+            "title": "Subscription"
+          },
+          "recipientUserId": {
+            "type": "string",
+            "description": "Nextcloud user id of the subscription's owner: the consumer's userId, else the user who requested the subscription",
+            "title": "Recipient"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["deprecated", "sunset-date-set", "new-version", "retired", "subscription-expiring"],
+            "description": "What changed",
+            "title": "Kind"
+          },
+          "message": {
+            "type": "string",
+            "description": "The text the subscriber reads, naming the product and, where there is one, the date",
+            "title": "Message"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The sunset date or the subscription's end date the notice is about, when it has one",
+            "title": "Effective Date"
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the notice was written and its notification sent",
+            "title": "Sent At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At (OR)"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-notifications": {
+          "created": {
+            "trigger": { "type": "created" },
+            "enabled": true,
+            "channels": ["nc-notification", "email"],
+            "recipients": [{ "kind": "field", "field": "recipientUserId" }],
+            "subject": {
+              "nl": "Wijziging in een API die je gebruikt: {{productName}}",
+              "en": "A change to an API you use: {{productName}}"
+            },
+            "message": "{{message}}"
+          }
+        },
+        "x-openregister-seed": [
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "product_change_notice",
+              "slug": "notice-besluiten-api-deprecated-example-developer-app"
+            },
+            "product": "@ref:api_product:api-product-besluiten-api-v1",
+            "productName": "Besluiten API",
+            "subscription": "@ref:api_product_subscription:sub-example-developer-app-besluiten-basic",
+            "recipientUserId": "developer1",
+            "kind": "deprecated",
+            "message": "Besluiten API is deprecated and is retired on 2027-01-01.",
+            "effectiveDate": "2027-01-01T00:00:00+00:00",
+            "sentAt": "2026-11-01T09:00:00+00:00"
           }
         ],
         "appendOnly": false,

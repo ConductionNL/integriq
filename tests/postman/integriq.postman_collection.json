@@ -2189,6 +2189,396 @@
       ]
     },
     {
+      "name": "17a — Developer portal: an ended subscription (access-developer-portal-and-subscriptions)",
+      "description": "REQ-DEVP-005, scenario 'a pilot subscription stops on its end date': an API-key consumer with a subscription whose expiresAt was yesterday calls the product's endpoint and is refused with 403 naming that date. Needs a live instance; cleans up after itself.",
+      "item": [
+        {
+          "name": "DP.1 create the API-key rule",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/rule",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "rule"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"devp-ended-auth\", \"action\": \"get\", \"timing\": \"before\", \"type\": \"authentication\", \"conditions\": {}, \"order\": 1, \"configuration\": {\"authentication\": {\"type\": \"apikey\", \"header\": \"X-Api-Key\", \"keys\": [\"{{devpKey}}\"]}}}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// A fresh key per run, and an end date of yesterday (REQ-DEVP-005).",
+                  "pm.collectionVariables.set('devpKey', 'devp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10));",
+                  "const y = new Date(Date.now() - 86400000);",
+                  "pm.collectionVariables.set('devpEndDate', y.toISOString().slice(0, 10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('devpRuleUuid', b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DP.2 create the endpoint behind the rule",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/endpoint",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"devp-ended-endpoint\", \"endpoint\": \"devp-ended-newman\", \"method\": \"GET\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"rules\": [\"{{devpRuleUuid}}\"]}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('devpEndpointUuid', b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DP.3 create the developer's application (consumer)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/consumer",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "consumer"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"devp-ended-consumer\", \"authorizationType\": \"apiKey\", \"authorizationConfiguration\": {\"apiKey\": \"{{devpKey}}\"}, \"ownerKind\": \"developer\", \"userId\": \"{{admin_user}}\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('devpConsumerUuid', b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DP.4 create the API product over the endpoint",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/api_product",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "api_product"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Newman ended-subscription product\", \"productSlug\": \"newman-devp-ended\", \"version\": \"1.0.0\", \"visibility\": \"private\", \"status\": \"active\", \"endpoints\": [\"{{devpEndpointUuid}}\"], \"tiers\": {\"basic\": {\"rateLimit\": {\"requestsPerWindow\": 60, \"windowSeconds\": 60}}}, \"defaultTier\": \"basic\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('devpProductUuid', b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DP.5 create a subscription that ended yesterday",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/api_product_subscription",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "api_product_subscription"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"product\": \"{{devpProductUuid}}\", \"consumer\": \"{{devpConsumerUuid}}\", \"tier\": \"basic\", \"status\": \"active\", \"expiresAt\": \"{{devpEndDate}}T00:00:00+00:00\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('devpSubscriptionUuid', b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DP.6 the consumer's call is refused naming the end date",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/devp-ended-newman",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "devp-ended-newman"
+              ]
+            },
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "{{devpKey}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// REQ-DEVP-005: from the end date on the answer is 403 and names the date, before the daily job marks it expired.",
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "const b = pm.response.json();",
+                  "pm.test('the refusal says the subscription ended', () => pm.expect(b.error).to.eql('subscription_expired'));",
+                  "pm.test('the refusal names the end date', () => {",
+                  "  pm.expect(b.expiresAt).to.eql(pm.collectionVariables.get('devpEndDate'));",
+                  "  pm.expect(b.message).to.include(pm.collectionVariables.get('devpEndDate'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DP.7 cleanup — DELETE subscription",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/api_product_subscription/{{devpSubscriptionUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "api_product_subscription",
+                "{{devpSubscriptionUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DP.8 cleanup — DELETE product",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/api_product/{{devpProductUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "api_product",
+                "{{devpProductUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DP.9 cleanup — DELETE consumer",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/consumer/{{devpConsumerUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "consumer",
+                "{{devpConsumerUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DP.10 cleanup — DELETE endpoint",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/endpoint/{{devpEndpointUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "{{devpEndpointUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DP.11 cleanup — DELETE rule",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/rule/{{devpRuleUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "rule",
+                "{{devpRuleUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "18 — OAuth client credentials and protected-resource metadata (access-oauth-and-token-validation)",
       "description": "REQ-TOKV-003 and REQ-TOKV-004: the issuer key and its public key set, a consumer's client secret (write-only in OpenRegister), the client credentials token endpoint and its refusals, the RFC 9728 metadata document of a token-protected endpoint, and the 401 that names it. Own fixtures, removed at the end of the folder.",
       "item": [

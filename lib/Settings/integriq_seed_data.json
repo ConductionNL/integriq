@@ -193,6 +193,13 @@
       "@self": { "register": "integriq", "schema": "consumer", "slug": "mobile-app" },
       "name": "Mobile App",
       "description": "Example consumer representing the corporate mobile app."
+    },
+    {
+      "@self": { "register": "integriq", "schema": "consumer", "slug": "example-developer-app" },
+      "name": "Example developer application",
+      "description": "Application the seeded developer account developer1 created in the developer portal.",
+      "userId": "developer1",
+      "ownerKind": "developer"
     }
   ],
   "endpoint": [

@@ -239,6 +239,13 @@
           "icon": "CheckDecagramOutline",
           "route": "Approvals",
           "order": 40
+        },
+        {
+          "id": "DeveloperPortal",
+          "label": "Developer portal",
+          "icon": "AccountKeyOutline",
+          "route": "DeveloperPortal",
+          "order": 50
         }
       ]
     },
@@ -3394,6 +3401,19 @@
             }
           }
         ]
+      }
+    },
+    {
+      "id": "DeveloperPortal",
+      "route": "/developer-portal",
+      "type": "custom",
+      "component": "DeveloperPortalPage",
+      "_note": "Custom page: the developer portal (access-developer-portal-and-subscriptions). A developer holds no rights on the integriq register, so the page cannot be a CnIndexPage over OpenRegister's object API; it reads the developer-group-checked /api/portal routes, which return only public products and the developer's own applications, and requests access through the product's approval.",
+      "title": "Developer portal",
+      "config": {
+        "register": "integriq",
+        "schema": "api_product",
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {

@@ -7968,6 +7968,264 @@
                 ]
             }
         },
+        "/portal/products": {
+            "get": {
+                "operationId": "portal-products",
+                "summary": "The public API products a developer may see",
+                "description": "The public API products, with their versions, tiers and documentation; private and retired products are not listed. Members of the developer group only.",
+                "tags": [
+                    "portal"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{results}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/portal/applications": {
+            "get": {
+                "operationId": "portal-applications",
+                "summary": "The developer's own applications",
+                "description": "The developer's own applications, each with its subscriptions. Members of the developer group only.",
+                "tags": [
+                    "portal"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{results}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "portal-create-application",
+                "summary": "Create an application the developer owns",
+                "description": "Create an application: a consumer owned by the developer.",
+                "tags": [
+                    "portal"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The application.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/portal/applications/{consumerId}/subscriptions": {
+            "post": {
+                "operationId": "portal-request-access",
+                "summary": "Request access to a product tier for one of the developer's applications",
+                "description": "Opens the product's approval for a gated tier, or activates an open tier at once. An application the developer does not own, or a product that is not public, answers 404 and nothing is written.",
+                "tags": [
+                    "portal"
+                ],
+                "parameters": [
+                    {
+                        "name": "consumerId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "productId"
+                                ],
+                                "properties": {
+                                    "productId": {
+                                        "type": "string"
+                                    },
+                                    "tier": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The active subscription; 202 when it waits for approval.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "202": {
+                        "description": "The subscription waits for the product's approvers."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/admin/developer-portal": {
+            "get": {
+                "operationId": "developer-portal-settings-get",
+                "summary": "The developer group and how many accounts are in it",
+                "description": "The developer group and its member count; members is null when the group does not exist.",
+                "tags": [
+                    "portal"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{group, members}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "developer-portal-settings-set",
+                "summary": "Name the developer group, or clear it to put the default back",
+                "description": "Name the developer group, or clear it to put `integriq-developers` back.",
+                "tags": [
+                    "portal"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "group": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`{group, members}`, or 400 naming a group that does not exist.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    }
+                }
+            }
+        },
         "/products/{productSlug}/asyncapi.json": {
             "get": {
                 "operationId": "product-channels-asyncapi",

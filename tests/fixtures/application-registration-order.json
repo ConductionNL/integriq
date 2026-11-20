@@ -347,6 +347,8 @@
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectUpdatingEvent, OCA\\Integriq\\EventListener\\DsoActivityMappingGuardListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatingEvent, OCA\\Integriq\\EventListener\\OpenFormulierenMappingGuardListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectUpdatingEvent, OCA\\Integriq\\EventListener\\OpenFormulierenMappingGuardListener, int)",
+	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectUpdatedEvent, OCA\\Integriq\\EventListener\\ProductChangeNoticeListener, int)",
+	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatedEvent, OCA\\Integriq\\EventListener\\ProductChangeNoticeListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatingEvent, OCA\\Integriq\\EventListener\\ProductChannelSlugGuardListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectUpdatingEvent, OCA\\Integriq\\EventListener\\ProductChannelSlugGuardListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatingEvent, OCA\\Integriq\\EventListener\\SubscriptionSigningDefaultListener, int)",
