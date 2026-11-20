@@ -56,6 +56,7 @@ use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
 use OCA\Integriq\Event\StufZdsConfirmationReceivedEvent;
 use OCA\Integriq\Event\SubmissionRegistrationRequestedEvent;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
+use OCA\Integriq\Service\Security\ConnectionHandoverListener;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -345,6 +346,9 @@ final class EventListenerBindings {
 		// dso-stam consumer, so the STAM intake never has to guess its account.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoStamConsumerListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoStamConsumerListener::class);
+		// Gateway-api-design-rules-check D4: a product with an open design rule error is not made active.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: ApiProductPublishGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: ApiProductPublishGuardListener::class);
 	}//end registerObjectSaveGuards()
 
 	/**
@@ -398,6 +402,12 @@ final class EventListenerBindings {
 		// webhook steps) asks for the Source for that base URL here, so the call
 		// can run through `openconnector.source-call` like every other one.
 		$dispatcher->addServiceListener(eventName: SourceRequestedEvent::class, className: SourceRequestedListener::class);
+		// A sibling app hands over a connection it used to run itself (first:
+		// pipelinq's BRP connection). Named by string: the event is the sender's.
+		foreach (array_keys(ConnectionHandoverListener::EVENTS) as $handoverEvent) {
+			$dispatcher->addServiceListener(eventName: $handoverEvent, className: ConnectionHandoverListener::class);
+		}
+
 		// Forms-service-fetch-for-apps (REQ-SF-002): a sibling app runs a service
 		// fetch an administrator defined, and gets its declared outputs or a refusal.
 		$dispatcher->addServiceListener(eventName: ServiceFetchRequestedEvent::class, className: ServiceFetchRequestedListener::class);

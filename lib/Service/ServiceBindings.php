@@ -57,6 +57,8 @@ use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
 use OCA\Integriq\Service\AgentTools\DeadLetterProjectionInterface;
 use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
 use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
+use OCA\Integriq\Service\ApiDesign\ApiDesignRuleService;
+use OCA\Integriq\Service\ApiDesign\ApiDesignRuleServiceInterface;
 use OCA\Integriq\Service\Catalogi\CatalogiWiring;
 use OCA\Integriq\Service\Chat\TalkMessageSource;
 use OCA\Integriq\Service\Chat\TalkMessageSourceInterface;
@@ -225,6 +227,8 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
 use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
+use OCA\Integriq\Service\Feed\FeedSchemaFieldsInterface;
+use OCA\Integriq\Service\Feed\OpenRegisterFeedSchemaFields;
 use OCA\Integriq\Service\Security\SecretRedactorInterface;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\ServiceFetch\ServiceFetchCatalogue;
@@ -330,6 +334,7 @@ final class ServiceBindings {
 		ObjectEndpointHandlerInterface::class => ObjectEndpointHandler::class,
 		ExchangeJobRunnerInterface::class => ExchangeJobRunner::class,
 		ConnectionRegistryServiceInterface::class => ConnectionRegistryService::class,
+		FeedSchemaFieldsInterface::class => OpenRegisterFeedSchemaFields::class,
 		EudiStatusListServiceInterface::class => EudiStatusListService::class,
 		PortalRequestParserInterface::class => DSOParserService::class,
 		ApprovalDecisionServiceInterface::class => ApprovalDecisionService::class,
@@ -459,6 +464,7 @@ final class ServiceBindings {
 		MtlsTransportServiceInterface::class => MtlsTransportService::class,
 		ExchangeTargetCatalogueInterface::class => ExchangeTargetCatalogue::class,
 		MessageValidationServiceInterface::class => MessageValidationService::class,
+		ApiDesignRuleServiceInterface::class => ApiDesignRuleService::class,
 		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
 		ConnectorExtensionsInterface::class => ConnectorExtensionCollector::class,
 		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,

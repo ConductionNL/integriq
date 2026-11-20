@@ -35,6 +35,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
@@ -42,14 +43,22 @@ use OC\AppFramework\Http;
 use OC\Files\Node\File;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Http\ProblemResponse;
+use OCA\Integriq\Service\Feed\FeedRequestHandler;
 use OCA\Integriq\Rule\AvgBsnPolicyRuleInterface;
 use OCA\Integriq\Rule\CompositeFanoutRuleInterface;
 use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
+use OCA\Integriq\Service\Auth\ClientCertificateReader;
 use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
+use OCA\Integriq\Service\Endpoint\EndpointResponseCache;
+use OCA\Integriq\Service\Endpoint\GraphqlHttpRequest;
+use OCA\Integriq\Service\Endpoint\GraphqlOperation;
+use OCA\Integriq\Service\Endpoint\GraphqlOperationLimiter;
+use OCA\Integriq\Service\Endpoint\GraphqlProxyHandler;
 use OCA\Integriq\Service\Endpoint\McpProxyCall;
 use OCA\Integriq\Service\Endpoint\McpProxyHandler;
+use OCA\Integriq\Service\Endpoint\UpstreamPathTemplate;
 use OCA\Integriq\Service\Endpoint\UpstreamRequest;
 use OCA\Integriq\Service\Endpoint\UpstreamRouter;
 use OCA\Integriq\Service\Endpoint\UpstreamSelector;
@@ -75,9 +84,11 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IRequestId;
 use OCP\IURLGenerator;
+use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -203,6 +214,11 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param ProductPolicyService|null $productPolicyService The API product policy shared with product
 	 *                                                        channels; built from the object service and
 	 *                                                        logger when not injected.
+	 * @param EndpointResponseCache|null $responseCache The endpoints' response cache
+	 *                                                  (gateway-response-cache-and-problem-errors);
+	 *                                                  nullable like the others, and without it no
+	 *                                                  answer is cached.
+	 * @param ClientCertificateReader|null $certificateReader Reads the web-server-verified client certificate for `mtls` rules.
 	 * @param ProtectedResourceMetadata|null $resourceMetadata Names the metadata address in the 401 of a
 	 *                                                         token-protected endpoint (REQ-TOKV-004);
 	 *                                                         without it the 401 carries no challenge.
@@ -239,6 +255,8 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly ?EndpointMessageGate $messageGate = null,
 		?UpstreamRouter $upstreamRouter = null,
 		?ProductPolicyService $productPolicyService = null,
+		private readonly ?EndpointResponseCache $responseCache = null,
+		private readonly ?ClientCertificateReader $certificateReader = null,
 		private readonly ?ProtectedResourceMetadata $resourceMetadata = null,
 		?ConnectAccountPrompt $connectPrompt = null,
 	) {
@@ -377,6 +395,15 @@ class EndpointService implements EndpointServiceInterface {
 	 * @var bool
 	 */
 	private bool $proxiedAnswer = false;
+
+	/**
+	 * Whether an authentication rule ran for the current request. A cached
+	 * answer of an endpoint that does not share answers is kept per caller,
+	 * so an authenticated caller without a resolved consumer is not cached.
+	 *
+	 * @var bool
+	 */
+	private bool $callerAuthenticated = false;
 
 	/**
 	 * The API product policy (subscription, tier, counter key, deprecation), shared with product channels.
@@ -568,6 +595,7 @@ class EndpointService implements EndpointServiceInterface {
 		$this->rateLimitHeaders = [];
 		$this->deprecationHeaders = [];
 		$this->proxiedAnswer = false;
+		$this->callerAuthenticated = false;
 		$startTime = microtime(true);
 
 		// Resolve the endpoint's api_product (if any) once, up front, so both
@@ -772,6 +800,144 @@ class EndpointService implements EndpointServiceInterface {
 			return $this->failedRequest(exception: $e, trace: $trace);
 		}//end try
 	}//end doHandleRequest()
+
+	/**
+	 * Answer a declared data feed (REQ-DDF-002, REQ-DDF-003).
+	 *
+	 * In order: GET only; the caller is authenticated as a consumer (by the
+	 * endpoint's own authentication rule, else by its consumer key or token);
+	 * the consumer's source allowlist; the consumer's scope binding for the
+	 * declaring app; the rate limit; then one page of the feed.
+	 *
+	 * @param ObjectEntity $endpoint         The feed endpoint.
+	 * @param IRequest     $request          The request.
+	 * @param bool         $enforceRateLimit Whether the consumer's rate limit applies.
+	 *
+	 * @return Response The page, or the refusal.
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
+	 */
+	private function handleFeedRequest(ObjectEntity $endpoint, IRequest $request, bool $enforceRateLimit): Response {
+		$feed    = ($endpoint->getObject()['feed'] ?? null);
+		$handler = $this->feedRequestHandler();
+		if ($handler === null || is_array($feed) === false) {
+			return new JSONResponse(['error' => 'This feed is not available.'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($request->getMethod() !== 'GET') {
+			return new JSONResponse(['error' => 'A feed is read-only and answers GET only.'], Http::STATUS_METHOD_NOT_ALLOWED);
+		}
+
+		$consumer = $this->feedConsumer(request: $request);
+		if ($consumer instanceof JSONResponse) {
+			return $consumer;
+		}
+
+		$query   = $this->feedQuery(request: $request);
+		$refusal = $this->enforceConsumerScope(request: $request)
+			?? $handler->scopeRefusal(feed: $feed, consumer: $consumer, query: $query);
+		if ($refusal === null && $enforceRateLimit === true) {
+			$refusal = $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint);
+		}
+
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $handler->answer(
+			feed: $feed,
+			bound: $handler->boundScope(feed: $feed, consumer: $consumer),
+			query: $query,
+			baseUrl: $this->feedBaseUrl(request: $request)
+		);
+	}//end handleFeedRequest()
+
+	/**
+	 * The handler that answers declared data feeds, or null when it cannot be resolved.
+	 *
+	 * @return FeedRequestHandler|null
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-feed-answers-only-its-declared-fields-page-by-page-req-ddf-002
+	 */
+	private function feedRequestHandler(): ?FeedRequestHandler {
+		try {
+			$handler = $this->containerInterface->get(FeedRequestHandler::class);
+		} catch (\Throwable) {
+			return null;
+		}
+
+		if ($handler instanceof FeedRequestHandler === false) {
+			return null;
+		}
+
+		return $handler;
+
+	}//end feedRequestHandler()
+
+	/**
+	 * The consumer a feed request comes from: the one the endpoint's
+	 * authentication rule resolved, else the one its consumer key or token names.
+	 *
+	 * @param IRequest $request The request.
+	 *
+	 * @return ObjectEntity|JSONResponse|null The consumer, null when the request names none, or the 401.
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
+	 */
+	private function feedConsumer(IRequest $request): ObjectEntity|JSONResponse|null {
+		$consumer = $this->authorizationService->getResolvedConsumer();
+		if ($consumer !== null) {
+			return $consumer;
+		}
+
+		$header = trim($request->getHeader('Authorization'));
+		if ($header === '') {
+			return null;
+		}
+
+		try {
+			if (str_starts_with($header, 'Bearer ') === true && substr_count($header, '.') === 2) {
+				$this->authorizationService->authorizeJwt(authorization: $header);
+			} else {
+				$this->authorizationService->authorizeApiKey(header: $header, keys: []);
+			}
+		} catch (AuthenticationException $exception) {
+			return $this->unauthenticated(exception: $exception);
+		}
+
+		return $this->authorizationService->getResolvedConsumer();
+	}//end feedConsumer()
+
+	/**
+	 * The query parameters of a feed request, without the router's own.
+	 *
+	 * @param IRequest $request The request.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 */
+	private function feedQuery(IRequest $request): array {
+		$query = [];
+		foreach ($request->getParams() as $name => $value) {
+			if (is_string($name) === true && str_starts_with($name, '_') === false) {
+				$query[$name] = $value;
+			}
+		}
+
+		return $query;
+	}//end feedQuery()
+
+	/**
+	 * The feed's absolute URL without its query, for the next link.
+	 *
+	 * @param IRequest $request The request.
+	 *
+	 * @return string The URL.
+	 */
+	private function feedBaseUrl(IRequest $request): string {
+		$path = (string)strtok($request->getRequestUri(), '?');
+
+		return $request->getServerProtocol() . '://' . $request->getServerHost() . $path;
+	}//end feedBaseUrl()
 
 	/**
 	 * Check the request body against the endpoint's request message schema
@@ -984,15 +1150,9 @@ class EndpointService implements EndpointServiceInterface {
 	): Response {
 		$endpointData = $endpoint->getObject();
 
-		if ($ruleResult instanceof JSONResponse === true) {
-			return $this->transformError(result: $ruleResult, request: $request);
-		}
-
-		if ($enforceRateLimit === true) {
-			$refusal = $this->enforceConsumerLimits(request: $request, endpoint: $endpoint);
-			if ($refusal !== null) {
-				return $refusal;
-			}
+		$early = $this->answerBeforeTarget(endpoint: $endpoint, request: $request, ruleResult: $ruleResult, enforceRateLimit: $enforceRateLimit);
+		if ($early !== null) {
+			return $early;
 		}
 
 		// Update request data with rule processing results.
@@ -1044,6 +1204,34 @@ class EndpointService implements EndpointServiceInterface {
 	}//end dispatchAfterBeforeRules()
 
 	/**
+	 * The answer a request gets before its target is called: a rule's error, a
+	 * declared feed's answer, or a consumer-limit refusal; null to go on.
+	 *
+	 * @param ObjectEntity   $endpoint         The endpoint.
+	 * @param IRequest       $request          The inbound request.
+	 * @param array|Response $ruleResult       What the before-rules produced.
+	 * @param bool           $enforceRateLimit Whether consumer limits are enforced on this call.
+	 *
+	 * @return Response|null
+	 */
+	private function answerBeforeTarget(ObjectEntity $endpoint, IRequest $request, array|Response $ruleResult, bool $enforceRateLimit): ?Response {
+		if ($ruleResult instanceof JSONResponse === true) {
+			return $this->transformError(result: $ruleResult, request: $request);
+		}
+
+		if (($endpoint->getObject()['targetType'] ?? '') === FeedDeclarationService::TARGET_TYPE) {
+			return $this->handleFeedRequest(endpoint: $endpoint, request: $request, enforceRateLimit: $enforceRateLimit);
+		}
+
+		if ($enforceRateLimit === false) {
+			return null;
+		}
+
+		return $this->enforceConsumerLimits(request: $request, endpoint: $endpoint);
+
+	}//end answerBeforeTarget()
+
+	/**
 	 * Whether a target type proxies to a source: `api`, or `a2a` for a
 	 * source holding an A2A agent.
 	 *
@@ -1052,9 +1240,10 @@ class EndpointService implements EndpointServiceInterface {
 	 * @return bool True when the endpoint proxies to a source.
 	 *
 	 * @spec openspec/changes/gateway-a2a-agent-card/specs/endpoint-runtime/spec.md#requirement-an-a2a-agents-card-points-at-the-gateway-req-a2a-001
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
 	 */
 	private function isSourceTarget(string $targetType): bool {
-		return ($targetType === 'api' || $targetType === A2aAgentCardRewriter::TARGET_TYPE);
+		return in_array($targetType, ['api', A2aAgentCardRewriter::TARGET_TYPE, GraphqlProxyHandler::TARGET_TYPE], true);
 	}//end isSourceTarget()
 
 	/**
@@ -2796,6 +2985,13 @@ class EndpointService implements EndpointServiceInterface {
 		$headers = $this->getHeaders(server: $_SERVER);
 		$rawBody = $this->getRawContent();
 
+		// A graphql endpoint reads the operation and refuses it here, before
+		// any source is loaded or called (gateway-graphql-and-streaming-protocols REQ-GQLP-001).
+		$graphql = $this->governGraphql(endpoint: $endpoint, request: $request, rawBody: $rawBody);
+		if ($graphql instanceof JSONResponse === true) {
+			return $graphql;
+		}
+
 		// Fetch the source entity by targetId.
 		//
 		// System context (ocon#147): the `source` schema is admin-only now. An Endpoint is
@@ -2807,23 +3003,9 @@ class EndpointService implements EndpointServiceInterface {
 		// An endpoint with `targets` routes over several sources (gateway-upstream-routing
 		// REQ-UPRT-001); the router loads and checks each candidate itself.
 		$routed = $this->upstreamRouter()->routes(endpointData: $endpointData);
-		$source = null;
-		if ($routed === false) {
-			// Unscoped: serving an endpoint resolves the source it proxies; the endpoint caller may be anonymous.
-			$source = $this->orObjectService->find(
-				id: $endpointData['targetId'] ?? '',
-				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
-				_rbac: false,
-				_multitenancy: false
-			);
-		}
-
-		if ($routed === false && $this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
-			$this->logger->warning(
-				'integriq: endpoint ' . $endpoint->getUuid() . ' refused to proxy to a source of another organisation'
-			);
-
-			return new JSONResponse(['error' => 'Source not found'], Http::STATUS_NOT_FOUND);
+		$source = $this->proxiedSource(endpoint: $endpoint);
+		if ($source instanceof JSONResponse === true) {
+			return $source;
 		}
 
 		// Render the upstream path from the inbound request (ocon#1069), so a
@@ -2834,7 +3016,7 @@ class EndpointService implements EndpointServiceInterface {
 		// never a dispatched request.
 		try {
 			$upstreamPath = $this->callService->renderEndpointPath(
-				endpoint: (string)($endpointData['endpoint'] ?? ''),
+				endpoint: (new UpstreamPathTemplate())->forEndpoint(endpointData: $endpointData),
 				context: $this->buildUpstreamPathContext(
 					endpointData: $endpointData,
 					request: $request,
@@ -2855,6 +3037,18 @@ class EndpointService implements EndpointServiceInterface {
 				Http::STATUS_BAD_REQUEST
 			);
 		}//end try
+
+		// A cached answer is served without reaching the source
+		// (REQ-RCPE-001). The authentication and rate limit rules ran before
+		// this point, so a hit never reaches a caller that could not have
+		// made the call.
+		$cache = $this->responseCacheOf(endpointData: $endpointData, request: $request, path: $path);
+		if ($cache !== null) {
+			$hit = $this->responseCache?->lookup(endpointId: (string)$endpoint->getUuid(), settings: $cache['settings'], request: $cache['request']);
+			if ($hit !== null) {
+				return $this->answerFromCache(endpoint: $endpoint, source: $source, hit: $hit);
+			}
+		}
 
 		// Proxy the request to the source via CallService, or to the target the
 		// router picks (gateway-upstream-routing REQ-UPRT-001/002). A per-user
@@ -2884,6 +3078,7 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		$callLogData = $callLog->getObject();
+		$this->recordGraphqlOperation(callLog: $callLog, operation: $graphql);
 
 		// REQ-RLPC-002: the source's paced turn was further away than a live
 		// call may wait, so nothing was sent. Tell the consumer when to come back.
@@ -2918,8 +3113,319 @@ class EndpointService implements EndpointServiceInterface {
 			$answer = $this->pointAgentCardAtGateway(answer: $answer, source: $source, path: $path);
 		}
 
-		return new JSONResponse($answer, $callLogData['statusCode'] ?? 200);
+		$response = new JSONResponse($answer, $callLogData['statusCode'] ?? 200);
+		if ($cache !== null) {
+			$this->responseCache?->store(
+				endpointId: (string)$endpoint->getUuid(),
+				settings: $cache['settings'],
+				request: $cache['request'],
+				status: (int)($callLogData['statusCode'] ?? 200),
+				answer: $answer
+			);
+			$response->addHeader(EndpointResponseCache::HEADER, 'MISS');
+		}
+
+		return $response;
 	}//end handleSourceRequest()
+
+	/**
+	 * The endpoint's cache settings and the request as the cache keys it, or
+	 * null when the endpoint does not cache this request.
+	 *
+	 * @param array    $endpointData The endpoint object.
+	 * @param IRequest $request      The incoming request.
+	 * @param string   $path         The inbound sub-path.
+	 *
+	 * @return array{settings: array<string, mixed>, request: array<string, mixed>}|null
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 */
+	private function responseCacheOf(array $endpointData, IRequest $request, string $path): ?array {
+		$settings = $this->responseCache?->settings(endpointData: $endpointData);
+		if ($settings === null || $this->responseCache->cachesMethod(settings: $settings, method: $request->getMethod()) === false) {
+			return null;
+		}
+
+		$caller = $this->cacheCaller(settings: $settings);
+		if ($caller === null) {
+			return null;
+		}
+
+		$headers = [];
+		foreach ($settings['varyHeaders'] as $name) {
+			$headers[$name] = (string)$request->getHeader($name);
+		}
+
+		return [
+			'settings' => $settings,
+			'request' => [
+				'method' => $request->getMethod(),
+				'path' => $path,
+				'query' => $request->getParams(),
+				'headers' => $headers,
+				'consumer' => $caller,
+			],
+		];
+	}//end responseCacheOf()
+
+	/**
+	 * Who the cache keeps an answer for: the resolved consumer, `anonymous`
+	 * on an endpoint without authentication (every caller may ask it), or
+	 * null when an authenticated caller has no consumer to key on (basic,
+	 * oauth, nc-session), so their answers are not cached at all. An
+	 * endpoint that shares answers across consumers keys on no caller.
+	 *
+	 * @param array<string, mixed> $settings The endpoint's cache settings.
+	 *
+	 * @return string|null The caller, or null to not cache this request.
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 */
+	private function cacheCaller(array $settings): ?string {
+		if (($settings['sharedAcrossConsumers'] ?? false) === true) {
+			return '';
+		}
+
+		$consumer = (string)($this->authorizationService->getResolvedConsumer()?->getUuid() ?? '');
+		if ($consumer !== '') {
+			return $consumer;
+		}
+
+		if ($this->callerAuthenticated === false) {
+			return 'anonymous';
+		}
+
+		return null;
+	}//end cacheCaller()
+
+	/**
+	 * Answer from the cache: the stored status and answer with `X-Cache: HIT`,
+	 * and a call log entry marking the hit, with no upstream request.
+	 *
+	 * @param ObjectEntity                                   $endpoint The endpoint served.
+	 * @param ObjectEntity|null                              $source   The source it targets, null when routed.
+	 * @param array{status: int, answer: array<string, mixed>} $hit    The cached answer.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 */
+	private function answerFromCache(ObjectEntity $endpoint, ?ObjectEntity $source, array $hit): JSONResponse {
+		$log = [
+			'statusCode' => $hit['status'],
+			'statusMessage' => 'Answered from the endpoint response cache',
+			'direction' => 'inbound',
+			'endpoint' => (string)$endpoint->getUuid(),
+			'cacheHit' => true,
+			'created' => (new DateTime())->format('c'),
+		];
+		if ($source !== null) {
+			$log['source'] = (string)$source->getUuid();
+		}
+
+		try {
+			// System write, unscoped: the log carries the endpoint's organisation; an inbound caller has none.
+			$this->orObjectService->saveObject(
+				object: $log + $this->organisationSelf(object: $endpoint),
+				options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
+				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning('integriq: failed to record a response cache hit: ' . $e->getMessage());
+		}
+
+		$this->proxiedAnswer = true;
+
+		$response = new JSONResponse($hit['answer'], $hit['status']);
+		$response->addHeader(EndpointResponseCache::HEADER, 'HIT');
+
+		return $response;
+	}//end answerFromCache()
+
+	/**
+	 * Read and govern the GraphQL operation of a request to a graphql endpoint.
+	 *
+	 * @param ObjectEntity $endpoint The endpoint.
+	 * @param IRequest     $request  The inbound request.
+	 * @param string       $rawBody  The request body.
+	 *
+	 * @return GraphqlOperation|JSONResponse|null The operation to forward, the refusal, or null for another target type.
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function governGraphql(ObjectEntity $endpoint, IRequest $request, string $rawBody): GraphqlOperation|JSONResponse|null {
+		$endpointData = $endpoint->getObject();
+		if (($endpointData['targetType'] ?? '') !== GraphqlProxyHandler::TARGET_TYPE) {
+			return null;
+		}
+
+		$caller = GraphqlProxyHandler::CALLER_CLIENT;
+		if ($this->callerIsAdmin() === true) {
+			$caller = GraphqlProxyHandler::CALLER_ADMINISTRATOR;
+		}
+
+		$operation = (new GraphqlProxyHandler())->check(
+			endpointData: $endpointData,
+			request: new GraphqlHttpRequest(
+				method: $request->getMethod(),
+				parameters: $request->getParams(),
+				rawBody: $rawBody,
+				contentType: (string)$request->getHeader('Content-Type')
+			),
+			caller: $caller
+		);
+		if ($operation instanceof JSONResponse === true) {
+			return $operation;
+		}
+
+		$limited = (new GraphqlOperationLimiter(rateLimits: $this->rateLimitService))->enforce(
+			endpointData: $endpointData,
+			endpointKey: (string)$endpoint->getUuid(),
+			operation: $operation,
+			callerKey: $this->graphqlCallerKey(request: $request)
+		);
+
+		return $limited ?? $operation;
+
+	}//end governGraphql()
+
+	/**
+	 * The source an endpoint proxies to, or the refusal when it belongs to another organisation.
+	 *
+	 * Unscoped: serving an endpoint resolves the source it proxies; the endpoint
+	 * caller may be anonymous. A routed endpoint has no single source: the router
+	 * loads and checks each candidate itself.
+	 *
+	 * @param ObjectEntity $endpoint The endpoint.
+	 *
+	 * @return ObjectEntity|JSONResponse|null The source, the refusal, or null for a routed endpoint.
+	 */
+	private function proxiedSource(ObjectEntity $endpoint): ObjectEntity|JSONResponse|null {
+		if ($this->upstreamRouter()->routes(endpointData: $endpoint->getObject()) === true) {
+			return null;
+		}
+
+		$source = $this->orObjectService->find(
+			id: $endpoint->getObject()['targetId'] ?? '',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		if ($this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
+			$this->logger->warning(
+				'integriq: endpoint ' . $endpoint->getUuid() . ' refused to proxy to a source of another organisation'
+			);
+
+			return new JSONResponse(['error' => 'Source not found'], Http::STATUS_NOT_FOUND);
+		}
+
+		return $source;
+
+	}//end proxiedSource()
+
+	/**
+	 * Who a graphql endpoint's per-operation limit counts against: the resolved consumer, else the client address.
+	 *
+	 * @param IRequest $request The inbound request.
+	 *
+	 * @return string `consumer:<uuid>` or `ip:<address>`.
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function graphqlCallerKey(IRequest $request): string {
+		$consumer = $this->consumerField()['consumer'] ?? '';
+		if ($consumer !== '') {
+			return 'consumer:' . $consumer;
+		}
+
+		return 'ip:' . $request->getRemoteAddress();
+
+	}//end graphqlCallerKey()
+
+	/**
+	 * Whether the signed-in caller is an administrator, who may introspect a graphql endpoint.
+	 *
+	 * @return bool True for an administrator; false for a consumer or when it cannot be told.
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function callerIsAdmin(): bool {
+		try {
+			$user = $this->containerInterface->get(IUserSession::class)->getUser();
+			return $user !== null && $this->containerInterface->get(IGroupManager::class)->isAdmin($user->getUID()) === true;
+		} catch (\Throwable) {
+			return false;
+		}
+	}//end callerIsAdmin()
+
+	/**
+	 * Write the operation of a proxied GraphQL call onto its stored call log.
+	 *
+	 * Adds the two fields to the row the call stored, after its body capture
+	 * and redaction, in system context; a failed write is logged and never
+	 * changes the answer.
+	 *
+	 * @param ObjectEntity          $callLog   The call's log entry.
+	 * @param GraphqlOperation|null $operation The operation it ran; null for a call that is not GraphQL.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function recordGraphqlOperation(ObjectEntity $callLog, ?GraphqlOperation $operation): void {
+		$uuid = (string)$callLog->getUuid();
+		if ($operation === null || $uuid === '') {
+			return;
+		}
+
+		try {
+			$this->writeGraphqlOperation(uuid: $uuid, operation: $operation);
+		} catch (\Throwable $e) {
+			$this->logger->warning('integriq: could not record the GraphQL operation on call log ' . $uuid . ': ' . $e->getMessage());
+		}
+
+	}//end recordGraphqlOperation()
+
+	/**
+	 * Merge the operation fields into the stored call log row, in system context.
+	 *
+	 * @param string           $uuid      The call log uuid.
+	 * @param GraphqlOperation $operation The operation it ran.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function writeGraphqlOperation(string $uuid, GraphqlOperation $operation): void {
+		// System context: the call log is admin-only, and the gateway caller may be anonymous.
+		$stored = $this->orObjectService->find(
+			id: $uuid,
+			options: new ObjectFindOptions(register: 'integriq', schema: 'call_log'),
+			_rbac: false,
+			_multitenancy: false
+		);
+		if ($stored === null) {
+			return;
+		}
+
+		$this->orObjectService->saveObject(
+			object: array_merge(
+				$stored->getObject(),
+				['graphqlOperationType' => $operation->type, 'graphqlOperationName' => ($operation->name ?? '')]
+			),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+				uuid: $uuid,
+				policy: new SavePolicy(silent: true, validation: false)
+			),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+	}//end writeGraphqlOperation()
 
 	/**
 	 * The answer to a live call whose paced turn was too far away: 429 with
@@ -3916,14 +4422,113 @@ class EndpointService implements EndpointServiceInterface {
 			$normalisedHeaders[strtolower((string)$key)] = $value;
 		}
 
-		// Default to the Authorization header (lowercase-normalised lookup).
-		$header = ($normalisedHeaders['authorization'] ?? '');
-
 		if (isset($configuration['authentication']) === false) {
 			return $data;
 		}
 
-		$authenticationType = (string)($configuration['authentication']['type'] ?? '');
+		$this->callerAuthenticated = true;
+
+		$anyOf = ($configuration['authentication']['anyOf'] ?? null);
+		if (is_array($anyOf) === true && $anyOf !== []) {
+			return $this->authenticateAnyOf(
+				methods: $anyOf,
+				normalisedHeaders: $normalisedHeaders,
+				data: $data,
+				requiredScopes: ($configuration['authentication']['requiredScopes'] ?? null)
+			);
+		}
+
+		$refusal = $this->authenticateOne(
+			authentication: (array)$configuration['authentication'],
+			normalisedHeaders: $normalisedHeaders,
+			method: (string)($data['method'] ?? 'GET'),
+			endpointPath: $endpointPath
+		);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $data;
+	}//end processAuthenticationRule()
+
+	/**
+	 * Pass when any one of several authentication methods passes (`anyOf`).
+	 *
+	 * The methods are tried in order and the first success passes the call.
+	 * When none passes, the 401 gives each method's reason, keyed by its
+	 * position and type.
+	 *
+	 * `requiredScopes` on the rule applies to every method that does not set
+	 * its own, so moving a method into `anyOf` never drops a scope check.
+	 *
+	 * @param array $methods           The `anyOf` list of method configurations.
+	 * @param array $normalisedHeaders The request headers, keys lowercased.
+	 * @param array $data              The request data.
+	 * @param mixed $requiredScopes    The rule's own `requiredScopes`, if any.
+	 *
+	 * @return array|JSONResponse The unchanged data, or the 401.
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-accepts-any-one-of-several-login-methods-req-cred-005
+	 */
+	private function authenticateAnyOf(array $methods, array $normalisedHeaders, array $data, mixed $requiredScopes=null): array|JSONResponse {
+		$reasons = [];
+		foreach (array_values($methods) as $position => $method) {
+			if (is_array($method) === false || isset($method['anyOf']) === true) {
+				$reasons[] = ['method' => $position . ':invalid', 'error' => 'The authentication method is not supported'];
+				continue;
+			}
+
+			if ($requiredScopes !== null && isset($method['requiredScopes']) === false) {
+				$method['requiredScopes'] = $requiredScopes;
+			}
+
+			$refusal = $this->authenticateOne(
+				authentication: $method,
+				normalisedHeaders: $normalisedHeaders,
+				method: (string)($data['method'] ?? 'GET')
+			);
+			if ($refusal === null) {
+				return $data;
+			}
+
+			$body = $refusal->getData();
+			if (is_array($body) === false) {
+				$body = [];
+			}
+
+			$reasons[] = [
+				'method'  => $position . ':' . (string)($method['type'] ?? ''),
+				'error'   => ($body['error'] ?? ''),
+				'details' => ($body['details'] ?? null),
+			];
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'unauthorized', 'details' => ['anyOf' => $reasons]],
+			statusCode: Http::STATUS_UNAUTHORIZED
+		);
+	}//end authenticateAnyOf()
+
+	/**
+	 * Check one authentication method configuration.
+	 *
+	 * After a header-based method passes, a caller that lacks a scope the
+	 * configuration's `requiredScopes` asks for this HTTP method is refused.
+	 *
+	 * @param array  $authentication    The method configuration (`type`, `header`, `keys`, `users`, `groups`, `requiredScopes`).
+	 * @param array  $normalisedHeaders The request headers, keys lowercased.
+	 * @param string $method            The request's HTTP method, for `requiredScopes`.
+	 * @param string $endpointPath      The endpoint's path, for the metadata address a token-protected 401 names (REQ-TOKV-004).
+	 *
+	 * @return JSONResponse|null Null when the call passes, else the refusal.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function authenticateOne(array $authentication, array $normalisedHeaders, string $method, string $endpointPath = ''): ?JSONResponse {
+		// Default to the Authorization header (lowercase-normalised lookup).
+		$header = ($normalisedHeaders['authorization'] ?? '');
+
+		$authenticationType = (string)($authentication['type'] ?? '');
 
 		// The `nc-session` type authorises the CURRENT Nextcloud session user
 		// (ocon#1068). It is dispatched BEFORE the header-presence guard below
@@ -3938,24 +4543,45 @@ class EndpointService implements EndpointServiceInterface {
 		if ($authenticationType === 'nc-session') {
 			try {
 				$this->authorizationService->authorizeNcSession(
-					users: ($configuration['authentication']['users'] ?? []),
-					groups: ($configuration['authentication']['groups'] ?? [])
+					users: ($authentication['users'] ?? []),
+					groups: ($authentication['groups'] ?? [])
 				);
 			} catch (AuthenticationException $exception) {
 				return $this->unauthenticated(exception: $exception);
 			}
 
-			return $data;
+			return null;
 		}//end if
 
-		if (isset($configuration['authentication']['header']) === true) {
+		// The `mtls` type presents no header either: the web server verified a
+		// client certificate, which the reader takes from the server
+		// environment or, only from a trusted proxy, its forwarding header.
+		if ($authenticationType === 'mtls') {
+			try {
+				$this->authorizationService->authorizeClientCertificate(
+					certificate: $this->certificateReader?->fromRequest(),
+					consumers: (array)($authentication['consumers'] ?? [])
+				);
+			} catch (AuthenticationException $exception) {
+				return $this->unauthenticated(exception: $exception);
+			}
+
+			return $this->refuseMissingScopes(
+				authentication: $authentication,
+				authenticationType: $authenticationType,
+				header: '',
+				method: $method
+			);
+		}//end if
+
+		if (isset($authentication['header']) === true) {
 			// Convert configured header name to lowercase + underscore variant
 			// for a single normalised lookup against $normalisedHeaders.
-			$lookupKey = strtolower((string)$configuration['authentication']['header']);
+			$lookupKey = strtolower((string)$authentication['header']);
 			$header = ($normalisedHeaders[$lookupKey] ?? null);
 		}
 
-		$challenge = $this->tokenChallenge(authentication: (array)$configuration['authentication'], endpointPath: $endpointPath);
+		$challenge = $this->tokenChallenge(authentication: $authentication, endpointPath: $endpointPath);
 		$missingToken = self::missingTokenResponse(header: $header, challenge: $challenge);
 		if ($missingToken !== null) {
 			return $missingToken;
@@ -3971,7 +4597,7 @@ class EndpointService implements EndpointServiceInterface {
 		switch ($authenticationType) {
 			case 'apikey':
 				try {
-					$this->authorizationService->authorizeApiKey(header: $header, keys: $configuration['authentication']['keys']);
+					$this->authorizationService->authorizeApiKey(header: $header, keys: $authentication['keys']);
 				} catch (AuthenticationException $exception) {
 					return $this->unauthenticated(exception: $exception);
 				}
@@ -3988,8 +4614,8 @@ class EndpointService implements EndpointServiceInterface {
 				try {
 					$this->authorizationService->authorizeBasic(
 						$header,
-						$configuration['authentication']['users'],
-						$configuration['authentication']['groups']
+						$authentication['users'],
+						$authentication['groups']
 					);
 				} catch (AuthenticationException $exception) {
 					return $this->unauthenticated(exception: $exception);
@@ -3999,8 +4625,8 @@ class EndpointService implements EndpointServiceInterface {
 				try {
 					$this->authorizationService->authorizeOAuth(
 						$header,
-						$configuration['authentication']['users'],
-						$configuration['authentication']['groups']
+						$authentication['users'],
+						$authentication['groups']
 					);
 				} catch (AuthenticationException $exception) {
 					return $this->unauthenticated(exception: $exception);
@@ -4010,18 +4636,13 @@ class EndpointService implements EndpointServiceInterface {
 				return new JSONResponse(data: ['error' => 'The authentication method is not supported'], statusCode: Http::STATUS_NOT_IMPLEMENTED);
 		}//end switch
 
-		$refusal = $this->refuseMissingScopes(
-			authentication: (array)$configuration['authentication'],
+		return $this->refuseMissingScopes(
+			authentication: $authentication,
 			authenticationType: $authenticationType,
 			header: (string)$header,
-			method: (string)($data['method'] ?? 'GET')
+			method: $method
 		);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
-		return $data;
-	}//end processAuthenticationRule()
+	}//end authenticateOne()
 
 	/**
 	 * The 401 of a token-protected endpoint called without a token, or null when a token was sent or none is required.

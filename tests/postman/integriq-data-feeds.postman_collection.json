@@ -1,0 +1,996 @@
+{
+  "info": {
+    "name": "Integriq \u2014 declared data feeds (gateway-declared-data-feeds)",
+    "description": "Newman tests of tasks 2 and 3 of openspec/changes/gateway-declared-data-feeds, against shillinq's declared feed `accounts` (GET /api/endpoint/feeds/shillinq/accounts):\n\n- paging: `$top`, `@odata.nextLink` with `$skip`, the next page is another record; only declared fields; `$select`; `$filter` with `eq`; `$orderby` and an undeclared field answer 400; POST answers 405.\n- scope (two consumers): a consumer bound to one administration reads it and is refused (403) for another, also through `$filter`; a consumer without a binding is refused (403); no key is 401.\n\nThe feeds come from shillinq's own lib/Settings/feeds.json, synced at the start. When shillinq is not installed, every feed check is reported as skipped, not passed. The two consumers get fresh API keys per run and are deleted in teardown.\n\nSPDX-License-Identifier: EUPL-1.2\nSPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Setup",
+      "item": [
+        {
+          "name": "Sync every enabled app's feeds.json (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/feeds/sync",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: sync answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Is shillinq's accounts feed declared?",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/endpoint?endpoint=feeds/shillinq/accounts",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: endpoint list readable', () => pm.response.to.have.status(200));",
+                  "const results = pm.response.json().results || [];",
+                  "// The feeds come from shillinq's own feeds.json. Without shillinq on this instance",
+                  "// there is nothing to read, and every feed check below is reported as skipped.",
+                  "pm.collectionVariables.set('feedsPresent', results.length > 0 ? 'true' : 'false');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pick an administration that has accounts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/shillinq/Account?_limit=1",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Fresh keys per run, so a key from an earlier run cannot answer for this one.",
+                  "pm.collectionVariables.set('feedKeyBound', 'newman-feed-bound-' + pm.variables.replaceIn('{{$guid}}'));",
+                  "pm.collectionVariables.set('feedKeyUnbound', 'newman-feed-unbound-' + pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ok = pm.response.code === 200;",
+                  "const first = ok ? ((pm.response.json().results || [])[0] || {}) : {};",
+                  "pm.collectionVariables.set('feedAdministration', String(first.administrationId || 'newman-administration-a'));",
+                  "pm.test('Setup: an administration to bind to', () => pm.expect(pm.collectionVariables.get('feedAdministration')).to.have.length.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create the consumer bound to that administration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"newman-feed-consumer-bound\",\n  \"description\": \"Newman data-feed consumer bound to one administration\",\n  \"authorizationType\": \"apiKey\",\n  \"authorizationConfiguration\": { \"apiKey\": \"{{feedKeyBound}}\" },\n  \"feedScopes\": { \"shillinq\": [\"{{feedAdministration}}\"] }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: bound consumer created', () => pm.expect(pm.response.code).to.be.below(300));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('feedConsumerBound', b.id || (b['@self'] || {}).id || '');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create the consumer without a binding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"newman-feed-consumer-unbound\",\n  \"description\": \"Newman data-feed consumer without a feed binding\",\n  \"authorizationType\": \"apiKey\",\n  \"authorizationConfiguration\": { \"apiKey\": \"{{feedKeyUnbound}}\" }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: unbound consumer created', () => pm.expect(pm.response.code).to.be.below(300));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('feedConsumerUnbound', b.id || (b['@self'] || {}).id || '');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Paging and field selection (task 2)",
+      "item": [
+        {
+          "name": "First page, one record at a time",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyBound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?$top=1",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('A page: 200 with value and a next link', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const b = pm.response.json();",
+                  "    pm.expect(b.value).to.be.an('array').with.length.at.most(1);",
+                  "    if (b.value.length === 1) { pm.expect(b['@odata.nextLink'], 'next link').to.include('%24skip=1'); }",
+                  "    pm.collectionVariables.set('feedFirst', JSON.stringify(b.value[0] || null));",
+                  "    pm.collectionVariables.set('feedNext', b['@odata.nextLink'] || '');",
+                  "});",
+                  "check('Only declared fields come back', () => {",
+                  "    const declared = ['accountNumber', 'name', 'accountType', 'parentAccountNumber', 'rgsCode'];",
+                  "    (pm.response.json().value || []).forEach((row) => Object.keys(row).forEach((k) => pm.expect(declared, k).to.include(k)));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Follow the next link",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyBound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{feedNextOrSelf}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set('feedNextOrSelf', pm.collectionVariables.get('feedNext') || pm.variables.replaceIn('{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?$top=1&$skip=1'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('The next page is another record', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const second = (pm.response.json().value || [])[0] || null;",
+                  "    const first = JSON.parse(pm.collectionVariables.get('feedFirst') || 'null');",
+                  "    if (first && second) { pm.expect(JSON.stringify(second)).to.not.eql(JSON.stringify(first)); }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "$select narrows to declared fields",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyBound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?$top=5&$select=accountNumber,name",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('$select: only accountNumber and name', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    (pm.response.json().value || []).forEach((row) => pm.expect(Object.keys(row).sort()).to.eql(['accountNumber', 'name']));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "$filter eq on a declared field",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyBound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?$filter=accountType eq '{{feedAccountType}}'",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const first = JSON.parse(pm.collectionVariables.get('feedFirst') || 'null') || {};",
+                  "pm.variables.set('feedAccountType', String(first.accountType || 'newman-none'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('$filter: every row has that account type', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const want = pm.variables.get('feedAccountType');",
+                  "    (pm.response.json().value || []).forEach((row) => pm.expect(String(row.accountType)).to.eql(want));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "$orderby is not supported (400)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyBound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?$orderby=name",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('$orderby: 400 naming it', () => {",
+                  "    pm.response.to.have.status(400);",
+                  "    pm.expect(pm.response.text()).to.include('$orderby');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "$select of an undeclared field (400)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyBound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?$select=iban",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('Undeclared field: 400 naming it', () => {",
+                  "    pm.response.to.have.status(400);",
+                  "    pm.expect(pm.response.text()).to.include('iban');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A feed is read-only (405 on POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyBound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('POST on a feed: 405', () => pm.response.to.have.status(405));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Consumer scope (task 3)",
+      "item": [
+        {
+          "name": "The bound consumer asks for its own administration",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyBound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?administrationId={{feedAdministration}}&$top=5",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('Own administration: 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The bound consumer asks for another administration (403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyBound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?administrationId=newman-another-administration",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('Another administration: 403 scope_not_allowed', () => {",
+                  "    pm.response.to.have.status(403);",
+                  "    pm.expect(pm.response.json().error).to.eql('scope_not_allowed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The bound consumer asks for another administration in $filter (403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyBound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?$filter=administrationId eq 'newman-another-administration'",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('Another administration through $filter: 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The consumer without a binding (403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{feedKeyUnbound}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?$top=1",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('No binding: 403 scope_not_allowed', () => {",
+                  "    pm.response.to.have.status(403);",
+                  "    pm.expect(pm.response.json().error).to.eql('scope_not_allowed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "No consumer key (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/feeds/shillinq/accounts?$top=1",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const present = pm.collectionVariables.get('feedsPresent') === 'true';",
+                  "const check = present ? pm.test : pm.test.skip;",
+                  "check('No key: 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Teardown",
+      "item": [
+        {
+          "name": "Delete the bound consumer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer/{{feedConsumerBound}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: removed or already gone', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the unbound consumer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer/{{feedConsumerUnbound}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: removed or already gone', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "feedsPresent",
+      "value": ""
+    },
+    {
+      "key": "feedAdministration",
+      "value": ""
+    },
+    {
+      "key": "feedKeyBound",
+      "value": ""
+    },
+    {
+      "key": "feedKeyUnbound",
+      "value": ""
+    },
+    {
+      "key": "feedConsumerBound",
+      "value": ""
+    },
+    {
+      "key": "feedConsumerUnbound",
+      "value": ""
+    },
+    {
+      "key": "feedFirst",
+      "value": ""
+    },
+    {
+      "key": "feedNext",
+      "value": ""
+    }
+  ]
+}

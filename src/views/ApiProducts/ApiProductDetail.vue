@@ -359,6 +359,11 @@
 				</template>
 			</section>
 
+			<!-- API design rules (gateway-api-design-rules-check) -->
+			<ApiDesignFindingsPanel
+				class="apiProductDetail__section"
+				:productId="String(productId)" />
+
 			<!-- Subscriptions -->
 			<section class="apiProductDetail__section">
 				<h3>{{ t('integriq', 'Subscriptions') }}</h3>
@@ -409,6 +414,7 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import ApiDesignFindingsPanel from '../../components/ApiDesignFindingsPanel.vue'
 import ProductChangeNotices from './ProductChangeNotices.vue'
 import { channelsOf, draftOf, withChannel, withoutChannel } from './productChannels.js'
 import { usageLabel, usageSplits } from './productUsage.js'
@@ -419,6 +425,7 @@ export default {
 	name: 'ApiProductDetail',
 
 	components: {
+		ApiDesignFindingsPanel,
 		NcButton,
 		NcEmptyContent,
 		NcLoadingIcon,

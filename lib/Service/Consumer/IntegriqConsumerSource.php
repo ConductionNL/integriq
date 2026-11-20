@@ -20,8 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Consumer;
 
-use Exception;
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\Auth\ClientCertificate;
 use OCA\Integriq\Service\OAuth\IssuerKeyService;
 use OCA\Integriq\Service\OAuth\TokenIssuer;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -68,9 +68,24 @@ class IntegriqConsumerSource implements ConsumerSource {
 	private array $tokenPayload = [];
 
 	/**
+	 * Finds the client credentials consumer a token of integriq's own issuer names.
+	 *
+	 * @var ClientCredentialsConsumerLookup
+	 */
+	private readonly ClientCredentialsConsumerLookup $clientCredentials;
+
+	/**
+	 * Matches and records the use of a consumer's listed credentials; null checks the single stored key only.
+	 *
+	 * @var ConsumerCredentialUse|null
+	 */
+	private ?ConsumerCredentialUse $credentialUse = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectService                  $objectService OpenRegister's object service.
+	 * @param ConsumerCredentials|null       $credentials   The credentials list rules; null checks the single stored key only.
 	 * @param ConsumerKeySourceResolver|null $keySources    Resolves the key of a `jwks` or `oidc` consumer; without it
 	 *                                                      the lookup is by name only, as before.
 	 * @param IssuerKeyService|null          $ownIssuer     Integriq's own issuer, whose tokens name their consumer as `sub`
@@ -78,9 +93,14 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
+		?ConsumerCredentials $credentials = null,
 		private readonly ?ConsumerKeySourceResolver $keySources = null,
 		private readonly ?IssuerKeyService $ownIssuer = null,
 	) {
+		$this->clientCredentials = new ClientCredentialsConsumerLookup(objectService: $objectService);
+		if ($credentials !== null) {
+			$this->credentialUse = new ConsumerCredentialUse(objectService: $objectService, credentials: $credentials);
+		}
 	}//end __construct()
 
 	/**
@@ -165,7 +185,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 			return null;
 		}
 
-		$object = $this->clientCredentialsConsumer(subject: ($this->tokenPayload['sub'] ?? ''));
+		$object = $this->clientCredentials->find(subject: ($this->tokenPayload['sub'] ?? ''));
 		if ($object === null) {
 			return null;
 		}
@@ -182,41 +202,6 @@ class IntegriqConsumerSource implements ConsumerSource {
 			record: $object,
 		);
 	}//end ownTokenConsumer()
-
-	/**
-	 * The client credentials consumer a token of integriq's own issuer names as its subject.
-	 *
-	 * @param mixed $subject The token's `sub` claim.
-	 *
-	 * @return ObjectEntity|null The consumer, or null when the subject names no client credentials consumer.
-	 *
-	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
-	 */
-	private function clientCredentialsConsumer(mixed $subject): ?ObjectEntity {
-		if (is_string($subject) === false || $subject === '') {
-			return null;
-		}
-
-		try {
-			$object = $this->objectService->find(
-				id: $subject,
-				options: new ObjectFindOptions(register: 'integriq', schema: 'consumer'),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Exception) {
-			// OpenRegister throws when no object has this id: not a known consumer.
-			return null;
-		}
-
-		if (($object instanceof ObjectEntity) === false
-			|| strtolower((string)self::typeOf(data: $object->getObject())) !== TokenIssuer::CLIENT_CREDENTIALS
-		) {
-			return null;
-		}
-
-		return $object;
-	}//end clientCredentialsConsumer()
 
 	/**
 	 * The API-key consumer whose configured key equals the presented one.
@@ -236,13 +221,47 @@ class IntegriqConsumerSource implements ConsumerSource {
 		}
 
 		foreach ($this->consumers(filters: []) as $consumer) {
-			if (self::holdsApiKey(data: $consumer->getObject(), apiKey: $apiKey) === true) {
+			if ($this->presentsApiKey(consumer: $consumer, apiKey: $apiKey) === true) {
 				return $this->resolve(consumer: $consumer);
 			}
 		}
 
 		return null;
 	}//end findByApiKey()
+
+	/**
+	 * Whether a consumer holds the key: a live hashed credential first (its use
+	 * recorded), else the key in its configuration.
+	 *
+	 * @param ObjectEntity      $consumer The consumer.
+	 * @param string            $apiKey   The presented key.
+	 *
+	 * @return bool
+	 */
+	private function presentsApiKey(ObjectEntity $consumer, string $apiKey): bool {
+		$data = $consumer->getObject();
+		$uuid = (string)self::uuidOf(consumer: $consumer, data: $data);
+		if ($this->credentialUse?->matchesApiKey(consumer: $consumer, uuid: $uuid, apiKey: $apiKey) === true) {
+			return true;
+		}
+
+		return self::holdsApiKey(data: $data, apiKey: $apiKey);
+	}//end presentsApiKey()
+
+	/**
+	 * The consumer a client certificate credential of which pins the certificate, or null.
+	 *
+	 * Records the use on the credential, at most once a minute, like an API key.
+	 *
+	 * @param ClientCertificate $certificate The web-server-verified certificate.
+	 *
+	 * @return ObjectEntity|null
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	public function findByClientCertificate(ClientCertificate $certificate): ?ObjectEntity {
+		return $this->credentialUse?->certificateHolder(consumers: $this->consumers(filters: []), certificate: $certificate);
+	}//end findByClientCertificate()
 
 	/**
 	 * Whether an API-key consumer stores exactly this key (compared in constant time).
@@ -380,7 +399,12 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 * @return array<string,mixed> The configuration, empty when absent.
 	 */
 	private static function configurationOf(ObjectEntity $consumer): array {
-		return self::arrayOrEmpty(value: ($consumer->getObject()['authorizationConfiguration'] ?? []));
+		$configuration = ($consumer->getObject()['authorizationConfiguration'] ?? []);
+		if (is_array($configuration) === false) {
+			return [];
+		}
+
+		return $configuration;
 	}//end configurationOf()
 
 	/**
@@ -435,21 +459,4 @@ class IntegriqConsumerSource implements ConsumerSource {
 
 		return (string)$data['authorizationType'];
 	}//end typeOf()
-
-	/**
-	 * An array value, or an empty array for anything else.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return array<mixed>
-	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
-	 */
-	private static function arrayOrEmpty(mixed $value): array {
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		return $value;
-	}//end arrayOrEmpty()
 }//end class
