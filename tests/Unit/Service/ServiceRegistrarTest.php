@@ -36,6 +36,8 @@ use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
+use OCA\Integriq\Service\ApiDesign\ApiDesignRuleService;
+use OCA\Integriq\Service\ApiDesign\ApiDesignRuleServiceInterface;
 use OCA\Integriq\Service\Chat\TalkMessageSource;
 use OCA\Integriq\Service\Chat\TalkMessageSourceInterface;
 use OCA\Integriq\Service\AgentTools\AgentActionStore;
@@ -80,6 +82,8 @@ use OCA\Integriq\Service\ConnectionProbeService;
 use OCA\Integriq\Service\ConnectionProbeServiceInterface;
 use OCA\Integriq\Service\ConnectionRegistryService;
 use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
+use OCA\Integriq\Service\Feed\FeedSchemaFieldsInterface;
+use OCA\Integriq\Service\Feed\OpenRegisterFeedSchemaFields;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
@@ -435,6 +439,7 @@ class ServiceRegistrarTest extends TestCase {
 		ObjectEndpointHandlerInterface::class => ObjectEndpointHandler::class,
 		ExchangeJobRunnerInterface::class => ExchangeJobRunner::class,
 		ConnectionRegistryServiceInterface::class => ConnectionRegistryService::class,
+		FeedSchemaFieldsInterface::class => OpenRegisterFeedSchemaFields::class,
 		EudiStatusListServiceInterface::class => EudiStatusListService::class,
 		PortalRequestParserInterface::class => DSOParserService::class,
 		ApprovalDecisionServiceInterface::class => ApprovalDecisionService::class,
@@ -548,6 +553,7 @@ class ServiceRegistrarTest extends TestCase {
 		MtlsTransportServiceInterface::class => MtlsTransportService::class,
 		ExchangeTargetCatalogueInterface::class => ExchangeTargetCatalogue::class,
 		MessageValidationServiceInterface::class => MessageValidationService::class,
+		ApiDesignRuleServiceInterface::class => ApiDesignRuleService::class,
 		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
 		ConnectorExtensionsInterface::class => ConnectorExtensionCollector::class,
 		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
