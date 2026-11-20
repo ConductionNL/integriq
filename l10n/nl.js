@@ -2907,7 +2907,15 @@ OC.L10N.register(
         "{count} endpoint created.": ["{count} endpoint aangemaakt.","{count} endpoints aangemaakt."],
         "_{count} endpoint created._::_{count} endpoints created._": ["{count} endpoint aangemaakt.","{count} endpoints aangemaakt."],
         "{count} operation skipped because its route is already served.": ["{count} operatie overgeslagen omdat de route al wordt bediend.","{count} operaties overgeslagen omdat de routes al worden bediend."],
-        "_{count} operation skipped because its route is already served._::_{count} operations skipped because their routes are already served._": ["{count} operatie overgeslagen omdat de route al wordt bediend.","{count} operaties overgeslagen omdat de routes al worden bediend."]
+        "_{count} operation skipped because its route is already served._::_{count} operations skipped because their routes are already served._": ["{count} operatie overgeslagen omdat de route al wordt bediend.","{count} operaties overgeslagen omdat de routes al worden bediend."],
+        "The API product cannot be made active: its description could not be checked.": "Het API-product kan niet actief worden gemaakt: de beschrijving kon niet worden gecontroleerd.",
+        "The API product could not be checked: %s": "Het API-product kon niet worden gecontroleerd: %s",
+        "A waiver needs a reason.": "Voor een uitzondering is een reden nodig.",
+        "Only an open finding can be waived.": "Alleen voor een openstaande bevinding kan een uitzondering worden gemaakt.",
+        "There is no such finding.": "Deze bevinding bestaat niet.",
+        "_The API product cannot be made active: %n design rule error is open. Fix it or waive it with a reason._::_The API product cannot be made active: %n design rule errors are open. Fix them or waive them with a reason._": ["Het API-product kan niet actief worden gemaakt: %n fout tegen de ontwerpregels staat open. Los de fout op of maak een uitzondering met een reden.","Het API-product kan niet actief worden gemaakt: %n fouten tegen de ontwerpregels staan open. Los ze op of maak een uitzondering met een reden."],
+        "API design rules": "API-ontwerpregels",
+        "Test cases": "Testgevallen"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -4180,7 +4180,15 @@ OC.L10N.register(
         "{count} endpoint created.": ["{count} endpoint created.","{count} endpoints created."],
         "_{count} endpoint created._::_{count} endpoints created._": ["{count} endpoint created.","{count} endpoints created."],
         "{count} operation skipped because its route is already served.": ["{count} operation skipped because its route is already served.","{count} operations skipped because their routes are already served."],
-        "_{count} operation skipped because its route is already served._::_{count} operations skipped because their routes are already served._": ["{count} operation skipped because its route is already served.","{count} operations skipped because their routes are already served."]
+        "_{count} operation skipped because its route is already served._::_{count} operations skipped because their routes are already served._": ["{count} operation skipped because its route is already served.","{count} operations skipped because their routes are already served."],
+        "The API product cannot be made active: its description could not be checked.": "The API product cannot be made active: its description could not be checked.",
+        "The API product could not be checked: %s": "The API product could not be checked: %s",
+        "A waiver needs a reason.": "A waiver needs a reason.",
+        "Only an open finding can be waived.": "Only an open finding can be waived.",
+        "There is no such finding.": "There is no such finding.",
+        "_The API product cannot be made active: %n design rule error is open. Fix it or waive it with a reason._::_The API product cannot be made active: %n design rule errors are open. Fix them or waive them with a reason._": ["The API product cannot be made active: %n design rule error is open. Fix it or waive it with a reason.","The API product cannot be made active: %n design rule errors are open. Fix them or waive them with a reason."],
+        "API design rules": "API design rules",
+        "Test cases": "Test cases"
     },
     "nplurals=2; plural=(n != 1);"
 )

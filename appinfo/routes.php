@@ -665,6 +665,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'serviceFetch#test', 'url' => '/api/service-fetches/{slug}/test', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+		// API design rules (gateway-api-design-rules-check): check a product, waive a finding. Admin only.
+		['name' => 'apiDesignCheck#check', 'url' => '/api/products/{productId}/design-check', 'verb' => 'POST'],
+		['name' => 'apiDesignCheck#waive', 'url' => '/api/products/design-findings/{findingId}/waive', 'verb' => 'POST'],
 		// Developer portal (access-developer-portal-and-subscriptions D1-D3): members of
 		// the developer group browse public products, create applications they own and
 		// request access through the product's approval. The group check and the

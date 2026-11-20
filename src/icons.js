@@ -103,6 +103,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import RocketLaunchOutline from 'vue-material-design-icons/RocketLaunchOutline.vue'
+import RulerSquare from 'vue-material-design-icons/RulerSquare.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SchoolOutline from 'vue-material-design-icons/SchoolOutline.vue'
 import SendCheckOutline from 'vue-material-design-icons/SendCheckOutline.vue'
@@ -225,6 +226,7 @@ export default {
 	PowerPlugOutline,
 	Refresh,
 	RocketLaunchOutline,
+	RulerSquare,
 	ScaleBalance,
 	SchoolOutline,
 	SendCheckOutline,
