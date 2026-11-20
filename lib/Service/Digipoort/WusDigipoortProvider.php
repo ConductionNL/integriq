@@ -172,7 +172,11 @@ class WusDigipoortProvider implements DigipoortProviderInterface {
 
 		$statuses = [];
 		$nodes = $answer->query('//*[local-name()="StatusResultaat"]');
-		foreach (($nodes === false ? [] : $nodes) as $node) {
+		if ($nodes === false) {
+			$nodes = [];
+		}
+
+		foreach ($nodes as $node) {
 			if ($node instanceof DOMElement === false) {
 				continue;
 			}
@@ -196,7 +200,11 @@ class WusDigipoortProvider implements DigipoortProviderInterface {
 		$code = $this->firstText(xpath: $xpath, localName: 'statuscode', context: $node);
 		$errors = [];
 		$faults = $xpath->query('.//*[local-name()="statusFoutcode"]', $node);
-		foreach (($faults === false ? [] : $faults) as $fault) {
+		if ($faults === false) {
+			$faults = [];
+		}
+
+		foreach ($faults as $fault) {
 			if ($fault instanceof DOMElement === false) {
 				continue;
 			}
@@ -263,9 +271,12 @@ class WusDigipoortProvider implements DigipoortProviderInterface {
 
 		$statusCode = $response->getStatusCode();
 		if ($statusCode < 200 || $statusCode >= 300 || $fault !== '') {
-			throw new DigipoortException(
-				message: 'Digipoort refused the request (HTTP ' . $statusCode . ')' . ($fault === '' ? '.' : ': ' . $fault)
-			);
+			$detail = '.';
+			if ($fault !== '') {
+				$detail = ': ' . $fault;
+			}
+
+			throw new DigipoortException(message: 'Digipoort refused the request (HTTP ' . $statusCode . ')' . $detail);
 		}
 
 		try {
@@ -289,7 +300,11 @@ class WusDigipoortProvider implements DigipoortProviderInterface {
 	 */
 	private function fault(DOMXPath $xpath): string {
 		$faults = $xpath->query('//*[local-name()="Fault"]');
-		$fault = ($faults === false ? null : $faults->item(0));
+		$fault = null;
+		if ($faults !== false) {
+			$fault = $faults->item(0);
+		}
+
 		if ($fault instanceof DOMElement === false) {
 			return '';
 		}
@@ -448,7 +463,11 @@ class WusDigipoortProvider implements DigipoortProviderInterface {
 	 */
 	private function firstText(DOMXPath $xpath, string $localName, ?DOMElement $context = null): string {
 		$nodes = $xpath->query('.//*[local-name()="' . $localName . '"]', $context);
-		$node = ($nodes === false ? null : $nodes->item(0));
+		$node = null;
+		if ($nodes !== false) {
+			$node = $nodes->item(0);
+		}
+
 		if ($node instanceof DOMElement === false) {
 			return '';
 		}

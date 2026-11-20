@@ -73,6 +73,8 @@ class SbrFilingStatusJob extends TimedJob {
 	 *
 	 * @return void
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $argument is Nextcloud's TimedJob::run() signature.
+	 *
 	 * @spec openspec/changes/connectors-digipoort-sbr-filing/specs/digipoort-sbr-connector/spec.md#requirement-every-status-change-is-reported-back-req-dps-003
 	 */
 	public function run(mixed $argument): void {
