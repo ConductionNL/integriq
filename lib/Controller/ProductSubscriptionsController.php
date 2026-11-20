@@ -32,8 +32,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use DateTime;
+use InvalidArgumentException;
 use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\Integriq\Service\ApprovalServiceInterface;
+use OCA\Integriq\Service\ProductSubscriptionService;
 use OCA\Integriq\Service\ProductUsageFigures;
 use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -87,6 +89,7 @@ class ProductSubscriptionsController extends Controller {
 	 * @param IUserSession $userSession The user session.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 * @param ProductSubscriptionService|null $subscriptionService The shared subscribe path; built from the collaborators above when not given.
 	 */
 	public function __construct(
 		string $appName,
@@ -96,10 +99,30 @@ class ProductSubscriptionsController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
+		private ?ProductSubscriptionService $subscriptionService = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
 	}//end __construct()
+
+	/**
+	 * The shared subscribe path (access-developer-portal-and-subscriptions D3).
+	 *
+	 * @return ProductSubscriptionService The service.
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
+	 */
+	private function subscriptions(): ProductSubscriptionService {
+		if ($this->subscriptionService === null) {
+			$this->subscriptionService = new ProductSubscriptionService(
+				approvalService: $this->approvalService,
+				orObjectService: $this->orObjectService,
+				l: $this->l
+			);
+		}
+
+		return $this->subscriptionService;
+	}//end subscriptions()
 
 	/**
 	 * Subscribe a Consumer to an api_product at a named tier
@@ -141,51 +164,21 @@ class ProductSubscriptionsController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('consumerId and tier are required')], Http::STATUS_BAD_REQUEST);
 		}
 
-		$tiers = ($product->getObject()['tiers'] ?? []);
-		if (is_array($tiers) === false || isset($tiers[$tierName]) === false || is_array($tiers[$tierName]) === false) {
-			return new JSONResponse(['error' => $this->l->t('Unknown tier: %s', [$tierName])], Http::STATUS_BAD_REQUEST);
+		try {
+			$result = $this->subscriptions()->subscribe(
+				product: $product,
+				consumerId: $consumerId,
+				tierName: $tierName,
+				requesterUserId: $this->userSession->getUser()?->getUID()
+			);
+		} catch (InvalidArgumentException | ValidationException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
-		$tier = $tiers[$tierName];
-		$requiresApproval = (bool)($tier['requiresApproval'] ?? false);
-		$now = new DateTime();
-
-		$subscription = $this->orObjectService->saveObject(
-			object: [
-				'product' => (string)$product->getUuid(),
-				'consumer' => $consumerId,
-				'tier' => $tierName,
-				'status' => 'pending_approval',
-				'requesterUserId' => $this->userSession->getUser()?->getUID(),
-				'createdAt' => $now->format('c'),
-			],
-			options: RegisterSave::options(register: self::REGISTER, schema: 'api_product_subscription')
-		);
-
-		if ($requiresApproval === false) {
-			try {
-				$subscription = $this->activateSubscription(subscription: $subscription, activatedAt: $now);
-			} catch (ValidationException $e) {
-				return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-			}
-
+		$subscription = $result['subscription'];
+		if ($result['pending'] === false) {
 			return new JSONResponse($this->summarizeSubscription(subscription: $subscription), Http::STATUS_CREATED);
 		}
-
-		$approverGroup = (string)($tier['approverGroup'] ?? '');
-		$approvalRequest = $this->approvalService->suspendForSubscription(
-			subscriptionId: (string)$subscription->getUuid(),
-			approverGroup: $approverGroup,
-			onReject: 'error',
-			ttlSeconds: ApprovalServiceInterface::DEFAULT_TTL_SECONDS
-		);
-
-		$subscriptionData = $subscription->getObject();
-		$subscriptionData['approvalRequestId'] = $approvalRequest->getUuid();
-		$subscription = $this->orObjectService->saveObject(
-			object: $subscriptionData,
-			options: RegisterSave::options(register: self::REGISTER, schema: 'api_product_subscription', uuid: $subscription->getUuid())
-		);
 
 		return new JSONResponse($this->summarizeSubscription(subscription: $subscription), Http::STATUS_ACCEPTED);
 	}//end subscribe()
@@ -514,14 +507,7 @@ class ProductSubscriptionsController extends Controller {
 	 *                             rather than emit a raw TypeError 500.
 	 */
 	private function activateSubscription(ObjectEntity $subscription, DateTime $activatedAt): ObjectEntity {
-		$data = $subscription->getObject();
-		$data['status'] = 'active';
-		$data['activatedAt'] = $activatedAt->format('c');
-
-		return $this->orObjectService->saveObject(
-			object: $data,
-			options: RegisterSave::options(register: self::REGISTER, schema: 'api_product_subscription', uuid: $subscription->getUuid())
-		);
+		return $this->subscriptions()->activate(subscription: $subscription, activatedAt: $activatedAt);
 
 	}//end activateSubscription()
 

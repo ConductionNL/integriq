@@ -218,7 +218,7 @@ describe('ActionAuthMatrix', () => {
 	it('shows admin first and always on', () => {
 		const vm = context(ActionAuthMatrix)
 		vm.groups = ['editors', 'admin', 'viewers']
-		expect(vm.displayGroups).toEqual(['admin', 'editors', 'viewers'])
+		expect(vm.columnsOf({ actions: [{ name: 'rule.edit' }] })).toEqual(['admin', 'editors', 'viewers'])
 		expect(vm.isChecked('rule.edit', 'admin')).toBe(true)
 		expect(vm.isChecked('rule.edit', 'editors')).toBe(false)
 	})

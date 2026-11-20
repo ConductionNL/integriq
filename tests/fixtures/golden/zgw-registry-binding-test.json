@@ -1,0 +1,315 @@
+{
+    "stored nothing": {
+        "verdict": {
+            "ok": true,
+            "message": "The binding resolves to OpenRegister on this instance.",
+            "binding": {
+                "kind": "openregister",
+                "name": "OpenRegister",
+                "baseUrl": ""
+            }
+        },
+        "calls": [],
+        "stored": {
+            "zgw.registry_binding_usable": "1"
+        }
+    },
+    "stored external": {
+        "verdict": {
+            "ok": true,
+            "message": "The ZGW registry at \"https://zaken.example.nl/api/v1/\" answered.",
+            "binding": {
+                "kind": "external",
+                "name": "Zaken",
+                "baseUrl": "https://zaken.example.nl/api/v1/"
+            }
+        },
+        "calls": [
+            [
+                "get",
+                "https://zaken.example.nl/api/v1/zaken",
+                {
+                    "timeout": 10,
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ],
+        "stored": {
+            "zgw.registry_binding": "{\"kind\":\"external\",\"name\":\"Zaken\",\"baseUrl\":\"https:\\/\\/zaken.example.nl\\/api\\/v1\\/\"}",
+            "zgw.registry_binding_usable": "1"
+        }
+    },
+    "stored kindless": {
+        "verdict": {
+            "ok": true,
+            "message": "The binding resolves to OpenRegister on this instance.",
+            "binding": {
+                "kind": "openregister",
+                "name": "OpenRegister",
+                "baseUrl": ""
+            }
+        },
+        "calls": [],
+        "stored": {
+            "zgw.registry_binding": "{\"baseUrl\":\"https://x.example\"}",
+            "zgw.registry_binding_usable": "1"
+        }
+    },
+    "openregister": {
+        "verdict": {
+            "ok": true,
+            "message": "The binding resolves to OpenRegister on this instance.",
+            "binding": {
+                "kind": "openregister"
+            }
+        },
+        "calls": [],
+        "stored": {
+            "zgw.registry_binding_usable": "1"
+        }
+    },
+    "no kind given": {
+        "verdict": {
+            "ok": true,
+            "message": "The binding resolves to OpenRegister on this instance.",
+            "binding": {
+                "baseUrl": "https://x.example"
+            }
+        },
+        "calls": [],
+        "stored": {
+            "zgw.registry_binding_usable": "1"
+        }
+    },
+    "external without url": {
+        "verdict": {
+            "ok": false,
+            "message": "An external ZGW binding needs a base URL.",
+            "binding": {
+                "kind": "external"
+            }
+        },
+        "calls": [],
+        "stored": {
+            "zgw.registry_binding_usable": "0"
+        }
+    },
+    "external 200": {
+        "verdict": {
+            "ok": true,
+            "message": "The ZGW registry at \"https://zaken.example.nl/api/v1/\" answered.",
+            "binding": {
+                "kind": "external",
+                "name": "Zaken",
+                "baseUrl": "https://zaken.example.nl/api/v1/"
+            }
+        },
+        "calls": [
+            [
+                "get",
+                "https://zaken.example.nl/api/v1/zaken",
+                {
+                    "timeout": 10,
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ],
+        "stored": {
+            "zgw.registry_binding_usable": "1"
+        }
+    },
+    "external 401": {
+        "verdict": {
+            "ok": true,
+            "message": "The ZGW registry at \"https://zaken.example.nl/api/v1/\" answered.",
+            "binding": {
+                "kind": "external",
+                "name": "Zaken",
+                "baseUrl": "https://zaken.example.nl/api/v1/"
+            }
+        },
+        "calls": [
+            [
+                "get",
+                "https://zaken.example.nl/api/v1/zaken",
+                {
+                    "timeout": 10,
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ],
+        "stored": {
+            "zgw.registry_binding_usable": "1"
+        }
+    },
+    "external 403": {
+        "verdict": {
+            "ok": true,
+            "message": "The ZGW registry at \"https://zaken.example.nl/api/v1/\" answered.",
+            "binding": {
+                "kind": "external",
+                "name": "Zaken",
+                "baseUrl": "https://zaken.example.nl/api/v1/"
+            }
+        },
+        "calls": [
+            [
+                "get",
+                "https://zaken.example.nl/api/v1/zaken",
+                {
+                    "timeout": 10,
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ],
+        "stored": {
+            "zgw.registry_binding_usable": "1"
+        }
+    },
+    "external 404": {
+        "verdict": {
+            "ok": false,
+            "message": "The ZGW registry at \"https://zaken.example.nl/api/v1/\" answered HTTP 404.",
+            "binding": {
+                "kind": "external",
+                "name": "Zaken",
+                "baseUrl": "https://zaken.example.nl/api/v1/"
+            }
+        },
+        "calls": [
+            [
+                "get",
+                "https://zaken.example.nl/api/v1/zaken",
+                {
+                    "timeout": 10,
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ],
+        "stored": {
+            "zgw.registry_binding_usable": "0"
+        }
+    },
+    "external 499": {
+        "verdict": {
+            "ok": true,
+            "message": "The ZGW registry at \"https://zaken.example.nl/api/v1/\" answered.",
+            "binding": {
+                "kind": "external",
+                "name": "Zaken",
+                "baseUrl": "https://zaken.example.nl/api/v1/"
+            }
+        },
+        "calls": [
+            [
+                "get",
+                "https://zaken.example.nl/api/v1/zaken",
+                {
+                    "timeout": 10,
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ],
+        "stored": {
+            "zgw.registry_binding_usable": "1"
+        }
+    },
+    "external 500": {
+        "verdict": {
+            "ok": false,
+            "message": "The ZGW registry at \"https://zaken.example.nl/api/v1/\" answered HTTP 500.",
+            "binding": {
+                "kind": "external",
+                "name": "Zaken",
+                "baseUrl": "https://zaken.example.nl/api/v1/"
+            }
+        },
+        "calls": [
+            [
+                "get",
+                "https://zaken.example.nl/api/v1/zaken",
+                {
+                    "timeout": 10,
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ],
+        "stored": {
+            "zgw.registry_binding_usable": "0"
+        }
+    },
+    "external 503": {
+        "verdict": {
+            "ok": false,
+            "message": "The ZGW registry at \"https://zaken.example.nl/api/v1/\" answered HTTP 503.",
+            "binding": {
+                "kind": "external",
+                "name": "Zaken",
+                "baseUrl": "https://zaken.example.nl/api/v1/"
+            }
+        },
+        "calls": [
+            [
+                "get",
+                "https://zaken.example.nl/api/v1/zaken",
+                {
+                    "timeout": 10,
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ],
+        "stored": {
+            "zgw.registry_binding_usable": "0"
+        }
+    },
+    "external unreachable": {
+        "verdict": {
+            "ok": false,
+            "message": "The ZGW registry at \"https://zaken.example.nl/api/v1/\" could not be reached: Could not resolve host.",
+            "binding": {
+                "kind": "external",
+                "name": "Zaken",
+                "baseUrl": "https://zaken.example.nl/api/v1/"
+            }
+        },
+        "calls": [
+            [
+                "get",
+                "https://zaken.example.nl/api/v1/zaken",
+                {
+                    "timeout": 10,
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ],
+            [
+                "warning",
+                "zgw.binding.unreachable",
+                {
+                    "baseUrl": "https://zaken.example.nl/api/v1/",
+                    "error": "Could not resolve host"
+                }
+            ]
+        ],
+        "stored": {
+            "zgw.registry_binding_usable": "0"
+        }
+    }
+}

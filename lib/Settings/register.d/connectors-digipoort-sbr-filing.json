@@ -1,0 +1,259 @@
+{
+    "$comment": "ADR-037 register fragment (connectors-digipoort-sbr-filing). Declares `sbr_filing`, the record of one XBRL filing delivered through Digipoort (REQ-DPS-002, REQ-DPS-003), and seeds the dormant `digipoort-sbr` source on the log provider (REQ-DPS-001). The `authorization` block is the administrator-only shape 99-payment-intent-lockdown.json documents: four empty lists deny everyone but the admin group and an object's owner. SbrFilingService reads and writes filings and the source in system context, because it runs from the event listener and the status job without an administrator's session; who may raise a filing request is gated by the `event` schema's create lockdown. `destroy` is not listed, for the reason 99-payment-intent-lockdown.json gives. The demo filing lives in the demo data, not here, so an install seeds no filing.",
+    "components": {
+        "registers": {
+            "integriq": {
+                "schemas": [
+                    "sbr_filing"
+                ]
+            }
+        },
+        "schemas": {
+            "sbr_filing": {
+                "slug": "sbr_filing",
+                "title": "SBR Filing",
+                "icon": "FileSendOutline",
+                "version": "1.0.0",
+                "summary": "One XBRL filing delivered to the Belastingdienst or the KvK through Digipoort",
+                "description": "A filing tracks one XBRL instance a sending app asked integriq to file, from the request through the delivery to Digipoort and every processing status the recipient reports. One filing exists per filed object and filing type. See openspec/changes/connectors-digipoort-sbr-filing/specs/digipoort-sbr-connector/spec.md.",
+                "required": [
+                    "objectUri",
+                    "filingType",
+                    "recipient",
+                    "status"
+                ],
+                "type": "object",
+                "authorization": {
+                    "create": [],
+                    "read": [],
+                    "update": [],
+                    "delete": []
+                },
+                "properties": {
+                    "objectUri": {
+                        "type": "string",
+                        "title": "Object URI",
+                        "description": "The object the filing is for, as the sending app named it."
+                    },
+                    "objectType": {
+                        "type": "string",
+                        "title": "Object type",
+                        "description": "The kind of object the filing is for, for example a VAT return."
+                    },
+                    "sourceApp": {
+                        "type": "string",
+                        "title": "Source app",
+                        "description": "The app that asked for the filing."
+                    },
+                    "filingType": {
+                        "type": "string",
+                        "title": "Filing type",
+                        "description": "What is filed: ob-aangifte for the VAT return, kvk-deponering for the KvK deposit."
+                    },
+                    "recipient": {
+                        "type": "string",
+                        "enum": [
+                            "belastingdienst",
+                            "kvk"
+                        ],
+                        "title": "Recipient",
+                        "description": "Who receives the filing."
+                    },
+                    "payloadFileUri": {
+                        "type": "string",
+                        "title": "Instance file",
+                        "description": "The XBRL instance in Nextcloud Files: a file id as nextcloud-file:<id> or a path in a user's files."
+                    },
+                    "identityNumber": {
+                        "type": "string",
+                        "title": "Identity number",
+                        "description": "The number of the party the filing is for, such as its tax number or KvK number."
+                    },
+                    "identityType": {
+                        "type": "string",
+                        "title": "Identity type",
+                        "description": "The kind of identity number, as Digipoort names it."
+                    },
+                    "deliveryReference": {
+                        "type": "string",
+                        "title": "Delivery reference",
+                        "description": "The kenmerk Digipoort gave the delivery. Empty until the filing is delivered."
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "queued",
+                            "delivered",
+                            "accepted",
+                            "rejected",
+                            "failed"
+                        ],
+                        "title": "Status",
+                        "description": "Queued until delivered, then accepted or rejected by the recipient. Failed when delivery kept failing."
+                    },
+                    "statusHistory": {
+                        "type": "array",
+                        "title": "Status history",
+                        "description": "Every status the filing reached, oldest first, with its time and errors.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "title": "Status",
+                                    "description": "The status reached."
+                                },
+                                "code": {
+                                    "type": "string",
+                                    "title": "Status code",
+                                    "description": "Digipoort's own status code, when Digipoort reported it."
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "title": "Status description",
+                                    "description": "Digipoort's description of the status."
+                                },
+                                "at": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "title": "Time",
+                                    "description": "When the status was reached."
+                                },
+                                "errors": {
+                                    "type": "array",
+                                    "title": "Errors",
+                                    "description": "The recipient's error codes and texts, or the reason the delivery failed.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "code": {
+                                                "type": "string",
+                                                "title": "Error code",
+                                                "description": "The recipient's error code."
+                                            },
+                                            "text": {
+                                                "type": "string",
+                                                "title": "Error text",
+                                                "description": "The recipient's explanation of the error."
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "errors": {
+                        "type": "array",
+                        "title": "Errors",
+                        "description": "The recipient's error codes and texts, or the reason the delivery failed.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string",
+                                    "title": "Error code",
+                                    "description": "The recipient's error code."
+                                },
+                                "text": {
+                                    "type": "string",
+                                    "title": "Error text",
+                                    "description": "The recipient's explanation of the error."
+                                }
+                            }
+                        }
+                    },
+                    "attempts": {
+                        "type": "array",
+                        "title": "Attempts",
+                        "description": "Every delivery attempt, with the error of each one that failed.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "at": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "title": "Attempt time",
+                                    "description": "When the delivery was tried."
+                                },
+                                "error": {
+                                    "type": "string",
+                                    "title": "Attempt error",
+                                    "description": "Why the attempt failed. Empty when it succeeded."
+                                }
+                            }
+                        }
+                    },
+                    "channelStatusCount": {
+                        "type": "integer",
+                        "title": "Statuses read",
+                        "description": "How many statuses Digipoort reported that integriq has already read."
+                    }
+                },
+                "x-openregister-notifications": {
+                    "filing-failed": {
+                        "trigger": {
+                            "type": "updated",
+                            "condition": {
+                                "field": "status",
+                                "operator": "equals",
+                                "value": "failed"
+                            }
+                        },
+                        "enabled": true,
+                        "channels": [
+                            "nc-notification"
+                        ],
+                        "recipients": [
+                            {
+                                "kind": "expression",
+                                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
+                            }
+                        ],
+                        "subject": {
+                            "nl": "Digipoort-aanlevering mislukt: {{filingType}} ({{objectUri}})",
+                            "en": "Digipoort filing failed: {{filingType}} ({{objectUri}})"
+                        }
+                    }
+                },
+                "x-openregister-seed": []
+            }
+        },
+        "objects": [
+            {
+                "@self": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "slug": "digipoort-sbr"
+                },
+                "name": "Digipoort SBR",
+                "description": "Files XBRL instances with the Belastingdienst and the KvK through Digipoort. Ships on the log provider, which answers without a network call. To go live: store your PKIoverheid certificate in the credential broker, set certificateRef and the client certificate under authentication, set provider to wus, pick the environment and enable the source.",
+                "type": "digipoort-sbr",
+                "location": "https://preprod-dgp2.procesinfrastructuur.nl/wus/2.0/",
+                "isEnabled": false,
+                "configuration": {
+                    "provider": "log",
+                    "environment": "preproduction",
+                    "certificateRef": "",
+                    "autorisatieAdres": "http://geenausp.nl",
+                    "berichtsoorten": {
+                        "ob-aangifte": "Omzetbelasting",
+                        "kvk-deponering": "Kvk-jaarverantwoording"
+                    },
+                    "acceptedStatusCodes": [
+                        "500"
+                    ],
+                    "endpoints": {
+                        "preproduction": {
+                            "aanleverUrl": "https://preprod-dgp2.procesinfrastructuur.nl/wus/2.0/aanleverservice/1.2",
+                            "statusUrl": "https://preprod-dgp2.procesinfrastructuur.nl/wus/2.0/statusinformatieservice/1.2"
+                        },
+                        "production": {
+                            "aanleverUrl": "https://dgp2.procesinfrastructuur.nl/wus/2.0/aanleverservice/1.2",
+                            "statusUrl": "https://dgp2.procesinfrastructuur.nl/wus/2.0/statusinformatieservice/1.2"
+                        }
+                    }
+                }
+            }
+        ]
+    }
+}
