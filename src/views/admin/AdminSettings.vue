@@ -21,6 +21,7 @@
 			<ExpressionSourceSettings />
 			<MappingLookupSettings />
 			<ConnectionAlertSettings />
+			<PersonalDataFieldsSettings />
 			<OtelSettings />
 			<ErrorSinkSettings />
 			<RetentionSettings />
@@ -42,6 +43,7 @@ import IdpRegistrationSettings from './IdpRegistrationSettings.vue'
 import MappingLookupSettings from './MappingLookupSettings.vue'
 import OpenFormulierenConnectionSettings from './OpenFormulierenConnectionSettings.vue'
 import OtelSettings from './OtelSettings.vue'
+import PersonalDataFieldsSettings from './PersonalDataFieldsSettings.vue'
 import RetentionSettings from './RetentionSettings.vue'
 import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
 
@@ -70,6 +72,7 @@ import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
  * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
  * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-on-the-admin-settings-page-req-dso-012
+ * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
  * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
  * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-beheer-authenticatie-configures-the-registrations-req-idpc-008
  */
@@ -90,6 +93,7 @@ export default {
 		MappingLookupSettings,
 		OpenFormulierenConnectionSettings,
 		OtelSettings,
+		PersonalDataFieldsSettings,
 		RetentionSettings,
 		WebhookConnectionsSettings,
 	},

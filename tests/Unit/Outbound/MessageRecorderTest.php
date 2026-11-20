@@ -120,6 +120,59 @@ class MessageRecorderTest extends TestCase {
 	}//end testAPartialFailureNamesTheRecipientAndTheStep()
 
 	/**
+	 * A per-message recipient decision is kept on the record in three parts; the
+	 * suppressed recipient reads suppressed, keeps its reason, user and time, has
+	 * no delivery state, and does not make the message pending forever.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+	 */
+	public function testASuppressedRecipientStaysOnTheRecordAsSuppressed(): void {
+		$this->recorder->start(
+			subjectRef: 'zaak-1',
+			channel: 'email',
+			subject: 'Beschikking',
+			body: 'Uw beschikking',
+			recipients: [['address' => 'aanvrager@example.org']],
+			options: [
+				'recipientSelection' => [
+					'standing' => [['address' => 'aanvrager@example.org'], ['address' => 'buur@example.org']],
+					'added' => [],
+					'suppressed' => [
+						['address' => 'buur@example.org', 'name' => 'Buur', 'reason' => 'Geen belanghebbende meer', 'user' => 'behandelaar', 'at' => '2026-11-14T09:00:00+01:00', 'deliveryState' => 'reported'],
+						'not a row',
+					],
+				],
+			]
+		);
+		$this->recorder->handedOver('message-uuid', 'aanvrager@example.org', 'MAIL-1');
+
+		$suppressed = $this->stored['recipientSelection']['suppressed'];
+		$this->assertCount(1, $suppressed);
+		$this->assertSame(
+			['address' => 'buur@example.org', 'name' => 'Buur', 'state' => RecipientState::SUPPRESSED, 'reason' => 'Geen belanghebbende meer', 'user' => 'behandelaar', 'at' => '2026-11-14T09:00:00+01:00'],
+			$suppressed[0]
+		);
+		$this->assertCount(2, $this->stored['recipientSelection']['standing']);
+		$this->assertSame(['aanvrager@example.org'], array_column($this->stored['recipients'], 'address'));
+		$this->assertSame(MessageRecorder::STATUS_SENT, $this->stored['status']);
+
+	}//end testASuppressedRecipientStaysOnTheRecordAsSuppressed()
+
+	/**
+	 * A message without a recipient decision carries no selection part.
+	 *
+	 * @return void
+	 */
+	public function testAMessageWithoutADecisionHasNoSelection(): void {
+		$this->start();
+
+		$this->assertArrayNotHasKey('recipientSelection', $this->stored);
+
+	}//end testAMessageWithoutADecisionHasNoSelection()
+
+	/**
 	 * A send that never reached a transport is still a record.
 	 *
 	 * @return void
