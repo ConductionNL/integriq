@@ -2404,6 +2404,586 @@
       ]
     },
     {
+      "name": "18 — Product channels (events-async-api-products)",
+      "description": "openspec/changes/events-async-api-products (REQ-AAPI-002, REQ-AAPI-003, REQ-AAPI-004). Hermetic: seeds its own product (one channel, a tier of 2 requests per 60 s), a JWT consumer and a product subscription, and deletes them at the end. The tier budget is shared by the channel routes: the pull and the refused subscribe spend it, the next pull is 429. That endpoints and channels share the one counter is pinned by PHPUnit on ProductPolicyService.",
+      "item": [
+        {
+          "name": "POST api_product with a publications channel and a 2-request tier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/api_product"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Newman channel product\", \"productSlug\": \"{{chProductSlug}}\", \"version\": \"2.0.0\", \"visibility\": \"public\", \"status\": \"active\", \"endpoints\": [], \"tiers\": {\"free\": {\"rateLimit\": {\"requestsPerWindow\": 2, \"windowSeconds\": 60}}}, \"channels\": [{\"slug\": \"publications\", \"title\": \"Publicaties\", \"types\": [\"nl.woo.publication.created\"], \"description\": \"Nieuwe Woo-publicaties\"}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = Date.now() + '-' + Math.floor(Math.random() * 1e6);",
+                  "pm.collectionVariables.set('chProductSlug', 'newman-channels-' + run);",
+                  "pm.collectionVariables.set('chConsumerName', 'newman-channel-consumer-' + run);",
+                  "// A throwaway HS256 secret for this run only, longer than the 32-byte minimum.",
+                  "pm.collectionVariables.set('chConsumerSecret', 'newman-' + run + '-' + CryptoJS.lib.WordArray.random(24).toString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('chProductUuid', uuid);",
+                  "pm.test('the channel is stored', () => pm.expect((b.channels || []).map((c) => c.slug)).to.eql(['publications']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET asyncapi.json of a public product without a session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/asyncapi.json"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 without authentication', () => pm.response.to.have.status(200));",
+                  "const doc = pm.response.json();",
+                  "pm.test('an AsyncAPI 3.0 document', () => pm.expect(doc.asyncapi).to.eql('3.0.0'));",
+                  "pm.test('lists channel publications', () => pm.expect(doc.channels).to.have.property('publications'));",
+                  "pm.test('carries message nl.woo.publication.created', () => pm.expect(doc.components.messages).to.have.property('nl.woo.publication.created'));",
+                  "pm.test('has operations', () => pm.expect(Object.keys(doc.operations || {})).to.not.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET asyncapi.json of an unknown product is 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/newman-no-such-product/asyncapi.json"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET channel events without a credential is 403 subscription_required",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('subscription_required', () => pm.expect(pm.response.json().error).to.eql('subscription_required'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST consumer with an HS256 JWT credential",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/consumer"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"{{chConsumerName}}\", \"description\": \"newman product channel consumer\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{chConsumerSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('chConsumerUuid', uuid);",
+                  "pm.test('the secret is not returned', () => pm.expect(JSON.stringify(b)).to.not.include(pm.collectionVariables.get('chConsumerSecret')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET channel events with a valid JWT and no product subscription is 403 subscription_required",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{chJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('chConsumerName'), sub: pm.collectionVariables.get('chConsumerName'), iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-' + now + '-' + Math.floor(Math.random() * 1e6) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('chConsumerSecret')));",
+                  "pm.collectionVariables.set('chJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('subscription_required', () => pm.expect(pm.response.json().error).to.eql('subscription_required'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET an undeclared channel is 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/no-such-channel/events"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{chJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('chConsumerName'), sub: pm.collectionVariables.get('chConsumerName'), iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-' + now + '-' + Math.floor(Math.random() * 1e6) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('chConsumerSecret')));",
+                  "pm.collectionVariables.set('chJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('not_found', () => pm.expect(pm.response.json().error).to.eql('not_found'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST api_product_subscription on tier free",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/api_product_subscription"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"product\": \"{{chProductUuid}}\", \"consumer\": \"{{chConsumerUuid}}\", \"tier\": \"free\", \"status\": \"active\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('chSubscriptionUuid', uuid);",
+                  "pm.test('active', () => pm.expect(b.status).to.eql('active'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET channel events with a subscription is 200 (request 1 of the tier budget of 2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{chJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('chConsumerName'), sub: pm.collectionVariables.get('chConsumerName'), iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-' + now + '-' + Math.floor(Math.random() * 1e6) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('chConsumerSecret')));",
+                  "pm.collectionVariables.set('chJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('a page of messages', () => pm.expect(b.messages).to.be.an('array'));",
+                  "pm.test('a cursor key', () => pm.expect(b).to.have.property('cursor'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST a push subscription to a metadata address is 400 and creates nothing (request 2 of 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/subscriptions"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sink\": \"http://169.254.169.254/latest\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{chJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('chConsumerName'), sub: pm.collectionVariables.get('chConsumerName'), iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-' + now + '-' + Math.floor(Math.random() * 1e6) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('chConsumerSecret')));",
+                  "pm.collectionVariables.set('chJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('invalid_sink', () => pm.expect(pm.response.json().error).to.eql('invalid_sink'));",
+                  "pm.sendRequest({",
+                  "  url: pm.variables.replaceIn('{{orBase}}') + '/event_subscription?style=push&productSubscription=' + pm.collectionVariables.get('chSubscriptionUuid'),",
+                  "  method: 'GET',",
+                  "  header: { 'OCS-APIRequest': 'true', Authorization: 'Basic ' + btoa(pm.environment.get('admin_user') + ':' + pm.environment.get('admin_password')) },",
+                  "}, (err, res) => {",
+                  "  pm.test('no push subscription was created', () => {",
+                  "    pm.expect(err).to.eql(null);",
+                  "    const rows = (res.json().results || []).filter((r) => r.productSubscription === pm.collectionVariables.get('chSubscriptionUuid') && r.style === 'push');",
+                  "    pm.expect(rows).to.have.length(0);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET channel events once the shared tier budget is spent is 429 with Retry-After",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{chJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const body = enc({ iss: pm.collectionVariables.get('chConsumerName'), sub: pm.collectionVariables.get('chConsumerName'), iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-' + now + '-' + Math.floor(Math.random() * 1e6) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('chConsumerSecret')));",
+                  "pm.collectionVariables.set('chJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('429', () => pm.response.to.have.status(429));",
+                  "pm.test('rate_limited', () => pm.expect(pm.response.json().error).to.eql('rate_limited'));",
+                  "pm.test('Retry-After', () => pm.expect(pm.response.headers.has('Retry-After')).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Teardown: delete the channel subscriptions, the product subscription, the consumer and the product",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/api_product/{{chProductUuid}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const auth = 'Basic ' + btoa(pm.environment.get('admin_user') + ':' + pm.environment.get('admin_password'));",
+                  "const or = pm.variables.replaceIn('{{orBase}}');",
+                  "const headers = { 'OCS-APIRequest': 'true', Authorization: auth };",
+                  "const ps = pm.collectionVariables.get('chSubscriptionUuid');",
+                  "if (ps) {",
+                  "  pm.sendRequest({ url: or + '/event_subscription?limit=100&productSubscription=' + ps, method: 'GET', header: headers }, (err, res) => {",
+                  "    if (err) { return; }",
+                  "    (res.json().results || []).filter((r) => r.productSubscription === ps).forEach((r) => {",
+                  "      pm.sendRequest({ url: or + '/event_subscription/' + (r.id || r.uuid || (r['@self'] && r['@self'].id)), method: 'DELETE', header: headers }, () => {});",
+                  "    });",
+                  "    pm.sendRequest({ url: or + '/api_product_subscription/' + ps, method: 'DELETE', header: headers }, () => {});",
+                  "  });",
+                  "}",
+                  "const consumer = pm.collectionVariables.get('chConsumerUuid');",
+                  "if (consumer) { pm.sendRequest({ url: or + '/consumer/' + consumer, method: 'DELETE', header: headers }, () => {}); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('product deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "99 — Teardown (via OR)",
       "description": "Deletes the fixtures created in folder 01.",
       "item": [
