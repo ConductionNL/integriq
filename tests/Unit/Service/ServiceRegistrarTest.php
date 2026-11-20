@@ -103,6 +103,8 @@ use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
+use OCA\Integriq\Service\Digipoort\SbrFilingService;
+use OCA\Integriq\Service\Digipoort\SbrFilingServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
@@ -427,6 +429,7 @@ class ServiceRegistrarTest extends TestCase {
 		ConfigurationImportPreviewServiceInterface::class => ConfigurationImportPreviewService::class,
 		ExecutionTraceServiceInterface::class => ExecutionTraceService::class,
 		DocumentGenerationServiceInterface::class => DocumentGenerationService::class,
+		SbrFilingServiceInterface::class => SbrFilingService::class,
 		ObjectEndpointHandlerInterface::class => ObjectEndpointHandler::class,
 		ExchangeJobRunnerInterface::class => ExchangeJobRunner::class,
 		ConnectionRegistryServiceInterface::class => ConnectionRegistryService::class,
