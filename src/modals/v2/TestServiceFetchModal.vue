@@ -304,7 +304,7 @@ export default {
 
 .cn-test-service-fetch__pane pre {
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: anywhere;
 	background-color: var(--color-background-dark);
 	padding: calc(var(--default-grid-baseline) * 2);
 	border-radius: var(--border-radius);
