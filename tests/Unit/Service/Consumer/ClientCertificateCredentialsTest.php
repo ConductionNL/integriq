@@ -28,6 +28,7 @@ use DateTimeImmutable;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\Auth\ClientCertificate;
 use OCA\Integriq\Service\Auth\ClientCertificateReader;
+use OCA\Integriq\Service\Consumer\CertificatePinMatcher;
 use OCA\Integriq\Service\Consumer\ConsumerCredentials;
 use OCA\Integriq\Service\Consumer\IntegriqConsumerSource;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
@@ -98,9 +99,9 @@ final class ClientCertificateCredentialsTest extends TestCase {
 		$this->assertArrayNotHasKey('keyHash', $entry);
 
 		$list = [['type' => 'apiKey', 'keyHash' => 'x'], $entry];
-		$this->assertSame(1, $credentials->matchingCertificate(credentials: $list, certificate: self::cert(name: 'pkio'), now: new DateTimeImmutable()));
-		$this->assertNull($credentials->matchingCertificate(credentials: $list, certificate: self::cert(name: 'rogue'), now: new DateTimeImmutable()));
-		$this->assertNull($credentials->matchingCertificate(credentials: $list, certificate: self::cert(name: 'plain'), now: new DateTimeImmutable()));
+		$this->assertSame(1, (new CertificatePinMatcher(credentials: $credentials))->matching(credentials: $list, certificate: self::cert(name: 'pkio'), now: new DateTimeImmutable()));
+		$this->assertNull((new CertificatePinMatcher(credentials: $credentials))->matching(credentials: $list, certificate: self::cert(name: 'rogue'), now: new DateTimeImmutable()));
+		$this->assertNull((new CertificatePinMatcher(credentials: $credentials))->matching(credentials: $list, certificate: self::cert(name: 'plain'), now: new DateTimeImmutable()));
 	}//end testAFingerprintPinMatchesThatCertificateOnly()
 
 	/**
@@ -120,9 +121,9 @@ final class ClientCertificateCredentialsTest extends TestCase {
 		$this->assertSame(self::cert(name: 'ca')->fingerprint, $entry['issuerFingerprint']);
 		$this->assertStringStartsWith('-----BEGIN CERTIFICATE-----', $entry['issuerCertificate']);
 		$now = new DateTimeImmutable();
-		$this->assertSame(0, $credentials->matchingCertificate(credentials: [$entry], certificate: self::cert(name: 'pkio'), now: $now));
-		$this->assertNull($credentials->matchingCertificate(credentials: [$entry], certificate: self::cert(name: 'rogue'), now: $now), 'same subject, other CA');
-		$this->assertNull($credentials->matchingCertificate(credentials: [$entry], certificate: self::cert(name: 'plain'), now: $now), 'same CA, other subject');
+		$this->assertSame(0, (new CertificatePinMatcher(credentials: $credentials))->matching(credentials: [$entry], certificate: self::cert(name: 'pkio'), now: $now));
+		$this->assertNull((new CertificatePinMatcher(credentials: $credentials))->matching(credentials: [$entry], certificate: self::cert(name: 'rogue'), now: $now), 'same subject, other CA');
+		$this->assertNull((new CertificatePinMatcher(credentials: $credentials))->matching(credentials: [$entry], certificate: self::cert(name: 'plain'), now: $now), 'same CA, other subject');
 	}//end testAnIssuerPinNeedsTheCaSignatureAndTheSubject()
 
 	/**
@@ -139,11 +140,11 @@ final class ClientCertificateCredentialsTest extends TestCase {
 
 		$pkio = self::cert(name: 'pkio');
 		$entry = $credentials->certificateEntry(label: 'x', certificate: $pkio, expiresAt: '2026-01-01T00:00:00+00:00');
-		$this->assertNull($credentials->matchingCertificate(credentials: [$entry], certificate: $pkio, now: new DateTimeImmutable('2026-06-01T00:00:00+00:00')));
+		$this->assertNull((new CertificatePinMatcher(credentials: $credentials))->matching(credentials: [$entry], certificate: $pkio, now: new DateTimeImmutable('2026-06-01T00:00:00+00:00')));
 		$live = $credentials->certificateEntry(label: 'x', certificate: $pkio);
-		$this->assertNull($credentials->matchingCertificate(credentials: [$live], certificate: $pkio, now: (new DateTimeImmutable())->setTimestamp($pkio->validTo + 1)));
-		$this->assertNull($credentials->matchingCertificate(credentials: ['a' => $live], certificate: $pkio, now: new DateTimeImmutable()));
-		$this->assertNull($credentials->matchingCertificate(credentials: null, certificate: $pkio, now: new DateTimeImmutable()));
+		$this->assertNull((new CertificatePinMatcher(credentials: $credentials))->matching(credentials: [$live], certificate: $pkio, now: (new DateTimeImmutable())->setTimestamp($pkio->validTo + 1)));
+		$this->assertNull((new CertificatePinMatcher(credentials: $credentials))->matching(credentials: ['a' => $live], certificate: $pkio, now: new DateTimeImmutable()));
+		$this->assertNull((new CertificatePinMatcher(credentials: $credentials))->matching(credentials: null, certificate: $pkio, now: new DateTimeImmutable()));
 	}//end testIncompleteExpiredAndInvalid()
 
 	/**

@@ -24,6 +24,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Auth\ClientCertificate;
+use OCA\Integriq\Service\Auth\PemCertificateParser;
 use OCA\Integriq\Service\Helper\RandomUuid;
 use OCP\IAppConfig;
 use OCP\Security\ISecureRandom;
@@ -127,7 +128,7 @@ class ConsumerCredentials {
 	 */
 	public function apiKeyEntry(string $key, string $label, ?string $expiresAt = null, ?DateTimeImmutable $now = null): array {
 		return [
-			'id'         => RandomUuid::version4(),
+			'id'         => (new RandomUuid())->next(),
 			'label'      => $label,
 			'type'       => self::TYPE_API_KEY,
 			'createdAt'  => ($now ?? new DateTimeImmutable())->format(DateTimeInterface::ATOM),
@@ -297,7 +298,7 @@ class ConsumerCredentials {
 		?DateTimeImmutable $now = null,
 	): ?array {
 		$entry = [
-			'id'         => RandomUuid::version4(),
+			'id'         => (new RandomUuid())->next(),
 			'label'      => $label,
 			'type'       => self::TYPE_CLIENT_CERTIFICATE,
 			'createdAt'  => ($now ?? new DateTimeImmutable())->format(DateTimeInterface::ATOM),
@@ -341,106 +342,6 @@ class ConsumerCredentials {
 			'subjectPattern'    => trim($subjectPattern),
 		];
 	}//end issuerPin()
-
-	/**
-	 * The index of the live client certificate credential a certificate matches, or null.
-	 *
-	 * A certificate outside its validity never matches. A fingerprint pin
-	 * matches that certificate only; an issuer pin matches a certificate whose
-	 * signature the pinned CA verifies and whose subject fits the pattern.
-	 *
-	 * @param mixed             $credentials The consumer's `credentials` value.
-	 * @param ClientCertificate $certificate The presented, web-server-verified certificate.
-	 * @param DateTimeImmutable $now         The moment of the call.
-	 *
-	 * @return int|null
-	 *
-	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
-	 */
-	public function matchingCertificate(mixed $credentials, ClientCertificate $certificate, DateTimeImmutable $now): ?int {
-		$list = self::credentialList(credentials: $credentials);
-		if ($list === null || $certificate->isValidAt(now: $now->getTimestamp()) === false) {
-			return null;
-		}
-
-		return $this->firstLivePin(list: $list, certificate: $certificate, now: $now);
-	}//end matchingCertificate()
-
-	/**
-	 * The index of the first live client certificate credential in the list that pins the certificate.
-	 *
-	 * @param list<mixed>       $list        The credentials.
-	 * @param ClientCertificate $certificate The certificate.
-	 * @param DateTimeImmutable $now         The moment of the call.
-	 *
-	 * @return int|null
-	 */
-	private function firstLivePin(array $list, ClientCertificate $certificate, DateTimeImmutable $now): ?int {
-		foreach ($list as $index => $credential) {
-			if ($this->isLivePinFor(credential: $credential, certificate: $certificate, now: $now) === true) {
-				return $index;
-			}
-		}
-
-		return null;
-	}//end firstLivePin()
-
-	/**
-	 * Whether a value is a live client certificate credential that pins the certificate.
-	 *
-	 * @param mixed             $credential  The value.
-	 * @param ClientCertificate $certificate The certificate.
-	 * @param DateTimeImmutable $now         The moment of the call.
-	 *
-	 * @return bool
-	 */
-	private function isLivePinFor(mixed $credential, ClientCertificate $certificate, DateTimeImmutable $now): bool {
-		if (self::isOfType(credential: $credential, type: self::TYPE_CLIENT_CERTIFICATE) === false) {
-			return false;
-		}
-
-		return self::pins(credential: $credential, certificate: $certificate) === true
-			&& $this->isLive(credential: $credential, now: $now) === true;
-	}//end isLivePinFor()
-
-	/**
-	 * Whether one client certificate credential pins a certificate.
-	 *
-	 * @param array<string, mixed> $credential  The credential.
-	 * @param ClientCertificate    $certificate The certificate.
-	 *
-	 * @return bool
-	 */
-	private static function pins(array $credential, ClientCertificate $certificate): bool {
-		$fingerprint = ($credential['fingerprint'] ?? null);
-		if (self::isFilled(value: $fingerprint) === true) {
-			return hash_equals(strtolower((string) $fingerprint), $certificate->fingerprint);
-		}
-
-		return self::issuerPins(credential: $credential, certificate: $certificate);
-	}//end pins()
-
-	/**
-	 * Whether an issuer pin covers a certificate: the subject fits and the CA verifies it.
-	 *
-	 * @param array<string, mixed> $credential  The credential.
-	 * @param ClientCertificate    $certificate The certificate.
-	 *
-	 * @return bool
-	 */
-	private static function issuerPins(array $credential, ClientCertificate $certificate): bool {
-		$issuer  = ($credential['issuerCertificate'] ?? null);
-		$pattern = ($credential['subjectPattern'] ?? null);
-		if (self::isFilled(value: $issuer) === false || self::isFilled(value: $pattern) === false) {
-			return false;
-		}
-
-		if (fnmatch((string) $pattern, $certificate->subject, FNM_NOESCAPE) === false) {
-			return false;
-		}
-
-		return @openssl_x509_verify($certificate->pem, (string) $issuer) === 1;
-	}//end issuerPins()
 
 	/**
 	 * Whether a credential is not expired at a moment.
@@ -520,11 +421,47 @@ class ConsumerCredentials {
 	 *
 	 * @spec openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-new-key-is-shown-exactly-once-req-cred-002
 	 */
-	public static function shown(array $credential): array {
+	public function shown(array $credential): array {
 		unset($credential['keyHash']);
 
 		return $credential;
 	}//end shown()
+
+	/**
+	 * The credentials as an administrator sees them: without a hash, and whether each has expired.
+	 *
+	 * @param list<array<string, mixed>> $entries The consumer's credentials list.
+	 *
+	 * @return list<array<string, mixed>>
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-consumer-holds-several-credentials-and-no-plaintext-key-req-cred-001
+	 */
+	public function listed(array $entries): array {
+		$now = new DateTimeImmutable();
+
+		return array_map(
+			fn (array $credential): array => $this->shown(credential: $credential)
+				+ ['expired' => ($this->isLive(credential: $credential, now: $now) === false)],
+			$entries
+		);
+	}//end listed()
+
+	/**
+	 * The certificate a PEM text holds, or null when it holds none.
+	 *
+	 * @param string|null $pem The PEM text, or null when none was given.
+	 *
+	 * @return ClientCertificate|null
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	public function certificateOf(?string $pem): ?ClientCertificate {
+		if ($pem === null || trim($pem) === '') {
+			return null;
+		}
+
+		return (new PemCertificateParser())->parse(pem: $pem);
+	}//end certificateOf()
 
 	/**
 	 * The instance pepper, generated and stored as a sensitive app config value on first use.

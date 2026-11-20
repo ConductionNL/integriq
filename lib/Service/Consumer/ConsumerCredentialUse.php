@@ -85,7 +85,7 @@ class ConsumerCredentialUse {
 	public function certificateHolder(array $consumers, ClientCertificate $certificate): ?ObjectEntity {
 		$now = new DateTimeImmutable();
 		foreach ($consumers as $consumer) {
-			$index = $this->credentials->matchingCertificate(
+			$index = (new CertificatePinMatcher(credentials: $this->credentials))->matching(
 				credentials: ($consumer->getObject()[ConsumerCredentials::FIELD] ?? null),
 				certificate: $certificate,
 				now: $now

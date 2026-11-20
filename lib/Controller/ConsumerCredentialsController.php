@@ -20,15 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use DateTimeImmutable;
-use OCA\Integriq\Service\Auth\ClientCertificate;
-use OCA\Integriq\Service\Auth\ClientCertificateReader;
+use OCA\Integriq\Service\Consumer\ConsumerCredentialList;
 use OCA\Integriq\Service\Consumer\ConsumerCredentials;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -36,10 +32,6 @@ use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
-use Throwable;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * A consumer's credentials: the list without hashes, a generated key shown
@@ -63,7 +55,7 @@ class ConsumerCredentialsController extends Controller {
 	 * @param IRequest            $request       The request.
 	 * @param IUserSession        $userSession   The session, for the admin check.
 	 * @param IGroupManager       $groupManager  The admin check.
-	 * @param OrObjectService     $objectService OpenRegister's object service.
+	 * @param ConsumerCredentialList $consumers   Reads and writes a consumer's credentials list.
 	 * @param ConsumerCredentials $credentials   The credentials list rules.
 	 * @param IL10N               $l             Translations.
 	 */
@@ -72,7 +64,7 @@ class ConsumerCredentialsController extends Controller {
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly OrObjectService $objectService,
+		private readonly ConsumerCredentialList $consumers,
 		private readonly ConsumerCredentials $credentials,
 		private readonly IL10N $l,
 	) {
@@ -95,19 +87,12 @@ class ConsumerCredentialsController extends Controller {
 			return $refused;
 		}
 
-		$consumer = $this->findConsumer(id: $id);
+		$consumer = $this->consumers->find(id: $id);
 		if ($consumer === null) {
 			return new JSONResponse(['error' => $this->l->t('Not Found')], Http::STATUS_NOT_FOUND);
 		}
 
-		$now = new DateTimeImmutable();
-		$shown = [];
-		foreach ($this->listOf(data: $consumer->getObject()) as $credential) {
-			$expired = ($this->credentials->isLive(credential: $credential, now: $now) === false);
-			$shown[] = ConsumerCredentials::shown(credential: $credential) + ['expired' => $expired];
-		}
-
-		return new JSONResponse(['results' => $shown]);
+		return new JSONResponse(['results' => $this->credentials->listed(entries: $this->consumers->entries(data: $consumer->getObject()))]);
 	}//end index()
 
 	/**
@@ -132,7 +117,7 @@ class ConsumerCredentialsController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('Give the expiry as a date and time.')], Http::STATUS_BAD_REQUEST);
 		}
 
-		$consumer = $this->findConsumer(id: $id);
+		$consumer = $this->consumers->find(id: $id);
 		if ($consumer === null) {
 			return new JSONResponse(['error' => $this->l->t('Not Found')], Http::STATUS_NOT_FOUND);
 		}
@@ -190,12 +175,12 @@ class ConsumerCredentialsController extends Controller {
 	 */
 	private function storeGeneratedKey(ObjectEntity $consumer, string $label, ?string $expiresAt): JSONResponse {
 		$generated = $this->credentials->generate(label: $label, expiresAt: $expiresAt);
-		if ($this->storeEntry(consumer: $consumer, entry: $generated['credential']) === false) {
+		if ($this->consumers->add(consumer: $consumer, entry: $generated['credential']) === false) {
 			return $this->notSaved();
 		}
 
 		return new JSONResponse(
-			['key' => $generated['key'], 'credential' => ConsumerCredentials::shown(credential: $generated['credential'])],
+			['key' => $generated['key'], 'credential' => $this->credentials->shown(credential: $generated['credential'])],
 			Http::STATUS_CREATED
 		);
 	}//end storeGeneratedKey()
@@ -213,10 +198,10 @@ class ConsumerCredentialsController extends Controller {
 	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
 	 */
 	private function pinCertificate(ObjectEntity $consumer, string $label, ?string $expiresAt): JSONResponse {
-		$certificate = $this->certificateParam(name: 'certificate');
+		$certificate = $this->credentials->certificateOf(pem: $this->stringParam(name: 'certificate'));
 		$issuer      = null;
 		if ($certificate === null) {
-			$issuer = $this->certificateParam(name: 'issuerCertificate');
+			$issuer = $this->credentials->certificateOf(pem: $this->stringParam(name: 'issuerCertificate'));
 		}
 
 		$entry = $this->credentials->certificateEntry(
@@ -233,28 +218,12 @@ class ConsumerCredentialsController extends Controller {
 			);
 		}
 
-		if ($this->storeEntry(consumer: $consumer, entry: $entry) === false) {
+		if ($this->consumers->add(consumer: $consumer, entry: $entry) === false) {
 			return $this->notSaved();
 		}
 
-		return new JSONResponse(['credential' => ConsumerCredentials::shown(credential: $entry)], Http::STATUS_CREATED);
+		return new JSONResponse(['credential' => $this->credentials->shown(credential: $entry)], Http::STATUS_CREATED);
 	}//end pinCertificate()
-
-	/**
-	 * A request parameter holding a PEM certificate, parsed; null when absent, blank or unreadable.
-	 *
-	 * @param string $name The parameter.
-	 *
-	 * @return ClientCertificate|null
-	 */
-	private function certificateParam(string $name): ?ClientCertificate {
-		$pem = $this->stringParam(name: $name);
-		if ($pem === null || trim($pem) === '') {
-			return null;
-		}
-
-		return ClientCertificateReader::parse(pem: $pem);
-	}//end certificateParam()
 
 	/**
 	 * A request parameter when it is a string, else null.
@@ -271,21 +240,6 @@ class ConsumerCredentialsController extends Controller {
 
 		return $value;
 	}//end stringParam()
-
-	/**
-	 * Append an entry to the consumer's credentials and save.
-	 *
-	 * @param ObjectEntity         $consumer The consumer.
-	 * @param array<string, mixed> $entry    The new credential.
-	 *
-	 * @return bool Whether the save landed.
-	 */
-	private function storeEntry(ObjectEntity $consumer, array $entry): bool {
-		$data = $consumer->getObject();
-		$data[ConsumerCredentials::FIELD] = array_merge($this->listOf(data: $data), [$entry]);
-
-		return $this->save(consumer: $consumer, data: $data);
-	}//end storeEntry()
 
 	/**
 	 * The 500 answered when the consumer could not be saved.
@@ -313,21 +267,18 @@ class ConsumerCredentialsController extends Controller {
 			return $refused;
 		}
 
-		$consumer = $this->findConsumer(id: $id);
+		$consumer = $this->consumers->find(id: $id);
 		if ($consumer === null) {
 			return new JSONResponse(['error' => $this->l->t('Not Found')], Http::STATUS_NOT_FOUND);
 		}
 
-		$data = $consumer->getObject();
-		$list = $this->listOf(data: $data);
-		$kept = array_values(array_filter($list, static fn (array $credential): bool => ($credential['id'] ?? null) !== $credentialId));
-		if (count($kept) === count($list)) {
+		$revoked = $this->consumers->remove(consumer: $consumer, credentialId: $credentialId);
+		if ($revoked === null) {
 			return new JSONResponse(['error' => $this->l->t('Not Found')], Http::STATUS_NOT_FOUND);
 		}
 
-		$data[ConsumerCredentials::FIELD] = $kept;
-		if ($this->save(consumer: $consumer, data: $data) === false) {
-			return new JSONResponse(['error' => $this->l->t('The consumer could not be saved. Nothing changed.')], Http::STATUS_INTERNAL_SERVER_ERROR);
+		if ($revoked === false) {
+			return $this->notSaved();
 		}
 
 		return new JSONResponse(['revoked' => $credentialId]);
@@ -375,68 +326,4 @@ class ConsumerCredentialsController extends Controller {
 		return $date->format(DATE_ATOM);
 	}//end expiry()
 
-	/**
-	 * The stored credentials list, entries that are not objects dropped.
-	 *
-	 * @param array<string, mixed> $data The consumer's raw data.
-	 *
-	 * @return array<int, array<string, mixed>>
-	 */
-	private function listOf(array $data): array {
-		$list = ($data[ConsumerCredentials::FIELD] ?? []);
-		if (is_array($list) === false) {
-			return [];
-		}
-
-		return array_values(array_filter($list, 'is_array'));
-	}//end listOf()
-
-	/**
-	 * The consumer's raw object, hashes included, or null.
-	 *
-	 * @param string $id The consumer's uuid.
-	 *
-	 * @return ObjectEntity|null
-	 */
-	private function findConsumer(string $id): ?ObjectEntity {
-		try {
-			$consumer = $this->objectService->find(
-				id: $id,
-				options: new ObjectFindOptions(register: 'integriq', schema: 'consumer', render: false),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (DoesNotExistException) {
-			return null;
-		}
-
-		if (($consumer instanceof ObjectEntity) === false || is_array($consumer->getObject()) === false) {
-			return null;
-		}
-
-		return $consumer;
-	}//end findConsumer()
-
-	/**
-	 * Save the consumer.
-	 *
-	 * @param ObjectEntity         $consumer The consumer.
-	 * @param array<string, mixed> $data     Its new data.
-	 *
-	 * @return bool Whether the save landed.
-	 */
-	private function save(ObjectEntity $consumer, array $data): bool {
-		try {
-			$this->objectService->saveObject(
-				object: $data,
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'consumer'), uuid: $consumer->getUuid()),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable) {
-			return false;
-		}
-
-		return true;
-	}//end save()
 }//end class

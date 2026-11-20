@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\ConsumerCredentialsController;
+use OCA\Integriq\Service\Consumer\ConsumerCredentialList;
 use OCA\Integriq\Service\Consumer\ConsumerCredentials;
 use OCA\Integriq\Tests\Unit\Service\Auth\ClientCertificateFixtures;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -274,6 +275,6 @@ final class ConsumerCredentialsControllerTest extends TestCase {
 		$l = $this->createMock(IL10N::class);
 		$l->method('t')->willReturnCallback(fn (string $text, array $parameters = []): string => vsprintf(str_replace('%1$s', '%s', $text), $parameters));
 
-		return new ConsumerCredentialsController('integriq', $request, $session, $groups, $objects, $this->credentials, $l);
+		return new ConsumerCredentialsController('integriq', $request, $session, $groups, new ConsumerCredentialList($objects), $this->credentials, $l);
 	}
 }

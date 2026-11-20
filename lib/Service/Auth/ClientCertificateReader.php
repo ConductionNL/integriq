@@ -51,11 +51,6 @@ class ClientCertificateReader {
 	public const DEFAULT_HEADER = 'X-SSL-Client-Cert';
 
 	/**
-	 * An OIN is twenty digits.
-	 */
-	private const OIN_PATTERN = '/^\d{20}$/';
-
-	/**
 	 * @param IRequest   $request   The current request.
 	 * @param IConfig    $config    Holds Nextcloud's `trusted_proxies`.
 	 * @param IAppConfig $appConfig Holds the forwarding header name.
@@ -104,45 +99,8 @@ class ClientCertificateReader {
 	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
 	 */
 	public static function parse(string $pem): ?ClientCertificate {
-		$pem = self::normalisePem(pem: $pem);
-		if ($pem === null) {
-			return null;
-		}
-
-		$parsed = @openssl_x509_parse($pem);
-		$fingerprint = @openssl_x509_fingerprint($pem, 'sha256');
-		if (is_array($parsed) === false || is_string($fingerprint) === false) {
-			return null;
-		}
-
-		$subject = (array)($parsed['subject'] ?? []);
-
-		return new ClientCertificate(
-			pem: $pem,
-			fingerprint: strtolower($fingerprint),
-			subject: self::oneLine(name: $subject),
-			issuer: self::oneLine(name: (array)($parsed['issuer'] ?? [])),
-			validFrom: (int)($parsed['validFrom_time_t'] ?? 0),
-			validTo: (int)($parsed['validTo_time_t'] ?? 0),
-			oin: self::oinOf(subject: $subject)
-		);
+		return (new PemCertificateParser())->parse(pem: $pem);
 	}//end parse()
-
-	/**
-	 * The OIN in a subject's serial number, or null when it holds none.
-	 *
-	 * @param array<mixed> $subject The parsed subject.
-	 *
-	 * @return string|null
-	 */
-	private static function oinOf(array $subject): ?string {
-		$serial = ($subject['serialNumber'] ?? null);
-		if (is_string($serial) === true && preg_match(self::OIN_PATTERN, $serial) === 1) {
-			return $serial;
-		}
-
-		return null;
-	}//end oinOf()
 
 	/**
 	 * Whether an address is one of Nextcloud's trusted proxies (an address or a CIDR range).
@@ -154,7 +112,7 @@ class ClientCertificateReader {
 	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
 	 */
 	public function isTrustedProxy(string $address): bool {
-		if ($address === '' || @inet_pton($address) === false) {
+		if ($address === '' || filter_var($address, FILTER_VALIDATE_IP) === false) {
 			return false;
 		}
 
@@ -203,44 +161,6 @@ class ClientCertificateReader {
 	}//end decodeHeader()
 
 	/**
-	 * Rebuild a PEM from its base64 body, whatever whitespace it arrived with.
-	 *
-	 * @param string $pem A PEM, possibly with its newlines replaced.
-	 *
-	 * @return string|null
-	 */
-	private static function normalisePem(string $pem): ?string {
-		if (preg_match('/-----BEGIN CERTIFICATE-----(.+?)-----END CERTIFICATE-----/s', $pem, $match) !== 1) {
-			return null;
-		}
-
-		$body = preg_replace('/\s+/', '', $match[1]);
-		if ($body === null || $body === '' || base64_decode($body, true) === false) {
-			return null;
-		}
-
-		return "-----BEGIN CERTIFICATE-----\n" . chunk_split($body, 64, "\n") . "-----END CERTIFICATE-----\n";
-	}//end normalisePem()
-
-	/**
-	 * A distinguished name as one line, `/C=NL/O=Gemeente/serialNumber=...`.
-	 *
-	 * @param array<string,string|array<int,string>> $name The parsed name.
-	 *
-	 * @return string
-	 */
-	private static function oneLine(array $name): string {
-		$line = '';
-		foreach ($name as $key => $value) {
-			foreach ((array)$value as $part) {
-				$line .= '/' . $key . '=' . (string)$part;
-			}
-		}
-
-		return $line;
-	}//end oneLine()
-
-	/**
 	 * Whether an address lies in a range: an exact address, or `address/bits`.
 	 *
 	 * @param string $address The address.
@@ -254,14 +174,29 @@ class ClientCertificateReader {
 			return false;
 		}
 
-		$subject = @inet_pton($address);
-		$network = @inet_pton($parts[0]);
+		$subject = self::packed(address: $address);
+		$network = self::packed(address: $parts[0]);
 		if ($subject === false || $network === false || strlen($subject) !== strlen($network)) {
 			return false;
 		}
 
 		return self::prefixMatches(subject: $subject, network: $network, bits: $parts[1]);
 	}//end inRange()
+
+	/**
+	 * An address in packed binary form, or false when it is not an IP address.
+	 *
+	 * @param string $address The address.
+	 *
+	 * @return string|false
+	 */
+	private static function packed(string $address): string|false {
+		if (filter_var($address, FILTER_VALIDATE_IP) === false) {
+			return false;
+		}
+
+		return inet_pton($address);
+	}//end packed()
 
 	/**
 	 * A range's address and prefix length (null for an exact address); null when the length is not a number.

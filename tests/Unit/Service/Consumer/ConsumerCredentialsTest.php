@@ -152,7 +152,7 @@ final class ConsumerCredentialsTest extends TestCase {
 	public function testAShownCredentialHasNoHash(): void {
 		$entry = $this->credentials()->apiKeyEntry(key: 'k', label: 'l');
 
-		$shown = ConsumerCredentials::shown(credential: $entry);
+		$shown = $this->credentials()->shown(credential: $entry);
 
 		$this->assertArrayNotHasKey('keyHash', $shown);
 		$this->assertSame($entry['keyPrefix'], $shown['keyPrefix']);

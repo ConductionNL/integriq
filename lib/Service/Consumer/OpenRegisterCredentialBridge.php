@@ -208,7 +208,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 			);
 		}
 
-		self::assertConsumerAllowed(consumer: $consumer, consumers: $consumers);
+		(new ConsumerAllowList())->assertAllowed(consumer: $consumer, consumers: $consumers);
 
 		$this->resolvedConsumer = $consumer;
 	}//end authorizeClientCertificate()
@@ -228,41 +228,6 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 
 		return $source->findByClientCertificate(certificate: $certificate);
 	}//end pinnedConsumer()
-
-	/**
-	 * Refuse a consumer the endpoint does not allow; an empty list allows any.
-	 *
-	 * @param ObjectEntity $consumer  The certificate's consumer.
-	 * @param array        $consumers Consumers allowed on the endpoint, by name or uuid.
-	 *
-	 * @return void
-	 *
-	 * @throws AuthenticationException When the consumer is not on a non-empty list.
-	 */
-	private static function assertConsumerAllowed(ObjectEntity $consumer, array $consumers): void {
-		$data    = $consumer->getObject();
-		$allowed = array_values(array_filter($consumers, static fn ($entry): bool => is_string($entry) === true && $entry !== ''));
-		if ($allowed !== [] && self::isNamedIn(consumer: $consumer, data: $data, allowed: $allowed) === false) {
-			throw new AuthenticationException(
-				message: 'The consumer of this client certificate may not call this endpoint',
-				details: ['consumer' => (string)($data['name'] ?? '')]
-			);
-		}
-	}//end assertConsumerAllowed()
-
-	/**
-	 * Whether the consumer's name or id is on the list.
-	 *
-	 * @param ObjectEntity         $consumer The consumer.
-	 * @param array<string, mixed> $data     Its data.
-	 * @param list<string>         $allowed  The allowed names and uuids.
-	 *
-	 * @return bool
-	 */
-	private static function isNamedIn(ObjectEntity $consumer, array $data, array $allowed): bool {
-		return in_array(($data['name'] ?? null), $allowed, true) === true
-			|| in_array(($data['id'] ?? $consumer->getUuid()), $allowed, true) === true;
-	}//end isNamedIn()
 
 	/**
 	 * Check HTTP Basic credentials against Nextcloud's users.
