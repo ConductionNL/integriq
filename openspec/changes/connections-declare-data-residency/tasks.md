@@ -40,7 +40,7 @@ EU-only check exists.
   - GIVEN the page WHEN rendered THEN it states that calls made by other apps without integriq are not covered
 - [x] Implement. Read call-log hosts with one grouped query over the last 30 days, not by loading every record. (OpenRegister's `findAll` has no grouped host query: hosts are read newest first in bounded pages and stop at the first record older than 30 days. The page is `src/views/EgressDestinations/EgressDestinationsPage.vue`, a manifest `custom` page under Connections over `CnDataTable`; `docs/features/data-residency.md`.)
 - [x] Test: PHPUnit `EgressDestinationServiceTest::testAnUnknownDestinationBlocksTheVerdict`, `::testACallLogHostWithoutASourceIsListed`, `::testAnEeaCountryIsNotCountedAsEu`, `::testAllEuGivesEuOnly`; `EgressDestinationControllerTest::testANonAdminIsRefused`. Double OpenRegister's `ObjectService` with `environmentAwareDouble` after reading its real `findAll()` signature on `openregister` `development`.
-- [ ] Wiring: the controller test goes through the route name from `appinfo/routes.php`, and the Playwright spec opens the page from the Connections menu, so the page is reachable from the navigation and not only by URL.
+- [x] Wiring: the controller test goes through the route name from `appinfo/routes.php`, and the Playwright spec opens the page from the Connections menu, so the page is reachable from the navigation and not only by URL.
 
 ### Task 4: EU-only mode
 - **spec_ref**: `openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-an-administrator-can-enforce-eu-only-egress-req-res-003`
@@ -61,7 +61,7 @@ EU-only check exists.
 - **acceptance_criteria**:
   - GIVEN the seeded sources WHEN an administrator sets residency on each THEN the destinations page reads "EU only"
   - GIVEN one source cleared WHEN she tries to switch EU-only mode on THEN the save is refused naming it
-- [ ] Test: Playwright `tests/e2e/data-residency.spec.ts`
+- [x] Test: Playwright `tests/e2e/data-residency.spec.ts`
 
 ## Cross-app follow-up, not in this change
 

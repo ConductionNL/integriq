@@ -8,10 +8,12 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 |---------|-------------|--------|
 | [Sources](sources.md) | External API connections with multi-protocol authentication | Implemented |
 | [Endpoints](endpoints.md) | Expose reverse-proxy API paths with rule-based logic | Implemented |
+| [MCP tool servers](mcp-gateway.md) | Publish an outside MCP tool server behind the gateway, with per-tool limits and a call log by tool | Implemented |
 | [Mappings](mappings.md) | Twig-powered data transformation between schemas | Implemented |
 | [Synchronizations](synchronizations.md) | Scheduled and event-driven source-to-target sync | Implemented |
 | [Reliability](reliability.md) | Retry policy, per-Source circuit breaker, sync dead letters | Implemented |
 | [Rules](rules.md) | Authentication, file handling, locking, and audit trail rules | Implemented |
+| [Consumer tokens](consumer-tokens.md) | OpenID Connect and JWKS key sources, client credentials tokens from integriq, protected-resource metadata and scopes | Implemented |
 | [Approvals](approvals.md) | Pause an endpoint call or a synchronization until a person approves it | Implemented |
 | [Jobs](jobs.md) | Cron-based scheduled task execution | Implemented |
 | [Data gathering](data-gathering.md) | Scheduled feeds filled into a register: the connector contract, the ten shipped connectors, and gathering versus leaf providers | Implemented |
