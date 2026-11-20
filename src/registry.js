@@ -85,6 +85,7 @@ import {
 	openPromotionHandler,
 	openRegistryLookupHandler,
 	previewDirectorySyncHandler,
+	refreshPaymentHandler,
 	releaseHeldMessageHandler,
 	rerunFailedRunHandler,
 	runDirectorySyncHandler,
@@ -121,6 +122,9 @@ export default {
 	// Run again on a failed run: one POST, no dialog (connection-run-monitoring
 	// REQ-CRUN-003). Shown only on failed rows through the action's visibleWhen.
 	rerunFailedRunHandler,
+	// Refresh a payment's status from its provider (messaging-payments-review
+	// D2): one POST, no dialog, the webhook's own re-derive on the server.
+	refreshPaymentHandler,
 	// Release or withdraw a message a send check held for review: one POST each,
 	// gated on the send right server-side (REQ-OSI-010).
 	releaseHeldMessageHandler,

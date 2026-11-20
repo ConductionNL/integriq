@@ -39,12 +39,15 @@ use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Payment\LogPaymentProvider;
 use OCA\Integriq\Service\Payment\MolliePaymentProvider;
 use OCA\Integriq\Service\Payment\PaymentProviderInterface;
+use OCA\Integriq\Service\Payment\PaymentProviderProbeInterface;
 use OCA\Integriq\Service\Payment\PaymentProviderRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Drives payment creation and the verified-webhook status lifecycle.
@@ -106,6 +109,16 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 		'failed' => 'failed',
 		'expired' => 'failed',
 		'canceled' => 'voided',
+	];
+
+	/**
+	 * The provider bindings this service knows, with whether each needs a brokered key.
+	 *
+	 * @var array<string, array{label: string, needsKey: bool}>
+	 */
+	private const PROVIDERS = [
+		'log' => ['label' => 'Log (sandbox, charges nobody)', 'needsKey' => false],
+		'mollie' => ['label' => 'Mollie', 'needsKey' => true],
 	];
 
 	/**
@@ -214,15 +227,16 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 * @param string $providerPaymentId The provider payment id from the webhook body (`id`).
 	 *                                  Any other field in the body is deliberately ignored.
 	 *
-	 * @return array{result: string, outcome: ?string} `result` is one of
-	 *                                                 `applied`|`noop`|`not-found`; `outcome` is the mapped outcome when applied.
+	 * @return array{result: string, outcome: ?string, paymentStatus: ?string} `result` is one of
+	 *                                                 `applied`|`noop`|`not-found`; `outcome` is the mapped outcome when applied;
+	 *                                                 `paymentStatus` is the provider-native status read, null when not found.
 	 *
 	 * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
 	 */
 	public function handleWebhook(string $providerPaymentId): array {
 		if ($providerPaymentId === '') {
 			$this->logger->warning('[PaymentIntentService] webhook payload carried no payment id; ignored');
-			return ['result' => 'not-found', 'outcome' => null];
+			return ['result' => 'not-found', 'outcome' => null, 'paymentStatus' => null];
 		}
 
 		$record = $this->findPaymentIntent(providerPaymentId: $providerPaymentId);
@@ -231,7 +245,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 				'[PaymentIntentService] webhook for unknown providerPaymentId; recorded, no state change',
 				['providerPaymentId' => $providerPaymentId]
 			);
-			return ['result' => 'not-found', 'outcome' => null];
+			return ['result' => 'not-found', 'outcome' => null, 'paymentStatus' => null];
 		}
 
 		$data = $record->getObject();
@@ -262,7 +276,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 				_rbac: false,
 				_multitenancy: false
 			);
-			return ['result' => 'noop', 'outcome' => null];
+			return ['result' => 'noop', 'outcome' => null, 'paymentStatus' => $nativeStatus];
 		}
 
 		if ($previousOutcome === $outcome) {
@@ -275,7 +289,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 				_rbac: false,
 				_multitenancy: false
 			);
-			return ['result' => 'noop', 'outcome' => $outcome];
+			return ['result' => 'noop', 'outcome' => $outcome, 'paymentStatus' => $nativeStatus];
 		}
 
 		$data['lastOutcome'] = $outcome;
@@ -288,8 +302,128 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 
 		$this->emitStatusEvent(providerPaymentId: $providerPaymentId, outcome: $outcome);
 
-		return ['result' => 'applied', 'outcome' => $outcome];
+		return ['result' => 'applied', 'outcome' => $outcome, 'paymentStatus' => $nativeStatus];
 	}//end handleWebhook()
+
+	/**
+	 * Refresh one payment's status from its provider, through the webhook's own path.
+	 *
+	 * Loads the `payment_intent` and hands its `providerPaymentId` to
+	 * {@see handleWebhook()}, so a refresh and a webhook apply the same
+	 * `lastOutcome` guard and emit the same single status event; they can never
+	 * disagree or reconcile twice. The caller gates this behind `payments.review`.
+	 *
+	 * @param string $paymentIntentId The `payment_intent` object id.
+	 *
+	 * @return array{result: string, outcome: ?string, paymentStatus: ?string} `result` is
+	 *                                                                         `applied`|`noop`|`not-found`.
+	 *
+	 * @throws PaymentProviderException When the source names an unknown provider or the provider errors.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
+	 */
+	public function refreshPayment(string $paymentIntentId): array {
+		$record = $this->findPaymentIntentById(paymentIntentId: $paymentIntentId);
+		$providerPaymentId = (string)($record?->getObject()['providerPaymentId'] ?? '');
+
+		if ($providerPaymentId === '') {
+			return ['result' => 'not-found', 'outcome' => null, 'paymentStatus' => null];
+		}
+
+		return $this->handleWebhook(providerPaymentId: $providerPaymentId);
+
+	}//end refreshPayment()
+
+	/**
+	 * The provider bindings a payment source can pick, in a stable order.
+	 *
+	 * @return array<int, array{id: string, label: string, needsKey: bool}> The bindings.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	public function listProviders(): array {
+		$providers = [];
+		foreach (self::PROVIDERS as $id => $provider) {
+			$providers[] = [
+				'id' => $id,
+				'label' => $provider['label'],
+				'needsKey' => $provider['needsKey'],
+			];
+		}
+
+		return $providers;
+
+	}//end listProviders()
+
+	/**
+	 * Check a draft payment source configuration with its binding's read-only probe.
+	 *
+	 * An unknown provider value, or a binding without a probe, answers `ok: false`
+	 * with the reason; the answer never carries the key.
+	 *
+	 * @param array $configuration The draft `configuration` of a payment source.
+	 *
+	 * @return array{ok: bool, provider: string, mode: ?string, profile: ?string, message: ?string} The check result.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	public function checkProvider(array $configuration): array {
+		$name = $this->providers->nameOf(value: ($configuration['provider'] ?? 'log'));
+		if ($name === '') {
+			$name = 'log';
+		}
+
+		try {
+			$provider = $this->resolveProvider(configuration: $configuration);
+		} catch (PaymentProviderException $exception) {
+			return ['ok' => false, 'provider' => $name, 'mode' => null, 'profile' => null, 'message' => $exception->getMessage()];
+		}
+
+		if ($provider instanceof PaymentProviderProbeInterface === false) {
+			return [
+				'ok' => false,
+				'provider' => $name,
+				'mode' => null,
+				'profile' => null,
+				'message' => 'The "' . $name . '" payment provider offers no check.',
+			];
+		}
+
+		return ['provider' => $name] + $provider->probe(sourceConfiguration: $this->probeConfiguration(configuration: $configuration));
+
+	}//end checkProvider()
+
+	/**
+	 * The configuration a provider check probes with: the draft names only the
+	 * binding and the brokered key, never where the call goes.
+	 *
+	 * The outbound target is the binding's own default, whatever the draft
+	 * carries (`baseUrl` and any other key are dropped), so a check cannot send
+	 * a brokered key to a host of the caller's choosing. The credential is the
+	 * draft's bare `credentialRef`, the key the administrator picked from the
+	 * broker, which applies its own guards to it; nothing else of
+	 * `authentication` (how or where the secret is injected) is passed on.
+	 *
+	 * @param array $configuration The draft `configuration` of a payment source.
+	 *
+	 * @return array The configuration to probe with.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	private function probeConfiguration(array $configuration): array {
+		$pinned = [];
+		if (array_key_exists('provider', $configuration) === true) {
+			$pinned['provider'] = $configuration['provider'];
+		}
+
+		$credentialRef = ($configuration['authentication']['credentialRef'] ?? null);
+		if ($credentialRef !== null) {
+			$pinned['authentication'] = ['credentialRef' => $credentialRef];
+		}
+
+		return $pinned;
+
+	}//end probeConfiguration()
 
 	/**
 	 * Resolve the payment source's `configuration.webhookSignature` block for
@@ -410,33 +544,44 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	}//end resolveSource()
 
 	/**
-	 * Select the provider binding named by `configuration.provider` (default `log`), through the registry.
+	 * Select the provider binding named by `configuration.provider`, through the registry.
 	 *
-	 * An id nothing answers to falls back to the log binding, as before.
+	 * An absent or empty value means `log`, so a dormant source keeps working. A
+	 * value no binding answers to is refused with its name: a mistyped
+	 * `Mollie` must stop the payment, not run the stub and record a payment
+	 * nobody is charged for (REQ-PRV-004).
 	 *
 	 * @param array $configuration The payment source's `configuration` object.
 	 *
 	 * @return PaymentProviderInterface The resolved provider binding.
 	 *
+	 * @throws PaymentProviderException When the value names no binding.
+	 *
 	 * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
 	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	private function resolveProvider(array $configuration): PaymentProviderInterface {
-		$provider = ($configuration['provider'] ?? 'log');
-		if (is_string($provider) === true) {
-			$binding = $this->providers->find(providerId: $provider);
-			if ($binding !== null) {
-				return $binding;
-			}
+		$provider = ($configuration['provider'] ?? null);
+		if (in_array($provider, [null, '', 'log'], true) === true) {
+			return $this->logProvider;
 		}
 
 		// The built-in Mollie binding answers to its id as it always did, also
 		// when the registry was built without it.
-		if ($provider === 'mollie') {
-			return $this->mollieProvider;
+		$binding = null;
+		if (is_string($provider) === true) {
+			$binding = ($this->providers->find(providerId: $provider) ?? (['mollie' => $this->mollieProvider][$provider] ?? null));
 		}
 
-		return $this->logProvider;
+		if ($binding !== null) {
+			return $binding;
+		}
+
+		throw new PaymentProviderException(
+			message: $this->l->t('Unknown payment provider') . ': "' . $this->providers->nameOf(value: $provider) . '". '
+				. 'Known providers: ' . implode(', ', array_keys(self::PROVIDERS)) . '.'
+		);
 	}//end resolveProvider()
 
 	/**
@@ -470,6 +615,44 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 
 		return $results[0];
 	}//end findPaymentIntent()
+
+	/**
+	 * Find a `payment_intent` by its own object id.
+	 *
+	 * @param string $paymentIntentId The object id.
+	 *
+	 * @return ObjectEntity|null The record, or null when there is none.
+	 */
+	private function findPaymentIntentById(string $paymentIntentId): ?ObjectEntity {
+		if ($paymentIntentId === '') {
+			return null;
+		}
+
+		try {
+			$record = $this->objectService->find(
+				id: $paymentIntentId,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_PAYMENT_INTENT),
+				// System context: `payment_intent` is locked to admins and owners
+				// (99-payment-intent-lockdown.json). The ADR-023 `payments.review`
+				// check in PaymentsController::refresh() is the gate for this read.
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $exception) {
+			$this->logger->info(
+				'[PaymentIntentService] payment to refresh not found',
+				['paymentIntentId' => $paymentIntentId, 'errorClass' => get_class($exception)]
+			);
+			return null;
+		}
+
+		if ($record instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		return $record;
+
+	}//end findPaymentIntentById()
 
 	/**
 	 * Emit `nl.conduction.payment.status`, payload-shaped identically to

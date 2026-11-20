@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Event\RegisterConnectorExtensionsEvent;
+use OCA\Integriq\Exception\PaymentProviderException;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
 use OCA\Integriq\Service\Payment\LogPaymentProvider;
@@ -146,11 +147,15 @@ class PaymentIntentServiceProviderRegistryTest extends TestCase {
 	}//end testAContributedProviderRunsWhenASourceNamesIt()
 
 	/**
-	 * An id nothing answers to falls back to the log binding, as before.
+	 * An id nothing answers to is refused, not run as the log stub (REQ-PRV-004).
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
 	 */
-	public function testAnUnknownProviderFallsBackToTheLogBinding(): void {
-		$this->assertSame('log', $this->providerThatRuns(providerId: 'adyen'));
-	}//end testAnUnknownProviderFallsBackToTheLogBinding()
+	public function testAnUnknownProviderIsRefused(): void {
+		$this->expectException(exception: PaymentProviderException::class);
+		$this->expectExceptionMessage(message: 'Unknown payment provider: "adyen".');
+		$this->providerThatRuns(providerId: 'adyen');
+	}//end testAnUnknownProviderIsRefused()
 }//end class
