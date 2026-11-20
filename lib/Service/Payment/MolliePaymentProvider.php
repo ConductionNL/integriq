@@ -94,6 +94,17 @@ class MolliePaymentProvider implements PaymentProviderInterface {
 	}//end __construct()
 
 	/**
+	 * The id a payment source names this provider by.
+	 *
+	 * @return string `mollie`.
+	 *
+	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 */
+	public function getProviderId(): string {
+		return 'mollie';
+	}//end getProviderId()
+
+	/**
 	 * {@inheritDoc}
 	 *
 	 * @param array $sourceConfiguration The payment source's `configuration` object (`baseUrl`, `authentication.credentialRef`).
