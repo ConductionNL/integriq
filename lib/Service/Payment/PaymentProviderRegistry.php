@@ -105,6 +105,23 @@ class PaymentProviderRegistry {
 	}//end find()
 
 	/**
+	 * The text name of a `configuration.provider` value, for messages.
+	 *
+	 * @param mixed $value The configured provider value.
+	 *
+	 * @return string The value as text, or `(not text)` when it is not a scalar.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
+	 */
+	public function nameOf(mixed $value): string {
+		if (is_scalar($value) === true) {
+			return (string)$value;
+		}
+
+		return '(not text)';
+	}//end nameOf()
+
+	/**
 	 * Every registered provider id.
 	 *
 	 * @return array<int,string> The ids, built-ins first.

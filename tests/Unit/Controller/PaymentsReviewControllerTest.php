@@ -85,12 +85,12 @@ class PaymentsReviewControllerTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->request = $this->createMock(IRequest::class);
+		$this->request = $this->createMock(originalClassName: IRequest::class);
 		$this->objectService = ObjectServiceMockBuilder::make($this);
-		$this->mollieProvider = $this->createMock(MolliePaymentProvider::class);
-		$this->eventService = $this->createMock(EventService::class);
-		$this->actionAuth = $this->createMock(ActionAuthService::class);
-		$this->user = $this->createMock(IUser::class);
+		$this->mollieProvider = $this->createMock(originalClassName: MolliePaymentProvider::class);
+		$this->eventService = $this->createMock(originalClassName: EventService::class);
+		$this->actionAuth = $this->createMock(originalClassName: ActionAuthService::class);
+		$this->user = $this->createMock(originalClassName: IUser::class);
 
 	}//end setUp()
 
@@ -102,30 +102,30 @@ class PaymentsReviewControllerTest extends TestCase {
 	 * @return PaymentsController
 	 */
 	private function controller(?IUser $user): PaymentsController {
-		$l = $this->createMock(IL10N::class);
+		$l = $this->createMock(originalClassName: IL10N::class);
 		$l->method('t')->willReturnArgument(0);
-		$logger = $this->createMock(LoggerInterface::class);
-		$userSession = $this->createMock(IUserSession::class);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$userSession = $this->createMock(originalClassName: IUserSession::class);
 		$userSession->method('getUser')->willReturn($user);
 
 		$service = new PaymentIntentService(
-			$this->objectService,
-			new LogPaymentProvider(),
-			$this->mollieProvider,
-			$this->eventService,
-			$l,
-			$logger
+			objectService: $this->objectService,
+			logProvider: new LogPaymentProvider(),
+			mollieProvider: $this->mollieProvider,
+			eventService: $this->eventService,
+			l: $l,
+			logger: $logger
 		);
 
 		return new PaymentsController(
-			'integriq',
-			$this->request,
-			$service,
-			$this->createMock(WebhookSignatureService::class),
-			$userSession,
-			$this->actionAuth,
-			$l,
-			$logger
+			appName: 'integriq',
+			request: $this->request,
+			paymentIntentService: $service,
+			signatureService: $this->createMock(originalClassName: WebhookSignatureService::class),
+			userSession: $userSession,
+			actionAuth: $this->actionAuth,
+			l: $l,
+			logger: $logger
 		);
 
 	}//end controller()
@@ -152,14 +152,23 @@ class PaymentsReviewControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testRefreshSettlesAPaymentTheWebhookNeverReached(): void {
-		$record = $this->entity(['sourceSlug' => 'ideal', 'providerPaymentId' => 'MOCK-PAY-3', 'paymentStatus' => 'open', 'lastOutcome' => null], 'pi-3');
+		$record = $this->entity(
+			data: ['sourceSlug' => 'ideal', 'providerPaymentId' => 'MOCK-PAY-3', 'paymentStatus' => 'open', 'lastOutcome' => null],
+			uuid: 'pi-3'
+		);
 		$source = $this->entity(
-			['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['provider' => 'log', 'mockStatuses' => ['MOCK-PAY-3' => 'paid']]],
-			'src-1'
+			data: ['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['provider' => 'log', 'mockStatuses' => ['MOCK-PAY-3' => 'paid']]],
+			uuid: 'src-1'
 		);
 		$this->objectService->method('find')->willReturn($record);
 		$this->objectService->method('findAll')->willReturnCallback(
-			static fn (array $config): array => ['results' => [(($config['filters']['schema'] ?? null) === 'source') ? $source : $record]]
+			static function (array $config) use ($source, $record): array {
+				if (($config['filters']['schema'] ?? null) === 'source') {
+					return ['results' => [$source]];
+				}
+
+				return ['results' => [$record]];
+			}
 		);
 		$this->objectService->expects($this->once())->method('saveObject')->willReturn($record);
 		$this->eventService->expects($this->once())->method('emitCloudEvent');
@@ -167,8 +176,8 @@ class PaymentsReviewControllerTest extends TestCase {
 
 		$response = $this->controller(user: $this->user)->refresh(id: 'pi-3');
 
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertSame(['result' => 'applied', 'outcome' => 'captured', 'paymentStatus' => 'paid'], $response->getData());
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$this->assertSame(expected: ['result' => 'applied', 'outcome' => 'captured', 'paymentStatus' => 'paid'], actual: $response->getData());
 
 	}//end testRefreshSettlesAPaymentTheWebhookNeverReached()
 
@@ -183,7 +192,7 @@ class PaymentsReviewControllerTest extends TestCase {
 		$this->objectService->expects($this->never())->method('findAll');
 		$this->mollieProvider->expects($this->never())->method('fetchPaymentStatus');
 
-		$this->expectException(OCSForbiddenException::class);
+		$this->expectException(exception: OCSForbiddenException::class);
 
 		$this->controller(user: $this->user)->refresh(id: 'pi-3');
 
@@ -198,12 +207,12 @@ class PaymentsReviewControllerTest extends TestCase {
 		$this->objectService->method('find')->willReturn(null);
 
 		$response = $this->controller(user: $this->user)->refresh(id: 'missing');
-		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-		$this->assertSame('not_found', $response->getData()['error']);
+		$this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $response->getStatus());
+		$this->assertSame(expected: 'not_found', actual: $response->getData()['error']);
 
 		$this->actionAuth->expects($this->never())->method('requireAction');
 		$anonymous = $this->controller(user: null)->refresh(id: 'pi-3');
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $anonymous->getStatus());
+		$this->assertSame(expected: Http::STATUS_UNAUTHORIZED, actual: $anonymous->getStatus());
 
 	}//end testRefreshAnswersNotFoundAndUnauthenticated()
 
@@ -213,18 +222,24 @@ class PaymentsReviewControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testRefreshOnAnUnknownProviderIsABadGatewayNamingIt(): void {
-		$record = $this->entity(['sourceSlug' => 'ideal', 'providerPaymentId' => 'MOCK-PAY-3'], 'pi-3');
-		$source = $this->entity(['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['provider' => 'Mollie']], 'src-1');
+		$record = $this->entity(data: ['sourceSlug' => 'ideal', 'providerPaymentId' => 'MOCK-PAY-3'], uuid: 'pi-3');
+		$source = $this->entity(data: ['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['provider' => 'Mollie']], uuid: 'src-1');
 		$this->objectService->method('find')->willReturn($record);
 		$this->objectService->method('findAll')->willReturnCallback(
-			static fn (array $config): array => ['results' => [(($config['filters']['schema'] ?? null) === 'source') ? $source : $record]]
+			static function (array $config) use ($source, $record): array {
+				if (($config['filters']['schema'] ?? null) === 'source') {
+					return ['results' => [$source]];
+				}
+
+				return ['results' => [$record]];
+			}
 		);
 		$this->objectService->expects($this->never())->method('saveObject');
 
 		$response = $this->controller(user: $this->user)->refresh(id: 'pi-3');
 
-		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
-		$this->assertStringContainsString('"Mollie"', $response->getData()['message']);
+		$this->assertSame(expected: Http::STATUS_BAD_GATEWAY, actual: $response->getStatus());
+		$this->assertStringContainsString(needle: '"Mollie"', haystack: $response->getData()['message']);
 
 	}//end testRefreshOnAnUnknownProviderIsABadGatewayNamingIt()
 
@@ -236,11 +251,11 @@ class PaymentsReviewControllerTest extends TestCase {
 	public function testProvidersListsEveryBinding(): void {
 		$response = $this->controller(user: $this->user)->providers();
 
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertSame(['log', 'mollie'], array_column($response->getData()['providers'], 'id'));
-		$this->assertSame([false, true], array_column($response->getData()['providers'], 'needsKey'));
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$this->assertSame(expected: ['log', 'mollie'], actual: array_column($response->getData()['providers'], 'id'));
+		$this->assertSame(expected: [false, true], actual: array_column($response->getData()['providers'], 'needsKey'));
 
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $this->controller(user: null)->providers()->getStatus());
+		$this->assertSame(expected: Http::STATUS_UNAUTHORIZED, actual: $this->controller(user: null)->providers()->getStatus());
 
 	}//end testProvidersListsEveryBinding()
 
@@ -260,8 +275,11 @@ class PaymentsReviewControllerTest extends TestCase {
 
 		$response = $this->controller(user: $this->user)->check();
 
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertSame(['provider' => 'mollie', 'ok' => true, 'mode' => 'test', 'profile' => 'School', 'message' => null], $response->getData());
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$this->assertSame(
+			expected: ['provider' => 'mollie', 'ok' => true, 'mode' => 'test', 'profile' => 'School', 'message' => null],
+			actual: $response->getData()
+		);
 
 	}//end testCheckProbesTheDraftConfiguration()
 
@@ -275,10 +293,10 @@ class PaymentsReviewControllerTest extends TestCase {
 		$this->mollieProvider->expects($this->never())->method('probe');
 
 		$response = $this->controller(user: $this->user)->check();
-		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $response->getStatus());
 
 		$this->actionAuth->method('requireAction')->willThrowException(new OCSForbiddenException('refused'));
-		$this->expectException(OCSForbiddenException::class);
+		$this->expectException(exception: OCSForbiddenException::class);
 		$this->controller(user: $this->user)->check();
 
 	}//end testCheckRefusesAMissingConfigurationAndAnUnauthorisedUser()

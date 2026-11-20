@@ -72,18 +72,18 @@ class PaymentIntentServiceReviewTest extends TestCase {
 		parent::setUp();
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
-		$this->mollieProvider = $this->createMock(MolliePaymentProvider::class);
-		$this->eventService = $this->createMock(EventService::class);
-		$l = $this->createMock(IL10N::class);
+		$this->mollieProvider = $this->createMock(originalClassName: MolliePaymentProvider::class);
+		$this->eventService = $this->createMock(originalClassName: EventService::class);
+		$l = $this->createMock(originalClassName: IL10N::class);
 		$l->method('t')->willReturnArgument(0);
 
 		$this->service = new PaymentIntentService(
-			$this->objectService,
-			new LogPaymentProvider(),
-			$this->mollieProvider,
-			$this->eventService,
-			$l,
-			$this->createMock(LoggerInterface::class)
+			objectService: $this->objectService,
+			logProvider: new LogPaymentProvider(),
+			mollieProvider: $this->mollieProvider,
+			eventService: $this->eventService,
+			l: $l,
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 	}//end setUp()
@@ -150,14 +150,14 @@ class PaymentIntentServiceReviewTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreatePaymentRefusesAnUnknownProviderAndStoresNothing(): void {
-		$source = $this->entity(['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['provider' => 'Mollie']], 'src-1');
+		$source = $this->entity(data: ['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['provider' => 'Mollie']], uuid: 'src-1');
 		$this->stubFindAll(source: $source, record: null);
 
 		$this->objectService->expects($this->never())->method('saveObject');
 		$this->mollieProvider->expects($this->never())->method('createPayment');
 
-		$this->expectException(PaymentProviderException::class);
-		$this->expectExceptionMessage('Unknown payment provider: "Mollie". Known providers: log, mollie.');
+		$this->expectException(exception: PaymentProviderException::class);
+		$this->expectExceptionMessage(message: 'Unknown payment provider: "Mollie". Known providers: log, mollie.');
 
 		$this->service->createPayment(payload: $this->payload());
 
@@ -169,19 +169,24 @@ class PaymentIntentServiceReviewTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreatePaymentWithoutProviderRunsTheLogBinding(): void {
-		$source = $this->entity(['slug' => 'ideal', 'type' => 'payment', 'configuration' => []], 'src-1');
+		$source = $this->entity(data: ['slug' => 'ideal', 'type' => 'payment', 'configuration' => []], uuid: 'src-1');
 		$this->stubFindAll(source: $source, record: null);
 
 		$this->mollieProvider->expects($this->never())->method('createPayment');
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->with($this->callback(static fn (array $object): bool => $object['provider'] === 'log' && str_starts_with($object['providerPaymentId'], 'MOCK-PAY-')))
-			->willReturn($this->entity([], 'pi-1'));
+			->with(
+				$this->callback(
+					callback: static fn (array $object): bool => $object['provider'] === 'log'
+						&& str_starts_with($object['providerPaymentId'], 'MOCK-PAY-')
+				)
+			)
+			->willReturn($this->entity(data: [], uuid: 'pi-1'));
 
 		$result = $this->service->createPayment(payload: $this->payload());
 
-		$this->assertTrue($result['dormant']);
-		$this->assertStringStartsWith('https://sandbox.payment.example/checkout/MOCK-PAY-', $result['checkoutUrl']);
+		$this->assertTrue(condition: $result['dormant']);
+		$this->assertStringStartsWith(prefix: 'https://sandbox.payment.example/checkout/MOCK-PAY-', string: $result['checkoutUrl']);
 
 	}//end testCreatePaymentWithoutProviderRunsTheLogBinding()
 
@@ -191,15 +196,15 @@ class PaymentIntentServiceReviewTest extends TestCase {
 	 * @return void
 	 */
 	public function testRefreshOnAnUnknownProviderFailsNamingIt(): void {
-		$record = $this->entity(['sourceSlug' => 'ideal', 'providerPaymentId' => 'MOCK-PAY-7', 'lastOutcome' => null], 'pi-7');
-		$source = $this->entity(['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['provider' => 'stripe']], 'src-1');
+		$record = $this->entity(data: ['sourceSlug' => 'ideal', 'providerPaymentId' => 'MOCK-PAY-7', 'lastOutcome' => null], uuid: 'pi-7');
+		$source = $this->entity(data: ['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['provider' => 'stripe']], uuid: 'src-1');
 		$this->objectService->method('find')->willReturn($record);
 		$this->stubFindAll(source: $source, record: $record);
 
 		$this->objectService->expects($this->never())->method('saveObject');
 
-		$this->expectException(PaymentProviderException::class);
-		$this->expectExceptionMessage('"stripe"');
+		$this->expectException(exception: PaymentProviderException::class);
+		$this->expectExceptionMessage(message: '"stripe"');
 
 		$this->service->refreshPayment(paymentIntentId: 'pi-7');
 
@@ -211,20 +216,23 @@ class PaymentIntentServiceReviewTest extends TestCase {
 	 * @return void
 	 */
 	public function testRefreshSettlesAPaidPaymentAndEmitsOnce(): void {
-		$record = $this->entity(['sourceSlug' => 'ideal', 'providerPaymentId' => 'MOCK-PAY-9', 'paymentStatus' => 'open', 'lastOutcome' => null], 'pi-9');
+		$record = $this->entity(
+			data: ['sourceSlug' => 'ideal', 'providerPaymentId' => 'MOCK-PAY-9', 'paymentStatus' => 'open', 'lastOutcome' => null],
+			uuid: 'pi-9'
+		);
 		$source = $this->entity(
-			['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['provider' => 'log', 'mockStatuses' => ['MOCK-PAY-9' => 'paid']]],
-			'src-1'
+			data: ['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['provider' => 'log', 'mockStatuses' => ['MOCK-PAY-9' => 'paid']]],
+			uuid: 'src-1'
 		);
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('pi-9', $this->equalTo(new ObjectFindOptions(register: 'integriq', schema: 'payment_intent')), false, false)
+			->with('pi-9', $this->equalTo(value: new ObjectFindOptions(register: 'integriq', schema: 'payment_intent')), false, false)
 			->willReturn($record);
 		$this->stubFindAll(source: $source, record: $record);
 
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->with($this->callback(static fn (array $object): bool => $object['paymentStatus'] === 'paid' && $object['lastOutcome'] === 'captured'))
+			->with($this->callback(callback: static fn (array $object): bool => $object['paymentStatus'] === 'paid' && $object['lastOutcome'] === 'captured'))
 			->willReturn($record);
 		$this->eventService->expects($this->once())
 			->method('emitCloudEvent')
@@ -232,7 +240,7 @@ class PaymentIntentServiceReviewTest extends TestCase {
 
 		$result = $this->service->refreshPayment(paymentIntentId: 'pi-9');
 
-		$this->assertSame(['result' => 'applied', 'outcome' => 'captured', 'paymentStatus' => 'paid'], $result);
+		$this->assertSame(expected: ['result' => 'applied', 'outcome' => 'captured', 'paymentStatus' => 'paid'], actual: $result);
 
 	}//end testRefreshSettlesAPaidPaymentAndEmitsOnce()
 
@@ -242,10 +250,13 @@ class PaymentIntentServiceReviewTest extends TestCase {
 	 * @return void
 	 */
 	public function testASecondRefreshEmitsNothing(): void {
-		$record = $this->entity(['sourceSlug' => 'ideal', 'providerPaymentId' => 'MOCK-PAY-9', 'paymentStatus' => 'paid', 'lastOutcome' => 'captured'], 'pi-9');
+		$record = $this->entity(
+			data: ['sourceSlug' => 'ideal', 'providerPaymentId' => 'MOCK-PAY-9', 'paymentStatus' => 'paid', 'lastOutcome' => 'captured'],
+			uuid: 'pi-9'
+		);
 		$source = $this->entity(
-			['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['mockStatuses' => ['MOCK-PAY-9' => 'paid']]],
-			'src-1'
+			data: ['slug' => 'ideal', 'type' => 'payment', 'configuration' => ['mockStatuses' => ['MOCK-PAY-9' => 'paid']]],
+			uuid: 'src-1'
 		);
 		$this->objectService->method('find')->willReturn($record);
 		$this->stubFindAll(source: $source, record: $record);
@@ -255,7 +266,7 @@ class PaymentIntentServiceReviewTest extends TestCase {
 
 		$result = $this->service->refreshPayment(paymentIntentId: 'pi-9');
 
-		$this->assertSame(['result' => 'noop', 'outcome' => 'captured', 'paymentStatus' => 'paid'], $result);
+		$this->assertSame(expected: ['result' => 'noop', 'outcome' => 'captured', 'paymentStatus' => 'paid'], actual: $result);
 
 	}//end testASecondRefreshEmitsNothing()
 
@@ -270,8 +281,8 @@ class PaymentIntentServiceReviewTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObject');
 
 		$this->assertSame(
-			['result' => 'not-found', 'outcome' => null, 'paymentStatus' => null],
-			$this->service->refreshPayment(paymentIntentId: 'missing')
+			expected: ['result' => 'not-found', 'outcome' => null, 'paymentStatus' => null],
+			actual: $this->service->refreshPayment(paymentIntentId: 'missing')
 		);
 
 	}//end testRefreshOfAnUnknownPaymentIsNotFound()
@@ -283,11 +294,11 @@ class PaymentIntentServiceReviewTest extends TestCase {
 	 */
 	public function testListProvidersNamesEveryBindingAndWhetherItNeedsAKey(): void {
 		$this->assertSame(
-			[
+			expected: [
 				['id' => 'log', 'label' => 'Log (sandbox, charges nobody)', 'needsKey' => false],
 				['id' => 'mollie', 'label' => 'Mollie', 'needsKey' => true],
 			],
-			$this->service->listProviders()
+			actual: $this->service->listProviders()
 		);
 
 	}//end testListProvidersNamesEveryBindingAndWhetherItNeedsAKey()
@@ -305,8 +316,8 @@ class PaymentIntentServiceReviewTest extends TestCase {
 			->willReturn(['ok' => true, 'mode' => 'test', 'profile' => 'School', 'message' => null]);
 
 		$this->assertSame(
-			['provider' => 'mollie', 'ok' => true, 'mode' => 'test', 'profile' => 'School', 'message' => null],
-			$this->service->checkProvider(configuration: $configuration)
+			expected: ['provider' => 'mollie', 'ok' => true, 'mode' => 'test', 'profile' => 'School', 'message' => null],
+			actual: $this->service->checkProvider(configuration: $configuration)
 		);
 
 	}//end testCheckProviderRunsTheBindingsProbe()
@@ -320,15 +331,15 @@ class PaymentIntentServiceReviewTest extends TestCase {
 		$this->mollieProvider->expects($this->never())->method('probe');
 
 		$this->assertSame(
-			['provider' => 'log', 'ok' => true, 'mode' => 'log', 'profile' => null, 'message' => null],
-			$this->service->checkProvider(configuration: [])
+			expected: ['provider' => 'log', 'ok' => true, 'mode' => 'log', 'profile' => null, 'message' => null],
+			actual: $this->service->checkProvider(configuration: [])
 		);
 
 		$refused = $this->service->checkProvider(configuration: ['provider' => 'Mollie']);
-		$this->assertFalse($refused['ok']);
-		$this->assertSame('Mollie', $refused['provider']);
-		$this->assertNull($refused['mode']);
-		$this->assertStringContainsString('"Mollie"', (string)$refused['message']);
+		$this->assertFalse(condition: $refused['ok']);
+		$this->assertSame(expected: 'Mollie', actual: $refused['provider']);
+		$this->assertNull(actual: $refused['mode']);
+		$this->assertStringContainsString(needle: '"Mollie"', haystack: (string)$refused['message']);
 
 	}//end testCheckProviderAnswersLogAndRefusesAnUnknownValue()
 
@@ -354,7 +365,7 @@ class PaymentIntentServiceReviewTest extends TestCase {
 			->with(['provider' => 'mollie', 'authentication' => ['credentialRef' => ['credentialId' => 'cred-1']]])
 			->willReturn(['ok' => true, 'mode' => 'test', 'profile' => null, 'message' => null]);
 
-		$this->assertTrue($this->service->checkProvider(configuration: $configuration)['ok']);
+		$this->assertTrue(condition: $this->service->checkProvider(configuration: $configuration)['ok']);
 
 	}//end testCheckProviderPinsTheTargetAndPassesOnlyTheCredentialRef()
 
@@ -372,7 +383,7 @@ class PaymentIntentServiceReviewTest extends TestCase {
 		$answer = $this->service->checkProvider(
 			configuration: ['provider' => 'mollie', 'baseUrl' => 'https://collector.example.invalid', 'authentication' => 'not-an-object']
 		);
-		$this->assertFalse($answer['ok']);
+		$this->assertFalse(condition: $answer['ok']);
 
 	}//end testCheckProviderWithoutAKeyPassesNoAuthentication()
 }//end class

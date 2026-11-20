@@ -69,12 +69,12 @@ class MolliePaymentProviderProbeTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->broker = $this->createMock(BrokeredCallService::class);
-		$l = $this->createMock(IL10N::class);
+		$this->broker = $this->createMock(originalClassName: BrokeredCallService::class);
+		$l = $this->createMock(originalClassName: IL10N::class);
 		$l->method('t')->willReturnArgument(0);
-		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 
-		$this->provider = new MolliePaymentProvider($this->broker, $l, $this->logger);
+		$this->provider = new MolliePaymentProvider(brokeredCallService: $this->broker, l: $l, logger: $this->logger);
 
 	}//end setUp()
 
@@ -101,11 +101,12 @@ class MolliePaymentProviderProbeTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAcceptedTestKeyAnswersOkInTestMode(): void {
-		$this->answer(new Response(200, [], json_encode(['resource' => 'profile', 'id' => 'pfl_1', 'mode' => 'test', 'name' => 'Basisschool De Linde'])));
+		$profile = ['resource' => 'profile', 'id' => 'pfl_1', 'mode' => 'test', 'name' => 'Basisschool De Linde'];
+		$this->answer(response: new Response(status: 200, headers: [], body: json_encode($profile)));
 
 		$this->assertSame(
-			['ok' => true, 'mode' => 'test', 'profile' => 'Basisschool De Linde', 'message' => null],
-			$this->provider->probe(sourceConfiguration: $this->configuration)
+			expected: ['ok' => true, 'mode' => 'test', 'profile' => 'Basisschool De Linde', 'message' => null],
+			actual: $this->provider->probe(sourceConfiguration: $this->configuration)
 		);
 
 	}//end testAnAcceptedTestKeyAnswersOkInTestMode()
@@ -116,11 +117,11 @@ class MolliePaymentProviderProbeTest extends TestCase {
 	 * @return void
 	 */
 	public function testALiveKeyAnswersLiveMode(): void {
-		$this->answer(new Response(200, [], json_encode(['mode' => 'live'])));
+		$this->answer(response: new Response(status: 200, headers: [], body: json_encode(['mode' => 'live'])));
 
 		$this->assertSame(
-			['ok' => true, 'mode' => 'live', 'profile' => null, 'message' => null],
-			$this->provider->probe(sourceConfiguration: $this->configuration)
+			expected: ['ok' => true, 'mode' => 'live', 'profile' => null, 'message' => null],
+			actual: $this->provider->probe(sourceConfiguration: $this->configuration)
 		);
 
 	}//end testALiveKeyAnswersLiveMode()
@@ -131,11 +132,11 @@ class MolliePaymentProviderProbeTest extends TestCase {
 	 * @return void
 	 */
 	public function testARefusedKeyIsReportedNotThrown(): void {
-		$this->answer(new Response(401, [], '{"status":401,"title":"Unauthorized Request"}'));
+		$this->answer(response: new Response(status: 401, headers: [], body: '{"status":401,"title":"Unauthorized Request"}'));
 
 		$this->assertSame(
-			['ok' => false, 'mode' => null, 'profile' => null, 'message' => 'Mollie responded with HTTP 401.'],
-			$this->provider->probe(sourceConfiguration: $this->configuration)
+			expected: ['ok' => false, 'mode' => null, 'profile' => null, 'message' => 'Mollie responded with HTTP 401.'],
+			actual: $this->provider->probe(sourceConfiguration: $this->configuration)
 		);
 
 	}//end testARefusedKeyIsReportedNotThrown()
@@ -146,12 +147,12 @@ class MolliePaymentProviderProbeTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAnswerWithoutAModeIsNotAccepted(): void {
-		$this->answer(new Response(200, [], json_encode(['mode' => 'sandbox'])));
+		$this->answer(response: new Response(status: 200, headers: [], body: json_encode(['mode' => 'sandbox'])));
 
 		$result = $this->provider->probe(sourceConfiguration: $this->configuration);
 
-		$this->assertFalse($result['ok']);
-		$this->assertSame('Mollie answered the profile lookup without a test or live mode.', $result['message']);
+		$this->assertFalse(condition: $result['ok']);
+		$this->assertSame(expected: 'Mollie answered the profile lookup without a test or live mode.', actual: $result['message']);
 
 	}//end testAnAnswerWithoutAModeIsNotAccepted()
 
@@ -166,8 +167,8 @@ class MolliePaymentProviderProbeTest extends TestCase {
 
 		$result = $this->provider->probe(sourceConfiguration: ['provider' => 'mollie']);
 
-		$this->assertFalse($result['ok']);
-		$this->assertStringContainsString('credentialRef', (string)$result['message']);
+		$this->assertFalse(condition: $result['ok']);
+		$this->assertStringContainsString(needle: 'credentialRef', haystack: (string)$result['message']);
 
 	}//end testWithoutACredentialNothingIsDispatched()
 
@@ -178,8 +179,8 @@ class MolliePaymentProviderProbeTest extends TestCase {
 	 */
 	public function testTheLogBindingAnswersOkInLogMode(): void {
 		$this->assertSame(
-			['ok' => true, 'mode' => 'log', 'profile' => null, 'message' => null],
-			(new LogPaymentProvider())->probe(sourceConfiguration: [])
+			expected: ['ok' => true, 'mode' => 'log', 'profile' => null, 'message' => null],
+			actual: (new LogPaymentProvider())->probe(sourceConfiguration: [])
 		);
 
 	}//end testTheLogBindingAnswersOkInLogMode()

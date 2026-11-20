@@ -273,13 +273,9 @@ class MolliePaymentProvider implements PaymentProviderInterface, PaymentProvider
 			return $this->refusedProbe(message: $exception->getMessage());
 		}
 
-		$decoded = json_decode($response, true);
-		$mode = null;
-		if (is_array($decoded) === true) {
-			$mode = ($decoded['mode'] ?? null);
-		}
-
-		if ($mode !== 'test' && $mode !== 'live') {
+		$decoded = (array)json_decode($response, true);
+		$mode    = ($decoded['mode'] ?? null);
+		if (in_array($mode, ['test', 'live'], true) === false) {
 			return $this->refusedProbe(message: 'Mollie answered the profile lookup without a test or live mode.');
 		}
 

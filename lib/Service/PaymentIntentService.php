@@ -368,12 +368,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	public function checkProvider(array $configuration): array {
-		$raw = ($configuration['provider'] ?? 'log');
-		$name = '(not text)';
-		if (is_scalar($raw) === true) {
-			$name = (string)$raw;
-		}
-
+		$name = $this->providers->nameOf(value: ($configuration['provider'] ?? 'log'));
 		if ($name === '') {
 			$name = 'log';
 		}
@@ -572,26 +567,19 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 			return $this->logProvider;
 		}
 
-		if (is_string($provider) === true) {
-			$binding = $this->providers->find(providerId: $provider);
-			if ($binding !== null) {
-				return $binding;
-			}
-		}
-
 		// The built-in Mollie binding answers to its id as it always did, also
 		// when the registry was built without it.
-		if ($provider === 'mollie') {
-			return $this->mollieProvider;
+		$binding = null;
+		if (is_string($provider) === true) {
+			$binding = ($this->providers->find(providerId: $provider) ?? (['mollie' => $this->mollieProvider][$provider] ?? null));
 		}
 
-		$name = '(not text)';
-		if (is_scalar($provider) === true) {
-			$name = (string)$provider;
+		if ($binding !== null) {
+			return $binding;
 		}
 
 		throw new PaymentProviderException(
-			message: $this->l->t('Unknown payment provider') . ': "' . $name . '". '
+			message: $this->l->t('Unknown payment provider') . ': "' . $this->providers->nameOf(value: $provider) . '". '
 				. 'Known providers: ' . implode(', ', array_keys(self::PROVIDERS)) . '.'
 		);
 	}//end resolveProvider()

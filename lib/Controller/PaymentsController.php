@@ -214,11 +214,13 @@ class PaymentsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function providers(): JSONResponse {
-		if ($this->userSession->getUser() === null) {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
 		}
 
-		return new JSONResponse(['providers' => $this->paymentIntentService->listProviders()]);
+		$providers = $this->paymentIntentService->listProviders();
+		return new JSONResponse(['providers' => $providers]);
 
 	}//end providers()
 
