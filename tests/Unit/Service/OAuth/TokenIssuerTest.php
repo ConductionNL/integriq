@@ -277,6 +277,39 @@ final class TokenIssuerTest extends TestCase {
 	}//end testTheTokenEndpoint()
 
 	/**
+	 * No object read carries the issuer's private key or a client secret.
+	 *
+	 * After a key is created, a secret is set and a token is issued, every
+	 * stored consumer holds the secret only as a password hash, nothing holds
+	 * the private key, and the register strips the hash from every API read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/tasks.md#verification
+	 */
+	public function testNoObjectReadCarriesThePrivateKeyOrAClientSecret(): void {
+		$this->issuerKey->create(owner: 'admin');
+		$secret = $this->issuer->setClientSecret(consumerId: 'c-partner');
+		$this->issuer->issue(grantType: 'client_credentials', clientId: 'c-partner', clientSecret: $secret);
+		$privatePem = array_values($this->vault)[0][0];
+
+		$stored = (string) json_encode(value: $this->consumers);
+		$this->assertStringNotContainsString(needle: $secret, haystack: $stored);
+		$this->assertStringNotContainsString(needle: 'PRIVATE KEY', haystack: $stored);
+		$this->assertStringNotContainsString(needle: $privatePem, haystack: $stored);
+		$this->assertSame(expected: ['name', 'authorizationType', 'scopes', 'clientSecretHash'], actual: array_keys($this->consumers['c-partner']));
+
+		$base = json_decode(json: (string) file_get_contents(filename: __DIR__ . '/../../../../lib/Settings/integriq_register.json'), associative: true);
+		$fragment = json_decode(json: (string) file_get_contents(filename: __DIR__ . '/../../../../lib/Settings/register.d/99-consumer-secrets-writeonly.json'), associative: true);
+		$consumer = $base['components']['schemas']['consumer']['properties'];
+		$this->assertArrayHasKey(key: 'clientSecretHash', array: $consumer);
+		$this->assertTrue(condition: $fragment['components']['schemas']['consumer']['properties']['clientSecretHash']['writeOnly']);
+		foreach (array_keys($consumer) as $property) {
+			$this->assertDoesNotMatchRegularExpression(pattern: '/private|secret$/i', string: $property, message: 'consumer.' . $property . ' would hold key or secret material in the clear');
+		}
+	}//end testNoObjectReadCarriesThePrivateKeyOrAClientSecret()
+
+	/**
 	 * Integriq accepts its own token: the consumer is its sub, checked against the published key only.
 	 *
 	 * @return void

@@ -41,4 +41,5 @@ Kind: code. Size M. Rows `integriq:gw-openapi-import`, `integriq:gw-openapi-publ
 ## Verification
 - [ ] `openspec validate gateway-openapi-import-and-publish --type change --strict` passes
 - [ ] PHPUnit, Newman and Playwright run, exit codes read
-- [ ] The configuration export and import tests pass unchanged
+- [x] The configuration export and import tests pass unchanged
+  - Checked on development 60f97d46: the merge of this change (#3582) only adds test files (`git diff --stat d7fc9c810^1 d7fc9c810 -- tests`, 3761 insertions, 0 deletions); the configuration export and import suites (`Configuration(Handler|Service|Import|Export)`, `HandlerImport`, `HandlerExport`, `ExportEnvelope`, `ImportPreview`) pass, 85 tests.

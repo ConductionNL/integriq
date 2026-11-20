@@ -67,4 +67,5 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
 ## Verification
 - [ ] `openspec validate access-oauth-and-token-validation --type change --strict` passes
 - [ ] PHPUnit and Newman run, exit codes read
-- [ ] No private key or client secret appears in any OR object read, asserted in a test
+- [x] No private key or client secret appears in any OR object read, asserted in a test
+  - `TokenIssuerTest::testNoObjectReadCarriesThePrivateKeyOrAClientSecret`: after a key is created, a secret set and a token issued, no stored consumer holds the secret, the PEM or `PRIVATE KEY`; the consumer keeps only `clientSecretHash`, which `99-consumer-secrets-writeonly.json` marks `writeOnly`, and no consumer property is named for key or secret material in the clear.
