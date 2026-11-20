@@ -39,7 +39,7 @@ Kind: code. Matrix row `integriq:obs-otel`.
   - GIVEN an active trace WHEN CallService dispatches THEN the request carries `traceparent`
 - [x] Implement. `TraceParent`; `EndpointService::mintEndpointTrace()`; `CallService::withTraceParent()` on `call()` and `callAsync()`, the call step records the span id it sent.
 - [x] Test. `TraceContextPropagationTest` (inbound valid and invalid, outbound header and span id, own header left alone), `SpanMapperTest::testTraceParentAcceptsOnlyTheW3cShape`.
-- [ ] Newman for the inbound header (not run: needs a live instance; recipe in STATE "Still owed").
+- [x] Inbound header against a live instance (live pass 2026-11-17, as requests rather than a Newman item): an endpoint called with a valid `traceparent` stores its trace with `otelTraceId` and `parentSpanId` from the header; an invalid header stores a trace with neither. Traces were stored at all only after execution_trace's microsecond fields got bigint columns.
 
 ### Task 5: Admin settings
 - **spec_ref**: openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
@@ -49,7 +49,7 @@ Kind: code. Matrix row `integriq:obs-otel`.
   - GIVEN a failed trace and a sampling ratio of 0 WHEN persisted THEN it is still queued
 - [x] Implement. `OtelSettings` (`otel_*` app settings), `OtelSettingsController` (`/api/admin/otel`, admin only), `src/views/admin/OtelSettings.vue` in the admin page, en and nl strings.
 - [x] Test. PHPUnit `OtelExportTest::testAFailedTraceIsAlwaysSampled`, `::testAnAdministratorSwitchesExportOn`.
-- [ ] Playwright `tests/e2e/opentelemetry-export.spec.ts` (written; not run: Playwright runs in the nightly job, not locally).
+- [x] Playwright `tests/e2e/opentelemetry-export.spec.ts`: 2 of 2 pass on a fresh NC 34.0.6 + OpenRegister main instance (live pass 2026-11-17). The switch-on test first timed out: NcTextField and NcCheckboxRadioSwitch put `data-testid` on the input itself, so `.locator('input')` under it found nothing; the spec now targets the input directly.
 
 ## Verification
 

@@ -523,6 +523,41 @@ class CallReplayServiceTest extends TestCase {
 	}//end testAGetWithoutAKeptBodyIsStillReplayed()
 
 	/**
+	 * A call that kept no replayRequest and whose stored request was masked is
+	 * not replayed: the partner would get the placeholder, not the value sent.
+	 *
+	 * @return void
+	 */
+	public function testAMaskedRequestWithoutAReplayRequestIsNotReplayed(): void {
+		$uuid = $this->failedCall();
+		unset($this->records[$uuid]['replayRequest']);
+		$this->records[$uuid]['request'] = ['method' => 'GET', 'endpoint' => '/personen', 'query' => ['bsn' => '[afgeschermd]']];
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertFalse($result['sent']);
+		$this->assertCount(0, $dispatcher->sent);
+		$this->assertStringContainsString('no longer kept', $result['detail']);
+	}//end testAMaskedRequestWithoutAReplayRequestIsNotReplayed()
+
+	/**
+	 * A masked stored request does not stop a replay from the kept replayRequest.
+	 *
+	 * @return void
+	 */
+	public function testAKeptReplayRequestIsReplayedWhenTheStoredRequestIsMasked(): void {
+		$uuid = $this->failedCall();
+		$this->records[$uuid]['request'] = ['method' => 'GET', 'endpoint' => '/personen', 'query' => ['bsn' => '[afgeschermd]']];
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertTrue($result['sent']);
+		$this->assertCount(1, $dispatcher->sent);
+	}//end testAKeptReplayRequestIsReplayedWhenTheStoredRequestIsMasked()
+
+	/**
 	 * A bulk replay reports each item, and skips none.
 	 *
 	 * @return void

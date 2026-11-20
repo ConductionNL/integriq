@@ -50,4 +50,18 @@ class OtelExportJobScheduler implements TraceExportSchedulerInterface {
 	public function scheduleExport(string $traceId): void {
 		$this->jobList->add(OtelExportJob::class, ['traceId' => $traceId, 'attempt' => 0]);
 	}//end scheduleExport()
+
+	/**
+	 * Queue the first export attempt of one span another app handed in.
+	 *
+	 * @param string $appId The app that sent the span; its `service.name`.
+	 * @param array<string, mixed> $span The span, cleaned by the span mapper.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
+	 */
+	public function scheduleForeignSpan(string $appId, array $span): void {
+		$this->jobList->add(OtelExportJob::class, ['appId' => $appId, 'span' => $span, 'attempt' => 0]);
+	}//end scheduleForeignSpan()
 }//end class

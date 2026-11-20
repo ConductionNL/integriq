@@ -1,0 +1,111 @@
+{
+  "$comment": "INTEGRIQ DRAFT (native-data-gathering-provider, ported from spectr/connectors): Source and Job ship isEnabled false, per the requirement that a connector blocked on an unbuilt capability ships disabled. PARKED (Wave 3): the API needs a subscription key, referenced through the credential broker (credentialRef 'doffin'); no key ships. Unparked by its own change once the key is enrolled. ORIGINAL SPECTR NOTE: Phase-2 W3-revival OpenConnector ingestion config for Norway/Doffin, the 'revive-native (S-M)' verdict from README.md's W3 audit table. concurrentie-analyse/scripts/sync/sync_norway.py's own docstring documents the situation precisely: Doffin's Public API (Azure API Management, base betaapi.doffin.no/public/v2) is free but requires a self-service developer-portal signup (https://dof-notices-prod-api.developer.azure-api.net/ - create an account, subscribe to the 'Public API' product, copy the subscription key from Profile > Subscriptions) - this is 'Ruben territory' per the batch-3 task brief, not something obtainable inside an agent session, so this file ships as a DOCUMENTED DRAFT with the Job disabled. The subscription key itself lives in the OpenRegister credential broker (manifest-credentials-doffin change): the Source carries `credentialRef.credentialName: \"doffin\"` instead of any header-embedded key - the operator creates a credential named `doffin` (provider `doffin`) in Nextcloud user settings, allows app `openconnector`, and no secret or placeholder ever enters this repo. LIVE CONNECTIVITY CHECK (2026-07-06, within the ≤8-request budget - 2 requests used): a keyless GET against `https://betaapi.doffin.no/public/v2/notices?cpvCodes=48000000&pageNumber=1&pageSize=1` and a second attempt with an obviously-fake `Ocp-Apim-Subscription-Key: fake-test-key-000` header both returned the identical `HTTP 404 {\"statusCode\":404,\"message\":\"Resource not found\"}` - confirming the host itself is alive and running a real Azure APIM gateway (the JSON error shape is APIM's own, matching the script's documented architecture), but NOT disambiguating why: Azure APIM's more typical unauthenticated-request response is `401 Access denied due to missing subscription key`, so a `404` here could mean either (a) APIM's route-masking hides even the existence of a path from a caller with no/invalid key, or (b) the exact `/public/v2/notices` path has moved since the Python script was written - its own docstring already flags the API as still-beta ('betaapi.doffin.no') and subject to change ('If it moves to production, update BASE_URL accordingly'). Neither can be resolved without a genuine subscription key, so the `sourceConfig.endpoint`/pagination shape below is carried over UNVERIFIED from the script's own documented contract (`GET /notices` with `cpvCodes`/`pageNumber`/`pageSize` query params, `{\"notices\":[...],\"totalCount\":N}` envelope) rather than confirmed against a real response - this is the one source in this batch whose field-level mapping was never checked against live data (the same class of gap as belgium.json's OAuth-gated mapping). Mapping mirrors sync_norway.py's own defensive multi-key fallback chains, since the script itself hedges against several possible eForms/REST field-naming variants it has apparently never pinned down either (`notice.get('title') or notice.get('noticeTitle') or notice.get('contractTitle')`, similarly for buyer/dates/CPV/value) - Twig's `|default()` chaining reproduces the same first-non-empty-wins logic. `extract_multilang()`'s language-preference logic (no/nb/nn/en) is approximated by chaining `.no`/`.nb`/`.nn`/`.en` attribute defaults - Twig's attribute access returns null (not an error) when the source value is a plain string rather than a dict, so the chain degrades safely either way, but - like the rest of this mapping - was never exercised against a real payload. `cpvCodes` uses the same scalar-to-array `cast` trick as latvia_iub.json/belgium.json (main CPV code only; the script's own `[cpv_main] + cpv_additional` array-union is not reproducible through Twig, see IMPORT.md). `estimatedValue` takes the first of three possible value-object shapes the script itself tries (`estimatedValue`/`totalValue`/`contractValue`), each of which may itself be a nested `{amount:...}` object or a bare number in the script's own handling - simplified here to the nested-object case only (`estimatedValue.amount`), the more eForms-idiomatic shape, since a single fixed dot-path cannot branch on the source value's own type the way the Python script's `isinstance()` check does. Job ships disabled - the secret blocker is resolved via the credential broker (`credentialRef`), so the ONLY remaining enablement blocker is live mapping verification: do not enable the Job until a real broker-held key has been used to check the mapping (and the 404-vs-401 route ambiguity) against at least one real response. One further simplification vs. the Python script: it loops over TWO CPV codes (48000000 software, 72000000 IT services) as two separate query passes; this Synchronization's `sourceConfig.query.cpvCodes` only wires the first (48000000) - OpenConnector has no multi-value-query-per-sync loop primitive, so covering both would need a second Source/Synchronization/Job triple (omitted here to keep the draft minimal; trivial to clone once the key is real and the shape is confirmed).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "norway-doffin"
+        },
+        "name": "Doffin (Norway public procurement portal)",
+        "description": "Norway's national procurement notice portal, via its Azure API Management-hosted Public API. Requires a free self-service developer-portal signup and subscription key (injected broker-side as the Ocp-Apim-Subscription-Key header) - see this file's $comment for the signup path and the live connectivity check that could not fully disambiguate the API's current route shape without a real key. The subscription key is held by the OpenRegister credential broker, never in this config: this Source references it via `credentialRef.credentialName: \"doffin\"`. Operator recipe: in Nextcloud user settings -> Credentials, create a credential named `doffin` with provider `doffin`, paste the APIM subscription key there, and allow app `openconnector` (the sync engine is the calling app, not spectr). Mapping remains UNVERIFIED against a real response (404-vs-401 route ambiguity, see $comment) - the Job below stays disabled until a live check passes. Feeds the spectr `tender` register/schema via the norway-doffin-to-spectr-tender synchronization.",
+        "type": "api",
+        "location": "https://betaapi.doffin.no/public/v2",
+        "documentation": "https://dof-notices-prod-api.developer.azure-api.net/",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          },
+          "authentication": {
+            "credentialRef": {
+              "credentialName": "doffin"
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "norway-doffin-to-tender"
+        },
+        "name": "Doffin to Spectr Tender",
+        "description": "Maps a raw Doffin notice onto the spectr `tender` schema, mirroring sync_norway.py's own defensive multi-key/multilingual fallback chains - UNVERIFIED against a real response, see this file's $comment.",
+        "mapping": {
+          "sourceRef": "{{ id|default(noticeId)|default('') }}",
+          "publicatieId": "{{ id|default(noticeId)|default('') }}",
+          "source": "norway-doffin",
+          "title": "{{ (title.no|default(title.nb)|default(title.nn)|default(title.en)|default(title))|default(noticeTitle)|default(contractTitle)|default('') }}",
+          "displayName": "{{ ((title.no|default(title.nb)|default(title.nn)|default(title.en)|default(title))|default(noticeTitle)|default(contractTitle)|default('Untitled Doffin notice'))|slice(0, 250) }}",
+          "organisation": "{{ (buyer.name.no|default(buyer.name.en)|default(buyer.name))|default(buyer.officialName)|default(buyer.legalName)|default(contractingAuthority.name)|default('') }}",
+          "country": "NO",
+          "description": "{{ (description.no|default(description.en)|default(description))|default('') }}",
+          "nutsCode": "{{ nutsCode|default(nuts)|default(placeOfPerformance)|default('') }}",
+          "publicationDate": "{{ (publicationDate|default(publishedDate)|default(''))|slice(0, 10) }}",
+          "status": "new",
+          "procedure": "{{ procedureType|default(procedure)|default('') }}",
+          "typeOpdracht": "{{ noticeType|default(type)|default('') }}",
+          "estimatedValue": "{{ (estimatedValue.amount|default(totalValue.amount)|default(contractValue.amount))|default('') }}",
+          "cpvCodes": "{{ cpvCode|default(mainCpvCode)|default('') }}",
+          "closingDate": "{{ (submissionDeadline|default(deadlineForSubmission)|default(tenderDeadline)|default(''))|slice(0, 10) }}",
+          "tenderUrl": "{{ noticeUrl|default('https://doffin.no/en/Notice/Details/' ~ (id|default(noticeId)|default(''))) }}"
+        },
+        "unset": [],
+        "cast": {
+          "cpvCodes": "array"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "norway-doffin-to-spectr-tender"
+        },
+        "name": "Doffin to Spectr Tender",
+        "description": "W3-revival ingestion sync: Doffin Public API notices search (CPV-filtered, paginated per sync_norway.py's own documented contract) -> spectr register, tender schema. UNVERIFIED against a real response (see $comment) - `resultsPosition`/`idPosition`/pagination params are carried over from the script's own documented API contract, not confirmed live.",
+        "sourceId": "norway-doffin",
+        "sourceType": "api",
+        "sourceTargetMapping": "norway-doffin-to-tender",
+        "sourceConfig": {
+          "endpoint": "/notices",
+          "query": {
+            "cpvCodes": "48000000",
+            "pageSize": 25
+          },
+          "idPosition": "id",
+          "resultsPosition": "notices",
+          "paginationQuery": "pageNumber",
+          "usesPagination": true,
+          "maxPages": 10
+        },
+        "targetId": "spectr/tender",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "job",
+          "slug": "norway-doffin-weekly-sync"
+        },
+        "name": "Doffin Weekly Sync",
+        "description": "Runs the norway-doffin-to-spectr-tender synchronization weekly - ships DISABLED. The secret blocker is resolved via the credential broker (Source `credentialRef.credentialName: \"doffin\"`); the remaining blocker is live mapping verification only - do not enable until the mapping (and the 404-vs-401 route ambiguity, see $comment) has been checked against at least one real response through the broker.",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "norway-doffin-to-spectr-tender"
+        },
+        "interval": 604800,
+        "isEnabled": false,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

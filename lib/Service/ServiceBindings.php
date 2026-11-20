@@ -26,7 +26,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
+use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Format\ArrayToXml;
+use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
@@ -49,6 +52,8 @@ use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
 use OCA\Integriq\Service\AgentTools\DeadLetterProjectionInterface;
 use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
 use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
+use OCA\Integriq\Service\Chat\TalkMessageSource;
+use OCA\Integriq\Service\Chat\TalkMessageSourceInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
@@ -151,6 +156,8 @@ use OCA\Integriq\Service\Objecten\ObjectenTokenServiceInterface;
 use OCA\Integriq\Service\Objecten\ObjectenWiring;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandlerInterface;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitter;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitterInterface;
 use OCA\Integriq\Service\Oso\LogOsoProvider;
 use OCA\Integriq\Service\Oso\OsoKennisnetClient;
 use OCA\Integriq\Service\Oso\OsoProviderRegistry;
@@ -213,6 +220,8 @@ use OCA\Integriq\Service\ServiceFetch\ServiceFetchService;
 use OCA\Integriq\Service\ServiceFetch\ServiceFetchServiceInterface;
 use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
 use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
+use OCA\Integriq\Service\Sms\SmsProviderRegistryInterface;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClient;
@@ -286,6 +295,7 @@ final class ServiceBindings {
 		AuthenticationServiceInterface::class => AuthenticationService::class,
 		SoftwareCatalogueServiceInterface::class => SoftwareCatalogueService::class,
 		OpenFormulierenIntakeServiceInterface::class => OpenFormulierenIntakeService::class,
+		DestinationSubmitterInterface::class => DestinationSubmitter::class,
 		LtiKeyServiceInterface::class => LtiKeyService::class,
 		CardfeedSyncServiceInterface::class => CardfeedSyncService::class,
 		ExchangeJobServiceInterface::class => ExchangeJobService::class,
@@ -294,6 +304,9 @@ final class ServiceBindings {
 		IwmoIjwSyncServiceInterface::class => IwmoIjwSyncService::class,
 		StufZdsOutboundInterface::class => StufZdsOutbound::class,
 		SmsDispatchServiceInterface::class => SmsDispatchService::class,
+		NotifyNlEmailServiceInterface::class => NotifyNlEmailService::class,
+		SmsStatusCallbackServiceInterface::class => SmsStatusCallbackService::class,
+		SmsProviderRegistryInterface::class => SmsProviderRegistry::class,
 		StufProviderReceiverInterface::class => StufProviderReceiver::class,
 		DigitalPostServiceInterface::class => DigitalPostService::class,
 		ExchangeRejectionServiceInterface::class => ExchangeRejectionService::class,
@@ -367,6 +380,7 @@ final class ServiceBindings {
 		UnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
 		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
+		TalkMessageSourceInterface::class => TalkMessageSource::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
 		CallerSearchInterface::class => ConfiguredCallerSearch::class,
 		IntakeGroupsInterface::class => IntakeGroups::class,
@@ -439,6 +453,8 @@ final class ServiceBindings {
 		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
 		PhoneNumberNormaliserInterface::class => E164PhoneNumberNormaliser::class,
 		CloudEventEmitterInterface::class => EventService::class,
+		LookupAllowlistInterface::class => LookupAllowlist::class,
+		XmlEncoderInterface::class => ArrayToXml::class,
 	];
 	/**
 	 * Register the contract aliases on the app's registration context.
@@ -538,7 +554,8 @@ final class ServiceBindings {
 				return new SettingsService(
 					config: $c->get('OCP\IAppConfig'),
 					rebaseScheduler: $c->get(RetentionRebaseSchedulerInterface::class),
-					logger: $c->get('Psr\Log\LoggerInterface')
+					logger: $c->get('Psr\Log\LoggerInterface'),
+					errorSink: $c->get(ErrorSinkSettings::class)
 				);
 			}
 		);

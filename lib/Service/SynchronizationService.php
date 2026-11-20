@@ -29,6 +29,7 @@ use Adbar\Dot;
 use DateTime;
 use DateTimeInterface;
 use Exception;
+use RuntimeException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Promise\Each;
 use GuzzleHttp\Promise\FulfilledPromise;
@@ -55,6 +56,8 @@ use OCA\Integriq\Service\Synchronization\FileFetchItem;
 use OCA\Integriq\Service\Synchronization\FileFetchRequest;
 use OCA\Integriq\Service\Synchronization\FileFetchRun;
 use OCA\Integriq\Service\Synchronization\SourcePage;
+use OCA\Integriq\Service\Synchronization\WildcardResultsPath;
+use OCA\Integriq\Service\Synchronization\ZipArchiveMembers;
 use OCA\Integriq\Service\Synchronization\OpenRegisterTargetWrite;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\Synchronization\PagedFetch;
@@ -73,6 +76,7 @@ use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Service\Format\CsvCodec;
 use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -138,6 +142,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @var int|null
 	 */
 	private ?int $lastPageFromLink = null;
+
+	/**
+	 * Mappings read for their output format, by reference (mapping-formats-and-lookups).
+	 *
+	 * @var array<string, ObjectEntity|null>
+	 */
+	private array $outputMappings = [];
 
 	/**
 	 * Call logs for pages fetched ahead of the loop, keyed by page number.
@@ -8518,6 +8529,28 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$page->body = $this->decodePageBody(page: $page);
 
+		// A `.zip` archive holds many files where gzip holds one (a bulk
+		// source publishing one feed per day inside one archive). Each member
+		// is read as its own page body and the objects are joined.
+		if ($this->isZipPayload(page: $page) === true) {
+			return $this->readZipPage(page: $page);
+		}
+
+		return $this->readDecodedPage(page: $page);
+	}//end fetchSinglePageData()
+
+	/**
+	 * Reads a decoded page body with the parser its source or synchronization declares.
+	 *
+	 * @param SourcePage $page The page, with its body decoded.
+	 *
+	 * @return array The page, an empty page, or a failed page.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function readDecodedPage(SourcePage $page): array {
+		$source = $page->source;
+
 		// #107: markdown- and HTML-shaped sources (spectr's keyless catalog/
 		// standards connectors — awesome_selfhosted, openalternative,
 		// don_oss_register, wikipedia_comparisons — have no JSON/XML API at
@@ -8539,8 +8572,121 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			);
 		}
 
+		// Mapping-formats-and-lookups REQ-MFL-001: a synchronization reading a
+		// CSV response hands one array per row to the mapping. Per
+		// synchronization, like `jsonl`, because the same source can serve
+		// several formats.
+		if (($page->synchronization['sourceConfig']['format'] ?? null) === 'csv') {
+			$rows = $this->decodeCsvPage(body: (string)$page->body, sourceConfig: $page->synchronization['sourceConfig']);
+			return ['objects' => $rows, 'result' => $rows];
+		}
+
 		return ($this->readYamlPage(page: $page, sourceFormat: $sourceFormat) ?? $this->readParsedPage(page: $page));
-	}//end fetchSinglePageData()
+	}//end readDecodedPage()
+
+	/**
+	 * Whether a decoded page body is a zip archive.
+	 *
+	 * Any one signal is enough: an explicit `Source.configuration.decompress:
+	 * "zip"`, a `.zip`-suffixed endpoint, or a body that starts with the zip
+	 * signature (no JSON, XML, CSV or YAML body does).
+	 *
+	 * @param SourcePage $page The page, with its body decoded.
+	 *
+	 * @return bool True when the body is to be read as an archive.
+	 *
+	 * @spec openspec/changes/native-data-gathering-provider/tasks.md
+	 */
+	private function isZipPayload(SourcePage $page): bool {
+		if (is_string($page->body) === false) {
+			return false;
+		}
+
+		if (strtolower((string)($page->source['configuration']['decompress'] ?? '')) === 'zip') {
+			return true;
+		}
+
+		if ($this->endpointSuggestsSuffix(endpoint: $page->endpoint, suffix: '.zip') === true) {
+			return true;
+		}
+
+		return (new ZipArchiveMembers())->looksLikeZip(bytes: $page->body);
+	}//end isZipPayload()
+
+	/**
+	 * Reads every member of a zip page and joins their objects.
+	 *
+	 * A member no parser can read, or an archive that cannot be opened or is
+	 * over its limits, fails the whole page: a partly read archive reported as
+	 * complete would let the stale sweep delete what was not read.
+	 * `Source.configuration.zipMembers` (a shell pattern such as `*.atom`)
+	 * narrows which members are read.
+	 *
+	 * @param SourcePage $page The page, with its body decoded.
+	 *
+	 * @return array The page with every member's objects, or a failed page.
+	 *
+	 * @spec openspec/changes/native-data-gathering-provider/tasks.md
+	 */
+	private function readZipPage(SourcePage $page): array {
+		$pattern = $page->source['configuration']['zipMembers'] ?? null;
+		if (is_string($pattern) === false) {
+			$pattern = null;
+		}
+
+		try {
+			$members = (new ZipArchiveMembers())->read(bytes: $page->body, pattern: $pattern);
+		} catch (RuntimeException $exception) {
+			$this->logger->error(
+				'SynchronizationService: source {endpoint} answered with a zip archive that could not be read '
+				. '({reason}). Treating the page as FAILED rather than empty.',
+				['endpoint' => $page->endpoint, 'reason' => $exception->getMessage()]
+			);
+
+			return $this->failedPage(page: $page);
+		}
+
+		$objects = [];
+		foreach ($members as $member) {
+			$memberPage = new SourcePage(source: $page->source, endpoint: $page->endpoint.'#'.$member['name']);
+			$memberPage->synchronization = $page->synchronization;
+			$memberPage->response = $page->response;
+			$memberPage->statusCode = $page->statusCode;
+			$memberPage->body = $member['body'];
+
+			$read = $this->readDecodedPage(page: $memberPage);
+			if (($read['failed'] ?? false) === true) {
+				return $this->failedPage(page: $page);
+			}
+
+			foreach ($read['objects'] as $object) {
+				$objects[] = $object;
+			}
+		}
+
+		return ['objects' => $objects, 'result' => $objects];
+	}//end readZipPage()
+
+	/**
+	 * The rows of a CSV page, with the synchronization's delimiter, enclosure and header flag.
+	 *
+	 * @param string              $body         The page body.
+	 * @param array<string,mixed> $sourceConfig The synchronization's `sourceConfig`.
+	 *
+	 * @return list<array<int|string,string>> The rows.
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+	 */
+	private function decodeCsvPage(string $body, array $sourceConfig): array {
+		return CsvCodec::decode(
+			content: $body,
+			options: [
+				'delimiter' => (string)($sourceConfig['csvDelimiter'] ?? ','),
+				'enclosure' => (string)($sourceConfig['csvEnclosure'] ?? '"'),
+				'header' => (($sourceConfig['csvHeader'] ?? true) !== false),
+			]
+		);
+	}//end decodeCsvPage()
 
 	/**
 	 * The call log of a page: taken from the concurrent prefetch when it is
@@ -10010,6 +10156,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return array An array of items extracted from the response body.
 	 * @throws Exception If the position of objects in the return body cannot be determined.
+	 *
+	 * @spec openspec/changes/native-data-gathering-provider/tasks.md
 	 */
 	public function getAllObjectsFromArray(array $array, array $synchronization): array {
 		// Get the source configuration from the synchronization object.
@@ -10021,6 +10169,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// If position is root, return the array.
 			if ($position === '_root' || $position === '_object') {
 				return $array;
+			}
+
+			// A `*` or `**` segment reaches the objects in every repeated
+			// container (articles in each chapter of a law) where a fixed dot
+			// path reaches one place.
+			$wildcardPath = new WildcardResultsPath();
+			if ($wildcardPath->isWildcard(path: (string)$position) === true) {
+				return $wildcardPath->objects(data: $array, path: (string)$position);
 			}
 
 			// Use Dot notation to access nested array elements.
@@ -10543,11 +10699,75 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				source: $write->target,
 				endpoint: $write->endpoint,
 				method: $method,
-				config: $write->targetConfig,
+				config: $this->formattedTargetConfig(write: $write, method: $method),
 				trace: $write->trace
 			)
 		);
 	}//end sendToTarget()
+
+	/**
+	 * The call config with the body in the output format of the mapping that made it.
+	 *
+	 * The mapping is the synchronization's sourceTargetMapping, or the
+	 * updateMapping on an update. When it declares `xml` or `csv` the mapped
+	 * object is sent as that text with its content type, and not as JSON. A
+	 * mapping without an output format, no mapping, or a body already turned
+	 * into a file upload leave the config as it was.
+	 *
+	 * @param TargetWrite $write  The write.
+	 * @param string      $method The HTTP method.
+	 *
+	 * @return array The call config.
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-sends-the-mappings-output-format-to-an-api-target-req-mfl-003
+	 */
+	private function formattedTargetConfig(TargetWrite $write, string $method): array {
+		$config = $write->targetConfig;
+		if (is_array($config['json'] ?? null) === false) {
+			return $config;
+		}
+
+		$reference = ($write->synchronization['sourceTargetMapping'] ?? null);
+		if ($method !== 'POST' && empty($config['updateMapping']) === false) {
+			$reference = $config['updateMapping'];
+		}
+
+		$mapping = $this->outputMapping(reference: $reference);
+		if ($mapping === null) {
+			return $config;
+		}
+
+		$rendered = $this->mappingService->renderOutput(mapping: $mapping, result: $config['json']);
+		if (($rendered['body'] ?? null) === null) {
+			return $config;
+		}
+
+		unset($config['json']);
+		$config['body'] = $rendered['body'];
+		$config['headers'] = array_merge((array)($config['headers'] ?? []), ['Content-Type' => $rendered['contentType']]);
+
+		return $config;
+	}//end formattedTargetConfig()
+
+	/**
+	 * The stored mapping object a reference names, read once per reference.
+	 *
+	 * @param mixed $reference The mapping id, uuid or slug.
+	 *
+	 * @return ObjectEntity|null The mapping, or null for no or an unknown reference.
+	 */
+	private function outputMapping(mixed $reference): ?ObjectEntity {
+		if (is_scalar($reference) === false || (string)$reference === '') {
+			return null;
+		}
+
+		$key = (string)$reference;
+		if (array_key_exists($key, $this->outputMappings) === false) {
+			$this->outputMappings[$key] = $this->mappingService->findMapping(reference: $key);
+		}
+
+		return $this->outputMappings[$key];
+	}//end outputMapping()
 
 	/**
 	 * Push one delivery as a new document to a ZGW Documenten API.
