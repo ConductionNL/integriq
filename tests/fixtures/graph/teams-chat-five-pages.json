@@ -1,0 +1,853 @@
+{
+ "chat": {
+  "id": "19:a1b2c3@thread.v2",
+  "topic": "Overleg Stationsplein",
+  "chatType": "group"
+ },
+ "members": {
+  "value": [
+   {
+    "id": "m-0",
+    "userId": "u-0",
+    "displayName": "P. Jansen"
+   },
+   {
+    "id": "m-1",
+    "userId": "u-1",
+    "displayName": "R. de Vries"
+   },
+   {
+    "id": "m-2",
+    "userId": "u-2",
+    "displayName": "S. Bakker"
+   }
+  ]
+ },
+ "pages": [
+  {
+   "value": [
+    {
+     "id": "m050",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:50:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 50"
+     }
+    },
+    {
+     "id": "m049",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:49:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 49"
+     }
+    },
+    {
+     "id": "m048",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:48:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 48"
+     }
+    },
+    {
+     "id": "m047",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:47:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 47"
+     }
+    },
+    {
+     "id": "m046",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:46:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 46"
+     }
+    },
+    {
+     "id": "m045",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:45:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 45"
+     }
+    },
+    {
+     "id": "m044",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:44:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 44"
+     }
+    },
+    {
+     "id": "m043",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:43:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 43"
+     }
+    },
+    {
+     "id": "m042",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:42:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 42"
+     }
+    },
+    {
+     "id": "m041",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:41:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 41"
+     }
+    }
+   ],
+   "@odata.nextLink": "https://graph.microsoft.com/v1.0/chats/19:a1b2c3@thread.v2/messages?$top=50&$skiptoken=page2"
+  },
+  {
+   "value": [
+    {
+     "id": "m040",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:40:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 40"
+     }
+    },
+    {
+     "id": "m039",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:39:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 39"
+     }
+    },
+    {
+     "id": "m038",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:38:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 38"
+     }
+    },
+    {
+     "id": "m037",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:37:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 37"
+     }
+    },
+    {
+     "id": "m036",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:36:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 36"
+     }
+    },
+    {
+     "id": "m035",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:35:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 35"
+     }
+    },
+    {
+     "id": "m034",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:34:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 34"
+     }
+    },
+    {
+     "id": "m033",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:33:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 33"
+     }
+    },
+    {
+     "id": "m032",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:32:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 32"
+     }
+    },
+    {
+     "id": "m031",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:31:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 31"
+     }
+    }
+   ],
+   "@odata.nextLink": "https://graph.microsoft.com/v1.0/chats/19:a1b2c3@thread.v2/messages?$top=50&$skiptoken=page3"
+  },
+  {
+   "value": [
+    {
+     "id": "m030",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:30:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 30"
+     }
+    },
+    {
+     "id": "m029",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:29:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 29"
+     }
+    },
+    {
+     "id": "m028",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:28:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 28"
+     }
+    },
+    {
+     "id": "m027",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:27:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 27"
+     }
+    },
+    {
+     "id": "m026",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:26:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 26"
+     }
+    },
+    {
+     "id": "m025",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:25:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 25"
+     }
+    },
+    {
+     "id": "m024",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:24:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 24"
+     }
+    },
+    {
+     "id": "m023",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:23:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 23"
+     }
+    },
+    {
+     "id": "m022",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:22:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 22"
+     }
+    },
+    {
+     "id": "m021",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:21:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 21"
+     }
+    }
+   ],
+   "@odata.nextLink": "https://graph.microsoft.com/v1.0/chats/19:a1b2c3@thread.v2/messages?$top=50&$skiptoken=page4"
+  },
+  {
+   "value": [
+    {
+     "id": "m020",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:20:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 20"
+     }
+    },
+    {
+     "id": "m019",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:19:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 19"
+     }
+    },
+    {
+     "id": "m018",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:18:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 18"
+     }
+    },
+    {
+     "id": "m017",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:17:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 17"
+     }
+    },
+    {
+     "id": "m016",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:16:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 16"
+     }
+    },
+    {
+     "id": "m015",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:15:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 15"
+     }
+    },
+    {
+     "id": "m014",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:14:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 14"
+     }
+    },
+    {
+     "id": "m013",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:13:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 13"
+     }
+    },
+    {
+     "id": "m012",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:12:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 12"
+     }
+    },
+    {
+     "id": "m011",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:11:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 11"
+     }
+    }
+   ],
+   "@odata.nextLink": "https://graph.microsoft.com/v1.0/chats/19:a1b2c3@thread.v2/messages?$top=50&$skiptoken=page5"
+  },
+  {
+   "value": [
+    {
+     "id": "m010",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:10:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 10"
+     }
+    },
+    {
+     "id": "m009",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:09:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 9"
+     }
+    },
+    {
+     "id": "m008",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:08:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 8"
+     }
+    },
+    {
+     "id": "m007",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:07:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 7"
+     }
+    },
+    {
+     "id": "m006",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:06:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 6"
+     }
+    },
+    {
+     "id": "m005",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:05:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 5"
+     }
+    },
+    {
+     "id": "m004",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:04:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 4"
+     }
+    },
+    {
+     "id": "m003",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:03:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "p.-jansen",
+       "displayName": "P. Jansen"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 3"
+     }
+    },
+    {
+     "id": "m002",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:02:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "s.-bakker",
+       "displayName": "S. Bakker"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 2"
+     }
+    },
+    {
+     "id": "m001",
+     "messageType": "message",
+     "createdDateTime": "2025-03-03T09:01:00Z",
+     "deletedDateTime": null,
+     "from": {
+      "user": {
+       "id": "r.-de-vries",
+       "displayName": "R. de Vries"
+      }
+     },
+     "body": {
+      "contentType": "text",
+      "content": "Bericht 1"
+     }
+    }
+   ]
+  }
+ ],
+ "hitId": "m013"
+}
