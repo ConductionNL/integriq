@@ -22946,8 +22946,8 @@
     {
       "type": "library",
       "name": "pinia",
-      "version": "2.3.1",
-      "bom-ref": "integriq@1.0.0|pinia@2.3.1",
+      "version": "4.1.0",
+      "bom-ref": "integriq@1.0.0|pinia@4.1.0",
       "licenses": [
         {
           "license": {
@@ -22955,15 +22955,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/pinia@2.3.1",
+      "purl": "pkg:npm/pinia@4.1.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/pinia/-/pinia-2.3.1.tgz",
+          "url": "https://registry.npmjs.org/pinia/-/pinia-4.1.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "921525652c2df715c26936dbc4560128373f6d60065898ce82fc444f091337b2919bae84793d597598fa8b671e87db0fd8fceab1b73bd38af6ca7801af1055ba"
+              "content": "fb9fc732e5636107ca9420f9c50ef37d79f5c54cd81446bba5dd0340ae5268c7d909a1514c795a1ff734d8dd45a0639d9734a2c1fe4438f809c7fff5403c3a83"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -22973,42 +22973,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/pinia"
-        }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "devtools-api",
-          "group": "@vue",
-          "version": "6.6.4",
-          "bom-ref": "integriq@1.0.0|pinia@2.3.1|@vue/devtools-api@6.6.4",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vue/devtools-api@6.6.4",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vue/devtools-api/-/devtools-api-6.6.4.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "b068533ccb97a99d6b54e937d91ca5ced5a47d74d186e4bbbe000abf4ce3aa4f206ec1e427bc5f15ffa36f24b1b7bb5639b109c3229a1cc8a457f5860e2426f2"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/pinia/node_modules/@vue/devtools-api"
-            }
-          ]
         }
       ]
     },
