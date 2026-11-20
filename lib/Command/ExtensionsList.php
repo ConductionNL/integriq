@@ -86,25 +86,29 @@ class ExtensionsList extends Command {
 		$record  = $this->inventory->record();
 		$refused = count(array_filter($record, static fn (array $entry): bool => $entry['refused'] === true));
 
+		$exitCode = 0;
+		if ($refused > 0) {
+			$exitCode = 1;
+		}
+
 		if ($input->getOption('json') === true) {
 			$output->writeln((string)json_encode($record, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-		} else if ($record === []) {
+			return $exitCode;
+		}
+
+		if ($record === []) {
 			$output->writeln('No extension app contributed anything.');
-		} else {
-			foreach ($record as $entry) {
-				$state = 'registered';
-				if ($entry['refused'] === true) {
-					$state = 'REFUSED: ' . $entry['reason'];
-				}
+		}
 
-				$output->writeln(sprintf('%s  %s  %s  %s  (%s)', $entry['appId'], $entry['seam'], $entry['id'], $state, $entry['class']));
+		foreach ($record as $entry) {
+			$state = 'registered';
+			if ($entry['refused'] === true) {
+				$state = 'REFUSED: ' . $entry['reason'];
 			}
+
+			$output->writeln(sprintf('%s  %s  %s  %s  (%s)', $entry['appId'], $entry['seam'], $entry['id'], $state, $entry['class']));
 		}
 
-		if ($refused > 0) {
-			return 1;
-		}
-
-		return 0;
+		return $exitCode;
 	}//end execute()
 }//end class

@@ -37,6 +37,10 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * outside the Intake component depend on the contract only.
  *
  * @spec exclude container wiring only, the registrar has no behaviour of its own
+ *
+ * Container wiring names every contract and its implementation, so it couples to all of them.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 final class IntakeBindings {
 	/**
