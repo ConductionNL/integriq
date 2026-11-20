@@ -197,7 +197,7 @@ class SchemaCheck implements RuleCheckInterface {
 			return sprintf('is too short%s', $where);
 		}
 
-		if (isset($schema['pattern']) === true && preg_match(PatternCheck::regex(pattern: (string) $schema['pattern']), $value) !== 1) {
+		if (isset($schema['pattern']) === true && preg_match((new PatternCheck())->regex(pattern: (string) $schema['pattern']), $value) !== 1) {
 			return sprintf('does not match %s%s', $schema['pattern'], $where);
 		}
 

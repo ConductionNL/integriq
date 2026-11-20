@@ -81,17 +81,8 @@ class ApiProductPublishGuardListener implements IEventListener {
 	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectCreatingEvent === true) {
-			$product = $event->getObject();
-			$old     = null;
-		} else if ($event instanceof ObjectUpdatingEvent === true) {
-			$product = $event->getNewObject();
-			$old     = $event->getOldObject();
-		} else {
-			return;
-		}
-
-		if ($this->becomesActive(product: $product, old: $old) === false) {
+		[$product, $old] = self::productChange(event: $event);
+		if ($product === null || $this->becomesActive(product: $product, old: $old) === false) {
 			return;
 		}
 
@@ -131,6 +122,25 @@ class ApiProductPublishGuardListener implements IEventListener {
 		);
 
 	}//end handle()
+
+	/**
+	 * The product an event writes and the version it replaces.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return array{0: ObjectEntity|null, 1: ObjectEntity|null} The new object (null for any other event) and the old one.
+	 */
+	private static function productChange(Event $event): array {
+		if ($event instanceof ObjectCreatingEvent === true) {
+			return [$event->getObject(), null];
+		}
+
+		if ($event instanceof ObjectUpdatingEvent === true) {
+			return [$event->getNewObject(), $event->getOldObject()];
+		}
+
+		return [null, null];
+	}//end productChange()
 
 	/**
 	 * Whether this save makes an API product active.

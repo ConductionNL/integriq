@@ -54,18 +54,25 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	public const SEVERITIES = ['error', 'warning', 'info'];
 
 	/**
-	 * How deep local references are followed.
-	 *
-	 * @var int
-	 */
-	private const MAX_REF_DEPTH = 32;
-
-	/**
 	 * The checks by name.
 	 *
 	 * @var array<string, RuleCheckInterface>
 	 */
 	private array $checks = [];
+
+	/**
+	 * Checks rule sets before they are saved.
+	 *
+	 * @var ApiDesignRuleSetValidator
+	 */
+	private readonly ApiDesignRuleSetValidator $ruleSets;
+
+	/**
+	 * Inlines the local `$ref`s of a document.
+	 *
+	 * @var JsonRefInliner
+	 */
+	private readonly JsonRefInliner $refs;
 
 	/**
 	 * Constructor.
@@ -80,7 +87,24 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 			$this->checks[$check->name()] = $check;
 		}
 
+		$this->ruleSets = new ApiDesignRuleSetValidator(selector: $selector, checks: $this->checks);
+		$this->refs     = new JsonRefInliner();
+
 	}//end __construct()
+
+	/**
+	 * The problems that keep a rule set from being saved; empty when it is sound.
+	 *
+	 * @param array<string,mixed> $ruleSet The rule set.
+	 *
+	 * @return list<string> The problems, each naming the rule it is about.
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 */
+	public function problemsOf(array $ruleSet): array {
+		return $this->ruleSets->problemsOf(ruleSet: $ruleSet);
+
+	}//end problemsOf()
 
 	/**
 	 * The rule sets integriq ships, the Dutch API design rules first.
@@ -113,92 +137,6 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	}//end builtInRuleSets()
 
 	/**
-	 * What makes a rule set unusable, one line per problem; empty when it can be saved.
-	 *
-	 * @param array<string, mixed> $ruleSet The rule set.
-	 *
-	 * @return list<string>
-	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
-	 */
-	public function problemsOf(array $ruleSet): array {
-		$problems = self::headerProblems(ruleSet: $ruleSet);
-
-		$rules = $ruleSet['rules'] ?? null;
-		if (is_array($rules) === false || $rules === [] || array_is_list($rules) === false) {
-			$problems[] = 'The rule set has no rules.';
-			return $problems;
-		}
-
-		return array_merge($problems, $this->ruleListProblems(rules: $rules));
-	}//end problemsOf()
-
-	/**
-	 * The problems of a rule set's rules: a label used twice, and each rule's own.
-	 *
-	 * @param list<mixed> $rules The rules.
-	 *
-	 * @return list<string>
-	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
-	 */
-	private function ruleListProblems(array $rules): array {
-		$problems = [];
-		$seen     = [];
-		foreach ($rules as $index => $rule) {
-			if (is_array($rule) === false) {
-				$rule = [];
-			}
-
-			$label = self::ruleLabel(index: $index, rule: $rule);
-			if (isset($seen[$label]) === true) {
-				$problems[] = sprintf('Rule %s appears twice.', $label);
-			}
-
-			$seen[$label] = true;
-			foreach ($this->ruleProblems(rule: $rule) as $problem) {
-				$problems[] = sprintf('Rule %s: %s', $label, $problem);
-			}
-		}
-
-		return $problems;
-	}//end ruleListProblems()
-
-	/**
-	 * What is missing from a rule set's name and version.
-	 *
-	 * @param array<string, mixed> $ruleSet The rule set.
-	 *
-	 * @return list<string>
-	 */
-	private static function headerProblems(array $ruleSet): array {
-		$problems = [];
-		foreach (['name', 'version'] as $member) {
-			if (is_string($ruleSet[$member] ?? null) === false || trim($ruleSet[$member]) === '') {
-				$problems[] = sprintf('The rule set has no %s.', $member);
-			}
-		}
-
-		return $problems;
-	}//end headerProblems()
-
-	/**
-	 * How a rule is named in a problem: its id, else its position.
-	 *
-	 * @param int                  $index The rule's position.
-	 * @param array<string, mixed> $rule  The rule.
-	 *
-	 * @return string
-	 */
-	private static function ruleLabel(int $index, array $rule): string {
-		if (is_string($rule['id'] ?? null) === true) {
-			return $rule['id'];
-		}
-
-		return '#'.$index;
-	}//end ruleLabel()
-
-	/**
 	 * Check a document against every enabled rule set.
 	 *
 	 * @param array<string, mixed>       $document The decoded OpenAPI description.
@@ -209,7 +147,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	public function check(array $document, array $ruleSets): array {
-		$document = self::inline(node: $document, root: $document, depth: 0, chain: []);
+		$document = $this->refs->inlined(document: $document);
 		$findings = [];
 		$manual   = [];
 		foreach ($ruleSets as $ruleSet) {
@@ -314,113 +252,6 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	}//end blockingFindings()
 
 	/**
-	 * What is wrong with one rule.
-	 *
-	 * @param array<string, mixed> $rule The rule.
-	 *
-	 * @return list<string>
-	 */
-	private function ruleProblems(array $rule): array {
-		$problems = self::metadataProblems(rule: $rule);
-		if (($rule['manual'] ?? false) === true) {
-			return $problems;
-		}
-
-		return array_merge($problems, $this->givenProblems(rule: $rule), $this->thenProblems(rule: $rule));
-	}//end ruleProblems()
-
-	/**
-	 * What is wrong with a rule's id, severity and link.
-	 *
-	 * @param array<string, mixed> $rule The rule.
-	 *
-	 * @return list<string>
-	 */
-	private static function metadataProblems(array $rule): array {
-		$problems = [];
-		if (is_string($rule['id'] ?? null) === false || $rule['id'] === '') {
-			$problems[] = 'it has no id';
-		}
-
-		if (in_array($rule['severity'] ?? null, self::SEVERITIES, true) === false) {
-			$problems[] = 'its severity is not error, warning or info';
-		}
-
-		if (is_string($rule['url'] ?? null) === false || str_starts_with($rule['url'], 'https://') === false) {
-			$problems[] = 'it has no https link to the rule text';
-		}
-
-		return $problems;
-	}//end metadataProblems()
-
-	/**
-	 * What is wrong with a rule's `given` selectors.
-	 *
-	 * @param array<string, mixed> $rule The rule.
-	 *
-	 * @return list<string>
-	 */
-	private function givenProblems(array $rule): array {
-		$problems = [];
-		$givens = (array) ($rule['given'] ?? []);
-		if ($givens === []) {
-			$problems[] = 'it selects nothing (given)';
-		}
-
-		foreach ($givens as $given) {
-			try {
-				$this->selector->select(document: [], expression: (string) $given);
-			} catch (InvalidArgumentException $exception) {
-				$problems[] = $exception->getMessage();
-			}
-		}
-
-		return $problems;
-	}//end givenProblems()
-
-	/**
-	 * What is wrong with a rule's `then` checks.
-	 *
-	 * @param array<string, mixed> $rule The rule.
-	 *
-	 * @return list<string>
-	 */
-	private function thenProblems(array $rule): array {
-		$problems = [];
-		$thens = self::thens(rule: $rule);
-		if ($thens === []) {
-			$problems[] = 'it checks nothing (then)';
-		}
-
-		foreach ($thens as $then) {
-			$problem = $this->thenProblem(then: $then);
-			if ($problem !== null) {
-				$problems[] = $problem;
-			}
-		}
-
-		return $problems;
-	}//end thenProblems()
-
-	/**
-	 * The problem of one `then`: an unknown check or options it refuses, or null.
-	 *
-	 * @param array<string, mixed> $then The `then`.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
-	 */
-	private function thenProblem(array $then): ?string {
-		$check = $this->checks[(string) ($then['function'] ?? '')] ?? null;
-		if ($check === null) {
-			return sprintf('check "%s" is not one of %s', (string) ($then['function'] ?? ''), implode(', ', array_keys($this->checks)));
-		}
-
-		return $check->invalidOptions(options: (array) ($then['functionOptions'] ?? []));
-	}//end thenProblem()
-
-	/**
 	 * Run one rule over a document.
 	 *
 	 * @param array<string, mixed> $document The document, references inlined.
@@ -458,7 +289,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	 */
 	private function nodeFailures(array $node, array $rule): array {
 		$failures = [];
-		foreach (self::thens(rule: $rule) as $then) {
+		foreach ($this->ruleSets->thensOf(rule: $rule) as $then) {
 			$failure = $this->thenFailure(node: $node, ruleThen: ['rule' => $rule, 'then' => $then]);
 			if ($failure !== null) {
 				$failures[] = $failure;
@@ -496,26 +327,6 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 
 		return ['path' => $pointer, 'message' => self::message(rule: $rule, error: $error, value: $value, key: $node['key'])];
 	}//end thenFailure()
-
-	/**
-	 * A rule's `then` as a list.
-	 *
-	 * @param array<string, mixed> $rule The rule.
-	 *
-	 * @return list<array<string, mixed>>
-	 */
-	private static function thens(array $rule): array {
-		$then = $rule['then'] ?? [];
-		if (is_array($then) === false || $then === []) {
-			return [];
-		}
-
-		if (array_is_list($then) === false) {
-			return [$then];
-		}
-
-		return array_values(array_filter($then, 'is_array'));
-	}//end thens()
 
 	/**
 	 * The value a `then.field` names under a selected node.
@@ -608,78 +419,4 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 		return '';
 	}//end scalarText()
 
-	/**
-	 * Inline local `$ref`s. A reference that loops or runs deeper than the
-	 * limit is left as written.
-	 *
-	 * @param mixed                $node  The node.
-	 * @param array<string, mixed> $root  The whole document.
-	 * @param int                  $depth How many references deep.
-	 * @param list<string>         $chain The references followed to get here.
-	 *
-	 * @return mixed
-	 */
-	private static function inline(mixed $node, array $root, int $depth, array $chain): mixed {
-		if (is_array($node) === false) {
-			return $node;
-		}
-
-		$ref = $node['$ref'] ?? null;
-		if (is_string($ref) === true && str_starts_with($ref, '#/') === true) {
-			return self::inlineRef(node: $node, ref: $ref, root: $root, depth: $depth, chain: $chain);
-		}
-
-		foreach ($node as $key => $child) {
-			$node[$key] = self::inline(node: $child, root: $root, depth: $depth, chain: $chain);
-		}
-
-		return $node;
-	}//end inline()
-
-	/**
-	 * A local reference node replaced by its inlined target, or left as written when
-	 * it loops, runs deeper than the limit or points nowhere.
-	 *
-	 * @param array<mixed, mixed>  $node  The reference node.
-	 * @param string               $ref   Its `#/...` reference.
-	 * @param array<string, mixed> $root  The whole document.
-	 * @param int                  $depth How many references deep.
-	 * @param list<string>         $chain The references followed to get here.
-	 *
-	 * @return mixed
-	 */
-	private static function inlineRef(array $node, string $ref, array $root, int $depth, array $chain): mixed {
-		if ($depth >= self::MAX_REF_DEPTH || in_array($ref, $chain, true) === true) {
-			return $node;
-		}
-
-		[$found, $target] = self::resolvePointer(root: $root, ref: $ref);
-		if ($found === false) {
-			return $node;
-		}
-
-		return self::inline(node: $target, root: $root, depth: $depth + 1, chain: [...$chain, $ref]);
-	}//end inlineRef()
-
-	/**
-	 * The value a local `#/...` reference points at.
-	 *
-	 * @param array<string, mixed> $root The whole document.
-	 * @param string               $ref  The reference, starting with `#/`.
-	 *
-	 * @return array{0: bool, 1: mixed} Whether it resolves, and the value it points at.
-	 */
-	private static function resolvePointer(array $root, string $ref): array {
-		$target = $root;
-		foreach (explode('/', substr($ref, 2)) as $part) {
-			$part = str_replace(['~1', '~0'], ['/', '~'], $part);
-			if (is_array($target) === false || array_key_exists($part, $target) === false) {
-				return [false, null];
-			}
-
-			$target = $target[$part];
-		}
-
-		return [true, $target];
-	}//end resolvePointer()
 }//end class

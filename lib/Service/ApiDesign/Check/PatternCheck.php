@@ -65,7 +65,7 @@ class PatternCheck implements RuleCheckInterface {
 			return 'is not a text value';
 		}
 
-		return self::patternFailure(text: (string) $value, options: $options);
+		return $this->patternFailure(text: (string) $value, options: $options);
 	}//end check()
 
 	/**
@@ -76,12 +76,12 @@ class PatternCheck implements RuleCheckInterface {
 	 *
 	 * @return string|null
 	 */
-	private static function patternFailure(string $text, array $options): ?string {
-		if (isset($options['match']) === true && preg_match(self::regex(pattern: (string) $options['match']), $text) !== 1) {
+	private function patternFailure(string $text, array $options): ?string {
+		if (isset($options['match']) === true && preg_match($this->regex(pattern: (string) $options['match']), $text) !== 1) {
 			return sprintf('"%s" does not match %s', $text, $options['match']);
 		}
 
-		if (isset($options['notMatch']) === true && preg_match(self::regex(pattern: (string) $options['notMatch']), $text) === 1) {
+		if (isset($options['notMatch']) === true && preg_match($this->regex(pattern: (string) $options['notMatch']), $text) === 1) {
 			return sprintf('"%s" matches %s', $text, $options['notMatch']);
 		}
 
@@ -103,7 +103,7 @@ class PatternCheck implements RuleCheckInterface {
 		}
 
 		foreach (['match', 'notMatch'] as $option) {
-			if (isset($options[$option]) === true && self::isValidPattern(pattern: $options[$option]) === false) {
+			if (isset($options[$option]) === true && $this->isValidPattern(pattern: $options[$option]) === false) {
 				return sprintf('pattern %s is not a valid regular expression', $option);
 			}
 		}
@@ -118,8 +118,19 @@ class PatternCheck implements RuleCheckInterface {
 	 *
 	 * @return bool
 	 */
-	private static function isValidPattern(mixed $pattern): bool {
-		return is_string($pattern) === true && @preg_match(self::regex(pattern: $pattern), '') !== false;
+	private function isValidPattern(mixed $pattern): bool {
+		if (is_string($pattern) === false) {
+			return false;
+		}
+
+		// A pattern that does not compile makes preg_match warn and answer false;
+		// the warning is the answer here, so it is not reported.
+		set_error_handler(static fn (): bool => true);
+		try {
+			return preg_match($this->regex(pattern: $pattern), '') !== false;
+		} finally {
+			restore_error_handler();
+		}
 	}//end isValidPattern()
 
 	/**
@@ -131,7 +142,7 @@ class PatternCheck implements RuleCheckInterface {
 	 *
 	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
-	public static function regex(string $pattern): string {
+	public function regex(string $pattern): string {
 		if (preg_match('#^/.*/[imsux]*$#s', $pattern) === 1) {
 			return $pattern;
 		}
