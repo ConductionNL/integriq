@@ -27,7 +27,7 @@ Kind: code. Size S. Row `opencatalogi:lc-source-destroyed`.
   - The signed route is `POST /api/synchronizations/{id}/destroyed` on its own `SourceDestroyedController` (`sourceDestroyed#destroyed`; on `SynchronizationsController` the constructor would pass phpmd's parameter limit). `#[PublicPage]`, verified against the source's `configuration.webhookSignature` over the raw body before the body is read; an unknown synchronization, a source without a secret and a bad signature all answer the same 401. The body carries `originId` (the route's `{id}` is the synchronization) and an optional `reference`.
 - [ ] Test (PHPUnit on the service and controller; `tests/e2e/source-destruction-purge.spec.ts`)
   - Done: `tests/Unit/Service/SourceDestructionServiceTest.php` through the real `SourceDestructionService` and `SynchronizationService` (only that object is purged, URL and uuid keyed contracts, the policy without `onSourceDestroyed`, keepAndFlag, no contract, another source's contract, unknown synchronization); `tests/Unit/Controller/SourceDestroyedControllerTest.php` with the real `WebhookSignatureService` (signed, forged, unsigned, unknown synchronization, missing `originId`); three tests in `NotificatiesSubscriberServiceTest` assert the hand-off from the caller.
-  - Owed: `tests/e2e/source-destruction-purge.spec.ts` against a live instance.
+  - Written, not yet run (it needs the live instance): `tests/e2e/source-destruction-purge.spec.ts` posts signed and unsigned notices from a context with an empty storage state: unsigned, wrongly signed and unknown synchronization answer 401; an unknown record 404; a signed notice purges only that record's object (a second contracted object stays), keeps the contract with `targetId` null and `targetLastAction` purge, and a repeat finds nothing to remove; the contract log names the record, the object, the trigger, the reference and the time.
 
 ### Task 3: The purge record and the refusal
 - **spec_ref**: openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-every-purge-is-recorded-and-a-refused-purge-stays-visible-req-sdp-003
@@ -52,7 +52,7 @@ Kind: code. Size S. Row `opencatalogi:lc-source-destroyed`.
   - Demo data: the mock register has no publication synchronization (the design assumed one), so `disappearancePolicy: purge` and `onSourceDestroyed: purge` are declared on the full-mode demo synchronization `synchronization-voorbeeld-name-3-3`. `tests/Unit/Settings/SourceDestructionDemoTest.php` pins it and validates it against the real register schema.
 - [ ] Test (`tests/e2e/source-destruction-purge.spec.ts`)
   - Done: `tests/vitest/syncOwnershipEditor.spec.js` mounts the real modal: the purge option, the `onSourceDestroyed` picker writing and removing its key, and the warning shown only when something purges.
-  - Owed: the Playwright spec, and a live demo run that shows the purged count.
+  - Playwright written, not yet run: the editor test in `tests/e2e/source-destruction-purge.spec.ts` shows the warning on a synchronization that purges on destruction and as soon as purge is picked on one that does not. Owed: a live demo run that shows the purged count, and the full-run scenario with an attached PDF, which needs a source that serves records.
 
 ## Verification
 
