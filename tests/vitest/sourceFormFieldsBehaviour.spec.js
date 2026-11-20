@@ -11,6 +11,7 @@
  *
  * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
  * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
+ * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -224,5 +225,107 @@ describe('SourceFormFields behaviour', () => {
 		get.mockResolvedValueOnce({ data: { providers: 'not a list' } })
 		await wrapper.vm.fetchDigitalPostProviders()
 		expect(wrapper.vm.digitalPostProviders).toEqual([])
+	})
+
+	it('an SMS source lists the five providers by name and shows the settings the picked one reads', async () => {
+		get.mockResolvedValue({
+			data: {
+				providers: [
+					{ providerId: 'log', name: 'Log', configSchema: { properties: { provider: { type: 'string' } } } },
+					{ providerId: 'notifynl', name: 'NotifyNL', configSchema: {} },
+					{
+						providerId: 'cmcom',
+						name: 'CM.com',
+						configSchema: {
+							required: ['senderId', 'authentication'],
+							properties: {
+								provider: { type: 'string' },
+								baseUrl: { type: 'string', default: 'https://gw.cmtelecom.com/v1.0' },
+								senderId: { type: 'string', description: 'The sender name.' },
+								authentication: { type: 'object' },
+							},
+						},
+					},
+					{ providerId: 'messagebird', name: 'MessageBird', configSchema: {} },
+					{ providerId: 'twilio', name: 'Twilio', configSchema: {} },
+					{ name: 'no id' },
+				],
+			},
+		})
+		const { wrapper } = mountFields({ type: 'sms', configuration: { provider: 'cmcom' } })
+		await flushPromises()
+
+		expect(get.mock.calls[0][0]).toContain('/apps/integriq/api/sms/providers')
+		expect(wrapper.vm.smsProviderOptions.map((option) => option.label)).toEqual(['Log', 'NotifyNL', 'CM.com', 'MessageBird', 'Twilio'])
+		expect(wrapper.vm.selectedSmsProvider).toEqual({ id: 'cmcom', label: 'CM.com' })
+		expect(wrapper.vm.smsProviderFields).toEqual([
+			{ key: 'baseUrl', label: 'Base URL', description: '', required: false, placeholder: 'https://gw.cmtelecom.com/v1.0' },
+			{ key: 'senderId', label: 'Sender', description: 'The sender name.', required: true, placeholder: '' },
+		])
+		expect(wrapper.vm.typeOptions.map((option) => option.id)).toContain('sms')
+
+		await wrapper.setProps({ formData: { type: 'sms', configuration: { provider: 'retired' } } })
+		expect(wrapper.vm.selectedSmsProvider).toEqual({ id: 'retired', label: 'retired' })
+		expect(wrapper.vm.smsProviderFields).toEqual([])
+		expect(get).toHaveBeenCalledTimes(1)
+	})
+
+	it('picking an SMS provider and typing its settings writes them onto the configuration', () => {
+		const { wrapper, writes } = mountFields({ type: 'sms', configuration: { senderId: 'Gemeente' } })
+		get.mockResolvedValue({ data: { providers: [] } })
+
+		wrapper.vm.onSmsProviderPick({ id: 'twilio' })
+		wrapper.vm.onSmsConfigInput('accountSid', 'AC123')
+		wrapper.vm.onSmsConfigInput('senderId', '')
+		wrapper.vm.onSmsProviderPick(null)
+
+		expect(writes).toEqual([
+			['configuration', { senderId: 'Gemeente', provider: 'twilio' }],
+			['configuration', { senderId: 'Gemeente', accountSid: 'AC123' }],
+			['configuration', {}],
+			['configuration', { senderId: 'Gemeente', provider: '' }],
+		])
+	})
+
+	it('a failed or odd SMS provider answer is an empty list, and switching to SMS loads it', async () => {
+		get.mockRejectedValueOnce(new Error('no endpoint'))
+		const { wrapper } = mountFields({ type: 'api' })
+		expect(get).not.toHaveBeenCalled()
+
+		await wrapper.setProps({ formData: { type: 'sms', configuration: {} } })
+		await flushPromises()
+		expect(get).toHaveBeenCalledTimes(1)
+		expect(wrapper.vm.smsProviders).toEqual([])
+		expect(wrapper.vm.smsLoading).toBe(false)
+
+		get.mockResolvedValueOnce({ data: { providers: { not: 'a list' } } })
+		await wrapper.vm.fetchSmsProviders()
+		expect(wrapper.vm.smsProviders).toEqual([])
+	})
+
+	it('a provider that posts delivery status shows its callback URL once saved, and a signing key field when it signs', async () => {
+		get.mockResolvedValue({
+			data: {
+				providers: [
+					{ providerId: 'log', name: 'Log', configSchema: {}, statusCallback: null },
+					{ providerId: 'cmcom', name: 'CM.com', configSchema: {}, statusCallback: { signed: false } },
+					{ providerId: 'twilio', name: 'Twilio', configSchema: {}, statusCallback: { signed: true } },
+				],
+			},
+		})
+		const { wrapper } = mountFields({ type: 'sms', configuration: { provider: 'twilio', statusCallbackToken: 'abc123' } })
+		await flushPromises()
+
+		expect(wrapper.vm.smsStatusCallback).toEqual({ signed: true })
+		expect(wrapper.vm.smsCallbackUrl).toBe(window.location.origin + '/index.php/apps/integriq/api/sms/twilio/status/abc123')
+		expect(wrapper.vm.smsSigningKeyField.key).toBe('webhookSigningKey')
+
+		await wrapper.setProps({ formData: { type: 'sms', configuration: { provider: 'cmcom' } } })
+		expect(wrapper.vm.smsStatusCallback).toEqual({ signed: false })
+		expect(wrapper.vm.smsCallbackUrl).toBe('')
+
+		await wrapper.setProps({ formData: { type: 'sms', configuration: { provider: 'log', statusCallbackToken: 'bad token!' } } })
+		expect(wrapper.vm.smsStatusCallback).toBeNull()
+		expect(wrapper.vm.smsCallbackUrl).toBe('')
 	})
 })

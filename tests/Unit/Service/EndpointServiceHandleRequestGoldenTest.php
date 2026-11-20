@@ -57,6 +57,8 @@ use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Handles requests through the endpoint conditions, the request message
@@ -167,7 +169,9 @@ class EndpointServiceHandleRequestGoldenTest extends TestCase {
 
 		$objects = ObjectServiceMockBuilder::make($this);
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null): ?ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->trace[] = ['find' => $schema, 'id' => $id];
 				return match ($schema) {
 					'message_schema' => ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Person', 'kind' => 'json-schema', 'version' => '1', 'document' => '{"type":"object","required":["bsn"],"properties":{"bsn":{"type":"string"}}}'], self::SCHEMA_UUID),
@@ -178,7 +182,10 @@ class EndpointServiceHandleRequestGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->trace[] = ['save' => $schema, 'uuid' => $uuid, 'object' => $object];
 				return new ObjectEntity();
 			}

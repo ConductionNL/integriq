@@ -2,9 +2,8 @@
 <!-- Copyright (C) 2026 Conduction B.V. -->
 <!--
   EndpointFormFields — slotted override for CnFormDialog's `#form` content on
-  the Endpoints index page. Restores the field set the pre-manifest
-  EditEndpoint.vue modal offered (src/modals/Endpoint/EditEndpoint.vue), which
-  the schema-driven form could not express declaratively:
+  the Endpoints index page. Adds the fields the schema-driven form could not
+  express declaratively:
 
     • Register + Schema pickers. These are NOT schema properties — the endpoint
       schema stores a single polymorphic `targetId`, and for
@@ -211,6 +210,11 @@
 			</template>
 		</div>
 
+		<McpEndpointFields
+			v-if="isMcpTarget"
+			:formData="formData"
+			:updateField="updateField" />
+
 		<!-- REQ-MSV-002: the message schemas the request and the proxied
 		     answer must match, and whether a mismatch is refused or recorded. -->
 		<fieldset class="cn-endpoint-form-fields__validation">
@@ -253,8 +257,9 @@ import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import McpEndpointFields from './McpEndpointFields.vue'
 
-/** HTTP methods the original EditEndpoint modal offered, in its order. */
+/** HTTP methods the method select offers, in display order. */
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({
 	id,
 	label: id,
@@ -266,7 +271,14 @@ const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({
  * documents `api`, `job` and `synchronization` too, but authoring those needs a
  * different target input than a register/schema pair — kept out until asked for.
  */
-const TARGET_TYPE_OPTIONS = [{ id: 'register/schema', label: 'register/schema' }]
+const TARGET_TYPE_OPTIONS = [
+	{ id: 'register/schema', label: 'register/schema' },
+	// An outside MCP tool server behind the gateway (gateway-mcp-proxy); its fields are McpEndpointFields.
+	{ id: 'mcp', label: 'mcp' },
+]
+
+/** The endpoint properties McpEndpointFields edits, kept out of the generic field list. */
+const MCP_FIELDS = ['mcpToolLimits', 'mcpMaxStreamSeconds', 'mcpStoreArguments']
 
 /**
  * Example values shown as placeholders. `endpoint` and `endpointArray` describe
@@ -295,6 +307,7 @@ export default {
 		NcSelect,
 		NcCheckboxRadioSwitch,
 		CnFieldHelper,
+		McpEndpointFields,
 	},
 
 	mixins: [messageSchemaOptions],
@@ -358,7 +371,7 @@ export default {
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
 			return this.fields.filter(
-				(field) => field.key !== 'targetId' && field.key !== 'validation',
+				(field) => field.key !== 'targetId' && field.key !== 'validation' && MCP_FIELDS.includes(field.key) === false,
 			)
 		},
 
@@ -400,6 +413,16 @@ export default {
 		 */
 		isRegisterSchemaTarget() {
 			return this.formData?.targetType === 'register/schema'
+		},
+
+		/**
+		 * Whether the endpoint relays to an outside MCP tool server.
+		 *
+		 * @return {boolean} True when Target Type is `mcp`.
+		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+		 */
+		isMcpTarget() {
+			return this.formData?.targetType === 'mcp'
 		},
 
 		/**

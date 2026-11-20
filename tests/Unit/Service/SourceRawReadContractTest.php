@@ -79,6 +79,7 @@ use OCP\BackgroundJob\IJobList;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 class SourceRawReadContractTest extends TestCase {
 
@@ -345,7 +346,7 @@ class SourceRawReadContractTest extends TestCase {
 		$this->assertSame('token', ($auth['mode'] ?? null), 'A non-declared sibling must survive the strip.');
 
 		// An `_rbac: false` read is NOT an escape: the strip is schema-gated.
-		$rbacOff = $fake->find(id: self::SOURCE_UUID, register: 'integriq', schema: 'source', _rbac: false);
+		$rbacOff = $fake->find(id: self::SOURCE_UUID, options: new ObjectFindOptions(register: 'integriq', schema: 'source'), _rbac: false);
 		$this->assertArrayNotHasKey(
 			'encryptedToken',
 			($rbacOff->getObject()['configuration']['authentication'] ?? []),

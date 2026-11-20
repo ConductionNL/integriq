@@ -40,6 +40,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The per-call switch that keeps every body out of the call log (decision 229).
@@ -100,7 +101,9 @@ class CallServiceWithheldBodiesTest extends TestCase {
 	private function service(Response $answer, ?string $userId = 'j.devries'): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
@@ -328,8 +331,12 @@ class CallServiceWithheldBodiesTest extends TestCase {
 
 		$service->call(source: $this->source(), endpoint: '/personen', method: 'POST');
 
+		// The bodies are stored, so `burgerservicenummer` appears; its values
+		// are masked as personal data (REQ-PDM-001).
 		$stored = (string)json_encode($this->callLogs()[0]);
-		$this->assertStringContainsString(self::ASKED, $stored);
-		$this->assertStringContainsString(self::ANSWERED, $stored);
+		$this->assertStringContainsString('burgerservicenummer', $stored);
+		$this->assertStringContainsString('[afgeschermd]', $stored);
+		$this->assertStringNotContainsString(self::ASKED, $stored);
+		$this->assertStringNotContainsString(self::ANSWERED, $stored);
 	}//end testControlWithoutTheSwitchTheWindowStoresTheBodies()
 }//end class

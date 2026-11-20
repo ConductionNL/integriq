@@ -35,6 +35,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests the status + instantiate endpoints' auth gating, mechanism
@@ -259,7 +260,10 @@ class CatalogControllerTest extends TestCase {
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register = null, $schema = null, $uuid = null) use ($savedSource) {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use ($savedSource) {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
+					$uuid = $options->uuid;
 					$this->assertTrue($object['isEnabled']);
 					$this->assertSame('source', $schema);
 					$this->assertSame('source-uuid', $uuid);
@@ -304,7 +308,10 @@ class CatalogControllerTest extends TestCase {
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register = null, $schema = null, $uuid = null) use ($createdSource) {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use ($createdSource) {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
+					$uuid = $options->uuid;
 					// The payload is the REAL seed fragment body.
 					$this->assertSame('brp-haalcentraal', $object['slug']);
 					$this->assertSame('BRP HaalCentraal Personen', $object['name']);

@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\ServiceFetchRequestedEvent;
-use OCA\Integriq\Service\ServiceFetch\ServiceFetchService;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -38,10 +38,10 @@ class ServiceFetchRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ServiceFetchService $service Runs the fetch.
+	 * @param ServiceFetchServiceInterface $service Runs the fetch.
 	 */
 	public function __construct(
-		private readonly ServiceFetchService $service,
+		private readonly ServiceFetchServiceInterface $service,
 	) {
 	}//end __construct()
 

@@ -40,6 +40,7 @@ use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the Verzuimloket send/retour orchestration.
@@ -135,7 +136,10 @@ class VerzuimloketServiceTest extends TestCase {
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$key = (string)$schema;
 				$this->saved[$key][] = ['object' => $object, 'register' => $register, 'uuid' => $uuid];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'saved-uuid-' . count($this->saved[$key])));

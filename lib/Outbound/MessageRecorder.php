@@ -32,7 +32,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Outbound;
 
 use DateTimeImmutable;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use RuntimeException;
@@ -46,7 +48,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-every-outbound-message-is-recorded-per-recipient-and-per-step-req-ocl-001
  */
-class MessageRecorder {
+class MessageRecorder implements MessageRecorderInterface {
 
 	/**
 	 * The OpenRegister register holding integriq's objects.
@@ -127,7 +129,9 @@ class MessageRecorder {
 	 * @param string $subject The subject line.
 	 * @param string $body The rendered body, redacted here before it is stored.
 	 * @param array<int,array<string,mixed>> $recipients `{address, name, accountId}` per recipient.
-	 * @param array<string,mixed> $options `sourceApp`, `attachments`, `context`, `correlationId`.
+	 * @param array<string,mixed> $options `sourceApp`, `attachments`, `context`, `correlationId`, and
+	 *                                     `recipientSelection` (standing, added, suppressed) when the
+	 *                                     message's recipients were a per-message decision.
 	 *
 	 * @return ObjectEntity The opened record.
 	 */
@@ -171,13 +175,56 @@ class MessageRecorder {
 			'forwardedTo' => [],
 		];
 
+		$record = $this->withSelection(record: $record, selection: ($options['recipientSelection'] ?? null));
+
 		return $this->objectService->saveObject(
 			object: $record,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA)
 		);
 
 	}//end start()
+
+	/**
+	 * The recipient decision as the record keeps it: the standing, added and
+	 * suppressed parts each on their own. A suppressed recipient stays on the
+	 * record, reads `suppressed` with its reason, user and time, and carries no
+	 * delivery state, because nothing was attempted for it.
+	 *
+	 * The record gains `recipientSelection` only when a decision was given.
+	 *
+	 * @param array $record    The record being built.
+	 * @param mixed $selection The decision, or anything else for none.
+	 *
+	 * @return array The record.
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+	 */
+	private function withSelection(array $record, mixed $selection): array {
+		if (is_array($selection) === false) {
+			return $record;
+		}
+
+		$suppressed = array_map(
+			static fn (array $row): array => [
+				'address' => (string)($row['address'] ?? ''),
+				'name' => (string)($row['name'] ?? ''),
+				'state' => RecipientState::SUPPRESSED,
+				'reason' => (string)($row['reason'] ?? ''),
+				'user' => (string)($row['user'] ?? ''),
+				'at' => (string)($row['at'] ?? ''),
+			],
+			array_values(array_filter((array)($selection['suppressed'] ?? []), 'is_array'))
+		);
+
+		$record['recipientSelection'] = [
+			'standing' => array_values(array_filter((array)($selection['standing'] ?? []), 'is_array')),
+			'added' => array_values(array_filter((array)($selection['added'] ?? []), 'is_array')),
+			'suppressed' => $suppressed,
+		];
+
+		return $record;
+
+	}//end withSelection()
 
 	/**
 	 * Record that a step succeeded.
@@ -427,8 +474,7 @@ class MessageRecorder {
 	public function read(string $uuid): array {
 		$entity = $this->objectService->find(
 			id: $uuid,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA)
 		);
 
 		if (($entity instanceof ObjectEntity) === false) {
@@ -600,9 +646,7 @@ class MessageRecorder {
 	private function write(string $uuid, array $record): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $record,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuid,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuid)
 		);
 
 	}//end write()

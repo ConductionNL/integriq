@@ -35,6 +35,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Edge paths of creating jobs and storing mappings.
@@ -117,12 +118,12 @@ class ExchangeJobServiceEdgesTest extends TestCase {
 	 */
 	public function testAnExistingMappingIsUpdatedInPlace(): void {
 		$this->store->method('findAll')->willReturn(['results' => ['not-an-entity', $this->entity('m-7', ['slug' => 'learniq-custom-rod'])]]);
-		$this->store->expects($this->once())->method('saveObject')->with(
-			$this->callback(static fn (array $object): bool => $object['slug'] === 'learniq-custom-rod' && $object['passThrough'] === true),
-			ExchangeJobService::REGISTER,
-			ExchangeJobService::SCHEMA_MAPPING,
-			'm-7'
-		)->willReturn($this->entity('m-7', []));
+		$this->store->expects($this->once())->method('saveObject')->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+			'object' => $this->callback(static fn (array $object): bool => $object['slug'] === 'learniq-custom-rod' && $object['passThrough'] === true),
+			'register' => ExchangeJobService::REGISTER,
+			'schema' => ExchangeJobService::SCHEMA_MAPPING,
+			'uuid' => 'm-7',
+		]))->willReturn($this->entity('m-7', []));
 
 		$event = new ExchangeMappingRequestedEvent('learniq', 'learniq-custom-rod', 'Custom', 'Mine', ['voornamen' => 'givenName'], passThrough: true);
 		$this->service()->handleMappingRequest(event: $event);
