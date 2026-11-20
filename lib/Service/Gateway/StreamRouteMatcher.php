@@ -49,7 +49,7 @@ final class StreamRouteMatcher {
 	 *
 	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-web-server-or-broker-asks-integriq-who-may-connect-req-gqlp-002
 	 */
-	public static function matches(string $protocol, string $route, string $target): bool {
+	public function matches(string $protocol, string $route, string $target): bool {
 		$route = trim($route);
 		if ($route === '') {
 			return false;

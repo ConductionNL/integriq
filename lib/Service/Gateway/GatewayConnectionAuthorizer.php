@@ -26,14 +26,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Gateway;
 
-use DateTime;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
-use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
-use Psr\Log\LoggerInterface;
+use SensitiveParameter;
 use Throwable;
 
 /**
@@ -65,18 +62,16 @@ class GatewayConnectionAuthorizer {
 	 *
 	 * @param GatewayServerSecret              $serverSecret The shared secret of the server.
 	 * @param OpenRegisterCredentialBridge     $credentials  Resolves the client's credential to a consumer.
-	 * @param ObjectService                    $objects      Reads stream endpoints and writes the call log.
+	 * @param StreamConnectionRecords          $records      Finds stream endpoints and writes the call log.
 	 * @param InboundRateLimitServiceInterface $rateLimits   The limiter consumer rate limits use.
-	 * @param LoggerInterface                  $logger       Records a call log that could not be written.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly GatewayServerSecret $serverSecret,
 		private readonly OpenRegisterCredentialBridge $credentials,
-		private readonly ObjectService $objects,
+		private readonly StreamConnectionRecords $records,
 		private readonly InboundRateLimitServiceInterface $rateLimits,
-		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
@@ -102,11 +97,11 @@ class GatewayConnectionAuthorizer {
 			return self::answer(status: Http::STATUS_UNAUTHORIZED, reason: 'unknown_connection');
 		}
 
-		$endpoint = $this->streamEndpoint(protocol: $protocol, target: $target);
+		$endpoint = $this->records->streamEndpoint(protocol: $protocol, target: $target);
 		$consumer = $this->consumer(credential: (string)($ask['credential'] ?? ''));
 		$decision = $this->decide(endpoint: $endpoint, consumer: $consumer);
 
-		$this->log(ask: $ask + ['protocol' => $protocol], endpoint: $endpoint, consumer: $consumer, decision: $decision);
+		$this->records->log(ask: $ask + ['protocol' => $protocol], endpoint: $endpoint, consumer: $consumer, decision: $decision);
 
 		return $decision;
 
@@ -130,7 +125,7 @@ class GatewayConnectionAuthorizer {
 		}
 
 		$endpointData = $endpoint->getObject();
-		$uuid = self::uuidOf(entity: $consumer);
+		$uuid = $this->records->uuidOf(entity: $consumer);
 		if (self::consumerAllowed(endpointData: $endpointData, consumerUuid: $uuid, consumerData: $consumer->getObject()) === false) {
 			return self::answer(status: Http::STATUS_UNAUTHORIZED, reason: 'consumer_not_allowed');
 		}
@@ -138,7 +133,7 @@ class GatewayConnectionAuthorizer {
 		$limit = ($endpointData['connectionRateLimit'] ?? null);
 		if (is_array($limit) === true && $limit !== []) {
 			$rate = $this->rateLimits->enforce(
-				consumerKey: 'stream:' . self::uuidOf(entity: $endpoint) . ':consumer:' . $uuid,
+				consumerKey: 'stream:' . $this->records->uuidOf(entity: $endpoint) . ':consumer:' . $uuid,
 				rateLimit: $limit,
 				quota: null
 			);
@@ -190,18 +185,14 @@ class GatewayConnectionAuthorizer {
 	 *
 	 * @return ObjectEntity|null Null when it names none or is refused.
 	 */
-	private function consumer(#[\SensitiveParameter] string $credential): ?ObjectEntity {
+	private function consumer(#[SensitiveParameter] string $credential): ?ObjectEntity {
 		$credential = trim($credential);
 		if ($credential === '') {
 			return null;
 		}
 
 		try {
-			if (str_starts_with($credential, 'Bearer ') === true) {
-				$this->credentials->authorizeJwt(authorization: $credential);
-			} else {
-				$this->credentials->authorizeApiKey(header: $credential, keys: []);
-			}
+			$this->authorizeCredential(credential: $credential);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -211,115 +202,23 @@ class GatewayConnectionAuthorizer {
 	}//end consumer()
 
 	/**
-	 * The stream endpoint of this protocol whose route covers the target.
+	 * Let the credential bridge resolve a credential: a `Bearer` JWT, else an API key.
 	 *
-	 * @param string $protocol The protocol.
-	 * @param string $target   The path or topic.
-	 *
-	 * @return ObjectEntity|null
-	 */
-	private function streamEndpoint(string $protocol, string $target): ?ObjectEntity {
-		try {
-			// Unscoped: the caller is a web server, which has no organisation; a
-			// stream endpoint is the app's own route description.
-			$found = $this->objects->findAll(
-				config: [
-					'filters' => [
-						'register' => 'integriq',
-						'schema' => 'endpoint',
-						'targetType' => self::TARGET_TYPE,
-						'streamProtocol' => $protocol,
-					],
-					'limit' => 500,
-				],
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning('integriq: stream endpoints could not be read', ['exception' => $e->getMessage()]);
-			return null;
-		}
-
-		foreach (($found['results'] ?? $found) as $endpoint) {
-			if ($endpoint instanceof ObjectEntity === false) {
-				continue;
-			}
-
-			$data = $endpoint->getObject();
-			if (($data['targetType'] ?? '') !== self::TARGET_TYPE || ($data['streamProtocol'] ?? '') !== $protocol) {
-				continue;
-			}
-
-			if (StreamRouteMatcher::matches(protocol: $protocol, route: (string)($data['streamRoute'] ?? ''), target: $target) === true) {
-				return $endpoint;
-			}
-		}
-
-		return null;
-
-	}//end streamEndpoint()
-
-	/**
-	 * Write one call log row for the connection.
-	 *
-	 * @param array<string, mixed> $ask      What the server sent.
-	 * @param ObjectEntity|null    $endpoint The stream endpoint.
-	 * @param ObjectEntity|null    $consumer The consumer.
-	 * @param array                $decision The answer.
+	 * @param string $credential The client's credential, trimmed and not empty.
 	 *
 	 * @return void
-	 */
-	private function log(array $ask, ?ObjectEntity $endpoint, ?ObjectEntity $consumer, array $decision): void {
-		$message = 'Connection refused: ' . $decision['reason'];
-		if ($decision['status'] === Http::STATUS_OK) {
-			$message = 'Connection allowed';
-		}
-
-		$row = [
-			'statusCode' => $decision['status'],
-			'statusMessage' => $message,
-			'direction' => 'inbound',
-			'protocol' => (string)$ask['protocol'],
-			'created' => (new DateTime())->format('c'),
-		];
-		$connectionId = trim((string)($ask['connectionId'] ?? ''));
-		if ($connectionId !== '') {
-			$row['connectionId'] = substr($connectionId, 0, 255);
-		}
-
-		if ($endpoint !== null) {
-			$row['endpoint'] = self::uuidOf(entity: $endpoint);
-		}
-
-		if ($consumer !== null) {
-			$row['consumer'] = self::uuidOf(entity: $consumer);
-		}
-
-		try {
-			// The call_log schema is admin-only (REQ-OCD-012); the asking server is not.
-			$this->objects->saveObject(
-				object: $row,
-				options: RegisterSave::options(register: 'integriq', schema: 'call_log'),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning('integriq: failed to record a stream connection call_log: ' . $e->getMessage());
-		}
-
-	}//end log()
-
-	/**
-	 * An entity's uuid.
 	 *
-	 * @param ObjectEntity $entity The entity.
-	 *
-	 * @return string
+	 * @throws Throwable When the bridge refuses the credential.
 	 */
-	private static function uuidOf(ObjectEntity $entity): string {
-		return (string)($entity->getUuid() ?? ($entity->getObject()['uuid'] ?? ''));
+	private function authorizeCredential(#[SensitiveParameter] string $credential): void {
+		if (str_starts_with($credential, 'Bearer ') === true) {
+			$this->credentials->authorizeJwt(authorization: $credential);
+			return;
+		}
 
-	}//end uuidOf()
+		$this->credentials->authorizeApiKey(header: $credential, keys: []);
+
+	}//end authorizeCredential()
 
 	/**
 	 * One answer.

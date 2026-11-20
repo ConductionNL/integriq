@@ -24,6 +24,7 @@ use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Gateway\GatewayConnectionAuthorizer;
 use OCA\Integriq\Service\Gateway\GatewayServerSecret;
+use OCA\Integriq\Service\Gateway\StreamConnectionRecords;
 use OCA\Integriq\Service\Gateway\StreamRouteMatcher;
 use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitServiceInterface;
@@ -41,6 +42,7 @@ use Psr\Log\LoggerInterface;
  */
 #[CoversClass(GatewayConnectionAuthorizer::class)]
 #[UsesClass(StreamRouteMatcher::class)]
+#[UsesClass(StreamConnectionRecords::class)]
 #[UsesClass(RegisterSave::class)]
 #[UsesClass(RateLimitDecision::class)]
 class GatewayConnectionAuthorizerTest extends TestCase {
@@ -142,9 +144,8 @@ class GatewayConnectionAuthorizerTest extends TestCase {
 		return new GatewayConnectionAuthorizer(
 			serverSecret: $secret,
 			credentials: $bridge,
-			objects: $objects,
-			rateLimits: $rates,
-			logger: $this->createMock(LoggerInterface::class)
+			records: new StreamConnectionRecords(objects: $objects, logger: $this->createMock(LoggerInterface::class)),
+			rateLimits: $rates
 		);
 	}
 

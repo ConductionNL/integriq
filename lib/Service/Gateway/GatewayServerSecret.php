@@ -30,6 +30,7 @@ use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use SensitiveParameter;
 use Throwable;
 
 /**
@@ -87,7 +88,7 @@ class GatewayServerSecret {
 	 *
 	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-web-server-or-broker-asks-integriq-who-may-connect-req-gqlp-002
 	 */
-	public function verify(#[\SensitiveParameter] string $presented): bool {
+	public function verify(#[SensitiveParameter] string $presented): bool {
 		if ($presented === '') {
 			return false;
 		}

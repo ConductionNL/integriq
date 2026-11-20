@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\Endpoint;
 
 use OCA\Integriq\Service\Endpoint\GraphqlDocumentReader;
+use OCA\Integriq\Service\Endpoint\GraphqlHttpRequest;
 use OCA\Integriq\Service\Endpoint\GraphqlOperation;
 use OCA\Integriq\Service\Endpoint\GraphqlProxyHandler;
 use OCP\AppFramework\Http\JSONResponse;
@@ -52,11 +53,13 @@ class GraphqlProxyHandlerTest extends TestCase {
 	private static function post(string $query, ?string $operationName=null, array $endpoint=self::ENDPOINT, bool $isAdmin=false): GraphqlOperation|JSONResponse {
 		return (new GraphqlProxyHandler())->check(
 			endpointData: $endpoint,
-			method: 'POST',
-			parameters: [],
-			rawBody: (string)json_encode(['query' => $query, 'operationName' => $operationName, 'variables' => ['id' => '1']]),
-			contentType: 'application/json',
-			isAdmin: $isAdmin
+			request: new GraphqlHttpRequest(
+				method: 'POST',
+				parameters: [],
+				rawBody: (string)json_encode(['query' => $query, 'operationName' => $operationName, 'variables' => ['id' => '1']]),
+				contentType: 'application/json'
+			),
+			caller: ($isAdmin === true ? GraphqlProxyHandler::CALLER_ADMINISTRATOR : GraphqlProxyHandler::CALLER_CLIENT)
 		);
 	}
 
@@ -179,10 +182,10 @@ class GraphqlProxyHandlerTest extends TestCase {
 	public function testGetCarriesQueriesOnly(): void {
 		$handler = new GraphqlProxyHandler();
 
-		$query = $handler->check(endpointData: self::ENDPOINT, method: 'GET', parameters: ['query' => 'query zakenLijst { zaken { id } }'], rawBody: '', contentType: '');
+		$query = $handler->check(endpointData: self::ENDPOINT, request: new GraphqlHttpRequest(method: 'GET', parameters: ['query' => 'query zakenLijst { zaken { id } }'], rawBody: '', contentType: ''));
 		$this->assertInstanceOf(GraphqlOperation::class, $query);
 
-		$mutation = $handler->check(endpointData: [], method: 'GET', parameters: ['query' => 'mutation m { x }'], rawBody: '', contentType: '');
+		$mutation = $handler->check(endpointData: [], request: new GraphqlHttpRequest(method: 'GET', parameters: ['query' => 'mutation m { x }'], rawBody: '', contentType: ''));
 		$this->assertRefused($mutation, 405, 'METHOD_NOT_ALLOWED');
 	}
 
@@ -194,10 +197,12 @@ class GraphqlProxyHandlerTest extends TestCase {
 	public function testAnApplicationGraphqlBodyIsTheDocument(): void {
 		$answer = (new GraphqlProxyHandler())->check(
 			endpointData: self::ENDPOINT,
-			method: 'POST',
-			parameters: [],
-			rawBody: 'query zakenLijst { zaken { id } }',
-			contentType: 'application/graphql; charset=utf-8'
+			request: new GraphqlHttpRequest(
+				method: 'POST',
+				parameters: [],
+				rawBody: 'query zakenLijst { zaken { id } }',
+				contentType: 'application/graphql; charset=utf-8'
+			)
 		);
 
 		$this->assertInstanceOf(GraphqlOperation::class, $answer);
@@ -212,11 +217,11 @@ class GraphqlProxyHandlerTest extends TestCase {
 	public function testMalformedRequestsAreRefused(): void {
 		$handler = new GraphqlProxyHandler();
 
-		$this->assertRefused($handler->check(endpointData: [], method: 'POST', parameters: [], rawBody: 'not json', contentType: 'application/json'), 400, 'BAD_REQUEST');
-		$this->assertRefused($handler->check(endpointData: [], method: 'POST', parameters: [], rawBody: '[{"query":"{ a }"}]', contentType: 'application/json'), 400, 'BATCH_NOT_ALLOWED');
-		$this->assertRefused($handler->check(endpointData: [], method: 'POST', parameters: [], rawBody: '{"query":""}', contentType: 'application/json'), 400, 'BAD_REQUEST');
-		$this->assertRefused($handler->check(endpointData: [], method: 'POST', parameters: [], rawBody: '{"query":"{ a }","operationName":5}', contentType: 'application/json'), 400, 'BAD_REQUEST');
-		$this->assertRefused($handler->check(endpointData: [], method: 'PUT', parameters: [], rawBody: '{"query":"{ a }"}', contentType: 'application/json'), 405, 'METHOD_NOT_ALLOWED');
+		$this->assertRefused($handler->check(endpointData: [], request: new GraphqlHttpRequest(method: 'POST', parameters: [], rawBody: 'not json', contentType: 'application/json')), 400, 'BAD_REQUEST');
+		$this->assertRefused($handler->check(endpointData: [], request: new GraphqlHttpRequest(method: 'POST', parameters: [], rawBody: '[{"query":"{ a }"}]', contentType: 'application/json')), 400, 'BATCH_NOT_ALLOWED');
+		$this->assertRefused($handler->check(endpointData: [], request: new GraphqlHttpRequest(method: 'POST', parameters: [], rawBody: '{"query":""}', contentType: 'application/json')), 400, 'BAD_REQUEST');
+		$this->assertRefused($handler->check(endpointData: [], request: new GraphqlHttpRequest(method: 'POST', parameters: [], rawBody: '{"query":"{ a }","operationName":5}', contentType: 'application/json')), 400, 'BAD_REQUEST');
+		$this->assertRefused($handler->check(endpointData: [], request: new GraphqlHttpRequest(method: 'PUT', parameters: [], rawBody: '{"query":"{ a }"}', contentType: 'application/json')), 405, 'METHOD_NOT_ALLOWED');
 		$this->assertRefused(self::post(query: 'query zakenLijst { zaken { id }'), 400, 'GRAPHQL_PARSE_FAILED');
 	}
 }

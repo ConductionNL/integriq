@@ -54,11 +54,6 @@ class GraphqlDocumentReader {
 	private const MAX_NESTING = 200;
 
 	/**
-	 * Punctuators of the grammar, one character each except the spread.
-	 */
-	private const PUNCTUATORS = '!$&()...:=@[]{|}';
-
-	/**
 	 * The tokens of the document being read.
 	 *
 	 * @var list<array{0: string, 1: string}>
@@ -89,7 +84,7 @@ class GraphqlDocumentReader {
 			throw new UnexpectedValueException('The GraphQL document is too large.');
 		}
 
-		$this->tokens = $this->tokenize(source: $document);
+		$this->tokens = (new GraphqlLexer())->tokenize(source: $document);
 		$this->pos    = 0;
 
 		$operations = [];
@@ -108,49 +103,9 @@ class GraphqlDocumentReader {
 			$operations[] = $definition;
 		}
 
-		$operation = $this->chosen(operations: $operations, operationName: $operationName);
-
-		return new GraphqlOperation(
-			type: $operation['type'],
-			name: $operation['name'],
-			depth: $this->depth(selections: $operation['selections'], fragments: $fragments, visiting: []),
-			rootFields: $this->rootFields(selections: $operation['selections'], fragments: $fragments, visiting: [])
-		);
+		return (new GraphqlOperationMeasure())->measure(operations: $operations, fragments: $fragments, operationName: $operationName);
 
 	}//end read()
-
-	/**
-	 * The operation the request asks for (GraphQL spec, GetOperation).
-	 *
-	 * @param list<array<string, mixed>> $operations    The operations of the document.
-	 * @param string|null                $operationName The requested name.
-	 *
-	 * @return array<string, mixed> The operation.
-	 *
-	 * @throws UnexpectedValueException When none or several match.
-	 */
-	private function chosen(array $operations, ?string $operationName): array {
-		if ($operations === []) {
-			throw new UnexpectedValueException('The GraphQL document holds no operation.');
-		}
-
-		if ($operationName !== null && $operationName !== '') {
-			foreach ($operations as $operation) {
-				if ($operation['name'] === $operationName) {
-					return $operation;
-				}
-			}
-
-			throw new UnexpectedValueException('The GraphQL document holds no operation named "' . $operationName . '".');
-		}
-
-		if (count($operations) > 1) {
-			throw new UnexpectedValueException('The GraphQL document holds several operations; name one in operationName.');
-		}
-
-		return $operations[0];
-
-	}//end chosen()
 
 	/**
 	 * One definition: an operation, a shorthand query or a fragment.
@@ -324,91 +279,6 @@ class GraphqlDocumentReader {
 	}//end skipBalanced()
 
 	/**
-	 * How deep a selection nests: a field counts one, a fragment counts nothing itself.
-	 *
-	 * @param list<array<string, mixed>>               $selections The selections.
-	 * @param array<string, list<array<string, mixed>>> $fragments  The fragments by name.
-	 * @param array<string, true>                      $visiting   The fragments being expanded.
-	 *
-	 * @return int The depth.
-	 *
-	 * @throws UnexpectedValueException On an unknown or cyclic fragment.
-	 */
-	private function depth(array $selections, array $fragments, array $visiting): int {
-		$deepest = 0;
-		foreach ($selections as $selection) {
-			$depth = match ($selection['kind']) {
-				'field' => (1 + $this->depth(selections: $selection['selections'], fragments: $fragments, visiting: $visiting)),
-				'inline' => $this->depth(selections: $selection['selections'], fragments: $fragments, visiting: $visiting),
-				default => $this->depth(
-					selections: $this->fragment(name: $selection['name'], fragments: $fragments, visiting: $visiting),
-					fragments: $fragments,
-					visiting: ($visiting + [$selection['name'] => true])
-				),
-			};
-			$deepest = max($deepest, $depth);
-		}
-
-		return $deepest;
-
-	}//end depth()
-
-	/**
-	 * The names of the fields an operation asks for at its root.
-	 *
-	 * @param list<array<string, mixed>>               $selections The root selections.
-	 * @param array<string, list<array<string, mixed>>> $fragments  The fragments by name.
-	 * @param array<string, true>                      $visiting   The fragments being expanded.
-	 *
-	 * @return list<string> The field names, each once.
-	 */
-	private function rootFields(array $selections, array $fragments, array $visiting): array {
-		$names = [];
-		foreach ($selections as $selection) {
-			if ($selection['kind'] === 'field') {
-				$names[] = $selection['name'];
-				continue;
-			}
-
-			$inner = $selection['selections'] ?? null;
-			$next  = $visiting;
-			if ($selection['kind'] === 'spread') {
-				$inner = $this->fragment(name: $selection['name'], fragments: $fragments, visiting: $visiting);
-				$next  = ($visiting + [$selection['name'] => true]);
-			}
-
-			$names = array_merge($names, $this->rootFields(selections: $inner, fragments: $fragments, visiting: $next));
-		}
-
-		return array_values(array_unique($names));
-
-	}//end rootFields()
-
-	/**
-	 * The selections of a fragment named in a spread.
-	 *
-	 * @param string                                    $name      The fragment name.
-	 * @param array<string, list<array<string, mixed>>> $fragments The fragments by name.
-	 * @param array<string, true>                       $visiting  The fragments being expanded.
-	 *
-	 * @return list<array<string, mixed>> Its selections.
-	 *
-	 * @throws UnexpectedValueException On an unknown or cyclic fragment.
-	 */
-	private function fragment(string $name, array $fragments, array $visiting): array {
-		if (isset($fragments[$name]) === false) {
-			throw new UnexpectedValueException('The fragment "' . $name . '" is not defined.');
-		}
-
-		if (isset($visiting[$name]) === true) {
-			throw new UnexpectedValueException('The fragment "' . $name . '" spreads itself.');
-		}
-
-		return $fragments[$name];
-
-	}//end fragment()
-
-	/**
 	 * The next token without taking it.
 	 *
 	 * @return array{0: string, 1: string}|null The token, or null at the end.
@@ -467,129 +337,4 @@ class GraphqlDocumentReader {
 
 	}//end expectName()
 
-	/**
-	 * Split a document into tokens, dropping whitespace, commas and comments.
-	 *
-	 * @param string $source The document.
-	 *
-	 * @return list<array{0: string, 1: string}> The tokens as [kind, value].
-	 *
-	 * @throws UnexpectedValueException On a character or string the grammar does not allow.
-	 */
-	private function tokenize(string $source): array {
-		$tokens = [];
-		$length = strlen($source);
-		$i      = 0;
-		if (str_starts_with($source, "\xEF\xBB\xBF") === true) {
-			$i = 3;
-		}
-
-		while ($i < $length) {
-			$char = $source[$i];
-			if ($char === ' ' || $char === "\t" || $char === "\n" || $char === "\r" || $char === ',') {
-				$i++;
-				continue;
-			}
-
-			if ($char === '#') {
-				while ($i < $length && $source[$i] !== "\n" && $source[$i] !== "\r") {
-					$i++;
-				}
-
-				continue;
-			}
-
-			if ($char === '.') {
-				if (substr($source, $i, 3) !== '...') {
-					throw new UnexpectedValueException('The GraphQL document holds a lone ".".');
-				}
-
-				$tokens[] = ['punct', '...'];
-				$i       += 3;
-				continue;
-			}
-
-			if (str_contains(self::PUNCTUATORS, $char) === true) {
-				$tokens[] = ['punct', $char];
-				$i++;
-				continue;
-			}
-
-			if ($char === '"') {
-				$i        = $this->skipString(source: $source, start: $i);
-				$tokens[] = ['string', ''];
-				continue;
-			}
-
-			if (preg_match('/\G[_A-Za-z][_0-9A-Za-z]*/', $source, $match, 0, $i) === 1) {
-				$tokens[] = ['name', $match[0]];
-				$i       += strlen($match[0]);
-				continue;
-			}
-
-			if (preg_match('/\G-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/', $source, $match, 0, $i) === 1 && $match[0] !== '-') {
-				$tokens[] = ['number', $match[0]];
-				$i       += strlen($match[0]);
-				continue;
-			}
-
-			throw new UnexpectedValueException('The GraphQL document holds a character the grammar does not allow.');
-		}//end while
-
-		return $tokens;
-
-	}//end tokenize()
-
-	/**
-	 * Skip a string or block string starting at a quote.
-	 *
-	 * @param string $source The document.
-	 * @param int    $start  The position of the opening quote.
-	 *
-	 * @return int The position after the closing quote.
-	 *
-	 * @throws UnexpectedValueException When the string does not close.
-	 */
-	private function skipString(string $source, int $start): int {
-		$length = strlen($source);
-		if (substr($source, $start, 3) === '"""') {
-			$i = ($start + 3);
-			while ($i < $length) {
-				if (substr($source, $i, 4) === '\\"""') {
-					$i += 4;
-					continue;
-				}
-
-				if (substr($source, $i, 3) === '"""') {
-					return ($i + 3);
-				}
-
-				$i++;
-			}
-
-			throw new UnexpectedValueException('The GraphQL document holds a block string that does not close.');
-		}
-
-		$i = ($start + 1);
-		while ($i < $length) {
-			$char = $source[$i];
-			if ($char === '\\') {
-				$i += 2;
-				continue;
-			}
-
-			if ($char === '"') {
-				return ($i + 1);
-			}
-
-			if ($char === "\n" || $char === "\r") {
-				break;
-			}
-
-			$i++;
-		}
-
-		throw new UnexpectedValueException('The GraphQL document holds a string that does not close.');
-
-	}//end skipString()
 }//end class

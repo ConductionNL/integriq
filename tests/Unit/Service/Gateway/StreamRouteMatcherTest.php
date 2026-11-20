@@ -58,6 +58,6 @@ class StreamRouteMatcherTest extends TestCase {
 
 	#[DataProvider('cases')]
 	public function testMatches(string $protocol, string $route, string $target, bool $expected): void {
-		$this->assertSame($expected, StreamRouteMatcher::matches(protocol: $protocol, route: $route, target: $target));
+		$this->assertSame($expected, (new StreamRouteMatcher())->matches(protocol: $protocol, route: $route, target: $target));
 	}
 }

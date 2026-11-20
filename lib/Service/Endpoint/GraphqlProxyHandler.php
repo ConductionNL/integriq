@@ -48,6 +48,16 @@ class GraphqlProxyHandler {
 	public const TARGET_TYPE = 'graphql';
 
 	/**
+	 * A caller that introspects only where the endpoint allows it.
+	 */
+	public const CALLER_CLIENT = 'client';
+
+	/**
+	 * An administrator, who may always introspect.
+	 */
+	public const CALLER_ADMINISTRATOR = 'administrator';
+
+	/**
 	 * Constructor for GraphqlProxyHandler.
 	 *
 	 * @param GraphqlDocumentReader $reader Reads the operation out of the document.
@@ -64,11 +74,8 @@ class GraphqlProxyHandler {
 	 * Read the operation of a request and check it against the endpoint.
 	 *
 	 * @param array<string, mixed> $endpointData The endpoint: `allowedOperations`, `maxDepth`, `introspection`.
-	 * @param string               $method       The HTTP method.
-	 * @param array<string, mixed> $parameters   The query-string parameters.
-	 * @param string               $rawBody      The request body.
-	 * @param string               $contentType  The request content type.
-	 * @param bool                 $isAdmin      Whether the caller is an administrator, who may always introspect.
+	 * @param GraphqlHttpRequest   $request      The inbound request.
+	 * @param string               $caller       CALLER_CLIENT, or CALLER_ADMINISTRATOR for an administrator, who may always introspect.
 	 *
 	 * @return GraphqlOperation|JSONResponse The operation to forward, or the refusal.
 	 *
@@ -76,24 +83,21 @@ class GraphqlProxyHandler {
 	 */
 	public function check(
 		array $endpointData,
-		string $method,
-		array $parameters,
-		string $rawBody,
-		string $contentType,
-		bool $isAdmin=false,
+		GraphqlHttpRequest $request,
+		string $caller=self::CALLER_CLIENT,
 	): GraphqlOperation|JSONResponse {
-		$request = $this->request(method: $method, parameters: $parameters, rawBody: $rawBody, contentType: $contentType);
-		if ($request instanceof JSONResponse) {
-			return $request;
+		$fields = $this->request(request: $request);
+		if ($fields instanceof JSONResponse) {
+			return $fields;
 		}
 
 		try {
-			$operation = $this->reader->read(document: $request['query'], operationName: $request['operationName']);
+			$operation = $this->reader->read(document: $fields['query'], operationName: $fields['operationName']);
 		} catch (UnexpectedValueException $e) {
 			return self::refusal(message: $e->getMessage(), code: 'GRAPHQL_PARSE_FAILED', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		if (strtoupper($method) === 'GET' && $operation->type !== 'query') {
+		if (strtoupper($request->method) === 'GET' && $operation->type !== 'query') {
 			return self::refusal(
 				message: 'A ' . $operation->type . ' cannot be sent with GET; use POST.',
 				code: 'METHOD_NOT_ALLOWED',
@@ -101,62 +105,93 @@ class GraphqlProxyHandler {
 			);
 		}
 
-		return $this->policy(endpointData: $endpointData, operation: $operation, isAdmin: $isAdmin) ?? $operation;
+		$freeIntrospection = ($caller === self::CALLER_ADMINISTRATOR && $operation->isIntrospection() === true);
+		if ($freeIntrospection === true) {
+			return $this->depthRefusal(endpointData: $endpointData, operation: $operation) ?? $operation;
+		}
+
+		return $this->introspectionRefusal(endpointData: $endpointData, operation: $operation)
+			?? $this->allowlistRefusal(endpointData: $endpointData, operation: $operation)
+			?? $this->depthRefusal(endpointData: $endpointData, operation: $operation)
+			?? $operation;
 
 	}//end check()
 
 	/**
-	 * The endpoint's refusal of an operation, or null when it may pass.
+	 * The refusal of an introspection query the endpoint does not allow, or null.
 	 *
 	 * @param array<string, mixed> $endpointData The endpoint.
 	 * @param GraphqlOperation     $operation    The operation.
-	 * @param bool                 $isAdmin      Whether the caller is an administrator.
 	 *
-	 * @return JSONResponse|null The refusal, or null.
+	 * @return JSONResponse|null
 	 */
-	private function policy(array $endpointData, GraphqlOperation $operation, bool $isAdmin): ?JSONResponse {
-		$introspection = $operation->isIntrospection();
-		if ($introspection === true && $isAdmin === false && ($endpointData['introspection'] ?? false) !== true) {
-			return self::refusal(message: 'Introspection is not allowed on this endpoint.', code: 'INTROSPECTION_NOT_ALLOWED', status: Http::STATUS_FORBIDDEN);
+	private function introspectionRefusal(array $endpointData, GraphqlOperation $operation): ?JSONResponse {
+		if ($operation->isIntrospection() === false || ($endpointData['introspection'] ?? false) === true) {
+			return null;
 		}
 
+		return self::refusal(message: 'Introspection is not allowed on this endpoint.', code: 'INTROSPECTION_NOT_ALLOWED', status: Http::STATUS_FORBIDDEN);
+
+	}//end introspectionRefusal()
+
+	/**
+	 * The refusal of an operation the endpoint's allowlist does not name, or null.
+	 *
+	 * @param array<string, mixed> $endpointData The endpoint.
+	 * @param GraphqlOperation     $operation    The operation.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function allowlistRefusal(array $endpointData, GraphqlOperation $operation): ?JSONResponse {
 		$allowed = $endpointData['allowedOperations'] ?? [];
-		if (is_array($allowed) === true && $allowed !== [] && ($introspection === false || $isAdmin === false)) {
-			if ($operation->name === null || in_array($operation->name, array_map('strval', $allowed), true) === false) {
-				$name = $operation->name ?? 'anonymous';
-				return self::refusal(
-					message: 'The operation "' . $name . '" is not allowed on this endpoint.',
-					code: 'OPERATION_NOT_ALLOWED',
-					status: Http::STATUS_FORBIDDEN
-				);
-			}
+		if (is_array($allowed) === false || $allowed === []) {
+			return null;
 		}
 
+		if ($operation->name !== null && in_array($operation->name, array_map('strval', $allowed), true) === true) {
+			return null;
+		}
+
+		return self::refusal(
+			message: 'The operation "' . ($operation->name ?? 'anonymous') . '" is not allowed on this endpoint.',
+			code: 'OPERATION_NOT_ALLOWED',
+			status: Http::STATUS_FORBIDDEN
+		);
+
+	}//end allowlistRefusal()
+
+	/**
+	 * The refusal of an operation nested deeper than the endpoint allows, or null.
+	 *
+	 * @param array<string, mixed> $endpointData The endpoint.
+	 * @param GraphqlOperation     $operation    The operation.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function depthRefusal(array $endpointData, GraphqlOperation $operation): ?JSONResponse {
 		$maxDepth = $endpointData['maxDepth'] ?? null;
-		if (is_int($maxDepth) === true && $maxDepth > 0 && $operation->depth > $maxDepth) {
-			return self::refusal(
-				message: 'The query nests ' . $operation->depth . ' deep; this endpoint allows ' . $maxDepth . '.',
-				code: 'MAX_DEPTH_EXCEEDED',
-				status: Http::STATUS_BAD_REQUEST
-			);
+		if (is_int($maxDepth) === false || $maxDepth <= 0 || $operation->depth <= $maxDepth) {
+			return null;
 		}
 
-		return null;
+		return self::refusal(
+			message: 'The query nests ' . $operation->depth . ' deep; this endpoint allows ' . $maxDepth . '.',
+			code: 'MAX_DEPTH_EXCEEDED',
+			status: Http::STATUS_BAD_REQUEST
+		);
 
-	}//end policy()
+	}//end depthRefusal()
 
 	/**
 	 * The query and operation name of a GraphQL-over-HTTP request.
 	 *
-	 * @param string               $method      The HTTP method.
-	 * @param array<string, mixed> $parameters  The query-string parameters.
-	 * @param string               $rawBody     The request body.
-	 * @param string               $contentType The content type.
+	 * @param GraphqlHttpRequest $request The inbound request.
 	 *
 	 * @return array{query: string, operationName: string|null}|JSONResponse The request, or the refusal.
 	 */
-	private function request(string $method, array $parameters, string $rawBody, string $contentType): array|JSONResponse {
-		$method = strtoupper($method);
+	private function request(GraphqlHttpRequest $request): array|JSONResponse {
+		$method     = strtoupper($request->method);
+		$parameters = $request->parameters;
 		if ($method === 'GET') {
 			return $this->fields(query: ($parameters['query'] ?? null), operationName: ($parameters['operationName'] ?? null));
 		}
@@ -165,11 +200,11 @@ class GraphqlProxyHandler {
 			return self::refusal(message: 'A GraphQL endpoint takes GET or POST.', code: 'METHOD_NOT_ALLOWED', status: Http::STATUS_METHOD_NOT_ALLOWED);
 		}
 
-		if (str_starts_with(strtolower(trim($contentType)), 'application/graphql') === true) {
-			return $this->fields(query: $rawBody, operationName: ($parameters['operationName'] ?? null));
+		if (str_starts_with(strtolower(trim($request->contentType)), 'application/graphql') === true) {
+			return $this->fields(query: $request->rawBody, operationName: ($parameters['operationName'] ?? null));
 		}
 
-		$body = json_decode($rawBody, true);
+		$body = json_decode($request->rawBody, true);
 		if (is_array($body) === false) {
 			return self::refusal(message: 'The request body is not a GraphQL request.', code: 'BAD_REQUEST', status: Http::STATUS_BAD_REQUEST);
 		}

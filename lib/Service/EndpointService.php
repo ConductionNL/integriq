@@ -49,6 +49,7 @@ use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
 use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
+use OCA\Integriq\Service\Endpoint\GraphqlHttpRequest;
 use OCA\Integriq\Service\Endpoint\GraphqlOperation;
 use OCA\Integriq\Service\Endpoint\GraphqlOperationLimiter;
 use OCA\Integriq\Service\Endpoint\GraphqlProxyHandler;
@@ -2805,30 +2806,10 @@ class EndpointService implements EndpointServiceInterface {
 
 		// A graphql endpoint reads the operation and refuses it here, before
 		// any source is loaded or called (gateway-graphql-and-streaming-protocols REQ-GQLP-001).
-		$graphql = null;
-		if (($endpointData['targetType'] ?? '') === GraphqlProxyHandler::TARGET_TYPE) {
-			$graphql = (new GraphqlProxyHandler())->check(
-				endpointData: $endpointData,
-				method: $request->getMethod(),
-				parameters: $request->getParams(),
-				rawBody: $rawBody,
-				contentType: (string)$request->getHeader('Content-Type'),
-				isAdmin: $this->callerIsAdmin()
-			);
-			if ($graphql instanceof JSONResponse === true) {
-				return $graphql;
-			}
-
-			$limited = (new GraphqlOperationLimiter(rateLimits: $this->rateLimitService))->enforce(
-				endpointData: $endpointData,
-				endpointKey: (string)$endpoint->getUuid(),
-				operation: $graphql,
-				callerKey: $this->graphqlCallerKey(request: $request)
-			);
-			if ($limited !== null) {
-				return $limited;
-			}
-		}//end if
+		$graphql = $this->governGraphql(endpoint: $endpoint, request: $request, rawBody: $rawBody);
+		if ($graphql instanceof JSONResponse === true) {
+			return $graphql;
+		}
 
 		// Fetch the source entity by targetId.
 		//
@@ -2841,23 +2822,9 @@ class EndpointService implements EndpointServiceInterface {
 		// An endpoint with `targets` routes over several sources (gateway-upstream-routing
 		// REQ-UPRT-001); the router loads and checks each candidate itself.
 		$routed = $this->upstreamRouter()->routes(endpointData: $endpointData);
-		$source = null;
-		if ($routed === false) {
-			// Unscoped: serving an endpoint resolves the source it proxies; the endpoint caller may be anonymous.
-			$source = $this->orObjectService->find(
-				id: $endpointData['targetId'] ?? '',
-				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
-				_rbac: false,
-				_multitenancy: false
-			);
-		}
-
-		if ($routed === false && $this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
-			$this->logger->warning(
-				'integriq: endpoint ' . $endpoint->getUuid() . ' refused to proxy to a source of another organisation'
-			);
-
-			return new JSONResponse(['error' => 'Source not found'], Http::STATUS_NOT_FOUND);
+		$source = $this->proxiedSource(endpoint: $endpoint);
+		if ($source instanceof JSONResponse === true) {
+			return $source;
 		}
 
 		// Render the upstream path from the inbound request (ocon#1069), so a
@@ -2918,9 +2885,7 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		$callLogData = $callLog->getObject();
-		if ($graphql instanceof GraphqlOperation === true) {
-			$this->recordGraphqlOperation(callLog: $callLog, operation: $graphql);
-		}
+		$this->recordGraphqlOperation(callLog: $callLog, operation: $graphql);
 
 		// REQ-RLPC-002: the source's paced turn was further away than a live
 		// call may wait, so nothing was sent. Tell the consumer when to come back.
@@ -2957,6 +2922,88 @@ class EndpointService implements EndpointServiceInterface {
 
 		return new JSONResponse($answer, $callLogData['statusCode'] ?? 200);
 	}//end handleSourceRequest()
+
+	/**
+	 * Read and govern the GraphQL operation of a request to a graphql endpoint.
+	 *
+	 * @param ObjectEntity $endpoint The endpoint.
+	 * @param IRequest     $request  The inbound request.
+	 * @param string       $rawBody  The request body.
+	 *
+	 * @return GraphqlOperation|JSONResponse|null The operation to forward, the refusal, or null for another target type.
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function governGraphql(ObjectEntity $endpoint, IRequest $request, string $rawBody): GraphqlOperation|JSONResponse|null {
+		$endpointData = $endpoint->getObject();
+		if (($endpointData['targetType'] ?? '') !== GraphqlProxyHandler::TARGET_TYPE) {
+			return null;
+		}
+
+		$caller = GraphqlProxyHandler::CALLER_CLIENT;
+		if ($this->callerIsAdmin() === true) {
+			$caller = GraphqlProxyHandler::CALLER_ADMINISTRATOR;
+		}
+
+		$operation = (new GraphqlProxyHandler())->check(
+			endpointData: $endpointData,
+			request: new GraphqlHttpRequest(
+				method: $request->getMethod(),
+				parameters: $request->getParams(),
+				rawBody: $rawBody,
+				contentType: (string)$request->getHeader('Content-Type')
+			),
+			caller: $caller
+		);
+		if ($operation instanceof JSONResponse === true) {
+			return $operation;
+		}
+
+		$limited = (new GraphqlOperationLimiter(rateLimits: $this->rateLimitService))->enforce(
+			endpointData: $endpointData,
+			endpointKey: (string)$endpoint->getUuid(),
+			operation: $operation,
+			callerKey: $this->graphqlCallerKey(request: $request)
+		);
+
+		return $limited ?? $operation;
+
+	}//end governGraphql()
+
+	/**
+	 * The source an endpoint proxies to, or the refusal when it belongs to another organisation.
+	 *
+	 * Unscoped: serving an endpoint resolves the source it proxies; the endpoint
+	 * caller may be anonymous. A routed endpoint has no single source: the router
+	 * loads and checks each candidate itself.
+	 *
+	 * @param ObjectEntity $endpoint The endpoint.
+	 *
+	 * @return ObjectEntity|JSONResponse|null The source, the refusal, or null for a routed endpoint.
+	 */
+	private function proxiedSource(ObjectEntity $endpoint): ObjectEntity|JSONResponse|null {
+		if ($this->upstreamRouter()->routes(endpointData: $endpoint->getObject()) === true) {
+			return null;
+		}
+
+		$source = $this->orObjectService->find(
+			id: $endpoint->getObject()['targetId'] ?? '',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		if ($this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
+			$this->logger->warning(
+				'integriq: endpoint ' . $endpoint->getUuid() . ' refused to proxy to a source of another organisation'
+			);
+
+			return new JSONResponse(['error' => 'Source not found'], Http::STATUS_NOT_FOUND);
+		}
+
+		return $source;
+
+	}//end proxiedSource()
 
 	/**
 	 * Who a graphql endpoint's per-operation limit counts against: the resolved consumer, else the client address.
@@ -3000,16 +3047,16 @@ class EndpointService implements EndpointServiceInterface {
 	 * and redaction, in system context; a failed write is logged and never
 	 * changes the answer.
 	 *
-	 * @param ObjectEntity     $callLog   The call's log entry.
-	 * @param GraphqlOperation $operation The operation it ran.
+	 * @param ObjectEntity          $callLog   The call's log entry.
+	 * @param GraphqlOperation|null $operation The operation it ran; null for a call that is not GraphQL.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
 	 */
-	private function recordGraphqlOperation(ObjectEntity $callLog, GraphqlOperation $operation): void {
+	private function recordGraphqlOperation(ObjectEntity $callLog, ?GraphqlOperation $operation): void {
 		$uuid = (string)$callLog->getUuid();
-		if ($uuid === '') {
+		if ($operation === null || $uuid === '') {
 			return;
 		}
 
