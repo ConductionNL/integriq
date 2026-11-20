@@ -102,6 +102,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Portal\\UnmappedActivitiesInterface, OCA\\Integriq\\Service\\Dso\\DsoUnmappedActivities)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Intake\\WebhookTrustMigratorInterface, OCA\\Integriq\\Service\\Intake\\WebhookTrustMigrator)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Adapter\\Saas\\Microsoft365AdapterInterface, OCA\\Integriq\\Service\\Adapter\\Saas\\Microsoft365Adapter)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\Chat\\TalkMessageSourceInterface, OCA\\Integriq\\Service\\Chat\\TalkMessageSource)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Kiss\\CtiEventIntakeInterface, OCA\\Integriq\\Service\\Kiss\\CtiEventIntake)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Kiss\\CallerSearchInterface, OCA\\Integriq\\Service\\Kiss\\ConfiguredCallerSearch)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Intake\\IntakeGroupsInterface, OCA\\Integriq\\Service\\Intake\\IntakeGroups)",
