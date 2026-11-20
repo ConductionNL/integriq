@@ -65,6 +65,9 @@ exclude:
   # Not part of the shipped app.
   - ".*/scripts/.*"
   - ".*/tools/.*"
+  # The connector extension skeleton: an example app for developers to copy
+  # (platform-connector-extension-kit), not part of the shipped app.
+  - ".*/examples/connector-extension/.*"
   # Root-level tool configuration (ESLint flat config, PHPStan bootstrap, PHP-CS-Fixer).
   - ".*/eslint[.]config[.]m?js"
   - ".*/phpstan-bootstrap[.]php"

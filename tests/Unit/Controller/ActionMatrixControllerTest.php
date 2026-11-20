@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\ActionMatrixController;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\ObjectRightsServiceInterface;
 use OCP\AppFramework\Http;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -58,6 +59,13 @@ class ActionMatrixControllerTest extends TestCase {
 	private IGroupManager $groupManager;
 
 	/**
+	 * Object rights writer mock.
+	 *
+	 * @var ObjectRightsServiceInterface&MockObject
+	 */
+	private ObjectRightsServiceInterface $objectRights;
+
+	/**
 	 * Build the mocks.
 	 *
 	 * @return void
@@ -67,6 +75,7 @@ class ActionMatrixControllerTest extends TestCase {
 		$this->request      = $this->createMock(IRequest::class);
 		$this->actionAuth   = $this->createMock(ActionAuthServiceInterface::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->objectRights = $this->createMock(ObjectRightsServiceInterface::class);
 	}//end setUp()
 
 	/**
@@ -78,7 +87,8 @@ class ActionMatrixControllerTest extends TestCase {
 		return new ActionMatrixController(
 			request: $this->request,
 			actionAuth: $this->actionAuth,
-			groupManager: $this->groupManager
+			groupManager: $this->groupManager,
+			objectRights: $this->objectRights
 		);
 	}//end controller()
 
@@ -174,7 +184,7 @@ class ActionMatrixControllerTest extends TestCase {
 		$response = $this->controller()->setMatrix();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertSame(['matrix' => ['job.run' => ['ops', 'admin']]], $response->getData());
+		$this->assertSame(['matrix' => ['job.run' => ['ops', 'admin']], 'notApplied' => []], $response->getData());
 	}//end testSetMatrixStoresThePostedMatrix()
 
 	/**
@@ -187,7 +197,7 @@ class ActionMatrixControllerTest extends TestCase {
 		$this->actionAuth->expects($this->once())->method('setMatrix')->with([]);
 		$this->actionAuth->method('getMatrix')->willReturn([]);
 
-		$this->assertSame(['matrix' => []], $this->controller()->setMatrix()->getData());
+		$this->assertSame(['matrix' => [], 'notApplied' => []], $this->controller()->setMatrix()->getData());
 	}//end testSetMatrixReplacesANonArrayWithEmpty()
 
 	/**
@@ -199,10 +209,45 @@ class ActionMatrixControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturn(['a' => ['b']]);
 		$this->actionAuth->method('setMatrix')->willThrowException(new \JsonException('Malformed UTF-8'));
 		$this->actionAuth->expects($this->never())->method('getMatrix');
+		$this->objectRights->expects($this->never())->method('apply');
 
 		$response = $this->controller()->setMatrix();
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertSame(['error' => 'Could not encode the action matrix: Malformed UTF-8'], $response->getData());
 	}//end testSetMatrixRefusesAnUnencodableMatrix()
+
+	/**
+	 * The save writes the stored object rights onto the schemas.
+	 *
+	 * @return void
+	 */
+	public function testSetMatrixAppliesTheStoredObjectRights(): void {
+		$stored = ['object.mapping.update' => ['admin', 'integratie-beheer'], 'job.run' => ['admin']];
+		$this->request->method('getParam')->willReturn($stored);
+		$this->actionAuth->method('getMatrix')->willReturn($stored);
+		$this->objectRights->expects($this->once())->method('apply')->with($stored)->willReturn([]);
+
+		$this->assertSame(['matrix' => $stored, 'notApplied' => []], $this->controller()->setMatrix()->getData());
+	}//end testSetMatrixAppliesTheStoredObjectRights()
+
+	/**
+	 * A schema whose update was refused is named in the answer.
+	 *
+	 * @return void
+	 */
+	public function testSetMatrixNamesASchemaThatWasNotApplied(): void {
+		$this->request->method('getParam')->willReturn([]);
+		$this->actionAuth->method('getMatrix')->willReturn([]);
+		$this->objectRights->method('apply')->willReturn(['mapping', 'job']);
+
+		$response = $this->controller()->setMatrix();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['mapping', 'job'], $response->getData()['notApplied']);
+		$this->assertSame(
+			'The object rights of these schemas were not applied: mapping, job. They are applied again on the next upgrade.',
+			$response->getData()['warning']
+		);
+	}//end testSetMatrixNamesASchemaThatWasNotApplied()
 }//end class

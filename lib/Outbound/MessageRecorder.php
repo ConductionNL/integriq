@@ -48,7 +48,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-every-outbound-message-is-recorded-per-recipient-and-per-step-req-ocl-001
  */
-class MessageRecorder {
+class MessageRecorder implements MessageRecorderInterface {
 
 	/**
 	 * The OpenRegister register holding integriq's objects.

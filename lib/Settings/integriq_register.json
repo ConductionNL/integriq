@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.2.1"
+    "version": "1.2.2"
   },
   "x-openregister": {
     "type": "application",
@@ -523,7 +523,7 @@
         "slug": "consumer",
         "title": "Consumer",
         "icon": "AccountGroup",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An outbound event-bus subscriber identity",
         "description": "A Consumer is an event-bus subscriber (webhook target, AMQP queue, etc.). Paired with EventSubscription (filter) and EventMessage (delivery record). See local ADR-013 for the event-bus model.",
         "required": [
@@ -566,13 +566,18 @@
           },
           "authorizationType": {
             "type": "string",
-            "description": "Auth strategy used by this consumer",
+            "description": "Auth strategy used by this consumer. client_credentials: integriq issues it tokens at /api/oauth/token for its client secret.",
             "title": "Authorization Type"
           },
           "authorizationConfiguration": {
             "type": "object",
             "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. `keySource` says where a JWT consumer's key comes from: `static` (default, the stored `publicKey`/`algorithm`, issuer matched on the consumer name), `jwks` (`issuer` the tokens' `iss`, `jwksUri` the published key set; the key is chosen by the token's `kid`) or `oidc` (`issuerUrl`, `audience` and optional `requiredClaims`, a list of claim names or a map of claim to value; the JWKS address and issuer come from the provider's discovery document). `jwks` and `oidc` accept RS and PS algorithms only. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
+          },
+          "clientSecretHash": {
+              "type": "string",
+              "title": "Client secret hash",
+              "description": "The password hash of a client_credentials consumer's secret (access-oauth-and-token-validation). Set by an admin through POST /api/consumers/{id}/client-secret, which shows the secret once; the secret itself is never stored."
           },
           "scopes": {
             "type": "array",
@@ -4619,7 +4624,7 @@
         "slug": "sms_message",
         "title": "SMS Message",
         "icon": "MessageTextOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Audit + lifecycle record for one outbound SMS sent through a configured SMS channel source",
         "description": "An SMS Message tracks one outbound message submitted through a configured SMS channel source (NotifyNL, or the log/sandbox provider), from queued through provider acceptance and any delivery-status poll or inbound callback. See openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback.",
         "required": [
@@ -4650,8 +4655,13 @@
           },
           "provider": {
             "type": "string",
-            "description": "The provider binding that handled this message (log|notifynl)",
+            "description": "The provider binding that handled this message (log|notifynl|cmcom|messagebird|twilio)",
             "title": "Provider"
+          },
+          "sourceSlug": {
+            "type": "string",
+            "description": "Slug of the SMS source that sent this message: the one the caller named, else the first enabled SMS source",
+            "title": "Source"
           },
           "providerMessageId": {
             "type": "string",

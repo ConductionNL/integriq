@@ -35,12 +35,16 @@ async function seedCall(
 ): Promise<string> {
 	const resp = await request.post(`${OR_BASE}/call_log`, {
 		failOnStatusCode: false,
+		headers: { 'OCS-APIRequest': 'true' },
 		data: {
 			target: 'e2e-stuf-partner',
 			traceId: 'e2e-trace-1',
 			direction: 'outbound',
 			request: { method: 'POST', endpoint: '/stuf', body: '<Lk01/>' },
 			response: { body: '<Fo01/>' },
+			// The schema defaults bodyCaptured to false (bodies are kept only
+			// inside an investigation window), and a replay refuses such a record.
+			bodyCaptured: true,
 			statusCode: 500,
 			statusMessage: 'E2E fout van de partner',
 			durationMs: 340,
@@ -195,6 +199,7 @@ test.describe('outbound call log', () => {
 	}) => {
 		const seed = await request.post(`${OR_BASE}/verdict`, {
 			failOnStatusCode: false,
+			headers: { 'OCS-APIRequest': 'true' },
 			data: {
 				objectRef: 'zaak/e2e-verdict',
 				state: 'fail',
@@ -209,5 +214,88 @@ test.describe('outbound call log', () => {
 		await expect(page.getByText('E2E ontbrekende bijlage').first()).toBeVisible({
 			timeout: 20_000,
 		})
+	})
+
+	test('an investigation window stores bodies until it is stopped early', async ({
+		page,
+		request,
+	}) => {
+		// A source the server can reach on itself: Nextcloud's own status.php.
+		const created = await request.post(`${OR_BASE}/source`, {
+			failOnStatusCode: false,
+			headers: { 'OCS-APIRequest': 'true' },
+			data: {
+				name: `E2E investigation window ${Date.now()}`,
+				location: 'http://localhost/status.php',
+				type: 'api',
+				isEnabled: true,
+			},
+		})
+		expect(created.status(), 'seeding a source must succeed').toBeLessThan(300)
+		const source = await created.json()
+		const sourceId = String(source.id ?? source.uuid)
+
+		const sync = await request.post(`${OR_BASE}/synchronization`, {
+			failOnStatusCode: false,
+			headers: { 'OCS-APIRequest': 'true' },
+			data: {
+				name: `E2E investigation window sync ${Date.now()}`,
+				sourceId,
+				sourceType: 'api',
+				sourceConfig: { endpoint: '', resultsPosition: '_root', idPosition: 'version', usesPagination: false },
+				targetType: 'register/schema',
+				targetId: 'integriq/event',
+			},
+		})
+		expect(sync.status(), 'seeding a synchronization must succeed').toBeLessThan(300)
+		const syncBody = await sync.json()
+		const syncId = String(syncBody.id ?? syncBody.uuid)
+
+		const seen = new Set<string>()
+		const runAndReadLog = async () => {
+			const run = await request.post(`${API_BASE}/synchronizations/${syncId}/run`, {
+				failOnStatusCode: false,
+				headers: { 'OCS-APIRequest': 'true' },
+				data: { test: true },
+			})
+			expect(run.status(), 'the synchronization run must answer').toBe(200)
+			const list = await (await request.get(`${OR_BASE}/call_log?_limit=200`, {
+				headers: { 'OCS-APIRequest': 'true' },
+			})).json()
+			const fresh = (list.results ?? []).filter(
+				(row) => row.source === sourceId && !seen.has(String(row.id)),
+			)
+			expect(fresh.length, 'one run records one call').toBe(1)
+			seen.add(String(fresh[0].id))
+			return fresh[0]
+		}
+
+		await page.goto(`${APP_BASE}/sources/${sourceId}`, { waitUntil: 'domcontentloaded' })
+		await expect(page.getByTestId('body-capture-state')).toHaveText(
+			/No investigation window is open/,
+			{ timeout: 20_000 },
+		)
+
+		await page.getByTestId('body-capture-open').click()
+		await page.getByTestId('body-capture-hours').fill('1')
+		await page.getByTestId('body-capture-reason').fill('E2E onderzoek naar een fout')
+		await page.getByTestId('body-capture-submit').click()
+		await expect(page.getByTestId('body-capture-state')).toHaveText(/Bodies are stored until/, {
+			timeout: 10_000,
+		})
+
+		const captured = await runAndReadLog()
+		expect(captured, 'the call inside the window is on the call log').toBeTruthy()
+		expect(captured.bodyCaptured, 'a call inside the window keeps its bodies').toBe(true)
+		expect(String(captured.response?.body ?? '')).toContain('installed')
+
+		await page.getByTestId('body-capture-stop').click()
+		await expect(page.getByTestId('body-capture-state')).toHaveText(
+			/No investigation window is open/,
+			{ timeout: 10_000 },
+		)
+
+		const after = await runAndReadLog()
+		expect(after.bodyCaptured, 'a call after the window is stopped keeps no bodies').toBe(false)
 	})
 })
