@@ -92,11 +92,15 @@
             "properties": {
               "requestsPerWindow": {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1,
+                "title": "Connections per window",
+                "description": "How many connections one consumer may open in a window."
               },
               "windowSeconds": {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1,
+                "title": "Window (seconds)",
+                "description": "How long the window lasts. The count starts again after it."
               }
             },
             "title": "Connection rate limit",

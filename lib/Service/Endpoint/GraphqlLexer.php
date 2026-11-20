@@ -220,24 +220,20 @@ class GraphqlLexer {
 	private function stringEnd(string $source, int $offset): int {
 		$length = strlen($source);
 		while ($offset < $length) {
-			$char = $source[$offset];
-			if ($char === '\\') {
-				$offset += 2;
-				continue;
-			}
-
-			if ($char === '"') {
-				return ($offset + 1);
-			}
-
-			if ($char === "\n" || $char === "\r") {
+			$offset += strcspn($source, "\\\"\n\r", $offset);
+			$char    = ($source[$offset] ?? '');
+			if ($char !== '\\') {
 				break;
 			}
 
-			$offset++;
+			$offset += 2;
 		}
 
-		throw new UnexpectedValueException('The GraphQL document holds a string that does not close.');
+		if (($source[$offset] ?? '') !== '"') {
+			throw new UnexpectedValueException('The GraphQL document holds a string that does not close.');
+		}
+
+		return ($offset + 1);
 
 	}//end stringEnd()
 }//end class

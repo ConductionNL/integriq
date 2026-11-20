@@ -3061,34 +3061,50 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		try {
-			// System context: the call log is admin-only, and the gateway caller may be anonymous.
-			$stored = $this->orObjectService->find(
-				id: $uuid,
-				options: new ObjectFindOptions(register: 'integriq', schema: 'call_log'),
-				_rbac: false,
-				_multitenancy: false
-			);
-			if ($stored === null) {
-				return;
-			}
-
-			$this->orObjectService->saveObject(
-				object: array_merge(
-					$stored->getObject(),
-					['graphqlOperationType' => $operation->type, 'graphqlOperationName' => ($operation->name ?? '')]
-				),
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
-					uuid: $uuid,
-					policy: new SavePolicy(silent: true, validation: false)
-				),
-				_rbac: false,
-				_multitenancy: false
-			);
+			$this->writeGraphqlOperation(uuid: $uuid, operation: $operation);
 		} catch (\Throwable $e) {
 			$this->logger->warning('integriq: could not record the GraphQL operation on call log ' . $uuid . ': ' . $e->getMessage());
-		}//end try
+		}
+
 	}//end recordGraphqlOperation()
+
+	/**
+	 * Merge the operation fields into the stored call log row, in system context.
+	 *
+	 * @param string           $uuid      The call log uuid.
+	 * @param GraphqlOperation $operation The operation it ran.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function writeGraphqlOperation(string $uuid, GraphqlOperation $operation): void {
+		// System context: the call log is admin-only, and the gateway caller may be anonymous.
+		$stored = $this->orObjectService->find(
+			id: $uuid,
+			options: new ObjectFindOptions(register: 'integriq', schema: 'call_log'),
+			_rbac: false,
+			_multitenancy: false
+		);
+		if ($stored === null) {
+			return;
+		}
+
+		$this->orObjectService->saveObject(
+			object: array_merge(
+				$stored->getObject(),
+				['graphqlOperationType' => $operation->type, 'graphqlOperationName' => ($operation->name ?? '')]
+			),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+				uuid: $uuid,
+				policy: new SavePolicy(silent: true, validation: false)
+			),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+	}//end writeGraphqlOperation()
 
 	/**
 	 * The answer to a live call whose paced turn was too far away: 429 with

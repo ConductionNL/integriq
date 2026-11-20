@@ -86,6 +86,25 @@ class GraphqlProxyHandler {
 		GraphqlHttpRequest $request,
 		string $caller=self::CALLER_CLIENT,
 	): GraphqlOperation|JSONResponse {
+		$operation = $this->operation(request: $request);
+		if ($operation instanceof JSONResponse) {
+			return $operation;
+		}
+
+		return $this->policyRefusal(endpointData: $endpointData, operation: $operation, caller: $caller) ?? $operation;
+
+	}//end check()
+
+	/**
+	 * Read the operation a request runs, or refuse a request that cannot carry it.
+	 *
+	 * @param GraphqlHttpRequest $request The inbound request.
+	 *
+	 * @return GraphqlOperation|JSONResponse The operation, or the refusal.
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function operation(GraphqlHttpRequest $request): GraphqlOperation|JSONResponse {
 		$fields = $this->request(request: $request);
 		if ($fields instanceof JSONResponse) {
 			return $fields;
@@ -105,17 +124,33 @@ class GraphqlProxyHandler {
 			);
 		}
 
-		$freeIntrospection = ($caller === self::CALLER_ADMINISTRATOR && $operation->isIntrospection() === true);
-		if ($freeIntrospection === true) {
-			return $this->depthRefusal(endpointData: $endpointData, operation: $operation) ?? $operation;
+		return $operation;
+
+	}//end operation()
+
+	/**
+	 * The endpoint's refusal of an operation, or null when it may pass.
+	 *
+	 * An administrator's introspection skips the introspection setting and the allowlist.
+	 *
+	 * @param array<string, mixed> $endpointData The endpoint.
+	 * @param GraphqlOperation     $operation    The operation.
+	 * @param string               $caller       CALLER_CLIENT or CALLER_ADMINISTRATOR.
+	 *
+	 * @return JSONResponse|null
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function policyRefusal(array $endpointData, GraphqlOperation $operation, string $caller): ?JSONResponse {
+		if ($caller === self::CALLER_ADMINISTRATOR && $operation->isIntrospection() === true) {
+			return $this->depthRefusal(endpointData: $endpointData, operation: $operation);
 		}
 
 		return $this->introspectionRefusal(endpointData: $endpointData, operation: $operation)
 			?? $this->allowlistRefusal(endpointData: $endpointData, operation: $operation)
-			?? $this->depthRefusal(endpointData: $endpointData, operation: $operation)
-			?? $operation;
+			?? $this->depthRefusal(endpointData: $endpointData, operation: $operation);
 
-	}//end check()
+	}//end policyRefusal()
 
 	/**
 	 * The refusal of an introspection query the endpoint does not allow, or null.
@@ -144,11 +179,7 @@ class GraphqlProxyHandler {
 	 */
 	private function allowlistRefusal(array $endpointData, GraphqlOperation $operation): ?JSONResponse {
 		$allowed = $endpointData['allowedOperations'] ?? [];
-		if (is_array($allowed) === false || $allowed === []) {
-			return null;
-		}
-
-		if ($operation->name !== null && in_array($operation->name, array_map('strval', $allowed), true) === true) {
+		if (is_array($allowed) === false || $allowed === [] || self::isListed(allowed: $allowed, name: $operation->name) === true) {
 			return null;
 		}
 
@@ -159,6 +190,19 @@ class GraphqlProxyHandler {
 		);
 
 	}//end allowlistRefusal()
+
+	/**
+	 * Whether an allowlist names this operation; an anonymous operation is never listed.
+	 *
+	 * @param array<mixed> $allowed The allowed operation names.
+	 * @param string|null  $name    The operation name.
+	 *
+	 * @return bool
+	 */
+	private static function isListed(array $allowed, ?string $name): bool {
+		return $name !== null && in_array($name, array_map('strval', $allowed), true) === true;
+
+	}//end isListed()
 
 	/**
 	 * The refusal of an operation nested deeper than the endpoint allows, or null.
@@ -204,7 +248,19 @@ class GraphqlProxyHandler {
 			return $this->fields(query: $request->rawBody, operationName: ($parameters['operationName'] ?? null));
 		}
 
-		$body = json_decode($request->rawBody, true);
+		return $this->jsonFields(rawBody: $request->rawBody);
+
+	}//end request()
+
+	/**
+	 * The query and operation name of a JSON request body.
+	 *
+	 * @param string $rawBody The request body.
+	 *
+	 * @return array{query: string, operationName: string|null}|JSONResponse The fields, or the refusal.
+	 */
+	private function jsonFields(string $rawBody): array|JSONResponse {
+		$body = json_decode($rawBody, true);
 		if (is_array($body) === false) {
 			return self::refusal(message: 'The request body is not a GraphQL request.', code: 'BAD_REQUEST', status: Http::STATUS_BAD_REQUEST);
 		}
@@ -215,7 +271,7 @@ class GraphqlProxyHandler {
 
 		return $this->fields(query: ($body['query'] ?? null), operationName: ($body['operationName'] ?? null));
 
-	}//end request()
+	}//end jsonFields()
 
 	/**
 	 * Check the shape of the query and operation name.

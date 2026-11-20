@@ -87,25 +87,39 @@ class GraphqlDocumentReader {
 		$this->tokens = (new GraphqlLexer())->tokenize(source: $document);
 		$this->pos    = 0;
 
-		$operations = [];
-		$fragments  = [];
-		while ($this->peek() !== null) {
-			$definition = $this->definition();
-			if ($definition['kind'] === 'fragment') {
-				if (isset($fragments[$definition['name']]) === true) {
-					throw new UnexpectedValueException('The fragment "' . $definition['name'] . '" is defined twice.');
-				}
-
-				$fragments[$definition['name']] = $definition['selections'];
-				continue;
-			}
-
-			$operations[] = $definition;
-		}
+		[$operations, $fragments] = $this->definitions();
 
 		return (new GraphqlOperationMeasure())->measure(operations: $operations, fragments: $fragments, operationName: $operationName);
 
 	}//end read()
+
+	/**
+	 * Every definition of the document, split into operations and fragments by name.
+	 *
+	 * @return array{0: list<array<string, mixed>>, 1: array<string, list<array<string, mixed>>>}
+	 *
+	 * @throws UnexpectedValueException On a malformed document or a fragment defined twice.
+	 */
+	private function definitions(): array {
+		$operations = [];
+		$fragments  = [];
+		while ($this->peek() !== null) {
+			$definition = $this->definition();
+			if ($definition['kind'] !== 'fragment') {
+				$operations[] = $definition;
+				continue;
+			}
+
+			if (isset($fragments[$definition['name']]) === true) {
+				throw new UnexpectedValueException('The fragment "' . $definition['name'] . '" is defined twice.');
+			}
+
+			$fragments[$definition['name']] = $definition['selections'];
+		}
+
+		return [$operations, $fragments];
+
+	}//end definitions()
 
 	/**
 	 * One definition: an operation, a shorthand query or a fragment.
@@ -120,37 +134,62 @@ class GraphqlDocumentReader {
 			return ['kind' => 'operation', 'type' => 'query', 'name' => null, 'selections' => $this->selectionSet(nesting: 0)];
 		}
 
-		if ($token !== null && $token[0] === 'name' && in_array($token[1], ['query', 'mutation', 'subscription'], true) === true) {
-			$this->pos++;
-			$name = null;
-			if ($this->peek() !== null && $this->peek()[0] === 'name') {
-				$name = $this->next()[1];
-			}
-
-			if ($this->peek() === ['punct', '(']) {
-				$this->skipBalanced(open: '(', close: ')');
-			}
-
-			$this->directives();
-			return ['kind' => 'operation', 'type' => $token[1], 'name' => $name, 'selections' => $this->selectionSet(nesting: 0)];
+		if ($token === ['name', 'fragment']) {
+			return $this->fragmentDefinition();
 		}
 
-		if ($token === ['name', 'fragment']) {
-			$this->pos++;
-			$name = $this->expectName();
-			if ($name === 'on') {
-				throw new UnexpectedValueException('A fragment cannot be named "on".');
-			}
-
-			$this->expect(kind: 'name', value: 'on');
-			$this->expectName();
-			$this->directives();
-			return ['kind' => 'fragment', 'name' => $name, 'selections' => $this->selectionSet(nesting: 0)];
+		if ($token !== null && $token[0] === 'name' && in_array($token[1], ['query', 'mutation', 'subscription'], true) === true) {
+			return $this->operationDefinition(type: $token[1]);
 		}
 
 		throw new UnexpectedValueException('The GraphQL document holds something other than operations and fragments.');
 
 	}//end definition()
+
+	/**
+	 * An operation definition: `type name? variables? directives? { ... }`.
+	 *
+	 * @param string $type The operation type keyword at the current token.
+	 *
+	 * @return array{kind: string, type: string, name: string|null, selections: list<array<string, mixed>>}
+	 *
+	 * @throws UnexpectedValueException On a malformed operation.
+	 */
+	private function operationDefinition(string $type): array {
+		$this->pos++;
+		$name = null;
+		if ($this->peek() !== null && $this->peek()[0] === 'name') {
+			$name = $this->next()[1];
+		}
+
+		$this->skipArguments();
+		$this->directives();
+
+		return ['kind' => 'operation', 'type' => $type, 'name' => $name, 'selections' => $this->selectionSet(nesting: 0)];
+
+	}//end operationDefinition()
+
+	/**
+	 * A fragment definition: `fragment name on Type directives? { ... }`.
+	 *
+	 * @return array{kind: string, name: string, selections: list<array<string, mixed>>}
+	 *
+	 * @throws UnexpectedValueException On a malformed fragment.
+	 */
+	private function fragmentDefinition(): array {
+		$this->pos++;
+		$name = $this->expectName();
+		if ($name === 'on') {
+			throw new UnexpectedValueException('A fragment cannot be named "on".');
+		}
+
+		$this->expect(kind: 'name', value: 'on');
+		$this->expectName();
+		$this->directives();
+
+		return ['kind' => 'fragment', 'name' => $name, 'selections' => $this->selectionSet(nesting: 0)];
+
+	}//end fragmentDefinition()
 
 	/**
 	 * A selection set: `{ selection+ }`.
@@ -197,20 +236,7 @@ class GraphqlDocumentReader {
 	private function selection(int $nesting): array {
 		if ($this->peek() === ['punct', '...']) {
 			$this->pos++;
-			$next = $this->peek();
-			if ($next !== null && $next[0] === 'name' && $next[1] !== 'on') {
-				$this->pos++;
-				$this->directives();
-				return ['kind' => 'spread', 'name' => $next[1]];
-			}
-
-			if ($next === ['name', 'on']) {
-				$this->pos++;
-				$this->expectName();
-			}
-
-			$this->directives();
-			return ['kind' => 'inline', 'selections' => $this->selectionSet(nesting: ($nesting + 1))];
+			return $this->spreadSelection(nesting: $nesting);
 		}
 
 		$name = $this->expectName();
@@ -219,10 +245,7 @@ class GraphqlDocumentReader {
 			$name = $this->expectName();
 		}
 
-		if ($this->peek() === ['punct', '(']) {
-			$this->skipBalanced(open: '(', close: ')');
-		}
-
+		$this->skipArguments();
 		$this->directives();
 		$selections = [];
 		if ($this->peek() === ['punct', '{']) {
@@ -234,6 +257,48 @@ class GraphqlDocumentReader {
 	}//end selection()
 
 	/**
+	 * The selection after a spread: a fragment spread or an inline fragment.
+	 *
+	 * @param int $nesting How deep the reader already is.
+	 *
+	 * @return array<string, mixed> The selection.
+	 *
+	 * @throws UnexpectedValueException On a malformed selection.
+	 */
+	private function spreadSelection(int $nesting): array {
+		$next = $this->peek();
+		if ($next !== null && $next[0] === 'name' && $next[1] !== 'on') {
+			$this->pos++;
+			$this->directives();
+			return ['kind' => 'spread', 'name' => $next[1]];
+		}
+
+		if ($next === ['name', 'on']) {
+			$this->pos++;
+			$this->expectName();
+		}
+
+		$this->directives();
+
+		return ['kind' => 'inline', 'selections' => $this->selectionSet(nesting: ($nesting + 1))];
+
+	}//end spreadSelection()
+
+	/**
+	 * Skip an argument or variable list when one follows.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the list does not close.
+	 */
+	private function skipArguments(): void {
+		if ($this->peek() === ['punct', '(']) {
+			$this->skipBalanced(open: '(', close: ')');
+		}
+
+	}//end skipArguments()
+
+	/**
 	 * Skip directives: `@name(arguments)?` any number of times.
 	 *
 	 * @return void
@@ -242,9 +307,7 @@ class GraphqlDocumentReader {
 		while ($this->peek() === ['punct', '@']) {
 			$this->pos++;
 			$this->expectName();
-			if ($this->peek() === ['punct', '(']) {
-				$this->skipBalanced(open: '(', close: ')');
-			}
+			$this->skipArguments();
 		}
 
 	}//end directives()

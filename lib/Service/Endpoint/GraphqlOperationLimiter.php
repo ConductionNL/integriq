@@ -71,13 +71,8 @@ class GraphqlOperationLimiter {
 	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
 	 */
 	public static function limitFor(array $endpointData, GraphqlOperation $operation): ?array {
-		$limits = ($endpointData['operationLimits'] ?? null);
-		if ($operation->name === null || is_array($limits) === false) {
-			return null;
-		}
-
-		$limit = ($limits[$operation->name] ?? null);
-		if (is_array($limit) === false) {
+		$limit = self::namedLimit(endpointData: $endpointData, operation: $operation);
+		if ($limit === null) {
 			return null;
 		}
 
@@ -90,6 +85,31 @@ class GraphqlOperationLimiter {
 		return ['requestsPerWindow' => $requests, 'windowSeconds' => $window];
 
 	}//end limitFor()
+
+	/**
+	 * The raw limit entry an endpoint holds for a named operation, or null.
+	 *
+	 * @param array<string, mixed> $endpointData The endpoint.
+	 * @param GraphqlOperation     $operation    The operation.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private static function namedLimit(array $endpointData, GraphqlOperation $operation): ?array {
+		$limits = ($endpointData['operationLimits'] ?? null);
+		if ($operation->name === null || is_array($limits) === false) {
+			return null;
+		}
+
+		$limit = ($limits[$operation->name] ?? null);
+		if (is_array($limit) === false) {
+			return null;
+		}
+
+		return $limit;
+
+	}//end namedLimit()
 
 	/**
 	 * Count one operation and refuse it past its limit.

@@ -67,6 +67,8 @@ class StreamConnectionRecords {
 	 * @param string $target   The path or topic.
 	 *
 	 * @return ObjectEntity|null
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-web-server-or-broker-asks-integriq-who-may-connect-req-gqlp-002
 	 */
 	public function streamEndpoint(string $protocol, string $target): ?ObjectEntity {
 		try {
@@ -118,6 +120,8 @@ class StreamConnectionRecords {
 	 * @param array                $decision The answer.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-web-server-or-broker-asks-integriq-who-may-connect-req-gqlp-002
 	 */
 	public function log(array $ask, ?ObjectEntity $endpoint, ?ObjectEntity $consumer, array $decision): void {
 		$message = 'Connection refused: ' . $decision['reason'];
@@ -165,6 +169,8 @@ class StreamConnectionRecords {
 	 * @param ObjectEntity $entity The entity.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-web-server-or-broker-asks-integriq-who-may-connect-req-gqlp-002
 	 */
 	public function uuidOf(ObjectEntity $entity): string {
 		return (string)($entity->getUuid() ?? ($entity->getObject()['uuid'] ?? ''));

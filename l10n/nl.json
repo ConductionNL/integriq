@@ -2863,7 +2863,9 @@
         "For a call through a graphql endpoint: the name of the operation it ran; empty for an anonymous operation.": "Voor een aanroep via een graphql-endpoint: de naam van de uitgevoerde operatie; leeg bij een anonieme operatie.",
         "Protocol": "Protocol",
         "For a connection a web server or broker asked about: the protocol it carries.": "Voor een verbinding waarover een webserver of broker vroeg: het protocol dat ze draagt.",
-        "For a connection a web server or broker asked about: the id the server or broker gave the connection, when it sent one.": "Voor een verbinding waarover een webserver of broker vroeg: het id dat de server of broker de verbinding gaf, als die er een meestuurde."
+        "For a connection a web server or broker asked about: the id the server or broker gave the connection, when it sent one.": "Voor een verbinding waarover een webserver of broker vroeg: het id dat de server of broker de verbinding gaf, als die er een meestuurde.",
+        "Connections per window": "Verbindingen per venster",
+        "How many connections one consumer may open in a window.": "Hoeveel verbindingen één consument per venster mag openen."
     },
     "plurals": {}
 }

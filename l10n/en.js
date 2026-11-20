@@ -4115,7 +4115,9 @@ OC.L10N.register(
         "For a call through a graphql endpoint: the name of the operation it ran; empty for an anonymous operation.": "For a call through a graphql endpoint: the name of the operation it ran; empty for an anonymous operation.",
         "Protocol": "Protocol",
         "For a connection a web server or broker asked about: the protocol it carries.": "For a connection a web server or broker asked about: the protocol it carries.",
-        "For a connection a web server or broker asked about: the id the server or broker gave the connection, when it sent one.": "For a connection a web server or broker asked about: the id the server or broker gave the connection, when it sent one."
+        "For a connection a web server or broker asked about: the id the server or broker gave the connection, when it sent one.": "For a connection a web server or broker asked about: the id the server or broker gave the connection, when it sent one.",
+        "Connections per window": "Connections per window",
+        "How many connections one consumer may open in a window.": "How many connections one consumer may open in a window."
     },
     "nplurals=2; plural=(n != 1);"
 )

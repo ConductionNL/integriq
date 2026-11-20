@@ -76,13 +76,7 @@ class GraphqlOperationMeasure {
 		}
 
 		if ($operationName !== null && $operationName !== '') {
-			foreach ($operations as $operation) {
-				if ($operation['name'] === $operationName) {
-					return $operation;
-				}
-			}
-
-			throw new UnexpectedValueException('The GraphQL document holds no operation named "' . $operationName . '".');
+			return $this->named(operations: $operations, operationName: $operationName);
 		}
 
 		if (count($operations) > 1) {
@@ -92,6 +86,27 @@ class GraphqlOperationMeasure {
 		return $operations[0];
 
 	}//end chosen()
+
+	/**
+	 * The operation with this name.
+	 *
+	 * @param list<array<string, mixed>> $operations    The operations of the document.
+	 * @param string                     $operationName The requested name.
+	 *
+	 * @return array<string, mixed> The operation.
+	 *
+	 * @throws UnexpectedValueException When none has the name.
+	 */
+	private function named(array $operations, string $operationName): array {
+		foreach ($operations as $operation) {
+			if ($operation['name'] === $operationName) {
+				return $operation;
+			}
+		}
+
+		throw new UnexpectedValueException('The GraphQL document holds no operation named "' . $operationName . '".');
+
+	}//end named()
 
 	/**
 	 * How deep a selection nests: a field counts one, a fragment counts nothing itself.
