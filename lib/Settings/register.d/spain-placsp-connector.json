@@ -1,0 +1,91 @@
+{
+  "$comment": "INTEGRIQ DRAFT (native-data-gathering-provider, ported from spectr/connectors): Source and Job ship isEnabled false, per the requirement that a connector blocked on an unbuilt capability ships disabled. GAP: iterating the members of a multi-file .zip archive (the monthly bulk holds ~83 Atom files). Follow-up: the '.zip multi-member archive iterate' capability listed in native-data-gathering-provider tasks.md (Wave 2) has landed (SynchronizationService reads every member of a .zip page through ZipArchiveMembers, narrowed by Source configuration.zipMembers, set here to *.atom). The remaining GAP is size: a monthly archive unpacks in memory (capped at 256 MiB), so enable only after one watched live run confirms the month fits. ORIGINAL SPECTR NOTE: Phase-2 wave-2 OpenConnector ingestion config for Spain PLACSP (Plataforma de Contratacion del Sector Publico). concurrentie-analyse/scripts/sync/sync_spain_placsp.py fetches a MONTHLY BULK ZIP (`licitacionesPerfilesContratanteCompleto3_{YYYYMM}.zip`) containing ~83 per-day `.atom`/`.xml` files, each an Atom feed wrapping UBL/CODICE `ContractFolderStatus` objects. Public, unauthenticated (keyless - docstring: 'No auth required, fully public open data'). SHIPPED AS A DOCUMENTED DRAFT, Source + Job DISABLED, blocked by a genuine engine gap NOT closed by openconnector#105: .zip multi-file archive extraction. oc#105 added single-file gzip (`.jsonl.gz`) decompression and explicitly REJECTS .tar/.tar.gz (isTarGzEndpoint short-circuits to zero objects with a warning); a .zip is a multi-member archive - the engine has no unzip step and no way to iterate the ~83 member .atom files, each of which is itself a separate XML document. Even the transport is wrong for the single-body fetch->parse model: one HTTP GET yields a binary zip, and fetchSinglePageData() only ever attempts gunzip (this file is not gzip), then json_decode, then simplexml over the whole (still-zipped) body - all of which fail, silently returning zero. This is the 'documented draft, do not force it' case per the batch brief. The mapping below is a SKELETON only (id/title/organisation/country), keyed on the UBL XPaths the script uses (atom:id, ProcurementProject/cbc:Name, LocatedContractingParty/.../PartyName/Name, ItemClassificationCode for CPV, TenderSubmissionDeadlinePeriod/EndDate, AwardedTenderedProject/... for awards) but deliberately not fully fleshed out, because after a future zip+per-member-XML engine mode lands, each member's xmlToArray shape (with #text-wrapped leaves and namespace-stripped keys, per estonia_rhr.json) will need to be pinned live before the full field set is trustworthy. Recommended interim path: an ETL loader in etl/ (download zip, iterate members, parse UBL, bulk-create) - out of this batch's scope. TED v3 carries Spain's above-threshold EU notices meanwhile. The script's own CPV 48/72 client-side filter is a DB-side layer, not an API constraint.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "spain-placsp"
+        },
+        "name": "Spain PLACSP (Plataforma de Contratacion del Sector Publico)",
+        "description": "Spanish national procurement platform, monthly bulk ZIP of per-day Atom/UBL files. Public, unauthenticated. DRAFT - ships DISABLED: the source is a .zip multi-file archive, which Integriq cannot iterate yet; see $comment. Would feed the spectr `tender` register/schema.",
+        "type": "api",
+        "location": "https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_643",
+        "auth": "none",
+        "documentation": "https://contrataciondelsectorpublico.gob.es/wps/portal/DatosAbiertos",
+        "configuration": {
+          "headers": {
+            "Accept": "application/zip"
+          },
+          "zipMembers": "*.atom"
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "spain-placsp-to-tender"
+        },
+        "name": "Spain PLACSP to Spectr Tender",
+        "description": "SKELETON mapping (id/title/organisation/country only) for a PLACSP UBL ContractFolderStatus entry. Not fully fleshed out - the source is unreachable today (zip archive, see file $comment); the full UBL field set (CPV, deadline, value, award) needs live pinning after a future zip+XML engine mode. Field paths documented in $comment.",
+        "mapping": {
+          "sourceRef": "id.#text",
+          "publicatieId": "id.#text",
+          "source": "spain-placsp",
+          "title": "{{ (title['#text'])|default('Spanish tender') }}",
+          "displayName": "{{ (title['#text'])|default('Spanish tender')|slice(0, 250) }}",
+          "country": "ES",
+          "status": "new",
+          "cpvCodes": []
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "0.1.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "spain-placsp-to-spectr-tender"
+        },
+        "name": "Spain PLACSP to Spectr Tender",
+        "description": "DRAFT sync (blocked): would ingest PLACSP monthly-zip Atom/UBL entries -> spectr register, tender schema. Cannot run - the source is a .zip multi-file archive OpenConnector cannot extract (see $comment). Kept for documentation and future readiness.",
+        "sourceId": "spain-placsp",
+        "sourceType": "api",
+        "sourceTargetMapping": "spain-placsp-to-tender",
+        "sourceConfig": {
+          "endpoint": "/licitacionesPerfilesContratanteCompleto3_{{ 'now'|date_modify('-1 month')|date('Ym') }}.zip",
+          "idPosition": "id.#text",
+          "resultsPosition": "entry",
+          "usesPagination": false
+        },
+        "targetId": "spectr/tender",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "job",
+          "slug": "spain-placsp-monthly-sync"
+        },
+        "name": "Spain PLACSP Monthly Sync",
+        "description": "Would run the spain-placsp-to-spectr-tender synchronization monthly - ships DISABLED (blocked by the zip-archive engine gap, see $comment).",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "spain-placsp-to-spectr-tender"
+        },
+        "interval": 2592000,
+        "isEnabled": false,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
