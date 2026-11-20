@@ -312,10 +312,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 */
 	public function refreshPayment(string $paymentIntentId): array {
 		$record = $this->findPaymentIntentById(paymentIntentId: $paymentIntentId);
-		$providerPaymentId = '';
-		if ($record !== null) {
-			$providerPaymentId = (string)($record->getObject()['providerPaymentId'] ?? '');
-		}
+		$providerPaymentId = (string)($record?->getObject()['providerPaymentId'] ?? '');
 
 		if ($providerPaymentId === '') {
 			return ['result' => 'not-found', 'outcome' => null, 'paymentStatus' => null];
@@ -412,9 +409,9 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 			$pinned['provider'] = $configuration['provider'];
 		}
 
-		$authentication = ($configuration['authentication'] ?? null);
-		if (is_array($authentication) === true && array_key_exists('credentialRef', $authentication) === true) {
-			$pinned['authentication'] = ['credentialRef' => $authentication['credentialRef']];
+		$credentialRef = ($configuration['authentication']['credentialRef'] ?? null);
+		if ($credentialRef !== null) {
+			$pinned['authentication'] = ['credentialRef' => $credentialRef];
 		}
 
 		return $pinned;
@@ -558,7 +555,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 */
 	private function resolveProvider(array $configuration): PaymentProviderInterface {
 		$provider = ($configuration['provider'] ?? null);
-		if ($provider === null || $provider === '' || $provider === 'log') {
+		if (in_array($provider, [null, '', 'log'], true) === true) {
 			return $this->logProvider;
 		}
 
