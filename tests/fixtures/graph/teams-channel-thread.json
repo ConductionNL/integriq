@@ -1,0 +1,224 @@
+{
+ "channelPath": "/v1.0/teams/team-ruimte/channels/19:stationsplein@thread.tacv2",
+ "channel": {
+  "id": "19:stationsplein@thread.tacv2",
+  "displayName": "Stationsplein"
+ },
+ "root": {
+  "id": "1741000000001",
+  "messageType": "message",
+  "createdDateTime": "2025-03-03T09:00:00Z",
+  "deletedDateTime": null,
+  "from": {
+   "user": {
+    "id": "p.-jansen",
+    "displayName": "P. Jansen"
+   }
+  },
+  "body": {
+   "contentType": "html",
+   "content": "<p>Stationsplein: planning aanbesteding &amp; fasering</p>"
+  }
+ },
+ "replies": {
+  "@odata.count": 11,
+  "value": [
+   {
+    "id": "1741000000012",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:55:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "s.-bakker",
+      "displayName": "S. Bakker"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Reactie 11 op de planning"
+    }
+   },
+   {
+    "id": "1741000000011",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:50:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "r.-de-vries",
+      "displayName": "R. de Vries"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Reactie 10 op de planning"
+    }
+   },
+   {
+    "id": "1741000000010",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:45:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "p.-jansen",
+      "displayName": "P. Jansen"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Reactie 9 op de planning"
+    }
+   },
+   {
+    "id": "1741000000009",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:40:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "s.-bakker",
+      "displayName": "S. Bakker"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Stationsplein: planning aanbesteding, de offertes sluiten op 1 april"
+    }
+   },
+   {
+    "id": "1741000000008",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:35:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "r.-de-vries",
+      "displayName": "R. de Vries"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Reactie 7 op de planning"
+    }
+   },
+   {
+    "id": "1741000000007",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:30:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "p.-jansen",
+      "displayName": "P. Jansen"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Reactie 6 op de planning"
+    }
+   },
+   {
+    "id": "1741000000006",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:25:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "s.-bakker",
+      "displayName": "S. Bakker"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Reactie 5 op de planning"
+    }
+   },
+   {
+    "id": "1741000000005",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:20:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "r.-de-vries",
+      "displayName": "R. de Vries"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Reactie 4 op de planning"
+    }
+   },
+   {
+    "id": "1741000000004",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:15:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "p.-jansen",
+      "displayName": "P. Jansen"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Reactie 3 op de planning"
+    }
+   },
+   {
+    "id": "1741000000003",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:10:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "s.-bakker",
+      "displayName": "S. Bakker"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Reactie 2 op de planning"
+    }
+   },
+   {
+    "id": "1741000000002",
+    "messageType": "message",
+    "createdDateTime": "2025-03-03T09:05:00Z",
+    "deletedDateTime": null,
+    "from": {
+     "user": {
+      "id": "r.-de-vries",
+      "displayName": "R. de Vries"
+     }
+    },
+    "body": {
+     "contentType": "text",
+     "content": "Reactie 1 op de planning"
+    }
+   }
+  ]
+ },
+ "members": {
+  "value": [
+   {
+    "id": "m-0",
+    "userId": "u-0",
+    "displayName": "P. Jansen"
+   },
+   {
+    "id": "m-1",
+    "userId": "u-1",
+    "displayName": "R. de Vries"
+   },
+   {
+    "id": "m-2",
+    "userId": "u-2",
+    "displayName": "S. Bakker"
+   }
+  ]
+ },
+ "hitId": "1741000000009"
+}

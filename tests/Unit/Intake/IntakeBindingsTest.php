@@ -29,6 +29,8 @@ use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
 use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
 use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
 use OCA\Integriq\Intake\Adapter\TeamsChannelAdapter;
+use OCA\Integriq\Intake\IntakeAssignmentService;
+use OCA\Integriq\Intake\IntakeAssignmentServiceInterface;
 use OCA\Integriq\Intake\IntakeBindings;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Intake\IntakeChannelRegistryInterface;
@@ -36,6 +38,7 @@ use OCA\Integriq\Intake\IntakeReplyService;
 use OCA\Integriq\Intake\IntakeReplyServiceInterface;
 use OCA\Integriq\Intake\IntakeRoutingService;
 use OCA\Integriq\Intake\IntakeRoutingServiceInterface;
+use OCA\Integriq\Service\Extension\ConnectorExtensionsInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -69,6 +72,7 @@ class IntakeBindingsTest extends TestCase {
 			[
 				IntakeRoutingServiceInterface::class => IntakeRoutingService::class,
 				IntakeReplyServiceInterface::class => IntakeReplyService::class,
+				IntakeAssignmentServiceInterface::class => IntakeAssignmentService::class,
 				IntakeChannelRegistryInterface::class => IntakeChannelRegistry::class,
 			],
 			$aliases
@@ -102,6 +106,7 @@ class IntakeBindingsTest extends TestCase {
 			MessagingChannelAdapter::class => $messaging,
 			PublicSpaceReportAdapter::class => $report,
 			TeamsChannelAdapter::class => $teams,
+			ConnectorExtensionsInterface::class => $this->createMock(ConnectorExtensionsInterface::class),
 		];
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id) => $services[$id]);

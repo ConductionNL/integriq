@@ -39,6 +39,7 @@ import CallLogDetail from './components/callLog/CallLogDetail.vue'
 import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import DatabaseSourcePanel from './components/DatabaseSourcePanel.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
 import IntakeMessageActions from './components/intake/IntakeMessageActions.vue'
 import IntakeMessageRowActions from './components/intake/IntakeMessageRowActions.vue'
@@ -89,6 +90,7 @@ import {
 	testJobHandler,
 	testMappingModalHandler,
 	testRegistrationTargetHandler,
+	testServiceFetchHandler,
 	testSourceHandler,
 	testSynchronizationHandler,
 	viewLogsHandler,
@@ -120,6 +122,8 @@ export default {
 	releaseHeldMessageHandler,
 	withdrawHeldMessageHandler,
 	testMappingModalHandler,
+	// Beheer > Service fetches: "Testen" opens TestServiceFetchModal (REQ-SF-001).
+	testServiceFetchHandler,
 	addEndpointRuleHandler,
 	// Directory connections are Sources, so their run and preview actions sit on
 	// the Sources index. Both open DirectoryRunModal, which owns the POST so a
@@ -180,6 +184,12 @@ export default {
 	// and #activate). Renders nothing for any other kind of source.
 	// document-generation-vendor-adapter REQ-DGV-004.
 	DocumentGenerationSourcePanel,
+
+	// SourceDetail body widget for a database source: its declared statements,
+	// a test run of a read statement (first page and duration) and the tables
+	// and columns (databaseSource#testStatement and #schema). Renders nothing
+	// for any other kind of source. sources-database-adapter REQ-DBSF-001.
+	DatabaseSourcePanel,
 
 	// SourceDetail body widget: the source's pulls per day and its latest
 	// runs, with Run again on a failed one. Reads runSummary#show.

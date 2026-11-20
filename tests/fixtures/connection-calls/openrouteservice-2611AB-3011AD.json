@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "bbox": [4.358, 51.917, 4.479, 52.012],
+  "features": [
+    {
+      "bbox": [4.358, 51.917, 4.479, 52.012],
+      "type": "Feature",
+      "properties": {
+        "summary": { "distance": 15812.4, "duration": 1124.6 },
+        "way_points": [0, 412]
+      },
+      "geometry": { "type": "LineString", "coordinates": [[4.358211, 52.011634], [4.478923, 51.917522]] }
+    }
+  ],
+  "metadata": {
+    "service": "routing",
+    "query": { "coordinates": [[4.358211, 52.011634], [4.478923, 51.917522]], "profile": "driving-car", "format": "json" },
+    "engine": { "version": "8.0.0" }
+  }
+}

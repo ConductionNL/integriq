@@ -115,6 +115,12 @@ parameters:
         # interface" is a general error no baseline absorbs; same remedy as
         # IntegriqMetricsProvider above.
         - lib/Notification/ConnectionAlertRecipientResolver.php
+        # sources-database-adapter: the two Doctrine DBAL wrappers. DBAL is the copy
+        # Nextcloud core ships (3rdparty), present at runtime but not in this app's
+        # vendor, so every DBAL type is "not found" here. The rest of the adapter
+        # sees DBAL only through DatabaseConnectionInterface and is analysed.
+        - lib/Service/Adapter/DataInfra/Database/DbalDatabaseConnection.php
+        - lib/Service/Adapter/DataInfra/Database/DbalDatabaseConnectionFactory.php
 
     ignoreErrors:
         # flow-workflowengine-integration: NC's concrete IRequest implementation

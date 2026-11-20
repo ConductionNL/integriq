@@ -34,15 +34,12 @@ test.describe('opentelemetry export settings', () => {
 		const section = page.getByTestId('admin-otel-section')
 		await expect(section).toBeVisible({ timeout: 20_000 })
 
+		// NcTextField and NcCheckboxRadioSwitch put data-testid on the input itself.
 		await page
 			.getByTestId('admin-otel-endpoint')
-			.locator('input')
 			.fill('https://otel.example.org:4318')
-		await page.getByTestId('admin-otel-sampling').locator('input').fill('10')
-		await page
-			.getByTestId('admin-otel-enabled')
-			.locator('input')
-			.check({ force: true })
+		await page.getByTestId('admin-otel-sampling').fill('10')
+		await page.getByTestId('admin-otel-enabled').check({ force: true })
 		await page.getByTestId('admin-otel-save').click()
 
 		await expect

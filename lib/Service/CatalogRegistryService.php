@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Service\Catalog\ConnectorTemplateLibrary;
+use OCA\Integriq\Service\Catalog\ContributedTemplates;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -119,6 +120,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'servicenow' => 'Service management',
 		'glpi' => 'Service management',
 		'cmcom-sms' => 'Messaging',
+		'smtp-mail' => 'Messaging',
 		'messagebird-sms' => 'Messaging',
 		'twilio-sms' => 'Messaging',
 		'whatsapp-bsp' => 'Messaging',
@@ -133,6 +135,10 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		// GitHub for the publiccode harvest (sources-github-publiccode).
 		'github-api' => 'Code hosting',
 		'github-raw' => 'Code hosting',
+		// Vehicle register and route planners for sibling apps (sources-route-distance-and-rdw-lookup).
+		'rdw-open-data' => 'Government registers',
+		'route-planner-openrouteservice' => 'Geo / Maps',
+		'route-planner-tomtom' => 'Geo / Maps',
 		// Web shops whose orders go to shillinq (connectors-webshop-orders D4).
 		'woocommerce-shop' => 'Commerce',
 		'shopify-shop' => 'Commerce',
@@ -146,6 +152,10 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'digipoort-sbr' => 'Tax filing',
 		// The ECB euro reference rates, credential-free (sources-ecb-exchange-rates D4).
 		'ecb-eurofxref-daily' => 'Bank',
+		// Other vendors' gateways whose APIs integriq lists (gateway-federated-api-discovery).
+		'kong-gateway-discovery' => 'API gateways',
+		'azure-apim-discovery' => 'API gateways',
+		'aws-apigateway-discovery' => 'API gateways',
 	];
 
 	/**
@@ -217,6 +227,21 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'icon' => 'MapMarkerOutline',
 		],
 		[
+			'slug' => 'adapter:digid-eherkenning-auth-adapter',
+			'name' => 'DigiD, eHerkenning and eIDAS login',
+			'description' => 'Signs residents and businesses in through DigiD, eHerkenning or eIDAS for an app such as portaliq, '
+				. 'which receives a signed pseudonymous envelope, never a BSN. Each organisation gets its own SAML Service Provider '
+				. 'or OIDC Relying Party registration, configured under Beheer > Authenticatie; this entry creates no configuration '
+				. 'of its own. Keys stay in Keepiq. Substantial is the lowest level accepted. Dormant until `idp_broker_enabled` is 1.',
+			'category' => 'Identity',
+			'kind' => 'adapter',
+			'mechanism' => 'flag-gated',
+			'flagKey' => 'idp_broker_enabled',
+			'sourceTemplateSlug' => '',
+			'standards' => ['SAML 2.0', 'OpenID Connect', 'DigiD', 'eHerkenning', 'eIDAS'],
+			'icon' => 'AccountKeyOutline',
+		],
+		[
 			'slug' => 'adapter:digikoppeling',
 			'name' => 'Digikoppeling',
 			'description' => 'Dutch government messaging standard (WUS profile, ebMS2 reliable messaging, WS-Security signing, '
@@ -246,6 +271,22 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'sourceTemplateSlug' => '',
 			'standards' => ['Digikoppeling ebMS2', 'Digikoppeling WUS', 'PKIoverheid'],
 			'icon' => 'EmailOutline',
+		],
+		[
+			'slug' => 'adapter:digipoort-sbr',
+			'name' => 'Digipoort (SBR filing)',
+			'description' => 'Files XBRL instances with the Belastingdienst and the KvK through Digipoort: a sibling app such as '
+				. 'shillinq raises a filing request, integriq delivers the instance once, polls the processing status and '
+				. 'reports every status back as an event. Ships on the log provider, which answers without a network call. '
+				. 'The live WUS provider signs with your PKIoverheid certificate from the credential broker and sends over '
+				. 'two-way TLS; without the certificate it refuses and sends nothing.',
+			'category' => 'Tax filing',
+			'kind' => 'adapter',
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => 'digipoort-sbr',
+			'standards' => ['Digipoort WUS', 'SBR', 'PKIoverheid'],
+			'icon' => 'FileSendOutline',
 		],
 		[
 			'slug' => 'adapter:smartdocuments',
@@ -321,6 +362,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'sharepoint-online' => 'Document / CMS',
 		'microsoft-365' => 'SaaS productivity',
 		'data-infra-s3' => 'Data infrastructure',
+		'data-infra-database' => 'Data infrastructure',
 	];
 
 	/**
@@ -331,6 +373,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @param IAppConfig $appConfig App config, used to resolve flag-gated mechanism status.
 	 * @param LoggerInterface $logger Logger for malformed seed-fragment warnings.
 	 * @param string|null $templateDir The template library to read; the shipped one when null.
+	 * @param ContributedTemplates|null $contributed The templates extension apps contributed, shown as provided by their app.
 	 */
 	public function __construct(
 		private readonly IntegrationRegistry $integrationRegistry,
@@ -338,6 +381,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		?string $templateDir = null,
+		private readonly ?ContributedTemplates $contributed = null,
 	) {
 		$this->templates = new ConnectorTemplateLibrary(directory: ($templateDir ?? self::TEMPLATE_DIR));
 	}//end __construct()
@@ -379,9 +423,15 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	private function collectFromTemplates(): array {
+		$cards = $this->templates->cards();
+		if ($this->contributed !== null) {
+			// @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+			$cards = [...$cards, ...$this->contributed->cards()];
+		}
+
 		return array_map(
 			fn (array $card): array => ['icon' => $this->iconForType(type: (string)$card['sourceType'])] + array_diff_key($card, ['sourceType' => true]),
-			$this->templates->cards()
+			$cards
 		);
 	}//end collectFromTemplates()
 
@@ -593,7 +643,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function findSeedSourcePayload(string $slug): ?array {
-		$templatePayload = $this->templates->payload(slug: $slug);
+		$templatePayload = ($this->templates->payload(slug: $slug) ?? $this->contributed?->payload(slug: $slug));
 		if ($templatePayload !== null) {
 			return $templatePayload;
 		}
