@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!--
+  - SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+  - SPDX-License-Identifier: EUPL-1.2
+-->
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+	<id>integriq_example_channel</id>
+	<name>IntegrIQ example channel</name>
+	<summary>A skeleton extension app that adds one intake channel to IntegrIQ.</summary>
+	<description>Copy this app to build your own IntegrIQ connector extension. It contributes the "example-webhook" intake channel through IntegrIQ's RegisterConnectorExtensionsEvent and passes IntegrIQ's intake channel contract tests.</description>
+	<version>0.1.0</version>
+	<licence>eupl</licence>
+	<author mail="info@conduction.nl" homepage="https://conduction.nl">Conduction B.V.</author>
+	<namespace>IntegriqExampleChannel</namespace>
+	<category>integration</category>
+	<dependencies>
+		<nextcloud min-version="30" max-version="33"/>
+	</dependencies>
+</info>

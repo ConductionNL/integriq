@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Service\Catalog\ConnectorTemplateLibrary;
+use OCA\Integriq\Service\Catalog\ContributedTemplates;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -272,6 +273,22 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'icon' => 'EmailOutline',
 		],
 		[
+			'slug' => 'adapter:digipoort-sbr',
+			'name' => 'Digipoort (SBR filing)',
+			'description' => 'Files XBRL instances with the Belastingdienst and the KvK through Digipoort: a sibling app such as '
+				. 'shillinq raises a filing request, integriq delivers the instance once, polls the processing status and '
+				. 'reports every status back as an event. Ships on the log provider, which answers without a network call. '
+				. 'The live WUS provider signs with your PKIoverheid certificate from the credential broker and sends over '
+				. 'two-way TLS; without the certificate it refuses and sends nothing.',
+			'category' => 'Tax filing',
+			'kind' => 'adapter',
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => 'digipoort-sbr',
+			'standards' => ['Digipoort WUS', 'SBR', 'PKIoverheid'],
+			'icon' => 'FileSendOutline',
+		],
+		[
 			'slug' => 'adapter:smartdocuments',
 			'name' => 'SmartDocuments',
 			'description' => 'Vendor document generation (SmartDocuments). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
@@ -345,6 +362,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'sharepoint-online' => 'Document / CMS',
 		'microsoft-365' => 'SaaS productivity',
 		'data-infra-s3' => 'Data infrastructure',
+		'data-infra-database' => 'Data infrastructure',
 	];
 
 	/**
@@ -355,6 +373,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @param IAppConfig $appConfig App config, used to resolve flag-gated mechanism status.
 	 * @param LoggerInterface $logger Logger for malformed seed-fragment warnings.
 	 * @param string|null $templateDir The template library to read; the shipped one when null.
+	 * @param ContributedTemplates|null $contributed The templates extension apps contributed, shown as provided by their app.
 	 */
 	public function __construct(
 		private readonly IntegrationRegistry $integrationRegistry,
@@ -362,6 +381,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		?string $templateDir = null,
+		private readonly ?ContributedTemplates $contributed = null,
 	) {
 		$this->templates = new ConnectorTemplateLibrary(directory: ($templateDir ?? self::TEMPLATE_DIR));
 	}//end __construct()
@@ -403,9 +423,15 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	private function collectFromTemplates(): array {
+		$cards = $this->templates->cards();
+		if ($this->contributed !== null) {
+			// @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+			$cards = [...$cards, ...$this->contributed->cards()];
+		}
+
 		return array_map(
 			fn (array $card): array => ['icon' => $this->iconForType(type: (string)$card['sourceType'])] + array_diff_key($card, ['sourceType' => true]),
-			$this->templates->cards()
+			$cards
 		);
 	}//end collectFromTemplates()
 
@@ -617,7 +643,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function findSeedSourcePayload(string $slug): ?array {
-		$templatePayload = $this->templates->payload(slug: $slug);
+		$templatePayload = ($this->templates->payload(slug: $slug) ?? $this->contributed?->payload(slug: $slug));
 		if ($templatePayload !== null) {
 			return $templatePayload;
 		}

@@ -77,4 +77,31 @@ interface HoldQueueInterface {
 	 * @spec exclude declaration only, the behaviour and its spec live on HoldQueue::release()
 	 */
 	public function release(string $uuid): bool;
+
+	/**
+	 * Hold a message a send check refused, until a person releases or withdraws it.
+	 *
+	 * @param string $uuid   The message record uuid.
+	 * @param string $check  The send check that refused it.
+	 * @param string $reason Why the check refused it.
+	 *
+	 * @return ObjectEntity The record, now held for review.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on HoldQueue::holdForReview()
+	 */
+	public function holdForReview(string $uuid, string $check, string $reason): ObjectEntity;
+
+	/**
+	 * Release a message held for review, so it can be sent.
+	 *
+	 * @param string $uuid     The message record uuid.
+	 * @param string $actorUid Who released it.
+	 *
+	 * @return ObjectEntity The record, now released.
+	 *
+	 * @throws RuntimeException When the message is not held for review.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on HoldQueue::releaseHeld()
+	 */
+	public function releaseHeld(string $uuid, string $actorUid): ObjectEntity;
 }
