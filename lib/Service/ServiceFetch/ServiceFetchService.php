@@ -33,8 +33,10 @@ use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\Integriq\Event\ServiceFetchRequestedEvent;
 use OCA\Integriq\Service\CallServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -46,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
  */
-class ServiceFetchService {
+class ServiceFetchService implements ServiceFetchServiceInterface {
 
 	/**
 	 * The register every object involved lives in.
@@ -62,6 +64,13 @@ class ServiceFetchService {
 	 * The longest call time a fetch may declare, in milliseconds.
 	 */
 	private const MAX_TIMEOUT_MS = 15000;
+
+	/**
+	 * The caller an administrator's test run is logged under on the call log.
+	 *
+	 * @var string
+	 */
+	public const TEST_CALLER = 'integriq-admin-test';
 
 	/**
 	 * Cached outputs per fetch and input values.
@@ -121,6 +130,52 @@ class ServiceFetchService {
 			$event->refuse(refusal: ServiceFetchRequestedEvent::SOURCE_UNAVAILABLE);
 		}
 	}//end handle()
+
+	/**
+	 * Run one fetch for its administrator with sample inputs ("Testen", design D5).
+	 *
+	 * Unlike an app's call it skips the allowed-apps check and the output cache,
+	 * and runs a disabled fetch too, so a fetch can be tried before it is
+	 * switched on. The answer holds the source's raw answer next to the mapped
+	 * outputs; it is for the administrator only and never reaches an app.
+	 *
+	 * @param string               $slug   The fetch.
+	 * @param array<string, mixed> $inputs The sample inputs.
+	 *
+	 * @return array{found: bool, raw: array{status: int, body: mixed}|null,
+	 *     outputs: array<string, mixed>|null, refusal: string|null, detail: string|null}
+	 *         `found` is false for an unknown slug; `refusal` names the first
+	 *         step that refused, with `raw` set once the source answered.
+	 *
+	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+	 */
+	public function test(string $slug, array $inputs): array {
+		$result = ['found' => false, 'raw' => null, 'outputs' => null, 'refusal' => null, 'detail' => null];
+		$fetch = $this->catalogue->fetchBySlug(slug: $slug);
+		if ($fetch === null) {
+			return $result;
+		}
+
+		$result['found'] = true;
+		try {
+			try {
+				$accepted = $this->inputs->accepted(declared: $this->catalogue->listOf(value: ($fetch['inputs'] ?? [])), given: $inputs);
+				$path = $this->inputs->path(path: (string)($fetch['path'] ?? ''), inputs: $accepted);
+				$query = $this->inputs->query(query: (array)($fetch['query'] ?? []), inputs: $accepted);
+			} catch (InvalidArgumentException $invalid) {
+				throw new ServiceFetchRefusal(ServiceFetchRequestedEvent::INVALID_INPUT, $invalid->getMessage());
+			}
+
+			$request = ['path' => $path, 'query' => $query, 'inputs' => $accepted, 'app' => self::TEST_CALLER];
+			$result['raw'] = $this->callSource(fetch: $fetch, request: $request);
+			$result['outputs'] = $this->outputs(fetch: $fetch, answer: $result['raw']);
+		} catch (ServiceFetchRefusal $refusal) {
+			$result['refusal'] = $refusal->getMessage();
+			$result['detail'] = $refusal->detail;
+		}
+
+		return $result;
+	}//end test()
 
 	/**
 	 * The steps of design D3, throwing a ServiceFetchRefusal at the first refusal.
@@ -278,18 +333,20 @@ class ServiceFetchService {
 
 		try {
 			// Unscoped: system write marking the call log of a service fetch.
-			$stored = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: 'call_log', _rbac: false, _multitenancy: false);
+			$stored = $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'call_log'),
+				_rbac: false,
+				_multitenancy: false
+			);
 			$row = $stored->getObject();
 			$row['context'] = ['app' => (string)$request['app'], 'fetch' => (string)($fetch['slug'] ?? '')];
 			$row = (new ServiceFetchRedactor())->redact(row: $row, values: $this->valuesToRedact(inputs: $request['inputs']));
 
 			$this->objectService->saveObject(
 				object: $row,
-				register: self::REGISTER,
-				schema: 'call_log',
-				uuid: $uuid,
+				options: RegisterSave::options(register: self::REGISTER, schema: 'call_log', uuid: $uuid),
 				_rbac: false,
-				// Unscoped: system write marking the call log of a service fetch.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {

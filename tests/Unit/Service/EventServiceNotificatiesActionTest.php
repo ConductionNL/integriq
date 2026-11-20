@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
@@ -124,7 +126,9 @@ class EventServiceNotificatiesActionTest extends TestCase {
 
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 		$this->objectService->method('find')->willReturnCallback(
-			function (string $id, string $register, string $schema) use ($find, $event) {
+			function (string $id, ?ObjectFindOptions $options = null) use ($find, $event) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'event') {
 					return ($find['event'] ?? $event);
 				}
@@ -135,6 +139,7 @@ class EventServiceNotificatiesActionTest extends TestCase {
 
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$this->capturedMessage = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}

@@ -31,6 +31,7 @@ use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\Integriq\Service\EndpointCorsPolicyInterface;
 use OCA\Integriq\Service\EndpointServiceInterface;
+use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SearchServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -119,6 +120,7 @@ class EndpointsController extends Controller {
 	 * @param string $corsMethods Allowed CORS methods.
 	 * @param string $corsAllowedHeaders Allowed CORS headers.
 	 * @param integer $corsMaxAge CORS max age in seconds.
+	 * @param XmlEncoderInterface|null $xmlEncoder Writes an XML response; the container binds it.
 	 */
 	public function __construct(
 		$appName,
@@ -133,6 +135,7 @@ class EndpointsController extends Controller {
 		$corsMethods = 'PUT, POST, GET, DELETE, PATCH',
 		$corsAllowedHeaders = 'Authorization, Content-Type, Accept',
 		$corsMaxAge = 1728000,
+		private ?XmlEncoderInterface $xmlEncoder = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->corsMethods = $corsMethods;
@@ -284,7 +287,8 @@ class EndpointsController extends Controller {
 			data: $response->getData(),
 			status: $response->getStatus(),
 			headers: $response->getHeaders(),
-			path: $path
+			path: $path,
+			encoder: $this->xmlEncoder
 		);
 	}//end inRequestedFormat()
 

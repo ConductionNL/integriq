@@ -34,6 +34,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every branch of getAllObjectsFromApi(), recorded against a golden file:
@@ -123,7 +124,8 @@ class SynchronizationGetAllObjectsFromApiTest extends TestCase {
 			}
 		);
 		$or->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
+			function (...$legacyArgs) {
+				[$object, $register, $schema, $uuid] = LegacyObjectArgs::positional(method: 'saveObject', args: $legacyArgs);
 				$this->log[] = ['or.saveObject', $object, $register, $schema, $uuid];
 				return new ObjectEntity();
 			}
@@ -182,6 +184,7 @@ class SynchronizationGetAllObjectsFromApiTest extends TestCase {
 			'no-merge-empty-data' => ['config' => ['useDataAsRequestBody' => false], 'data' => [], 'pages' => [$items]],
 			'rate-limited-source-page' => ['source' => ['rateLimitLimit' => 10], 'sync' => ['currentPage' => 3], 'config' => ['usesPagination' => true], 'pages' => [$items, ['items' => []]]],
 			'rate-limited-source-no-page' => ['source' => ['rateLimitLimit' => 10], 'sync' => ['currentPage' => null], 'config' => ['usesPagination' => true], 'pages' => [$items, ['items' => []]]],
+			'paced-source-page' => ['source' => ['pace' => ['maxCalls' => 100, 'perSeconds' => 60]], 'sync' => ['currentPage' => 3], 'config' => ['usesPagination' => true], 'pages' => [$items, ['items' => []]]],
 			'current-page-ignored' => ['sync' => ['currentPage' => 4], 'config' => ['usesPagination' => true], 'pages' => [$items, ['items' => []]]],
 			'rate-limit-exceeded' => ['source' => ['rateLimitRemaining' => 0, 'rateLimitReset' => (time() + 3600)], 'pages' => [$items]],
 			'source-by-id' => ['resolved' => false, 'pages' => [$items]],

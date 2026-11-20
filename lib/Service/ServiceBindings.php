@@ -26,10 +26,21 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
+use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DatabaseConnectionFactoryInterface;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DbalDatabaseConnectionFactory;
+use OCA\Integriq\Service\Adapter\DataInfra\DatabaseAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Format\ArrayToXml;
+use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSetInterface;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\CitrixDaasAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\EndpointWorkspaceListing;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\EndpointWorkspaceListingInterface;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\IntuneAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\JamfProAdapter;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
@@ -44,6 +55,8 @@ use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
 use OCA\Integriq\Service\AgentTools\DeadLetterProjectionInterface;
 use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
 use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
+use OCA\Integriq\Service\Chat\TalkMessageSource;
+use OCA\Integriq\Service\Chat\TalkMessageSourceInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
@@ -56,6 +69,11 @@ use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettingsInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
+use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
+use OCA\Integriq\Service\Extension\ConnectorExtensionsInterface;
+use OCA\Integriq\Service\Payment\LogPaymentProvider;
+use OCA\Integriq\Service\Payment\MolliePaymentProvider;
+use OCA\Integriq\Service\Payment\PaymentProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistryInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
@@ -64,6 +82,8 @@ use OCA\Integriq\Service\DigitalPost\PostexProvider;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
+use OCA\Integriq\Service\Digipoort\SbrFilingService;
+use OCA\Integriq\Service\Digipoort\SbrFilingServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\Event\EventForwardingGuardInterface;
 use OCA\Integriq\Service\Event\EventLoopGuard;
@@ -72,6 +92,8 @@ use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
+use OCA\Integriq\Service\Event\CloudEventReceiver;
+use OCA\Integriq\Service\Event\CloudEventReceiverInterface;
 use OCA\Integriq\Service\Exchange\ExchangeJobRunner;
 use OCA\Integriq\Service\Exchange\ExchangeJobRunnerInterface;
 use OCA\Integriq\Service\Exchange\ExchangeJobService;
@@ -129,6 +151,12 @@ use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolverInterface;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCA\Integriq\Service\Mtls\MtlsTransportServiceInterface;
+use OCA\Integriq\Service\OAuth\IssuerKeyService;
+use OCA\Integriq\Service\OAuth\IssuerKeyServiceInterface;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadata;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadataInterface;
+use OCA\Integriq\Service\OAuth\TokenIssuer;
+use OCA\Integriq\Service\OAuth\TokenIssuerInterface;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandlerInterface;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
@@ -138,6 +166,8 @@ use OCA\Integriq\Service\Objecten\ObjectenTokenServiceInterface;
 use OCA\Integriq\Service\Objecten\ObjectenWiring;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandlerInterface;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitter;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitterInterface;
 use OCA\Integriq\Service\Oso\LogOsoProvider;
 use OCA\Integriq\Service\Oso\OsoKennisnetClient;
 use OCA\Integriq\Service\Oso\OsoProviderRegistry;
@@ -145,6 +175,8 @@ use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
+use OCA\Integriq\Service\Payment\PaymentSettlementService;
+use OCA\Integriq\Service\Payment\PaymentSettlementServiceInterface;
 use OCA\Integriq\Service\Portal\ActivityMappingTableInterface;
 use OCA\Integriq\Service\Portal\ActivityOverview;
 use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
@@ -154,6 +186,10 @@ use OCA\Integriq\Service\Portal\PortalRequestIntakeInterface;
 use OCA\Integriq\Service\Portal\PortalRequestParserInterface;
 use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\Integriq\Service\Portal\UnmappedActivitiesInterface;
+use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
+use OCA\Integriq\Service\RateLimit\InboundRateLimitServiceInterface;
+use OCA\Integriq\Service\Registration\RegistrationStore;
+use OCA\Integriq\Service\Registration\RegistrationStoreInterface;
 use OCA\Integriq\Service\Registry\BrpVolgindicatieProvider;
 use OCA\Integriq\Service\Registry\KvkMutatieProvider;
 use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
@@ -165,6 +201,10 @@ use OCA\Integriq\Service\Registry\SubscriptionRequestHandler;
 use OCA\Integriq\Service\Registry\SubscriptionRequestHandlerInterface;
 use OCA\Integriq\Service\Registry\SubscriptionRoster;
 use OCA\Integriq\Service\Registry\SubscriptionRosterInterface;
+use OCA\Integriq\Service\Regression\TraceCaseRecorder;
+use OCA\Integriq\Service\Regression\TraceCaseRecorderInterface;
+use OCA\Integriq\Service\Residency\EgressDestinationService;
+use OCA\Integriq\Service\Residency\EgressDestinationServiceInterface;
 use OCA\Integriq\Service\Rod\LogRodProvider;
 use OCA\Integriq\Service\Rod\RodEdukoppelingClient;
 use OCA\Integriq\Service\Rod\RodProviderRegistry;
@@ -184,8 +224,14 @@ use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
 use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
 use OCA\Integriq\Service\Security\SecretRedactorInterface;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchCatalogue;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchCatalogueInterface;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchService;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchServiceInterface;
 use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
 use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
+use OCA\Integriq\Service\Sms\SmsProviderRegistryInterface;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClient;
@@ -259,6 +305,7 @@ final class ServiceBindings {
 		AuthenticationServiceInterface::class => AuthenticationService::class,
 		SoftwareCatalogueServiceInterface::class => SoftwareCatalogueService::class,
 		OpenFormulierenIntakeServiceInterface::class => OpenFormulierenIntakeService::class,
+		DestinationSubmitterInterface::class => DestinationSubmitter::class,
 		LtiKeyServiceInterface::class => LtiKeyService::class,
 		CardfeedSyncServiceInterface::class => CardfeedSyncService::class,
 		ExchangeJobServiceInterface::class => ExchangeJobService::class,
@@ -267,12 +314,16 @@ final class ServiceBindings {
 		IwmoIjwSyncServiceInterface::class => IwmoIjwSyncService::class,
 		StufZdsOutboundInterface::class => StufZdsOutbound::class,
 		SmsDispatchServiceInterface::class => SmsDispatchService::class,
+		NotifyNlEmailServiceInterface::class => NotifyNlEmailService::class,
+		SmsStatusCallbackServiceInterface::class => SmsStatusCallbackService::class,
+		SmsProviderRegistryInterface::class => SmsProviderRegistry::class,
 		StufProviderReceiverInterface::class => StufProviderReceiver::class,
 		DigitalPostServiceInterface::class => DigitalPostService::class,
 		ExchangeRejectionServiceInterface::class => ExchangeRejectionService::class,
 		ConfigurationImportPreviewServiceInterface::class => ConfigurationImportPreviewService::class,
 		ExecutionTraceServiceInterface::class => ExecutionTraceService::class,
 		DocumentGenerationServiceInterface::class => DocumentGenerationService::class,
+		SbrFilingServiceInterface::class => SbrFilingService::class,
 		ObjectEndpointHandlerInterface::class => ObjectEndpointHandler::class,
 		ExchangeJobRunnerInterface::class => ExchangeJobRunner::class,
 		ConnectionRegistryServiceInterface::class => ConnectionRegistryService::class,
@@ -282,6 +333,9 @@ final class ServiceBindings {
 		UwlrEduVServiceInterface::class => UwlrEduVService::class,
 		PaymentIntentServiceInterface::class => PaymentIntentService::class,
 		EudiIssuerKeyServiceInterface::class => EudiIssuerKeyService::class,
+		TokenIssuerInterface::class => TokenIssuer::class,
+		IssuerKeyServiceInterface::class => IssuerKeyService::class,
+		ProtectedResourceMetadataInterface::class => ProtectedResourceMetadata::class,
 		VerzuimloketServiceInterface::class => VerzuimloketService::class,
 		LtiPlatformLoginServiceInterface::class => LtiPlatformLoginService::class,
 		RodServiceInterface::class => RodService::class,
@@ -296,6 +350,7 @@ final class ServiceBindings {
 		BerichtenboxSourceSettingsInterface::class => BerichtenboxSourceSettings::class,
 		ConnectionMonitorServiceInterface::class => ConnectionMonitorService::class,
 		TablesSyncAdapterInterface::class => TablesSyncAdapter::class,
+		DatabaseConnectionFactoryInterface::class => DbalDatabaseConnectionFactory::class,
 	];
 
 	/**
@@ -337,11 +392,13 @@ final class ServiceBindings {
 		UnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
 		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
+		TalkMessageSourceInterface::class => TalkMessageSource::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
 		CallerSearchInterface::class => ConfiguredCallerSearch::class,
 		IntakeGroupsInterface::class => IntakeGroups::class,
 		ObjecttypeEndpointHandlerInterface::class => ObjecttypeEndpointHandler::class,
 		ActionAuthServiceInterface::class => ActionAuthService::class,
+		ObjectRightsServiceInterface::class => ObjectRightsService::class,
 		LtiNrpsServiceInterface::class => LtiNrpsService::class,
 		RecordProvenanceServiceInterface::class => RecordProvenanceService::class,
 		SubscriptionRequestHandlerInterface::class => SubscriptionRequestHandler::class,
@@ -356,6 +413,22 @@ final class ServiceBindings {
 		EndpointCorsPolicyInterface::class => EndpointCorsPolicy::class,
 		SourceTestServiceInterface::class => SourceTestService::class,
 		SynchronizationLookupInterface::class => SynchronizationService::class,
+		EgressDestinationServiceInterface::class => EgressDestinationService::class,
+		ServiceFetchServiceInterface::class => ServiceFetchService::class,
+		SharePointOnlineAdapterInterface::class => SharePointOnlineAdapter::class,
+		SharePointPublicationSetInterface::class => SharePointPublicationSet::class,
+		AsyncApiDocumentServiceInterface::class => AsyncApiDocumentService::class,
+		RegressionSuiteServiceInterface::class => RegressionSuiteService::class,
+		CertificateExpiryAlertServiceInterface::class => CertificateExpiryAlertService::class,
+		InboundRateLimitServiceInterface::class => InboundRateLimitService::class,
+		TraceCaseRecorderInterface::class => TraceCaseRecorder::class,
+		PaymentSettlementServiceInterface::class => PaymentSettlementService::class,
+		CloudEventReceiverInterface::class => CloudEventReceiver::class,
+		ServiceFetchCatalogueInterface::class => ServiceFetchCatalogue::class,
+		ProductPolicyServiceInterface::class => ProductPolicyService::class,
+		ListenerSchemaResolverInterface::class => ListenerSchemaResolver::class,
+		RegistrationStoreInterface::class => RegistrationStore::class,
+		EndpointWorkspaceListingInterface::class => EndpointWorkspaceListing::class,
 	];
 
 	/**
@@ -384,6 +457,7 @@ final class ServiceBindings {
 		ExchangeTargetCatalogueInterface::class => ExchangeTargetCatalogue::class,
 		MessageValidationServiceInterface::class => MessageValidationService::class,
 		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
+		ConnectorExtensionsInterface::class => ConnectorExtensionCollector::class,
 		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
 		SubscriptionRegistryInterface::class => SubscriptionRegistry::class,
 		DocumentProviderRegistryInterface::class => DocumentGenerationProviderRegistry::class,
@@ -393,6 +467,8 @@ final class ServiceBindings {
 		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
 		PhoneNumberNormaliserInterface::class => E164PhoneNumberNormaliser::class,
 		CloudEventEmitterInterface::class => EventService::class,
+		LookupAllowlistInterface::class => LookupAllowlist::class,
+		XmlEncoderInterface::class => ArrayToXml::class,
 	];
 	/**
 	 * Register the contract aliases on the app's registration context.
@@ -431,6 +507,8 @@ final class ServiceBindings {
 	 *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
 	 *     proving the `AbstractCategoryAdapterProvider` registration pattern
 	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
+	 *   - DatabaseAdapter — the relational database data-infra adapter
+	 *     (sources-database-adapter).
 	 *   - IntuneAdapter, JamfProAdapter, CitrixDaasAdapter — the endpoint-workspace
 	 *     adapters of connectors-endpoint-workspace-adapters (REQ-EWC-008).
 	 *
@@ -461,6 +539,7 @@ final class ServiceBindings {
 			$registry->addProvider($container->get(SharePointOnlineAdapter::class));
 			$registry->addProvider($container->get(Microsoft365Adapter::class));
 			$registry->addProvider($container->get(S3Adapter::class));
+			$registry->addProvider($container->get(DatabaseAdapter::class));
 		} catch (\Throwable $e) {
 			// Don't crash boot — log and continue. The provider just won't appear
 			// in object sidebars on this instance until the registry resolves.
@@ -492,7 +571,8 @@ final class ServiceBindings {
 				return new SettingsService(
 					config: $c->get('OCP\IAppConfig'),
 					rebaseScheduler: $c->get(RetentionRebaseSchedulerInterface::class),
-					logger: $c->get('Psr\Log\LoggerInterface')
+					logger: $c->get('Psr\Log\LoggerInterface'),
+					errorSink: $c->get(ErrorSinkSettings::class)
 				);
 			}
 		);
@@ -542,7 +622,23 @@ final class ServiceBindings {
 						$c->get(BerichtenboxProvider::class),
 						$c->get(PostexProvider::class),
 						$c->get(LogDigitalPostProvider::class),
-					]
+					],
+					extensions: $c->get(ConnectorExtensionCollector::class)
+				);
+			}
+		);
+
+		// The payment provider bindings: integriq's own first, then what an
+		// extension app contributes (platform-connector-extension-kit D3).
+		$context->registerService(
+			PaymentProviderRegistry::class,
+			static function ($c): PaymentProviderRegistry {
+				return new PaymentProviderRegistry(
+					providers: [
+						$c->get(MolliePaymentProvider::class),
+						$c->get(LogPaymentProvider::class),
+					],
+					extensions: $c->get(ConnectorExtensionCollector::class)
 				);
 			}
 		);

@@ -23,6 +23,7 @@ use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallConfigurationException;
+use OCA\Integriq\Service\PerUserAccountNotConnectedException;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
@@ -34,6 +35,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the outbound call service (OR cutover — no deleted Db types).
@@ -109,7 +111,10 @@ class CallServiceTest extends TestCase {
 
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null, $_rbac = true) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saved[] = [
 					'object' => $object,
 					'register' => $register,
@@ -317,6 +322,30 @@ class CallServiceTest extends TestCase {
 		// the early error record past RBAC, or a non-admin's call loses its log.
 		$this->assertFalse($logs[0]['rbac'], 'The early error call_log must be written with _rbac: false');
 	}//end testBrokeredConfigErrorPersists409EarlyLog()
+
+	/**
+	 * A caller without a connected account at a per-user source is not a
+	 * configuration fault: no 409 log is written and the refusal reaches the
+	 * endpoint, which answers the connect prompt (sources-per-user-oauth REQ-PUOA-002).
+	 *
+	 * @return void
+	 */
+	public function testAMissingPerUserAccountIsNotLoggedAsAConfigError(): void {
+		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered->method('hasCredentialRef')->willReturn(true);
+		$brokered->method('prepare')->willThrowException(new PerUserAccountNotConnectedException(provider: 'microsoft'));
+		$brokered->expects($this->never())->method('dispatch');
+
+		$service = $this->buildBrokeredCallService($brokered);
+		try {
+			$service->call(source: $this->makeBrokeredSource(), endpoint: '/v1/items');
+			$this->fail('the missing account must reach the caller');
+		} catch (PerUserAccountNotConnectedException $exception) {
+			$this->assertSame('microsoft', $exception->getProvider());
+		}
+
+		$this->assertSame([], $this->savedCallLogs());
+	}//end testAMissingPerUserAccountIsNotLoggedAsAConfigError()
 
 	/**
 	 * Broker unavailable soft-fails as a 409 config log with NO fallback dispatch.

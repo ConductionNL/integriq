@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Row reads filter by app, writes drop nulls and unknown keys.
@@ -71,7 +72,12 @@ class ConnectionStoreTest extends TestCase {
 	public function testSaveDropsNullsAndUnknownKeys(): void {
 		$objects = $this->getMockBuilder(className: OrObjectService::class)->disableOriginalConstructor()->onlyMethods(['saveObject'])->getMock();
 		$objects->expects($this->once())->method('saveObject')
-			->with(['app' => 'dossiq', 'key' => 'zgw', 'status' => 'unconfigured'], 'integriq', 'app_connection', 'u-1')
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['app' => 'dossiq', 'key' => 'zgw', 'status' => 'unconfigured'],
+				'register' => 'integriq',
+				'schema' => 'app_connection',
+				'uuid' => 'u-1',
+			]))
 			->willReturn($this->entity(uuid: 'u-1', data: []));
 
 		$uuid = (new ConnectionStore(objectService: $objects))->save(

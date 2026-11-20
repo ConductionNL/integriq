@@ -105,10 +105,10 @@
   },
   "components": [
     {
-      "bom-ref": "adbario/php-dot-notation-3.5.0.0",
+      "bom-ref": "adbario/php-dot-notation-3.6.0.0",
       "type": "library",
       "name": "php-dot-notation",
-      "version": "3.5.0",
+      "version": "3.6.0",
       "group": "adbario",
       "description": "PHP dot notation access to arrays",
       "author": "Riku Särkinen",
@@ -119,17 +119,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/adbario/php-dot-notation@3.5.0",
+      "purl": "pkg:composer/adbario/php-dot-notation@3.6.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/adbario/php-dot-notation/zipball/aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0",
-          "comment": "dist reference: aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "url": "https://api.github.com/repos/adbario/php-dot-notation/zipball/b59a609293b22fdb8a7d9fcb4b9b283176463d40",
+          "comment": "dist reference: b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "type": "vcs",
           "url": "https://github.com/adbario/php-dot-notation.git",
-          "comment": "source reference: aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "comment": "source reference: b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "type": "website",
@@ -143,18 +143,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/adbario/php-dot-notation/tree/3.5.0",
+          "url": "https://github.com/adbario/php-dot-notation/tree/3.6.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "value": "b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "value": "b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "name": "cdx:composer:package:type",
@@ -2438,10 +2438,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/console-7.4.16.0",
+      "bom-ref": "symfony/console-7.4.23.0",
       "type": "library",
       "name": "console",
-      "version": "v7.4.16",
+      "version": "v7.4.23",
       "group": "symfony",
       "description": "Eases the creation of beautiful and testable command line interfaces",
       "author": "Fabien Potencier, Symfony Community",
@@ -2452,17 +2452,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/console@v7.4.16",
+      "purl": "pkg:composer/symfony/console@v7.4.23",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/console/zipball/f4c69c9aed03abf933b294257d618bdd9b30a06d",
-          "comment": "dist reference: f4c69c9aed03abf933b294257d618bdd9b30a06d"
+          "url": "https://api.github.com/repos/symfony/console/zipball/81957c2440c05c962fe8291f318de6e85f8db330",
+          "comment": "dist reference: 81957c2440c05c962fe8291f318de6e85f8db330"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/console.git",
-          "comment": "source reference: f4c69c9aed03abf933b294257d618bdd9b30a06d"
+          "comment": "source reference: 81957c2440c05c962fe8291f318de6e85f8db330"
         },
         {
           "type": "website",
@@ -2471,18 +2471,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/console/tree/v7.4.16",
+          "url": "https://github.com/symfony/console/tree/v7.4.23",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "f4c69c9aed03abf933b294257d618bdd9b30a06d"
+          "value": "81957c2440c05c962fe8291f318de6e85f8db330"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "f4c69c9aed03abf933b294257d618bdd9b30a06d"
+          "value": "81957c2440c05c962fe8291f318de6e85f8db330"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3074,10 +3074,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/polyfill-intl-grapheme-1.41.0.0",
+      "bom-ref": "symfony/polyfill-intl-grapheme-1.43.3.0",
       "type": "library",
       "name": "polyfill-intl-grapheme",
-      "version": "v1.41.0",
+      "version": "v1.43.3",
       "group": "symfony",
       "description": "Symfony polyfill for intl's grapheme_* functions",
       "author": "Nicolas Grekas, Symfony Community",
@@ -3088,17 +3088,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/polyfill-intl-grapheme@v1.41.0",
+      "purl": "pkg:composer/symfony/polyfill-intl-grapheme@v1.43.3",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/polyfill-intl-grapheme/zipball/bb899c1db0aa8127dc3afe8cda4a67eb24915f8d",
-          "comment": "dist reference: bb899c1db0aa8127dc3afe8cda4a67eb24915f8d"
+          "url": "https://api.github.com/repos/symfony/polyfill-intl-grapheme/zipball/5a8f33c87aeecffce24e721b5064fab05f4becf8",
+          "comment": "dist reference: 5a8f33c87aeecffce24e721b5064fab05f4becf8"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/polyfill-intl-grapheme.git",
-          "comment": "source reference: bb899c1db0aa8127dc3afe8cda4a67eb24915f8d"
+          "comment": "source reference: 5a8f33c87aeecffce24e721b5064fab05f4becf8"
         },
         {
           "type": "website",
@@ -3107,18 +3107,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/polyfill-intl-grapheme/tree/v1.41.0",
+          "url": "https://github.com/symfony/polyfill-intl-grapheme/tree/v1.43.3",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "bb899c1db0aa8127dc3afe8cda4a67eb24915f8d"
+          "value": "5a8f33c87aeecffce24e721b5064fab05f4becf8"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "bb899c1db0aa8127dc3afe8cda4a67eb24915f8d"
+          "value": "5a8f33c87aeecffce24e721b5064fab05f4becf8"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3339,10 +3339,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/polyfill-php85-1.43.0.0",
+      "bom-ref": "symfony/polyfill-php85-1.44.0.0",
       "type": "library",
       "name": "polyfill-php85",
-      "version": "v1.43.0",
+      "version": "v1.44.0",
       "group": "symfony",
       "description": "Symfony polyfill backporting some PHP 8.5+ features to lower PHP versions",
       "author": "Nicolas Grekas, Symfony Community",
@@ -3353,17 +3353,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/polyfill-php85@v1.43.0",
+      "purl": "pkg:composer/symfony/polyfill-php85@v1.44.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/polyfill-php85/zipball/86a42cbcc07adc331481a5ab310a4024bfc227f6",
-          "comment": "dist reference: 86a42cbcc07adc331481a5ab310a4024bfc227f6"
+          "url": "https://api.github.com/repos/symfony/polyfill-php85/zipball/94c794cb5ba51784bc259f11e9f128593297d8dc",
+          "comment": "dist reference: 94c794cb5ba51784bc259f11e9f128593297d8dc"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/polyfill-php85.git",
-          "comment": "source reference: 86a42cbcc07adc331481a5ab310a4024bfc227f6"
+          "comment": "source reference: 94c794cb5ba51784bc259f11e9f128593297d8dc"
         },
         {
           "type": "website",
@@ -3372,18 +3372,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/polyfill-php85/tree/v1.43.0",
+          "url": "https://github.com/symfony/polyfill-php85/tree/v1.44.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "86a42cbcc07adc331481a5ab310a4024bfc227f6"
+          "value": "94c794cb5ba51784bc259f11e9f128593297d8dc"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "86a42cbcc07adc331481a5ab310a4024bfc227f6"
+          "value": "94c794cb5ba51784bc259f11e9f128593297d8dc"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3445,10 +3445,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/service-contracts-3.7.3.0",
+      "bom-ref": "symfony/service-contracts-3.8.1.0",
       "type": "library",
       "name": "service-contracts",
-      "version": "v3.7.3",
+      "version": "v3.8.1",
       "group": "symfony",
       "description": "Generic abstractions related to writing services",
       "author": "Nicolas Grekas, Symfony Community",
@@ -3459,17 +3459,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/service-contracts@v3.7.3",
+      "purl": "pkg:composer/symfony/service-contracts@v3.8.1",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/service-contracts/zipball/15e6a07ec2a2c75ceb1b21dd98105ee8456d2257",
-          "comment": "dist reference: 15e6a07ec2a2c75ceb1b21dd98105ee8456d2257"
+          "url": "https://api.github.com/repos/symfony/service-contracts/zipball/052852a96fd5e5ebdb617dba22031e41a3300fb5",
+          "comment": "dist reference: 052852a96fd5e5ebdb617dba22031e41a3300fb5"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/service-contracts.git",
-          "comment": "source reference: 15e6a07ec2a2c75ceb1b21dd98105ee8456d2257"
+          "comment": "source reference: 052852a96fd5e5ebdb617dba22031e41a3300fb5"
         },
         {
           "type": "website",
@@ -3478,18 +3478,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/service-contracts/tree/v3.7.3",
+          "url": "https://github.com/symfony/service-contracts/tree/v3.8.1",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "15e6a07ec2a2c75ceb1b21dd98105ee8456d2257"
+          "value": "052852a96fd5e5ebdb617dba22031e41a3300fb5"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "15e6a07ec2a2c75ceb1b21dd98105ee8456d2257"
+          "value": "052852a96fd5e5ebdb617dba22031e41a3300fb5"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3498,10 +3498,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/string-7.4.15.0",
+      "bom-ref": "symfony/string-7.4.22.0",
       "type": "library",
       "name": "string",
-      "version": "v7.4.15",
+      "version": "v7.4.22",
       "group": "symfony",
       "description": "Provides an object-oriented API to strings and deals with bytes, UTF-8 code points and grapheme clusters in a unified way",
       "author": "Nicolas Grekas, Symfony Community",
@@ -3512,17 +3512,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/string@v7.4.15",
+      "purl": "pkg:composer/symfony/string@v7.4.22",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/string/zipball/e394af32256bf9e7bf80849d95e589167c10097b",
-          "comment": "dist reference: e394af32256bf9e7bf80849d95e589167c10097b"
+          "url": "https://api.github.com/repos/symfony/string/zipball/8dff7da3a56638f1d189c5368183294102de4ced",
+          "comment": "dist reference: 8dff7da3a56638f1d189c5368183294102de4ced"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/string.git",
-          "comment": "source reference: e394af32256bf9e7bf80849d95e589167c10097b"
+          "comment": "source reference: 8dff7da3a56638f1d189c5368183294102de4ced"
         },
         {
           "type": "website",
@@ -3531,18 +3531,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/string/tree/v7.4.15",
+          "url": "https://github.com/symfony/string/tree/v7.4.22",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "e394af32256bf9e7bf80849d95e589167c10097b"
+          "value": "8dff7da3a56638f1d189c5368183294102de4ced"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "e394af32256bf9e7bf80849d95e589167c10097b"
+          "value": "8dff7da3a56638f1d189c5368183294102de4ced"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3657,10 +3657,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/var-exporter-7.4.18.0",
+      "bom-ref": "symfony/var-exporter-7.4.22.0",
       "type": "library",
       "name": "var-exporter",
-      "version": "v7.4.18",
+      "version": "v7.4.22",
       "group": "symfony",
       "description": "Allows exporting any serializable PHP data structure to plain PHP code",
       "author": "Nicolas Grekas, Symfony Community",
@@ -3671,17 +3671,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/var-exporter@v7.4.18",
+      "purl": "pkg:composer/symfony/var-exporter@v7.4.22",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/var-exporter/zipball/d6a87acbe48cbc707b9aba7f1a6c2215aab02603",
-          "comment": "dist reference: d6a87acbe48cbc707b9aba7f1a6c2215aab02603"
+          "url": "https://api.github.com/repos/symfony/var-exporter/zipball/6c967db30708068f6eaedb6ed37973bd86de2241",
+          "comment": "dist reference: 6c967db30708068f6eaedb6ed37973bd86de2241"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/var-exporter.git",
-          "comment": "source reference: d6a87acbe48cbc707b9aba7f1a6c2215aab02603"
+          "comment": "source reference: 6c967db30708068f6eaedb6ed37973bd86de2241"
         },
         {
           "type": "website",
@@ -3690,18 +3690,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/var-exporter/tree/v7.4.18",
+          "url": "https://github.com/symfony/var-exporter/tree/v7.4.22",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "d6a87acbe48cbc707b9aba7f1a6c2215aab02603"
+          "value": "6c967db30708068f6eaedb6ed37973bd86de2241"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "d6a87acbe48cbc707b9aba7f1a6c2215aab02603"
+          "value": "6c967db30708068f6eaedb6ed37973bd86de2241"
         },
         {
           "name": "cdx:composer:package:type",
@@ -4021,8 +4021,8 @@
       "type": "library",
       "name": "helper-string-parser",
       "group": "@babel",
-      "version": "7.29.13",
-      "bom-ref": "integriq@1.0.0|@babel/helper-string-parser@7.29.13",
+      "version": "7.29.14",
+      "bom-ref": "integriq@1.0.0|@babel/helper-string-parser@7.29.14",
       "licenses": [
         {
           "license": {
@@ -4030,15 +4030,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.13",
+      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.13.tgz",
+          "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "7d67a0afe5ac12c88c556e0a50d748233ccc4d94b3362aa1cb4fffebed8c462d9de4d14db0bfc06300505bc7819d16d30554670d5ce3689114a8a6825a330c75"
+              "content": "097bca305bccf348a123b568c7d8dbfa44239f28c449034f33ebc1ed4d19cfa4d6b9903e67f14bd103cc1f7d34877dea26d231f9111e0615ea58e3d6e3c4dc01"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4089,8 +4089,8 @@
       "type": "library",
       "name": "parser",
       "group": "@babel",
-      "version": "7.29.13",
-      "bom-ref": "integriq@1.0.0|@babel/parser@7.29.13",
+      "version": "7.29.14",
+      "bom-ref": "integriq@1.0.0|@babel/parser@7.29.14",
       "licenses": [
         {
           "license": {
@@ -4098,15 +4098,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/parser@7.29.13",
+      "purl": "pkg:npm/%40babel/parser@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.13.tgz",
+          "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "7c9339d186239538818607641a60b5b41a6ff85300ca8e1a9e77f65fa024b3ed324656a2564616ff77f4ef101f55591822867d7c5669fa6113854167bb26e191"
+              "content": "54bdb6d2f5eec8edb3deb34843063b7ed8fd530a6a3adfb7dec1feb015a439e91bb1247683b1043273b1db8665087d31380dc333fdf74a27d51466e7243f2bff"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4157,8 +4157,8 @@
       "type": "library",
       "name": "types",
       "group": "@babel",
-      "version": "7.29.11",
-      "bom-ref": "integriq@1.0.0|@babel/types@7.29.11",
+      "version": "7.29.14",
+      "bom-ref": "integriq@1.0.0|@babel/types@7.29.14",
       "licenses": [
         {
           "license": {
@@ -4166,15 +4166,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/types@7.29.11",
+      "purl": "pkg:npm/%40babel/types@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.11.tgz",
+          "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "582b1e996e340a973a828b82d52ad8e8f05a67ea0b46511563d5c1bd9048ee297f1f252b6f69c9e74e70135307105c8364d9eb58312ecb88cbe745951df4d349"
+              "content": "52323f74a9b02704fda4eb33262b6ad86e8439b64f9ec6547dd0abf76cf64e51771192bd27711d7ce294ac2cc797ac05b616f3c21ce5d52a1cfd4230c518aaeb"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4743,8 +4743,8 @@
       "type": "library",
       "name": "nextcloud-vue",
       "group": "@conduction",
-      "version": "2.180.0",
-      "bom-ref": "integriq@1.0.0|@conduction/nextcloud-vue@2.180.0",
+      "version": "2.181.0",
+      "bom-ref": "integriq@1.0.0|@conduction/nextcloud-vue@2.181.0",
       "licenses": [
         {
           "license": {
@@ -4752,15 +4752,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.180.0",
+      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.181.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.180.0.tgz",
+          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.181.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "6deed18686d29c1328f786009a99a14fab4cf52e8a8aa2ea6f0035c1d4eaa77f5d064ff23fe6142873a61e9201ac1ac40e28e56cfc9ae96ce536608df4ed7493"
+              "content": "4cbbcd40d463ccd080f1a3edaeca41c546842375bad9b7956540f0b289a94f3641ca79122d3ae762d6ae99d659767b057dff60ef40b1c4f0ab8937579b586f9b"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9551,8 +9551,8 @@
       "type": "library",
       "name": "parser",
       "group": "@typescript-eslint",
-      "version": "8.71.2",
-      "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.71.2",
+      "version": "8.72.2",
+      "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2",
       "licenses": [
         {
           "license": {
@@ -9560,15 +9560,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40typescript-eslint/parser@8.71.2",
+      "purl": "pkg:npm/%40typescript-eslint/parser@8.72.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-8.71.2.tgz",
+          "url": "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-8.72.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "693b66663a7fc7782c187903b34e3fd48f24368801264a5069e19a3743df886e373730c4996da7f8e3f98a6f707ecbf25f4c8fd5465606b006b4305f1fd8c457"
+              "content": "9653fe4f562e24e2e5c447223fa3b2406b73e52331ca7fbd2c0d81bd9c394664e81956b5cb86de1035502fa1a37bb4f9585621d7d5911230c237d12fe209b900"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9589,8 +9589,8 @@
           "type": "library",
           "name": "scope-manager",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/scope-manager@8.71.2",
+          "version": "8.72.2",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/scope-manager@8.72.2",
           "licenses": [
             {
               "license": {
@@ -9598,15 +9598,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/scope-manager@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/scope-manager@8.72.2",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/scope-manager/-/scope-manager-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/scope-manager/-/scope-manager-8.72.2.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "605e30820e62517e4e6f2c2869cdbb079e85868ccc34585d2526e1d751f9181030981b5fc9186681342a5bdb5134d9870efb19d825fa506ce8cfe61f627d8b7a"
+                  "content": "888a0c27affc735fd0a453721635347756333dca3832c663430d24dd5faf7f33560059949af865c8ca181286180d065773e27a1a2d57e577319735b6b5a20819"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9627,8 +9627,8 @@
           "type": "library",
           "name": "types",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/types@8.71.2",
+          "version": "8.72.2",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/types@8.72.2",
           "licenses": [
             {
               "license": {
@@ -9636,15 +9636,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/types@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/types@8.72.2",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/types/-/types-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/types/-/types-8.72.2.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "cb9524977a15a7b7bf546c6a228117a1e6ff4688fbd4f009e161bf37f4468fe79e0ef2912ccd79906afd3228cb6cdd22d374b9db3c6edf567df04e605828492b"
+                  "content": "5df9f7ece2d9c74dfe3c253ba96c7d0d3bf6142461d44e9f936fb038d78d635e475c8c2d730baf79a4b0569180529b643663d07a04715b927245e97d4fbc2ba2"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9665,8 +9665,8 @@
           "type": "library",
           "name": "typescript-estree",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/typescript-estree@8.71.2",
+          "version": "8.72.2",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/typescript-estree@8.72.2",
           "licenses": [
             {
               "license": {
@@ -9674,15 +9674,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/typescript-estree@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/typescript-estree@8.72.2",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-8.72.2.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "0e034e12c978a5d633c122fe37f0a5df7b57d47970dc5bc877bdcb9ca5dfabb8e7ac5daf88e127ed7f8fed1064912582566f7682759ddbc1880b9bc9b8b44478"
+                  "content": "a50106a882bf72a12f2a2bd559a14b6297bb5d87a31717ee00e8b89aed6801616f228dfa6911c8f5eb11153531708cbfcfc378f36449c87f8ba5907464853b3b"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9703,8 +9703,8 @@
           "type": "library",
           "name": "visitor-keys",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/visitor-keys@8.71.2",
+          "version": "8.72.2",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/visitor-keys@8.72.2",
           "licenses": [
             {
               "license": {
@@ -9712,15 +9712,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/visitor-keys@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/visitor-keys@8.72.2",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/visitor-keys/-/visitor-keys-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/visitor-keys/-/visitor-keys-8.72.2.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "ce8ce5374500df66d21b6ce4280810c916126c4212568c94eafbe4298a366929f2ef80fc261e1ef8f3a427a2e4d1d95ecd98b9c7b4ed0fef3c5dbd3a201f2786"
+                  "content": "3401ab8e7d0f8ad8eaceafc6920302e240589b6df73d0f067dfc90f7e913037025350604cce7f6e4420cd360401d9bf9151252a47a4993e386531564381f7719"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9741,8 +9741,8 @@
           "type": "library",
           "name": "project-service",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/project-service@8.71.2",
+          "version": "8.72.2",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/project-service@8.72.2",
           "licenses": [
             {
               "license": {
@@ -9750,15 +9750,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/project-service@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/project-service@8.72.2",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/project-service/-/project-service-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/project-service/-/project-service-8.72.2.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "3ddebc1ac2d587965795c11c7053dd8523afb4767fd965345ec03cce65ce4b7175e7c95595c4cb85f43aaafb4bd51cdb3227b42a9f31b5b570020e277a328f1f"
+                  "content": "eb2e5d2d365d1e123c121df2210fdb7d08512b09f97be4e9263eb8a35f029e0734896fc10ab56faebeb3198a973e7607df5bba617018885874faac57e66c9b27"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9779,8 +9779,8 @@
           "type": "library",
           "name": "tsconfig-utils",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/tsconfig-utils@8.71.2",
+          "version": "8.72.2",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/tsconfig-utils@8.72.2",
           "licenses": [
             {
               "license": {
@@ -9788,15 +9788,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/tsconfig-utils@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/tsconfig-utils@8.72.2",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/tsconfig-utils/-/tsconfig-utils-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/tsconfig-utils/-/tsconfig-utils-8.72.2.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "8f3e3d4c05a8926ffbc960fdfe8f37ee761ac7d0f200bc483ce2267489af573a3a71a9c10996338a7f33272a8d4799358fd2b50c4d1b56faf45d807ef7db8076"
+                  "content": "fa1de20a0657b9336da0b5dc9e78cfd766541cb32aa147081cf7d0ac51174d4aaf6fd745f102bd6f99efe55b52a397cb91d1ee92cf1e85b4f3663deb226026f7"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9816,8 +9816,8 @@
         {
           "type": "library",
           "name": "semver",
-          "version": "7.8.5",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.71.2|semver@7.8.5",
+          "version": "7.8.6",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|semver@7.8.6",
           "licenses": [
             {
               "license": {
@@ -9825,15 +9825,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/semver@7.8.5",
+          "purl": "pkg:npm/semver@7.8.6",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz",
+              "url": "https://registry.npmjs.org/semver/-/semver-7.8.6.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "63bfca0ec6fc2e3a28669c1aa86cae94ee8342592c8029dc7211c693eb19218e1206f52870c044147e54af57c8e1d57e26f974c3a723bee71a222e34a6e462a0"
+                  "content": "f65a52494e0c972de6aedaeec0bb3578b2bafa0cdbcea78117044d8c88c4fbd2ee0e959d61cb6b4254377a3d489608bb8249e9b134673e82cff03a421ea1c827"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9854,7 +9854,7 @@
           "type": "library",
           "name": "eslint-visitor-keys",
           "version": "5.0.1",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.71.2|eslint-visitor-keys@5.0.1",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|eslint-visitor-keys@5.0.1",
           "licenses": [
             {
               "license": {
@@ -10341,8 +10341,8 @@
       "type": "library",
       "name": "compiler-core",
       "group": "@vue",
-      "version": "3.5.42",
-      "bom-ref": "integriq@1.0.0|@vue/compiler-core@3.5.42",
+      "version": "3.5.45",
+      "bom-ref": "integriq@1.0.0|@vue/compiler-core@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10350,15 +10350,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/compiler-core@3.5.42",
+      "purl": "pkg:npm/%40vue/compiler-core@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/compiler-core/-/compiler-core-3.5.42.tgz",
+          "url": "https://registry.npmjs.org/@vue/compiler-core/-/compiler-core-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "d987b58a532d297c65f2a654ad0e63d027607a7169fc71509ad6baadf4727c4b131baf4be9693eb56b8da07607331f44f2d1764a5bdd83516ec03bc05ddcb52d"
+              "content": "5c61c9acceae7d901101cff0fadc8eb304adc3db5d2a2a8228149c23880668dc43f9a686bbf1d05a0289f8922d8d12cfa9e9d0ee213b1bc0090bb4f97b0d69fa"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10375,8 +10375,8 @@
       "type": "library",
       "name": "compiler-dom",
       "group": "@vue",
-      "version": "3.5.42",
-      "bom-ref": "integriq@1.0.0|@vue/compiler-dom@3.5.42",
+      "version": "3.5.45",
+      "bom-ref": "integriq@1.0.0|@vue/compiler-dom@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10384,15 +10384,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/compiler-dom@3.5.42",
+      "purl": "pkg:npm/%40vue/compiler-dom@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/compiler-dom/-/compiler-dom-3.5.42.tgz",
+          "url": "https://registry.npmjs.org/@vue/compiler-dom/-/compiler-dom-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "a9b850644166c9cafe9e2feacae71c4b8b2e70d37b5406c37db92f37158e5f655f8059bdd0c36cdff52144d2a83cc108567d05f207656232cfbeac47c0779038"
+              "content": "2db3f6775f4648e6063e6bcc04109525596fed32ad8ccd427decaeddc6226bbdb4a649d93fed5c2d7ec7e4c55ab6faee4fa32e26188fb8d6d0056fcc0e7fc4c0"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10437,152 +10437,14 @@
           "name": "cdx:npm:package:path",
           "value": "node_modules/@vue/compiler-sfc"
         }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "compiler-core",
-          "group": "@vue",
-          "version": "3.5.45",
-          "bom-ref": "integriq@1.0.0|@vue/compiler-sfc@3.5.45|@vue/compiler-core@3.5.45",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vue/compiler-core@3.5.45",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vue/compiler-core/-/compiler-core-3.5.45.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "5c61c9acceae7d901101cff0fadc8eb304adc3db5d2a2a8228149c23880668dc43f9a686bbf1d05a0289f8922d8d12cfa9e9d0ee213b1bc0090bb4f97b0d69fa"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@vue/compiler-sfc/node_modules/@vue/compiler-core"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "compiler-dom",
-          "group": "@vue",
-          "version": "3.5.45",
-          "bom-ref": "integriq@1.0.0|@vue/compiler-sfc@3.5.45|@vue/compiler-dom@3.5.45",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vue/compiler-dom@3.5.45",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vue/compiler-dom/-/compiler-dom-3.5.45.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "2db3f6775f4648e6063e6bcc04109525596fed32ad8ccd427decaeddc6226bbdb4a649d93fed5c2d7ec7e4c55ab6faee4fa32e26188fb8d6d0056fcc0e7fc4c0"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@vue/compiler-sfc/node_modules/@vue/compiler-dom"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "compiler-ssr",
-          "group": "@vue",
-          "version": "3.5.45",
-          "bom-ref": "integriq@1.0.0|@vue/compiler-sfc@3.5.45|@vue/compiler-ssr@3.5.45",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vue/compiler-ssr@3.5.45",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vue/compiler-ssr/-/compiler-ssr-3.5.45.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "445e6c6d939f633e402b4d2d389527d8fc055d1d9f4b5bb61d5cc8f03f5517dac6005c6e181aa0d9b075909dd91cca6ba9296d5e74fd31913522caa348cf287b"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@vue/compiler-sfc/node_modules/@vue/compiler-ssr"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "shared",
-          "group": "@vue",
-          "version": "3.5.45",
-          "bom-ref": "integriq@1.0.0|@vue/compiler-sfc@3.5.45|@vue/shared@3.5.45",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vue/shared@3.5.45",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vue/shared/-/shared-3.5.45.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "b9ef5f80799534f94fee25b7f9cc68057fc29e5c39ddd1e5552c3424a198eb3d6539b83ca47a23f76f0cda7cc6e3fc95b0c67735a459dacdb3eb5b82d7a343c1"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@vue/compiler-sfc/node_modules/@vue/shared"
-            }
-          ]
-        }
       ]
     },
     {
       "type": "library",
       "name": "compiler-ssr",
       "group": "@vue",
-      "version": "3.5.42",
-      "bom-ref": "integriq@1.0.0|@vue/compiler-ssr@3.5.42",
+      "version": "3.5.45",
+      "bom-ref": "integriq@1.0.0|@vue/compiler-ssr@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10590,15 +10452,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/compiler-ssr@3.5.42",
+      "purl": "pkg:npm/%40vue/compiler-ssr@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/compiler-ssr/-/compiler-ssr-3.5.42.tgz",
+          "url": "https://registry.npmjs.org/@vue/compiler-ssr/-/compiler-ssr-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "c662e4df02e46e2ccf0222f2a268e0145a2c7f6cacf5be4685bfa887f936b67be2a4dcfc385ad03a24dc582cf22bb329069f4a9321ad7ef81f2d48af6e6b8660"
+              "content": "445e6c6d939f633e402b4d2d389527d8fc055d1d9f4b5bb61d5cc8f03f5517dac6005c6e181aa0d9b075909dd91cca6ba9296d5e74fd31913522caa348cf287b"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10717,8 +10579,8 @@
       "type": "library",
       "name": "reactivity",
       "group": "@vue",
-      "version": "3.5.42",
-      "bom-ref": "integriq@1.0.0|@vue/reactivity@3.5.42",
+      "version": "3.5.45",
+      "bom-ref": "integriq@1.0.0|@vue/reactivity@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10726,15 +10588,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/reactivity@3.5.42",
+      "purl": "pkg:npm/%40vue/reactivity@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/reactivity/-/reactivity-3.5.42.tgz",
+          "url": "https://registry.npmjs.org/@vue/reactivity/-/reactivity-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "4f334d7caa5bee10f16d096dc00badf150d003960ff81b919719ed1d4b918f22b094cbe600f6ecdee9e10af89e8a389f63abc57d5070b12ef01bf0bbbaaf9b11"
+              "content": "5aa932b9b356a48e0e6013a2a52ae322cb0c7493bc2b58bd66db3f5a6f04af5d3fd26b0e1300b25965af667008ed65b7910b13a2783a0c9a7c09b6febdde1c3c"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10751,8 +10613,8 @@
       "type": "library",
       "name": "runtime-core",
       "group": "@vue",
-      "version": "3.5.42",
-      "bom-ref": "integriq@1.0.0|@vue/runtime-core@3.5.42",
+      "version": "3.5.45",
+      "bom-ref": "integriq@1.0.0|@vue/runtime-core@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10760,15 +10622,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/runtime-core@3.5.42",
+      "purl": "pkg:npm/%40vue/runtime-core@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/runtime-core/-/runtime-core-3.5.42.tgz",
+          "url": "https://registry.npmjs.org/@vue/runtime-core/-/runtime-core-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "f6e002b6e1eceef246926e41a77c6ee314432c54c8632e43831a53a158ea1880210042b041fb1a2ef28836133a9c5569e9b64f44519d0ea775839d8ca8ab28b4"
+              "content": "6f320edfe140063a63f39b8829273e4278f7ebfb310cd237b5c1fd8bac3ac4a03593a7b47a3bf41b48cc09f78906f2b7c862f95db2770cc663f8296ac821c563"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10785,8 +10647,8 @@
       "type": "library",
       "name": "runtime-dom",
       "group": "@vue",
-      "version": "3.5.42",
-      "bom-ref": "integriq@1.0.0|@vue/runtime-dom@3.5.42",
+      "version": "3.5.45",
+      "bom-ref": "integriq@1.0.0|@vue/runtime-dom@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10794,15 +10656,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/runtime-dom@3.5.42",
+      "purl": "pkg:npm/%40vue/runtime-dom@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/runtime-dom/-/runtime-dom-3.5.42.tgz",
+          "url": "https://registry.npmjs.org/@vue/runtime-dom/-/runtime-dom-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "aec0a686258b691c4696d2f0865096c989059fb5806ca461d2ad7b799d40e83aba7aa73600243ad4822bcb1cf42ebb2f0b31d28a52c0f491e8bd5c0cf02344da"
+              "content": "66f45314c0e07ea4c3616bc97e8569413271d5137933a97b3f277ac1f758d8d697cdb3d0561f5ecde41815b34f3fa6c8711567d92a92491db937f8d25baf4117"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10819,8 +10681,8 @@
       "type": "library",
       "name": "server-renderer",
       "group": "@vue",
-      "version": "3.5.42",
-      "bom-ref": "integriq@1.0.0|@vue/server-renderer@3.5.42",
+      "version": "3.5.45",
+      "bom-ref": "integriq@1.0.0|@vue/server-renderer@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10828,15 +10690,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/server-renderer@3.5.42",
+      "purl": "pkg:npm/%40vue/server-renderer@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/server-renderer/-/server-renderer-3.5.42.tgz",
+          "url": "https://registry.npmjs.org/@vue/server-renderer/-/server-renderer-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "dbefb9754c984b882fa3bc505d2102503841ed34b468e97949e55f0b9a92ab52607e18ef7a0c35cea8704c84778a667e4183c9430f607dc16f5c6023199eda8d"
+              "content": "d5f357507861b167f81152f85e2c5b18153998a76221724007cd9f787453c8f3e8e99504616209b8479497799557a403069e741c9397e286cb87161796b8ebcc"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10853,8 +10715,8 @@
       "type": "library",
       "name": "shared",
       "group": "@vue",
-      "version": "3.5.42",
-      "bom-ref": "integriq@1.0.0|@vue/shared@3.5.42",
+      "version": "3.5.45",
+      "bom-ref": "integriq@1.0.0|@vue/shared@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10862,15 +10724,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/shared@3.5.42",
+      "purl": "pkg:npm/%40vue/shared@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/shared/-/shared-3.5.42.tgz",
+          "url": "https://registry.npmjs.org/@vue/shared/-/shared-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "dab3f17b1d6341fe23be5f4c38797a61a5c23dcacdab3fc5b2d30e121dd0598fbf38c13d9d04ef97d598782c215bb0058da4744a79e0646969ff0911eab908ea"
+              "content": "b9ef5f80799534f94fee25b7f9cc68057fc29e5c39ddd1e5552c3424a198eb3d6539b83ca47a23f76f0cda7cc6e3fc95b0c67735a459dacdb3eb5b82d7a343c1"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -17481,8 +17343,8 @@
     {
       "type": "library",
       "name": "gridstack",
-      "version": "14.0.0",
-      "bom-ref": "integriq@1.0.0|gridstack@14.0.0",
+      "version": "14.1.0",
+      "bom-ref": "integriq@1.0.0|gridstack@14.1.0",
       "licenses": [
         {
           "license": {
@@ -17490,15 +17352,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/gridstack@14.0.0",
+      "purl": "pkg:npm/gridstack@14.1.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/gridstack/-/gridstack-14.0.0.tgz",
+          "url": "https://registry.npmjs.org/gridstack/-/gridstack-14.1.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "8e4a06ba0131a0250735b0b720c4041d4b5fdfeaae8a2f0123eb53b0ff21d1ba478dfdc9af729d0946c7a66a86cf75551c46f9b6a7222fa7e804bba6f3fdf615"
+              "content": "9c5e9ab1b1959c8247ecdf696be0c269204602812f4cd4bb8d81d425f70d37ee5b4c3ddae292c42af1a26bb5bfe8d6e38895a6b3d7b766287562e5387284f740"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -20209,8 +20071,8 @@
     {
       "type": "library",
       "name": "marked",
-      "version": "18.0.14",
-      "bom-ref": "integriq@1.0.0|marked@18.0.14",
+      "version": "18.2.0",
+      "bom-ref": "integriq@1.0.0|marked@18.2.0",
       "licenses": [
         {
           "license": {
@@ -20218,15 +20080,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/marked@18.0.14",
+      "purl": "pkg:npm/marked@18.2.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/marked/-/marked-18.0.14.tgz",
+          "url": "https://registry.npmjs.org/marked/-/marked-18.2.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "9811cae85047b8102586045ef3cc3d1743b501bc305c951c4226d46c2fd071d4db546003eda5b36bec6ddcdea84ff8c2671dff38c792fbcae7ba21d9710f6cec"
+              "content": "29a78bfad01bb6f23ddf4abb1c4d8f3799585d8753f048929b11e537a177aec7dbe7bc1de66a795b94cb6b3a5d8f88a74d00497608d8c1bb38d16ff4554194f9"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -23084,8 +22946,8 @@
     {
       "type": "library",
       "name": "pinia",
-      "version": "2.3.1",
-      "bom-ref": "integriq@1.0.0|pinia@2.3.1",
+      "version": "4.1.0",
+      "bom-ref": "integriq@1.0.0|pinia@4.1.0",
       "licenses": [
         {
           "license": {
@@ -23093,15 +22955,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/pinia@2.3.1",
+      "purl": "pkg:npm/pinia@4.1.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/pinia/-/pinia-2.3.1.tgz",
+          "url": "https://registry.npmjs.org/pinia/-/pinia-4.1.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "921525652c2df715c26936dbc4560128373f6d60065898ce82fc444f091337b2919bae84793d597598fa8b671e87db0fd8fceab1b73bd38af6ca7801af1055ba"
+              "content": "fb9fc732e5636107ca9420f9c50ef37d79f5c54cd81446bba5dd0340ae5268c7d909a1514c795a1ff734d8dd45a0639d9734a2c1fe4438f809c7fff5403c3a83"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -23111,42 +22973,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/pinia"
-        }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "devtools-api",
-          "group": "@vue",
-          "version": "6.6.4",
-          "bom-ref": "integriq@1.0.0|pinia@2.3.1|@vue/devtools-api@6.6.4",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vue/devtools-api@6.6.4",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vue/devtools-api/-/devtools-api-6.6.4.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "b068533ccb97a99d6b54e937d91ca5ced5a47d74d186e4bbbe000abf4ce3aa4f206ec1e427bc5f15ffa36f24b1b7bb5639b109c3229a1cc8a457f5860e2426f2"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/pinia/node_modules/@vue/devtools-api"
-            }
-          ]
         }
       ]
     },
@@ -24609,8 +24435,8 @@
     {
       "type": "library",
       "name": "sass",
-      "version": "1.105.0",
-      "bom-ref": "integriq@1.0.0|sass@1.105.0",
+      "version": "1.108.2",
+      "bom-ref": "integriq@1.0.0|sass@1.108.2",
       "licenses": [
         {
           "license": {
@@ -24618,15 +24444,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/sass@1.105.0",
+      "purl": "pkg:npm/sass@1.108.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/sass/-/sass-1.105.0.tgz",
+          "url": "https://registry.npmjs.org/sass/-/sass-1.108.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "e048d2b914f21bc338c915d76353d3f4e515e73cf6df10712646c8029ae884a1ea7fa1ce538302a44dd4def002fa23b5831a1b06311235b723f2b6004195a7c8"
+              "content": "92e80af1d8e8b671bd1d044f4ce7f7e9ab0a625c60f2b596b0d2d81ce8160c854e89942a9517ca0601785d733a91fc35e3a9080ccbe6e7b07818892f0d2c93cc"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27498,8 +27324,8 @@
     {
       "type": "library",
       "name": "vue-material-design-icons",
-      "version": "5.3.1",
-      "bom-ref": "integriq@1.0.0|vue-material-design-icons@5.3.1",
+      "version": "5.4.0",
+      "bom-ref": "integriq@1.0.0|vue-material-design-icons@5.4.0",
       "licenses": [
         {
           "license": {
@@ -27507,15 +27333,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/vue-material-design-icons@5.3.1",
+      "purl": "pkg:npm/vue-material-design-icons@5.4.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/vue-material-design-icons/-/vue-material-design-icons-5.3.1.tgz",
+          "url": "https://registry.npmjs.org/vue-material-design-icons/-/vue-material-design-icons-5.4.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "e94344ca1953ce509e4fc65e5f959ba541854d33d26cea1341ea00493bfb5f8625874a5ef2f96d8fedfa54c2b9e8a334806f04415a0c2bf430ffa7af6a583c94"
+              "content": "36a2935a7fb8727583883d8feb178aa9a2e0d6219a8e5d1555470c6dcbf96834685c53eeef486a379e6c052ac629ab6478fe4cd5a0d9fd80a20a0064afdaa1d4"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27666,8 +27492,8 @@
     {
       "type": "library",
       "name": "vue",
-      "version": "3.5.42",
-      "bom-ref": "integriq@1.0.0|vue@3.5.42",
+      "version": "3.5.45",
+      "bom-ref": "integriq@1.0.0|vue@3.5.45",
       "licenses": [
         {
           "license": {
@@ -27675,15 +27501,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/vue@3.5.42",
+      "purl": "pkg:npm/vue@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/vue/-/vue-3.5.42.tgz",
+          "url": "https://registry.npmjs.org/vue/-/vue-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "e11c874136d0bce3ecdcc7ef50ed52834611aca36703498056dbe9775d938357ca0cdece1c1525d48a929fccc62632bd9c8dcd90da7c7204e956b4990b94d370"
+              "content": "ddcbec89bf26f5cd2f076e3e3032ac81c5b8f836b8c5a065f59ff94db9b6a66488b113f172297871d5e35e556c989da0eb85c9a3987e21177baec7464fda596b"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27693,42 +27519,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/vue"
-        }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "compiler-sfc",
-          "group": "@vue",
-          "version": "3.5.42",
-          "bom-ref": "integriq@1.0.0|vue@3.5.42|@vue/compiler-sfc@3.5.42",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vue/compiler-sfc@3.5.42",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vue/compiler-sfc/-/compiler-sfc-3.5.42.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "7e4080141e2891c00034631385ba169d2729fe0cd68d4d194a45678d3222a6598c0eadaeab4b480778fec55bb8ae1bf9aef3a0072482cacb9d99b31deb1451ab"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/vue/node_modules/@vue/compiler-sfc"
-            }
-          ]
         }
       ]
     },
@@ -28365,7 +28155,7 @@
   ],
   "dependencies": [
     {
-      "ref": "adbario/php-dot-notation-3.5.0.0"
+      "ref": "adbario/php-dot-notation-3.6.0.0"
     },
     {
       "ref": "azjezz/psl-4.3.0.0",
@@ -28536,7 +28326,7 @@
         "league/uri-7.8.0.0",
         "league/uri-components-7.8.0.0",
         "php-soap/xml-1.9.0.0",
-        "symfony/console-7.4.16.0",
+        "symfony/console-7.4.23.0",
         "veewee/xml-3.4.0.0"
       ]
     },
@@ -28608,8 +28398,8 @@
         "psr/log-3.0.2.0",
         "symfony/cache-contracts-3.7.1.0",
         "symfony/deprecation-contracts-3.8.1.0",
-        "symfony/service-contracts-3.7.3.0",
-        "symfony/var-exporter-7.4.18.0"
+        "symfony/service-contracts-3.8.1.0",
+        "symfony/var-exporter-7.4.22.0"
       ]
     },
     {
@@ -28619,12 +28409,12 @@
       ]
     },
     {
-      "ref": "symfony/console-7.4.16.0",
+      "ref": "symfony/console-7.4.23.0",
       "dependsOn": [
         "symfony/deprecation-contracts-3.8.1.0",
         "symfony/polyfill-mbstring-1.43.3.0",
-        "symfony/service-contracts-3.7.3.0",
-        "symfony/string-7.4.15.0"
+        "symfony/service-contracts-3.8.1.0",
+        "symfony/string-7.4.22.0"
       ]
     },
     {
@@ -28646,7 +28436,7 @@
       "ref": "symfony/error-handler-7.4.22.0",
       "dependsOn": [
         "psr/log-3.0.2.0",
-        "symfony/polyfill-php85-1.43.0.0",
+        "symfony/polyfill-php85-1.44.0.0",
         "symfony/var-dumper-7.4.22.0"
       ]
     },
@@ -28667,7 +28457,7 @@
       "dependsOn": [
         "symfony/cache-7.4.19.0",
         "symfony/deprecation-contracts-3.8.1.0",
-        "symfony/service-contracts-3.7.3.0"
+        "symfony/service-contracts-3.8.1.0"
       ]
     },
     {
@@ -28698,7 +28488,7 @@
       "ref": "symfony/polyfill-ctype-1.37.0.0"
     },
     {
-      "ref": "symfony/polyfill-intl-grapheme-1.41.0.0"
+      "ref": "symfony/polyfill-intl-grapheme-1.43.3.0"
     },
     {
       "ref": "symfony/polyfill-intl-normalizer-1.43.0.0"
@@ -28713,24 +28503,24 @@
       "ref": "symfony/polyfill-php82-1.38.1.0"
     },
     {
-      "ref": "symfony/polyfill-php85-1.43.0.0"
+      "ref": "symfony/polyfill-php85-1.44.0.0"
     },
     {
       "ref": "symfony/polyfill-uuid-1.33.0.0"
     },
     {
-      "ref": "symfony/service-contracts-3.7.3.0",
+      "ref": "symfony/service-contracts-3.8.1.0",
       "dependsOn": [
         "psr/container-2.0.2.0",
         "symfony/deprecation-contracts-3.8.1.0"
       ]
     },
     {
-      "ref": "symfony/string-7.4.15.0",
+      "ref": "symfony/string-7.4.22.0",
       "dependsOn": [
         "symfony/deprecation-contracts-3.8.1.0",
         "symfony/polyfill-ctype-1.37.0.0",
-        "symfony/polyfill-intl-grapheme-1.41.0.0",
+        "symfony/polyfill-intl-grapheme-1.43.3.0",
         "symfony/polyfill-intl-normalizer-1.43.0.0",
         "symfony/polyfill-mbstring-1.43.3.0"
       ]
@@ -28749,7 +28539,7 @@
       ]
     },
     {
-      "ref": "symfony/var-exporter-7.4.18.0",
+      "ref": "symfony/var-exporter-7.4.22.0",
       "dependsOn": [
         "symfony/deprecation-contracts-3.8.1.0"
       ]
@@ -28791,7 +28581,7 @@
     {
       "ref": "conductionnl/integriq-1.0.0.0",
       "dependsOn": [
-        "adbario/php-dot-notation-3.5.0.0",
+        "adbario/php-dot-notation-3.6.0.0",
         "elasticsearch/elasticsearch-9.5.0.0",
         "guzzlehttp/guzzle-7.15.2.0",
         "jwadhams/json-logic-php-1.5.1.0",
@@ -28800,7 +28590,7 @@
         "react/async-4.3.0.0",
         "react/event-loop-1.6.0.0",
         "react/promise-3.3.0.0",
-        "symfony/console-7.4.16.0",
+        "symfony/console-7.4.23.0",
         "symfony/css-selector-7.4.9.0",
         "symfony/dom-crawler-7.4.12.0",
         "symfony/expression-language-6.4.48.0",
@@ -28808,7 +28598,7 @@
         "symfony/http-kernel-6.4.50.0",
         "symfony/options-resolver-7.4.8.0",
         "symfony/uid-6.4.32.0",
-        "symfony/var-exporter-7.4.18.0",
+        "symfony/var-exporter-7.4.22.0",
         "symfony/yaml-6.4.50.0",
         "twig/twig-3.28.0.0",
         "web-token/jwt-library-4.2.7.0"

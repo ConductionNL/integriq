@@ -44,6 +44,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Covers the WooCommerce, Shopify and Lightspeed shop fragments in register.d.
@@ -443,7 +444,9 @@ final class WebshopOrderSetsTest extends TestCase {
 	private function guardOver(array $mapping, string $shop): RunPrerequisiteGuard {
 		$objects = $this->createMock(ORObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null) use ($mapping, $shop) {
+			function ($id, ?ObjectFindOptions $options = null) use ($mapping, $shop) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema !== 'mapping' || $id !== $shop . '-to-webshop-order') {
 					throw new \RuntimeException('Object not found');
 				}

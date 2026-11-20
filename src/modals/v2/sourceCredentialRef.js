@@ -228,3 +228,58 @@ function firstTruthy(values) {
 function credentialLabel(name, provider) {
 	return provider ? `${name} (${provider})` : String(name)
 }
+
+/**
+ * Whether the Source calls with each user's own account
+ * (`credentialRef: { provider, perUser: true }`, sources-per-user-oauth).
+ *
+ * @param {object} formData The CnFormDialog form-data (a Source object).
+ * @return {boolean} True for a per-user source.
+ * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+ */
+export function isPerUser(formData) {
+	return readCredentialRef(formData)?.perUser === true
+}
+
+/**
+ * The provider of a per-user Source, or null.
+ *
+ * @param {object} formData The CnFormDialog form-data (a Source object).
+ * @return {string|null} The provider slug, or null.
+ * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+ */
+export function readPerUserProvider(formData) {
+	const ref = readCredentialRef(formData)
+	if (ref?.perUser !== true) return null
+	return typeof ref.provider === 'string' && ref.provider.length > 0 ? ref.provider : null
+}
+
+/**
+ * Return a NEW `configuration` whose `authentication` is exactly
+ * `{ credentialRef: { provider, perUser: true } }`: every call is made with the
+ * signed-in user's own account at that provider. Does not mutate.
+ *
+ * @param {object} configuration The current source `configuration` object (may be undefined).
+ * @param {string} provider The OAuth 2.0 provider slug from the broker's catalogue.
+ * @return {object} The next `configuration` object.
+ * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+ */
+export function writePerUserRef(configuration, provider) {
+	const base = isRecord(configuration) ? { ...configuration } : {}
+	base.authentication = { credentialRef: { provider, perUser: true } }
+	return base
+}
+
+/**
+ * The broker catalogue's OAuth 2.0 providers as picker options: only those
+ * can back a per-user source.
+ *
+ * @param {Array<object>} providers The rows of GET /api/credentials/providers.
+ * @return {Array<{id: string, label: string}>} The options.
+ * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+ */
+export function perUserProviderOptions(providers) {
+	return (Array.isArray(providers) ? providers : [])
+		.filter((p) => p && p.kind === 'oauth2-token-set' && typeof p.identifier === 'string' && p.identifier !== '')
+		.map((p) => ({ id: p.identifier, label: String(p.title || p.identifier) }))
+}

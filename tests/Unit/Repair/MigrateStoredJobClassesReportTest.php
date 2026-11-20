@@ -25,6 +25,7 @@ use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Pins every output line and error log of the step: no stale value, a
@@ -130,7 +131,10 @@ class MigrateStoredJobClassesReportTest extends TestCase {
 			]
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($uuid === 'bad') {
 					throw new \RuntimeException('write rejected');
 				}

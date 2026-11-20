@@ -28,7 +28,7 @@ no window dialog exist.
   - GIVEN a record in the call log WHEN it was not captured THEN the detail says "No body stored: no investigation window was open"
 - [x] Implement
 - note: `BodyCaptureWindow` (a `bodyWidgets` section on SourceDetail) and `src/dialogs/BodyCaptureWindowDialog.vue`; the Source logs row detail is `CallLogDetail` (`slots.row-detail`). Vitest `tests/vitest/bodyCaptureWindow.spec.js`; the Playwright test is a live pass and is not run here.
-- [ ] Test: Playwright `tests/e2e/outbound-call-log.spec.ts` (open a window, see a captured record, stop early)
+- [x] Test: Playwright `tests/e2e/outbound-call-log.spec.ts` (open a window, see a captured record, stop early): written and passing on a fresh instance (live pass 2026-11-17); a synchronization run against the instance's own status.php is the captured call.
 
 ## Verification
 
