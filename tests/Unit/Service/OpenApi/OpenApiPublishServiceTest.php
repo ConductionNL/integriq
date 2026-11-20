@@ -220,7 +220,6 @@ class OpenApiPublishServiceTest extends TestCase {
 
 		return new OpenApiPublishService(
 			objects: $objects,
-			normaliser: new OpenApiDocumentNormaliser(),
 			targets: new EndpointTargetResolver(registerMapper: $registers, schemaMapper: $schemas),
 			schemaMapper: $schemas,
 			logger: $this->createMock(LoggerInterface::class)

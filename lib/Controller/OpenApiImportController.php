@@ -27,7 +27,7 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Exception\EgressRefusedException;
-use OCA\Integriq\Service\OpenApi\OpenApiDocumentNormaliser;
+use OCA\Integriq\Service\OpenApi\OpenApiDocumentReader;
 use OCA\Integriq\Service\OpenApi\OpenApiImportService;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
@@ -53,13 +53,13 @@ class OpenApiImportController extends Controller {
 	 * @param string                    $appName    The app name.
 	 * @param IRequest                  $request    The request.
 	 * @param OpenApiImportService      $importer   Previews and imports.
-	 * @param OpenApiDocumentNormaliser $normaliser Decodes a document given as text.
+	 * @param OpenApiDocumentReader $documents Reads a document given as text or as a URL.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly OpenApiImportService $importer,
-		private readonly OpenApiDocumentNormaliser $normaliser,
+		private readonly OpenApiDocumentReader $documents,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -142,12 +142,12 @@ class OpenApiImportController extends Controller {
 		}
 
 		if (is_string($document) === true && trim($document) !== '') {
-			return $this->normaliser->decode(text: $document);
+			return $this->documents->decode(text: $document);
 		}
 
 		$url = trim((string) $this->request->getParam('url', ''));
 		if ($url !== '') {
-			return $this->importer->fetch(url: $url);
+			return $this->documents->fetch(url: $url);
 		}
 
 		throw new InvalidArgumentException('Give the document, or the URL to fetch it from.');

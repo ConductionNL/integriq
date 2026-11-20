@@ -28,8 +28,11 @@ use InvalidArgumentException;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Service\ConfigurationHandlers\EndpointHandler;
 use OCA\Integriq\Service\ConfigurationHandlers\SourceHandler;
+use OCA\Integriq\Service\OpenApi\OpenApiCredentialShapes;
 use OCA\Integriq\Service\OpenApi\OpenApiDocumentNormaliser;
+use OCA\Integriq\Service\OpenApi\OpenApiDocumentReader;
 use OCA\Integriq\Service\OpenApi\OpenApiImportService;
+use OCA\Integriq\Service\OpenApi\SwaggerOperationConverter;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
@@ -50,6 +53,9 @@ use Psr\Log\LoggerInterface;
  */
 #[CoversClass(OpenApiImportService::class)]
 #[UsesClass(OpenApiDocumentNormaliser::class)]
+#[UsesClass(OpenApiDocumentReader::class)]
+#[UsesClass(OpenApiCredentialShapes::class)]
+#[UsesClass(SwaggerOperationConverter::class)]
 #[UsesClass(SourceHandler::class)]
 #[UsesClass(EndpointHandler::class)]
 #[UsesClass(SensitiveFieldRegistry::class)]
@@ -113,23 +119,33 @@ class OpenApiImportServiceTest extends TestCase {
 	/**
 	 * The service, with the real handlers over the mocked object service.
 	 *
-	 * @param EgressGuardInterface|null $guard The egress guard; the real one when null.
-	 *
 	 * @return OpenApiImportService The service.
 	 */
-	private function service(?EgressGuardInterface $guard = null): OpenApiImportService {
+	private function service(): OpenApiImportService {
 		$registry = new SensitiveFieldRegistry();
 
 		return new OpenApiImportService(
 			objects: $this->objects,
 			sources: new SourceHandler(orObjectService: $this->objects, sensitiveFieldRegistry: $registry),
 			endpoints: new EndpointHandler(orObjectService: $this->objects, sensitiveFieldRegistry: $registry),
-			normaliser: new OpenApiDocumentNormaliser(),
-			egressGuard: ($guard ?? new EgressGuard()),
-			clientService: $this->clients,
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end service()
+
+	/**
+	 * The document reader over the mocked HTTP client.
+	 *
+	 * @param EgressGuardInterface|null $guard The egress guard; the real one when null.
+	 *
+	 * @return OpenApiDocumentReader The reader.
+	 */
+	private function reader(?EgressGuardInterface $guard = null): OpenApiDocumentReader {
+		return new OpenApiDocumentReader(
+			egressGuard: ($guard ?? new EgressGuard()),
+			clientService: $this->clients,
+			normaliser: new OpenApiDocumentNormaliser()
+		);
+	}//end reader()
 
 	/**
 	 * A fixture document.
@@ -383,7 +399,7 @@ class OpenApiImportServiceTest extends TestCase {
 
 		foreach (['https://127.0.0.1/openapi.json', 'https://10.1.2.3/openapi.json', 'https://169.254.169.254/latest', 'http://petstore.example.com/openapi.json'] as $url) {
 			try {
-				$this->service()->fetch(url: $url);
+				$this->reader()->fetch(url: $url);
 				$this->fail('Fetched '.$url);
 			} catch (EgressRefusedException $exception) {
 				$this->assertNotSame('', $exception->getMessage());
@@ -408,7 +424,7 @@ class OpenApiImportServiceTest extends TestCase {
 			->willReturn($response);
 		$this->clients->method('newClient')->willReturn($client);
 
-		$document = $this->service(guard: $guard)->fetch(url: 'https://vendor.example.com/openapi.json');
+		$document = $this->reader(guard: $guard)->fetch(url: 'https://vendor.example.com/openapi.json');
 
 		$this->assertSame('Swagger Petstore', $document['info']['title']);
 	}//end testAnAllowedUrlIsFetchedWithoutRedirects()

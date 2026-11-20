@@ -25,8 +25,11 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\OpenApiImportController;
 use OCA\Integriq\Service\ConfigurationHandlers\EndpointHandler;
 use OCA\Integriq\Service\ConfigurationHandlers\SourceHandler;
+use OCA\Integriq\Service\OpenApi\OpenApiCredentialShapes;
 use OCA\Integriq\Service\OpenApi\OpenApiDocumentNormaliser;
+use OCA\Integriq\Service\OpenApi\OpenApiDocumentReader;
 use OCA\Integriq\Service\OpenApi\OpenApiImportService;
+use OCA\Integriq\Service\OpenApi\SwaggerOperationConverter;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -51,6 +54,9 @@ use ReflectionMethod;
 #[CoversClass(OpenApiImportController::class)]
 #[UsesClass(OpenApiImportService::class)]
 #[UsesClass(OpenApiDocumentNormaliser::class)]
+#[UsesClass(OpenApiDocumentReader::class)]
+#[UsesClass(OpenApiCredentialShapes::class)]
+#[UsesClass(SwaggerOperationConverter::class)]
 #[UsesClass(SourceHandler::class)]
 #[UsesClass(EndpointHandler::class)]
 #[UsesClass(SensitiveFieldRegistry::class)]
@@ -92,12 +98,9 @@ class OpenApiImportControllerTest extends TestCase {
 				objects: $this->objects,
 				sources: new SourceHandler(orObjectService: $this->objects, sensitiveFieldRegistry: $registry),
 				endpoints: new EndpointHandler(orObjectService: $this->objects, sensitiveFieldRegistry: $registry),
-				normaliser: $normaliser,
-				egressGuard: new EgressGuard(),
-				clientService: $this->clients,
 				logger: $this->createMock(LoggerInterface::class)
 			),
-			normaliser: $normaliser
+			documents: new OpenApiDocumentReader(egressGuard: new EgressGuard(), clientService: $this->clients, normaliser: $normaliser)
 		);
 	}//end controller()
 

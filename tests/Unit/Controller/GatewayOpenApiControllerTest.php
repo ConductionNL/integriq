@@ -179,7 +179,6 @@ class GatewayOpenApiControllerTest extends TestCase {
 
 		$publisher = new OpenApiPublishService(
 			objects: $this->objects,
-			normaliser: new OpenApiDocumentNormaliser(),
 			targets: new EndpointTargetResolver(registerMapper: $this->createMock(RegisterMapper::class), schemaMapper: $this->createMock(SchemaMapper::class)),
 			schemaMapper: $this->createMock(SchemaMapper::class),
 			logger: $logger

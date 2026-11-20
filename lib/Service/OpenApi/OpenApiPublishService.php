@@ -25,7 +25,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\OpenApi;
 
-use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\EndpointTargetResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -67,13 +66,6 @@ class OpenApiPublishService {
 	public const OPENAPI_VERSION = '3.1.0';
 
 	/**
-	 * The component kinds a vendor operation may reference.
-	 *
-	 * @var array<int,string>
-	 */
-	private const COMPONENT_KINDS = ['schemas', 'parameters', 'responses', 'requestBodies', 'headers', 'examples'];
-
-	/**
 	 * The rule authentication types and the security scheme each publishes as.
 	 *
 	 * @var array<string,array{name:string,scheme:array<string,string>}>
@@ -96,21 +88,35 @@ class OpenApiPublishService {
 	private array $sources = [];
 
 	/**
+	 * Reads a source's stored vendor document in the OpenAPI 3.x shape.
+	 *
+	 * @var OpenApiDocumentNormaliser
+	 */
+	private readonly OpenApiDocumentNormaliser $normaliser;
+
+	/**
+	 * Copies an imported endpoint's vendor operation and its components.
+	 *
+	 * @var VendorOperationCopy
+	 */
+	private readonly VendorOperationCopy $vendorOperations;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param OrObjectService           $objects      OpenRegister's object service.
-	 * @param OpenApiDocumentNormaliser $normaliser   Reads a source's stored vendor document.
 	 * @param EndpointTargetResolver    $targets      Resolves a register/schema endpoint target.
 	 * @param SchemaMapper              $schemaMapper OpenRegister's schema definitions (ADR-022).
 	 * @param LoggerInterface           $logger       The logger.
 	 */
 	public function __construct(
 		private readonly OrObjectService $objects,
-		private readonly OpenApiDocumentNormaliser $normaliser,
 		private readonly EndpointTargetResolver $targets,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->normaliser       = new OpenApiDocumentNormaliser();
+		$this->vendorOperations = new VendorOperationCopy();
 	}//end __construct()
 
 	/**
@@ -176,15 +182,19 @@ class OpenApiPublishService {
 	 * @return array<string,string> The info object.
 	 */
 	private static function productInfo(array $data): array {
-		$info = [
-			'title' => (string) ($data['name'] ?? ($data['productSlug'] ?? '')),
-			'version' => (string) ($data['version'] ?? '1.0.0'),
-		];
-		if (is_string($data['description'] ?? null) === true && $data['description'] !== '') {
-			$info['description'] = $data['description'];
+		$description = ($data['description'] ?? null);
+		if (is_string($description) === false || $description === '') {
+			$description = null;
 		}
 
-		return $info;
+		return array_filter(
+			[
+				'title' => (string) ($data['name'] ?? ($data['productSlug'] ?? '')),
+				'version' => (string) ($data['version'] ?? '1.0.0'),
+				'description' => $description,
+			],
+			static fn (mixed $value): bool => $value !== null
+		);
 	}//end productInfo()
 
 	/**
@@ -359,64 +369,6 @@ class OpenApiPublishService {
 	}//end targetOperation()
 
 	/**
-	 * The operation of an imported endpoint, taken from the vendor document kept on its source.
-	 *
-	 * @param array<string,mixed> $document The document being built.
-	 * @param array<string,mixed> $data     The endpoint's data.
-	 *
-	 * @return array<string,mixed>|null The operation, or null when the source keeps no document describing it.
-	 */
-	private function importedOperation(array &$document, array $data): ?array {
-		$sourceId = (string) ($data['targetId'] ?? '');
-		$vendor = $this->vendorDocument(sourceId: $sourceId);
-		if ($vendor === null) {
-			return null;
-		}
-
-		$method = strtolower((string) ($data['method'] ?? ''));
-		// An imported endpoint keeps the vendor path in `upstreamPath`; its
-		// `endpoint` carries the gateway prefix the vendor document lacks.
-		$wanted = self::shape(path: EndpointService::upstreamTemplate(endpointData: $data));
-		$operation = self::vendorOperation(vendor: $vendor, method: $method, wanted: $wanted);
-		if ($operation === null) {
-			return null;
-		}
-
-		$prefix = self::componentPrefix(sourceId: $sourceId);
-		unset($operation['servers'], $operation['security'], $operation['operationId'], $operation['callbacks']);
-		$this->copyComponents(document: $document, vendor: $vendor, prefix: $prefix);
-
-		return self::prefixRefs(value: $operation, prefix: $prefix);
-	}//end importedOperation()
-
-	/**
-	 * The vendor document's operation for a method on a path shape, with its path item's shared parameters first.
-	 *
-	 * @param array<string,mixed> $vendor The vendor document.
-	 * @param string              $method The lower-case HTTP method.
-	 * @param string              $wanted The path shape.
-	 *
-	 * @return array<string,mixed>|null The operation, or null when the document has none.
-	 */
-	private static function vendorOperation(array $vendor, string $method, string $wanted): ?array {
-		foreach ((array) ($vendor['paths'] ?? []) as $path => $item) {
-			if (is_array($item) === false || is_array($item[$method] ?? null) === false || self::shape(path: (string) $path) !== $wanted) {
-				continue;
-			}
-
-			$operation = $item[$method];
-			$shared = array_values(array_filter((array) ($item['parameters'] ?? []), 'is_array'));
-			if ($shared !== []) {
-				$operation['parameters'] = array_merge($shared, (array) ($operation['parameters'] ?? []));
-			}
-
-			return $operation;
-		}
-
-		return null;
-	}//end vendorOperation()
-
-	/**
 	 * The operation of a register/schema endpoint, its schema read from OpenRegister.
 	 *
 	 * @param array<string,mixed> $document The document being built.
@@ -581,6 +533,24 @@ class OpenApiPublishService {
 	}//end isDroppedPathParameter()
 
 	/**
+	 * The operation of an imported endpoint, taken from the vendor document kept on its source.
+	 *
+	 * @param array<string,mixed> $document The document being built.
+	 * @param array<string,mixed> $data     The endpoint's data.
+	 *
+	 * @return array<string,mixed>|null The operation, or null when the source keeps no document describing it.
+	 */
+	private function importedOperation(array &$document, array $data): ?array {
+		$sourceId = (string) ($data['targetId'] ?? '');
+		$vendor   = $this->vendorDocument(sourceId: $sourceId);
+		if ($vendor === null) {
+			return null;
+		}
+
+		return $this->vendorOperations->copy(document: $document, data: $data, vendor: $vendor, sourceId: $sourceId);
+	}//end importedOperation()
+
+	/**
 	 * The vendor document a source keeps, in the OpenAPI 3.x shape.
 	 *
 	 * @param string $sourceId The source uuid.
@@ -637,23 +607,6 @@ class OpenApiPublishService {
 
 		return $this->sources[$sourceId];
 	}//end source()
-
-	/**
-	 * Copy a vendor document's components into the published document, under the source's prefix.
-	 *
-	 * @param array<string,mixed> $document The document being built.
-	 * @param array<string,mixed> $vendor   The vendor document.
-	 * @param string              $prefix   The source's component prefix.
-	 *
-	 * @return void
-	 */
-	private function copyComponents(array &$document, array $vendor, string $prefix): void {
-		foreach (self::COMPONENT_KINDS as $kind) {
-			foreach ((array) ($vendor['components'][$kind] ?? []) as $name => $component) {
-				$document['components'][$kind][$prefix.$name] = self::prefixRefs(value: $component, prefix: $prefix);
-			}
-		}
-	}//end copyComponents()
 
 	/**
 	 * Every row of an integriq schema, read in system context.
@@ -747,53 +700,6 @@ class OpenApiPublishService {
 
 		return $scrubbed;
 	}//end scrub()
-
-	/**
-	 * Point a vendor component reference at its prefixed copy.
-	 *
-	 * @param mixed  $value  Any part of a vendor document.
-	 * @param string $prefix The source's component prefix.
-	 *
-	 * @return mixed The part with its references prefixed.
-	 */
-	private static function prefixRefs(mixed $value, string $prefix): mixed {
-		if (is_array($value) === false) {
-			return $value;
-		}
-
-		foreach ($value as $key => $item) {
-			if ($key === '$ref' && is_string($item) === true) {
-				$value[$key] = (string) preg_replace('#^\#/components/([A-Za-z]+)/#', '#/components/$1/'.$prefix, $item);
-				continue;
-			}
-
-			$value[$key] = self::prefixRefs(value: $item, prefix: $prefix);
-		}
-
-		return $value;
-	}//end prefixRefs()
-
-	/**
-	 * The component prefix of a source's copied components.
-	 *
-	 * @param string $sourceId The source uuid.
-	 *
-	 * @return string The prefix.
-	 */
-	private static function componentPrefix(string $sourceId): string {
-		return 'source-'.substr((string) preg_replace('/[^A-Za-z0-9]/', '', $sourceId), 0, 8).'.';
-	}//end componentPrefix()
-
-	/**
-	 * A path's shape: no outer slashes, every placeholder the same.
-	 *
-	 * @param string $path The path.
-	 *
-	 * @return string The shape.
-	 */
-	private static function shape(string $path): string {
-		return strtolower((string) preg_replace('#\{\{?\s*[^}]+\s*\}?\}#', '{}', trim($path, '/')));
-	}//end shape()
 
 	/**
 	 * The non-empty strings of a list.

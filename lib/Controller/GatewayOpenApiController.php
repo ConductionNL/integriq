@@ -25,11 +25,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\AsyncApiDocumentService;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\OpenApi\OpenApiPublishService;
 use OCA\Integriq\Service\ProductPolicyService;
+use OCA\Integriq\Service\ProductSubscriber;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -208,30 +208,12 @@ class GatewayOpenApiController extends Controller {
 	 * @return JSONResponse|null The refusal, or null when the caller may read.
 	 */
 	private function refuseWithoutSubscription(ObjectEntity $product): ?JSONResponse {
-		$subscriptionRequired = new JSONResponse(
-			['error' => 'subscription_required', 'message' => 'No active subscription to this API product'],
-			Http::STATUS_FORBIDDEN
+		$subscriber = (new ProductSubscriber(credentials: $this->credentials, policy: $this->policy))->resolve(
+			authorization: (string) $this->request->getHeader('Authorization'),
+			product: $product
 		);
-
-		$header = (string) $this->request->getHeader('Authorization');
-		if (str_starts_with($header, 'Bearer ') === false || substr_count($header, '.') !== 2) {
-			return $subscriptionRequired;
-		}
-
-		try {
-			$this->credentials->authorizeJwt(authorization: $header);
-		} catch (AuthenticationException $exception) {
-			return new JSONResponse(['error' => 'unauthorized', 'message' => $exception->getMessage()], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$consumer = $this->credentials->getResolvedConsumer();
-		if ($consumer === null) {
-			return $subscriptionRequired;
-		}
-
-		$subscription = $this->policy->resolveActiveSubscription(consumerUuid: (string) $consumer->getUuid(), productUuid: (string) $product->getUuid());
-		if ($subscription === null) {
-			return $subscriptionRequired;
+		if ($subscriber instanceof JSONResponse) {
+			return $subscriber;
 		}
 
 		return null;

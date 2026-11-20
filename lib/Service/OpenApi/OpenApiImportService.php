@@ -26,13 +26,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\OpenApi;
 
 use InvalidArgumentException;
-use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Service\ConfigurationHandlers\EndpointHandler;
 use OCA\Integriq\Service\ConfigurationHandlers\SourceHandler;
-use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
-use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -58,84 +55,36 @@ class OpenApiImportService {
 	public const BATCH_SIZE = 50;
 
 	/**
-	 * The largest document a URL import reads, in bytes.
+	 * Reads the version and the OpenAPI 3.x shape of a document.
 	 *
-	 * @var integer
+	 * @var OpenApiDocumentNormaliser
 	 */
-	public const MAX_DOCUMENT_BYTES = 10485760;
+	private readonly OpenApiDocumentNormaliser $normaliser;
 
 	/**
-	 * The keys a stored security scheme keeps; anything else (vendor extensions, examples) is dropped.
+	 * Names the credentials a document's security schemes need, without secrets.
 	 *
-	 * @var array<int,string>
+	 * @var OpenApiCredentialShapes
 	 */
-	private const SCHEME_KEYS = ['type', 'description', 'name', 'in', 'scheme', 'bearerFormat', 'flows', 'openIdConnectUrl'];
+	private readonly OpenApiCredentialShapes $credentials;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param OrObjectService            $objects       OpenRegister's object service, to read existing endpoints.
-	 * @param SourceHandler              $sources       Writes the source.
-	 * @param EndpointHandler            $endpoints     Writes the endpoints.
-	 * @param OpenApiDocumentNormaliser  $normaliser    Reads the document.
-	 * @param EgressGuardInterface       $egressGuard   Refuses a URL on an internal address (ADR-067).
-	 * @param IClientService             $clientService The HTTP client for a URL import.
-	 * @param LoggerInterface            $logger        The logger.
+	 * @param OrObjectService $objects   Reads the endpoints already served.
+	 * @param SourceHandler   $sources   Creates the imported source.
+	 * @param EndpointHandler $endpoints Creates the imported endpoints.
+	 * @param LoggerInterface $logger    Logs a source or endpoint that could not be created.
 	 */
 	public function __construct(
 		private readonly OrObjectService $objects,
 		private readonly SourceHandler $sources,
 		private readonly EndpointHandler $endpoints,
-		private readonly OpenApiDocumentNormaliser $normaliser,
-		private readonly EgressGuardInterface $egressGuard,
-		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->normaliser  = new OpenApiDocumentNormaliser();
+		$this->credentials = new OpenApiCredentialShapes();
 	}//end __construct()
-
-	/**
-	 * Fetch a document from a URL, through the egress guard.
-	 *
-	 * Redirects are not followed, so a public URL cannot bounce the fetch onto an internal address.
-	 *
-	 * @param string $url The document URL.
-	 *
-	 * @return array<string,mixed> The decoded document.
-	 *
-	 * @throws EgressRefusedException When the URL is on an internal address or not https.
-	 * @throws InvalidArgumentException When the fetch fails or the answer is not a document.
-	 *
-	 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
-	 */
-	public function fetch(string $url): array {
-		$this->egressGuard->assertAllowed(url: $url);
-
-		try {
-			$response = $this->clientService->newClient()->get(
-				$url,
-				[
-					'allow_redirects' => false,
-					'timeout' => 30,
-					'http_errors' => false,
-					'headers' => ['Accept' => 'application/json, application/yaml, text/yaml'],
-				]
-			);
-		} catch (Throwable $exception) {
-			throw new InvalidArgumentException('The document could not be fetched: '.$exception->getMessage());
-		}
-
-		$status = $response->getStatusCode();
-		if ($status < 200 || $status >= 300) {
-			throw new InvalidArgumentException('The document URL answered HTTP '.$status.'.');
-		}
-
-		$body = (string) $response->getBody();
-		if (strlen($body) > self::MAX_DOCUMENT_BYTES) {
-			throw new InvalidArgumentException('The document is larger than '.self::MAX_DOCUMENT_BYTES.' bytes.');
-		}
-
-		return $this->normaliser->decode(text: $body);
-	}//end fetch()
 
 	/**
 	 * What an import of the document would create. Writes nothing.
@@ -181,7 +130,7 @@ class OpenApiImportService {
 			],
 			'total' => count($operations),
 			'operations' => array_slice($operations, max(0, $offset), $limit),
-			'credentials' => $this->credentialPlaceholders(document: $normalised),
+			'credentials' => $this->credentials->credentialPlaceholders(document: $normalised),
 		];
 	}//end preview()
 
@@ -360,7 +309,7 @@ class OpenApiImportService {
 			'type' => 'api',
 			'isEnabled' => true,
 			'configuration' => $configuration,
-			'openApiDocument' => self::withoutSecretShapes(document: $document),
+			'openApiDocument' => $this->credentials->withoutSecretShapes(document: $document),
 		];
 
 		try {
@@ -599,141 +548,6 @@ class OpenApiImportService {
 
 		return strtoupper((string) ($data['method'] ?? '')).' '.self::shape(segments: $segments);
 	}//end routeShape()
-
-	/**
-	 * One credential placeholder per security scheme: what the administrator must fill. No value is read.
-	 *
-	 * @param array<string,mixed> $document The OpenAPI 3.x document.
-	 *
-	 * @return array<int,array<string,mixed>> The placeholders.
-	 */
-	private function credentialPlaceholders(array $document): array {
-		$placeholders = [];
-		foreach ((array) ($document['components']['securitySchemes'] ?? []) as $schemeName => $scheme) {
-			if (is_array($scheme) === false) {
-				continue;
-			}
-
-			$placeholders[] = self::placeholderOf(schemeName: (string) $schemeName, scheme: $scheme);
-		}//end foreach
-
-		return $placeholders;
-	}//end credentialPlaceholders()
-
-	/**
-	 * The credential placeholder of one security scheme.
-	 *
-	 * @param string              $schemeName The scheme's name.
-	 * @param array<string,mixed> $scheme     The security scheme.
-	 *
-	 * @return array<string,mixed> The placeholder.
-	 */
-	private static function placeholderOf(string $schemeName, array $scheme): array {
-		$type = (string) ($scheme['type'] ?? '');
-		$placeholder = ['scheme' => $schemeName, 'type' => $type, 'credentialRef' => null, 'supported' => true];
-
-		return match ($type) {
-			'apiKey' => $placeholder + self::apiKeyPlaceholder(scheme: $scheme),
-			'http' => $placeholder + self::httpPlaceholder(scheme: $scheme),
-			'oauth2' => array_merge($placeholder, self::oauth2Placeholder(scheme: $scheme)),
-			default => array_merge($placeholder, ['required' => [], 'supported' => false]),
-		};
-	}//end placeholderOf()
-
-	/**
-	 * What an `apiKey` scheme's placeholder adds: where the key goes and that it is required.
-	 *
-	 * @param array<string,mixed> $scheme The security scheme.
-	 *
-	 * @return array<string,mixed> The added fields.
-	 */
-	private static function apiKeyPlaceholder(array $scheme): array {
-		return [
-			'in' => (string) ($scheme['in'] ?? 'header'),
-			'name' => (string) ($scheme['name'] ?? ''),
-			'required' => ['apiKey'],
-		];
-	}//end apiKeyPlaceholder()
-
-	/**
-	 * What an `http` scheme's placeholder adds: the scheme and the fields it requires.
-	 *
-	 * @param array<string,mixed> $scheme The security scheme.
-	 *
-	 * @return array<string,mixed> The added fields.
-	 */
-	private static function httpPlaceholder(array $scheme): array {
-		$httpScheme = strtolower((string) ($scheme['scheme'] ?? 'bearer'));
-		$required = ['token'];
-		if ($httpScheme === 'basic') {
-			$required = ['username', 'password'];
-		}
-
-		return ['httpScheme' => $httpScheme, 'required' => $required];
-	}//end httpPlaceholder()
-
-	/**
-	 * What an `oauth2` scheme's placeholder adds: its client-credentials flow, supported only when present.
-	 *
-	 * @param array<string,mixed> $scheme The security scheme.
-	 *
-	 * @return array<string,mixed> The added fields.
-	 */
-	private static function oauth2Placeholder(array $scheme): array {
-		$flow = (array) ($scheme['flows']['clientCredentials'] ?? []);
-
-		return [
-			'flow' => 'clientCredentials',
-			'tokenUrl' => (string) ($flow['tokenUrl'] ?? ''),
-			'scopes' => array_keys((array) ($flow['scopes'] ?? [])),
-			'required' => ['clientId', 'clientSecret'],
-			'supported' => ($flow !== []),
-		];
-	}//end oauth2Placeholder()
-
-	/**
-	 * The document as kept on the source: security schemes stripped to their shape.
-	 *
-	 * A scheme only names where a credential goes; a vendor extension or
-	 * example on it could carry a value, so only the known keys are kept.
-	 *
-	 * @param array<string,mixed> $document The vendor document.
-	 *
-	 * @return array<string,mixed> The document to keep.
-	 */
-	private static function withoutSecretShapes(array $document): array {
-		foreach (['securityDefinitions'] as $key) {
-			if (is_array($document[$key] ?? null) === true) {
-				$document[$key] = array_map(static fn (mixed $scheme): array => self::schemeShape(scheme: (array) $scheme, swagger: true), $document[$key]);
-			}
-		}
-
-		if (is_array($document['components']['securitySchemes'] ?? null) === true) {
-			$document['components']['securitySchemes'] = array_map(
-				static fn (mixed $scheme): array => self::schemeShape(scheme: (array) $scheme, swagger: false),
-				$document['components']['securitySchemes']
-			);
-		}
-
-		return $document;
-	}//end withoutSecretShapes()
-
-	/**
-	 * A security scheme with only its known keys.
-	 *
-	 * @param array<string,mixed> $scheme  The scheme.
-	 * @param bool                $swagger Whether it is a Swagger 2.0 security definition.
-	 *
-	 * @return array<string,mixed> The scheme's shape.
-	 */
-	private static function schemeShape(array $scheme, bool $swagger): array {
-		$keys = self::SCHEME_KEYS;
-		if ($swagger === true) {
-			$keys = array_merge($keys, ['flow', 'authorizationUrl', 'tokenUrl', 'scopes']);
-		}
-
-		return array_intersect_key($scheme, array_flip($keys));
-	}//end schemeShape()
 
 	/**
 	 * A cleaned gateway prefix: no outer slashes, safe path segments only.
