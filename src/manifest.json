@@ -1138,6 +1138,48 @@
             }
           },
           {
+            "id": "src-kpis-pacing",
+            "type": "stats-block",
+            "icon": "Gauge",
+            "title": "Pacing",
+            "_note": "sources-outbound-rate-limit-pacing REQ-RLPC-001: the budget the source announced (rateLimitRemaining, reset by the engine when the window passes) and the time calls waited for their paced turn over the last day (sum of call_log.pacedMs, the pacedMsPerSource aggregation). The configured pace itself is a source field and shows in the Connection widget.",
+            "content": {
+              "entries": [
+                {
+                  "title": "Budget left",
+                  "countLabel": "calls in this window",
+                  "register": "integriq",
+                  "schema": "source",
+                  "metric": "sum",
+                  "field": "rateLimitRemaining",
+                  "filter": {
+                    "id": "@objectId"
+                  }
+                },
+                {
+                  "title": "Waited",
+                  "countLabel": "ms for a paced turn, last day",
+                  "register": "integriq",
+                  "schema": "call_log",
+                  "metric": "sum",
+                  "field": "pacedMs",
+                  "filter": {
+                    "source": "@objectId",
+                    "created": {
+                      "gte": "@today-1d"
+                    }
+                  },
+                  "route": {
+                    "name": "SourceLogs",
+                    "query": {
+                      "source": "@objectId"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
             "id": "src-calls",
             "type": "object-list",
             "icon": "Timeline",
@@ -1385,12 +1427,20 @@
             "gridHeight": 6
           },
           {
-            "id": "4",
-            "widgetId": "src-related",
+            "id": "2e",
+            "widgetId": "src-kpis-pacing",
             "gridX": 8,
             "gridY": 8,
             "gridWidth": 4,
-            "gridHeight": 6
+            "gridHeight": 3
+          },
+          {
+            "id": "4",
+            "widgetId": "src-related",
+            "gridX": 8,
+            "gridY": 11,
+            "gridWidth": 4,
+            "gridHeight": 3
           },
           {
             "id": "5",
@@ -1454,6 +1504,12 @@
             "component": "BodyCaptureWindow",
             "title": "Investigation window",
             "placement": "before-body",
+            "colSpan": 12
+          },
+          {
+            "id": "src-database",
+            "component": "DatabaseSourcePanel",
+            "placement": "after-data",
             "colSpan": 12
           },
           {
@@ -1548,6 +1604,18 @@
             }
           },
           {
+            "key": "mcpMethod",
+            "label": "MCP method",
+            "type": "select",
+            "options": [
+              { "label": "Session start", "filter": { "mcpMethod": "initialize" } },
+              { "label": "Tool list", "filter": { "mcpMethod": "tools/list" } },
+              { "label": "Tool call", "filter": { "mcpMethod": "tools/call" } },
+              { "label": "Resource request", "filter": { "mcpMethod": "resources/read" } },
+              { "label": "Prompt request", "filter": { "mcpMethod": "prompts/get" } }
+            ]
+          },
+          {
             "key": "direction",
             "label": "Direction",
             "type": "select",
@@ -1639,8 +1707,14 @@
             "key": "request.url",
             "label": "URL",
             "sortable": false,
-            "width": "40%",
+            "width": "28%",
             "cellClass": "cn-cell--truncate"
+          },
+          {
+            "key": "mcpTool",
+            "label": "MCP tool",
+            "sortable": true,
+            "width": "12%"
           },
           {
             "key": "response.responseTime",
