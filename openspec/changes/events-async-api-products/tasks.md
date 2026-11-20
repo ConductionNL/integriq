@@ -29,7 +29,7 @@ Kind: code. Matrix row `integriq:evt-async-apis`.
   - GIVEN a tier budget of 2 WHEN a consumer spends it across an endpoint and a channel THEN the next request is 429
   - GIVEN a deprecated product version WHEN a consumer pulls THEN Deprecation and Sunset headers are present
 - [x] Implement (`productChannels#pull`, `#subscribe`, `#unsubscribe`; the consumer authenticates with a JWT as on the AsyncAPI route, API-key consumers are not accepted here yet; the tier budget is spent under `ProductPolicyService::counterKey()`, the counter the product's endpoints use)
-- [x] Test (`ProductChannelsControllerChannelTest`: 403 without subscription, one pull subscription per channel, 429 with Retry-After, Deprecation and Sunset, refused sinks, own-only unsubscribe; the Newman requests are left for a live run)
+- [x] Test (`ProductChannelsControllerChannelTest`: 403 without subscription, one pull subscription per channel, 429 with Retry-After, Deprecation and Sunset, refused sinks, own-only unsubscribe; the Newman requests are folder 18 of `tests/postman/integriq.postman_collection.json`)
 
 ### Task 4: Push deliveries under the product subscription
 - **spec_ref**: openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
@@ -48,10 +48,11 @@ Kind: code. Matrix row `integriq:evt-async-apis`.
   - GIVEN a public product with a channel WHEN the document is requested without a session THEN a valid AsyncAPI 3.0 document is returned
   - GIVEN a private product WHEN it is requested without a subscribed consumer THEN 403
 - [x] Implement (a private product's consumer authenticates with a JWT; API-key consumers are not accepted on this route yet)
-- [ ] Test (PHPUnit on the document's structure and the route done; validation against the AsyncAPI 3.0 JSON schema fixture left, the fixture is not vendored)
+- [x] Test (PHPUnit on the document's structure and the route; the built document validates against the official AsyncAPI 3.0.0 JSON schema, vendored in tests/fixtures/asyncapi/, in tests/Unit/Service/AsyncApiDocumentSchemaTest.php)
 
 ## Verification
 
 - `openspec validate events-async-api-products --type change --strict`
 - `composer check:strict` once before push, then `npm run lint`
 - Newman collection for the channel routes and `tests/e2e/events-async-api-products.spec.ts`
+  - Written 17 Nov (round 2): Newman folder `18 — Product channels (events-async-api-products)` in `tests/postman/integriq.postman_collection.json` (the public AsyncAPI document, 403 `subscription_required` without a credential and with a JWT but no subscription, 404 for an undeclared channel, 400 and nothing created for a metadata-address sink, 429 with Retry-After once the 2-request tier budget is spent across the pull and subscribe routes; it seeds and deletes its own product, consumer and subscription), and `tests/e2e/events-async-api-products.spec.ts` (an administrator adds the `publications` channel on the detail page and it is listed and stored; a repeated slug is refused). Both still need a live run against a container.

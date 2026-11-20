@@ -39,6 +39,8 @@ import CallLogDetail from './components/callLog/CallLogDetail.vue'
 import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import CloudEventReceiverUrl from './components/CloudEventReceiverUrl.vue'
+import DatabaseSourcePanel from './components/DatabaseSourcePanel.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
 import IntakeMessageActions from './components/intake/IntakeMessageActions.vue'
 import IntakeMessageRowActions from './components/intake/IntakeMessageRowActions.vue'
@@ -59,6 +61,7 @@ import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.v
 import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
 import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
 import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
+import DeveloperPortalPage from './views/DeveloperPortal/DeveloperPortalPage.vue'
 import EgressDestinationsPage from './views/EgressDestinations/EgressDestinationsPage.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
@@ -80,6 +83,7 @@ import {
 	openPromotionHandler,
 	openRegistryLookupHandler,
 	previewDirectorySyncHandler,
+	releaseHeldMessageHandler,
 	rerunFailedRunHandler,
 	runDirectorySyncHandler,
 	runJobHandler,
@@ -88,9 +92,11 @@ import {
 	testJobHandler,
 	testMappingModalHandler,
 	testRegistrationTargetHandler,
+	testServiceFetchHandler,
 	testSourceHandler,
 	testSynchronizationHandler,
 	viewLogsHandler,
+	withdrawHeldMessageHandler,
 } from './handlers/actionHandlers.js'
 import {
 	moveIntakeRuleDownHandler,
@@ -113,7 +119,13 @@ export default {
 	// Run again on a failed run: one POST, no dialog (connection-run-monitoring
 	// REQ-CRUN-003). Shown only on failed rows through the action's visibleWhen.
 	rerunFailedRunHandler,
+	// Release or withdraw a message a send check held for review: one POST each,
+	// gated on the send right server-side (REQ-OSI-010).
+	releaseHeldMessageHandler,
+	withdrawHeldMessageHandler,
 	testMappingModalHandler,
+	// Beheer > Service fetches: "Testen" opens TestServiceFetchModal (REQ-SF-001).
+	testServiceFetchHandler,
 	addEndpointRuleHandler,
 	// Directory connections are Sources, so their run and preview actions sit on
 	// the Sources index. Both open DirectoryRunModal, which owns the POST so a
@@ -175,6 +187,12 @@ export default {
 	// document-generation-vendor-adapter REQ-DGV-004.
 	DocumentGenerationSourcePanel,
 
+	// SourceDetail body widget for a database source: its declared statements,
+	// a test run of a read statement (first page and duration) and the tables
+	// and columns (databaseSource#testStatement and #schema). Renders nothing
+	// for any other kind of source. sources-database-adapter REQ-DBSF-001.
+	DatabaseSourcePanel,
+
 	// SourceDetail body widget: the source's pulls per day and its latest
 	// runs, with Run again on a failed one. Reads runSummary#show.
 	// connection-run-monitoring REQ-CRUN-002 and REQ-CRUN-003.
@@ -184,6 +202,11 @@ export default {
 	// at the vendor, each with a copy action. Reads ltiPlatformDetails#show.
 	// connectors-lti-platform-launch REQ-LTIL-004.
 	LtiPlatformDetails,
+
+	// SourceDetail and EndpointDetail body widget: the CloudEvents receiver URL
+	// of the source (or its pattern on an endpoint), with a copy action.
+	// cloudevents-receiver task 1.4, REQ-017.
+	CloudEventReceiverUrl,
 
 	// The outbound call log (SourceLogs) acts on its calls: a per-row replay
 	// through `slots["row-actions"]`, and bulk replay plus firing by hand
@@ -303,6 +326,12 @@ export default {
 	ApprovalsIndex,
 	ApprovalDetail,
 
+	// Developer portal (custom page): public API products and the developer's
+	// own applications, read from the developer-group-checked /api/portal
+	// routes because a developer holds no register rights. See
+	// access-developer-portal-and-subscriptions.
+	DeveloperPortalPage,
+
 	// API Products gateway detail (custom page): endpoint picker, tier
 	// editor, gateway analytics panel, and pending-subscription approve/
 	// reject actions for one api_product. Not expressible as a generic
@@ -394,6 +423,7 @@ export const registry = {
 	},
 	EventDeliveriesPage: { kind: 'page', component: EventDeliveriesPage },
 	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
+	DeveloperPortalPage: { kind: 'page', component: DeveloperPortalPage },
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
 	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
 	EgressDestinationsPage: { kind: 'page', component: EgressDestinationsPage },
