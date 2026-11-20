@@ -368,6 +368,10 @@
             "description": "Where a sibling app may register form submissions."
         },
         {
+            "name": "feeds",
+            "description": "Admin only: re-reads the data feeds apps declare in lib/Settings/feeds.json"
+        },
+        {
             "name": "oauth",
             "description": "Integriq as an OAuth 2.0 authorization server for its consumers."
         }
@@ -4397,6 +4401,236 @@
                         }
                     }
                 ]
+            }
+        },
+        "/gateway/authorize": {
+            "get": {
+                "operationId": "gateway-authorize-get",
+                "summary": "Ask whether a client may open a WebSocket, gRPC or MQTT connection",
+                "description": "Called by a web server (nginx auth_request, GET) or an MQTT broker plugin (POST), never by the client. Checks the server secret, resolves the client's credential to a consumer, checks the stream endpoint covering the route and its connection rate limit, and logs the connection.",
+                "tags": [
+                    "gateway"
+                ],
+                "parameters": [
+                    {
+                        "name": "X-Integriq-Gateway-Secret",
+                        "in": "header",
+                        "required": true,
+                        "description": "The shared secret of the web server or broker.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Integriq-Protocol",
+                        "in": "header",
+                        "required": false,
+                        "description": "websocket, grpc or mqtt, when not sent as the protocol parameter.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "websocket",
+                                "grpc",
+                                "mqtt"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "X-Original-URI",
+                        "in": "header",
+                        "required": false,
+                        "description": "The path the client asked for, when not sent as the route parameter.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Integriq-Credential",
+                        "in": "header",
+                        "required": false,
+                        "description": "The client's API key, or Bearer with a JWT.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Allowed; the consumer uuid is in the X-Integriq-Consumer header and the body.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Refused: a wrong server secret, no or an unknown credential, no stream endpoint for the route, or a consumer the endpoint does not allow.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "The consumer opened too many connections in the window.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            },
+            "post": {
+                "operationId": "gateway-authorize-post",
+                "summary": "Ask whether a client may open a WebSocket, gRPC or MQTT connection",
+                "description": "Called by a web server (nginx auth_request, GET) or an MQTT broker plugin (POST), never by the client. Checks the server secret, resolves the client's credential to a consumer, checks the stream endpoint covering the route and its connection rate limit, and logs the connection.",
+                "tags": [
+                    "gateway"
+                ],
+                "parameters": [
+                    {
+                        "name": "X-Integriq-Gateway-Secret",
+                        "in": "header",
+                        "required": true,
+                        "description": "The shared secret of the web server or broker.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Integriq-Protocol",
+                        "in": "header",
+                        "required": false,
+                        "description": "websocket, grpc or mqtt, when not sent as the protocol parameter.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "websocket",
+                                "grpc",
+                                "mqtt"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "X-Original-URI",
+                        "in": "header",
+                        "required": false,
+                        "description": "The path the client asked for, when not sent as the route parameter.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Integriq-Credential",
+                        "in": "header",
+                        "required": false,
+                        "description": "The client's API key, or Bearer with a JWT.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Allowed; the consumer uuid is in the X-Integriq-Consumer header and the body.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Refused: a wrong server secret, no or an unknown credential, no stream endpoint for the route, or a consumer the endpoint does not allow.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "The consumer opened too many connections in the window.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "protocol": {
+                                        "type": "string",
+                                        "enum": [
+                                            "websocket",
+                                            "grpc",
+                                            "mqtt"
+                                        ]
+                                    },
+                                    "route": {
+                                        "type": "string"
+                                    },
+                                    "topic": {
+                                        "type": "string"
+                                    },
+                                    "credential": {
+                                        "type": "string"
+                                    },
+                                    "username": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "clientid": {
+                                        "type": "string"
+                                    },
+                                    "connectionId": {
+                                        "type": "string"
+                                    },
+                                    "clientAddress": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/gateways": {
@@ -11862,6 +12096,49 @@
                         }
                     }
                 ]
+            }
+        },
+        "/feeds/sync": {
+            "post": {
+                "operationId": "feeds-sync",
+                "summary": "Sync the declared data feeds",
+                "description": "Re-read lib/Settings/feeds.json of every enabled app, or of the app named in `app`, and keep the feed endpoints and API products in step. Admin only.",
+                "tags": [
+                    "feeds"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "app": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`{created, updated, deleted, unchanged, refused}`; `refused` names each refused file or dataset and why.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/openapi/import/preview": {

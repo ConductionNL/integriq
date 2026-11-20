@@ -2579,6 +2579,197 @@
       ]
     },
     {
+      "name": "18 — Gateway connection authorization (gateway-graphql-and-streaming-protocols)",
+      "description": "GET|POST /api/gateway/authorize, the route a web server (nginx auth_request) or MQTT broker calls before it opens a WebSocket, gRPC or MQTT connection (REQ-GQLP-002). These are the refusals that need no configured server secret: the route is public, answers JSON, and refuses a caller without the right secret before it reads anything else, however good the client's key. The allowed path (200 with the consumer, the connection rate limit and the call log row) needs a server secret in the credential broker and runs in PHPUnit (tests/Unit/Service/Gateway/GatewayConnectionAuthorizerTest.php) and in the walk against nginx and Mosquitto (docs/gateway/streaming.md).",
+      "item": [
+        {
+          "name": "GET /api/gateway/authorize without a server secret is refused",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "X-Original-URI",
+                "value": "/ws/meldingen"
+              },
+              {
+                "key": "X-Integriq-Credential",
+                "value": "any-key"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/gateway/authorize?protocol=websocket",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "gateway",
+                "authorize"
+              ],
+              "query": [
+                {
+                  "key": "protocol",
+                  "value": "websocket"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401, not a login redirect', () => pm.response.to.have.status(401));",
+                  "pm.test('a JSON refusal of the server', () => { const b = pm.response.json(); pm.expect(b.allowed).to.equal(false); pm.expect(b.reason).to.equal('server_not_authorized'); });",
+                  "pm.test('no consumer is named', () => pm.expect(pm.response.headers.has('X-Integriq-Consumer')).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/gateway/authorize with a wrong server secret is refused",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "X-Integriq-Gateway-Secret",
+                "value": "not-the-secret"
+              },
+              {
+                "key": "X-Original-URI",
+                "value": "/ws/meldingen"
+              },
+              {
+                "key": "X-Integriq-Credential",
+                "value": "any-key"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/gateway/authorize?protocol=websocket",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "gateway",
+                "authorize"
+              ],
+              "query": [
+                {
+                  "key": "protocol",
+                  "value": "websocket"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401, not a login redirect', () => pm.response.to.have.status(401));",
+                  "pm.test('a JSON refusal of the server', () => { const b = pm.response.json(); pm.expect(b.allowed).to.equal(false); pm.expect(b.reason).to.equal('server_not_authorized'); });",
+                  "pm.test('no consumer is named', () => pm.expect(pm.response.headers.has('X-Integriq-Consumer')).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/gateway/authorize from a broker with a wrong server secret is refused",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "X-Integriq-Gateway-Secret",
+                "value": "not-the-secret"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/gateway/authorize?protocol=websocket",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "gateway",
+                "authorize"
+              ],
+              "query": [
+                {
+                  "key": "protocol",
+                  "value": "websocket"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"protocol\": \"mqtt\", \"topic\": \"meldingen/1\", \"username\": \"app\", \"password\": \"any-key\", \"clientid\": \"newman-1\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401, not a login redirect', () => pm.response.to.have.status(401));",
+                  "pm.test('a JSON refusal of the server', () => { const b = pm.response.json(); pm.expect(b.allowed).to.equal(false); pm.expect(b.reason).to.equal('server_not_authorized'); });",
+                  "pm.test('no consumer is named', () => pm.expect(pm.response.headers.has('X-Integriq-Consumer')).to.be.false);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "18 — OpenAPI import (gateway-openapi-import-and-publish)",
       "description": "Task 2: three chosen operations become one source and three endpoints, and the source asks for its credential; one created endpoint is called through against a mock source (the instance's own status.php).",
       "item": [

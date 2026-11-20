@@ -51,6 +51,7 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CreditCardOutline from 'vue-material-design-icons/CreditCardOutline.vue'
 import CurrencyEur from 'vue-material-design-icons/CurrencyEur.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
+import DatabaseExportOutline from 'vue-material-design-icons/DatabaseExportOutline.vue'
 import DatabaseImportOutline from 'vue-material-design-icons/DatabaseImportOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import DatabaseSearchOutline from 'vue-material-design-icons/DatabaseSearchOutline.vue'
@@ -212,6 +213,7 @@ export default {
 	MedicalBag,
 	MessageTextOutline,
 	Package,
+	DatabaseExportOutline,
 	PackageVariantClosed,
 	PauseCircleOutline,
 	Pencil,
