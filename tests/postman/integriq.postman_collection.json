@@ -2579,6 +2579,548 @@
       ]
     },
     {
+      "name": "18 — Gateway connection authorization (gateway-graphql-and-streaming-protocols)",
+      "description": "GET|POST /api/gateway/authorize, the route a web server (nginx auth_request) or MQTT broker calls before it opens a WebSocket, gRPC or MQTT connection (REQ-GQLP-002). These are the refusals that need no configured server secret: the route is public, answers JSON, and refuses a caller without the right secret before it reads anything else, however good the client's key. The allowed path (200 with the consumer, the connection rate limit and the call log row) needs a server secret in the credential broker and runs in PHPUnit (tests/Unit/Service/Gateway/GatewayConnectionAuthorizerTest.php) and in the walk against nginx and Mosquitto (docs/gateway/streaming.md).",
+      "item": [
+        {
+          "name": "GET /api/gateway/authorize without a server secret is refused",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "X-Original-URI",
+                "value": "/ws/meldingen"
+              },
+              {
+                "key": "X-Integriq-Credential",
+                "value": "any-key"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/gateway/authorize?protocol=websocket",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "gateway",
+                "authorize"
+              ],
+              "query": [
+                {
+                  "key": "protocol",
+                  "value": "websocket"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401, not a login redirect', () => pm.response.to.have.status(401));",
+                  "pm.test('a JSON refusal of the server', () => { const b = pm.response.json(); pm.expect(b.allowed).to.equal(false); pm.expect(b.reason).to.equal('server_not_authorized'); });",
+                  "pm.test('no consumer is named', () => pm.expect(pm.response.headers.has('X-Integriq-Consumer')).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/gateway/authorize with a wrong server secret is refused",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "X-Integriq-Gateway-Secret",
+                "value": "not-the-secret"
+              },
+              {
+                "key": "X-Original-URI",
+                "value": "/ws/meldingen"
+              },
+              {
+                "key": "X-Integriq-Credential",
+                "value": "any-key"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/gateway/authorize?protocol=websocket",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "gateway",
+                "authorize"
+              ],
+              "query": [
+                {
+                  "key": "protocol",
+                  "value": "websocket"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401, not a login redirect', () => pm.response.to.have.status(401));",
+                  "pm.test('a JSON refusal of the server', () => { const b = pm.response.json(); pm.expect(b.allowed).to.equal(false); pm.expect(b.reason).to.equal('server_not_authorized'); });",
+                  "pm.test('no consumer is named', () => pm.expect(pm.response.headers.has('X-Integriq-Consumer')).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/gateway/authorize from a broker with a wrong server secret is refused",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "X-Integriq-Gateway-Secret",
+                "value": "not-the-secret"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/gateway/authorize?protocol=websocket",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "gateway",
+                "authorize"
+              ],
+              "query": [
+                {
+                  "key": "protocol",
+                  "value": "websocket"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"protocol\": \"mqtt\", \"topic\": \"meldingen/1\", \"username\": \"app\", \"password\": \"any-key\", \"clientid\": \"newman-1\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401, not a login redirect', () => pm.response.to.have.status(401));",
+                  "pm.test('a JSON refusal of the server', () => { const b = pm.response.json(); pm.expect(b.allowed).to.equal(false); pm.expect(b.reason).to.equal('server_not_authorized'); });",
+                  "pm.test('no consumer is named', () => pm.expect(pm.response.headers.has('X-Integriq-Consumer')).to.be.false);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "18 — OpenAPI import (gateway-openapi-import-and-publish)",
+      "description": "Task 2: three chosen operations become one source and three endpoints, and the source asks for its credential; one created endpoint is called through against a mock source (the instance's own status.php).",
+      "item": [
+        {
+          "name": "18.1 preview an OpenAPI 3.1 document",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/openapi/import/preview",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "openapi",
+                "import",
+                "preview"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"document\": {\"openapi\": \"3.1.0\", \"info\": {\"title\": \"Newman Petstore\", \"version\": \"1.0.0\", \"description\": \"Three operations and an API key, for the import check.\"}, \"servers\": [{\"url\": \"https://petstore.example.test/v1\"}], \"components\": {\"securitySchemes\": {\"api_key\": {\"type\": \"apiKey\", \"in\": \"header\", \"name\": \"X-API-Key\"}}}, \"security\": [{\"api_key\": []}], \"paths\": {\"/pets\": {\"get\": {\"operationId\": \"listPets\", \"summary\": \"List all pets\", \"responses\": {\"200\": {\"description\": \"A list of pets\"}}}, \"post\": {\"operationId\": \"createPet\", \"summary\": \"Create a pet\", \"responses\": {\"201\": {\"description\": \"Created\"}}}}, \"/pets/{petId}\": {\"get\": {\"operationId\": \"showPetById\", \"summary\": \"Info for one pet\", \"parameters\": [{\"name\": \"petId\", \"in\": \"path\", \"required\": true, \"schema\": {\"type\": \"string\"}}], \"responses\": {\"200\": {\"description\": \"One pet\"}}}}}}, \"prefix\": \"{{oapiPrefixA}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('oapiPrefixA', 'newman-oapi-a-' + Date.now());",
+                  "pm.collectionVariables.set('oapiPrefixB', 'newman-oapi-b-' + Date.now());",
+                  "pm.collectionVariables.set('oapiDelete', '[]');",
+                  "if (!pm.variables.get('oapiMockBase')) { pm.collectionVariables.set('oapiMockBase', pm.variables.get('base_url')); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('lists the three operations', () => pm.expect(b.operations.map((o) => o.key).sort()).to.eql(['createPet', 'listPets', 'showPetById']));",
+                  "pm.test('names the source location', () => pm.expect(b.source.location).to.eql('https://petstore.example.test/v1'));",
+                  "pm.test('names the credential the source will ask for', () => pm.expect(b.credentials.map((c) => c.scheme)).to.eql(['api_key']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.2 the preview wrote nothing",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{orBase}}/endpoint",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "const rows = Array.isArray(b) ? b : (b.results || []);",
+                  "const prefix = pm.collectionVariables.get('oapiPrefixA');",
+                  "pm.test('no endpoint under the previewed prefix', () => pm.expect(rows.filter((r) => String(r.endpoint || '').startsWith(prefix))).to.have.length(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.3 import three operations",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/openapi/import",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "openapi",
+                "import"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"document\": {\"openapi\": \"3.1.0\", \"info\": {\"title\": \"Newman Petstore\", \"version\": \"1.0.0\", \"description\": \"Three operations and an API key, for the import check.\"}, \"servers\": [{\"url\": \"https://petstore.example.test/v1\"}], \"components\": {\"securitySchemes\": {\"api_key\": {\"type\": \"apiKey\", \"in\": \"header\", \"name\": \"X-API-Key\"}}}, \"security\": [{\"api_key\": []}], \"paths\": {\"/pets\": {\"get\": {\"operationId\": \"listPets\", \"summary\": \"List all pets\", \"responses\": {\"200\": {\"description\": \"A list of pets\"}}}, \"post\": {\"operationId\": \"createPet\", \"summary\": \"Create a pet\", \"responses\": {\"201\": {\"description\": \"Created\"}}}}, \"/pets/{petId}\": {\"get\": {\"operationId\": \"showPetById\", \"summary\": \"Info for one pet\", \"parameters\": [{\"name\": \"petId\", \"in\": \"path\", \"required\": true, \"schema\": {\"type\": \"string\"}}], \"responses\": {\"200\": {\"description\": \"One pet\"}}}}}}, \"prefix\": \"{{oapiPrefixA}}\", \"operations\": [\"listPets\", \"createPet\", \"showPetById\"], \"name\": \"Newman Petstore {{oapiPrefixA}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json();",
+                  "const queue = JSON.parse(pm.collectionVariables.get('oapiDelete') || '[]');",
+                  "(b.endpoints || []).forEach((e) => { if (e.uuid) { queue.push('endpoint/' + e.uuid); } });",
+                  "if (b.source && b.source.uuid) { queue.push('source/' + b.source.uuid); }",
+                  "pm.collectionVariables.set('oapiDelete', JSON.stringify(queue));",
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('three endpoints created', () => { pm.expect(b.created).to.eql(3); pm.expect(b.endpoints.filter((e) => e.outcome === 'created' && e.uuid)).to.have.length(3); });",
+                  "pm.test('one source created', () => pm.expect(b.source.uuid).to.be.a('string').and.not.empty);",
+                  "pm.collectionVariables.set('oapiSourceA', b.source.uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.4 the source asks for its credential",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{orBase}}/source/{{oapiSourceA}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "source",
+                "{{oapiSourceA}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const s = pm.response.json();",
+                  "pm.test('points at the vendor server', () => pm.expect(s.location).to.eql('https://petstore.example.test/v1'));",
+                  "const conf = s.configuration || {};",
+                  "pm.test('a credential is still to be named', () => pm.expect(((conf.authentication || {}).credentialRef || {}).credentialName).to.eql(''));",
+                  "pm.test('the placeholder names the scheme', () => pm.expect((conf.credentialPlaceholders || []).map((c) => c.scheme)).to.eql(['api_key']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.5 import an operation of a mock source",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/openapi/import",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "openapi",
+                "import"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"document\": {\"openapi\": \"3.1.0\", \"info\": {\"title\": \"Newman status mock\", \"version\": \"1.0.0\"}, \"servers\": [{\"url\": \"{{oapiMockBase}}\"}], \"paths\": {\"/status.php\": {\"get\": {\"operationId\": \"getStatus\", \"summary\": \"The instance status\", \"responses\": {\"200\": {\"description\": \"Status\"}}}}}}, \"prefix\": \"{{oapiPrefixB}}\", \"operations\": [\"getStatus\"], \"name\": \"Newman status mock {{oapiPrefixB}}\"}"
+            }
+          },
+          "description": "The mock source is the instance under test: its own status.php answers JSON on every Nextcloud, so the call below needs no outside host. Set oapiMockBase when the server reaches itself at another address than base_url (a dev container: http://localhost).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json();",
+                  "const queue = JSON.parse(pm.collectionVariables.get('oapiDelete') || '[]');",
+                  "(b.endpoints || []).forEach((e) => { if (e.uuid) { queue.push('endpoint/' + e.uuid); } });",
+                  "if (b.source && b.source.uuid) { queue.push('source/' + b.source.uuid); }",
+                  "pm.collectionVariables.set('oapiDelete', JSON.stringify(queue));",
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('one endpoint created', () => pm.expect(b.created).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.6 call through the created endpoint",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/{{oapiPrefixB}}/status.php",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "{{oapiPrefixB}}",
+                "status.php"
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('the answer is the mock source\\'s', () => { const b = pm.response.json(); pm.expect(b.installed).to.eql(true); pm.expect(b).to.have.property('versionstring'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18.7 delete what the imports created",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/{{oapiDeleteTarget}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "{{oapiDeleteTarget}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const queue = JSON.parse(pm.collectionVariables.get('oapiDelete') || '[]');",
+                  "pm.collectionVariables.set('oapiDeleteTarget', queue.length > 0 ? queue.shift() : 'source/none');",
+                  "pm.collectionVariables.set('oapiDelete', JSON.stringify(queue));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));",
+                  "const queue = JSON.parse(pm.collectionVariables.get('oapiDelete') || '[]');",
+                  "if (queue.length > 0) { postman.setNextRequest('18.7 delete what the imports created'); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "18 — OAuth client credentials and protected-resource metadata (access-oauth-and-token-validation)",
       "description": "REQ-TOKV-003 and REQ-TOKV-004: the issuer key and its public key set, a consumer's client secret (write-only in OpenRegister), the client credentials token endpoint and its refusals, the RFC 9728 metadata document of a token-protected endpoint, and the 401 that names it. Own fixtures, removed at the end of the folder.",
       "item": [

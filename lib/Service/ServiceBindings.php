@@ -225,6 +225,8 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
 use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
+use OCA\Integriq\Service\Feed\FeedSchemaFieldsInterface;
+use OCA\Integriq\Service\Feed\OpenRegisterFeedSchemaFields;
 use OCA\Integriq\Service\Security\SecretRedactorInterface;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\ServiceFetch\ServiceFetchCatalogue;
@@ -330,6 +332,7 @@ final class ServiceBindings {
 		ObjectEndpointHandlerInterface::class => ObjectEndpointHandler::class,
 		ExchangeJobRunnerInterface::class => ExchangeJobRunner::class,
 		ConnectionRegistryServiceInterface::class => ConnectionRegistryService::class,
+		FeedSchemaFieldsInterface::class => OpenRegisterFeedSchemaFields::class,
 		EudiStatusListServiceInterface::class => EudiStatusListService::class,
 		PortalRequestParserInterface::class => DSOParserService::class,
 		ApprovalDecisionServiceInterface::class => ApprovalDecisionService::class,

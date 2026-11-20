@@ -20,7 +20,7 @@ Tier V1. Section 2 waits on keepiq `connection-certificate-expiry-for-integriq`.
 
 ## 3. Handover from pipelinq
 
-- [ ] 3.1 Listener for pipelinq's handover event: fill empty fields, mint, verify, reference, answer per part.
+- [x] 3.1 Listener for pipelinq's handover event: fill empty fields, mint, verify, reference, answer per part.
   - spec_ref: `specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq`
 
 ## 4. Verify

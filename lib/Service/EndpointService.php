@@ -35,6 +35,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
@@ -42,14 +43,20 @@ use OC\AppFramework\Http;
 use OC\Files\Node\File;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Http\ProblemResponse;
+use OCA\Integriq\Service\Feed\FeedRequestHandler;
 use OCA\Integriq\Rule\AvgBsnPolicyRuleInterface;
 use OCA\Integriq\Rule\CompositeFanoutRuleInterface;
 use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
 use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
+use OCA\Integriq\Service\Endpoint\GraphqlHttpRequest;
+use OCA\Integriq\Service\Endpoint\GraphqlOperation;
+use OCA\Integriq\Service\Endpoint\GraphqlOperationLimiter;
+use OCA\Integriq\Service\Endpoint\GraphqlProxyHandler;
 use OCA\Integriq\Service\Endpoint\McpProxyCall;
 use OCA\Integriq\Service\Endpoint\McpProxyHandler;
+use OCA\Integriq\Service\Endpoint\UpstreamPathTemplate;
 use OCA\Integriq\Service\Endpoint\UpstreamRequest;
 use OCA\Integriq\Service\Endpoint\UpstreamRouter;
 use OCA\Integriq\Service\Endpoint\UpstreamSelector;
@@ -75,9 +82,11 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IRequestId;
 use OCP\IURLGenerator;
+use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -774,6 +783,144 @@ class EndpointService implements EndpointServiceInterface {
 	}//end doHandleRequest()
 
 	/**
+	 * Answer a declared data feed (REQ-DDF-002, REQ-DDF-003).
+	 *
+	 * In order: GET only; the caller is authenticated as a consumer (by the
+	 * endpoint's own authentication rule, else by its consumer key or token);
+	 * the consumer's source allowlist; the consumer's scope binding for the
+	 * declaring app; the rate limit; then one page of the feed.
+	 *
+	 * @param ObjectEntity $endpoint         The feed endpoint.
+	 * @param IRequest     $request          The request.
+	 * @param bool         $enforceRateLimit Whether the consumer's rate limit applies.
+	 *
+	 * @return Response The page, or the refusal.
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
+	 */
+	private function handleFeedRequest(ObjectEntity $endpoint, IRequest $request, bool $enforceRateLimit): Response {
+		$feed    = ($endpoint->getObject()['feed'] ?? null);
+		$handler = $this->feedRequestHandler();
+		if ($handler === null || is_array($feed) === false) {
+			return new JSONResponse(['error' => 'This feed is not available.'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($request->getMethod() !== 'GET') {
+			return new JSONResponse(['error' => 'A feed is read-only and answers GET only.'], Http::STATUS_METHOD_NOT_ALLOWED);
+		}
+
+		$consumer = $this->feedConsumer(request: $request);
+		if ($consumer instanceof JSONResponse) {
+			return $consumer;
+		}
+
+		$query   = $this->feedQuery(request: $request);
+		$refusal = $this->enforceConsumerScope(request: $request)
+			?? $handler->scopeRefusal(feed: $feed, consumer: $consumer, query: $query);
+		if ($refusal === null && $enforceRateLimit === true) {
+			$refusal = $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint);
+		}
+
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $handler->answer(
+			feed: $feed,
+			bound: $handler->boundScope(feed: $feed, consumer: $consumer),
+			query: $query,
+			baseUrl: $this->feedBaseUrl(request: $request)
+		);
+	}//end handleFeedRequest()
+
+	/**
+	 * The handler that answers declared data feeds, or null when it cannot be resolved.
+	 *
+	 * @return FeedRequestHandler|null
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-feed-answers-only-its-declared-fields-page-by-page-req-ddf-002
+	 */
+	private function feedRequestHandler(): ?FeedRequestHandler {
+		try {
+			$handler = $this->containerInterface->get(FeedRequestHandler::class);
+		} catch (\Throwable) {
+			return null;
+		}
+
+		if ($handler instanceof FeedRequestHandler === false) {
+			return null;
+		}
+
+		return $handler;
+
+	}//end feedRequestHandler()
+
+	/**
+	 * The consumer a feed request comes from: the one the endpoint's
+	 * authentication rule resolved, else the one its consumer key or token names.
+	 *
+	 * @param IRequest $request The request.
+	 *
+	 * @return ObjectEntity|JSONResponse|null The consumer, null when the request names none, or the 401.
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
+	 */
+	private function feedConsumer(IRequest $request): ObjectEntity|JSONResponse|null {
+		$consumer = $this->authorizationService->getResolvedConsumer();
+		if ($consumer !== null) {
+			return $consumer;
+		}
+
+		$header = trim($request->getHeader('Authorization'));
+		if ($header === '') {
+			return null;
+		}
+
+		try {
+			if (str_starts_with($header, 'Bearer ') === true && substr_count($header, '.') === 2) {
+				$this->authorizationService->authorizeJwt(authorization: $header);
+			} else {
+				$this->authorizationService->authorizeApiKey(header: $header, keys: []);
+			}
+		} catch (AuthenticationException $exception) {
+			return $this->unauthenticated(exception: $exception);
+		}
+
+		return $this->authorizationService->getResolvedConsumer();
+	}//end feedConsumer()
+
+	/**
+	 * The query parameters of a feed request, without the router's own.
+	 *
+	 * @param IRequest $request The request.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 */
+	private function feedQuery(IRequest $request): array {
+		$query = [];
+		foreach ($request->getParams() as $name => $value) {
+			if (is_string($name) === true && str_starts_with($name, '_') === false) {
+				$query[$name] = $value;
+			}
+		}
+
+		return $query;
+	}//end feedQuery()
+
+	/**
+	 * The feed's absolute URL without its query, for the next link.
+	 *
+	 * @param IRequest $request The request.
+	 *
+	 * @return string The URL.
+	 */
+	private function feedBaseUrl(IRequest $request): string {
+		$path = (string)strtok($request->getRequestUri(), '?');
+
+		return $request->getServerProtocol() . '://' . $request->getServerHost() . $path;
+	}//end feedBaseUrl()
+
+	/**
 	 * Check the request body against the endpoint's request message schema
 	 * (REQ-MSV-002).
 	 *
@@ -984,15 +1131,9 @@ class EndpointService implements EndpointServiceInterface {
 	): Response {
 		$endpointData = $endpoint->getObject();
 
-		if ($ruleResult instanceof JSONResponse === true) {
-			return $this->transformError(result: $ruleResult, request: $request);
-		}
-
-		if ($enforceRateLimit === true) {
-			$refusal = $this->enforceConsumerLimits(request: $request, endpoint: $endpoint);
-			if ($refusal !== null) {
-				return $refusal;
-			}
+		$early = $this->answerBeforeTarget(endpoint: $endpoint, request: $request, ruleResult: $ruleResult, enforceRateLimit: $enforceRateLimit);
+		if ($early !== null) {
+			return $early;
 		}
 
 		// Update request data with rule processing results.
@@ -1044,6 +1185,34 @@ class EndpointService implements EndpointServiceInterface {
 	}//end dispatchAfterBeforeRules()
 
 	/**
+	 * The answer a request gets before its target is called: a rule's error, a
+	 * declared feed's answer, or a consumer-limit refusal; null to go on.
+	 *
+	 * @param ObjectEntity   $endpoint         The endpoint.
+	 * @param IRequest       $request          The inbound request.
+	 * @param array|Response $ruleResult       What the before-rules produced.
+	 * @param bool           $enforceRateLimit Whether consumer limits are enforced on this call.
+	 *
+	 * @return Response|null
+	 */
+	private function answerBeforeTarget(ObjectEntity $endpoint, IRequest $request, array|Response $ruleResult, bool $enforceRateLimit): ?Response {
+		if ($ruleResult instanceof JSONResponse === true) {
+			return $this->transformError(result: $ruleResult, request: $request);
+		}
+
+		if (($endpoint->getObject()['targetType'] ?? '') === FeedDeclarationService::TARGET_TYPE) {
+			return $this->handleFeedRequest(endpoint: $endpoint, request: $request, enforceRateLimit: $enforceRateLimit);
+		}
+
+		if ($enforceRateLimit === false) {
+			return null;
+		}
+
+		return $this->enforceConsumerLimits(request: $request, endpoint: $endpoint);
+
+	}//end answerBeforeTarget()
+
+	/**
 	 * Whether a target type proxies to a source: `api`, or `a2a` for a
 	 * source holding an A2A agent.
 	 *
@@ -1052,9 +1221,10 @@ class EndpointService implements EndpointServiceInterface {
 	 * @return bool True when the endpoint proxies to a source.
 	 *
 	 * @spec openspec/changes/gateway-a2a-agent-card/specs/endpoint-runtime/spec.md#requirement-an-a2a-agents-card-points-at-the-gateway-req-a2a-001
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
 	 */
 	private function isSourceTarget(string $targetType): bool {
-		return ($targetType === 'api' || $targetType === A2aAgentCardRewriter::TARGET_TYPE);
+		return in_array($targetType, ['api', A2aAgentCardRewriter::TARGET_TYPE, GraphqlProxyHandler::TARGET_TYPE], true);
 	}//end isSourceTarget()
 
 	/**
@@ -2796,6 +2966,13 @@ class EndpointService implements EndpointServiceInterface {
 		$headers = $this->getHeaders(server: $_SERVER);
 		$rawBody = $this->getRawContent();
 
+		// A graphql endpoint reads the operation and refuses it here, before
+		// any source is loaded or called (gateway-graphql-and-streaming-protocols REQ-GQLP-001).
+		$graphql = $this->governGraphql(endpoint: $endpoint, request: $request, rawBody: $rawBody);
+		if ($graphql instanceof JSONResponse === true) {
+			return $graphql;
+		}
+
 		// Fetch the source entity by targetId.
 		//
 		// System context (ocon#147): the `source` schema is admin-only now. An Endpoint is
@@ -2807,23 +2984,9 @@ class EndpointService implements EndpointServiceInterface {
 		// An endpoint with `targets` routes over several sources (gateway-upstream-routing
 		// REQ-UPRT-001); the router loads and checks each candidate itself.
 		$routed = $this->upstreamRouter()->routes(endpointData: $endpointData);
-		$source = null;
-		if ($routed === false) {
-			// Unscoped: serving an endpoint resolves the source it proxies; the endpoint caller may be anonymous.
-			$source = $this->orObjectService->find(
-				id: $endpointData['targetId'] ?? '',
-				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
-				_rbac: false,
-				_multitenancy: false
-			);
-		}
-
-		if ($routed === false && $this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
-			$this->logger->warning(
-				'integriq: endpoint ' . $endpoint->getUuid() . ' refused to proxy to a source of another organisation'
-			);
-
-			return new JSONResponse(['error' => 'Source not found'], Http::STATUS_NOT_FOUND);
+		$source = $this->proxiedSource(endpoint: $endpoint);
+		if ($source instanceof JSONResponse === true) {
+			return $source;
 		}
 
 		// Render the upstream path from the inbound request (ocon#1069), so a
@@ -2834,7 +2997,7 @@ class EndpointService implements EndpointServiceInterface {
 		// never a dispatched request.
 		try {
 			$upstreamPath = $this->callService->renderEndpointPath(
-				endpoint: (string)($endpointData['endpoint'] ?? ''),
+				endpoint: (new UpstreamPathTemplate())->forEndpoint(endpointData: $endpointData),
 				context: $this->buildUpstreamPathContext(
 					endpointData: $endpointData,
 					request: $request,
@@ -2884,6 +3047,7 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		$callLogData = $callLog->getObject();
+		$this->recordGraphqlOperation(callLog: $callLog, operation: $graphql);
 
 		// REQ-RLPC-002: the source's paced turn was further away than a live
 		// call may wait, so nothing was sent. Tell the consumer when to come back.
@@ -2920,6 +3084,189 @@ class EndpointService implements EndpointServiceInterface {
 
 		return new JSONResponse($answer, $callLogData['statusCode'] ?? 200);
 	}//end handleSourceRequest()
+
+	/**
+	 * Read and govern the GraphQL operation of a request to a graphql endpoint.
+	 *
+	 * @param ObjectEntity $endpoint The endpoint.
+	 * @param IRequest     $request  The inbound request.
+	 * @param string       $rawBody  The request body.
+	 *
+	 * @return GraphqlOperation|JSONResponse|null The operation to forward, the refusal, or null for another target type.
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function governGraphql(ObjectEntity $endpoint, IRequest $request, string $rawBody): GraphqlOperation|JSONResponse|null {
+		$endpointData = $endpoint->getObject();
+		if (($endpointData['targetType'] ?? '') !== GraphqlProxyHandler::TARGET_TYPE) {
+			return null;
+		}
+
+		$caller = GraphqlProxyHandler::CALLER_CLIENT;
+		if ($this->callerIsAdmin() === true) {
+			$caller = GraphqlProxyHandler::CALLER_ADMINISTRATOR;
+		}
+
+		$operation = (new GraphqlProxyHandler())->check(
+			endpointData: $endpointData,
+			request: new GraphqlHttpRequest(
+				method: $request->getMethod(),
+				parameters: $request->getParams(),
+				rawBody: $rawBody,
+				contentType: (string)$request->getHeader('Content-Type')
+			),
+			caller: $caller
+		);
+		if ($operation instanceof JSONResponse === true) {
+			return $operation;
+		}
+
+		$limited = (new GraphqlOperationLimiter(rateLimits: $this->rateLimitService))->enforce(
+			endpointData: $endpointData,
+			endpointKey: (string)$endpoint->getUuid(),
+			operation: $operation,
+			callerKey: $this->graphqlCallerKey(request: $request)
+		);
+
+		return $limited ?? $operation;
+
+	}//end governGraphql()
+
+	/**
+	 * The source an endpoint proxies to, or the refusal when it belongs to another organisation.
+	 *
+	 * Unscoped: serving an endpoint resolves the source it proxies; the endpoint
+	 * caller may be anonymous. A routed endpoint has no single source: the router
+	 * loads and checks each candidate itself.
+	 *
+	 * @param ObjectEntity $endpoint The endpoint.
+	 *
+	 * @return ObjectEntity|JSONResponse|null The source, the refusal, or null for a routed endpoint.
+	 */
+	private function proxiedSource(ObjectEntity $endpoint): ObjectEntity|JSONResponse|null {
+		if ($this->upstreamRouter()->routes(endpointData: $endpoint->getObject()) === true) {
+			return null;
+		}
+
+		$source = $this->orObjectService->find(
+			id: $endpoint->getObject()['targetId'] ?? '',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		if ($this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
+			$this->logger->warning(
+				'integriq: endpoint ' . $endpoint->getUuid() . ' refused to proxy to a source of another organisation'
+			);
+
+			return new JSONResponse(['error' => 'Source not found'], Http::STATUS_NOT_FOUND);
+		}
+
+		return $source;
+
+	}//end proxiedSource()
+
+	/**
+	 * Who a graphql endpoint's per-operation limit counts against: the resolved consumer, else the client address.
+	 *
+	 * @param IRequest $request The inbound request.
+	 *
+	 * @return string `consumer:<uuid>` or `ip:<address>`.
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function graphqlCallerKey(IRequest $request): string {
+		$consumer = $this->consumerField()['consumer'] ?? '';
+		if ($consumer !== '') {
+			return 'consumer:' . $consumer;
+		}
+
+		return 'ip:' . $request->getRemoteAddress();
+
+	}//end graphqlCallerKey()
+
+	/**
+	 * Whether the signed-in caller is an administrator, who may introspect a graphql endpoint.
+	 *
+	 * @return bool True for an administrator; false for a consumer or when it cannot be told.
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function callerIsAdmin(): bool {
+		try {
+			$user = $this->containerInterface->get(IUserSession::class)->getUser();
+			return $user !== null && $this->containerInterface->get(IGroupManager::class)->isAdmin($user->getUID()) === true;
+		} catch (\Throwable) {
+			return false;
+		}
+	}//end callerIsAdmin()
+
+	/**
+	 * Write the operation of a proxied GraphQL call onto its stored call log.
+	 *
+	 * Adds the two fields to the row the call stored, after its body capture
+	 * and redaction, in system context; a failed write is logged and never
+	 * changes the answer.
+	 *
+	 * @param ObjectEntity          $callLog   The call's log entry.
+	 * @param GraphqlOperation|null $operation The operation it ran; null for a call that is not GraphQL.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function recordGraphqlOperation(ObjectEntity $callLog, ?GraphqlOperation $operation): void {
+		$uuid = (string)$callLog->getUuid();
+		if ($operation === null || $uuid === '') {
+			return;
+		}
+
+		try {
+			$this->writeGraphqlOperation(uuid: $uuid, operation: $operation);
+		} catch (\Throwable $e) {
+			$this->logger->warning('integriq: could not record the GraphQL operation on call log ' . $uuid . ': ' . $e->getMessage());
+		}
+
+	}//end recordGraphqlOperation()
+
+	/**
+	 * Merge the operation fields into the stored call log row, in system context.
+	 *
+	 * @param string           $uuid      The call log uuid.
+	 * @param GraphqlOperation $operation The operation it ran.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-graphql-api-is-proxied-with-operation-aware-policies-req-gqlp-001
+	 */
+	private function writeGraphqlOperation(string $uuid, GraphqlOperation $operation): void {
+		// System context: the call log is admin-only, and the gateway caller may be anonymous.
+		$stored = $this->orObjectService->find(
+			id: $uuid,
+			options: new ObjectFindOptions(register: 'integriq', schema: 'call_log'),
+			_rbac: false,
+			_multitenancy: false
+		);
+		if ($stored === null) {
+			return;
+		}
+
+		$this->orObjectService->saveObject(
+			object: array_merge(
+				$stored->getObject(),
+				['graphqlOperationType' => $operation->type, 'graphqlOperationName' => ($operation->name ?? '')]
+			),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+				uuid: $uuid,
+				policy: new SavePolicy(silent: true, validation: false)
+			),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+	}//end writeGraphqlOperation()
 
 	/**
 	 * The answer to a live call whose paced turn was too far away: 429 with

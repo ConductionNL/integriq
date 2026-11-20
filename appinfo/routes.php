@@ -499,6 +499,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// Job endpoints
 		['name' => 'jobs#schedulePreview', 'url' => '/api/jobs/schedule-preview', 'verb' => 'POST'],
+		// Declared data feeds (gateway-declared-data-feeds): re-read every enabled app's feeds.json on request. Admin only.
+		['name' => 'feeds#sync', 'url' => '/api/feeds/sync', 'verb' => 'POST'],
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#logs', 'url' => '/api/jobs/logs', 'verb' => 'GET'],
@@ -677,6 +679,14 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'portal#getSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'GET'],
 		['name' => 'portal#setSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'PUT'],
 		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
+		// OpenAPI import and publish (openspec/changes/gateway-openapi-import-and-publish).
+		// /api/openapi.json stays the app's own API contract; the gateway's published
+		// document has its own path. Import is admin-only (#[AuthorizedAdminSetting]);
+		// both documents are public routes, a private product's checked in the controller.
+		['name' => 'openApiImport#preview', 'url' => '/api/openapi/import/preview', 'verb' => 'POST'],
+		['name' => 'openApiImport#import', 'url' => '/api/openapi/import', 'verb' => 'POST'],
+		['name' => 'gatewayOpenApi#gateway', 'url' => '/api/gateway/openapi.json', 'verb' => 'GET'],
+		['name' => 'gatewayOpenApi#product', 'url' => '/api/products/{id}/openapi.json', 'verb' => 'GET'],
 		['name' => 'productChannels#pull', 'url' => '/api/products/{productSlug}/channels/{channel}/events', 'verb' => 'GET'],
 		['name' => 'productChannels#subscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions', 'verb' => 'POST'],
 		['name' => 'productChannels#unsubscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions/{id}', 'verb' => 'DELETE'],
@@ -726,6 +736,11 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// statutory-gateways-and-frameworks: which laws this instance reaches,
 		// how far it claims to meet each one, where every endpoint sits, and
 		// which bridge a call behind a firewall travels over.
+		// gateway-graphql-and-streaming-protocols REQ-GQLP-002: a web server or broker asks
+		// whether a WebSocket, gRPC or MQTT client may connect. GET for nginx auth_request,
+		// which repeats the client's method without a body; POST for a broker plugin.
+		['name' => 'gatewayAuthorize#authorize', 'url' => '/api/gateway/authorize', 'verb' => 'GET', 'postfix' => 'get'],
+		['name' => 'gatewayAuthorize#authorize', 'url' => '/api/gateway/authorize', 'verb' => 'POST'],
 		['name' => 'gateways#index', 'url' => '/api/gateways', 'verb' => 'GET'],
 		['name' => 'gateways#overview', 'url' => '/api/gateways/overview', 'verb' => 'GET'],
 		['name' => 'gateways#exportOverview', 'url' => '/api/gateways/overview/export', 'verb' => 'GET'],
