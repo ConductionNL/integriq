@@ -4021,8 +4021,8 @@
       "type": "library",
       "name": "helper-string-parser",
       "group": "@babel",
-      "version": "7.29.13",
-      "bom-ref": "integriq@1.0.0|@babel/helper-string-parser@7.29.13",
+      "version": "7.29.14",
+      "bom-ref": "integriq@1.0.0|@babel/helper-string-parser@7.29.14",
       "licenses": [
         {
           "license": {
@@ -4030,15 +4030,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.13",
+      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.13.tgz",
+          "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "7d67a0afe5ac12c88c556e0a50d748233ccc4d94b3362aa1cb4fffebed8c462d9de4d14db0bfc06300505bc7819d16d30554670d5ce3689114a8a6825a330c75"
+              "content": "097bca305bccf348a123b568c7d8dbfa44239f28c449034f33ebc1ed4d19cfa4d6b9903e67f14bd103cc1f7d34877dea26d231f9111e0615ea58e3d6e3c4dc01"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4089,8 +4089,8 @@
       "type": "library",
       "name": "parser",
       "group": "@babel",
-      "version": "7.29.13",
-      "bom-ref": "integriq@1.0.0|@babel/parser@7.29.13",
+      "version": "7.29.14",
+      "bom-ref": "integriq@1.0.0|@babel/parser@7.29.14",
       "licenses": [
         {
           "license": {
@@ -4098,15 +4098,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/parser@7.29.13",
+      "purl": "pkg:npm/%40babel/parser@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.13.tgz",
+          "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "7c9339d186239538818607641a60b5b41a6ff85300ca8e1a9e77f65fa024b3ed324656a2564616ff77f4ef101f55591822867d7c5669fa6113854167bb26e191"
+              "content": "54bdb6d2f5eec8edb3deb34843063b7ed8fd530a6a3adfb7dec1feb015a439e91bb1247683b1043273b1db8665087d31380dc333fdf74a27d51466e7243f2bff"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4157,8 +4157,8 @@
       "type": "library",
       "name": "types",
       "group": "@babel",
-      "version": "7.29.11",
-      "bom-ref": "integriq@1.0.0|@babel/types@7.29.11",
+      "version": "7.29.14",
+      "bom-ref": "integriq@1.0.0|@babel/types@7.29.14",
       "licenses": [
         {
           "license": {
@@ -4166,15 +4166,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/types@7.29.11",
+      "purl": "pkg:npm/%40babel/types@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.11.tgz",
+          "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "582b1e996e340a973a828b82d52ad8e8f05a67ea0b46511563d5c1bd9048ee297f1f252b6f69c9e74e70135307105c8364d9eb58312ecb88cbe745951df4d349"
+              "content": "52323f74a9b02704fda4eb33262b6ad86e8439b64f9ec6547dd0abf76cf64e51771192bd27711d7ce294ac2cc797ac05b616f3c21ce5d52a1cfd4230c518aaeb"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
