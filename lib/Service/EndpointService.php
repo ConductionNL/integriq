@@ -43,6 +43,7 @@ use OC\AppFramework\Http;
 use OC\Files\Node\File;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Http\ProblemResponse;
+use OCA\Integriq\Service\Feed\FeedRequestHandler;
 use OCA\Integriq\Rule\AvgBsnPolicyRuleInterface;
 use OCA\Integriq\Rule\CompositeFanoutRuleInterface;
 use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
@@ -781,6 +782,144 @@ class EndpointService implements EndpointServiceInterface {
 	}//end doHandleRequest()
 
 	/**
+	 * Answer a declared data feed (REQ-DDF-002, REQ-DDF-003).
+	 *
+	 * In order: GET only; the caller is authenticated as a consumer (by the
+	 * endpoint's own authentication rule, else by its consumer key or token);
+	 * the consumer's source allowlist; the consumer's scope binding for the
+	 * declaring app; the rate limit; then one page of the feed.
+	 *
+	 * @param ObjectEntity $endpoint         The feed endpoint.
+	 * @param IRequest     $request          The request.
+	 * @param bool         $enforceRateLimit Whether the consumer's rate limit applies.
+	 *
+	 * @return Response The page, or the refusal.
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
+	 */
+	private function handleFeedRequest(ObjectEntity $endpoint, IRequest $request, bool $enforceRateLimit): Response {
+		$feed    = ($endpoint->getObject()['feed'] ?? null);
+		$handler = $this->feedRequestHandler();
+		if ($handler === null || is_array($feed) === false) {
+			return new JSONResponse(['error' => 'This feed is not available.'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($request->getMethod() !== 'GET') {
+			return new JSONResponse(['error' => 'A feed is read-only and answers GET only.'], Http::STATUS_METHOD_NOT_ALLOWED);
+		}
+
+		$consumer = $this->feedConsumer(request: $request);
+		if ($consumer instanceof JSONResponse) {
+			return $consumer;
+		}
+
+		$query   = $this->feedQuery(request: $request);
+		$refusal = $this->enforceConsumerScope(request: $request)
+			?? $handler->scopeRefusal(feed: $feed, consumer: $consumer, query: $query);
+		if ($refusal === null && $enforceRateLimit === true) {
+			$refusal = $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint);
+		}
+
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $handler->answer(
+			feed: $feed,
+			bound: $handler->boundScope(feed: $feed, consumer: $consumer),
+			query: $query,
+			baseUrl: $this->feedBaseUrl(request: $request)
+		);
+	}//end handleFeedRequest()
+
+	/**
+	 * The handler that answers declared data feeds, or null when it cannot be resolved.
+	 *
+	 * @return FeedRequestHandler|null
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-feed-answers-only-its-declared-fields-page-by-page-req-ddf-002
+	 */
+	private function feedRequestHandler(): ?FeedRequestHandler {
+		try {
+			$handler = $this->containerInterface->get(FeedRequestHandler::class);
+		} catch (\Throwable) {
+			return null;
+		}
+
+		if ($handler instanceof FeedRequestHandler === false) {
+			return null;
+		}
+
+		return $handler;
+
+	}//end feedRequestHandler()
+
+	/**
+	 * The consumer a feed request comes from: the one the endpoint's
+	 * authentication rule resolved, else the one its consumer key or token names.
+	 *
+	 * @param IRequest $request The request.
+	 *
+	 * @return ObjectEntity|JSONResponse|null The consumer, null when the request names none, or the 401.
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
+	 */
+	private function feedConsumer(IRequest $request): ObjectEntity|JSONResponse|null {
+		$consumer = $this->authorizationService->getResolvedConsumer();
+		if ($consumer !== null) {
+			return $consumer;
+		}
+
+		$header = trim($request->getHeader('Authorization'));
+		if ($header === '') {
+			return null;
+		}
+
+		try {
+			if (str_starts_with($header, 'Bearer ') === true && substr_count($header, '.') === 2) {
+				$this->authorizationService->authorizeJwt(authorization: $header);
+			} else {
+				$this->authorizationService->authorizeApiKey(header: $header, keys: []);
+			}
+		} catch (AuthenticationException $exception) {
+			return $this->unauthenticated(exception: $exception);
+		}
+
+		return $this->authorizationService->getResolvedConsumer();
+	}//end feedConsumer()
+
+	/**
+	 * The query parameters of a feed request, without the router's own.
+	 *
+	 * @param IRequest $request The request.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 */
+	private function feedQuery(IRequest $request): array {
+		$query = [];
+		foreach ($request->getParams() as $name => $value) {
+			if (is_string($name) === true && str_starts_with($name, '_') === false) {
+				$query[$name] = $value;
+			}
+		}
+
+		return $query;
+	}//end feedQuery()
+
+	/**
+	 * The feed's absolute URL without its query, for the next link.
+	 *
+	 * @param IRequest $request The request.
+	 *
+	 * @return string The URL.
+	 */
+	private function feedBaseUrl(IRequest $request): string {
+		$path = (string)strtok($request->getRequestUri(), '?');
+
+		return $request->getServerProtocol() . '://' . $request->getServerHost() . $path;
+	}//end feedBaseUrl()
+
+	/**
 	 * Check the request body against the endpoint's request message schema
 	 * (REQ-MSV-002).
 	 *
@@ -991,15 +1130,9 @@ class EndpointService implements EndpointServiceInterface {
 	): Response {
 		$endpointData = $endpoint->getObject();
 
-		if ($ruleResult instanceof JSONResponse === true) {
-			return $this->transformError(result: $ruleResult, request: $request);
-		}
-
-		if ($enforceRateLimit === true) {
-			$refusal = $this->enforceConsumerLimits(request: $request, endpoint: $endpoint);
-			if ($refusal !== null) {
-				return $refusal;
-			}
+		$early = $this->answerBeforeTarget(endpoint: $endpoint, request: $request, ruleResult: $ruleResult, enforceRateLimit: $enforceRateLimit);
+		if ($early !== null) {
+			return $early;
 		}
 
 		// Update request data with rule processing results.
@@ -1049,6 +1182,34 @@ class EndpointService implements EndpointServiceInterface {
 		// Invalid endpoint configuration.
 		throw new Exception('Endpoint must specify either a schema or source connection');
 	}//end dispatchAfterBeforeRules()
+
+	/**
+	 * The answer a request gets before its target is called: a rule's error, a
+	 * declared feed's answer, or a consumer-limit refusal; null to go on.
+	 *
+	 * @param ObjectEntity   $endpoint         The endpoint.
+	 * @param IRequest       $request          The inbound request.
+	 * @param array|Response $ruleResult       What the before-rules produced.
+	 * @param bool           $enforceRateLimit Whether consumer limits are enforced on this call.
+	 *
+	 * @return Response|null
+	 */
+	private function answerBeforeTarget(ObjectEntity $endpoint, IRequest $request, array|Response $ruleResult, bool $enforceRateLimit): ?Response {
+		if ($ruleResult instanceof JSONResponse === true) {
+			return $this->transformError(result: $ruleResult, request: $request);
+		}
+
+		if (($endpoint->getObject()['targetType'] ?? '') === FeedDeclarationService::TARGET_TYPE) {
+			return $this->handleFeedRequest(endpoint: $endpoint, request: $request, enforceRateLimit: $enforceRateLimit);
+		}
+
+		if ($enforceRateLimit === false) {
+			return null;
+		}
+
+		return $this->enforceConsumerLimits(request: $request, endpoint: $endpoint);
+
+	}//end answerBeforeTarget()
 
 	/**
 	 * Whether a target type proxies to a source: `api`, or `a2a` for a
