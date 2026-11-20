@@ -247,8 +247,8 @@ class ContractMatchNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNode
 
 		return $this->flowOwner->runAs(
 			user: $owner,
-			callback: function () use ($items, $config, $context) {
-				return $this->matchPage(items: $items, config: $config, context: $context);
+			callback: function () use ($call) {
+				return $this->matchPage(call: $call);
 			}
 		);
 
@@ -257,9 +257,7 @@ class ContractMatchNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNode
 	/**
 	 * Collect the page's origin ids, look them all up ONCE, decide per item.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
@@ -267,7 +265,10 @@ class ContractMatchNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	private function matchPage(array $items, array $config, array $context): array {
+	private function matchPage(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$reference = trim((string)$config['synchronization']);
 		$idPosition = $this->pathOrDefault(config: $config, key: 'idPosition', default: self::DEFAULT_ID_POSITION);
 		$hashPosition = trim((string)($config['hashPosition'] ?? ''));

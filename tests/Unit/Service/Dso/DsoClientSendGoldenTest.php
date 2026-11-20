@@ -174,7 +174,31 @@ class DsoClientSendGoldenTest extends TestCase {
 		$golden = json_decode((string)file_get_contents(self::GOLDEN), true, 512, JSON_THROW_ON_ERROR);
 		$this->assertSame(array_keys($golden), array_keys($found));
 		foreach ($golden as $name => $expected) {
-			$this->assertSame($expected, json_decode((string)json_encode($found[$name]), true), $name);
+			$this->assertSame(
+				self::withoutTransportHeaders(case: $expected),
+				self::withoutTransportHeaders(case: json_decode((string)json_encode($found[$name]), true)),
+				$name
+			);
 		}
 	}//end testSendMatchesTheRecording()
+
+	/**
+	 * Drops the headers Guzzle itself adds and sorts the rest by name, so the
+	 * recording pins what DsoClient sends and not the Guzzle version or the
+	 * order in which a Guzzle version inserts its own headers.
+	 *
+	 * @param array<string, mixed> $case One recorded case.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withoutTransportHeaders(array $case): array {
+		foreach (($case['requests'] ?? []) as $index => $request) {
+			$headers = $request[2];
+			unset($headers['User-Agent']);
+			ksort($headers);
+			$case['requests'][$index][2] = $headers;
+		}
+
+		return $case;
+	}//end withoutTransportHeaders()
 }//end class

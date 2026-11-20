@@ -29,6 +29,7 @@ use Adbar\Dot;
 use DateTime;
 use DateTimeInterface;
 use Exception;
+use RuntimeException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Promise\Each;
 use GuzzleHttp\Promise\FulfilledPromise;
@@ -55,15 +56,20 @@ use OCA\Integriq\Service\Synchronization\FileFetchItem;
 use OCA\Integriq\Service\Synchronization\FileFetchRequest;
 use OCA\Integriq\Service\Synchronization\FileFetchRun;
 use OCA\Integriq\Service\Synchronization\SourcePage;
+use OCA\Integriq\Service\Synchronization\WildcardResultsPath;
+use OCA\Integriq\Service\Synchronization\ZipArchiveMembers;
 use OCA\Integriq\Service\Synchronization\OpenRegisterTargetWrite;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\Synchronization\PagedFetch;
 use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
+use OCA\Integriq\Service\Synchronization\BrokerSigningGuard;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Service\Synchronization\SourceItemRequest;
 use OCA\Integriq\Service\Synchronization\TargetWrite;
 use OCA\Integriq\Service\Synchronization\DeletionRun;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DatabaseSourceException;
+use OCA\Integriq\Service\Adapter\DataInfra\DatabaseAdapter;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Ownership\DisappearanceApplier;
@@ -72,7 +78,7 @@ use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
-use OCA\Integriq\Util\CsvCodec;
+use OCA\Integriq\Service\Format\CsvCodec;
 use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -628,6 +634,16 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @var RunPrerequisiteGuard|null
 	 */
 	private ?RunPrerequisiteGuard $prerequisiteGuard = null;
+
+	/**
+	 * Refuses a run whose source needs a signature the credential broker cannot make
+	 * (gateway-federated-api-discovery Task 2). Resolved by {@see signingRefusal()}
+	 * only for a run that declares `sourceConfig.brokerSigning`, so every other run
+	 * asks the container for nothing new.
+	 *
+	 * @var BrokerSigningGuard|null
+	 */
+	private ?BrokerSigningGuard $signingGuard = null;
 
 	/**
 	 * Checks source objects and target bodies against their message schemas
@@ -2825,6 +2841,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$this->failExternRun(run: $run, message: 'sourceId of synchronization cannot be empty. Canceling synchronization...');
 		}
 
+		// Gateway-federated-api-discovery REQ-FEDG-002: a source the broker cannot
+		// sign for is never called.
+		$signingRefusal = $this->signingRefusal(sourceConfig: $run->sourceConfig);
+		if ($signingRefusal !== null) {
+			$this->failExternRun(run: $run, message: $signingRefusal);
+		}
+
 		$missingPrerequisite = $this->prerequisiteGuard?->missing(sourceConfig: $run->sourceConfig);
 		if ($missingPrerequisite !== null) {
 			$this->failExternRun(run: $run, message: $missingPrerequisite);
@@ -2835,6 +2858,39 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			'description' => 'Configuration loading and source validation',
 		];
 	}//end validateExternRun()
+
+	/**
+	 * Why a run that needs the broker to sign may not start.
+	 *
+	 * Only a synchronization declaring `sourceConfig.brokerSigning` asks the
+	 * container for the guard. When the guard cannot be resolved the run is
+	 * refused too: a declared signing need is never read as "none".
+	 *
+	 * @param array $sourceConfig The run's source configuration.
+	 *
+	 * @return string|null The refusal, or null when the run may start.
+	 *
+	 * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-each-vendor-is-read-on-a-schedule-req-fedg-002
+	 */
+	private function signingRefusal(array $sourceConfig): ?string {
+		if (array_key_exists(BrokerSigningGuard::KEY, $sourceConfig) === false) {
+			return null;
+		}
+
+		if ($this->signingGuard === null) {
+			$guard = $this->containerInterface->get(BrokerSigningGuard::class);
+			if ($guard instanceof BrokerSigningGuard) {
+				$this->signingGuard = $guard;
+			}
+		}
+
+		if ($this->signingGuard === null) {
+			return 'Canceled: this synchronization needs the credential broker to sign, and the signing check is not available. '
+				. 'Nothing was fetched or written.';
+		}
+
+		return $this->signingGuard->refusal(sourceConfig: $sourceConfig);
+	}//end signingRefusal()
 
 	/**
 	 * Records a refusal on the run log and stops the run.
@@ -7028,7 +7084,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		?array $synchronization = null,
 	): array {
 		// Normalise null to the same [] the parameter already defaults to. The
-		// `database` (a @todo no-op) and `nextcloud-table` branches never write
+		// `database` and `nextcloud-table` branches never write
 		// $targetObject back, so without this a null passed IN came straight
 		// back OUT — which is what made the @param-out below untrue for those
 		// two paths.
@@ -7081,7 +7137,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				);
 				break;
 			case 'database':
-				// @todo: implement.
+				$synchronizationContract = $this->updateTargetDatabase(
+					synchronizationContract: $synchronizationContract,
+					synchronization: $synchronization,
+					targetObject: $targetObject,
+					action: $action
+				);
 				break;
 			case 'nextcloud-table':
 				$synchronizationContract = $this->updateTargetTable(
@@ -7247,7 +7308,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				);
 				break;
 			case 'database':
-				// @todo: implement
+				$objects = $this->getAllObjectsFromDatabase(
+					synchronization: $synchronization,
+					isTest: $isTest,
+					fetchInfo: $fetchInfo,
+					resolvedSource: $resolvedSource
+				);
 				break;
 			case 'nextcloud-table':
 				$objects = $this->getAllObjectsFromTable(synchronization: $synchronization, isTest: $isTest);
@@ -7259,6 +7325,218 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return $objects;
 	}//end getAllObjectsFromSource()
+
+	/**
+	 * Reads every row of a `database` source's declared read statement, page by page.
+	 *
+	 * `sourceConfig.statement` names the read statement, `sourceConfig.parameters`
+	 * holds its values and `sourceConfig.pageSize` its page size. Pages are read
+	 * on the statement's key until a page is shorter than the page size, and the
+	 * rows go to the existing mapping unchanged. A test run returns the first row.
+	 * A failure on the first page fails the run; a failure later returns what was
+	 * read and marks the fetch incomplete, so no deletion follows from it.
+	 *
+	 * @param array      $synchronization The synchronization.
+	 * @param bool|null  $isTest          Whether this is a test run.
+	 * @param array|null $fetchInfo       By-reference fetch completeness, as for the api branch.
+	 * @param array|null $resolvedSource  A source resolved by the caller, used as is.
+	 *
+	 * @return array The rows.
+	 *
+	 * @throws Exception When the synchronization names no statement or the first page fails.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-synchronization-reads-from-a-database-page-by-page-req-dbsf-002
+	 */
+	public function getAllObjectsFromDatabase(
+		array $synchronization,
+		?bool $isTest = false,
+		?array &$fetchInfo = null,
+		?array $resolvedSource = null,
+	): array {
+		$fetchInfo = ['complete' => true, 'pagesFetched' => 0, 'failureReason' => null];
+
+		[$statement, $parameters, $pageSize] = $this->databaseReadConfig(sourceConfig: ($synchronization['sourceConfig'] ?? []));
+
+		$source = $resolvedSource;
+		if ($source === null) {
+			$source = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['sourceId'] ?? null))->getObject();
+		}
+
+		$adapter = $this->databaseAdapter();
+		$rows = [];
+		$after = null;
+		do {
+			try {
+				$page = $adapter->read(source: $source, statement: $statement, parameters: $parameters, after: $after, limit: $pageSize);
+			} catch (DatabaseSourceException $exception) {
+				if ($fetchInfo['pagesFetched'] === 0) {
+					throw new Exception('The database source could not be read: ' . $exception->getMessage(), 0, $exception);
+				}
+
+				$fetchInfo['complete'] = false;
+				$fetchInfo['failureReason'] = $exception->getMessage();
+
+				return $rows;
+			}
+
+			$fetchInfo['pagesFetched']++;
+			array_push($rows, ...$page['rows']);
+
+			if ($isTest === true) {
+				return array_slice($rows, 0, 1);
+			}
+
+			if ($page['next'] !== null && $page['next'] === $after) {
+				$fetchInfo['complete'] = false;
+				$fetchInfo['failureReason'] = 'The page key did not advance; reading stopped.';
+
+				return $rows;
+			}
+
+			$after = $page['next'];
+		} while ($after !== null);
+
+		return $rows;
+	}//end getAllObjectsFromDatabase()
+
+	/**
+	 * The read statement, its parameters and the page size a database synchronization names.
+	 *
+	 * @param array $sourceConfig The synchronization's sourceConfig.
+	 *
+	 * @return array{0: string, 1: array, 2: int|null} The statement, parameters and page size.
+	 *
+	 * @throws Exception When no statement is named.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-synchronization-reads-from-a-database-page-by-page-req-dbsf-002
+	 */
+	private function databaseReadConfig(array $sourceConfig): array {
+		$statement = trim((string) ($sourceConfig['statement'] ?? ''));
+		if ($statement === '') {
+			throw new Exception('A database synchronization needs sourceConfig.statement, the read statement to run.');
+		}
+
+		$parameters = ($sourceConfig['parameters'] ?? []);
+		if (is_array($parameters) === false) {
+			$parameters = [];
+		}
+
+		$pageSize = null;
+		if (isset($sourceConfig['pageSize']) === true && filter_var($sourceConfig['pageSize'], FILTER_VALIDATE_INT) !== false) {
+			$pageSize = (int) $sourceConfig['pageSize'];
+		}
+
+		return [$statement, $parameters, $pageSize];
+	}//end databaseReadConfig()
+
+	/**
+	 * Writes one object to a `database` target through its declared write statement.
+	 *
+	 * `targetConfig.statement` names the write statement for a save and
+	 * `targetConfig.deleteStatement` the one for a delete; without it a delete
+	 * only clears the contract. The mapped object's fields are the values, plus
+	 * `targetId`, the id this contract already holds; values the statement does
+	 * not declare are never bound. `targetConfig.idField` (default `id`) names
+	 * the field whose value becomes the contract's target id.
+	 *
+	 * @param array      $synchronizationContract The contract.
+	 * @param array      $synchronization         The synchronization.
+	 * @param array|null $targetObject            The mapped object.
+	 * @param string|null $action                 save or delete.
+	 *
+	 * @return array The contract.
+	 *
+	 * @throws Exception When the synchronization names no write statement or the database fails the write.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 */
+	private function updateTargetDatabase(
+		array $synchronizationContract,
+		array $synchronization,
+		?array $targetObject = [],
+		?string $action = 'save',
+	): array {
+		$targetConfig = ($synchronization['targetConfig'] ?? []);
+		$targetId = ($synchronizationContract['targetId'] ?? null);
+
+		$statement = self::databaseTargetStatement(targetConfig: $targetConfig, action: $action);
+		if ($statement === '' && $action === 'delete') {
+			return self::withoutDatabaseTarget(contract: $synchronizationContract);
+		}
+
+		if ($statement === '') {
+			throw new Exception('A database target needs targetConfig.statement, the write statement to run.');
+		}
+
+		$mappedObject = [];
+		if (is_array($targetObject) === true) {
+			$mappedObject = $targetObject;
+		}
+
+		$target = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['targetId'] ?? null))->getObject();
+
+		try {
+			$this->databaseAdapter()->write(source: $target, statement: $statement, parameters: array_merge($mappedObject, ['targetId' => $targetId]));
+		} catch (DatabaseSourceException $exception) {
+			throw new Exception('The database target could not be written: ' . $exception->getMessage(), 0, $exception);
+		}
+
+		if ($action === 'delete') {
+			return self::withoutDatabaseTarget(contract: $synchronizationContract);
+		}
+
+		$idField = (string) ($targetConfig['idField'] ?? 'id');
+		if (isset($mappedObject[$idField]) === true && is_scalar($mappedObject[$idField]) === true) {
+			$synchronizationContract['targetId'] = (string) $mappedObject[$idField];
+		}
+
+		$synchronizationContract['targetHash'] = md5(serialize($mappedObject));
+
+		return $synchronizationContract;
+	}//end updateTargetDatabase()
+
+	/**
+	 * The write statement a database target names for this action: deleteStatement for a delete, statement otherwise.
+	 *
+	 * @param array       $targetConfig The synchronization's targetConfig.
+	 * @param string|null $action       save or delete.
+	 *
+	 * @return string The statement name, or '' when none is named.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 */
+	private static function databaseTargetStatement(array $targetConfig, ?string $action): string {
+		if ($action === 'delete') {
+			return trim((string) ($targetConfig['deleteStatement'] ?? ''));
+		}
+
+		return trim((string) ($targetConfig['statement'] ?? ''));
+	}//end databaseTargetStatement()
+
+	/**
+	 * The contract with its database target cleared.
+	 *
+	 * @param array $contract The contract.
+	 *
+	 * @return array The contract.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 */
+	private static function withoutDatabaseTarget(array $contract): array {
+		$contract['targetId'] = null;
+		$contract['targetHash'] = null;
+
+		return $contract;
+	}//end withoutDatabaseTarget()
+
+	/**
+	 * The database adapter, resolved when a database synchronization first needs it.
+	 *
+	 * @return DatabaseAdapter
+	 */
+	private function databaseAdapter(): DatabaseAdapter {
+		return $this->containerInterface->get(DatabaseAdapter::class);
+	}//end databaseAdapter()
 
 	/**
 	 * Fetches all rows from a `nextcloud-table` source for a given synchronization.
@@ -8493,6 +8771,28 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$page->body = $this->decodePageBody(page: $page);
 
+		// A `.zip` archive holds many files where gzip holds one (a bulk
+		// source publishing one feed per day inside one archive). Each member
+		// is read as its own page body and the objects are joined.
+		if ($this->isZipPayload(page: $page) === true) {
+			return $this->readZipPage(page: $page);
+		}
+
+		return $this->readDecodedPage(page: $page);
+	}//end fetchSinglePageData()
+
+	/**
+	 * Reads a decoded page body with the parser its source or synchronization declares.
+	 *
+	 * @param SourcePage $page The page, with its body decoded.
+	 *
+	 * @return array The page, an empty page, or a failed page.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function readDecodedPage(SourcePage $page): array {
+		$source = $page->source;
+
 		// #107: markdown- and HTML-shaped sources (spectr's keyless catalog/
 		// standards connectors — awesome_selfhosted, openalternative,
 		// don_oss_register, wikipedia_comparisons — have no JSON/XML API at
@@ -8514,17 +8814,100 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			);
 		}
 
-		// mapping-formats-and-lookups REQ-MFL-001: a synchronization reading a
+		// Mapping-formats-and-lookups REQ-MFL-001: a synchronization reading a
 		// CSV response hands one array per row to the mapping. Per
 		// synchronization, like `jsonl`, because the same source can serve
 		// several formats.
-		if (($synchronization['sourceConfig']['format'] ?? null) === 'csv') {
-			$rows = $this->decodeCsvPage(body: (string)$page->body, sourceConfig: $synchronization['sourceConfig']);
+		if (($page->synchronization['sourceConfig']['format'] ?? null) === 'csv') {
+			$rows = $this->decodeCsvPage(body: (string)$page->body, sourceConfig: $page->synchronization['sourceConfig']);
 			return ['objects' => $rows, 'result' => $rows];
 		}
 
 		return ($this->readYamlPage(page: $page, sourceFormat: $sourceFormat) ?? $this->readParsedPage(page: $page));
-	}//end fetchSinglePageData()
+	}//end readDecodedPage()
+
+	/**
+	 * Whether a decoded page body is a zip archive.
+	 *
+	 * Any one signal is enough: an explicit `Source.configuration.decompress:
+	 * "zip"`, a `.zip`-suffixed endpoint, or a body that starts with the zip
+	 * signature (no JSON, XML, CSV or YAML body does).
+	 *
+	 * @param SourcePage $page The page, with its body decoded.
+	 *
+	 * @return bool True when the body is to be read as an archive.
+	 *
+	 * @spec openspec/changes/native-data-gathering-provider/tasks.md
+	 */
+	private function isZipPayload(SourcePage $page): bool {
+		if (is_string($page->body) === false) {
+			return false;
+		}
+
+		if (strtolower((string)($page->source['configuration']['decompress'] ?? '')) === 'zip') {
+			return true;
+		}
+
+		if ($this->endpointSuggestsSuffix(endpoint: $page->endpoint, suffix: '.zip') === true) {
+			return true;
+		}
+
+		return (new ZipArchiveMembers())->looksLikeZip(bytes: $page->body);
+	}//end isZipPayload()
+
+	/**
+	 * Reads every member of a zip page and joins their objects.
+	 *
+	 * A member no parser can read, or an archive that cannot be opened or is
+	 * over its limits, fails the whole page: a partly read archive reported as
+	 * complete would let the stale sweep delete what was not read.
+	 * `Source.configuration.zipMembers` (a shell pattern such as `*.atom`)
+	 * narrows which members are read.
+	 *
+	 * @param SourcePage $page The page, with its body decoded.
+	 *
+	 * @return array The page with every member's objects, or a failed page.
+	 *
+	 * @spec openspec/changes/native-data-gathering-provider/tasks.md
+	 */
+	private function readZipPage(SourcePage $page): array {
+		$pattern = $page->source['configuration']['zipMembers'] ?? null;
+		if (is_string($pattern) === false) {
+			$pattern = null;
+		}
+
+		try {
+			$members = (new ZipArchiveMembers())->read(bytes: $page->body, pattern: $pattern);
+		} catch (RuntimeException $exception) {
+			$this->logger->error(
+				'SynchronizationService: source {endpoint} answered with a zip archive that could not be read '
+				. '({reason}). Treating the page as FAILED rather than empty.',
+				['endpoint' => $page->endpoint, 'reason' => $exception->getMessage()]
+			);
+
+			return $this->failedPage(page: $page);
+		}
+
+		$objects = [];
+		foreach ($members as $member) {
+			$memberPage = new SourcePage(source: $page->source, endpoint: $page->endpoint.'#'.$member['name']);
+			$memberPage->synchronization = $page->synchronization;
+			$memberPage->response = $page->response;
+			$memberPage->statusCode = $page->statusCode;
+			$memberPage->body = $member['body'];
+
+			$read = $this->readDecodedPage(page: $memberPage);
+			if (($read['failed'] ?? false) === true) {
+				return $this->failedPage(page: $page);
+			}
+
+			foreach ($read['objects'] as $object) {
+				$objects[] = $object;
+			}
+		}
+
+		return ['objects' => $objects, 'result' => $objects];
+	}//end readZipPage()
 
 	/**
 	 * The rows of a CSV page, with the synchronization's delimiter, enclosure and header flag.
@@ -10015,6 +10398,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return array An array of items extracted from the response body.
 	 * @throws Exception If the position of objects in the return body cannot be determined.
+	 *
+	 * @spec openspec/changes/native-data-gathering-provider/tasks.md
 	 */
 	public function getAllObjectsFromArray(array $array, array $synchronization): array {
 		// Get the source configuration from the synchronization object.
@@ -10026,6 +10411,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			// If position is root, return the array.
 			if ($position === '_root' || $position === '_object') {
 				return $array;
+			}
+
+			// A `*` or `**` segment reaches the objects in every repeated
+			// container (articles in each chapter of a law) where a fixed dot
+			// path reaches one place.
+			$wildcardPath = new WildcardResultsPath();
+			if ($wildcardPath->isWildcard(path: (string)$position) === true) {
+				return $wildcardPath->objects(data: $array, path: (string)$position);
 			}
 
 			// Use Dot notation to access nested array elements.

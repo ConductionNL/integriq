@@ -133,6 +133,31 @@ class SourcePacer {
 	}//end isPaced()
 
 	/**
+	 * Take a call's turn and wait for it, for a paced source only.
+	 *
+	 * A refused turn is returned without waiting; the caller records it and
+	 * does not send the call.
+	 *
+	 * @param string $sourceKey The source's identity (its uuid) the budget is kept under.
+	 * @param array $sourceData The source: `pace`, `rateLimitRemaining`, `rateLimitReset`.
+	 * @param bool $live True for a live gateway call, false for background work.
+	 *
+	 * @return PacingDecision|null The decision, or null when the source is not paced.
+	 *
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 */
+	public function turn(string $sourceKey, array $sourceData, bool $live): ?PacingDecision {
+		if ($this->isPaced(sourceData: $sourceData) === false) {
+			return null;
+		}
+
+		$decision = $this->acquire(sourceKey: $sourceKey, sourceData: $sourceData, live: $live);
+		$this->wait(decision: $decision);
+
+		return $decision;
+	}//end turn()
+
+	/**
 	 * Take the next turn for a call to a source.
 	 *
 	 * @param string $sourceKey The source's identity (its uuid) the budget is kept under.
@@ -298,12 +323,12 @@ class SourcePacer {
 	 */
 	private function maxWaitMicros(array $pace, bool $live): int {
 		if ($live === true) {
-			$ms = ($pace['maxLiveWaitMs'] ?? self::DEFAULT_MAX_LIVE_WAIT_MS);
-			if (is_numeric($ms) === false || (int)$ms < 0) {
-				$ms = self::DEFAULT_MAX_LIVE_WAIT_MS;
+			$maxWaitMs = ($pace['maxLiveWaitMs'] ?? self::DEFAULT_MAX_LIVE_WAIT_MS);
+			if (is_numeric($maxWaitMs) === false || (int)$maxWaitMs < 0) {
+				$maxWaitMs = self::DEFAULT_MAX_LIVE_WAIT_MS;
 			}
 
-			return ((int)$ms * 1000);
+			return ((int)$maxWaitMs * 1000);
 		}
 
 		$seconds = ($pace['maxBackgroundWaitSeconds'] ?? self::DEFAULT_MAX_BACKGROUND_WAIT_SECONDS);

@@ -42,6 +42,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use OC\Files\Node\File;
 use OCA\Integriq\Service\CallServiceInterface;
+use OCA\Integriq\Service\MappingLookupInterface;
 use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
@@ -74,7 +75,7 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	 * @param FileService $fileService Service that resolves file metadata.
 	 * @param SourceMappingServiceInterface $objectService Service that resolves OR objects.
 	 * @param SynchronizationContractServiceInterface $synchronizationContractService Service for contract lookups.
-	 * @param MappingLookup|null $lookup The allowlisted register lookup; null refuses every lookup.
+	 * @param MappingLookupInterface|null $lookup The allowlisted register lookup; null refuses every lookup.
 	 */
 	public function __construct(
 		private readonly MappingServiceInterface $mappingService,
@@ -82,7 +83,7 @@ class MappingRuntime implements RuntimeExtensionInterface {
 		private readonly FileService $fileService,
 		private readonly SourceMappingServiceInterface $objectService,
 		private readonly SynchronizationContractServiceInterface $synchronizationContractService,
-		private readonly ?MappingLookup $lookup = null,
+		private readonly ?MappingLookupInterface $lookup = null,
 	) {
 
 	}//end __construct()

@@ -23,7 +23,8 @@
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Util\ArrayToXml;
+use LogicException;
+use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCP\AppFramework\Http\Response;
 
 /**
@@ -57,13 +58,20 @@ class XMLResponse extends Response {
 	 * @param int $status HTTP status code, defaults to 200.
 	 * @param array<string, string> $headers Custom headers to add to the response.
 	 * @param string|null $path The request path to determine if download header should be added.
+	 * @param XmlEncoderInterface|null $encoder Writes the XML; required to render.
 	 *
 	 * @psalm-param array<string, mixed>|string $data
 	 * @psalm-param int $status
 	 * @psalm-param array<string, string> $headers
 	 * @psalm-param string|null $path
 	 */
-	public function __construct($data = [], int $status = 200, array $headers = [], ?string $path = null) {
+	public function __construct(
+		$data = [],
+		int $status = 200,
+		array $headers = [],
+		?string $path = null,
+		private readonly ?XmlEncoderInterface $encoder = null,
+	) {
 		parent::__construct(status: $status);
 
 		// Set response data.
@@ -153,9 +161,15 @@ class XMLResponse extends Response {
 	 * @psalm-param  array<string, mixed> $data
 	 * @psalm-return string
 	 *
+	 * @throws LogicException When the response was built without an encoder.
+	 *
 	 * @spec openspec/specs/xml-response/spec.md
 	 */
 	public function arrayToXml(array $data, ?string $rootTag = null): string {
-		return (new ArrayToXml())->convert(data: $data, rootTag: $rootTag);
+		if ($this->encoder === null) {
+			throw new LogicException(message: 'An XMLResponse needs an XML encoder to render.');
+		}
+
+		return $this->encoder->convert(data: $data, rootTag: $rootTag);
 	}//end arrayToXml()
 }//end class

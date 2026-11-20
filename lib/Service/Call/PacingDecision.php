@@ -34,6 +34,10 @@ final class PacingDecision {
 	 * @param int $waitMicros How long the call waits before it is sent (0 when refused).
 	 * @param bool $refused True when the wait exceeds what the caller may wait; the call is not sent.
 	 * @param int $retryAfterSeconds When refused: the seconds until the call's turn, at least 1.
+	 *
+	 * A readonly value object: $refused is the decision it carries, not a mode switch.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
 	public function __construct(
 		public readonly int $waitMicros = 0,
@@ -52,4 +56,18 @@ final class PacingDecision {
 	public function waitMs(): int {
 		return intdiv($this->waitMicros + 999, 1000);
 	}//end waitMs()
+
+	/**
+	 * The status message of a refused turn, recorded on its 429 call log.
+	 *
+	 * @return string The message.
+	 *
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 */
+	public function refusalMessage(): string {
+		return sprintf(
+			'This source is paced: the next call is due in %d seconds, longer than this call may wait.',
+			$this->retryAfterSeconds
+		);
+	}//end refusalMessage()
 }//end class

@@ -30,7 +30,7 @@ use OCP\Files\IRootFolder;
 use OCP\IUserSession;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
-use OCA\Integriq\Util\CsvCodec;
+use OCA\Integriq\Service\Format\CsvCodec;
 
 /**
  * The columns are mapped once and the mapping is stored, so the second

@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\MappingLookupController;
-use OCA\Integriq\Twig\LookupAllowlist;
+use OCA\Integriq\Service\LookupAllowlist;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -34,7 +34,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\Integriq\Controller\MappingLookupController
- * @uses   \OCA\Integriq\Twig\LookupAllowlist
+ * @uses   \OCA\Integriq\Service\LookupAllowlist
  */
 class MappingLookupControllerTest extends TestCase {
 

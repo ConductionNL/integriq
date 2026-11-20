@@ -55,7 +55,6 @@ use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 use OCA\Integriq\Kernel\EndpointContainment;
-use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Observability\Otel\TraceParent;
@@ -97,6 +96,11 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/http-call-engine/spec.md
  * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+ *
+ * relay() is the streaming entry point next to call(); both are the public
+ * surface the endpoint handlers use.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class CallService implements CallServiceInterface {
 	use OrganisationBoundary;
@@ -1168,7 +1172,7 @@ class CallService implements CallServiceInterface {
 		// passing its own class name: a bare true, or one set on a source's
 		// configuration, stores nothing (outbound-call-log REQ-OCD-010).
 		$caller  = ($config['logBody'] ?? null);
-		$logBody = (is_string($caller) === true && in_array($caller, BodyCapturePolicy::LOG_BODY_ALLOWLIST, true) === true);
+		$logBody = (is_string($caller) === true && in_array($caller, BodyCapturePolicyInterface::LOG_BODY_ALLOWLIST, true) === true);
 		unset($config['logBody']);
 
 		// We want to surpress guzzle exceptions and return the response instead.
@@ -1666,6 +1670,27 @@ class CallService implements CallServiceInterface {
 	}//end redactResponseHeaders()
 
 	/**
+	 * The logged copy of a request or response with its personal data masked:
+	 * declared fields in the URL, the headers, the request options and a JSON
+	 * or XML body read `[afgeschermd]`. Runs right after the secret masking,
+	 * on the copy that is stored; the message that was sent is not touched.
+	 *
+	 * @param array $exchange The logged request or response.
+	 *
+	 * @return array The masked copy.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 */
+	private function maskPersonalData(array $exchange): array {
+		$masked = $this->sensitiveFieldRegistry->maskPersonalData(value: $exchange);
+		if (is_array($masked) === false) {
+			return $exchange;
+		}
+
+		return $masked;
+	}//end maskPersonalData()
+
+	/**
 	 * Returns true when a header/query/form key name looks like it carries a secret.
 	 *
 	 * Delegates to the shared {@see SensitiveFieldRegistry} (secret-hygiene) — a pure
@@ -1927,9 +1952,7 @@ class CallService implements CallServiceInterface {
 
 		// The time the call waited for its paced turn (REQ-RLPC-001). Left out
 		// for a call that did not wait, so unpaced sources log as before.
-		if ($pacedMs > 0) {
-			$callLogData['pacedMs'] = $pacedMs;
-		}
+		$callLogData += array_filter(['pacedMs' => $pacedMs]);
 
 		// Bodies are stored only inside the source's investigation window, or
 		// for a caller that passed logBody; a failure keeps its request for a
@@ -1939,6 +1962,15 @@ class CallService implements CallServiceInterface {
 		$callLogData = $this->bodyCapturePolicy->apply(record: $callLogData, sourceData: $sourceData, logBody: $logBody, errorExpires: $errorExpires);
 		if ($withholdBodies === true) {
 			$callLogData = $this->bodyCapturePolicy->withheldRecord(record: $callLogData);
+		}
+
+		// Personal data in the stored request and response is masked after the
+		// body policy ran, so `replayRequest` keeps what a replay sends; it is
+		// never listed (call-log-personal-data-masking REQ-PDM-001).
+		foreach (['request', 'response'] as $bag) {
+			if (is_array(($callLogData[$bag] ?? null)) === true) {
+				$callLogData[$bag] = $this->maskPersonalData(exchange: $callLogData[$bag]);
+			}
 		}
 
 		// A call kept for ever (retention 0) has no expiry. `expires` is a
@@ -2425,6 +2457,7 @@ class CallService implements CallServiceInterface {
 					asynchronous: false,
 					brokeredCredential: $prepared['brokeredCredential'],
 					sink: $prepared['request']->sink,
+					onHeaders: $prepared['request']->onHeaders,
 				);
 			} catch (\Throwable $exception) {
 				// Note: dispatchRequest() already converts a Guzzle
@@ -2684,6 +2717,10 @@ class CallService implements CallServiceInterface {
 				sourceData: $run->sourceData,
 				asynchronous: $run->request->asynchronous,
 			);
+		} catch (PerUserAccountNotConnectedException $exception) {
+			// Not a configuration fault but the caller's own missing account: the
+			// endpoint answers it with the connect prompt (sources-per-user-oauth D3).
+			throw $exception;
 		} catch (BrokeredCallConfigurationException $exception) {
 			return $this->configErrorLog(run: $run, exception: $exception);
 		}
@@ -3097,14 +3134,9 @@ class CallService implements CallServiceInterface {
 	 */
 	private function guardSource(CallPreparation $run): bool {
 		// Pacing (phase 5b, paceCall()) runs inside the precondition guards, before the rate limit.
-		$live = $this->takePacingMode(run: $run);
 		$pacedMs = 0;
 		$earlyError = $this->guardCallPreconditions(
-			source: $run->source,
-			sourceData: $run->sourceData,
-			errorExpires: $run->errorExpires,
-			live: $live,
-			pacedMs: $pacedMs,
+			source: $run->source, sourceData: $run->sourceData, errorExpires: $run->errorExpires, live: $run->takePacingMode(), pacedMs: $pacedMs
 		);
 		$run->prepared['pacedMs'] = $pacedMs;
 		if ($earlyError === null) {
@@ -3115,33 +3147,12 @@ class CallService implements CallServiceInterface {
 	}//end guardSource()
 
 	/**
-	 * Phase 1c: whether the caller is live (a gateway request, or the
-	 * interactive test) or background work. It decides how long a paced call
-	 * may wait for its turn (REQ-RLPC-002). Pulled out of the config like the
-	 * retry policy, so it never reaches the request.
-	 *
-	 * @param CallPreparation $run The call being prepared.
-	 *
-	 * @return bool True for a live caller.
-	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
-	 */
-	private function takePacingMode(CallPreparation $run): bool {
-		$live = (($run->config['pacing'] ?? null) === 'live' || $run->request->persistLog === false);
-		unset($run->config['pacing']);
-		$run->prepared['config'] = $run->config;
-
-		return $live;
-	}//end takePacingMode()
-
-	/**
-	 * Phase 5b: take the call's turn from the source's pace and wait for it.
-	 *
-	 * Without a pacer, or for a source with neither a configured pace nor an
-	 * announced window, nothing happens. A refused turn is recorded as a 429
-	 * call log carrying `retryAfter`, the seconds until the call's turn, and
-	 * the call is not sent. After a wait the announced window is checked
-	 * again, as the reset may have passed while waiting.
+	 * Phase 5b: take the call's turn from the source's pace and wait for it
+	 * ({@see SourcePacer::turn()}); nothing happens without a pacer or for an
+	 * unpaced source. A refused turn is recorded as a 429 call log carrying
+	 * `retryAfter`, the seconds until the call's turn, and the call is not
+	 * sent. After a wait the announced window is checked again, as the reset
+	 * may have passed while waiting.
 	 *
 	 * @param ObjectEntity $source The source.
 	 * @param array $sourceData The mutable source data (a passed reset clears its counters).
@@ -3156,31 +3167,19 @@ class CallService implements CallServiceInterface {
 	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
 	 */
 	private function paceCall(ObjectEntity $source, array &$sourceData, ?\DateTime $errorExpires, bool $live): ObjectEntity|int {
-		if ($this->pacer === null || $this->pacer->isPaced(sourceData: $sourceData) === false) {
-			return 0;
-		}
-
-		$sourceKey = (string)($source->getUuid() ?? $source->getId());
-		$decision = $this->pacer->acquire(sourceKey: $sourceKey, sourceData: $sourceData, live: $live);
-		if ($decision->refused === true) {
+		$decision = $this->pacer?->turn(sourceKey: (string)($source->getUuid() ?? $source->getId()), sourceData: $sourceData, live: $live);
+		if ($decision?->refused === true) {
+			$extra = ['retryAfter' => $decision->retryAfterSeconds];
 			return $this->saveEarlyErrorLog(
-				source: $source,
-				statusCode: 429,
-				statusMessage: sprintf(
-					'This source is paced: the next call is due in %d seconds, longer than this call may wait.',
-					$decision->retryAfterSeconds
-				),
-				expires: $errorExpires,
-				extra: ['retryAfter' => $decision->retryAfterSeconds],
+				source: $source, statusCode: 429, statusMessage: $decision->refusalMessage(), expires: $errorExpires, extra: $extra
 			);
 		}
 
-		$this->pacer->wait(decision: $decision);
-		if ($decision->waitMicros > 0) {
+		if (($decision->waitMicros ?? 0) > 0) {
 			$this->checkAndResetRateLimit(source: $source, sourceData: $sourceData);
 		}
 
-		return $decision->waitMs();
+		return ($decision?->waitMs() ?? 0);
 	}//end paceCall()
 
 	/**
@@ -3345,7 +3344,10 @@ class CallService implements CallServiceInterface {
 	 */
 	private function tracedExchange(FinishedCall $call): array {
 		$prepared = $call->prepared;
-		$traced = ['request' => $call->data['request'], 'response' => $this->redactResponseHeaders(response: $call->data['response'])];
+		$traced = [
+			'request' => $this->maskPersonalData(exchange: $call->data['request']),
+			'response' => $this->maskPersonalData(exchange: $this->redactResponseHeaders(response: $call->data['response'])),
+		];
 		if ($this->bodyCapturePolicy->captures(sourceData: $prepared['sourceData'], logBody: (bool)$prepared['logBody']) === false) {
 			$traced = $this->bodyCapturePolicy->strip(request: $traced['request'], response: $traced['response']);
 		}
@@ -3525,6 +3527,61 @@ class CallService implements CallServiceInterface {
 		return $this->finalizeCall(prepared: $prepared, dispatched: $dispatched);
 
 	}//end call()
+
+	/**
+	 * Relay one call to a source straight to the caller, as it arrives.
+	 *
+	 * The call takes the same path as {@see call()} (the source's credential,
+	 * the SSRF containment, retries, the circuit breaker and the call log),
+	 * with two differences: the response body streams into `$sink` instead of
+	 * being buffered, and `$onHeaders` gets the upstream response as soon as
+	 * its status and headers arrive, before the first body byte. The MCP
+	 * gateway uses it to pass an answer, an event stream included, through
+	 * unchanged (gateway-mcp-proxy D2). The call log records no response body.
+	 *
+	 * @param ObjectEntity               $source         The source to call.
+	 * @param string                     $endpoint       The path on the source.
+	 * @param string                     $method         The HTTP method.
+	 * @param array<string, mixed>       $config         The request configuration (headers, body, timeout).
+	 * @param mixed                      $sink           A writable PSR-7 stream the body is relayed into.
+	 * @param callable                   $onHeaders      Called with the PSR-7 response once its headers arrived.
+	 * @param bool                       $withholdBodies When true, the call log keeps no request body either.
+	 * @param ExecutionTraceContext|null $trace          The active execution trace context, when any.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 */
+	public function relay(
+		ObjectEntity $source,
+		string $endpoint,
+		string $method,
+		array $config,
+		mixed $sink,
+		callable $onHeaders,
+		bool $withholdBodies = true,
+		?ExecutionTraceContext $trace = null,
+	): ObjectEntity {
+		$prepared = $this->prepareCall(
+			source: $source,
+			request: new CallRequest(
+				endpoint: $endpoint,
+				method: $method,
+				config: $config,
+				sink: $sink,
+				trace: $trace,
+				onHeaders: $onHeaders,
+				withholdBodies: $withholdBodies,
+			)
+		);
+		if ($prepared['shortCircuit'] !== null) {
+			return $prepared['shortCircuit'];
+		}
+
+		$prepared = $this->withTraceParent(prepared: $prepared, trace: $trace);
+		$dispatched = $this->dispatchWithRetry(prepared: $prepared);
+		return $this->finalizeCall(prepared: $prepared, dispatched: $dispatched);
+	}//end relay()
 
 	/**
 	 * Give an outbound call made during a trace a W3C traceparent naming the
