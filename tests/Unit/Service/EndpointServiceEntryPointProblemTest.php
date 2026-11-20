@@ -79,39 +79,39 @@ class EndpointServiceEntryPointProblemTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->orObjectService = ObjectServiceMockBuilder::make($this);
-		$logger = $this->createMock(LoggerInterface::class);
-		$urlGenerator = $this->createMock(IURLGenerator::class);
+		$this->orObjectService = ObjectServiceMockBuilder::make(test: $this);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$urlGenerator = $this->createMock(originalClassName: IURLGenerator::class);
 		$urlGenerator->method('getBaseUrl')->willReturn('https://example.org');
-		$consumerScope = $this->createMock(\OCA\Integriq\Service\ConsumerScopeService::class);
+		$consumerScope = $this->createMock(originalClassName: \OCA\Integriq\Service\ConsumerScopeService::class);
 		$consumerScope->method('isAllowed')->willReturn(true);
-		$requestId = $this->createMock(IRequestId::class);
+		$requestId = $this->createMock(originalClassName: IRequestId::class);
 		$requestId->method('getId')->willReturn('req-replay-1');
 
 		$this->service = new EndpointService(
-			$this->createMock(ObjectService::class),
-			$this->createMock(CallService::class),
-			$logger,
-			$urlGenerator,
-			$this->createMock(MappingService::class),
-			$this->orObjectService,
-			$this->createMock(IConfig::class),
-			$this->createMock(StorageService::class),
-			$this->createMock(OpenRegisterCredentialBridge::class),
-			$this->createMock(ContainerInterface::class),
-			$this->createMock(SynchronizationService::class),
-			$this->createMock(RuleService::class),
-			new \OCA\Integriq\Service\WebhookSignatureService($logger),
-			$this->createMock(\OCA\Integriq\Service\RateLimit\InboundRateLimitService::class),
-			new CompositeFanoutRule($this->orObjectService, $logger),
-			new ReferenceNumberRule(),
-			new AvgBsnPolicyRule(),
-			$this->createMock(\OCA\Integriq\Service\ApprovalService::class),
-			$requestId,
-			$this->createMock(FlowRunnerService::class),
-			$consumerScope,
-			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
+			objectService: $this->createMock(originalClassName: ObjectService::class),
+			callService: $this->createMock(originalClassName: CallService::class),
+			logger: $logger,
+			urlGenerator: $urlGenerator,
+			mappingService: $this->createMock(originalClassName: MappingService::class),
+			orObjectService: $this->orObjectService,
+			config: $this->createMock(originalClassName: IConfig::class),
+			storageService: $this->createMock(originalClassName: StorageService::class),
+			authorizationService: $this->createMock(originalClassName: OpenRegisterCredentialBridge::class),
+			containerInterface: $this->createMock(originalClassName: ContainerInterface::class),
+			synchronizationService: $this->createMock(originalClassName: SynchronizationService::class),
+			ruleService: $this->createMock(originalClassName: RuleService::class),
+			webhookSignatureService: new \OCA\Integriq\Service\WebhookSignatureService(logger: $logger),
+			rateLimitService: $this->createMock(originalClassName: \OCA\Integriq\Service\RateLimit\InboundRateLimitService::class),
+			compositeFanoutRule: new CompositeFanoutRule(orObjectService: $this->orObjectService, logger: $logger),
+			referenceNumberRule: new ReferenceNumberRule(),
+			avgBsnPolicyRule: new AvgBsnPolicyRule(),
+			approvalService: $this->createMock(originalClassName: \OCA\Integriq\Service\ApprovalService::class),
+			requestId: $requestId,
+			flowRunnerService: $this->createMock(originalClassName: FlowRunnerService::class),
+			consumerScopeService: $consumerScope,
+			schemaMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\SchemaMapper::class),
+			orFileService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\FileService::class),
 		);
 	}//end setUp()
 
@@ -121,8 +121,8 @@ class EndpointServiceEntryPointProblemTest extends TestCase {
 	 * @return ObjectEntity
 	 */
 	private function brokenEndpoint(): ObjectEntity {
-		$endpoint = $this->createMock(ObjectEntity::class);
-		$endpoint->method('getObject')->willThrowException(new Exception('storage gone'));
+		$endpoint = $this->createMock(originalClassName: ObjectEntity::class);
+		$endpoint->method('getObject')->willThrowException(new Exception(message: 'storage gone'));
 		$endpoint->method('getUuid')->willReturn('endpoint-broken');
 
 		return $endpoint;
@@ -137,14 +137,14 @@ class EndpointServiceEntryPointProblemTest extends TestCase {
 	 * @return ObjectEntity
 	 */
 	private function endpointWithFailingRule(): ObjectEntity {
-		$rule = $this->createMock(ObjectEntity::class);
-		$rule->method('getObject')->willThrowException(new Exception('rule unreadable'));
+		$rule = $this->createMock(originalClassName: ObjectEntity::class);
+		$rule->method('getObject')->willThrowException(new Exception(message: 'rule unreadable'));
 		$this->orObjectService->method('find')->willReturn($rule);
 
 		return ObjectServiceMockBuilder::objectEntity(
-			$this,
-			['method' => 'GET', 'rules' => ['rule-1', 'rule-2'], 'targetType' => 'api'],
-			'endpoint-with-rule'
+			test: $this,
+			body: ['method' => 'GET', 'rules' => ['rule-1', 'rule-2'], 'targetType' => 'api'],
+			uuid: 'endpoint-with-rule'
 		);
 	}//end endpointWithFailingRule()
 
@@ -157,14 +157,14 @@ class EndpointServiceEntryPointProblemTest extends TestCase {
 	 * @return array<string,mixed> The document.
 	 */
 	private function assertInternalProblem(mixed $response, string $error): array {
-		$this->assertInstanceOf(ProblemResponse::class, $response);
-		$this->assertSame(500, $response->getStatus());
-		$headers = (new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers'))->getValue($response);
-		$this->assertSame(ProblemResponse::CONTENT_TYPE, $headers['Content-Type']);
+		$this->assertInstanceOf(expected: ProblemResponse::class, actual: $response);
+		$this->assertSame(expected: 500, actual: $response->getStatus());
+		$headers = (new \ReflectionProperty(class: \OCP\AppFramework\Http\Response::class, property: 'headers'))->getValue(object: $response);
+		$this->assertSame(expected: ProblemResponse::CONTENT_TYPE, actual: $headers['Content-Type']);
 		$document = $response->getData();
-		$this->assertSame(ProblemResponse::TYPE_BASE . 'upstream-unavailable', $document['type']);
-		$this->assertSame($error, $document['error']);
-		$this->assertSame($error, $document['detail']);
+		$this->assertSame(expected: ProblemResponse::TYPE_BASE . 'upstream-unavailable', actual: $document['type']);
+		$this->assertSame(expected: $error, actual: $document['error']);
+		$this->assertSame(expected: $error, actual: $document['detail']);
 
 		return $document;
 	}//end assertInternalProblem()
@@ -175,7 +175,7 @@ class EndpointServiceEntryPointProblemTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailedResumeIsAProblemDocument(): void {
-		$request = $this->createMock(IRequest::class);
+		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getId')->willReturn('req-resume-1');
 		$request->method('getMethod')->willReturn('POST');
 
@@ -188,7 +188,7 @@ class EndpointServiceEntryPointProblemTest extends TestCase {
 		);
 
 		$document = $this->assertInternalProblem(response: $response, error: 'Internal server error');
-		$this->assertSame('req-resume-1', $document['instance']);
+		$this->assertSame(expected: 'req-resume-1', actual: $document['instance']);
 	}//end testAFailedResumeIsAProblemDocument()
 
 	/**
@@ -197,7 +197,7 @@ class EndpointServiceEntryPointProblemTest extends TestCase {
 	 * @return void
 	 */
 	public function testAResumedPipelineErrorIsAProblemDocument(): void {
-		$request = $this->createMock(IRequest::class);
+		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getId')->willReturn('req-resume-2');
 		$request->method('getMethod')->willReturn('POST');
 
@@ -210,7 +210,7 @@ class EndpointServiceEntryPointProblemTest extends TestCase {
 		);
 
 		$document = $this->assertInternalProblem(response: $response, error: 'Rule processing failed');
-		$this->assertSame('req-resume-2', $document['instance']);
+		$this->assertSame(expected: 'req-resume-2', actual: $document['instance']);
 	}//end testAResumedPipelineErrorIsAProblemDocument()
 
 	/**
@@ -222,11 +222,11 @@ class EndpointServiceEntryPointProblemTest extends TestCase {
 		$response = $this->service->replay(
 			endpoint: $this->brokenEndpoint(),
 			requestSnapshot: ['method' => 'GET', 'parameters' => [], 'path' => ''],
-			trace: new ExecutionTraceContext('replay')
+			trace: new ExecutionTraceContext(entryPoint: 'replay')
 		);
 
 		$document = $this->assertInternalProblem(response: $response, error: 'Internal server error');
-		$this->assertArrayNotHasKey('instance', $document);
+		$this->assertArrayNotHasKey(key: 'instance', array: $document);
 	}//end testAFailedReplayIsAProblemDocument()
 
 	/**
@@ -238,10 +238,10 @@ class EndpointServiceEntryPointProblemTest extends TestCase {
 		$response = $this->service->replay(
 			endpoint: $this->endpointWithFailingRule(),
 			requestSnapshot: ['method' => 'GET', 'parameters' => [], 'path' => ''],
-			trace: new ExecutionTraceContext('replay')
+			trace: new ExecutionTraceContext(entryPoint: 'replay')
 		);
 
 		$document = $this->assertInternalProblem(response: $response, error: 'Rule processing failed');
-		$this->assertSame('req-replay-1', $document['instance']);
+		$this->assertSame(expected: 'req-replay-1', actual: $document['instance']);
 	}//end testAReplayedPipelineErrorIsAProblemDocument()
 }//end class
