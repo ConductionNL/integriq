@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Adapter\DataInfra\Database;
 
+use SensitiveParameter;
+
 /**
  * How to reach one database, for the length of one adapter call.
  *
@@ -52,7 +54,7 @@ final class DatabaseConnectionSettings {
 		public readonly ?int $port,
 		public readonly string $dbname,
 		public readonly string $user,
-		#[\SensitiveParameter]
+		#[SensitiveParameter]
 		public readonly string $password,
 		public readonly int $timeoutSeconds,
 		public readonly string $charset = '',

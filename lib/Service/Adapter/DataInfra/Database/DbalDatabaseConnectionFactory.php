@@ -26,6 +26,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PDO;
 use Throwable;
+use SensitiveParameter;
 
 /**
  * Opens connections through Doctrine DBAL, the copy Nextcloud ships.
@@ -72,6 +73,10 @@ class DbalDatabaseConnectionFactory implements DatabaseConnectionFactoryInterfac
 	 * @throws DatabaseSourceException When the database cannot be reached or refuses the account.
 	 *
 	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 *
+	 * DriverManager::getConnection() is DBAL's only way to build a connection.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	public function open(DatabaseConnectionSettings $settings): DatabaseConnectionInterface {
 		$driverOptions = [PDO::ATTR_TIMEOUT => $settings->timeoutSeconds];
@@ -155,7 +160,7 @@ class DbalDatabaseConnectionFactory implements DatabaseConnectionFactoryInterfac
 	 *
 	 * @return string
 	 */
-	private static function withoutPassword(string $message, #[\SensitiveParameter] string $password): string {
+	private static function withoutPassword(string $message, #[SensitiveParameter] string $password): string {
 		if ($password === '') {
 			return $message;
 		}

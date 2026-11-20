@@ -223,6 +223,10 @@ class DatabaseAdapter extends AbstractCategoryAdapterProvider {
 	 * @throws DatabaseSourceException When a declaration is unusable or a name repeats.
 	 *
 	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 *
+	 * DatabaseStatement::fromDeclaration() is the statement's named constructor.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	public function statements(array $source): array {
 		$declared = ($source['statements'] ?? []);
@@ -424,30 +428,53 @@ class DatabaseAdapter extends AbstractCategoryAdapterProvider {
 			throw new DatabaseSourceException(message: 'The source needs a database host and a database name.');
 		}
 
-		$port = null;
+		return new DatabaseConnectionSettings(
+			driver: $driver,
+			host: $host,
+			port: self::port(database: $database),
+			dbname: $dbname,
+			user: trim((string) ($database['user'] ?? '')),
+			password: $this->password(source: $source),
+			timeoutSeconds: self::timeout(database: $database, statement: $statement),
+			charset: trim((string) ($database['charset'] ?? ''))
+		);
+	}//end settings()
+
+	/**
+	 * The configured port, or null to use the driver's default.
+	 *
+	 * @param array<string,mixed> $database The source's database settings.
+	 *
+	 * @return int|null
+	 */
+	private static function port(array $database): ?int {
 		if (isset($database['port']) === true && filter_var($database['port'], FILTER_VALIDATE_INT) !== false) {
-			$port = (int) $database['port'];
+			return (int) $database['port'];
 		}
 
+		return null;
+	}//end port()
+
+	/**
+	 * The timeout in seconds: the statement's own, else the source's, else the default, capped.
+	 *
+	 * @param array<string,mixed>    $database  The source's database settings.
+	 * @param DatabaseStatement|null $statement The statement, for its own timeout.
+	 *
+	 * @return int
+	 */
+	private static function timeout(array $database, ?DatabaseStatement $statement): int {
 		$timeout = filter_var(($database['timeout'] ?? null), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 		if ($statement?->timeoutSeconds !== null) {
 			$timeout = $statement->timeoutSeconds;
 		}
+
 		if (is_int($timeout) === false) {
 			$timeout = self::DEFAULT_TIMEOUT;
 		}
 
-		return new DatabaseConnectionSettings(
-			driver: $driver,
-			host: $host,
-			port: $port,
-			dbname: $dbname,
-			user: trim((string) ($database['user'] ?? '')),
-			password: $this->password(source: $source),
-			timeoutSeconds: min($timeout, self::MAX_TIMEOUT),
-			charset: trim((string) ($database['charset'] ?? ''))
-		);
-	}//end settings()
+		return min($timeout, self::MAX_TIMEOUT);
+	}//end timeout()
 
 	/**
 	 * The account's password, resolved from its credential reference.

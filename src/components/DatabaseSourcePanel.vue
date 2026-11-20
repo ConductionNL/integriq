@@ -424,7 +424,7 @@ export default {
 
 .dbSource__sql {
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: anywhere;
 }
 
 .dbSource__tableWrap {

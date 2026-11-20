@@ -68,13 +68,15 @@ class DbalDatabaseConnection implements DatabaseConnectionInterface {
 		try {
 			$result = $this->connection->executeQuery($sql, $parameters, self::dbalTypes(types: $types));
 			$rows = [];
-			while (count($rows) < $maxRows) {
+			$read = 0;
+			while ($read < $maxRows) {
 				$row = $result->fetchAssociative();
 				if ($row === false) {
 					break;
 				}
 
 				$rows[] = $row;
+				$read++;
 			}
 
 			$result->free();

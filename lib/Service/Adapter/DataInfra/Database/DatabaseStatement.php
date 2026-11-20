@@ -98,55 +98,29 @@ final class DatabaseStatement {
 	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
 	 */
 	public static function fromDeclaration(array $declaration): self {
-		$name = trim((string) ($declaration['name'] ?? ''));
-		if (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$/', $name) !== 1) {
-			throw new DatabaseSourceException(message: 'A statement needs a name of letters, digits, dots, dashes or underscores.');
-		}
-
-		$kind = (string) ($declaration['kind'] ?? self::KIND_READ);
-		if (in_array($kind, [self::KIND_READ, self::KIND_WRITE], true) === false) {
-			throw new DatabaseSourceException(message: sprintf('Statement "%s" must be of kind read or write.', $name));
-		}
-
-		$sql = trim((string) ($declaration['sql'] ?? ''));
-		$sql = rtrim($sql, "; \t\n\r");
-		if ($sql === '') {
-			throw new DatabaseSourceException(message: sprintf('Statement "%s" has no SQL.', $name));
-		}
-
-		$code = self::withoutLiteralsAndComments(sql: $sql);
-		if (str_contains($code, ';') === true) {
-			throw new DatabaseSourceException(message: sprintf('Statement "%s" holds more than one statement.', $name));
-		}
-
-		if (str_contains($code, '?') === true) {
-			throw new DatabaseSourceException(message: sprintf('Statement "%s" uses a ? placeholder; name every placeholder (:name).', $name));
-		}
-
+		[$name, $kind] = self::declaredNameAndKind(declaration: $declaration);
+		[$sql, $code] = self::declaredSql(declaration: $declaration, name: $name);
 		$parameters = self::declaredParameters(declaration: $declaration, name: $name);
 
-		$pageKey = trim((string) ($declaration['pageKey'] ?? ''));
-		if ($pageKey === '' || $kind !== self::KIND_READ) {
-			$pageKey = null;
+		$pageKey = null;
+		$reserved = [];
+		$declaredPageKey = trim((string) ($declaration['pageKey'] ?? ''));
+		if ($declaredPageKey !== '' && $kind === self::KIND_READ) {
+			$pageKey = $declaredPageKey;
+			$reserved = [self::AFTER, self::LIMIT];
 		}
 
 		preg_match_all('/(?<![:\w]):([A-Za-z_][A-Za-z0-9_]*)/', $code, $matches);
 		$placeholders = array_values(array_unique($matches[1]));
 
-		$reserved = [];
-		if ($pageKey !== null) {
-			$reserved = [self::AFTER, self::LIMIT];
-			foreach ($reserved as $required) {
-				if (in_array($required, $placeholders, true) === false) {
-					throw new DatabaseSourceException(message: sprintf('Statement "%s" pages on %s, so its SQL must bind :%s.', $name, $pageKey, $required));
-				}
-			}
+		$missing = array_values(array_diff($reserved, $placeholders));
+		if ($missing !== []) {
+			throw new DatabaseSourceException(message: sprintf('Statement "%s" pages on %s, so its SQL must bind :%s.', $name, $pageKey, $missing[0]));
 		}
 
-		foreach ($placeholders as $placeholder) {
-			if (in_array($placeholder, $reserved, true) === false && array_key_exists($placeholder, $parameters) === false) {
-				throw new DatabaseSourceException(message: sprintf('Statement "%s" binds :%s, which it does not declare as a parameter.', $name, $placeholder));
-			}
+		$undeclared = array_values(array_diff($placeholders, $reserved, array_map('strval', array_keys($parameters))));
+		if ($undeclared !== []) {
+			throw new DatabaseSourceException(message: sprintf('Statement "%s" binds :%s, which it does not declare as a parameter.', $name, $undeclared[0]));
 		}
 
 		$pageStart = ($declaration['pageStart'] ?? 0);
@@ -166,6 +140,64 @@ final class DatabaseStatement {
 			placeholders: $placeholders
 		);
 	}//end fromDeclaration()
+
+	/**
+	 * The declared statement name and kind, checked.
+	 *
+	 * @param array<string,mixed> $declaration The declaration.
+	 *
+	 * @return array{0: string, 1: string} The name, and read or write.
+	 *
+	 * @throws DatabaseSourceException When the name is malformed or the kind is neither read nor write.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 */
+	private static function declaredNameAndKind(array $declaration): array {
+		$name = trim((string) ($declaration['name'] ?? ''));
+		if (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$/', $name) !== 1) {
+			throw new DatabaseSourceException(message: 'A statement needs a name of letters, digits, dots, dashes or underscores.');
+		}
+
+		$kind = (string) ($declaration['kind'] ?? self::KIND_READ);
+		if (in_array($kind, [self::KIND_READ, self::KIND_WRITE], true) === false) {
+			throw new DatabaseSourceException(message: sprintf('Statement "%s" must be of kind read or write.', $name));
+		}
+
+		return [$name, $kind];
+	}//end declaredNameAndKind()
+
+	/**
+	 * The declared SQL, trimmed of trailing semicolons and whitespace, and its code
+	 * part (without literals and comments), checked to hold one statement with named
+	 * placeholders.
+	 *
+	 * @param array<string,mixed> $declaration The declaration.
+	 * @param string              $name        The statement name, for the message.
+	 *
+	 * @return array{0: string, 1: string} The SQL and its code part.
+	 *
+	 * @throws DatabaseSourceException When there is no SQL, more than one statement or a ? placeholder.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 */
+	private static function declaredSql(array $declaration, string $name): array {
+		$sql = trim((string) ($declaration['sql'] ?? ''));
+		$sql = rtrim($sql, "; \t\n\r");
+		if ($sql === '') {
+			throw new DatabaseSourceException(message: sprintf('Statement "%s" has no SQL.', $name));
+		}
+
+		$code = self::withoutLiteralsAndComments(sql: $sql);
+		if (str_contains($code, ';') === true) {
+			throw new DatabaseSourceException(message: sprintf('Statement "%s" holds more than one statement.', $name));
+		}
+
+		if (str_contains($code, '?') === true) {
+			throw new DatabaseSourceException(message: sprintf('Statement "%s" uses a ? placeholder; name every placeholder (:name).', $name));
+		}
+
+		return [$sql, $code];
+	}//end declaredSql()
 
 	/**
 	 * The values and types to bind: one per placeholder, nothing else.

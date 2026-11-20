@@ -7337,21 +7337,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	): array {
 		$fetchInfo = ['complete' => true, 'pagesFetched' => 0, 'failureReason' => null];
 
-		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
-		$statement = trim((string) ($sourceConfig['statement'] ?? ''));
-		if ($statement === '') {
-			throw new Exception('A database synchronization needs sourceConfig.statement, the read statement to run.');
-		}
-
-		$parameters = ($sourceConfig['parameters'] ?? []);
-		if (is_array($parameters) === false) {
-			$parameters = [];
-		}
-
-		$pageSize = null;
-		if (isset($sourceConfig['pageSize']) === true && filter_var($sourceConfig['pageSize'], FILTER_VALIDATE_INT) !== false) {
-			$pageSize = (int) $sourceConfig['pageSize'];
-		}
+		[$statement, $parameters, $pageSize] = $this->databaseReadConfig(sourceConfig: ($synchronization['sourceConfig'] ?? []));
 
 		$source = $resolvedSource;
 		if ($source === null) {
@@ -7396,6 +7382,36 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	}//end getAllObjectsFromDatabase()
 
 	/**
+	 * The read statement, its parameters and the page size a database synchronization names.
+	 *
+	 * @param array $sourceConfig The synchronization's sourceConfig.
+	 *
+	 * @return array{0: string, 1: array, 2: int|null} The statement, parameters and page size.
+	 *
+	 * @throws Exception When no statement is named.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-synchronization-reads-from-a-database-page-by-page-req-dbsf-002
+	 */
+	private function databaseReadConfig(array $sourceConfig): array {
+		$statement = trim((string) ($sourceConfig['statement'] ?? ''));
+		if ($statement === '') {
+			throw new Exception('A database synchronization needs sourceConfig.statement, the read statement to run.');
+		}
+
+		$parameters = ($sourceConfig['parameters'] ?? []);
+		if (is_array($parameters) === false) {
+			$parameters = [];
+		}
+
+		$pageSize = null;
+		if (isset($sourceConfig['pageSize']) === true && filter_var($sourceConfig['pageSize'], FILTER_VALIDATE_INT) !== false) {
+			$pageSize = (int) $sourceConfig['pageSize'];
+		}
+
+		return [$statement, $parameters, $pageSize];
+	}//end databaseReadConfig()
+
+	/**
 	 * Writes one object to a `database` target through its declared write statement.
 	 *
 	 * `targetConfig.statement` names the write statement for a save and
@@ -7425,16 +7441,9 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$targetConfig = ($synchronization['targetConfig'] ?? []);
 		$targetId = ($synchronizationContract['targetId'] ?? null);
 
-		$statement = trim((string) ($targetConfig['statement'] ?? ''));
-		if ($action === 'delete') {
-			$statement = trim((string) ($targetConfig['deleteStatement'] ?? ''));
-		}
-
+		$statement = self::databaseTargetStatement(targetConfig: $targetConfig, action: $action);
 		if ($statement === '' && $action === 'delete') {
-			$synchronizationContract['targetId'] = null;
-			$synchronizationContract['targetHash'] = null;
-
-			return $synchronizationContract;
+			return self::withoutDatabaseTarget(contract: $synchronizationContract);
 		}
 
 		if ($statement === '') {
@@ -7455,10 +7464,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		if ($action === 'delete') {
-			$synchronizationContract['targetId'] = null;
-			$synchronizationContract['targetHash'] = null;
-
-			return $synchronizationContract;
+			return self::withoutDatabaseTarget(contract: $synchronizationContract);
 		}
 
 		$idField = (string) ($targetConfig['idField'] ?? 'id');
@@ -7470,6 +7476,40 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return $synchronizationContract;
 	}//end updateTargetDatabase()
+
+	/**
+	 * The write statement a database target names for this action: deleteStatement for a delete, statement otherwise.
+	 *
+	 * @param array       $targetConfig The synchronization's targetConfig.
+	 * @param string|null $action       save or delete.
+	 *
+	 * @return string The statement name, or '' when none is named.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 */
+	private static function databaseTargetStatement(array $targetConfig, ?string $action): string {
+		if ($action === 'delete') {
+			return trim((string) ($targetConfig['deleteStatement'] ?? ''));
+		}
+
+		return trim((string) ($targetConfig['statement'] ?? ''));
+	}//end databaseTargetStatement()
+
+	/**
+	 * The contract with its database target cleared.
+	 *
+	 * @param array $contract The contract.
+	 *
+	 * @return array The contract.
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 */
+	private static function withoutDatabaseTarget(array $contract): array {
+		$contract['targetId'] = null;
+		$contract['targetHash'] = null;
+
+		return $contract;
+	}//end withoutDatabaseTarget()
 
 	/**
 	 * The database adapter, resolved when a database synchronization first needs it.
