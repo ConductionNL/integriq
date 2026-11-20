@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Outbound\Identity\DomainAlignmentCheckerInterface;
+use OCA\Integriq\Outbound\Identity\HeldMessageReleaseInterface;
 use OCA\Integriq\Outbound\Identity\HoldQueueInterface;
 use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\Identity\OptOutRegistryInterface;
@@ -34,6 +35,7 @@ use OCA\Integriq\Outbound\Identity\SenderIdentityServiceInterface;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenServiceInterface;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -48,7 +50,7 @@ use OCP\IUserSession;
 use RuntimeException;
 
 /**
- * Identity, alignment, unsubscribe and withdraw endpoints.
+ * Identity, alignment, unsubscribe, withdraw and release endpoints.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
@@ -71,6 +73,13 @@ class SenderIdentityController extends Controller {
 	public const ACTION_WITHDRAW = 'outbound.withdraw';
 
 	/**
+	 * The ADR-023 action releasing a message held for review is gated by: the send right.
+	 *
+	 * @var string
+	 */
+	public const ACTION_RELEASE = 'outbound.release';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
@@ -84,6 +93,8 @@ class SenderIdentityController extends Controller {
 	 * @param HoldQueueInterface $holdQueue Holds and withdraws a message inside its window.
 	 * @param IL10N $l Translations.
 	 * @param IURLGenerator $urls Builds the confirmation form's target.
+	 * @param HeldMessageReleaseInterface|null $heldRelease Releases a message held for review and sends it;
+	 *                                                      without it a release is refused.
 	 */
 	public function __construct(
 		$appName,
@@ -97,6 +108,7 @@ class SenderIdentityController extends Controller {
 		private readonly HoldQueueInterface $holdQueue,
 		private readonly IL10N $l,
 		private readonly IURLGenerator $urls,
+		private readonly ?HeldMessageReleaseInterface $heldRelease = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -206,6 +218,42 @@ class SenderIdentityController extends Controller {
 		return new JSONResponse(['id' => (string)$record->getUuid(), 'status' => 'withdrawn']);
 
 	}//end withdraw()
+
+	/**
+	 * Release a message a send check held for review, and send it.
+	 *
+	 * @param string $id The outbound message uuid.
+	 *
+	 * @return JSONResponse The release and the send's outcome; 409 when the message is not held for review.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+	 */
+	#[NoAdminRequired]
+	public function release(string $id): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: self::ACTION_RELEASE);
+
+		if ($this->heldRelease === null) {
+			return new JSONResponse(['error' => $this->l->t('Releasing a held message is not available.')], Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		try {
+			$result = $this->heldRelease->release($id, $user->getUID());
+		} catch (DoesNotExistException) {
+			return new JSONResponse(['error' => $this->l->t('No such message.')], Http::STATUS_NOT_FOUND);
+		} catch (RuntimeException $exception) {
+			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_CONFLICT);
+		}
+
+		return new JSONResponse($result);
+
+	}//end release()
 
 	/**
 	 * Show what the link in a message stops, and ask to confirm.

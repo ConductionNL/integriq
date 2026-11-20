@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Settings;
 use OCA\Integriq\Controller\XMLResponse;
 use OCA\Integriq\Service\Call\FeedSource;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Format\ArrayToXml;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationContractService;
@@ -206,7 +207,7 @@ final class JobBoardSetsTest extends TestCase {
 		$listed = ['results' => [$service->executeMapping(mapping: $job, input: $this->fixture(file: 'vacancy-vue-developer.json'))], 'count' => 1, 'page' => 1, 'pages' => 1];
 		$body = $service->executeMapping(mapping: $feed, input: $listed);
 
-		$xml = (new XMLResponse(data: $body))->render();
+		$xml = (new XMLResponse(data: $body, encoder: new ArrayToXml()))->render();
 
 		$this->assertSame((string)file_get_contents(dirname(__DIR__, 2) . '/fixtures/jobboards/indeed-feed.xml'), $xml);
 		$this->assertStringNotContainsString('administrationId', $xml);

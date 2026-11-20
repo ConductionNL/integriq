@@ -38,15 +38,20 @@ use GuzzleHttp\Psr7\Response;
 use OCA\Integriq\Controller\OpenFormulierenController;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitter;
 use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
 use OCA\Integriq\Service\OpenFormulierenIntakeService;
 use OCA\Integriq\Tests\Helpers\DsoConnectionWorld;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\FormSubmitRefusedException;
+use OCA\OpenRegister\Service\Form\FormSubmission;
+use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -96,6 +101,20 @@ class OpenFormulierenConnectionIntakeTest extends TestCase {
 	private string $signature = '';
 
 	/**
+	 * Every create OpenRegister's submit path made: key, writes, payload, the session's uid.
+	 *
+	 * @var list<array<string, mixed>>
+	 */
+	private array $created = [];
+
+	/**
+	 * Answer every submit with this status instead of creating, when set.
+	 *
+	 * @var int|null
+	 */
+	private ?int $refuseWith = null;
+
+	/**
 	 * A world with one Open Formulieren connection whose account holds the rights,
 	 * and an enabled form mapping that every authenticated account can read.
 	 *
@@ -124,6 +143,8 @@ class OpenFormulierenConnectionIntakeTest extends TestCase {
 		$this->objectService = $this->buildWorldObjectService();
 		$this->alerted = [];
 		$this->storedFiles = [];
+		$this->created = [];
+		$this->refuseWith = null;
 
 		// PHPUnit's CLI request body is empty, so a signature over '' is valid.
 		$this->signature = $this->signOpenFormulieren('');
@@ -190,10 +211,51 @@ class OpenFormulierenConnectionIntakeTest extends TestCase {
 			$this->createMock(IUserSession::class),
 			$this->createMock(ActionAuthService::class),
 			$l10n,
-			new NullLogger()
+			new NullLogger(),
+			new DestinationSubmitter(
+				objectService: $this->objectService,
+				fieldMapper: new FormFieldMapper(),
+				formSubmit: $this->formSubmit(),
+				userSession: $this->worldSession,
+				dispatcher: $this->createMock(IEventDispatcher::class)
+			)
 		);
 
 	}//end controller()
+
+	/**
+	 * OpenRegister's submit path as this world sees it: one case per idempotency
+	 * key, created as whoever the session holds at that moment.
+	 *
+	 * @return FormSubmitServiceInterface
+	 */
+	private function formSubmit(): FormSubmitServiceInterface {
+		$fake = $this->createMock(FormSubmitServiceInterface::class);
+		$fake->method('submit')->willReturnCallback(
+			function (FormSubmission $submission, ?string $key = null): array {
+				if ($this->refuseWith !== null) {
+					throw new FormSubmitRefusedException('Refused', $this->refuseWith);
+				}
+
+				foreach ($this->created as $index => $earlier) {
+					if ($earlier['key'] === $key) {
+						return ['reference' => 'CASE-' . ($index + 1), 'id' => 'case-' . ($index + 1)];
+					}
+				}
+
+				$this->created[] = [
+					'key' => $key,
+					'writes' => $submission->writes,
+					'payload' => $submission->payload,
+					'uid' => $this->worldSession->getUser()?->getUID(),
+				];
+
+				return ['reference' => 'CASE-' . count($this->created), 'id' => 'case-' . count($this->created)];
+			}
+		);
+
+		return $fake;
+	}//end formSubmit()
 
 	/**
 	 * The submissions the world holds.
@@ -206,69 +268,45 @@ class OpenFormulierenConnectionIntakeTest extends TestCase {
 	}//end submissions()
 
 	/**
-	 * A correctly signed submission without a login is stored, mapped and
-	 * attached, and every write and every file runs as the connection's account.
+	 * A signed submit without a login creates its case as the connection's
+	 * account, in the same request, and stages no submission.
 	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#scenario-the-submission-is-stored-as-the-configured-account
+	 * @spec openspec/changes/open-formulieren-submits-into-its-case/specs/open-formulieren-intake/spec.md#scenario-a-valid-submit-returns-the-case-reference
 	 */
-	public function testASignedSubmissionWithoutALoginIsStoredAsTheConnectionAccount(): void {
+	public function testASignedSubmissionCreatesItsCaseAsTheConnectionAccount(): void {
 		$this->assertNull($this->worldSession->getUser(), 'precondition: no login');
 
 		$response = $this->controller()->inbound();
 
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertCount(1, $this->submissions());
-		$stored = $this->submissions()[0]->getObject();
-		$this->assertSame('mapped', $stored['status']);
-		$this->assertSame('Melding: Losse tegel', $stored['mappedTitle']);
-		$this->assertSame(['consumer' => 'consumer-of', 'account' => 'of-intake'], $stored['receivedVia']);
-		$this->assertSame('fetched', $stored['attachments'][0]['status']);
-
-		$submissionWriters = array_values(
-			array_unique(
-				array_map(
-					static fn (array $write): ?string => $write['uid'],
-					array_filter($this->worldWrites, static fn (array $write): bool => $write['schema'] === 'openformulieren_submission')
-				)
-			)
+		$this->assertSame(Http::STATUS_CREATED, $response->getStatus());
+		$this->assertSame('CASE-1', $response->getData()['reference']);
+		$this->assertCount(1, $this->created);
+		$this->assertSame('of-sub-1', $this->created[0]['key'], 'the submission id is the idempotency key');
+		$this->assertSame('of-intake', $this->created[0]['uid'], 'the case is created as the connection account');
+		$this->assertSame(
+			['title' => 'Melding: Losse tegel', 'summary' => 'Bij nummer 1', 'channel' => 'web', 'externalReference' => 'of-sub-1'],
+			$this->created[0]['payload']
 		);
-		$this->assertSame(['of-intake'], $submissionWriters, 'every submission write runs as the connection account');
-		$this->assertSame([['name' => 'foto.jpg', 'uid' => 'of-intake']], $this->storedFiles, 'the attachment is stored as the connection account');
+		$this->assertSame(['dossiq', 'case'], [$this->created[0]['writes'][0]['register'], $this->created[0]['writes'][0]['schema']]);
+		$this->assertSame([], $this->submissions(), 'no openformulieren_submission is staged');
 		$this->assertNull($this->worldSession->getUser(), 'the previous (anonymous) user is restored');
 		$this->assertSame([], $this->alerted);
 
-	}//end testASignedSubmissionWithoutALoginIsStoredAsTheConnectionAccount()
+	}//end testASignedSubmissionCreatesItsCaseAsTheConnectionAccount()
 
 	/**
-	 * Every object the intake writes is valid against the real register
-	 * schema, `receivedVia` included, and `receivedVia` accepts nothing else.
+	 * The control: the inbound path writes no `openformulieren_submission` at all.
 	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-3
+	 * @spec openspec/changes/open-formulieren-submits-into-its-case/specs/open-formulieren-intake/spec.md#requirement-an-open-formulieren-submit-must-create-its-case-in-the-inbound-request
 	 */
-	public function testEveryWrittenSubmissionIsValidAgainstTheRegisterSchema(): void {
+	public function testTheInboundPathWritesNoSubmissionObject(): void {
 		$this->controller()->inbound();
 
 		$writes = array_filter($this->worldWrites, static fn (array $write): bool => $write['schema'] === 'openformulieren_submission');
-		$this->assertNotSame([], $writes);
-		foreach ($writes as $write) {
-			$object = array_filter($write['object'], static fn (mixed $value): bool => $value !== null);
-			$this->assertSame([], RegisterSchemaValidator::errors(schemaSlug: 'openformulieren_submission', object: $object));
-		}
+		$this->assertSame([], $writes);
+		$this->assertCount(1, $this->created);
 
-		$this->assertNotSame(
-			[],
-			RegisterSchemaValidator::errors(
-				schemaSlug: 'openformulieren_submission',
-				object: ['formSlug' => 'melding', 'status' => 'mapped', 'receivedVia' => ['consumer' => 'c', 'user' => 'x']]
-			),
-			'receivedVia declares exactly consumer and account'
-		);
-
-	}//end testEveryWrittenSubmissionIsValidAgainstTheRegisterSchema()
+	}//end testTheInboundPathWritesNoSubmissionObject()
 
 	/**
 	 * A bad signature answers 401 and writes nothing.
@@ -399,43 +437,33 @@ class OpenFormulierenConnectionIntakeTest extends TestCase {
 	}//end testTwoConnectionsAnswer503()
 
 	/**
-	 * A write OpenRegister refuses anyway answers 503, so Open Formulieren delivers again.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#scenario-a-submission-that-was-not-stored-is-answered-with-503
+	 * A destination that cannot be written now answers 503 so the sender retries.
 	 */
 	public function testARefusedWriteAnswers503(): void {
-		$this->worldRefuseSubmissionWrites = true;
+		$this->refuseWith = 503;
 
 		$response = $this->controller()->inbound();
 
 		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
 		$this->assertSame('submission_not_stored', $response->getData()['error']);
-		$this->assertSame([], $this->submissions());
+		$this->assertSame([], $this->created);
 		$this->assertSame([['reason' => 'submission_not_stored', 'channel' => 'openformulieren']], $this->alerted);
 
 	}//end testARefusedWriteAnswers503()
 
 	/**
-	 * The same submission delivered twice creates one record.
+	 * A redelivered submit answers with the first case's reference and creates no second case.
 	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#scenario-a-repeated-delivery-creates-no-second-record
+	 * @spec openspec/changes/open-formulieren-submits-into-its-case/specs/open-formulieren-intake/spec.md#scenario-a-redelivered-submit-creates-one-case
 	 */
-	public function testARepeatedDeliveryCreatesNoSecondRecord(): void {
+	public function testARepeatedDeliveryCreatesOneCase(): void {
 		$first = $this->controller()->inbound();
-		$writes = count($this->worldWrites);
-
 		$second = $this->controller()->inbound();
 
-		$this->assertSame(Http::STATUS_OK, $first->getStatus());
-		$this->assertSame(Http::STATUS_OK, $second->getStatus());
-		$this->assertCount(1, $this->submissions());
-		$this->assertSame($first->getData()['id'], $second->getData()['id']);
-		$this->assertSame($writes, count($this->worldWrites), 'the second delivery writes nothing');
-		$this->assertCount(1, $this->storedFiles, 'the attachment is stored once');
+		$this->assertSame(Http::STATUS_CREATED, $first->getStatus());
+		$this->assertSame(Http::STATUS_CREATED, $second->getStatus());
+		$this->assertSame($first->getData()['reference'], $second->getData()['reference']);
+		$this->assertCount(1, $this->created);
 
-	}//end testARepeatedDeliveryCreatesNoSecondRecord()
+	}//end testARepeatedDeliveryCreatesOneCase()
 }//end class

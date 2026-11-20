@@ -286,6 +286,13 @@
           "order": 30
         },
         {
+          "id": "ServiceFetches",
+          "label": "Service fetches",
+          "icon": "CloudSearchOutline",
+          "route": "ServiceFetches",
+          "order": 35
+        },
+        {
           "id": "EgressDestinations",
           "label": "Outbound destinations",
           "icon": "EarthArrowRight",
@@ -1138,6 +1145,48 @@
             }
           },
           {
+            "id": "src-kpis-pacing",
+            "type": "stats-block",
+            "icon": "Gauge",
+            "title": "Pacing",
+            "_note": "sources-outbound-rate-limit-pacing REQ-RLPC-001: the budget the source announced (rateLimitRemaining, reset by the engine when the window passes) and the time calls waited for their paced turn over the last day (sum of call_log.pacedMs, the pacedMsPerSource aggregation). The configured pace itself is a source field and shows in the Connection widget.",
+            "content": {
+              "entries": [
+                {
+                  "title": "Budget left",
+                  "countLabel": "calls in this window",
+                  "register": "integriq",
+                  "schema": "source",
+                  "metric": "sum",
+                  "field": "rateLimitRemaining",
+                  "filter": {
+                    "id": "@objectId"
+                  }
+                },
+                {
+                  "title": "Waited",
+                  "countLabel": "ms for a paced turn, last day",
+                  "register": "integriq",
+                  "schema": "call_log",
+                  "metric": "sum",
+                  "field": "pacedMs",
+                  "filter": {
+                    "source": "@objectId",
+                    "created": {
+                      "gte": "@today-1d"
+                    }
+                  },
+                  "route": {
+                    "name": "SourceLogs",
+                    "query": {
+                      "source": "@objectId"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
             "id": "src-calls",
             "type": "object-list",
             "icon": "Timeline",
@@ -1385,12 +1434,20 @@
             "gridHeight": 6
           },
           {
-            "id": "4",
-            "widgetId": "src-related",
+            "id": "2e",
+            "widgetId": "src-kpis-pacing",
             "gridX": 8,
             "gridY": 8,
             "gridWidth": 4,
-            "gridHeight": 6
+            "gridHeight": 3
+          },
+          {
+            "id": "4",
+            "widgetId": "src-related",
+            "gridX": 8,
+            "gridY": 11,
+            "gridWidth": 4,
+            "gridHeight": 3
           },
           {
             "id": "5",
@@ -1454,6 +1511,12 @@
             "component": "BodyCaptureWindow",
             "title": "Investigation window",
             "placement": "before-body",
+            "colSpan": 12
+          },
+          {
+            "id": "src-database",
+            "component": "DatabaseSourcePanel",
+            "placement": "after-data",
             "colSpan": 12
           },
           {
@@ -1557,6 +1620,18 @@
             }
           },
           {
+            "key": "mcpMethod",
+            "label": "MCP method",
+            "type": "select",
+            "options": [
+              { "label": "Session start", "filter": { "mcpMethod": "initialize" } },
+              { "label": "Tool list", "filter": { "mcpMethod": "tools/list" } },
+              { "label": "Tool call", "filter": { "mcpMethod": "tools/call" } },
+              { "label": "Resource request", "filter": { "mcpMethod": "resources/read" } },
+              { "label": "Prompt request", "filter": { "mcpMethod": "prompts/get" } }
+            ]
+          },
+          {
             "key": "direction",
             "label": "Direction",
             "type": "select",
@@ -1648,8 +1723,14 @@
             "key": "request.url",
             "label": "URL",
             "sortable": false,
-            "width": "40%",
+            "width": "28%",
             "cellClass": "cn-cell--truncate"
+          },
+          {
+            "key": "mcpTool",
+            "label": "MCP tool",
+            "sortable": true,
+            "width": "12%"
           },
           {
             "key": "response.responseTime",
@@ -2618,6 +2699,39 @@
       }
     },
     {
+      "id": "ServiceFetches",
+      "route": "/service-fetches",
+      "type": "index",
+      "title": "Service fetches",
+      "_note": "Beheer > Service fetches (forms-service-fetch-for-apps Task 5, REQ-SF-001, design D5). The serviceFetch schema is readable by administrators only, so the list is empty for everyone else. Create, edit, enable and disable are the index page's built-in form over the schema; Testen is a row action opening TestServiceFetchModal, which posts sample inputs to the admin-only POST /api/service-fetches/{slug}/test and shows the raw answer next to the mapped outputs.",
+      "config": {
+        "register": "integriq",
+        "schema": "serviceFetch",
+        "columns": [
+          "slug",
+          "title",
+          "source",
+          "allowedApps",
+          "enabled"
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "actions": [
+          {
+            "id": "test",
+            "label": "Test",
+            "icon": "PlayOutline",
+            "handler": "testServiceFetchHandler"
+          }
+        ],
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
       "id": "Mappings",
       "route": "/mappings",
       "type": "index",
@@ -3411,6 +3525,14 @@
             "route": "PeppolTransmissions"
           },
           {
+            "id": "DigipoortFilings",
+            "label": "Digipoort filings",
+            "description": "Filings sent to the Belastingdienst and the KvK, and what each recipient answered.",
+            "icon": "FileSendOutline",
+            "category": "protocols",
+            "route": "DigipoortFilings"
+          },
+          {
             "id": "IwmoMessages",
             "label": "iWmo and iJw messages",
             "description": "Care messages in and out, with the answer each one received.",
@@ -4061,6 +4183,68 @@
       }
     },
     {
+      "id": "DigipoortFilings",
+      "route": "/messages/digipoort",
+      "type": "logs",
+      "title": "Digipoort filings",
+      "_note": "connectors-digipoort-sbr-filing REQ-DPS-004: every SBR filing integriq delivered through Digipoort. The row detail shows the status history with its times and the recipient's errors. Columns are declared schema properties; the status colours map the schema's own enum members.",
+      "config": {
+        "register": "integriq",
+        "schema": "sbr_filing",
+        "sortKey": "created",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "created",
+            "label": "Time",
+            "sortable": true,
+            "width": "15%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "recipient",
+            "label": "Recipient",
+            "sortable": true,
+            "width": "14%"
+          },
+          {
+            "key": "filingType",
+            "label": "Filing type",
+            "sortable": true,
+            "width": "16%"
+          },
+          {
+            "key": "deliveryReference",
+            "label": "Delivery reference",
+            "sortable": true,
+            "width": "25%"
+          },
+          {
+            "key": "status",
+            "label": "Status",
+            "sortable": true,
+            "width": "12%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "queued": "info",
+                "delivered": "info",
+                "accepted": "success",
+                "rejected": "error",
+                "failed": "error"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "IwmoMessages",
       "route": "/messages/iwmo",
       "type": "logs",
@@ -4164,7 +4348,7 @@
             "key": "recipientMsisdn",
             "label": "Recipient",
             "sortable": true,
-            "width": "18%"
+            "width": "14%"
           },
           {
             "key": "provider",
@@ -4173,10 +4357,16 @@
             "width": "13%"
           },
           {
+            "key": "sourceSlug",
+            "label": "Source",
+            "sortable": true,
+            "width": "12%"
+          },
+          {
             "key": "templateId",
             "label": "Template",
             "sortable": true,
-            "width": "18%"
+            "width": "10%"
           },
           {
             "key": "status",

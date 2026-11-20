@@ -36,9 +36,10 @@ use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitterInterface;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\OpenFormulierenIntakeServiceInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Controller;
@@ -78,6 +79,7 @@ class OpenFormulierenController extends Controller {
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 * @param DestinationSubmitterInterface $submitter Creates the case in the inbound request.
 	 */
 	public function __construct(
 		string $appName,
@@ -89,6 +91,7 @@ class OpenFormulierenController extends Controller {
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
+		private readonly DestinationSubmitterInterface $submitter,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -103,10 +106,14 @@ class OpenFormulierenController extends Controller {
 	 * who every write runs as, inside OpenRegister's `runAs()`. A bad signature
 	 * answers 401 before any state change. A missing connection, account or
 	 * right answers 503 before anything is written, so Open Formulieren
-	 * delivers again. A write OpenRegister refuses anyway answers 503 too.
+	 * delivers again. The submission is mapped and its case created in this
+	 * request through OpenRegister's form submit path, with the submission id
+	 * as idempotency key and `externalReference`: 201 with the case reference,
+	 * or the refusal's status (422 with findings) so Open Formulieren reports
+	 * the failure on its side. No submission is stored to process later.
 	 * Expected JSON body: see design.md §5 of open-formulieren-intake.
 	 *
-	 * @return JSONResponse The persisted `openformulieren_submission` record, or a 400/401/503 error envelope.
+	 * @return JSONResponse 201 with OpenRegister's answer (reference, id, ...), or a 400/401/422/503 error envelope.
 	 *
 	 * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-signed-inbound-submission-webhook-req-001
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#requirement-the-intake-acts-as-the-open-formulieren-connections-account-req-006
@@ -115,7 +122,8 @@ class OpenFormulierenController extends Controller {
 	#[PublicPage]
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function inbound(): JSONResponse {
-		$identity = $this->identify(rawBody: $this->getRawContent());
+		$rawBody  = $this->getRawContent();
+		$identity = $this->identify(rawBody: $rawBody);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
@@ -131,88 +139,57 @@ class OpenFormulierenController extends Controller {
 			);
 		}
 
-		return $this->storeSubmission(identity: $identity, body: $body);
+		return $this->submitCase(identity: $identity, body: $body, payloadHash: hash('sha256', $rawBody));
 	}//end inbound()
 
 	/**
-	 * Store the submission as the connection's account and answer the stored
-	 * record, or 503 when it was not stored.
+	 * Create the case as the connection's account and answer 201, or the refusal.
 	 *
-	 * @param DsoIdentity          $identity The authenticated connection.
-	 * @param array<string, mixed> $body     The submission payload.
+	 * @param DsoIdentity          $identity    The authenticated consumer.
+	 * @param array<string, mixed> $body        The decoded body.
+	 * @param string               $payloadHash The sha256 of the raw body, for the audit log.
 	 *
-	 * @return JSONResponse The record with its id, or the 503 answer.
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/open-formulieren-submits-into-its-case/specs/open-formulieren-intake/spec.md#requirement-an-open-formulieren-submit-must-create-its-case-in-the-inbound-request
 	 */
-	private function storeSubmission(DsoIdentity $identity, array $body): JSONResponse {
+	private function submitCase(DsoIdentity $identity, array $body, string $payloadHash): JSONResponse {
 		$submissionMeta = (array)($body['submission'] ?? []);
 		try {
-			$submission = $this->ingestAs(identity: $identity, body: $body);
+			$answer = $this->connection->runAs(
+				$identity->account,
+				fn (): array => $this->submitter->submit(
+					formSlug: (string)($body['form']['slug'] ?? ''),
+					submissionId: (string)($submissionMeta['uuid'] ?? ''),
+					values: (array)($body['values'] ?? []),
+					payloadHash: $payloadHash
+				)
+			);
+		} catch (FormSubmitRefusedException $refusal) {
+			return $this->refused(refusal: $refusal, submissionMeta: $submissionMeta);
 		} catch (Throwable $exception) {
 			return $this->notStored(submissionMeta: $submissionMeta, reason: $exception->getMessage());
 		}
 
-		if ($submission instanceof ObjectEntity === false || (string)$submission->getUuid() === '') {
-			return $this->notStored(submissionMeta: $submissionMeta, reason: 'ingest returned an object without a uuid');
-		}
-
-		return new JSONResponse($submission->getObject() + ['id' => $submission->getUuid()]);
-	}//end storeSubmission()
+		return new JSONResponse($answer, Http::STATUS_CREATED);
+	}//end submitCase()
 
 	/**
-	 * Ingest the submission inside OpenRegister's `runAs()` for the
-	 * connection's account.
+	 * The answer to a refused submit: OpenRegister's status and body; a 5xx
+	 * refusal is answered as "not stored" so Open Formulieren delivers again.
 	 *
-	 * @param DsoIdentity          $identity The authenticated connection.
-	 * @param array<string, mixed> $body     The submission payload.
+	 * @param FormSubmitRefusedException $refusal        The refusal.
+	 * @param array<string, mixed>       $submissionMeta The submission metadata.
 	 *
-	 * @return mixed What the intake service stored.
+	 * @return JSONResponse
 	 */
-	private function ingestAs(DsoIdentity $identity, array $body): mixed {
-		return $this->connection->runAs(
-			$identity->account,
-			fn (): mixed => $this->intakeService->ingest(
-				formSlug: (string)($body['form']['slug'] ?? ''),
-				formUuid: $this->formUuidOf(body: $body),
-				submissionMeta: (array)($body['submission'] ?? []),
-				values: (array)($body['values'] ?? []),
-				attachmentRefs: (array)($body['attachments'] ?? []),
-				authContext: $this->authContextOf(body: $body),
-				identity: $identity
-			)
-		);
-	}//end ingestAs()
-
-	/**
-	 * The form uuid as a string, or null when the payload has none.
-	 *
-	 * @param array<string, mixed> $body The submission payload.
-	 *
-	 * @return string|null
-	 */
-	private function formUuidOf(array $body): ?string {
-		$formUuid = ($body['form']['uuid'] ?? null);
-		if ($formUuid === null) {
-			return null;
+	private function refused(FormSubmitRefusedException $refusal, array $submissionMeta): JSONResponse {
+		if ($refusal->getStatus() >= 500) {
+			return $this->notStored(submissionMeta: $submissionMeta, reason: $refusal->getMessage());
 		}
 
-		return (string)$formUuid;
-	}//end formUuidOf()
-
-	/**
-	 * The payload's `auth` block, or null when it is not an object.
-	 *
-	 * @param array<string, mixed> $body The submission payload.
-	 *
-	 * @return array<string, mixed>|null
-	 */
-	private function authContextOf(array $body): ?array {
-		$authContext = ($body['auth'] ?? null);
-		if (is_array($authContext) === false) {
-			return null;
-		}
-
-		return $authContext;
-	}//end authContextOf()
+		return new JSONResponse(['error' => 'submission_refused'] + $refusal->toBody(), $refusal->getStatus());
+	}//end refused()
 
 	/**
 	 * Authenticate the submission against the Open Formulieren connection.

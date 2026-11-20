@@ -13,7 +13,7 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
   - GIVEN the channel select WHEN it opens THEN it lists only what `GET /api/intake/channels` returns
 - [x] Implement
   - `IntakeRoutingRules` is `type: index` with `slots.form-dialog: IntakeRuleEditorModal`; the dialog saves through `saveRule()` (`src/modals/v2/intakeRuleApi.js`) and maps a refusal onto its field (`src/modals/v2/intakeRuleDraft.js`).
-- [ ] Test (Vitest done in `tests/vitest/intakeRuleDraft.spec.js` and `tests/vitest/intakeRoutingEditor.spec.js`; e2e left. Vitest on the dialog payload and error mapping; `tests/e2e/intake-routing-rules.spec.ts`)
+- [ ] Test (Vitest done in `tests/vitest/intakeRuleDraft.spec.js` and `tests/vitest/intakeRoutingEditor.spec.js`; e2e written (not run here: it needs a live instance). Vitest on the dialog payload and error mapping; `tests/e2e/intake-routing-rules.spec.ts`)
 
 ### Task 2: Reorder, enable and delete from the list
 - **spec_ref**: openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-an-administrator-writes-a-routing-rule-on-the-intake-routing-page-req-ire-001
@@ -23,7 +23,7 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
   - GIVEN an enabled rule WHEN the administrator disables it THEN `firstMatchingRule()` no longer returns it
 - [x] Implement
   - Move up, Move down, Enable and Disable row actions (`src/handlers/intakeRuleHandlers.js`) write through `saveRule()`; delete is the built-in action, copy is off.
-- [ ] Test (Vitest on the handlers done in `tests/vitest/intakeRoutingEditor.spec.js`; e2e left. `tests/e2e/intake-routing-rules.spec.ts`)
+- [ ] Test (Vitest on the handlers done in `tests/vitest/intakeRoutingEditor.spec.js`; e2e written (not run here: it needs a live instance). `tests/e2e/intake-routing-rules.spec.ts`)
 
 ### Task 3: Test a draft rule
 - **spec_ref**: openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-draft-rule-is-tested-against-a-sample-message-without-side-effects-req-ire-002
@@ -33,7 +33,7 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
   - GIVEN any test WHEN it completes THEN no object is written and no `IntakeMessageRoutedEvent` is dispatched
 - [x] Implement
   - Server half: `POST /api/intake/routing-rules/test` on `IntakeChannelsController::testRule()`. Editor half: the "Test this rule" section of `IntakeRuleEditorModal`, with typed text or a held message as the sample.
-- [ ] Test (PHPUnit done in `tests/Unit/Controller/IntakeRuleTestAndRouteAgainTest.php`; e2e left. PHPUnit on `testRule()` asserting no `saveObject` and no `dispatchTyped` call; e2e in `tests/e2e/intake-routing-rules.spec.ts`)
+- [ ] Test (PHPUnit done in `tests/Unit/Controller/IntakeRuleTestAndRouteAgainTest.php`; e2e written (not run here: it needs a live instance). PHPUnit on `testRule()` asserting no `saveObject` and no `dispatchTyped` call; e2e in `tests/e2e/intake-routing-rules.spec.ts`)
 
 ### Task 4: Keep a held message's files
 - **spec_ref**: openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-held-message-is-routed-again-on-request-with-its-files-req-ire-003
@@ -53,7 +53,7 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
   - GIVEN a saved rule WHEN nobody chooses "Route again" THEN held messages stay held
 - [x] Implement
   - Server half: `IntakeRoutingService::reroute()`, `POST /api/intake/messages/{id}/route` and `POST /api/intake/messages/route`. Inbox half: `IntakeMessageRowActions` (row, held and failed only) and `IntakeMessageActions` with `IntakeRouteAgainModal` (a selection, answered per message). The inbox stays a log page, so the action files sit in `src/components/intake/` and `src/modals/Intake/` rather than `src/handlers/actionHandlers.js`.
-- [ ] Test (PHPUnit done in `tests/Unit/Intake/IntakeRerouteTest.php`; e2e left. PHPUnit on `reroute()` with files read back; `tests/e2e/intake-routing-rules.spec.ts`)
+- [ ] Test (PHPUnit done in `tests/Unit/Intake/IntakeRerouteTest.php`; e2e written (not run here: it needs a live instance). PHPUnit on `reroute()` with files read back; `tests/e2e/intake-routing-rules.spec.ts`)
 
 ### Task 6: The Outlook add-in manifest and task pane
 - **spec_ref**: openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-an-outlook-user-sends-the-open-message-to-intake-from-a-task-pane-req-ire-004
@@ -72,7 +72,7 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
 - **acceptance_criteria**:
   - GIVEN demo data loaded WHEN an administrator opens "Intake routing" THEN three rules name `teams`, `public-space-report` and `form-submission`, and one of them is disabled
 - [x] Implement
-- [ ] Test (`tests/validate-register.js` and `tests/Unit/Settings/SeededRoutingRulesTest.php` pass; e2e left. `tests/validate-register.js`; `tests/e2e/intake-routing-rules.spec.ts`)
+- [ ] Test (`tests/validate-register.js` and `tests/Unit/Settings/SeededRoutingRulesTest.php` pass; e2e written (not run here: it needs a live instance). `tests/validate-register.js`; `tests/e2e/intake-routing-rules.spec.ts`)
 
 ### Task 8: Import a saved .eml or .msg file from the inbox page
 - **spec_ref**: openspec/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
@@ -83,7 +83,7 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
   - GIVEN a user without the right WHEN they open the inbox THEN the import action is not offered
 - [x] Implement
   - `ImportMailFileModal` posts the file to `/api/mail-intake/import` under a picked mailbox. `MailImportAction` offers it on the mail inbox (`actionsComponent`) and inside the intake inbox's actions, only after `GET /api/mail-intake/import/options` (new, on `MailIntakeController::importOptions()`) says the user holds `mail.import`.
-- [ ] Test (Vitest in `tests/vitest/mailImportFile.spec.js` and PHPUnit in `tests/Unit/Controller/MailImportOptionsTest.php` done; e2e left. `tests/e2e/mail-intake-import.spec.ts`)
+- [ ] Test (Vitest in `tests/vitest/mailImportFile.spec.js` and PHPUnit in `tests/Unit/Controller/MailImportOptionsTest.php` done; e2e written (not run here: it needs a live instance). `tests/e2e/mail-intake-import.spec.ts`)
 
 ## Verification
 

@@ -24,6 +24,8 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\ObjectRightsService;
+use OCA\Integriq\Service\ObjectRightsServiceInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
@@ -34,6 +36,8 @@ use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
+use OCA\Integriq\Service\Chat\TalkMessageSource;
+use OCA\Integriq\Service\Chat\TalkMessageSourceInterface;
 use OCA\Integriq\Service\AgentTools\AgentActionStore;
 use OCA\Integriq\Service\AgentTools\AgentActionStoreInterface;
 use OCA\Integriq\Service\AgentTools\AgentBatchGate;
@@ -94,11 +98,15 @@ use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistryInterface;
+use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
+use OCA\Integriq\Service\Extension\ConnectorExtensionsInterface;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
+use OCA\Integriq\Service\Digipoort\SbrFilingService;
+use OCA\Integriq\Service\Digipoort\SbrFilingServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
@@ -142,6 +150,8 @@ use OCA\Integriq\Service\FlowGraphMigrationService;
 use OCA\Integriq\Service\FlowGraphMigrationServiceInterface;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\FlowRunnerServiceInterface;
+use OCA\Integriq\Service\Format\ArrayToXml;
+use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Forms\FormsSyncAdapterInterface;
 use OCA\Integriq\Service\FscCallService;
@@ -172,6 +182,8 @@ use OCA\Integriq\Service\Kiss\CtiEventIntake;
 use OCA\Integriq\Service\Kiss\CtiEventIntakeInterface;
 use OCA\Integriq\Service\ListenerSchemaResolver;
 use OCA\Integriq\Service\ListenerSchemaResolverInterface;
+use OCA\Integriq\Service\LookupAllowlist;
+use OCA\Integriq\Service\LookupAllowlistInterface;
 use OCA\Integriq\Service\Lti\LtiAgsService;
 use OCA\Integriq\Service\Lti\LtiAgsServiceInterface;
 use OCA\Integriq\Service\Lti\LtiKeyService;
@@ -206,6 +218,12 @@ use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCA\Integriq\Service\Mtls\MtlsTransportServiceInterface;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\Integriq\Service\NotificatiesSubscriberServiceInterface;
+use OCA\Integriq\Service\OAuth\IssuerKeyService;
+use OCA\Integriq\Service\OAuth\IssuerKeyServiceInterface;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadata;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadataInterface;
+use OCA\Integriq\Service\OAuth\TokenIssuer;
+use OCA\Integriq\Service\OAuth\TokenIssuerInterface;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandlerInterface;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
@@ -216,6 +234,8 @@ use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandlerInterface;
 use OCA\Integriq\Service\OpenFormulierenIntakeService;
 use OCA\Integriq\Service\OpenFormulierenIntakeServiceInterface;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitter;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitterInterface;
 use OCA\Integriq\Service\OsoService;
 use OCA\Integriq\Service\OsoServiceInterface;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
@@ -301,6 +321,12 @@ use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
 use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
 use OCA\Integriq\Service\SmsDispatchService;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
+use OCA\Integriq\Service\NotifyNlEmailService;
+use OCA\Integriq\Service\NotifyNlEmailServiceInterface;
+use OCA\Integriq\Service\SmsStatusCallbackService;
+use OCA\Integriq\Service\SmsStatusCallbackServiceInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
+use OCA\Integriq\Service\Sms\SmsProviderRegistryInterface;
 use OCA\Integriq\Service\SoftwareCatalogueService;
 use OCA\Integriq\Service\SoftwareCatalogueServiceInterface;
 use OCA\Integriq\Service\SourceDestructionService;
@@ -336,6 +362,8 @@ use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
 use OCA\Integriq\Service\Tables\TablesSyncAdapterInterface;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DatabaseConnectionFactoryInterface;
+use OCA\Integriq\Service\Adapter\DataInfra\Database\DbalDatabaseConnectionFactory;
 use OCA\Integriq\Service\UserService;
 use OCA\Integriq\Service\UserServiceInterface;
 use OCA\Integriq\Service\UwlrEduVService;
@@ -385,6 +413,7 @@ class ServiceRegistrarTest extends TestCase {
 		AuthenticationServiceInterface::class => AuthenticationService::class,
 		SoftwareCatalogueServiceInterface::class => SoftwareCatalogueService::class,
 		OpenFormulierenIntakeServiceInterface::class => OpenFormulierenIntakeService::class,
+		DestinationSubmitterInterface::class => DestinationSubmitter::class,
 		LtiKeyServiceInterface::class => LtiKeyService::class,
 		CardfeedSyncServiceInterface::class => CardfeedSyncService::class,
 		ExchangeJobServiceInterface::class => ExchangeJobService::class,
@@ -393,12 +422,16 @@ class ServiceRegistrarTest extends TestCase {
 		IwmoIjwSyncServiceInterface::class => IwmoIjwSyncService::class,
 		StufZdsOutboundInterface::class => StufZdsOutbound::class,
 		SmsDispatchServiceInterface::class => SmsDispatchService::class,
+		NotifyNlEmailServiceInterface::class => NotifyNlEmailService::class,
+		SmsStatusCallbackServiceInterface::class => SmsStatusCallbackService::class,
+		SmsProviderRegistryInterface::class => SmsProviderRegistry::class,
 		StufProviderReceiverInterface::class => StufProviderReceiver::class,
 		DigitalPostServiceInterface::class => DigitalPostService::class,
 		ExchangeRejectionServiceInterface::class => ExchangeRejectionService::class,
 		ConfigurationImportPreviewServiceInterface::class => ConfigurationImportPreviewService::class,
 		ExecutionTraceServiceInterface::class => ExecutionTraceService::class,
 		DocumentGenerationServiceInterface::class => DocumentGenerationService::class,
+		SbrFilingServiceInterface::class => SbrFilingService::class,
 		ObjectEndpointHandlerInterface::class => ObjectEndpointHandler::class,
 		ExchangeJobRunnerInterface::class => ExchangeJobRunner::class,
 		ConnectionRegistryServiceInterface::class => ConnectionRegistryService::class,
@@ -408,6 +441,9 @@ class ServiceRegistrarTest extends TestCase {
 		UwlrEduVServiceInterface::class => UwlrEduVService::class,
 		PaymentIntentServiceInterface::class => PaymentIntentService::class,
 		EudiIssuerKeyServiceInterface::class => EudiIssuerKeyService::class,
+		TokenIssuerInterface::class => TokenIssuer::class,
+		IssuerKeyServiceInterface::class => IssuerKeyService::class,
+		ProtectedResourceMetadataInterface::class => ProtectedResourceMetadata::class,
 		VerzuimloketServiceInterface::class => VerzuimloketService::class,
 		LtiPlatformLoginServiceInterface::class => LtiPlatformLoginService::class,
 		RodServiceInterface::class => RodService::class,
@@ -422,6 +458,7 @@ class ServiceRegistrarTest extends TestCase {
 		BerichtenboxSourceSettingsInterface::class => BerichtenboxSourceSettings::class,
 		ConnectionMonitorServiceInterface::class => ConnectionMonitorService::class,
 		TablesSyncAdapterInterface::class => TablesSyncAdapter::class,
+		DatabaseConnectionFactoryInterface::class => DbalDatabaseConnectionFactory::class,
 		StufZdsConfirmationReceiverInterface::class => StufZdsConfirmationReceiver::class,
 		FscCallServiceInterface::class => FscCallService::class,
 		ConnectionStoreInterface::class => ConnectionStore::class,
@@ -455,11 +492,13 @@ class ServiceRegistrarTest extends TestCase {
 		UnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
 		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
+		TalkMessageSourceInterface::class => TalkMessageSource::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
 		CallerSearchInterface::class => ConfiguredCallerSearch::class,
 		IntakeGroupsInterface::class => IntakeGroups::class,
 		ObjecttypeEndpointHandlerInterface::class => ObjecttypeEndpointHandler::class,
 		ActionAuthServiceInterface::class => ActionAuthService::class,
+		ObjectRightsServiceInterface::class => ObjectRightsService::class,
 		LtiNrpsServiceInterface::class => LtiNrpsService::class,
 		RecordProvenanceServiceInterface::class => RecordProvenanceService::class,
 		SubscriptionRequestHandlerInterface::class => SubscriptionRequestHandler::class,
@@ -510,6 +549,7 @@ class ServiceRegistrarTest extends TestCase {
 		ExchangeTargetCatalogueInterface::class => ExchangeTargetCatalogue::class,
 		MessageValidationServiceInterface::class => MessageValidationService::class,
 		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
+		ConnectorExtensionsInterface::class => ConnectorExtensionCollector::class,
 		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
 		SubscriptionRegistryInterface::class => SubscriptionRegistry::class,
 		DocumentProviderRegistryInterface::class => DocumentGenerationProviderRegistry::class,
@@ -519,6 +559,8 @@ class ServiceRegistrarTest extends TestCase {
 		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
 		PhoneNumberNormaliserInterface::class => E164PhoneNumberNormaliser::class,
 		CloudEventEmitterInterface::class => EventService::class,
+		LookupAllowlistInterface::class => LookupAllowlist::class,
+		XmlEncoderInterface::class => ArrayToXml::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 
@@ -530,6 +572,7 @@ class ServiceRegistrarTest extends TestCase {
 		'OCA\\Integriq\\Service\\SettingsService',
 		'OCA\\Integriq\\Service\\Registry\\SubscriptionRegistry',
 		'OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistry',
+		'OCA\\Integriq\\Service\\Payment\\PaymentProviderRegistry',
 		'OCA\\Integriq\\Service\\Rod\\RodProviderRegistry',
 		'OCA\\Integriq\\Service\\Verzuimloket\\VerzuimloketProviderRegistry',
 		'OCA\\Integriq\\Service\\Oso\\OsoProviderRegistry',

@@ -62,6 +62,20 @@ class GatherContractTest extends TestCase {
 	];
 
 	/**
+	 * Connector drafts blocked on a capability or a credential (Wave 2 and 3).
+	 *
+	 * @var array<int, string>
+	 */
+	private const DRAFTS = [
+		'ireland-etenders-connector.json',
+		'canada-canadabuys-connector.json',
+		'spain-placsp-connector.json',
+		'italy-anac-connector.json',
+		'belgium-connector.json',
+		'norway-doffin-connector.json',
+	];
+
+	/**
 	 * Transport-only seed sources a leaf provider calls live.
 	 *
 	 * @var array<string, string> fragment => source slug
@@ -135,13 +149,13 @@ class GatherContractTest extends TestCase {
 	}//end allSynchronizationsAndJobs()
 
 	/**
-	 * The ten connectors as a data provider.
+	 * The Wave-0 connectors and the drafts as a data provider.
 	 *
 	 * @return array<string, array{0: string}>
 	 */
 	public static function connectorProvider(): array {
 		$cases = [];
-		foreach (self::CONNECTORS as $filename) {
+		foreach (array_merge(self::CONNECTORS, self::DRAFTS) as $filename) {
 			$cases[$filename] = [$filename];
 		}
 
@@ -201,6 +215,64 @@ class GatherContractTest extends TestCase {
 		$this->assertNotSame('', trim($comment), $filename . ' must document itself in $comment.');
 
 	}//end testTheConnectorCarriesAComment()
+
+	/**
+	 * The drafts as a data provider.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function draftProvider(): array {
+		$cases = [];
+		foreach (self::DRAFTS as $filename) {
+			$cases[$filename] = [$filename];
+		}
+
+		return $cases;
+	}//end draftProvider()
+
+	/**
+	 * A draft ships with its Source and its Job switched off, says in its
+	 * `$comment` which gap or credential holds it back, and carries no
+	 * credential value.
+	 *
+	 * @param string $filename The fragment's basename.
+	 *
+	 * @dataProvider draftProvider
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/native-data-gathering-provider/specs/native-data-gathering-provider/spec.md#requirement-a-connector-blocked-on-an-unbuilt-capability-ships-disabled
+	 */
+	public function testADraftShipsDisabledWithItsGapNamed(string $filename): void {
+		$fragment = $this->fragment(filename: $filename);
+
+		foreach (['source', 'job'] as $schema) {
+			$objects = $this->objects(fragment: $fragment, schema: $schema);
+			$this->assertNotEmpty(actual: $objects, message: $filename . ' must ship a ' . $schema . '.');
+			foreach ($objects as $slug => $object) {
+				$this->assertFalse(
+					condition: ($object['isEnabled'] ?? null),
+					message: $filename . ' ' . $schema . ' ' . $slug . ' must ship isEnabled false.'
+				);
+			}
+		}
+
+		$this->assertMatchesRegularExpression(
+			pattern: '/^INTEGRIQ DRAFT .*(GAP|PARKED)/',
+			string: (string)$fragment['$comment'],
+			message: $filename . ' must name its gap or why it is parked.'
+		);
+
+		$configuration = json_encode(
+			value: array_column(array: $this->objects(fragment: $fragment, schema: 'source'), column_key: 'configuration')
+		);
+		$this->assertDoesNotMatchRegularExpression(
+			pattern: '/"client_(id|secret)":"(?!<PLACEHOLDER>)/',
+			string: (string)$configuration,
+			message: $filename . ' must not ship a credential value.'
+		);
+
+	}//end testADraftShipsDisabledWithItsGapNamed()
 
 	/**
 	 * A transport-only seed source is never the source of a Synchronization,
