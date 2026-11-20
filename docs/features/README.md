@@ -8,11 +8,14 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 |---------|-------------|--------|
 | [Sources](sources.md) | External API connections with multi-protocol authentication | Implemented |
 | [Endpoints](endpoints.md) | Expose reverse-proxy API paths with rule-based logic | Implemented |
+| [MCP tool servers](mcp-gateway.md) | Publish an outside MCP tool server behind the gateway, with per-tool limits and a call log by tool | Implemented |
 | [Mappings](mappings.md) | Twig-powered data transformation between schemas | Implemented |
 | [Synchronizations](synchronizations.md) | Scheduled and event-driven source-to-target sync | Implemented |
 | [Reliability](reliability.md) | Retry policy, per-Source circuit breaker, sync dead letters | Implemented |
 | [Rules](rules.md) | Authentication, file handling, locking, and audit trail rules | Implemented |
+| [Consumer tokens](consumer-tokens.md) | OpenID Connect and JWKS key sources, client credentials tokens from integriq, protected-resource metadata and scopes | Implemented |
 | [Approvals](approvals.md) | Pause an endpoint call or a synchronization until a person approves it | Implemented |
+| [Developer portal](developer-portal.md) | Developers browse public API products, create applications and request access; subscribers are told about product changes | Implemented |
 | [Jobs](jobs.md) | Cron-based scheduled task execution | Implemented |
 | [Data gathering](data-gathering.md) | Scheduled feeds filled into a register: the connector contract, the ten shipped connectors, and gathering versus leaf providers | Implemented |
 | [Flow nodes](flow-nodes.md) | Contributed step types for OpenRegister's flow engine | Implemented |
@@ -37,6 +40,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Objecten API](objecten-api.md) | The VNG Objecten and Objecttypen APIs over your registers, one token per caller | Implemented |
 | [ZGW consumer sets](zgw-sets.md) | Read a ZGW store (Zaken, Documenten, Catalogi, Besluiten, Objecten) into a schema you choose, in the store's own shape, and write changes back | Partial |
 | [Case system for meeting apps](case-system.md) | A `case-system` source answers a meeting app's five case operations through the ZGW Zaken and Documenten APIs, or from test data | Implemented |
+| [Digipoort SBR filing](digipoort-sbr-filing.md) | File XBRL instances with the Belastingdienst and the KvK through Digipoort, and report every status back | Implemented |
 | [ECB exchange rates](exchange-rates.md) | The daily euro reference rates of the European Central Bank, stored as objects and answered to a sibling app for a currency pair on a date | Implemented |
 | [Connection calls and route distance](connection-calls.md) | Other apps call a connection they declared, and ask the road distance between two postcodes, without holding a credential | Implemented |
 | [Web shop orders](webshop-orders.md) | WooCommerce and Shopify orders arrive in shillinq as web shop orders, refunds included | Partial |

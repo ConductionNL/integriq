@@ -1,0 +1,175 @@
+{
+  "$comment": "ADR-037 register fragment (sources-database-adapter, row integriq:src-database). Merges onto `source` the connection settings of a database source (`database`) and the statements an administrator declares on it (`statements`), and corrects the `type` description: 'database' is dispatched by DatabaseAdapter, and 'file' is dropped until something reads it (design D5). The password is never a field here: it is a credential reference under configuration.authentication.password, resolved through the credential broker per call. Does NOT edit lib/Settings/integriq_register.json.",
+  "components": {
+    "schemas": {
+      "source": {
+        "version": "1.9.0",
+        "properties": {
+          "type": {
+            "description": "Source kind. CallService dispatches 'api' (default HTTP) and 'soap' (SOAPService dispatch); every other recognised type is dispatched by its own service: 'database' (a relational database read and written through the statements the source declares, dispatched by DatabaseAdapter, not via CallService), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit. Log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam. Not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveRequest(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService. Not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService. Not via CallService), 'sms' (SMS channel. NotifyNL or sandbox, dispatched directly by SmsDispatchService. Not via CallService), 'payment' (live payment provider. Log/sandbox or Mollie. Dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API. Log/sandbox or generic REST, dispatched directly by KissSyncService. Not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound(). Not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge. Log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService. Not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing. Log/sandbox or generic REST, dispatched directly by FscCallService. Not via CallService), 'feed' (a feed other systems read, such as a job board's vacancy feed: a call answers \"published in feed\" with the location as its link and sends nothing, answered in-process by CallService through FeedSource). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "examples": [
+              "api",
+              "database",
+              "fsc",
+              "intake-channel",
+              "iwmo-ijw",
+              "kiss",
+              "mailbox",
+              "open-formulieren",
+              "payment",
+              "peppol",
+              "psd2",
+              "sms",
+              "soap",
+              "dso",
+              "case-system"
+            ]
+          },
+          "database": {
+            "type": "object",
+            "title": "Database connection",
+            "description": "Where a database source connects: driver, host, port, database name and account. The password is a credential reference under configuration.authentication.password. Use a read-only account unless the source declares write statements.",
+            "properties": {
+              "driver": {
+                "type": "string",
+                "enum": [
+                  "pdo_pgsql",
+                  "pdo_mysql",
+                  "pdo_sqlsrv"
+                ],
+                "title": "Driver",
+                "description": "pdo_pgsql for PostgreSQL, pdo_mysql for MySQL and MariaDB, pdo_sqlsrv for Microsoft SQL Server"
+              },
+              "host": {
+                "type": "string",
+                "title": "Host",
+                "description": "The database server's host name"
+              },
+              "port": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535,
+                "title": "Port",
+                "description": "Leave empty for the driver's default port"
+              },
+              "dbname": {
+                "type": "string",
+                "title": "Database name"
+              },
+              "user": {
+                "type": "string",
+                "title": "Account",
+                "description": "The account integriq connects as. Prefer a read-only account"
+              },
+              "charset": {
+                "type": "string",
+                "title": "Character set",
+                "description": "The client character set, for example utf8mb4. Leave empty for the driver's default"
+              },
+              "timeout": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 300,
+                "default": 30,
+                "title": "Timeout (seconds)",
+                "description": "How long connecting and each statement may take, unless a statement sets its own"
+              }
+            }
+          },
+          "statements": {
+            "type": "array",
+            "default": [],
+            "title": "Statements",
+            "description": "The only statements integriq runs against this database. A synchronization or flow names one and sends values for its parameters, never SQL.",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "kind",
+                "sql"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$",
+                  "title": "Name",
+                  "description": "How synchronizations and flows refer to this statement"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "read",
+                    "write"
+                  ],
+                  "default": "read",
+                  "title": "Kind"
+                },
+                "sql": {
+                  "type": "string",
+                  "title": "SQL",
+                  "description": "One statement with named placeholders (:name). A read that pages binds :after and :limit, for example: SELECT id, zaaknummer FROM zaken WHERE id > :after ORDER BY id LIMIT :limit"
+                },
+                "parameters": {
+                  "type": "array",
+                  "default": [],
+                  "title": "Parameters",
+                  "description": "Every placeholder other than :after and :limit, with its type",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "title": "Name"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "string",
+                          "integer",
+                          "number",
+                          "boolean"
+                        ],
+                        "default": "string",
+                        "title": "Type"
+                      }
+                    }
+                  }
+                },
+                "pageKey": {
+                  "type": "string",
+                  "title": "Page key",
+                  "description": "The column a read pages on, in the order of the statement. Leave empty for a read that returns one page"
+                },
+                "pageStart": {
+                  "type": [
+                    "integer",
+                    "string"
+                  ],
+                  "default": 0,
+                  "title": "First page after",
+                  "description": "The key value the first page reads after"
+                },
+                "pageSize": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5000,
+                  "title": "Page size",
+                  "description": "Rows per page; 500 when empty"
+                },
+                "timeout": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 300,
+                  "title": "Timeout (seconds)"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

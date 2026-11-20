@@ -73,6 +73,7 @@ const ENDPOINTS_URL = '/index.php/apps/openregister/api/objects/integriq/endpoin
 const ANALYTICS_URL = '/index.php/apps/integriq/api/products/p1/analytics'
 const SUBS_URL = '/index.php/apps/openregister/api/objects/integriq/api_product_subscription'
 const FINDINGS_URL = '/index.php/apps/openregister/api/objects/integriq/api_design_finding'
+const NOTICES_URL = '/index.php/apps/openregister/api/objects/integriq/product_change_notice'
 
 const PRODUCT = {
 	name: 'Zaken API',
@@ -171,7 +172,7 @@ beforeEach(() => {
 })
 
 describe('ApiProductDetail loading', () => {
-	it('requests the product, endpoints, analytics, its own subscriptions and its design findings', async () => {
+	it('requests the product, endpoints, analytics, its own subscriptions, its design findings and its change notices', async () => {
 		await mountPage()
 		expect(http.get.mock.calls).toEqual(
 			expect.arrayContaining([
@@ -180,9 +181,10 @@ describe('ApiProductDetail loading', () => {
 				[ANALYTICS_URL],
 				[SUBS_URL, { params: { product: 'p1', _limit: 100 } }],
 				[FINDINGS_URL, { params: { product: 'p1', _limit: 500 } }],
+				[NOTICES_URL, { params: { product: 'p1', _limit: 100 } }],
 			]),
 		)
-		expect(http.get).toHaveBeenCalledTimes(5)
+		expect(http.get).toHaveBeenCalledTimes(6)
 	})
 
 	it('shows the product header with the deprecation notice', async () => {

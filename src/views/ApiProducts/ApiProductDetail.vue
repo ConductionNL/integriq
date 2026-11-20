@@ -392,6 +392,8 @@
 					</li>
 				</ul>
 			</section>
+
+			<ProductChangeNotices :productId="productId" class="apiProductDetail__section" />
 		</div>
 
 		<NcEmptyContent
@@ -413,6 +415,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import ApiDesignFindingsPanel from '../../components/ApiDesignFindingsPanel.vue'
+import ProductChangeNotices from './ProductChangeNotices.vue'
 import { channelsOf, draftOf, withChannel, withoutChannel } from './productChannels.js'
 import { usageLabel, usageSplits } from './productUsage.js'
 
@@ -428,6 +431,7 @@ export default {
 		NcLoadingIcon,
 		NcSelect,
 		AlertCircleOutline,
+		ProductChangeNotices,
 	},
 
 	data() {
@@ -1010,9 +1014,11 @@ export default {
 .apiProductDetail__loading {
 	margin: 32px auto;
 }
+
 .apiProductDetail__error {
 	color: var(--color-error-text);
 }
+
 .apiProductDetail__hint {
 	color: var(--color-text-maxcontrast);
 }

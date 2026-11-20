@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\XMLResponse;
+use OCA\Integriq\Service\Format\ArrayToXml;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -76,7 +77,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testGetDataWrapsTheStoredPayload(): void {
-		$response = new XMLResponse(['foo' => 'bar']);
+		$response = new XMLResponse(['foo' => 'bar'], encoder: new ArrayToXml());
 
 		$this->assertSame(['value' => ['foo' => 'bar']], $this->callGetData($response));
 
@@ -91,7 +92,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testGetDataWrapsAStringPayloadUnderContent(): void {
-		$response = new XMLResponse('plain text');
+		$response = new XMLResponse('plain text', encoder: new ArrayToXml());
 
 		$this->assertSame(['value' => ['content' => 'plain text']], $this->callGetData($response));
 
@@ -105,7 +106,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testSetRenderCallbackReturnsSelfForChaining(): void {
-		$response = new XMLResponse(['a' => 1]);
+		$response = new XMLResponse(['a' => 1], encoder: new ArrayToXml());
 
 		$this->assertSame($response, $response->setRenderCallback(static fn (array $d): string => '<a/>'));
 
@@ -123,7 +124,7 @@ class XMLResponseTest extends TestCase {
 	 */
 	public function testRenderCallbackReplacesTheDomPathAndReceivesTheWrappedData(): void {
 		$seen = null;
-		$response = new XMLResponse(['foo' => 'bar']);
+		$response = new XMLResponse(['foo' => 'bar'], encoder: new ArrayToXml());
 		$response->setRenderCallback(
 			function (array $data) use (&$seen): string {
 				$seen = $data;
@@ -148,7 +149,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testRootConventionDrivesTheDocumentElementName(): void {
-		$xml = (new XMLResponse(['@root' => 'envelope', 'body' => 'hello']))->render();
+		$xml = (new XMLResponse(['@root' => 'envelope', 'body' => 'hello'], encoder: new ArrayToXml()))->render();
 
 		$this->assertStringContainsString('<envelope>', $xml);
 		$this->assertStringContainsString('<body>hello</body>', $xml);
@@ -163,7 +164,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoRootFallsBackToResponseValueWrapper(): void {
-		$xml = (new XMLResponse(['foo' => 'bar']))->render();
+		$xml = (new XMLResponse(['foo' => 'bar'], encoder: new ArrayToXml()))->render();
 
 		$this->assertStringContainsString('<response>', $xml);
 		$this->assertMatchesRegularExpression('/<value>\s*<foo>bar<\/foo>\s*<\/value>/', $xml);
@@ -182,7 +183,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testExplicitRootTagOverridesRootKey(): void {
-		$xml = (new XMLResponse())->arrayToXml(['@root' => 'ignored', 'a' => 1], 'used');
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(['@root' => 'ignored', 'a' => 1], 'used');
 
 		$this->assertStringContainsString('<used>', $xml);
 		$this->assertStringNotContainsString('ignored', $xml);
@@ -202,7 +203,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testCarriageReturnIsNormalisedToTheHexEntity(): void {
-		$xml = (new XMLResponse())->arrayToXml(['note' => "line1\r\nline2"]);
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(['note' => "line1\r\nline2"]);
 
 		$this->assertStringContainsString('&#xD;', $xml);
 		$this->assertStringNotContainsString('&#13;', $xml);
@@ -221,7 +222,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testAttributesBecomeElementAttributes(): void {
-		$xml = (new XMLResponse())->arrayToXml(
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(
 			['@attributes' => ['id' => 1, 'href' => '/foo'], 'name' => 'bar'],
 			'thing'
 		);
@@ -239,7 +240,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testTextKeyBecomesTheElementTextContent(): void {
-		$xml = (new XMLResponse())->arrayToXml(['#text' => 'inline'], 'thing');
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(['#text' => 'inline'], 'thing');
 
 		$this->assertStringContainsString('inline', $xml);
 		$this->assertStringNotContainsString('<#text>', $xml);
@@ -256,7 +257,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testIndexedArrayOfArraysFansOutSiblingElements(): void {
-		$xml = (new XMLResponse())->arrayToXml(
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(
 			['item' => [['n' => 1], ['n' => 2], ['n' => 3]]],
 			'list'
 		);
@@ -279,7 +280,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testNumericKeyIsRewrittenToItemN(): void {
-		$xml = (new XMLResponse())->arrayToXml(['0' => 'first', '1' => 'second'], 'list');
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(['0' => 'first', '1' => 'second'], 'list');
 
 		$this->assertStringContainsString('<item0>first</item0>', $xml);
 		$this->assertStringContainsString('<item1>second</item1>', $xml);
@@ -300,7 +301,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testArrayDataRecurses(): void {
-		$xml = (new XMLResponse())->arrayToXml(['outer' => ['inner' => 'value']], 'doc');
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(['outer' => ['inner' => 'value']], 'doc');
 
 		$this->assertMatchesRegularExpression('/<outer>\s*<inner>value<\/inner>\s*<\/outer>/', $xml);
 
@@ -314,7 +315,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testObjectWithoutToStringBecomesPlaceholder(): void {
-		$xml = (new XMLResponse())->arrayToXml(['thing' => new \stdClass()], 'doc');
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(['thing' => new \stdClass()], 'doc');
 
 		$this->assertStringContainsString('[Object of class stdClass]', $xml);
 
@@ -336,7 +337,7 @@ class XMLResponseTest extends TestCase {
 			}
 		};
 
-		$xml = (new XMLResponse())->arrayToXml(['thing' => $stringable], 'doc');
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(['thing' => $stringable], 'doc');
 
 		$this->assertStringContainsString('coerced-value', $xml);
 		$this->assertStringNotContainsString('[Object of class', $xml);
@@ -391,7 +392,7 @@ class XMLResponseTest extends TestCase {
 		$this->assertInstanceOf(IQueryBuilder::class, $builder);
 		$this->assertSame($sql, (string)$builder, 'the double really does render SQL when cast');
 
-		$xml = (new XMLResponse())->arrayToXml(['query' => $builder], 'doc');
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(['query' => $builder], 'doc');
 
 		$this->assertStringContainsString('[Object of class ', $xml);
 		$this->assertStringNotContainsString('SELECT', $xml);
@@ -419,7 +420,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testDoubleEntityDecodeUnwrapsEscapedHtml(): void {
-		$xml = (new XMLResponse())->arrayToXml(
+		$xml = (new XMLResponse(encoder: new ArrayToXml()))->arrayToXml(
 			['note' => '&amp;lt;b&amp;gt;hi&amp;lt;/b&amp;gt;'],
 			'doc'
 		);
@@ -443,7 +444,7 @@ class XMLResponseTest extends TestCase {
 	 * @return void
 	 */
 	public function testConstructorSetsTheXmlContentType(): void {
-		$response = new XMLResponse(['a' => 1]);
+		$response = new XMLResponse(['a' => 1], encoder: new ArrayToXml());
 
 		$property = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
 		$property->setAccessible(true);
