@@ -89,6 +89,7 @@ import {
 	testJobHandler,
 	testMappingModalHandler,
 	testRegistrationTargetHandler,
+	testServiceFetchHandler,
 	testSourceHandler,
 	testSynchronizationHandler,
 	viewLogsHandler,
@@ -115,6 +116,8 @@ export default {
 	// REQ-CRUN-003). Shown only on failed rows through the action's visibleWhen.
 	rerunFailedRunHandler,
 	testMappingModalHandler,
+	// Beheer > Service fetches: "Testen" opens TestServiceFetchModal (REQ-SF-001).
+	testServiceFetchHandler,
 	addEndpointRuleHandler,
 	// Directory connections are Sources, so their run and preview actions sit on
 	// the Sources index. Both open DirectoryRunModal, which owns the POST so a
