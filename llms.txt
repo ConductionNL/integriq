@@ -1,0 +1,37 @@
+# Integriq
+
+> API gateway and integration hub for Nextcloud: connects REST and SOAP sources, exposes API endpoints, transforms data with mappings and keeps systems in sync. Requires OpenRegister; every entity is stored as an OpenRegister object.
+
+## Start here
+
+- [AGENTS.md](AGENTS.md): setup, build, test, lint and repo conventions for coding agents
+- [CLAUDE.md](CLAUDE.md): translation (l10n) tooling and rules
+- [README.md](README.md): overview, features, development and tests
+- [ARCHITECTURE.md](ARCHITECTURE.md): architecture overview
+- [CONTRIBUTING.md](CONTRIBUTING.md): contribution workflow and commit format
+
+## Docs
+
+- [docs/intro.md](docs/intro.md): introduction to the user documentation
+- [docs/Installation/demo-environment.md](docs/Installation/demo-environment.md): local demo environment
+- [docs/features/](docs/features/): one page per feature (sources, endpoints, mappings, jobs, events and more)
+- [docs/administrators/](docs/administrators/): administration guides
+- [docs/developers/](docs/developers/): developer guides, connector kit and style guide
+- [docs/architecture/register-schema.md](docs/architecture/register-schema.md): register schema
+
+## API
+
+- [openapi.json](openapi.json): OpenAPI document for the app's HTTP API
+- [openapi.standards.json](openapi.standards.json): endpoints that implement an external standard
+
+## Specs and decisions
+
+- [openspec/specs/](openspec/specs/): current capability specs
+- [openspec/changes/](openspec/changes/): open changes; finished ones in `openspec/changes/archive/`
+- [openspec/architecture/README.md](openspec/architecture/README.md): index of architecture decision records
+- [openspec/config.yaml](openspec/config.yaml): project context and spec rules
+
+## Configuration
+
+- [src/manifest.json](src/manifest.json): frontend page manifest, with fragments in `src/manifest.d/`
+- [lib/Settings/](lib/Settings/): connector templates and example configurations
