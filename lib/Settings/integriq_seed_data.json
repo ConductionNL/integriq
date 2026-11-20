@@ -223,6 +223,52 @@
       "description": "Sample endpoint returning the running app version.",
       "endpoint": "/api/version",
       "method": "GET"
+    },
+    {
+      "@self": {
+        "register": "integriq",
+        "schema": "endpoint",
+        "slug": "graphql-example"
+      },
+      "name": "graphql/example",
+      "description": "Example GraphQL endpoint (gateway-graphql-and-streaming-protocols). Off until a GraphQL source is chosen as its target: it allows only the operations zaakDetails and zakenLijst, refuses queries nested deeper than 8 and limits zakenLijst to 60 calls a minute per consumer.",
+      "endpoint": "/api/graphql/example",
+      "method": "POST",
+      "targetType": "graphql",
+      "allowedOperations": [
+        "zaakDetails",
+        "zakenLijst"
+      ],
+      "maxDepth": 8,
+      "introspection": false,
+      "operationLimits": {
+        "zakenLijst": {
+          "requestsPerWindow": 60,
+          "windowSeconds": 60
+        }
+      }
+    },
+    {
+      "@self": {
+        "register": "integriq",
+        "schema": "endpoint",
+        "slug": "ws-meldingen"
+      },
+      "name": "ws/meldingen",
+      "description": "Example WebSocket route (gateway-graphql-and-streaming-protocols). The web server carries the connection and asks integriq whether a client may open it; see docs/gateway/streaming.md for the nginx configuration.",
+      "endpoint": "/ws/meldingen",
+      "method": "GET",
+      "targetType": "stream",
+      "streamProtocol": "websocket",
+      "streamRoute": "/ws/meldingen",
+      "streamUpstream": "http://meldingen:8080/ws",
+      "requiredScopes": [
+        "meldingen:read"
+      ],
+      "connectionRateLimit": {
+        "requestsPerWindow": 30,
+        "windowSeconds": 60
+      }
     }
   ],
   "event": [

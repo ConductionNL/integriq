@@ -723,6 +723,11 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// statutory-gateways-and-frameworks: which laws this instance reaches,
 		// how far it claims to meet each one, where every endpoint sits, and
 		// which bridge a call behind a firewall travels over.
+		// gateway-graphql-and-streaming-protocols REQ-GQLP-002: a web server or broker asks
+		// whether a WebSocket, gRPC or MQTT client may connect. GET for nginx auth_request,
+		// which repeats the client's method without a body; POST for a broker plugin.
+		['name' => 'gatewayAuthorize#authorize', 'url' => '/api/gateway/authorize', 'verb' => 'GET', 'postfix' => 'get'],
+		['name' => 'gatewayAuthorize#authorize', 'url' => '/api/gateway/authorize', 'verb' => 'POST'],
 		['name' => 'gateways#index', 'url' => '/api/gateways', 'verb' => 'GET'],
 		['name' => 'gateways#overview', 'url' => '/api/gateways/overview', 'verb' => 'GET'],
 		['name' => 'gateways#exportOverview', 'url' => '/api/gateways/overview/export', 'verb' => 'GET'],
