@@ -380,7 +380,7 @@ class ConnectionHandoverService {
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
-			$this->logFailure(step: 'save', part: implode(',', $pending), e: $e);
+			$this->minter->logFailure(step: 'save', part: implode(',', $pending), e: $e);
 			foreach ($pending as $part) {
 				$answer[$part] = self::FAILED;
 			}
@@ -449,7 +449,7 @@ class ConnectionHandoverService {
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
-			$this->logFailure(step: 'find', part: '', e: $e);
+			$this->minter->logFailure(step: 'find', part: '', e: $e);
 			return null;
 		}
 
@@ -515,7 +515,7 @@ class ConnectionHandoverService {
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
-			$this->logFailure(step: 'read', part: '', e: $e);
+			$this->minter->logFailure(step: 'read', part: '', e: $e);
 			return null;
 		}
 
@@ -527,24 +527,4 @@ class ConnectionHandoverService {
 
 	}//end readRaw()
 
-	/**
-	 * Log a failure without any secret.
-	 *
-	 * @param string         $step The step that failed.
-	 * @param string         $part The part name(s).
-	 * @param Throwable|null $e    The exception; only its class is logged.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
-	 */
-	private function logFailure(string $step, string $part, ?Throwable $e): void {
-		$context = ['step' => $step, 'part' => $part];
-		if ($e !== null) {
-			$context['errorClass'] = get_class($e);
-		}
-
-		$this->logger->warning('[integriq] connection handover: part not taken', $context);
-
-	}//end logFailure()
 }//end class

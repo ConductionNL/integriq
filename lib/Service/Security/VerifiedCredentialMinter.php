@@ -294,7 +294,7 @@ class VerifiedCredentialMinter {
 	}//end canMintAndVerify()
 
 	/**
-	 * Log a failure without any secret.
+	 * Log a part that was not taken over, without any secret.
 	 *
 	 * @param string         $step The step that failed.
 	 * @param string         $part The part name.
@@ -304,7 +304,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
-	private function logFailure(string $step, string $part, ?Throwable $e): void {
+	public function logFailure(string $step, string $part, ?Throwable $e): void {
 		$context = ['step' => $step, 'part' => $part];
 		if ($e !== null) {
 			$context['errorClass'] = get_class($e);
