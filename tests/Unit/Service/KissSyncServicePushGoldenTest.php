@@ -31,6 +31,7 @@ use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Pushes contact moments with and without a case, parties and a call, and
@@ -97,7 +98,10 @@ class KissSyncServicePushGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				unset($object['syncedAt']);
 				$object['occurredOn'] = $this->stableTime(time: ($object['occurredOn'] ?? null));
 				if (isset($object['registratiedatum']) === true) {

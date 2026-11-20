@@ -28,8 +28,9 @@ use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\OpenFormulierenIntakeService;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\Integriq\Service\OpenFormulieren\DestinationSubmitterInterface;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Http;
@@ -69,6 +70,8 @@ class OpenFormulierenControllerTest extends TestCase {
 	/** @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject */
 	private $logger;
 
+	private $submitter;
+
 	private OpenFormulierenController $controller;
 
 	protected function setUp(): void {
@@ -77,6 +80,7 @@ class OpenFormulierenControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->intakeService = $this->createMock(OpenFormulierenIntakeService::class);
 		$this->connection = $this->createMock(OpenFormulierenConnection::class);
+		$this->submitter = $this->createMock(DestinationSubmitterInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->actionAuth = $this->createMock(ActionAuthService::class);
 		$this->l = $this->createMock(IL10N::class);
@@ -100,7 +104,8 @@ class OpenFormulierenControllerTest extends TestCase {
 			$this->userSession,
 			$this->actionAuth,
 			$this->l,
-			$this->logger
+			$this->logger,
+			$this->submitter
 		);
 
 	}//end buildController()
@@ -118,7 +123,7 @@ class OpenFormulierenControllerTest extends TestCase {
 				channel: DsoConnectionUnavailableException::CHANNEL_OPEN_FORMULIEREN
 			)
 		);
-		$this->intakeService->expects($this->never())->method('ingest');
+		$this->submitter->expects($this->never())->method('submit');
 
 		$response = $this->controller->inbound();
 
@@ -132,7 +137,7 @@ class OpenFormulierenControllerTest extends TestCase {
 	 */
 	public function testInboundInvalidSignatureReturns401BeforeAnySideEffect(): void {
 		$this->connection->method('authenticate')->willThrowException(new DsoSignatureException('bad'));
-		$this->intakeService->expects($this->never())->method('ingest');
+		$this->submitter->expects($this->never())->method('submit');
 
 		$response = $this->controller->inbound();
 
@@ -142,14 +147,73 @@ class OpenFormulierenControllerTest extends TestCase {
 	}//end testInboundInvalidSignatureReturns401BeforeAnySideEffect()
 
 	/**
-	 * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#scenario-valid-signature-is-accepted
+	 * A valid submit creates its case as the connection's account and answers 201
+	 * with the case reference; nothing is staged for later.
+	 *
+	 * @spec openspec/changes/open-formulieren-submits-into-its-case/specs/open-formulieren-intake/spec.md#scenario-a-valid-submit-returns-the-case-reference
 	 */
-	public function testInboundValidSignatureIngestsSubmissionAsTheConnectionAccount(): void {
-		$identity = $this->identity();
-		$this->connection->method('authenticate')->willReturn($identity);
+	public function testInboundCreatesTheCaseAsTheConnectionAccountAndAnswers201(): void {
+		$identity = $this->signedSubmit();
 		$this->connection->expects($this->once())->method('runAs')
 			->with($identity->account, $this->isType('callable'))
 			->willReturnCallback(static fn ($account, callable $operation): mixed => $operation());
+		$this->intakeService->expects($this->never())->method('ingest');
+		$this->submitter->expects($this->once())
+			->method('submit')
+			->with('vergunning-aanvraag', 'of-sub-1', ['aanvraagType' => 'kapvergunning'], hash('sha256', ''))
+			->willReturn(['reference' => '2026-0042', 'id' => 'case-uuid-1']);
+
+		$response = $this->controller->inbound();
+
+		$this->assertSame(Http::STATUS_CREATED, $response->getStatus());
+		$this->assertSame(['reference' => '2026-0042', 'id' => 'case-uuid-1'], $response->getData());
+
+	}//end testInboundCreatesTheCaseAsTheConnectionAccountAndAnswers201()
+
+	/**
+	 * A refused submit answers OpenRegister's 422 with its findings, so Open
+	 * Formulieren reports the failure on its side.
+	 *
+	 * @spec openspec/changes/open-formulieren-submits-into-its-case/specs/open-formulieren-intake/spec.md#requirement-an-open-formulieren-submit-must-create-its-case-in-the-inbound-request
+	 */
+	public function testInboundRefusedSubmitAnswers422WithFindings(): void {
+		$this->signedSubmit();
+		$this->connection->method('runAs')->willReturnCallback(static fn ($account, callable $operation): mixed => $operation());
+		$finding = ['property' => 'caseType', 'code' => 'required-unmapped', 'message' => 'caseType is required'];
+		$this->submitter->method('submit')->willThrowException(new FormSubmitRefusedException('Refused', 422, [$finding]));
+
+		$response = $this->controller->inbound();
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertSame('submission_refused', $response->getData()['error']);
+		$this->assertSame([$finding], $response->getData()['findings']);
+
+	}//end testInboundRefusedSubmitAnswers422WithFindings()
+
+	/**
+	 * A refusal OpenRegister answers with 503 is "not stored": 503 so the sender retries.
+	 *
+	 * @spec openspec/changes/open-formulieren-submits-into-its-case/specs/open-formulieren-intake/spec.md#requirement-an-open-formulieren-submit-must-create-its-case-in-the-inbound-request
+	 */
+	public function testInboundUnavailableDestinationAnswers503(): void {
+		$this->signedSubmit();
+		$this->connection->method('runAs')->willReturnCallback(static fn ($account, callable $operation): mixed => $operation());
+		$this->submitter->method('submit')->willThrowException(new FormSubmitRefusedException('Try again later', 503));
+
+		$response = $this->controller->inbound();
+
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+
+	}//end testInboundUnavailableDestinationAnswers503()
+
+	/**
+	 * A signed submit of form `vergunning-aanvraag`, submission `of-sub-1`.
+	 *
+	 * @return DsoIdentity The identity the connection authenticates.
+	 */
+	private function signedSubmit(): DsoIdentity {
+		$identity = $this->identity();
+		$this->connection->method('authenticate')->willReturn($identity);
 		$this->request->method('getParams')->willReturn(
 			[
 				'form' => ['slug' => 'vergunning-aanvraag', 'uuid' => 'form-uuid-1'],
@@ -158,27 +222,15 @@ class OpenFormulierenControllerTest extends TestCase {
 			]
 		);
 
-		$submission = new ObjectEntity();
-		$submission->setUuid('sub-1');
-		$submission->setObject(['status' => 'mapped']);
+		return $identity;
 
-		$this->intakeService->expects($this->once())
-			->method('ingest')
-			->with('vergunning-aanvraag', 'form-uuid-1', ['uuid' => 'of-sub-1'], ['aanvraagType' => 'kapvergunning'], [], null, $identity)
-			->willReturn($submission);
-
-		$response = $this->controller->inbound();
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertSame('sub-1', $response->getData()['id']);
-
-	}//end testInboundValidSignatureIngestsSubmissionAsTheConnectionAccount()
+	}//end signedSubmit()
 
 	public function testInboundMissingFormSlugReturns400(): void {
 		$this->connection->method('authenticate')->willReturn($this->identity());
 		$this->request->method('getParams')->willReturn(['values' => []]);
 
-		$this->intakeService->expects($this->never())->method('ingest');
+		$this->submitter->expects($this->never())->method('submit');
 
 		$response = $this->controller->inbound();
 

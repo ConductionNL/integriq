@@ -35,6 +35,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Devices with their owner, a session without a user, a source without a
@@ -214,7 +215,9 @@ final class EndpointWorkspaceControllerTest extends TestCase {
 
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null): ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null): ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->assertSame(['integriq', 'source'], [$register, $schema]);
 				if (isset($this->sources[$id]) === false) {
 					throw new DoesNotExistException('no');

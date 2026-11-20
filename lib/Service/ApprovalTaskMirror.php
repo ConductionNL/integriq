@@ -30,6 +30,8 @@ namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 use OCA\OpenRegister\Service\Task\TaskService as ORTaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -215,9 +217,13 @@ class ApprovalTaskMirror {
 		try {
 			$this->taskService->applyTimerOutcome(
 				uuid: $taskUuid,
-				outcome: $outcome,
-				source: 'integriq:' . $actorUid,
-				reason: sprintf("Approval request resolved as '%s'.", (string)($data['status'] ?? ''))
+				outcome: new TimerOutcome(
+					outcome: $outcome,
+					trigger: new TaskTrigger(
+						source: 'integriq:' . $actorUid,
+						reason: sprintf("Approval request resolved as '%s'.", (string)($data['status'] ?? ''))
+					)
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

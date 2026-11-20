@@ -22,7 +22,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Settings;
 
 use OCA\Integriq\Controller\XMLResponse;
+use OCA\Integriq\Service\Call\FeedSource;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Format\ArrayToXml;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationContractService;
@@ -120,6 +122,21 @@ final class JobBoardSetsTest extends TestCase {
 	}//end testTheLinkedInTemplateIsDormantWithItsSecretInTheBroker()
 
 	/**
+	 * The Indeed template is a dormant feed source: a call to it sends nothing and answers "published in feed".
+	 *
+	 * @return void
+	 */
+	public function testTheIndeedTemplateIsADormantFeedSource(): void {
+		$source = $this->seeds(board: 'indeed')['source']['jobboard-indeed'];
+
+		$this->assertFalse($source['isEnabled']);
+		$this->assertSame(FeedSource::SOURCE_TYPE, $source['type']);
+		$this->assertSame('none', $source['auth']);
+		$this->assertStringContainsString('jobfeeds/indeed.xml', $source['description']);
+		$this->assertStringContainsString('register that URL with Indeed', $source['description']);
+	}//end testTheIndeedTemplateIsADormantFeedSource()
+
+	/**
 	 * With the employer and vacancy page filled, the vacancy becomes the recorded Indeed feed job, without applicant data.
 	 *
 	 * @return void
@@ -190,7 +207,7 @@ final class JobBoardSetsTest extends TestCase {
 		$listed = ['results' => [$service->executeMapping(mapping: $job, input: $this->fixture(file: 'vacancy-vue-developer.json'))], 'count' => 1, 'page' => 1, 'pages' => 1];
 		$body = $service->executeMapping(mapping: $feed, input: $listed);
 
-		$xml = (new XMLResponse(data: $body))->render();
+		$xml = (new XMLResponse(data: $body, encoder: new ArrayToXml()))->render();
 
 		$this->assertSame((string)file_get_contents(dirname(__DIR__, 2) . '/fixtures/jobboards/indeed-feed.xml'), $xml);
 		$this->assertStringNotContainsString('administrationId', $xml);

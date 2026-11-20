@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.2.1"
+    "version": "1.2.2"
   },
   "x-openregister": {
     "type": "application",
@@ -137,7 +137,7 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit. Log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam. Not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveRequest(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService. Not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService. Not via CallService), 'sms' (SMS channel. NotifyNL or sandbox, dispatched directly by SmsDispatchService. Not via CallService), 'payment' (live payment provider. Log/sandbox or Mollie. Dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API. Log/sandbox or generic REST, dispatched directly by KissSyncService. Not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound(). Not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge. Log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService. Not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing. Log/sandbox or generic REST, dispatched directly by FscCallService. Not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit. Log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam. Not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveRequest(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService. Not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService. Not via CallService), 'sms' (SMS channel. NotifyNL or sandbox, dispatched directly by SmsDispatchService. Not via CallService), 'payment' (live payment provider. Log/sandbox or Mollie. Dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API. Log/sandbox or generic REST, dispatched directly by KissSyncService. Not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound(). Not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge. Log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService. Not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing. Log/sandbox or generic REST, dispatched directly by FscCallService. Not via CallService), 'feed' (a feed other systems read, such as a job board's vacancy feed: a call answers \"published in feed\" with the location as its link and sends nothing, answered in-process by CallService through FeedSource). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
@@ -523,7 +523,7 @@
         "slug": "consumer",
         "title": "Consumer",
         "icon": "AccountGroup",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An outbound event-bus subscriber identity",
         "description": "A Consumer is an event-bus subscriber (webhook target, AMQP queue, etc.). Paired with EventSubscription (filter) and EventMessage (delivery record). See local ADR-013 for the event-bus model.",
         "required": [
@@ -566,13 +566,18 @@
           },
           "authorizationType": {
             "type": "string",
-            "description": "Auth strategy used by this consumer",
+            "description": "Auth strategy used by this consumer. client_credentials: integriq issues it tokens at /api/oauth/token for its client secret.",
             "title": "Authorization Type"
           },
           "authorizationConfiguration": {
             "type": "object",
             "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. `keySource` says where a JWT consumer's key comes from: `static` (default, the stored `publicKey`/`algorithm`, issuer matched on the consumer name), `jwks` (`issuer` the tokens' `iss`, `jwksUri` the published key set; the key is chosen by the token's `kid`) or `oidc` (`issuerUrl`, `audience` and optional `requiredClaims`, a list of claim names or a map of claim to value; the JWKS address and issuer come from the provider's discovery document). `jwks` and `oidc` accept RS and PS algorithms only. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
+          },
+          "clientSecretHash": {
+              "type": "string",
+              "title": "Client secret hash",
+              "description": "The password hash of a client_credentials consumer's secret (access-oauth-and-token-validation). Set by an admin through POST /api/consumers/{id}/client-secret, which shows the secret once; the secret itself is never stored."
           },
           "scopes": {
             "type": "array",
@@ -4619,7 +4624,7 @@
         "slug": "sms_message",
         "title": "SMS Message",
         "icon": "MessageTextOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Audit + lifecycle record for one outbound SMS sent through a configured SMS channel source",
         "description": "An SMS Message tracks one outbound message submitted through a configured SMS channel source (NotifyNL, or the log/sandbox provider), from queued through provider acceptance and any delivery-status poll or inbound callback. See openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback.",
         "required": [
@@ -4650,8 +4655,13 @@
           },
           "provider": {
             "type": "string",
-            "description": "The provider binding that handled this message (log|notifynl)",
+            "description": "The provider binding that handled this message (log|notifynl|cmcom|messagebird|twilio)",
             "title": "Provider"
+          },
+          "sourceSlug": {
+            "type": "string",
+            "description": "Slug of the SMS source that sent this message: the one the caller named, else the first enabled SMS source",
+            "title": "Source"
           },
           "providerMessageId": {
             "type": "string",
@@ -5269,7 +5279,7 @@
         "slug": "outbound_message",
         "title": "Outbound Message",
         "icon": "SendOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "authorization": {
           "create": [
             "digitale-post-verzenders"
@@ -5290,6 +5300,79 @@
         ],
         "type": "object",
         "properties": {
+          "holdStatus": {
+            "type": "string",
+            "enum": [
+              "held",
+              "due",
+              "withdrawn",
+              "review",
+              "released"
+            ],
+            "description": "Where the message stands on hold, mirrored from hold.status so a list can filter on it: held (waiting out its identity's window) | due (the window passed) | withdrawn (taken back, not sent) | review (a send check refused it and it waits for a person) | released (a person released it to be sent)",
+            "title": "Hold Status"
+          },
+          "hold": {
+            "type": "object",
+            "description": "The message's hold: its identity's window, or the send check that stopped it and what a person did about that",
+            "properties": {
+              "status": {
+                "type": "string",
+                "description": "held, due, withdrawn, review or released",
+                "title": "Status"
+              },
+              "check": {
+                "type": "string",
+                "description": "The send check that stopped the message",
+                "title": "Check"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why the check stopped it",
+                "title": "Reason"
+              },
+              "heldAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was held",
+                "title": "Held At"
+              },
+              "releasedBy": {
+                "type": "string",
+                "description": "Who released it",
+                "title": "Released By"
+              },
+              "releasedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was released",
+                "title": "Released At"
+              },
+              "withdrawnBy": {
+                "type": "string",
+                "description": "Who withdrew it",
+                "title": "Withdrawn By"
+              },
+              "withdrawnAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was withdrawn",
+                "title": "Withdrawn At"
+              },
+              "windowSeconds": {
+                "type": "integer",
+                "description": "The identity's hold window in seconds",
+                "title": "Window Seconds"
+              },
+              "releaseAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the window closes",
+                "title": "Release At"
+              }
+            },
+            "title": "Hold"
+          },
           "subjectRef": {
             "type": "string",
             "description": "What the message is about, as the sending app references it. The log answers questions per subject, never by writing a field onto the sending app's record",
@@ -5586,6 +5669,37 @@
             "description": "Who forwarded it",
             "title": "Forwarded By"
           },
+          "recipientSelection": {
+            "type": "object",
+            "description": "The per-message recipient decision, when there was one: the standing recipients the calling app passed, the ones added for this message only, and the ones suppressed for this message only, each kept on its own",
+            "properties": {
+              "standing": {
+                "type": "array",
+                "description": "The standing recipients as the calling app passed them, with the required marker and what requires it",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Standing"
+              },
+              "added": {
+                "type": "array",
+                "description": "Recipients added for this message only. They are written nowhere else",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Added"
+              },
+              "suppressed": {
+                "type": "array",
+                "description": "Recipients suppressed for this message only. Each reads suppressed, carries the typed reason, the user and the time, and has no delivery state",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Suppressed"
+              }
+            },
+            "title": "Recipient Selection"
+          },
           "forwardedTo": {
             "type": "array",
             "description": "The forwards made from this message, read from the other end of the link. The rest of this record is left exactly as it was, because it is the evidence",
@@ -5612,7 +5726,7 @@
         "slug": "openformulieren_form_mapping",
         "title": "Open Formulieren Form Mapping",
         "icon": "FormSelect",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "Per-form mapping config: an Open Formulieren form slug's raw submitted values onto the ns#Case handoff contract fields",
         "description": "One record per Open Formulieren form, resolved by FormFieldMapper (open-formulieren-intake). FieldMapping keys are limited to title/summary/channel (mandatory) and priority (optional): source is engine-filled by OpenRegister's own handoff dialect and requester is unsupported in v1 (no OR-managed party register to resolve a BSN/KvK auth context against). See openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002.",
         "required": [
@@ -5662,6 +5776,32 @@
             "default": true,
             "description": "Whether this mapping is active. A submission for a formSlug with no enabled mapping fails closed (status=failed).",
             "title": "Enabled"
+          },
+          "destinationRegister": {
+            "type": "string",
+            "default": "dossiq",
+            "title": "Destination register",
+            "description": "The register of the object a submission creates (open-formulieren-submits-into-its-case). Default dossiq."
+          },
+          "destinationSchema": {
+            "type": "string",
+            "default": "case",
+            "title": "Destination schema",
+            "description": "The schema of the object a submission creates, checked against this mapping before it may be active. Default case."
+          },
+          "fixedValues": {
+            "type": "object",
+            "title": "Fixed values",
+            "description": "Destination property -> value written on every submission of this form, such as the case type.",
+            "additionalProperties": true
+          },
+          "propertyMap": {
+            "type": "object",
+            "title": "Property map",
+            "description": "Contract field (title, summary, channel, priority) -> destination property. Empty takes title->title, summary->description, channel->intakeChannel.",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         },
         "x-openregister-seed": [],
@@ -6003,7 +6143,7 @@
         "slug": "intake_message",
         "title": "Intake Message",
         "icon": "InboxArrowDown",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "One message an intake channel delivered, in the normalised shape every consumer reads",
         "description": "An Intake Message is one message delivered by a channel adapter, normalised so no consuming app contains channel-specific code. A routing rule decides which case type it opens; a message matching no rule is held with its reason rather than dropped or opened as a default case. See openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md.",
         "authorization": {
@@ -6123,9 +6263,10 @@
               "routed",
               "held",
               "failed",
-              "rejected"
+              "rejected",
+              "assigned"
             ],
-            "description": "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel)",
+            "description": "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel) | assigned (a handler linked it to a case from the inbox)",
             "title": "Status"
           },
           "reason": {
@@ -6145,8 +6286,19 @@
           },
           "targetRef": {
             "type": "string",
-            "description": "The object the owning app opened for this message",
+            "description": "The object the owning app opened for this message, or the case a handler assigned it to",
             "title": "Target Reference"
+          },
+          "assignedBy": {
+            "type": "string",
+            "description": "The user id of the handler who assigned the message to a case from the inbox",
+            "title": "Assigned By"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the handler assigned the message to a case",
+            "title": "Assigned At"
           },
           "replies": {
             "type": "array",

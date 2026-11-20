@@ -221,9 +221,9 @@ export default {
 			for (const [path, value] of Object.entries(this.replacements)) {
 				if (value === '') continue
 				if (path.startsWith('input.')) {
-					input = withValueAt(input, path.slice('input.'.length), value)
+					input = withValueAt(input, { path: path.slice('input.'.length), value })
 				} else if (path.startsWith('expectedOutput.')) {
-					expectedOutput = withValueAt(expectedOutput, path.slice('expectedOutput.'.length), value)
+					expectedOutput = withValueAt(expectedOutput, { path: path.slice('expectedOutput.'.length), value })
 				}
 			}
 			return {

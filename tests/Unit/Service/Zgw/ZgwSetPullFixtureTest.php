@@ -30,9 +30,11 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
 use OCA\Integriq\Tests\Helpers\CatalogueL10n;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The installer and the REAL synchronization and mapping engines; only HTTP and OpenRegister storage are faked.
@@ -132,7 +134,7 @@ class ZgwSetPullFixtureTest extends TestCase {
 
 	private function positions(string $class, string $method): array {
 		$positions = [];
-		foreach ((new ReflectionMethod($class, $method))->getParameters() as $i => $parameter) {
+		foreach (LegacyObjectArgs::parameters(class: $class, method: $method) as $i => $parameter) {
 			$positions[$parameter->getName()] = $i;
 		}
 
@@ -144,6 +146,7 @@ class ZgwSetPullFixtureTest extends TestCase {
 		$findPos = $this->positions(ORObjectService::class, 'find');
 		$or->method('find')->willReturnCallback(
 			function (...$args) use ($findPos) {
+				$args   = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$id     = (string)($args[$findPos['id']] ?? '');
 				$schema = (string)($args[$findPos['schema']] ?? '');
 				if (isset($this->store[$schema][$id]) === false) {
@@ -154,14 +157,17 @@ class ZgwSetPullFixtureTest extends TestCase {
 			}
 		);
 		$or->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, ...$rest) {
+			function ($object, ?ObjectSaveOptions $options=null, ...$rest) {
+				$schema = $options?->target->schema;
+				$uuid   = $options?->uuid;
 				$key                                = (string)($uuid ?? ($object['uuid'] ?? ($schema . '-' . (count($this->store[(string)$schema] ?? []) + 1))));
 				$this->store[(string)$schema][$key] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) ? $object : [], $key);
 			}
 		);
 		$or->method('saveObjects')->willReturnCallback(
-			function (array $objects, $register=null, $schema=null, ...$rest): array {
+			function (array $objects, ?BulkSaveOptions $options=null, ...$rest): array {
+				$schema = $options?->defaults->schema;
 				$saved = [];
 				foreach ($objects as $object) {
 					$key                                = (string)($object['uuid'] ?? ($object['id'] ?? ($schema . '-' . (count($this->store[(string)$schema] ?? []) + 1))));

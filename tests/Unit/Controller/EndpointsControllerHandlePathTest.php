@@ -24,6 +24,7 @@ use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EndpointCacheService;
 use OCA\Integriq\Service\EndpointCorsPolicy;
 use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Service\Format\ArrayToXml;
 use OCA\Integriq\Service\ObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http\JSONResponse;
@@ -93,7 +94,7 @@ class EndpointsControllerHandlePathTest extends TestCase {
 		$l = $this->createMock(IL10N::class);
 		$l->method('t')->willReturnCallback(static fn (string $text, array $params = []): string => vsprintf($text, $params));
 
-		return new EndpointsController('integriq', $request, $endpoints, $bridge, $this->createMock(ObjectService::class), $cache, $this->createMock(LoggerInterface::class), $l, $policy);
+		return new EndpointsController('integriq', $request, $endpoints, $bridge, $this->createMock(ObjectService::class), $cache, $this->createMock(LoggerInterface::class), $l, $policy, xmlEncoder: new ArrayToXml());
 
 	}//end controller()
 

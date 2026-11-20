@@ -21,6 +21,7 @@
 //   POST /api/jobs/{run,test}/{id}          — RunActionModal
 //   POST /api/synchronizations/{id}/{run,test} — RunActionModal
 
+import { releaseHeldMessage, withdrawHeldMessage } from './heldMessage.js'
 import { logsLocation, VIEW_LOGS_TARGETS } from './logTargets.js'
 import {
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
@@ -30,11 +31,13 @@ import {
 	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
 	EVENT_OPEN_PROMOTION,
+	EVENT_OPEN_REGISTRATION_TEST,
 	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SOURCE_RESIDENCY,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_TEST_MAPPING,
+	EVENT_OPEN_TEST_SERVICE_FETCH,
 	EVENT_OPEN_TEST_SOURCE,
 	modalBus,
 } from './modalBus.js'
@@ -118,6 +121,28 @@ export function rerunFailedRunHandler({ item }) {
 }
 
 /**
+ * Release a message held for review and send it, from the held-messages list.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @return {Promise<object|null>} The server's answer.
+ * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+ */
+export function releaseHeldMessageHandler({ item }) {
+	return releaseHeldMessage(item)
+}
+
+/**
+ * Withdraw a message held for review, from the held-messages list.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @return {Promise<object|null>} The server's answer.
+ * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+ */
+export function withdrawHeldMessageHandler({ item }) {
+	return withdrawHeldMessage(item)
+}
+
+/**
  * Open the run/test modal for a synchronization "Test (dry run)" row action.
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
@@ -168,12 +193,35 @@ export function testMappingModalHandler({ item }) {
 }
 
 /**
+ * Open the service fetch test modal ("Testen") for the clicked serviceFetch row.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+ */
+export function testServiceFetchHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_TEST_SERVICE_FETCH, { fetch: item })
+}
+
+/**
  * Open the Add-rule-to-endpoint modal for the clicked endpoint row.
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  */
 export function addEndpointRuleHandler({ item }) {
 	modalBus.emit(EVENT_OPEN_ADD_ENDPOINT_RULE, { endpoint: item })
+}
+
+/**
+ * Open the dry run of a registration target row ("Test", design D6).
+ *
+ * The modal owns the POST to /api/registration-targets/{slug}/test, which
+ * maps a sample hand-over and stops before the first write.
+ *
+ * @param {{ item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
+ */
+export function testRegistrationTargetHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_REGISTRATION_TEST, { target: item })
 }
 
 /**

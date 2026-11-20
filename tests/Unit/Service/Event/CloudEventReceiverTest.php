@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Stores a received event once per source and id, then routes it.
@@ -100,8 +101,8 @@ class CloudEventReceiverTest extends TestCase {
 
 		$this->objectService->method('find')->willReturn(null);
 		$this->objectService->expects($this->once())->method('saveObject')
-			->with(
-				[
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => [
 					'source' => '/shop',
 					'type' => 'nl.example.order.created',
 					'specversion' => '1.0',
@@ -113,12 +114,12 @@ class CloudEventReceiverTest extends TestCase {
 					'userId' => null,
 					EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 				],
-				'integriq',
-				'event',
-				$uuid,
-				false,
-				false
-			)
+				'register' => 'integriq',
+				'schema' => 'event',
+				'uuid' => $uuid,
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))
 			->willReturn($stored);
 		$this->eventService->expects($this->once())->method('processEvent')->with($stored)->willReturn([]);
 
@@ -133,7 +134,13 @@ class CloudEventReceiverTest extends TestCase {
 	public function testARepeatedEventIsNotProcessedTwice(): void {
 		$uuid = $this->receiver->uuidFor(receiver: 'webshop', cloudEvent: $this->event());
 		$this->objectService->expects($this->once())->method('find')
-			->with($uuid, 'integriq', 'event', false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => $uuid,
+				'register' => 'integriq',
+				'schema' => 'event',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))
 			->willReturn(new ObjectEntity());
 		$this->objectService->expects($this->never())->method('saveObject');
 		$this->eventService->expects($this->never())->method('processEvent');

@@ -46,6 +46,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests the public inbound leg, which is where the refusals live.
@@ -556,16 +557,16 @@ class IntakeChannelsControllerTest extends TestCase {
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				[
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => [
 					'channelId' => 'messaging',
 					'externalId' => '',
 					'status' => 'rejected',
 					'reason' => 'invalid signature',
 				],
-				IntakeRoutingServiceInterface::REGISTER,
-				IntakeRoutingServiceInterface::SCHEMA_MESSAGE
-			)
+					'register' => IntakeRoutingServiceInterface::REGISTER,
+					'schema' => IntakeRoutingServiceInterface::SCHEMA_MESSAGE,
+				]))
 			->willThrowException(new RuntimeException('database down'));
 
 		$l10n = $this->createMock(IL10N::class);
@@ -679,12 +680,12 @@ class IntakeChannelsControllerTest extends TestCase {
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				['name' => 'Meldingen', 'channelId' => 'messaging'],
-				IntakeRoutingServiceInterface::REGISTER,
-				IntakeRoutingServiceInterface::SCHEMA_RULE,
-				null
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => ['name' => 'Meldingen', 'channelId' => 'messaging'],
+					'register' => IntakeRoutingServiceInterface::REGISTER,
+					'schema' => IntakeRoutingServiceInterface::SCHEMA_RULE,
+					'uuid' => null,
+				]))
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Meldingen'], 'rule-new'));
 
 		$response = $this->controllerOver(objectService: $objectService)->saveRule();
@@ -706,12 +707,12 @@ class IntakeChannelsControllerTest extends TestCase {
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				['name' => 'Meldingen v2'],
-				IntakeRoutingServiceInterface::REGISTER,
-				IntakeRoutingServiceInterface::SCHEMA_RULE,
-				'rule-7'
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => ['name' => 'Meldingen v2'],
+					'register' => IntakeRoutingServiceInterface::REGISTER,
+					'schema' => IntakeRoutingServiceInterface::SCHEMA_RULE,
+					'uuid' => 'rule-7',
+				]))
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Meldingen v2'], 'rule-7'));
 
 		$response = $this->controllerOver(objectService: $objectService)->saveRule('rule-7');
