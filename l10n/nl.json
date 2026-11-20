@@ -1556,6 +1556,7 @@
         "Why this rejection was waived. Required when an exchange rejection is discarded.": "Waarom van deze afwijzing is afgezien. Verplicht wanneer een uitwisselingsafwijzing wordt afgesloten.",
         "Run a data exchange": "Een gegevensuitwisseling uitvoeren",
         "S3-compatible storage with an API key (not AWS S3)": "S3-compatibele opslag met een API-sleutel (niet AWS S3)",
+        "Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)": "Relationele database (PostgreSQL, MySQL, MariaDB, SQL Server)",
         "Body, as JSON": "Inhoud, als JSON",
         "Call actions": "Acties voor deze aanroep",
         "Dry run: this is what would be sent. Nothing was sent.": "Proefdraaien: dit zou er verstuurd worden. Er is niets verstuurd.",

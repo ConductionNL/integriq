@@ -478,6 +478,14 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Investigation window: store call bodies for a bounded time (outbound-call-log-investigation-window).
 		['name' => 'bodyCapture#open', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'POST'],
 		['name' => 'bodyCapture#close', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'DELETE'],
+		// Database sources (sources-database-adapter): schema discovery and a test run of a declared read statement, admin only.
+		['name' => 'databaseSource#schema', 'url' => '/api/sources/{id}/database/schema', 'verb' => 'GET'],
+		[
+			'name' => 'databaseSource#testStatement',
+			'url' => '/api/sources/{id}/database/statements/{name}/test',
+			'verb' => 'POST',
+			'requirements' => ['name' => '[A-Za-z0-9][A-Za-z0-9_.-]{0,99}'],
+		],
 
 		// dashboard-http-datasource: governed, read-only "resolve one value
 		// from a configured source" façade for dashboard/widget hosts
