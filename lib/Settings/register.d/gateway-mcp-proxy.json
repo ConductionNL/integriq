@@ -1,0 +1,116 @@
+{
+	"_comment": "gateway-mcp-proxy (REQ-MCPX-001..003): an endpoint of targetType mcp puts an outside MCP tool server (streamable HTTP) behind the gateway, under the consumer keys, limits, quota and call log that guard a REST API. The answer, an event stream included, is relayed as it arrives up to mcpMaxStreamSeconds; mcpToolLimits gives a tool its own limit per consumer; the call log names the JSON-RPC method and the tool, and stores tool arguments only when mcpStoreArguments is set. Seeds a disabled example tool server and its endpoint.",
+	"components": {
+		"schemas": {
+			"endpoint": {
+				"properties": {
+					"targetType": {
+						"title": "Target Type",
+						"description": "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `mcp` (a source that is an MCP tool server over streamable HTTP, relayed with its session headers and event streams), `job`, `synchronization`."
+					},
+					"mcpToolLimits": {
+						"type": "object",
+						"title": "Tool limits",
+						"description": "For an mcp endpoint: a rate limit per tool, counted per consumer on top of the consumer's own limits. Maps a tool name to the number of calls allowed in a window of seconds; a call over it gets HTTP 429 with a JSON-RPC error naming the tool.",
+						"additionalProperties": {
+							"type": "object",
+							"required": [
+								"limit",
+								"window"
+							],
+							"properties": {
+								"limit": {
+									"type": "integer",
+									"minimum": 1,
+									"title": "Calls",
+									"description": "Calls allowed in the window."
+								},
+								"window": {
+									"type": "integer",
+									"minimum": 1,
+									"title": "Window (seconds)",
+									"description": "The length of the window, in seconds."
+								}
+							}
+						}
+					},
+					"mcpMaxStreamSeconds": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 3600,
+						"default": 60,
+						"title": "Maximum stream duration (seconds)",
+						"description": "For an mcp endpoint: the longest an answer is relayed, an event stream included, after which integriq closes it. Every open stream holds a web server worker until it ends."
+					},
+					"mcpStoreArguments": {
+						"type": "boolean",
+						"default": false,
+						"title": "Store tool arguments",
+						"description": "For an mcp endpoint: keep the request body, and so the tool arguments, in the call log after its usual redaction. Off by default, because tool arguments may carry personal data."
+					}
+				}
+			},
+			"call_log": {
+				"properties": {
+					"mcpMethod": {
+						"type": "string",
+						"title": "MCP method",
+						"description": "For a call through an mcp endpoint: the JSON-RPC method, such as initialize, tools/list or tools/call.",
+						"facetable": true
+					},
+					"mcpTool": {
+						"type": "string",
+						"title": "MCP tool",
+						"description": "For a tools/call through an mcp endpoint: the name of the tool called.",
+						"facetable": true
+					}
+				}
+			}
+		},
+		"objects": [
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "source",
+					"slug": "example-mcp-server"
+				},
+				"name": "Example MCP tool server",
+				"description": "An example of an outside MCP tool server reached over streamable HTTP. Disabled: set the location to your tool server and its own credential, then enable it. The endpoint mcp/example relays to the path mcp/example on this location.",
+				"type": "api",
+				"location": "https://mcp.example.nl",
+				"auth": "none",
+				"configuration": {},
+				"isEnabled": false,
+				"test": false,
+				"version": "1.0.0"
+			},
+			{
+				"@self": {
+					"register": "integriq",
+					"schema": "endpoint",
+					"slug": "mcp-example"
+				},
+				"name": "Example MCP tool server",
+				"slug": "mcp-example",
+				"description": "Publishes the example MCP tool server through the gateway: consumers call it with their API key, and the call log names each tool called. The tool search is limited to 10 calls a minute per consumer. Its source is disabled until it points at a real tool server.",
+				"endpoint": "mcp/example",
+				"endpointArray": [
+					"mcp",
+					"example"
+				],
+				"endpointRegex": "#^mcp/example$#",
+				"method": "POST",
+				"targetType": "mcp",
+				"targetId": "example-mcp-server",
+				"mcpToolLimits": {
+					"search": {
+						"limit": 10,
+						"window": 60
+					}
+				},
+				"mcpMaxStreamSeconds": 60,
+				"mcpStoreArguments": false
+			}
+		]
+	}
+}

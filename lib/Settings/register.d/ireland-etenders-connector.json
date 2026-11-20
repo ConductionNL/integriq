@@ -1,0 +1,99 @@
+{
+  "$comment": "INTEGRIQ DRAFT (native-data-gathering-provider, ported from spectr/connectors): Source and Job ship isEnabled false, per the requirement that a connector blocked on an unbuilt capability ships disabled. GAP: CSV parsing. That capability has landed in Integriq through the change mapping-formats-and-lookups (a synchronization with sourceConfig.format 'csv', REQ-MFL-001), but this draft's synchronization is not yet switched to it and its column mapping has never run against the live file; the feed is also one 100K+ row file, which is the open large-file streaming follow-up. Enable only after switching the format and one watched live run. ORIGINAL SPECTR NOTE: Phase-2 wave-2 OpenConnector ingestion config for Ireland eTenders (gov.ie Public Procurement Open Data). concurrentie-analyse/scripts/sync/sync_ireland_etenders.py downloads a single static CSV (`Public_Procurement_Opendata_Dataset.csv`, ~30 columns, 100K+ rows, 2013-present) and parses it with csv.DictReader (delimiter auto-detected among , ; tab | ; multi-encoding fallback utf-8-sig/utf-8/latin-1/cp1252). Public, unauthenticated (keyless - docstring: 'No authentication required - direct download'). SHIPPED AS A DOCUMENTED DRAFT, Source + Job DISABLED, blocked by a genuine engine gap NOT closed by openconnector#105: CSV parsing. oc#105 added JSONL (`format:\"jsonl\"`, one JSON object per line) and single-file gzip - it did NOT add delimited/CSV parsing. fetchSinglePageData() attempts gunzip (n/a), then json_decode (fails on CSV), then simplexml (fails on CSV) - a CSV body silently yields zero objects. Additional blocker even if CSV were supported: the script resolves column names via a fuzzy multi-candidate find_column() (e.g. id from any of Tender ID / TenderID / tender_id / ID) because the live header names are unstable across re-publishes - a declarative mapping must hardcode ONE exact header set, which would need live pinning against the current file. The mapping below is authored against the script's PREFERRED candidate names (Tender ID, Tender Name, Contracting Authority, Publication Date, Closing Date, CPV Codes, Estimated Value, Procedure Type, Contract Type, Awarded Suppliers) so it is a starting point for the day OpenConnector grows a CSV format mode, but is not usable today. Recommended interim path: the existing etl/ CSV loader (etl/bulk_load.sh) already handles delimited bulk files - route this through it rather than a declarative Source. TED v3 carries Ireland's above-threshold EU notices meanwhile. The script's own CPV 48/72 filter is a DB-side classification layer over the full CSV, not an API constraint.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "ireland-etenders"
+        },
+        "name": "Ireland eTenders (gov.ie Open Data)",
+        "description": "Irish public procurement open-data CSV (assets.gov.ie). Public, unauthenticated, single bulk CSV file. DRAFT - ships DISABLED: Integriq parses CSV (a synchronization with sourceConfig.format 'csv'), but this draft's synchronization is not switched to it yet and has not run live; see $comment. Would feed the spectr `tender` register/schema.",
+        "type": "api",
+        "location": "https://assets.gov.ie/static/documents/7ba65f1b",
+        "auth": "none",
+        "documentation": "https://www.etenders.gov.ie",
+        "configuration": {
+          "headers": {
+            "Accept": "text/csv"
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "ireland-etenders-to-tender"
+        },
+        "name": "Ireland eTenders to Spectr Tender",
+        "description": "Maps an Ireland eTenders CSV row onto the spectr `tender` schema, keyed on sync_ireland_etenders.py's preferred column names. Unused today (source is CSV, unreachable - see file $comment); ready for a future CSV engine mode after the live header set is pinned.",
+        "mapping": {
+          "sourceRef": "Tender ID",
+          "publicatieId": "{{ 'IE-' ~ (attribute(_context, 'Tender ID')|default('')) }}",
+          "source": "ireland-etenders",
+          "title": "{{ attribute(_context, 'Tender Name')|default('Irish tender') }}",
+          "displayName": "{{ (attribute(_context, 'Tender Name')|default('Irish tender'))|slice(0, 250) }}",
+          "organisation": "{{ attribute(_context, 'Contracting Authority')|default('') }}",
+          "country": "IE",
+          "publicationDate": "{{ attribute(_context, 'Publication Date')|default('') }}",
+          "closingDate": "{{ attribute(_context, 'Closing Date')|default('') }}",
+          "status": "new",
+          "procedure": "{{ attribute(_context, 'Procedure Type')|default('') }}",
+          "typeOpdracht": "{{ attribute(_context, 'Contract Type')|default('') }}",
+          "estimatedValue": "{{ attribute(_context, 'Estimated Value')|default('') }}",
+          "cpvCodes": "CPV Codes",
+          "tenderUrl": "{{ 'https://www.etenders.gov.ie/epps/cft/prepareViewCfTWS.do?resourceId=' ~ (attribute(_context, 'Tender ID')|default('')) }}"
+        },
+        "unset": [],
+        "cast": {
+          "cpvCodes": "array"
+        },
+        "passThrough": false,
+        "version": "0.1.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "ireland-etenders-to-spectr-tender"
+        },
+        "name": "Ireland eTenders to Spectr Tender",
+        "description": "DRAFT sync (blocked): would ingest the Ireland eTenders CSV -> spectr register, tender schema. Cannot run - OpenConnector has no CSV parser (see $comment). Kept for documentation and future readiness.",
+        "sourceId": "ireland-etenders",
+        "sourceType": "api",
+        "sourceTargetMapping": "ireland-etenders-to-tender",
+        "sourceConfig": {
+          "endpoint": "/Public_Procurement_Opendata_Dataset.csv",
+          "idPosition": "Tender ID",
+          "resultsPosition": "_root",
+          "usesPagination": false
+        },
+        "targetId": "spectr/tender",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "job",
+          "slug": "ireland-etenders-weekly-sync"
+        },
+        "name": "Ireland eTenders Weekly Sync",
+        "description": "Would run the ireland-etenders-to-spectr-tender synchronization weekly - ships DISABLED (blocked by the CSV engine gap, see $comment).",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "ireland-etenders-to-spectr-tender"
+        },
+        "interval": 604800,
+        "isEnabled": false,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
