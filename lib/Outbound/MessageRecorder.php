@@ -175,10 +175,7 @@ class MessageRecorder implements MessageRecorderInterface {
 			'forwardedTo' => [],
 		];
 
-		$selection = $this->describeSelection(selection: ($options['recipientSelection'] ?? null));
-		if ($selection !== null) {
-			$record['recipientSelection'] = $selection;
-		}
+		$record = $this->withSelection(record: $record, selection: ($options['recipientSelection'] ?? null));
 
 		return $this->objectService->saveObject(
 			object: $record,
@@ -193,40 +190,41 @@ class MessageRecorder implements MessageRecorderInterface {
 	 * record, reads `suppressed` with its reason, user and time, and carries no
 	 * delivery state, because nothing was attempted for it.
 	 *
+	 * The record gains `recipientSelection` only when a decision was given.
+	 *
+	 * @param array $record    The record being built.
 	 * @param mixed $selection The decision, or anything else for none.
 	 *
-	 * @return array{standing: array<int,array<string,mixed>>, added: array<int,array<string,mixed>>, suppressed: array<int,array<string,mixed>>}|null
+	 * @return array The record.
 	 *
 	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
 	 */
-	private function describeSelection(mixed $selection): ?array {
+	private function withSelection(array $record, mixed $selection): array {
 		if (is_array($selection) === false) {
-			return null;
+			return $record;
 		}
 
-		$suppressed = [];
-		foreach ((array)($selection['suppressed'] ?? []) as $row) {
-			if (is_array($row) === false) {
-				continue;
-			}
-
-			$suppressed[] = [
+		$suppressed = array_map(
+			static fn (array $row): array => [
 				'address' => (string)($row['address'] ?? ''),
 				'name' => (string)($row['name'] ?? ''),
 				'state' => RecipientState::SUPPRESSED,
 				'reason' => (string)($row['reason'] ?? ''),
 				'user' => (string)($row['user'] ?? ''),
 				'at' => (string)($row['at'] ?? ''),
-			];
-		}
+			],
+			array_values(array_filter((array)($selection['suppressed'] ?? []), 'is_array'))
+		);
 
-		return [
+		$record['recipientSelection'] = [
 			'standing' => array_values(array_filter((array)($selection['standing'] ?? []), 'is_array')),
 			'added' => array_values(array_filter((array)($selection['added'] ?? []), 'is_array')),
 			'suppressed' => $suppressed,
 		];
 
-	}//end describeSelection()
+		return $record;
+
+	}//end withSelection()
 
 	/**
 	 * Record that a step succeeded.
