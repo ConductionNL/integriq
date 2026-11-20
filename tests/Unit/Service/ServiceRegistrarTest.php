@@ -24,6 +24,8 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\ObjectRightsService;
+use OCA\Integriq\Service\ObjectRightsServiceInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapterInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
@@ -34,6 +36,8 @@ use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
+use OCA\Integriq\Service\Chat\TalkMessageSource;
+use OCA\Integriq\Service\Chat\TalkMessageSourceInterface;
 use OCA\Integriq\Service\AgentTools\AgentActionStore;
 use OCA\Integriq\Service\AgentTools\AgentActionStoreInterface;
 use OCA\Integriq\Service\AgentTools\AgentBatchGate;
@@ -210,6 +214,12 @@ use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCA\Integriq\Service\Mtls\MtlsTransportServiceInterface;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\Integriq\Service\NotificatiesSubscriberServiceInterface;
+use OCA\Integriq\Service\OAuth\IssuerKeyService;
+use OCA\Integriq\Service\OAuth\IssuerKeyServiceInterface;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadata;
+use OCA\Integriq\Service\OAuth\ProtectedResourceMetadataInterface;
+use OCA\Integriq\Service\OAuth\TokenIssuer;
+use OCA\Integriq\Service\OAuth\TokenIssuerInterface;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjectEndpointHandlerInterface;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
@@ -426,6 +436,9 @@ class ServiceRegistrarTest extends TestCase {
 		UwlrEduVServiceInterface::class => UwlrEduVService::class,
 		PaymentIntentServiceInterface::class => PaymentIntentService::class,
 		EudiIssuerKeyServiceInterface::class => EudiIssuerKeyService::class,
+		TokenIssuerInterface::class => TokenIssuer::class,
+		IssuerKeyServiceInterface::class => IssuerKeyService::class,
+		ProtectedResourceMetadataInterface::class => ProtectedResourceMetadata::class,
 		VerzuimloketServiceInterface::class => VerzuimloketService::class,
 		LtiPlatformLoginServiceInterface::class => LtiPlatformLoginService::class,
 		RodServiceInterface::class => RodService::class,
@@ -474,11 +487,13 @@ class ServiceRegistrarTest extends TestCase {
 		UnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
 		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
+		TalkMessageSourceInterface::class => TalkMessageSource::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
 		CallerSearchInterface::class => ConfiguredCallerSearch::class,
 		IntakeGroupsInterface::class => IntakeGroups::class,
 		ObjecttypeEndpointHandlerInterface::class => ObjecttypeEndpointHandler::class,
 		ActionAuthServiceInterface::class => ActionAuthService::class,
+		ObjectRightsServiceInterface::class => ObjectRightsService::class,
 		LtiNrpsServiceInterface::class => LtiNrpsService::class,
 		RecordProvenanceServiceInterface::class => RecordProvenanceService::class,
 		SubscriptionRequestHandlerInterface::class => SubscriptionRequestHandler::class,

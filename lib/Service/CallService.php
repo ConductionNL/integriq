@@ -95,6 +95,11 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/http-call-engine/spec.md
  * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+ *
+ * relay() is the streaming entry point next to call(); both are the public
+ * surface the endpoint handlers use.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class CallService implements CallServiceInterface {
 	use OrganisationBoundary;
@@ -2424,6 +2429,7 @@ class CallService implements CallServiceInterface {
 					asynchronous: false,
 					brokeredCredential: $prepared['brokeredCredential'],
 					sink: $prepared['request']->sink,
+					onHeaders: $prepared['request']->onHeaders,
 				);
 			} catch (\Throwable $exception) {
 				// Note: dispatchRequest() already converts a Guzzle
@@ -3447,6 +3453,61 @@ class CallService implements CallServiceInterface {
 		return $this->finalizeCall(prepared: $prepared, dispatched: $dispatched);
 
 	}//end call()
+
+	/**
+	 * Relay one call to a source straight to the caller, as it arrives.
+	 *
+	 * The call takes the same path as {@see call()} (the source's credential,
+	 * the SSRF containment, retries, the circuit breaker and the call log),
+	 * with two differences: the response body streams into `$sink` instead of
+	 * being buffered, and `$onHeaders` gets the upstream response as soon as
+	 * its status and headers arrive, before the first body byte. The MCP
+	 * gateway uses it to pass an answer, an event stream included, through
+	 * unchanged (gateway-mcp-proxy D2). The call log records no response body.
+	 *
+	 * @param ObjectEntity               $source         The source to call.
+	 * @param string                     $endpoint       The path on the source.
+	 * @param string                     $method         The HTTP method.
+	 * @param array<string, mixed>       $config         The request configuration (headers, body, timeout).
+	 * @param mixed                      $sink           A writable PSR-7 stream the body is relayed into.
+	 * @param callable                   $onHeaders      Called with the PSR-7 response once its headers arrived.
+	 * @param bool                       $withholdBodies When true, the call log keeps no request body either.
+	 * @param ExecutionTraceContext|null $trace          The active execution trace context, when any.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 */
+	public function relay(
+		ObjectEntity $source,
+		string $endpoint,
+		string $method,
+		array $config,
+		mixed $sink,
+		callable $onHeaders,
+		bool $withholdBodies = true,
+		?ExecutionTraceContext $trace = null,
+	): ObjectEntity {
+		$prepared = $this->prepareCall(
+			source: $source,
+			request: new CallRequest(
+				endpoint: $endpoint,
+				method: $method,
+				config: $config,
+				sink: $sink,
+				trace: $trace,
+				onHeaders: $onHeaders,
+				withholdBodies: $withholdBodies,
+			)
+		);
+		if ($prepared['shortCircuit'] !== null) {
+			return $prepared['shortCircuit'];
+		}
+
+		$prepared = $this->withTraceParent(prepared: $prepared, trace: $trace);
+		$dispatched = $this->dispatchWithRetry(prepared: $prepared);
+		return $this->finalizeCall(prepared: $prepared, dispatched: $dispatched);
+	}//end relay()
 
 	/**
 	 * Give an outbound call made during a trace a W3C traceparent naming the

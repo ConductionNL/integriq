@@ -1554,6 +1554,18 @@
             }
           },
           {
+            "key": "mcpMethod",
+            "label": "MCP method",
+            "type": "select",
+            "options": [
+              { "label": "Session start", "filter": { "mcpMethod": "initialize" } },
+              { "label": "Tool list", "filter": { "mcpMethod": "tools/list" } },
+              { "label": "Tool call", "filter": { "mcpMethod": "tools/call" } },
+              { "label": "Resource request", "filter": { "mcpMethod": "resources/read" } },
+              { "label": "Prompt request", "filter": { "mcpMethod": "prompts/get" } }
+            ]
+          },
+          {
             "key": "direction",
             "label": "Direction",
             "type": "select",
@@ -1645,8 +1657,14 @@
             "key": "request.url",
             "label": "URL",
             "sortable": false,
-            "width": "40%",
+            "width": "28%",
             "cellClass": "cn-cell--truncate"
+          },
+          {
+            "key": "mcpTool",
+            "label": "MCP tool",
+            "sortable": true,
+            "width": "12%"
           },
           {
             "key": "response.responseTime",
