@@ -573,6 +573,22 @@ class EndpointService implements EndpointServiceInterface {
 	}//end asProblem()
 
 	/**
+	 * A 500 problem document for an entry point that failed before it had an answer.
+	 *
+	 * Keeps the deprecated `error` member, as {@see ProblemResponse::fromLegacy()} does.
+	 *
+	 * @param string        $detail  The message, also carried as `error`.
+	 * @param IRequest|null $request The request, for the instance member; null when there is none.
+	 *
+	 * @return ProblemResponse
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 */
+	private function internalProblem(string $detail, ?IRequest $request): ProblemResponse {
+		return ProblemResponse::fromLegacy(data: ['error' => $detail], status: Http::STATUS_INTERNAL_SERVER_ERROR, instance: $request?->getId());
+	}//end internalProblem()
+
+	/**
 	 * Handles incoming requests to endpoints, applying inbound rate-limit headers.
 	 *
 	 * Thin wrapper over {@see doHandleRequest()} that attaches the IETF
@@ -648,10 +664,11 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param ObjectEntity $endpoint The endpoint configuration to trigger.
 	 * @param array $parameters Optional static key/value parameters configured on the Flow rule.
 	 *
-	 * @return Response The response `handleRequest()` produced, or a 500 `JSONResponse`
+	 * @return Response The response `handleRequest()` produced, or a 500 problem document
 	 *                  when synthetic-request construction fails (see `buildSyntheticRequest()`).
 	 *
 	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operation-s-onevent-must-dispatch-to-endpointservice-triggerfromflow-req-003
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function triggerFromFlow(ObjectEntity $endpoint, array $parameters = []): Response {
 		try {
@@ -662,7 +679,7 @@ class EndpointService implements EndpointServiceInterface {
 				['exception' => $e]
 			);
 
-			return new JSONResponse(['error' => 'Unable to synthesize a request for this endpoint trigger'], 500);
+			return $this->internalProblem(detail: 'Unable to synthesize a request for this endpoint trigger', request: null);
 		}
 
 		return $this->handleRequest(endpoint: $endpoint, request: $request, path: '');
@@ -1426,10 +1443,11 @@ class EndpointService implements EndpointServiceInterface {
 	 *                                          SAME trace and `execution_trace` is UPDATED
 	 *                                          (not created), per design.md Decision 2.
 	 *
-	 * @return Response The resumed pipeline's final result.
+	 * @return Response The resumed pipeline's final result; an error is a problem document.
 	 *
 	 * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution-trace-object-per-execution-req-004
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function resumeFromApproval(
 		ObjectEntity $endpoint,
@@ -1473,7 +1491,7 @@ class EndpointService implements EndpointServiceInterface {
 
 			$this->finalizeTrace(trace: $trace, response: $response, resume: true);
 
-			return $response;
+			return $this->asProblem(response: $response, request: $request);
 		} catch (Exception $e) {
 			$this->logger->error(
 				'Error resuming endpoint request after approval: ' . $e->getMessage(),
@@ -1491,7 +1509,7 @@ class EndpointService implements EndpointServiceInterface {
 				resume: true
 			);
 
-			return new JSONResponse(['error' => 'Internal server error'], 500);
+			return $this->internalProblem(detail: 'Internal server error', request: $request);
 		}//end try
 
 	}//end resumeFromApproval()
@@ -1522,10 +1540,11 @@ class EndpointService implements EndpointServiceInterface {
 	 *                                     `isReplay: true`/`replayOf` by the caller).
 	 * @param boolean $dryRun Whether to suppress write-shaped rule dispatch. Defaults to true.
 	 *
-	 * @return Response The replayed pipeline's final result.
+	 * @return Response The replayed pipeline's final result; an error is a problem document.
 	 *
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-dry-run-replay-performs-no-writes-req-005
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-forced-replay-reuses-the-original-entry-point-s-real-dispatch-path-req-006
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function replay(ObjectEntity $endpoint, array $requestSnapshot, ExecutionTraceContext $trace, bool $dryRun = true): Response {
 		try {
@@ -1554,7 +1573,7 @@ class EndpointService implements EndpointServiceInterface {
 				dryRun: $dryRun
 			);
 
-			return $this->dispatchAfterBeforeRules(
+			$response = $this->dispatchAfterBeforeRules(
 				endpoint: $endpoint,
 				request: $syntheticRequest,
 				path: $path,
@@ -1564,12 +1583,14 @@ class EndpointService implements EndpointServiceInterface {
 				trace: $trace,
 				dryRun: $dryRun
 			);
+
+			return $this->asProblem(response: $response, request: $syntheticRequest);
 		} catch (Exception $e) {
 			$this->logger->error(
 				'Error replaying endpoint execution_trace: ' . $e->getMessage(),
 				['exception' => $e]
 			);
-			return new JSONResponse(['error' => 'Internal server error'], 500);
+			return $this->internalProblem(detail: 'Internal server error', request: null);
 		}//end try
 
 	}//end replay()
