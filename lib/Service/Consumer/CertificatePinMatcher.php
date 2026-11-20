@@ -138,7 +138,7 @@ class CertificatePinMatcher {
 			return false;
 		}
 
-		return (new QuietCall())->run(static fn (): int|false => openssl_x509_verify($certificate->pem, (string) $issuer)) === 1;
+		return (new QuietCall())->run(static fn (): int => openssl_x509_verify($certificate->pem, (string) $issuer)) === 1;
 	}//end issuerPins()
 
 	/**
