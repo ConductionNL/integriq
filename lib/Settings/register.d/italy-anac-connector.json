@@ -1,0 +1,106 @@
+{
+  "$comment": "INTEGRIQ DRAFT (native-data-gathering-provider, ported from spectr/connectors): Source and Job ship isEnabled false, per the requirement that a connector blocked on an unbuilt capability ships disabled. GAP: an N+1 two-hop fetch (an id list, then one detail request per id). Follow-up: the 'N+1 two-hop' change listed in native-data-gathering-provider tasks.md (Wave 2), not opened yet. Enable only once that change lands. ORIGINAL SPECTR NOTE: Phase-2 wave-2 OpenConnector ingestion config for Italy ANAC (Autorita Nazionale Anticorruzione OCDS API, api.anticorruzione.it/opendata/ocds/api/v1/1.0.0). Mirrors concurrentie-analyse/scripts/sync/sync_italy_anac.py. Public, unauthenticated (keyless - docstring: 'No authentication required'). SHIPPED AS A DOCUMENTED DRAFT, Source + Job DISABLED, because of a genuine engine-shape blocker that neither oc#105 nor any current OpenConnector capability addresses: ANAC exposes NO bulk/list-of-releases endpoint. The real feed is a TWO-HOP N+1 fan-out - (1) GET /tender/ids returns a bare list of {\"value\": <id>} stubs (ids only, no tender content), then (2) the script fetches /releases/tender/{id} ONCE PER ID to get each actual OCDS release. OpenConnector's declarative synchronize path is single-fetch-then-map: `resultsPosition` extracts a records array from ONE fetched page and maps each element; it has no mechanism to take each element of a fetched list and issue a follow-up per-element HTTP GET to a Twig-templated detail endpoint, then map THOSE responses. (The `followUps`/`data`-injection machinery drives whole additional synchronizations, not a per-row detail fetch within one.) So pointing a Source at /tender/ids would only ever ingest id-stubs (no title/buyer/value), and pointing it at /releases/tender/{id} needs one id per run supplied externally - neither is a usable unattended feed. The mapping below is authored against the real /releases/tender/{id} OCDS release shape (ocid, tender.description as title - ANAC has no separate title field, buyer.name, tender.tenderPeriod.startDate/endDate, tender.items[].classification.id, tender.value.amount, tender.procurementMethodDetails, tender.mainProcurementCategory - all confirmed field paths from the script) so it is READY THE DAY OpenConnector grows a list-then-detail (N+1 detail-fetch) sync mode; until then it lands 0 objects. Additional script-confirmed quirks that would matter even with a detail-fetch mode: ANAC responses are slow (3-60s/id, script sets a 90s timeout) and UUID-style / special-char ids consistently time out or return [] (the script skips them via looks_like_problematic_id()) - a naive per-id crawl would be both slow and partially failing. Awards live inline in awards[] (no fan-out to tenderAward, per the declarative one-source->one-target limit). Recommended interim path if Italy coverage is needed before an N+1 mode exists: an ETL-style loader in etl/ (walk the id list, fetch each release, bulk-create) - out of this batch's scope. TED v3 already carries Italy's above-threshold EU notices meanwhile.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "italy-anac"
+        },
+        "name": "Italy ANAC (OCDS)",
+        "description": "Italian national anti-corruption authority OCDS procurement API (api.anticorruzione.it). Public, unauthenticated. DRAFT - ships DISABLED: the feed is a two-hop id-list-then-per-id-detail fan-out with no bulk endpoint, which Integriq's single-fetch synchronization cannot drive yet; see $comment. Would feed the spectr `tender` register/schema.",
+        "type": "api",
+        "location": "https://api.anticorruzione.it/opendata/ocds/api/v1/1.0.0",
+        "auth": "none",
+        "documentation": "https://dati.anticorruzione.it/opendata/ocds/api/ui",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "italy-anac-to-tender"
+        },
+        "name": "Italy ANAC to Spectr Tender",
+        "description": "Maps a single ANAC /releases/tender/{id} OCDS release onto the spectr `tender` schema. Authored against the real release shape (from sync_italy_anac.py) so it is ready for a future N+1 detail-fetch sync mode; unused today because the source cannot be fetched declaratively (see file $comment). Optional fields Twig-wrapped per IMPORT.md; cpvCodes bare dot-path + cast:array.",
+        "mapping": {
+          "sourceRef": "{{ tender.id|default(ocid) }}",
+          "publicatieId": "{{ 'italy-anac-' ~ (tender.id|default(ocid)) }}",
+          "source": "italy-anac",
+          "title": "{{ tender.description|default('Italian tender ' ~ ocid) }}",
+          "displayName": "{{ (tender.description|default('Italian tender ' ~ ocid))|slice(0, 250) }}",
+          "organisation": "{{ buyer.name|default('') }}",
+          "country": "IT",
+          "description": "{{ tender.description|default('') }}",
+          "publicationDate": "{{ (tender.tenderPeriod.startDate|default(''))|slice(0, 10) }}",
+          "closingDate": "{{ tender.tenderPeriod.endDate|default('') }}",
+          "status": "new",
+          "procedure": "{{ tender.procurementMethodDetails|default('') }}",
+          "typeOpdracht": "{{ tender.mainProcurementCategory|default('') }}",
+          "estimatedValue": "{{ tender.value.amount|default('') }}",
+          "currency": "{{ tender.value.currency|default('EUR') }}",
+          "cpvCodes": "tender.items.0.classification.id",
+          "tenderUrl": "{{ 'https://dati.anticorruzione.it/#/dettaglio-appalto?cig=' ~ (tender.id|default(ocid)) }}"
+        },
+        "unset": [],
+        "cast": {
+          "cpvCodes": "array"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "italy-anac-to-spectr-tender"
+        },
+        "name": "Italy ANAC to Spectr Tender",
+        "description": "DRAFT sync (blocked): would ingest ANAC OCDS releases -> spectr register, tender schema. Cannot run today - the source is a two-hop id-list-then-per-id-detail fan-out with no bulk endpoint (see $comment); OpenConnector's single-fetch declarative sync has no per-row detail-fetch step. `endpoint` points at the id-list surface for documentation; `resultsPosition: 'value'` reflects the id-stub shape it would land (ids only, not full releases) which is why this is not enabled.",
+        "sourceId": "italy-anac",
+        "sourceType": "api",
+        "sourceTargetMapping": "italy-anac-to-tender",
+        "sourceConfig": {
+          "endpoint": "/tender/ids",
+          "query": {
+            "filterField": "tenderStartDate",
+            "limit": 100,
+            "offset": 0
+          },
+          "idPosition": "value",
+          "resultsPosition": "_root",
+          "usesPagination": false
+        },
+        "targetId": "spectr/tender",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "job",
+          "slug": "italy-anac-weekly-sync"
+        },
+        "name": "Italy ANAC Weekly Sync",
+        "description": "Would run the italy-anac-to-spectr-tender synchronization weekly - ships DISABLED (blocked by the two-hop N+1 engine gap, see $comment). Enable only after OpenConnector grows a list-then-detail sync mode or an ETL loader is built.",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "italy-anac-to-spectr-tender"
+        },
+        "interval": 604800,
+        "isEnabled": false,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
