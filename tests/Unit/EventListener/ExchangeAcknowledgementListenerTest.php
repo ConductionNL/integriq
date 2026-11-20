@@ -39,6 +39,8 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * REQ-013 scenarios, through the real acknowledgement events and the real
@@ -84,7 +86,10 @@ class ExchangeAcknowledgementListenerTest extends TestCase {
 
 		$objects = $this->createMock(ORObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null, ...$rest) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$uuid = $uuid ?? ($schema . '-' . (count($this->store) + 1));
 				$this->store[$uuid] = $object;
 				$this->schemaOf[$uuid] = (string)$schema;
@@ -93,6 +98,7 @@ class ExchangeAcknowledgementListenerTest extends TestCase {
 		);
 		$objects->method('find')->willReturnCallback(
 			function ($id, ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				if (isset($this->store[$id]) === false) {
 					throw new \RuntimeException('not found');
 				}
@@ -307,4 +313,36 @@ class ExchangeAcknowledgementListenerTest extends TestCase {
 		}
 
 	}//end testTheListenerIsRegisteredForEveryAdaptersAcknowledgement()
+
+	/**
+	 * A failure while reporting is logged with the job, never thrown.
+	 *
+	 * @return void
+	 */
+	public function testAFailureWhileReportingIsLoggedNotThrown(): void {
+		$jobs = $this->createMock(\OCA\Integriq\Service\Exchange\ExchangeJobServiceInterface::class);
+		$jobs->method('findJob')->willThrowException(new \RuntimeException('register down'));
+		$logged = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('error')->willReturnCallback(
+			function (string $message, array $context) use (&$logged): void {
+				$logged[] = [$message, $context];
+			}
+		);
+		$listener = new ExchangeAcknowledgementListener(
+			jobs: $jobs,
+			rejections: $this->createMock(\OCA\Integriq\Service\Exchange\ExchangeRejectionServiceInterface::class),
+			targets: new ExchangeTargetCatalogue(),
+			dispatcher: $this->createMock(IEventDispatcher::class),
+			logger: $logger
+		);
+
+		$listener->handle(new OsoAcknowledgementReceivedEvent('job-x:r-1:extra', 'OSO-1', null, false));
+
+		$this->assertSame(
+			[['[integriq] an acknowledgement for exchange job {job} could not be recorded: {error}', ['job' => 'job-x', 'error' => 'register down']]],
+			$logged
+		);
+
+	}//end testAFailureWhileReportingIsLoggedNotThrown()
 }//end class

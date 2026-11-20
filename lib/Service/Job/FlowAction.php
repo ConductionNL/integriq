@@ -30,6 +30,7 @@ namespace OCA\Integriq\Service\Job;
 
 use Exception;
 use OCA\Integriq\Service\FlowRunnerServiceInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -94,6 +95,18 @@ class FlowAction {
 			return $response;
 		}
 
+		return $this->runFlow(flow: $flow, response: $response);
+	}//end run()
+
+	/**
+	 * Run the found flow and report how its run ended.
+	 *
+	 * @param ObjectEntity $flow     The flow.
+	 * @param array        $response The response so far.
+	 *
+	 * @return array The response.
+	 */
+	private function runFlow(ObjectEntity $flow, array $response): array {
 		$response['stackTrace'][] = 'Running flow';
 		try {
 			$flowRun = $this->flowRunnerService->run(flow: $flow, triggerSource: 'cron');
@@ -106,15 +119,28 @@ class FlowAction {
 
 		$status = (string)($flowRun->getObject()['status'] ?? '');
 
-		$response['level'] = 'SUCCESS';
-		if ($status === 'dead_letter' || $status === 'suspended') {
-			$response['level'] = 'WARNING';
-		} elseif (in_array($status, self::ERROR_STATUSES, true) === true) {
-			$response['level'] = 'ERROR';
-		}
-
+		$response['level'] = self::levelFor(status: $status);
 		$response['stackTrace'][] = $response['message'] = 'Flow run ended with status: ' . $status;
 
 		return $response;
-	}//end run()
+	}//end runFlow()
+
+	/**
+	 * The job_log level of a flow_run status.
+	 *
+	 * @param string $status The flow_run status.
+	 *
+	 * @return string SUCCESS, WARNING or ERROR.
+	 */
+	private static function levelFor(string $status): string {
+		if ($status === 'dead_letter' || $status === 'suspended') {
+			return 'WARNING';
+		}
+
+		if (in_array($status, self::ERROR_STATUSES, true) === true) {
+			return 'ERROR';
+		}
+
+		return 'SUCCESS';
+	}//end levelFor()
 }//end class

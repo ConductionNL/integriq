@@ -34,10 +34,12 @@ namespace OCA\Integriq\Service;
 use DateInterval;
 use DateTime;
 use OCA\Integriq\Exception\Psd2ProviderException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Psd2\LogPsd2AggregatorProvider;
 use OCA\Integriq\Service\Psd2\Psd2AggregatorProviderInterface;
 use OCA\Integriq\Service\Psd2\Psd2ConsentRevokedException;
 use OCA\Integriq\Service\Psd2\RestPsd2AggregatorProvider;
+use OCA\Integriq\Service\Helper\RandomUuid;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -211,8 +213,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 				'accounts' => [],
 				'lifecycleState' => 'pending',
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONNECTION
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_CONNECTION)
 		);
 
 		return [
@@ -288,9 +289,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONNECTION,
-			uuid: $connection->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_CONNECTION, uuid: $connection->getUuid())
 		);
 
 		$this->emitConsentEvent(type: self::EVENT_TYPE_CONSENT_GRANTED, connection: $saved);
@@ -356,9 +355,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONNECTION,
-			uuid: $connection->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_CONNECTION, uuid: $connection->getUuid())
 		);
 
 		return $data['accounts'];
@@ -461,9 +458,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 		$data['lastSyncAt'] = $run->until;
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONNECTION,
-			uuid: $connection->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_CONNECTION, uuid: $connection->getUuid())
 		);
 
 		// Keep the in-memory entity in step for callers holding the reference.
@@ -535,8 +530,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 				'transactionCount' => count($pull['transactions']),
 				'transactions' => $pull['transactions'],
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_BATCH
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_BATCH)
 		);
 
 		$this->eventService->emitCloudEvent(
@@ -598,9 +592,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 			$data['lifecycleState'] = 'expired';
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_CONNECTION,
-				uuid: $connection->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_CONNECTION, uuid: $connection->getUuid())
 			);
 			$connection->setObject($saved->getObject());
 			$this->logger->info(
@@ -617,9 +609,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 			$data['expiryWarnedAt'] = $now->format('c');
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_CONNECTION,
-				uuid: $connection->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_CONNECTION, uuid: $connection->getUuid())
 			);
 			$connection->setObject($saved->getObject());
 			$this->logger->info(
@@ -652,9 +642,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONNECTION,
-			uuid: $connection->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_CONNECTION, uuid: $connection->getUuid())
 		);
 
 		$this->logger->warning(
@@ -916,10 +904,6 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 	 * @return string The generated UUID.
 	 */
 	private function generateUuid(): string {
-		$bytes = random_bytes(16);
-		$bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
-		$bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+		return RandomUuid::version4();
 	}//end generateUuid()
 }//end class

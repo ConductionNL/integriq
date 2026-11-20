@@ -17,6 +17,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -27,6 +30,7 @@ use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Contract upsert identity.
@@ -115,12 +119,12 @@ class SynchronizationContractIdentityTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->anything(),
-				$this->equalTo('integriq'),
-				$this->equalTo('synchronization_contract'),
-				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->anything(),
+					'register' => $this->equalTo('integriq'),
+					'schema' => $this->equalTo('synchronization_contract'),
+					'uuid' => $this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33'),
+				]))
 			->willReturn($saved);
 
 		$this->service->persist(contract: [
@@ -150,12 +154,12 @@ class SynchronizationContractIdentityTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->anything(),
-				$this->equalTo('integriq'),
-				$this->equalTo('synchronization_contract'),
-				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->anything(),
+					'register' => $this->equalTo('integriq'),
+					'schema' => $this->equalTo('synchronization_contract'),
+					'uuid' => $this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33'),
+				]))
 			->willReturn($saved);
 
 		$this->service->persist(
@@ -182,6 +186,7 @@ class SynchronizationContractIdentityTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				function (...$args) use ($saved, &$seen): mixed {
+					$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 					$seen = ($args[3] ?? null);
 
 					return $saved;
@@ -216,6 +221,7 @@ class SynchronizationContractIdentityTest extends TestCase {
 
 		$this->orObjectService->method('saveObjects')->willReturnCallback(
 			function (...$args) use (&$rows): array {
+				$args = LegacyObjectArgs::positional(method: 'saveObjects', args: $args);
 				$rows = ($args[0] ?? null);
 
 				return ['statistics' => ['saved' => 0, 'updated' => 1, 'invalid' => 0, 'errors' => 0]];
@@ -244,6 +250,7 @@ class SynchronizationContractIdentityTest extends TestCase {
 
 		$this->orObjectService->method('saveObjects')->willReturnCallback(
 			function (...$args) use (&$rows): array {
+				$args = LegacyObjectArgs::positional(method: 'saveObjects', args: $args);
 				$rows = ($args[0] ?? null);
 
 				return ['statistics' => ['saved' => 1, 'updated' => 0, 'invalid' => 0, 'errors' => 0]];
@@ -267,6 +274,7 @@ class SynchronizationContractIdentityTest extends TestCase {
 
 		$this->orObjectService->method('saveObjects')->willReturnCallback(
 			function (...$args) use (&$rows): array {
+				$args = LegacyObjectArgs::positional(method: 'saveObjects', args: $args);
 				$rows = ($args[0] ?? null);
 
 				return ['statistics' => ['saved' => 1, 'updated' => 0, 'invalid' => 0, 'errors' => 0]];

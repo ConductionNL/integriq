@@ -21,6 +21,9 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/rule-pipeline/spec.md
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -28,6 +31,7 @@ namespace OCA\Integriq\Service;
 use Adbar\Dot;
 use Exception;
 use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistryInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -165,6 +169,7 @@ class RuleService {
 		if (count($sources) > 0) {
 			$source = $sources[0];
 		} else {
+			// Unscoped: a rule run records the external source it fetches from, during a run that may have no user.
 			$source = $this->orObjectService->saveObject(
 				object: [
 					'location' => $url,
@@ -172,10 +177,9 @@ class RuleService {
 					'type' => 'api',
 					'isEnabled' => true,
 				],
-				register: 'integriq',
-				schema: 'source',
+				options: RegisterSave::options(register: 'integriq', schema: 'source'),
 				_rbac: false,
-				_multitenancy: false,
+				_multitenancy: false
 			);
 		}
 
@@ -253,35 +257,9 @@ class RuleService {
 					)
 				);
 			} catch (ValidationException $exception) {
-				return new JSONResponse(
-					data: [
-						'message' => 'Invalid Input',
-						'error' => 'The object referenced in field ' . $property['property'] . ' is not valid',
-						'errors' => [
-							[
-								'name' => $propName,
-								'code' => 'invalid-resource',
-								'reason' => 'The resource is not valid',
-							],
-						],
-					],
-					statusCode: 400
-				);
+				return $this->invalidInput(error: 'The object referenced in field ' . $property['property'] . ' is not valid', field: $propName);
 			} catch (Exception $exception) {
-				return new JSONResponse(
-					data: [
-						'message' => 'Invalid Input',
-						'error' => $exception->getMessage(),
-						'errors' => [
-							[
-								'name' => $propName,
-								'code' => 'invalid-resource',
-								'reason' => 'The resource is not valid',
-							],
-						],
-					],
-					statusCode: 400
-				);
+				return $this->invalidInput(error: $exception->getMessage(), field: $propName);
 			}//end try
 		}//end foreach
 
@@ -292,4 +270,31 @@ class RuleService {
 
 		return $data;
 	}//end extendExternalUrl()
+
+	/**
+	 * The 400 answer for an external object a field references but that cannot be used.
+	 *
+	 * @param string $error The error sentence.
+	 * @param string $field The referencing field's last path segment.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function invalidInput(string $error, string $field): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'message' => 'Invalid Input',
+				'error' => $error,
+				'errors' => [
+					[
+						'name' => $field,
+						'code' => 'invalid-resource',
+						'reason' => 'The resource is not valid',
+					],
+				],
+			],
+			statusCode: 400
+		);
+	}//end invalidInput()
 }//end class

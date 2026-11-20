@@ -46,6 +46,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @spec openspec/specs/endoflife-date-source/spec.md#requirement-each-curated-product-syncs-its-cycles-via-a-dedicated-engine-native-synchronization
@@ -181,9 +184,8 @@ class EndoflifeDateSyncTest extends TestCase {
 	 * @return array<string, int>
 	 */
 	private function findParamPositions(): array {
-		$rm = new ReflectionMethod(ORObjectService::class, 'find');
 		$positions = [];
-		foreach ($rm->getParameters() as $i => $p) {
+		foreach (LegacyObjectArgs::parameters(class: ORObjectService::class, method: 'find') as $i => $p) {
 			$positions[$p->getName()] = $i;
 		}
 
@@ -246,7 +248,9 @@ class EndoflifeDateSyncTest extends TestCase {
 		// two writes of one object must collapse to ONE row, or a store that
 		// appended would report a duplicate that production does not create.
 		$this->orObjectService->method('saveObjects')->willReturnCallback(
-			function (array $objects, $register = null, $schema = null, ...$rest): array {
+			function (array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest): array {
+				$register = $options->defaults->register;
+				$schema = $options->defaults->schema;
 				$saved = [];
 				foreach ($objects as $object) {
 					$key = ($object['uuid'] ?? ($object['id'] ?? null));
@@ -267,7 +271,10 @@ class EndoflifeDateSyncTest extends TestCase {
 		);
 
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, ...$rest) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($schema === 'synchronization_contract') {
 					$key = ($uuid ?? ($object['uuid'] ?? 'contract-' . (count($this->contractStore) + 1)));
 					$this->contractStore[$key] = $object;
@@ -339,6 +346,7 @@ class EndoflifeDateSyncTest extends TestCase {
 		$findPos = $this->findParamPositions();
 		$this->orObjectService->method('find')->willReturnCallback(
 			function (...$args) use ($findPos) {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$id = ($args[$findPos['id']] ?? null);
 				$schema = ($args[$findPos['schema']] ?? null);
 

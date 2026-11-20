@@ -8,16 +8,27 @@
 
 ## Contract and boundary (spec)
 
-- [ ] Confirm the gather contract shape against the shipped `tenderned.json`
+- [x] Confirm the gather contract shape against the shipped `tenderned.json`
   bundle (Source + Mapping×2 + Synchronization + Job; `targetType:
   "register/schema"`, `targetId: "spectr/tender"`) and against
-  `SynchronizationService` / `JobService` / `Cron/JobTask` at HEAD
-- [ ] Confirm the Integriq-vs-leaf split against OpenRegister
+  `SynchronizationService` / `JobService` / `Cron/JobTask` at HEAD — confirmed
+  and enforced by `tests/Unit/Settings/GatherContractTest.php` for all ten
+  Wave-0 fragments (register/schema target, own Source and Mappings, Job via
+  `SynchronizationAction`); the cron class lives at
+  `lib/BackgroundJob/JobTask.php` (a `TimedJob`), not `lib/Cron/`
+- [x] Confirm the Integriq-vs-leaf split against OpenRegister
   `integration-leaf-foundation` and `object-source-providers` (transport-only
-  source = no Synchronization + no Job; leaf = per-object live read)
-- [ ] Confirm the flow-reaction seam: OpenRegister emits object-created/updated
+  source = no Synchronization + no Job; leaf = per-object live read) —
+  OpenRegister main carries `Service/Integration/IntegrationProvider` and
+  `Service/ObjectSource/ObjectSourceProvider`; `GatherContractTest` asserts the
+  BRP/KvK/xWiki seeds ship no Synchronization or Job and no shipped
+  Synchronization gathers from them
+- [x] Confirm the flow-reaction seam: OpenRegister emits object-created/updated
   events on write; or#2068 trigger set consumes them; no gather-side flow-engine
-  dependency
+  dependency — gathered rows are written through OpenRegister's
+  `ObjectService::saveObject` (which raises `ObjectCreatedEvent` /
+  `ObjectUpdatedEvent`); `GatherContractTest` asserts JobTask, JobService,
+  SynchronizationAction and SynchronizationService import no flow-engine class
 
 ## Wave 0 — formalize the ten live-verified connectors as register.d fragments
 
@@ -98,23 +109,62 @@
 
 ## Wave 2 — one follow-up change per capability GAP, then the connector
 
-- [ ] Open follow-up: offset/cursor pagination beyond page 1 (`start`/`rows`,
+- [x] Open follow-up: offset/cursor pagination beyond page 1 (`start`/`rows`,
   `limit`/`offset`) + a `sourceConfig.pageOffset` knob → unblocks
-  germany/france multi-page and many EU portals
-- [ ] Open follow-up: CSV / delimited parse → unblocks `ireland_etenders`,
-  `canada_canadabuys`
-- [ ] Open follow-up: `.zip` multi-member archive iterate → unblocks
-  `spain_placsp`
-- [ ] Open follow-up: N+1 two-hop (id-list then per-id detail fetch) → unblocks
-  `italy_anac`, `saashub`, `sourceforge`
-- [ ] Open follow-up: wildcard / recursive `resultsPosition` → unblocks
-  `dutch_laws_bwb` lawArticle
-- [ ] Open follow-up: incremental / since-watermark fetch cursor → high-volume
-  daily feeds
+  germany/france multi-page and many EU portals — landed on development as
+  `sourceConfig.paginationMode: "offset"` with a page size
+  (`SynchronizationService::paginationValueFor()`, CKAN `start`/`rows`
+  recognised); enabling germany/france multi-page still needs a watched run
+- [x] Open follow-up: CSV / delimited parse → unblocks `ireland_etenders`,
+  `canada_canadabuys` — landed through `mapping-formats-and-lookups`
+  (REQ-MFL-001: a synchronization with `sourceConfig.format: "csv"`, with
+  `csvDelimiter` / `csvEnclosure` / `csvHeader`); both drafts ship disabled
+  until their synchronization is switched to it and run live once
+- [x] Open follow-up: `.zip` multi-member archive iterate → unblocks
+  `spain_placsp` — landed in this change: a page that is a zip archive
+  (`Source.configuration.decompress: "zip"`, a `.zip` endpoint, or the zip
+  signature) has every file member read with the synchronization's own parser
+  and the objects joined (`SynchronizationService::readZipPage()` over
+  `ZipArchiveMembers`); `Source.configuration.zipMembers` narrows the members by
+  shell pattern; an unreadable member or an archive over 1000 members / 256 MiB
+  unpacked fails the page instead of emptying it. Pinned by
+  `ZipArchiveMembersTest` and `SynchronizationZipPageTest`. The
+  `spain-placsp` draft now carries `zipMembers: "*.atom"` and stays disabled
+  until one watched live run confirms a month fits the memory cap
+- [x] Open follow-up: N+1 two-hop (id-list then per-id detail fetch) → unblocks
+  `italy_anac`, `saashub`, `sourceforge` — already on development: a
+  synchronization's `sourceConfig.extraDataConfigs` fetches a per-object
+  detail endpoint (`staticEndpoint` filled with the listed object's id, or
+  `dynamicEndpointLocation`) and merges it (`keyToSetExtraData` /
+  `mergeExtraData`) through `fetchExtraDataForObject()`
+  (synchronization-engine REQ-002). The `italy-anac` draft stays disabled
+  until its synchronization is switched to it and run live once
+- [x] Open follow-up: wildcard / recursive `resultsPosition` → unblocks
+  `dutch_laws_bwb` lawArticle — landed in this change: a `resultsPosition`
+  with a `*` segment (each element of the list there; a single object counts
+  as one) or a `**` segment (any depth, each match once) is resolved by
+  `WildcardResultsPath` from `SynchronizationService::getAllObjectsFromArray()`;
+  a fixed dot path reads exactly as before. Pinned by `WildcardResultsPathTest`
+  and `SynchronizationWildcardPositionTest`. The `dutch_laws_bwb` draft itself
+  is still left (see the Wave-2 draft list below)
+- [x] Open follow-up: incremental / since-watermark fetch cursor → high-volume
+  daily feeds — already on development: `syncMode: "incremental"` exposes the
+  stored `cursorWatermark` as `{{ cursor }}` to `sourceConfig.endpoint` and
+  `sourceConfig.query`, advances it only after a complete fetch and never runs
+  the deletion sweep (synchronization-engine REQ-016 to REQ-019); a feed opts
+  in per synchronization
 - [ ] Open follow-up (deferred, likely ETL): large-file streaming
   decompress/parse; JS-rendered SPA headless render (`fedramp`)
 - [ ] Ship each Wave-2 connector draft `isEnabled: false` with a `$comment`
   naming its gap and follow-up change until that change lands
+  - Shipped (Source and Job `isEnabled: false`, `$comment` opens with
+    `INTEGRIQ DRAFT ... GAP:`): `ireland-etenders-connector.json`,
+    `canada-canadabuys-connector.json`, `spain-placsp-connector.json`,
+    `italy-anac-connector.json`, ported from `spectr/connectors`; pinned by
+    `GatherContractTest::testADraftShipsDisabledWithItsGapNamed` and the
+    wiring test. Left: `dutch_laws_bwb` (its fragment also seeds `spectr`
+    `law` objects, which Integriq fragments do not carry yet), `saashub`,
+    `sourceforge`, `fedramp` (no draft exists in `spectr/connectors`)
 
 ## Wave 3 — credential/broker-gated connectors (parked)
 
@@ -122,19 +172,27 @@
   (apikey), `norway_doffin` (broker `credentialRef`), `g2` / `builtwith` /
   `wappalyzer` / `saashub` (commercial keys) as fragments, `isEnabled: false`,
   secrets as `<PLACEHOLDER>` or broker reference; unpark each via its own change
+  - Shipped: `belgium-connector.json` (credentials `<PLACEHOLDER>`),
+    `norway-doffin-connector.json` (broker `credentialRef: doffin`), both with
+    Source and Job disabled. Left: `github_competitors` (two synchronizations
+    and `spectr` `competitor` seed objects in one fragment), `g2` /
+    `builtwith` / `wappalyzer` / `saashub` (no draft exists in
+    `spectr/connectors`)
 
 ## Out of scope (stay Python)
 
-- [ ] Document that the analytics/scoring scripts (`sync_adoption_metrics.py`,
+- [x] Document that the analytics/scoring scripts (`sync_adoption_metrics.py`,
   relevance/classification, `run_sync.py` orchestration) are NOT ingestion and
   remain scheduled Python jobs (earlier routing decision) — no Integriq
   connector for these
-- [ ] Document the dead tendrils (croatia native NIAS login-wall; dead legacy
-  APIs) as not-addressable, per `spectr/connectors/IMPORT.md`
+- [x] Document the dead tendrils (croatia native NIAS login-wall; dead legacy
+  APIs) as not-addressable, per `spectr/connectors/IMPORT.md` — both in
+  `docs/features/data-gathering.md`, "What stays outside Integriq"
 
 ## Validation
 
 - [x] `openspec validate native-data-gathering-provider --strict` clean
   (re-confirmed on the Wave-0 landing branch)
-- [ ] Cross-check no overlap with or#2067 / or#2068 / or#2070 / or#2071:
-  this change adds no flow node, trigger, or runtime
+- [x] Cross-check no overlap with or#2067 / or#2068 / or#2070 / or#2071:
+  this change adds no flow node, trigger, or runtime — it adds connector
+  fragments, a contract test and a feature page only

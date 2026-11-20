@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Repair;
 
 use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\SignedPayloadVerifierInterface;
@@ -119,8 +120,7 @@ class MigrateDsoStamConnection implements IRepairStep {
 					'authorizationConfiguration' => $trust,
 					'userId' => '',
 				],
-				register: PortalConnectionInterface::REGISTER,
-				schema: PortalConnectionInterface::SCHEMA_CONSUMER
+				options: RegisterSave::options(register: PortalConnectionInterface::REGISTER, schema: PortalConnectionInterface::SCHEMA_CONSUMER)
 			)
 		);
 
@@ -154,7 +154,7 @@ class MigrateDsoStamConnection implements IRepairStep {
 
 		$trust = [
 			'mode' => $read(SignedPayloadVerifierInterface::CONFIG_MODE),
-			'hmacSecret' => $read(SignedPayloadVerifierInterface::CONFIG_HMAC_SECRET),
+			'hmacSecret' => $read(SignedPayloadVerifierInterface::CONFIG_HMAC_NAME),
 			'signingCertificate' => $read(SignedPayloadVerifierInterface::CONFIG_SIGNING_CERTIFICATE),
 			'intermediateChain' => $read(SignedPayloadVerifierInterface::CONFIG_INTERMEDIATE_CHAIN),
 			'rootCa' => $read(SignedPayloadVerifierInterface::CONFIG_ROOT_CA),

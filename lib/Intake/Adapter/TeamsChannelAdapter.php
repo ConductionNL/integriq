@@ -156,24 +156,6 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 		}
 
 		$text = $this->plainText(activity: $payload);
-		$channelData = $this->mapAt(value: ($payload['channelData'] ?? null));
-		$tenant = $this->mapAt(value: ($channelData['tenant'] ?? null));
-
-		$configuration = $this->sourceResolver->configurationFor(self::CHANNEL_ID);
-		$pattern = null;
-		if ($configuration !== null && trim((string)($configuration['casePattern'] ?? '')) !== '') {
-			$pattern = trim((string)$configuration['casePattern']);
-		}
-
-		$reference = $this->referenceDetector->detectInText(text: $text, pattern: $pattern);
-		if ($reference === null) {
-			$reference = '';
-		}
-
-		$timestamp = ($payload['timestamp'] ?? null);
-		if ($timestamp !== null) {
-			$timestamp = (string)$timestamp;
-		}
 
 		return new InboundMessage(
 			channelId: self::CHANNEL_ID,
@@ -188,17 +170,58 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 			location: null,
 			media: [],
 			rawPayload: $payload,
-			receivedAt: $timestamp,
-			fields: [
-				'text' => $text,
-				'caseReference' => $reference,
-				'conversationId' => $conversationId,
-				'tenantId' => (string)($tenant['id'] ?? ''),
-				'teamId' => (string)($channelData['teamsTeamId'] ?? ''),
-				'conversationType' => (string)($conversation['conversationType'] ?? ''),
-			]);
+			receivedAt: IntakePayloadReader::optionalString(value: ($payload['timestamp'] ?? null)),
+			fields: $this->activityFields(payload: $payload, text: $text));
 
 	}//end receive()
+
+	/**
+	 * The fields a Teams activity carries for routing: its text, the case it
+	 * names, and the conversation, tenant and team it came from.
+	 *
+	 * @param array<string,mixed> $payload The Teams activity.
+	 * @param string              $text    The activity's plain text.
+	 *
+	 * @return array<string,string> The fields.
+	 *
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	private function activityFields(array $payload, string $text): array {
+		$conversation = $this->mapAt(value: ($payload['conversation'] ?? null));
+		$channelData = $this->mapAt(value: ($payload['channelData'] ?? null));
+		$tenant = $this->mapAt(value: ($channelData['tenant'] ?? null));
+
+		return [
+			'text' => $text,
+			'caseReference' => $this->caseReferenceIn(text: $text),
+			'conversationId' => trim((string)($conversation['id'] ?? '')),
+			'tenantId' => (string)($tenant['id'] ?? ''),
+			'teamId' => (string)($channelData['teamsTeamId'] ?? ''),
+			'conversationType' => (string)($conversation['conversationType'] ?? ''),
+		];
+
+	}//end activityFields()
+
+	/**
+	 * The case reference the text names, read with the source's configured
+	 * pattern when it sets one; empty when it names none.
+	 *
+	 * @param string $text The activity's plain text.
+	 *
+	 * @return string The case reference.
+	 *
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	private function caseReferenceIn(string $text): string {
+		$configuration = $this->sourceResolver->configurationFor(self::CHANNEL_ID);
+		$pattern = null;
+		if ($configuration !== null && trim((string)($configuration['casePattern'] ?? '')) !== '') {
+			$pattern = trim((string)$configuration['casePattern']);
+		}
+
+		return (string)$this->referenceDetector->detectInText(text: $text, pattern: $pattern);
+
+	}//end caseReferenceIn()
 
 	/**
 	 * Answer in the conversation the message arrived in.
@@ -235,12 +258,11 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 			);
 		}
 
-		return $this->post(
-			message: $message,
-			text: $text,
-			conversationId: $conversationId,
-			configuration: $configuration
-		);
+		$reply = new TeamsReply(message: $message, text: $text);
+		$reply->conversationId = $conversationId;
+		$reply->configuration = $configuration;
+
+		return $this->post(reply: $reply);
 
 	}//end reply()
 
@@ -266,59 +288,27 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	}//end conversationOf()
 
 	/**
-	 * Post the reply to the Bot Framework connector.
+	 * Post the reply to the Bot Framework connector, once its destination and
+	 * token are in order.
 	 *
-	 * @param InboundMessage $message The message being replied to.
-	 * @param string $text The reply text.
-	 * @param string $conversationId The conversation to answer in.
-	 * @param array<string,mixed> $configuration The source configuration.
+	 * @param TeamsReply $reply The reply.
 	 *
 	 * @return ReplyResult What happened.
 	 */
-	private function post(
-		InboundMessage $message,
-		string $text,
-		string $conversationId,
-		array $configuration,
-	): ReplyResult {
-		$raw = $message->getRawPayload();
-
-		// CONFIGURED FIRST, payload second. This was the other way round, so a
-		// value on the activity overrode the operator's. The payload is still
-		// honoured when the source configures nothing, because that is how a
-		// multi-tenant connector legitimately works — but it is checked against
-		// the trusted list either way.
-		$serviceUrl = trim((string)($configuration['serviceUrl'] ?? $raw['serviceUrl'] ?? ''));
-		if ($serviceUrl === '') {
-			return ReplyResult::failed(
-				self::CHANNEL_ID,
-				'The activity names no serviceUrl and the source configures none.'
-			);
+	private function post(TeamsReply $reply): ReplyResult {
+		$refusal = $this->refuseDestination(reply: $reply);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		if ($this->isTrustedServiceUrl(serviceUrl: $serviceUrl, configuration: $configuration) === false) {
-			return ReplyResult::failed(
-				self::CHANNEL_ID,
-				'The serviceUrl is not a trusted connector host, so no reply is sent.'
-			);
-		}
-
-		$token = trim((string)($configuration['accessToken'] ?? ''));
-		if ($token === '') {
-			return ReplyResult::failed(
-				self::CHANNEL_ID,
-				'The Teams source holds no connector access token.'
-			);
-		}
-
-		$url = rtrim($serviceUrl, '/') . '/v3/conversations/' . rawurlencode($conversationId) . '/activities';
+		$url = rtrim($reply->serviceUrl, '/') . '/v3/conversations/' . rawurlencode($reply->conversationId) . '/activities';
 
 		try {
 			$response = $this->clientService->newClient()->post(
 				$url,
 				[
-					'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $token],
-					'json' => $this->replyBody(message: $message, text: $text),
+					'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $reply->token],
+					'json' => $this->replyBody(message: $reply->message, text: $reply->text),
 					'timeout' => 30,
 				]
 			);
@@ -333,6 +323,47 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 		return ReplyResult::sent(self::CHANNEL_ID, $this->referenceFrom(decoded: $decoded));
 
 	}//end post()
+
+	/**
+	 * Refuse a reply without a trusted connector address or a token; fills in both when they are in order.
+	 *
+	 * @param TeamsReply $reply The reply.
+	 *
+	 * @return ReplyResult|null The refusal, or null when the reply may be posted.
+	 */
+	private function refuseDestination(TeamsReply $reply): ?ReplyResult {
+		// CONFIGURED FIRST, payload second. This was the other way round, so a
+		// value on the activity overrode the operator's. The payload is still
+		// honoured when the source configures nothing, because that is how a
+		// multi-tenant connector legitimately works — but it is checked against
+		// the trusted list either way.
+		$raw = $reply->message->getRawPayload();
+		$reply->serviceUrl = trim((string)($reply->configuration['serviceUrl'] ?? $raw['serviceUrl'] ?? ''));
+		if ($reply->serviceUrl === '') {
+			return ReplyResult::failed(
+				self::CHANNEL_ID,
+				'The activity names no serviceUrl and the source configures none.'
+			);
+		}
+
+		if ($this->isTrustedServiceUrl(serviceUrl: $reply->serviceUrl, configuration: $reply->configuration) === false) {
+			return ReplyResult::failed(
+				self::CHANNEL_ID,
+				'The serviceUrl is not a trusted connector host, so no reply is sent.'
+			);
+		}
+
+		$reply->token = trim((string)($reply->configuration['accessToken'] ?? ''));
+		if ($reply->token === '') {
+			return ReplyResult::failed(
+				self::CHANNEL_ID,
+				'The Teams source holds no connector access token.'
+			);
+		}
+
+		return null;
+
+	}//end refuseDestination()
 
 	/**
 	 * The activity the reply is posted as.
@@ -425,34 +456,51 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 				continue;
 			}
 
-			$contentType = (string)($attachment['contentType'] ?? '');
-			if (str_starts_with($contentType, 'application/vnd.microsoft.card.') === true) {
-				continue;
+			$file = $this->fileAttachment(index: (int)$index, attachment: $attachment);
+			if ($file !== null) {
+				$attachments[] = $file;
 			}
-
-			$content = $this->mapAt(value: ($attachment['content'] ?? null));
-			$downloadUrl = trim((string)($content['downloadUrl'] ?? $attachment['contentUrl'] ?? ''));
-			if ($downloadUrl === '') {
-				continue;
-			}
-
-			$mime = $contentType;
-			if ($contentType === self::FILE_DOWNLOAD_INFO) {
-				$mime = 'application/octet-stream';
-			}
-
-			$attachments[] = [
-				'name' => (string)($attachment['name'] ?? ('attachment-' . ((int)$index + 1))),
-				'mime' => $mime,
-				'size' => 0,
-				'content' => '',
-				'downloadUrl' => $downloadUrl,
-			];
-		}//end foreach
+		}
 
 		return $attachments;
 
 	}//end attachments()
+
+	/**
+	 * One attachment as a file that stays in Teams, or null for a card or an
+	 * attachment without a download address.
+	 *
+	 * @param integer             $index      The attachment's position.
+	 * @param array<string,mixed> $attachment The attachment.
+	 *
+	 * @return array<string,mixed>|null The file, or null.
+	 */
+	private function fileAttachment(int $index, array $attachment): ?array {
+		$contentType = (string)($attachment['contentType'] ?? '');
+		if (str_starts_with($contentType, 'application/vnd.microsoft.card.') === true) {
+			return null;
+		}
+
+		$content = $this->mapAt(value: ($attachment['content'] ?? null));
+		$downloadUrl = trim((string)($content['downloadUrl'] ?? $attachment['contentUrl'] ?? ''));
+		if ($downloadUrl === '') {
+			return null;
+		}
+
+		$mime = $contentType;
+		if ($contentType === self::FILE_DOWNLOAD_INFO) {
+			$mime = 'application/octet-stream';
+		}
+
+		return [
+			'name' => (string)($attachment['name'] ?? ('attachment-' . ($index + 1))),
+			'mime' => $mime,
+			'size' => 0,
+			'content' => '',
+			'downloadUrl' => $downloadUrl,
+		];
+
+	}//end fileAttachment()
 
 	/**
 	 * The value when it is a map, an empty map otherwise.
@@ -484,16 +532,7 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
 	 */
 	private function isTrustedServiceUrl(string $serviceUrl, array $configuration): bool {
-		$parts = parse_url($serviceUrl);
-		if (is_array($parts) === false) {
-			return false;
-		}
-
-		if (strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
-			return false;
-		}
-
-		$host = strtolower(trim((string)($parts['host'] ?? '')));
+		$host = $this->httpsHostOf(serviceUrl: $serviceUrl);
 		if ($host === '') {
 			return false;
 		}
@@ -512,6 +551,29 @@ class TeamsChannelAdapter implements IntakeChannelAdapterInterface {
 		return false;
 
 	}//end isTrustedServiceUrl()
+
+	/**
+	 * The lower-cased host of an https address; empty for anything else or anything unparseable.
+	 *
+	 * @param string $serviceUrl The candidate destination.
+	 *
+	 * @return string The host, or an empty string.
+	 *
+	 * @spec openspec/specs/intake-channels/spec.md#requirement-a-teams-message-arrives-as-an-intake-channel-req-ic-006
+	 */
+	private function httpsHostOf(string $serviceUrl): string {
+		$parts = parse_url($serviceUrl);
+		if (is_array($parts) === false) {
+			return '';
+		}
+
+		if (strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
+			return '';
+		}
+
+		return strtolower(trim((string)($parts['host'] ?? '')));
+
+	}//end httpsHostOf()
 
 	/**
 	 * The host suffixes this source may reply to.

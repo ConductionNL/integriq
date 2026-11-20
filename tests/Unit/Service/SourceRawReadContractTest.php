@@ -3,6 +3,9 @@
 /**
  * The raw-source-read contract for the six direct-Guzzle clients (ocon#242).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * These six bypass {@see \OCA\Integriq\Service\CallService} entirely, so they
  * never benefit from its `_render: false` re-resolve (`resolveSourceForDispatch`,
  * ocon#236). Each located its active source through a RENDERED `findAll()` and then
@@ -33,9 +36,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  */
@@ -79,6 +79,7 @@ use OCP\BackgroundJob\IJobList;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 class SourceRawReadContractTest extends TestCase {
 
@@ -345,7 +346,7 @@ class SourceRawReadContractTest extends TestCase {
 		$this->assertSame('token', ($auth['mode'] ?? null), 'A non-declared sibling must survive the strip.');
 
 		// An `_rbac: false` read is NOT an escape: the strip is schema-gated.
-		$rbacOff = $fake->find(id: self::SOURCE_UUID, register: 'integriq', schema: 'source', _rbac: false);
+		$rbacOff = $fake->find(id: self::SOURCE_UUID, options: new ObjectFindOptions(register: 'integriq', schema: 'source'), _rbac: false);
 		$this->assertArrayNotHasKey(
 			'encryptedToken',
 			($rbacOff->getObject()['configuration']['authentication'] ?? []),

@@ -88,7 +88,26 @@ class RodAdviesVoBuilder {
 	 */
 	public function append(DOMDocument $document, DOMElement $body, array $payload, DOMElement $personalNumber): void {
 		$this->assertAdviesFormats(payload: $payload);
+		$adviezen = $this->adviezen(payload: $payload);
 
+		$request = $document->createElementNS(self::NAMESPACE, 'AanleverenAdviesVO_Request');
+		$body->appendChild($request);
+
+		$request->appendChild($personalNumber);
+		$this->appendSchoolFields(request: $request, payload: $payload);
+		$this->appendAdviezen(request: $request, adviezen: $adviezen);
+	}//end append()
+
+	/**
+	 * The first and second advies, refused when there is neither.
+	 *
+	 * @param array $payload The schooladvies payload.
+	 *
+	 * @return array{advies1: array|null, advies2: array|null} The adviezen.
+	 *
+	 * @throws RodTranslationException When neither advies is given.
+	 */
+	private function adviezen(array $payload): array {
 		$advies1 = $this->advies(payload: $payload, adviesField: 'advies1', dateField: 'advies1Datum');
 		$advies2 = $this->advies(payload: $payload, adviesField: 'advies2', dateField: 'advies2Datum');
 		if ($advies1 === null && $advies2 === null) {
@@ -97,10 +116,19 @@ class RodAdviesVoBuilder {
 			);
 		}
 
-		$request = $document->createElementNS(self::NAMESPACE, 'AanleverenAdviesVO_Request');
-		$body->appendChild($request);
+		return ['advies1' => $advies1, 'advies2' => $advies2];
+	}//end adviezen()
 
-		$request->appendChild($personalNumber);
+	/**
+	 * Append the adviesvolgnummer, the optional onderwijsaanbieder and -locatie, the vestigingscode and the adviesjaar.
+	 *
+	 * @param DOMElement $request The AanleverenAdviesVO_Request element.
+	 * @param array      $payload The schooladvies payload.
+	 *
+	 * @return void
+	 */
+	private function appendSchoolFields(DOMElement $request, array $payload): void {
+		$document = $request->ownerDocument;
 		$this->appendText(document: $document, parent: $request, name: 'adviesvolgnummer', value: (string) $payload['adviesvolgnummer']);
 		foreach (['onderwijsaanbieder', 'onderwijslocatie'] as $field) {
 			$value = $this->stringOrNull(value: ($payload[$field] ?? null));
@@ -111,8 +139,19 @@ class RodAdviesVoBuilder {
 
 		$this->appendText(document: $document, parent: $request, name: 'vestigingscode', value: (string) $payload['vestigingscode']);
 		$this->appendText(document: $document, parent: $request, name: 'adviesjaar', value: (string) $payload['adviesjaar']);
+	}//end appendSchoolFields()
 
-		foreach (['advies1' => $advies1, 'advies2' => $advies2] as $name => $advies) {
+	/**
+	 * Append each given advies with its date.
+	 *
+	 * @param DOMElement                                         $request  The AanleverenAdviesVO_Request element.
+	 * @param array{advies1: array|null, advies2: array|null} $adviezen The adviezen.
+	 *
+	 * @return void
+	 */
+	private function appendAdviezen(DOMElement $request, array $adviezen): void {
+		$document = $request->ownerDocument;
+		foreach ($adviezen as $name => $advies) {
 			if ($advies === null) {
 				continue;
 			}
@@ -122,7 +161,7 @@ class RodAdviesVoBuilder {
 			$this->appendText(document: $document, parent: $element, name: 'advies', value: $advies['advies']);
 			$this->appendText(document: $document, parent: $element, name: 'adviesdatum', value: $advies['adviesdatum']);
 		}
-	}//end append()
+	}//end appendAdviezen()
 
 	/**
 	 * Check every AanleverenAdviesVO field that has a value against its DUO format.

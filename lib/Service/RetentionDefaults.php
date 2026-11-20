@@ -83,6 +83,14 @@ final class RetentionDefaults implements RetentionDefaultsInterface {
 	public const SYNC_LOG = 2592000000;
 
 	/**
+	 * Execution traces: 30 days, the default the `execution_trace` schema
+	 * declares (`x-openregister-archival.retention.default` P30D).
+	 *
+	 * @var int
+	 */
+	public const EXECUTION_TRACE = 2592000000;
+
+	/**
 	 * The defaults keyed by the `retention` JSON's own keys, in the order the settings read returns them.
 	 *
 	 * @var array<string,int>
@@ -94,5 +102,6 @@ final class RetentionDefaults implements RetentionDefaultsInterface {
 		'jobLogRetention' => self::JOB_LOG,
 		'syncContractLogRetention' => self::SYNC_CONTRACT_LOG,
 		'syncLogRetention' => self::SYNC_LOG,
+		'executionTraceRetention' => self::EXECUTION_TRACE,
 	];
 }//end class

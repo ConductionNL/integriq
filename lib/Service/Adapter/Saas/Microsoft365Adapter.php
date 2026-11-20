@@ -16,6 +16,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Adapter\Saas;
 
 use OCA\Integriq\Service\Adapter\AbstractCategoryAdapterProvider;
+use OCA\Integriq\Service\Chat\ThreadTranscript;
 use OCP\IL10N;
 
 /**
@@ -63,6 +67,20 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements Doc
 	private readonly GraphDriveSearch $driveSearch;
 
 	/**
+	 * Reads the conversation around a Teams chat hit.
+	 *
+	 * @var TeamsThreadReader
+	 */
+	private readonly TeamsThreadReader $threads;
+
+	/**
+	 * Renders a thread as the fetch answer.
+	 *
+	 * @var ThreadTranscript
+	 */
+	private readonly ThreadTranscript $transcript;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param \OCA\OpenRegister\Service\Credential\CredentialBrokerService $credentialBroker OR's credential broker.
@@ -78,6 +96,8 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements Doc
 	) {
 		parent::__construct(credentialBroker: $credentialBroker, appConfig: $appConfig, logger: $logger);
 		$this->driveSearch = new GraphDriveSearch();
+		$this->threads = new TeamsThreadReader();
+		$this->transcript = new ThreadTranscript();
 
 	}//end __construct()
 
@@ -274,7 +294,9 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements Doc
 			method: 'POST',
 			path: '/v1.0/search/query',
 			headers: ['Content-Type' => 'application/json'],
-			body: $this->driveSearch->requestBody(terms: $terms, from: $from, to: $to, limit: $limit, region: $region),
+			body: $this->driveSearch->requestBody(
+				query: new DriveSearchQuery(terms: $terms, from: $from, to: $to, limit: $limit, region: $region)
+			),
 		);
 
 		return $this->driveSearch->answer(response: $response, sourceSlug: $this->getId(), limit: $limit, notices: $plan['notices']);
@@ -304,4 +326,74 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements Doc
 			content: $this->brokeredRequest(method: 'GET', path: $item . '/content'),
 		);
 	}//end fetch()
+
+	/**
+	 * Fetch a Teams chat or channel message with its conversation.
+	 *
+	 * The thread is read with the requester's delegated grant, the same grant
+	 * a chat hit is found with, never with the source's application grant: an
+	 * application grant reads every chat of the organisation. Until the
+	 * person has a delegated grant (sources-per-user-oauth) the answer is the
+	 * error `delegated-grant-missing` and no Graph call is made.
+	 *
+	 * @param string $handle  A `chatMessage:teams:…` handle.
+	 * @param string $userId  The person fetching.
+	 * @param int    $context Messages to read on each side of the hit; the caller validated it.
+	 *
+	 * @return array<string,mixed>|null `{fileName, mimeType, content, thread}`, `{error}`, or null
+	 *         for a handle that names no Teams message.
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-a-fetched-chat-message-comes-with-its-conversation-req-dcc-010
+	 */
+	public function fetchThread(string $handle, string $userId, int $context): ?array {
+		if ($this->threads->isTeamsHandle(handle: $handle) === false) {
+			return null;
+		}
+
+		$credentialId = $this->delegatedCredentialId(userId: $userId);
+		if ($credentialId === null) {
+			return ['error' => 'delegated-grant-missing'];
+		}
+
+		$read = $this->threads->read(
+			handle: $handle,
+			context: $context,
+			get: $this->delegatedGet(credentialId: $credentialId),
+		);
+		if ($read === null || isset($read['thread']) === false) {
+			return $read;
+		}
+
+		return $this->transcript->answer(thread: $read['thread'], fetchedAt: gmdate(DATE_ATOM));
+	}//end fetchThread()
+
+	/**
+	 * A Graph GET transport that runs with one broker credential.
+	 *
+	 * @param string $credentialId The broker credential.
+	 *
+	 * @return callable `fn (string $path): ?array{status: int, body: string}`.
+	 */
+	private function delegatedGet(string $credentialId): callable {
+		return fn (string $path): ?array => $this->brokeredRequest(method: 'GET', path: $path, credentialId: $credentialId);
+	}//end delegatedGet()
+
+	/**
+	 * The broker credential holding this person's delegated Microsoft 365 grant.
+	 *
+	 * Integriq does not hold per-person grants for the adapter yet
+	 * (sources-per-user-oauth), so this answers null and every chat read is
+	 * refused rather than run with the application grant.
+	 *
+	 * @param string $userId The person.
+	 *
+	 * @return string|null The credential id, or null when the person has none.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $userId selects the delegated grant once sources-per-user-oauth lands.
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-a-fetched-chat-message-comes-with-its-conversation-req-dcc-010
+	 */
+	protected function delegatedCredentialId(string $userId): ?string {
+		return null;
+	}//end delegatedCredentialId()
 }//end class

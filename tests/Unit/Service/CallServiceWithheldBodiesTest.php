@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/changes/call-log-without-bodies/specs/outbound-call-log/spec.md#requirement-a-caller-can-have-a-call-recorded-without-any-body
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -20,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use DateTimeImmutable;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
@@ -36,6 +40,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The per-call switch that keeps every body out of the call log (decision 229).
@@ -96,7 +101,9 @@ class CallServiceWithheldBodiesTest extends TestCase {
 	private function service(Response $answer, ?string $userId = 'j.devries'): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
@@ -262,7 +269,7 @@ class CallServiceWithheldBodiesTest extends TestCase {
 	public function testTheSwitchWinsOverLogBody(): void {
 		$service = $this->service(new Response(200, [], '{"burgerservicenummer":"' . self::ANSWERED . '"}'));
 
-		$service->call(source: $this->source(), endpoint: '/personen', method: 'POST', config: ['logBody' => true], withholdBodies: true);
+		$service->call(source: $this->source(), endpoint: '/personen', method: 'POST', config: ['logBody' => SloCurriculumClientHttp::class], withholdBodies: true);
 
 		$this->assertHoldsNoBody($this->callLogs()[0]);
 	}//end testTheSwitchWinsOverLogBody()
@@ -324,8 +331,12 @@ class CallServiceWithheldBodiesTest extends TestCase {
 
 		$service->call(source: $this->source(), endpoint: '/personen', method: 'POST');
 
+		// The bodies are stored, so `burgerservicenummer` appears; its values
+		// are masked as personal data (REQ-PDM-001).
 		$stored = (string)json_encode($this->callLogs()[0]);
-		$this->assertStringContainsString(self::ASKED, $stored);
-		$this->assertStringContainsString(self::ANSWERED, $stored);
+		$this->assertStringContainsString('burgerservicenummer', $stored);
+		$this->assertStringContainsString('[afgeschermd]', $stored);
+		$this->assertStringNotContainsString(self::ASKED, $stored);
+		$this->assertStringNotContainsString(self::ANSWERED, $stored);
 	}//end testControlWithoutTheSwitchTheWindowStoresTheBodies()
 }//end class

@@ -17,7 +17,7 @@ authentication enforcement (covered by PHPUnit/Newman). It is a retrofit spec.
 
 ## Requirements
 
-### REQ-CON-UI-001: Consumer Management UI
+### Requirement: Consumer Management UI (REQ-CON-UI-001)
 
 Integriq MUST provide a Consumers section in its SPA where administrators can browse,
 create, edit, and delete consumer configurations.
@@ -98,7 +98,7 @@ enforced on save and would make existing rows unsaveable.
   consumer does not silently replace it
 - @e2e exclude asserted on the draft seeding — covered by vitest
 
-### REQ-WBHK-UI-001: Webhook Management UI
+### Requirement: Webhook Management UI (REQ-WBHK-UI-001)
 
 Integriq MUST provide a Webhooks section in its SPA where administrators can
 browse, create, edit, and delete webhook consumers.
@@ -115,7 +115,7 @@ browse, create, edit, and delete webhook consumers.
 - WHEN the user clicks the "Add Item" button
 - THEN a modal or dialog opens containing the webhook/consumer creation form
 
-### REQ-CON-001: Consumer authentication enforcement
+### Requirement: Consumer authentication enforcement (REQ-CON-001)
 
 The system SHALL enforce consumer-level authentication on inbound calls to
 Integriq endpoints by resolving the `consumer` record associated with the
@@ -637,3 +637,21 @@ The integriq admin settings MUST list every webhook in `WebhookProfiles`, with w
 - WHEN an administrator chooses that account
 - THEN the save is refused with a field error naming the missing right
 - @e2e exclude admin settings payload: covered by PHPUnit and the live settings PUT
+
+### Requirement: A consumer can authenticate by Open Formulieren webhook signature (REQ-CON-OF-001)
+
+A `consumer` with `authorizationType` `open-formulieren` MUST authenticate a call by verifying the signature header named in its `authorizationConfiguration` over the raw request body, with the scheme, secret and tolerance stored there. Its `userId` MUST be the Nextcloud account the call acts as. An instance MUST hold at most one `open-formulieren` consumer. One `dso-stam` and one `open-formulieren` consumer MAY exist side by side.
+
+#### Scenario: A valid Open Formulieren signature resolves to the consumer's account
+
+- GIVEN an `open-formulieren` consumer with secret S and `userId` `of-intake`
+- WHEN a call arrives with a valid timestamped HMAC signature over its raw body under S
+- THEN authentication succeeds and resolves to the user `of-intake`
+- @e2e exclude backend signature verification: covered by PHPUnit
+
+#### Scenario: A second open-formulieren consumer is refused
+
+- GIVEN an `open-formulieren` consumer exists
+- WHEN an administrator saves another consumer with `authorizationType` `open-formulieren`
+- THEN the save is refused with an error saying only one Open Formulieren connection is allowed
+- @e2e exclude backend save guard: covered by PHPUnit

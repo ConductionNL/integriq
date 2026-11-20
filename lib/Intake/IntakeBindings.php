@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -26,6 +29,7 @@ use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
 use OCA\Integriq\Intake\Adapter\MessagingChannelAdapter;
 use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
 use OCA\Integriq\Intake\Adapter\TeamsChannelAdapter;
+use OCA\Integriq\Service\Extension\ConnectorExtensionsInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -33,6 +37,10 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * outside the Intake component depend on the contract only.
  *
  * @spec exclude container wiring only, the registrar has no behaviour of its own
+ *
+ * Container wiring names every contract and its implementation, so it couples to all of them.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 final class IntakeBindings {
 	/**
@@ -47,6 +55,7 @@ final class IntakeBindings {
 	public function register(IRegistrationContext $context): void {
 		$context->registerServiceAlias(IntakeRoutingServiceInterface::class, IntakeRoutingService::class);
 		$context->registerServiceAlias(IntakeReplyServiceInterface::class, IntakeReplyService::class);
+		$context->registerServiceAlias(IntakeAssignmentServiceInterface::class, IntakeAssignmentService::class);
 		$context->registerServiceAlias(IntakeChannelRegistryInterface::class, IntakeChannelRegistry::class);
 		$this->registerChannelRegistry(context: $context);
 	}
@@ -74,7 +83,8 @@ final class IntakeBindings {
 						$c->get(MessagingChannelAdapter::class),
 						$c->get(PublicSpaceReportAdapter::class),
 						$c->get(TeamsChannelAdapter::class),
-					]
+					],
+					extensions: $c->get(ConnectorExtensionsInterface::class)
 				);
 			}
 		);

@@ -3,6 +3,9 @@
 /**
  * Integriq Mapping Twig Extension.
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Registers Twig filters and functions for executing mappings, encoding
  * helpers and source/file lookups exposed to template authors.
  *
@@ -85,6 +88,8 @@ class MappingExtension extends AbstractExtension {
 			new TwigFunction(name: 'getFiles', callable: [MappingRuntime::class, 'getFiles']),
 			new TwigFunction(name: 'getTargetIdByOriginId', callable: [MappingRuntime::class, 'getTargetIdByOriginId']),
 			new TwigFunction(name: 'getOriginIdByTargetId', callable: [MappingRuntime::class, 'getOriginIdByTargetId']),
+			// A register read behind an administered allowlist; no outbound call (mapping-formats-and-lookups D4).
+			new TwigFunction(name: 'lookup', callable: [MappingRuntime::class, 'lookup']),
 		];
 
 	}//end getFunctions()

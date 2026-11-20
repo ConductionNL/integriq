@@ -12,6 +12,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -26,6 +29,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use OCP\Session\Exceptions\SessionNotAvailableException;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Append-only contract log write-path tests.
@@ -171,12 +175,10 @@ class SynchronizationContractLogServiceTest extends TestCase {
 		$observedBody = null;
 
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				?string $register = null,
-				?string $schema = null,
-				?string $uuid = null,
-			) use (&$observedUuid, &$observedBody) {
+			->willReturnCallback(function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedUuid, &$observedBody) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedUuid = $uuid;
 				$observedBody = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'log-1');
@@ -206,12 +208,10 @@ class SynchronizationContractLogServiceTest extends TestCase {
 	public function testUpdateIsNoOpForAlreadyPersistedUuid(): void {
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				?string $register = null,
-				?string $schema = null,
-				?string $uuid = null,
-			) {
+			->willReturnCallback(function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'log-1');
 			});
 
@@ -230,12 +230,10 @@ class SynchronizationContractLogServiceTest extends TestCase {
 	public function testUpdateStripsNullValuesFromPayload(): void {
 		$observedBody = null;
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				?string $register = null,
-				?string $schema = null,
-				?string $uuid = null,
-			) use (&$observedBody) {
+			->willReturnCallback(function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedBody) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedBody = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'log-1');
 			});

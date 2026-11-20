@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -27,6 +30,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the background job execution service (OR cutover — no deleted Db types).
@@ -128,6 +132,7 @@ class JobServiceTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				static function (...$args) use (&$capturedArgs, $savedMock) {
+					$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 					$capturedArgs = $args;
 					return $savedMock;
 				}
@@ -313,6 +318,7 @@ class JobServiceTest extends TestCase {
 				&$savedErrorLevels,
 				$defaultEntity
 			) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$object = ($args[0] ?? []);
 				$schema = ($args[2] ?? null);
 				$uuid = ($args[3] ?? null);
@@ -433,6 +439,7 @@ class JobServiceTest extends TestCase {
 		$saved = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$saved) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				if (isset($args[0]) === true && is_array($args[0]) === true) {
 					$saved[] = $args[0];
 				}
@@ -494,6 +501,7 @@ class JobServiceTest extends TestCase {
 		$logLevels = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$logLevels) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$object = ($args[0] ?? []);
 				$schema = ($args[2] ?? null);
 				if (is_array($object) === true && $schema === 'job_log') {
@@ -690,6 +698,7 @@ class JobServiceTest extends TestCase {
 		$savedJobRows = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$savedJobRows) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$object = ($args[0] ?? []);
 				$schema = ($args[2] ?? null);
 				$uuid = ($args[3] ?? null);
@@ -754,6 +763,7 @@ class JobServiceTest extends TestCase {
 		$nextRuns = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$nextRuns) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$object = ($args[0] ?? []);
 				if (($args[2] ?? null) === 'job' && isset($object['nextRun']) === true) {
 					$nextRuns[$args[3]] = new \DateTime($object['nextRun']);

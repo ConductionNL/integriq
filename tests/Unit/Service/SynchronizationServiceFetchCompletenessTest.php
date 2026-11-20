@@ -24,6 +24,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -43,6 +46,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests REQ-009 (fetch-completeness tracking) and its REQ-010 deletion gate.
@@ -256,6 +260,7 @@ class SynchronizationServiceFetchCompletenessTest extends TestCase {
 		$savedSynchronizations = [];
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$savedSynchronizations) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$object = ($args[0] ?? []);
 				if (($args[2] ?? null) === 'synchronization') {
 					$savedSynchronizations[] = $object;
@@ -302,6 +307,7 @@ class SynchronizationServiceFetchCompletenessTest extends TestCase {
 		$savedSynchronizations = [];
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$savedSynchronizations) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$object = ($args[0] ?? []);
 				if (($args[2] ?? null) === 'synchronization') {
 					$savedSynchronizations[] = $object;

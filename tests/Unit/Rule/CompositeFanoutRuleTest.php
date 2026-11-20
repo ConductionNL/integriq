@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -21,6 +24,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the dialect-agnostic composite transactional fan-out rule.
@@ -116,7 +121,11 @@ class CompositeFanoutRuleTest extends TestCase {
 		// Rollback must delete exactly the one object that was created (the parent).
 		$orObjectService->expects($this->once())
 			->method('deleteObject')
-			->with('parent-uuid', 'pipelinq', 'ticket')
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+					'uuid' => 'parent-uuid',
+					'register' => 'pipelinq',
+					'schema' => 'ticket',
+				]))
 			->willReturn(true);
 
 		$rule = $this->makeRule(
@@ -158,7 +167,9 @@ class CompositeFanoutRuleTest extends TestCase {
 		$captured = [];
 		$orObjectService->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register, $schema) use (&$captured, $parentObject, $involvedPartyObject, $adresObject) {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$captured, $parentObject, $involvedPartyObject, $adresObject) {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
 					$captured[] = $object;
 					return match (count($captured)) {
 						1 => $parentObject,
@@ -204,7 +215,11 @@ class CompositeFanoutRuleTest extends TestCase {
 
 		$parentObject = $this->makeObject('parent-uuid', []);
 		$orObjectService->expects($this->once())->method('saveObject')->willReturn($parentObject);
-		$orObjectService->expects($this->once())->method('deleteObject')->with('parent-uuid', 'pipelinq', 'ticket')->willReturn(true);
+		$orObjectService->expects($this->once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'parent-uuid',
+				'register' => 'pipelinq',
+				'schema' => 'ticket',
+			]))->willReturn(true);
 
 		$rule = $this->makeRule(
 			[
@@ -275,7 +290,9 @@ class CompositeFanoutRuleTest extends TestCase {
 			$counter = 0;
 			$service = $this->createMock(ORObjectService::class);
 			$service->method('saveObject')->willReturnCallback(
-				function ($object, $register = null, $schema = null) use (&$calls, &$counter): ObjectEntity {
+				function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$calls, &$counter): ObjectEntity {
+					$register = $options->target->register;
+					$schema = $options->target->schema;
 					$calls[] = ['save', $object, $register, $schema];
 					if ($schema === 'boom') {
 						throw new Exception('write refused');
@@ -287,6 +304,7 @@ class CompositeFanoutRuleTest extends TestCase {
 			);
 			$service->method('deleteObject')->willReturnCallback(
 				function (...$args) use (&$calls, $body) {
+					$args = LegacyObjectArgs::positional(method: 'deleteObject', args: $args);
 					$calls[] = ['delete', $args];
 					if (isset($body['deletefails']) === true) {
 						throw new Exception('delete refused');

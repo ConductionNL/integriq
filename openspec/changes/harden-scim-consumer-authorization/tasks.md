@@ -59,7 +59,7 @@
 ## Tests (company-wide ADR-009)
 
 - [x] PHPUnit unit tests for new/changed business logic (`tests/Unit/`)
-- [ ] Newman/Postman tests for new/changed API endpoints — no endpoint is added or changed in shape; the two new 403s need a live instance and a real consumer key, and every spec scenario names PHPUnit as its cover
+- [x] Newman/Postman tests for new/changed API endpoints: no endpoint is added or changed in shape. The two new 403s were run as requests against a live instance with a real API-key consumer (live pass 2026-11-17): PATCH Groups/admin answers 403 "This group cannot be managed over SCIM.", PATCH Groups/finance answers 403 naming 'finance', a wrong key answers 401, and no membership changed. That run first found every API-key consumer refused (the writeOnly credential is stripped from the list read), fixed in IntegriqConsumerSource.
 - [ ] Vitest tests for new/changed frontend logic — N/A, no frontend surface
 - [ ] Playwright e2e for new/changed user journeys — N/A, a SCIM client cannot be staged in a browser; the spec scenarios carry `@e2e exclude` with that reason
 

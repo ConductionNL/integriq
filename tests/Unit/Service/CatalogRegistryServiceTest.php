@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/connector-catalog/spec.md#requirement-a-single-php-side-adapter-metadata-registry-is-the-source-of-truth-for-catalog-entries-req-003
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -181,6 +184,24 @@ class CatalogRegistryServiceTest extends TestCase {
 	}//end testNewProviderAppearsWithoutCodeChange()
 
 	/**
+	 * The database adapter is listed in the store under data infrastructure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 */
+	public function testTheDatabaseAdapterIsListedUnderDataInfrastructure(): void {
+		$this->registry->withProviders([$this->makeProvider('data-infra-database', 'Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)')]);
+
+		$bySlug = array_column($this->makeService()->collect(), null, 'slug');
+
+		$this->assertArrayHasKey('adapter:data-infra-database', $bySlug);
+		$this->assertSame('Data infrastructure', $bySlug['adapter:data-infra-database']['category']);
+		$this->assertSame('adapter', $bySlug['adapter:data-infra-database']['kind']);
+		$this->assertSame('Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)', $bySlug['adapter:data-infra-database']['name']);
+	}//end testTheDatabaseAdapterIsListedUnderDataInfrastructure()
+
+	/**
 	 * Seeded source templates carry the mock-seeded mechanism and their
 	 * category override, distinct from flag-gated adapters (Risk 2 — two
 	 * dormancy mechanisms modeled separately).
@@ -204,6 +225,22 @@ class CatalogRegistryServiceTest extends TestCase {
 		$this->assertSame('flag-gated', $pdok['mechanism']);
 		$this->assertSame('pdok.feature_flag', $pdok['flagKey']);
 	}//end testSeedEntriesAreMockSeededWithCategoryOverride()
+
+	/**
+	 * The RDW vehicle register and the two route planners are listed in their categories.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
+	 */
+	public function testRouteAndVehicleTemplatesAreListedInTheirCategories(): void {
+		$bySlug = array_column($this->makeService()->collect(), null, 'slug');
+
+		$this->assertSame('Government registers', $bySlug['source-template:rdw-open-data']['category']);
+		$this->assertSame('Geo / Maps', $bySlug['source-template:route-planner-openrouteservice']['category']);
+		$this->assertSame('Geo / Maps', $bySlug['source-template:route-planner-tomtom']['category']);
+		$this->assertSame('route-planner-tomtom', $bySlug['source-template:route-planner-tomtom']['sourceTemplateSlug']);
+	}//end testRouteAndVehicleTemplatesAreListedInTheirCategories()
 
 	/**
 	 * The three service desk templates show under Service management.
@@ -453,4 +490,73 @@ class CatalogRegistryServiceTest extends TestCase {
 		$payload = (new \ReflectionMethod($repair, 'payloadFor'))->invoke($repair, $card, 'adapter:objecten-api', 'available');
 		$this->assertSame([], RegisterSchemaValidator::errors('catalog_item', $payload));
 	}//end testTheObjectenApiIsOneAdapterCard()
+
+	/**
+	 * REQ-CAT-BK-001: the Peppol access point, the PSD2 bank aggregator, the
+	 * corporate card feed and the Mollie account are dormant source templates
+	 * under the bookkeeping categories, each holding its credential by broker
+	 * reference only.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
+	 */
+	public function testTheBookkeepingConnectorsAreDormantTemplatesInTheirCategories(): void {
+		$service = $this->makeService();
+		$bySlug = array_column($service->collect(), null, 'slug');
+		$expected = [
+			'peppol-access-point' => 'E-invoicing',
+			'psd2-bank-aggregator' => 'Bank',
+			'corporate-card-feed' => 'Bank',
+			'mollie-payments' => 'Payments',
+		];
+
+		foreach ($expected as $slug => $category) {
+			$entry = $bySlug['source-template:' . $slug];
+			$this->assertSame('source-template', $entry['kind'], $slug);
+			$this->assertSame('mock-seeded', $entry['mechanism'], $slug);
+			$this->assertSame($category, $entry['category'], $slug);
+
+			$source = $service->findSeedSourcePayload($slug);
+			$this->assertFalse($source['isEnabled'], $slug . ' ships dormant');
+			$authentication = $source['configuration']['authentication'];
+			$this->assertSame(['credentialRef'], array_keys($authentication), $slug . ' holds only a broker reference');
+			$this->assertNotSame('', $authentication['credentialRef']['credentialName'], $slug);
+		}
+	}//end testTheBookkeepingConnectorsAreDormantTemplatesInTheirCategories()
+
+	/**
+	 * REQ-CAT-BK-001: every bookkeeping connector template resolves to one of
+	 * the six categories shillinq's integrations page filters on, so a
+	 * template without a bookkeeping category fails here, named.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
+	 */
+	public function testEveryBookkeepingTemplateHasABookkeepingCategory(): void {
+		$this->assertSame(['Bank', 'Payments', 'E-invoicing', 'Tax filing', 'Commerce', 'Payroll'], CatalogRegistryService::BOOKKEEPING_CATEGORIES);
+
+		$categories = array_column($this->makeService()->collect(), 'category', 'slug');
+		$bookkeeping = [
+			'peppol-access-point',
+			'psd2-bank-aggregator',
+			'corporate-card-feed',
+			'mollie-payments',
+			'ecb-eurofxref-daily',
+			'woocommerce-shop',
+			'shopify-shop',
+			'lightspeed-shop',
+		];
+
+		$wrong = [];
+		foreach ($bookkeeping as $slug) {
+			$category = ($categories['source-template:' . $slug] ?? '(no catalogue entry)');
+			if (in_array($category, CatalogRegistryService::BOOKKEEPING_CATEGORIES, true) === false) {
+				$wrong[$slug] = $category;
+			}
+		}
+
+		$this->assertSame([], $wrong, 'bookkeeping templates outside the bookkeeping categories');
+	}//end testEveryBookkeepingTemplateHasABookkeepingCategory()
 }//end class

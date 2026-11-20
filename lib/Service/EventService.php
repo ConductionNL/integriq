@@ -15,6 +15,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -40,9 +43,12 @@ use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Event\ActionDelivery;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\OrganisationBoundary;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
@@ -50,6 +56,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 /**
@@ -89,6 +96,15 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
  * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
  */
 class EventService implements EventServiceInterface {
+	use OrganisationBoundary;
+
+	/**
+	 * CloudEvents extension attribute naming the organisation that owns the object an event is about.
+	 *
+	 * @var string
+	 */
+	public const ORGANISATION_ATTRIBUTE = 'sourceorganisation';
+
 	/**
 	 * Base backoff interval in seconds for the first retry.
 	 *
@@ -190,6 +206,9 @@ class EventService implements EventServiceInterface {
 	 *                                                        a personal recipient (opt-out-before-send). Null
 	 *                                                        (unit tests that predate it) answers such a
 	 *                                                        delivery closed unless its category is exempt.
+	 * @param ProductDeliveryGate|null $productGate Stops a product channel's push delivery once its product
+	 *                                              subscription is not active, and defers one over quota
+	 *                                              (events-async-api-products). Null gates nothing.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
@@ -216,6 +235,7 @@ class EventService implements EventServiceInterface {
 		private readonly ?BrokerCredentialResolver $brokerCredentials = null,
 		private readonly ?EventFanOutSchedulerInterface $fanOutScheduler = null,
 		private readonly ?OutboundSendGateInterface $sendGate = null,
+		private readonly ?ProductDeliveryGate $productGate = null,
 	) {
 		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
@@ -409,8 +429,7 @@ class EventService implements EventServiceInterface {
 			try {
 				$event = $this->objectService->find(
 					id: $eventId,
-					register: 'integriq',
-					schema: 'event',
+					options: new ObjectFindOptions(register: 'integriq', schema: 'event'),
 					_rbac: false,
 					_multitenancy: false
 				);
@@ -471,10 +490,17 @@ class EventService implements EventServiceInterface {
 	 * @return boolean
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	private function doesEventMatchSubscription(ObjectEntity $event, ObjectEntity $subscription): bool {
 		$eventData = $event->getObject();
 		$subscriptionData = $subscription->getObject();
+
+		// The fan-out reads every organisation's subscriptions, so an object event is kept to its own organisation here.
+		$eventOrganisation = (string)($eventData[self::ORGANISATION_ATTRIBUTE] ?? '');
+		if ($this->sameOrganisation(first: $eventOrganisation, second: $this->organisationOf(object: $subscription)) === false) {
+			return false;
+		}
 
 		// Check event type matches.
 		$types = ($subscriptionData['types'] ?? []);
@@ -500,6 +526,24 @@ class EventService implements EventServiceInterface {
 
 		return true;
 	}//end doesEventMatchSubscription()
+
+	/**
+	 * The CloudEvents extension attribute naming the organisation of the object an event is about.
+	 *
+	 * @param ObjectEntity $object The created, updated or deleted object.
+	 *
+	 * @return array<string, string> The attribute, or [] when the object has no organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	private function organisationAttribute(ObjectEntity $object): array {
+		$organisation = $this->organisationOf(object: $object);
+		if ($organisation === '') {
+			return [];
+		}
+
+		return [self::ORGANISATION_ATTRIBUTE => $organisation];
+	}//end organisationAttribute()
 
 	/**
 	 * Evaluate filter conditions against an event data array.
@@ -620,9 +664,7 @@ class EventService implements EventServiceInterface {
 				'created' => (new DateTime())->format('c'),
 				'updated' => (new DateTime())->format('c'),
 			],
-			register: 'integriq',
-			schema: 'event_message',
-			// System context: see processEvent().
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -661,6 +703,10 @@ class EventService implements EventServiceInterface {
 		// repeats the refusal.
 			$refusal = $this->refuseUnsafeSink(message: $message, subscriptionData: $delivery->subscriptionData);
 			if ($refusal !== null) {
+				return false;
+			}
+
+			if ($this->holdForProduct(message: $message, subscriptionData: $delivery->subscriptionData) === true) {
 				return false;
 			}
 
@@ -768,11 +814,9 @@ class EventService implements EventServiceInterface {
 		// `(string)` cast is defensive (find() signs for a string $id).
 		$subscription = $this->objectService->find(
 			id: (string)$subscriptionId,
-			register: 'integriq',
-			schema: 'event_subscription',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 
 		if ($subscription === null) {
@@ -926,10 +970,7 @@ class EventService implements EventServiceInterface {
 		);
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $delivery->message->getUuid(),
-			// System context: see processEvent().
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $delivery->message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -963,6 +1004,63 @@ class EventService implements EventServiceInterface {
 		];
 
 	}//end resolveRetryPolicy()
+
+	/**
+	 * Hold a product channel's push delivery the product subscription does not allow now.
+	 *
+	 * A revoked product subscription abandons the delivery at once. A spent
+	 * tier budget defers it to the end of the window without spending a retry,
+	 * so the event is delivered later rather than dropped.
+	 *
+	 * @param ObjectEntity $message          The message under delivery.
+	 * @param array        $subscriptionData The owning push subscription.
+	 *
+	 * @return bool True when the delivery was held.
+	 *
+	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 */
+	private function holdForProduct(ObjectEntity $message, array $subscriptionData): bool {
+		$held = $this->productGate?->hold(subscriptionData: $subscriptionData);
+		if ($held === null) {
+			return false;
+		}
+
+		if ($held['abandon'] === true) {
+			$this->recordFailure(message: $message, error: $held['reason'], statusCode: null, retryAfter: null, retryPolicy: ['maxRetries' => 0]);
+			return true;
+		}
+
+		$this->deferForQuota(message: $message, held: $held);
+
+		return true;
+	}//end holdForProduct()
+
+	/**
+	 * Defer a delivery to the end of its product's quota window.
+	 *
+	 * Deferred, not failed: the retry count is left alone, so waiting for the
+	 * quota window never spends the subscription's retry budget.
+	 *
+	 * @param ObjectEntity                                $message The message under delivery.
+	 * @param array{reason: string, retryAfter: int|null} $held    The hold: why, and how many seconds to wait.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 */
+	private function deferForQuota(ObjectEntity $message, array $held): void {
+		$messageData = $message->getObject();
+		$messageData['status'] = 'failed';
+		$messageData['error'] = $held['reason'];
+		$messageData['retryAfter'] = (int)$held['retryAfter'];
+		$messageData['nextAttempt'] = (new DateTime())->modify('+' . (int)$held['retryAfter'] . ' seconds')->format('c');
+		$this->objectService->saveObject(
+			object: $messageData,
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid()),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end deferForQuota()
 
 	/**
 	 * Abandon a push delivery whose sink the egress guard refuses.
@@ -1072,10 +1170,7 @@ class EventService implements EventServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $message->getUuid(),
-			// System context: see processEvent().
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -1210,47 +1305,56 @@ class EventService implements EventServiceInterface {
 	 * the sweep and a replay re-attempt the SAME kind of action that
 	 * originally ran/failed (`dead-letter-replay` REQ-DLR-003).
 	 *
+	 * Every caller is a publish, retry-sweep or replay entry point, so this
+	 * method mints a fresh `event`-entryPoint trace context and owns its
+	 * persistence (execution-trace REQ-001/REQ-004).
+	 *
 	 * @param ObjectEntity $message The message to attempt delivery for.
 	 * @param ObjectEntity|null $subscription The already-resolved subscription, when the
 	 *                                        caller has it in hand (avoids a redundant
 	 *                                        find()); resolved from
 	 *                                        `message.subscriptionId` when null.
-	 * @param ExecutionTraceContext|null $trace The active execution trace context. When null (the common
-	 *                                          publish/retry-sweep case), a fresh `event`-entryPoint
-	 *                                          context is minted here and its persistence owned by this
-	 *                                          method (execution-trace REQ-001/REQ-004).
 	 *
 	 * @return boolean True when the attempt succeeded.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
 	 */
-	private function attemptDelivery(ObjectEntity $message, ?ObjectEntity $subscription = null, ?ExecutionTraceContext $trace = null): bool {
-		$ownsEventTrace = ($trace === null);
-		if ($ownsEventTrace === true) {
-			$trace = new ExecutionTraceContext(entryPoint: 'event', entryPointId: $message->getUuid(), triggeredBy: 'http');
-		}
-
+	private function attemptDelivery(ObjectEntity $message, ?ObjectEntity $subscription = null): bool {
+		$trace  = new ExecutionTraceContext(entryPoint: 'event', entryPointId: $message->getUuid(), triggeredBy: 'http');
 		$result = $this->attemptDeliveryDispatch(message: $message, subscription: $subscription, trace: $trace);
-
-		if ($ownsEventTrace === true) {
-			$attemptDeliveryTraceStatus = 'failed';
-			if ($result === true) {
-				$attemptDeliveryTraceStatus = 'success';
-			}
-
-			try {
-				$this->executionTraceService?->persist(trace: $trace, status: $attemptDeliveryTraceStatus);
-			} catch (\Throwable $exception) {
-				$this->logger->warning(
-					'EventService: failed to persist execution_trace.',
-					['traceId' => $trace->getTraceId(), 'exception' => $exception->getMessage()]
-				);
-			}
-		}
+		$this->persistDeliveryTrace(trace: $trace, succeeded: $result);
 
 		return $result;
 	}//end attemptDelivery()
+
+	/**
+	 * Persist the event trace of one delivery attempt; a trace that cannot be
+	 * stored is logged and never changes the attempt's outcome.
+	 *
+	 * @param ExecutionTraceContext $trace     The attempt's trace context.
+	 * @param bool                  $succeeded Whether the attempt succeeded.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
+	 */
+	private function persistDeliveryTrace(ExecutionTraceContext $trace, bool $succeeded): void {
+		$status = 'failed';
+		if ($succeeded === true) {
+			$status = 'success';
+		}
+
+		try {
+			$this->executionTraceService?->persist(trace: $trace, status: $status);
+		} catch (\Throwable $exception) {
+			$this->logger->warning(
+				'EventService: failed to persist execution_trace.',
+				['traceId' => $trace->getTraceId(), 'exception' => $exception->getMessage()]
+			);
+		}
+
+	}//end persistDeliveryTrace()
 
 	/**
 	 * The action.kind switch extracted from {@see attemptDelivery()} so the
@@ -1349,11 +1453,9 @@ class EventService implements EventServiceInterface {
 		// `(string)` cast is defensive (find() signs for a string $id).
 		return $this->objectService->find(
 			id: (string)$subscriptionId,
-			register: 'integriq',
-			schema: 'event_subscription',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 
 	}//end resolveDispatchSubscription()
@@ -1543,7 +1645,7 @@ class EventService implements EventServiceInterface {
 		}
 
 		try {
-			return $this->objectService->find(id: $id, register: 'integriq', schema: $schema);
+			return $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: $schema));
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -1682,8 +1784,7 @@ class EventService implements EventServiceInterface {
 			// notificaties API with NO credentials at all.
 			return $this->objectService->find(
 				id: $sourceId,
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1709,7 +1810,7 @@ class EventService implements EventServiceInterface {
 		}
 
 		try {
-			return $this->objectService->find(id: $eventId, register: 'integriq', schema: 'event');
+			return $this->objectService->find(id: $eventId, options: new ObjectFindOptions(register: 'integriq', schema: 'event'));
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -2191,8 +2292,7 @@ class EventService implements EventServiceInterface {
 			// unauthenticated.
 			return $this->objectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: $schema,
+				options: new ObjectFindOptions(register: 'integriq', schema: $schema),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -2233,10 +2333,7 @@ class EventService implements EventServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $message->getUuid(),
-			// System context: see processEvent().
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2357,10 +2454,7 @@ class EventService implements EventServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $message->getUuid(),
-			// System context: see processEvent().
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2392,8 +2486,7 @@ class EventService implements EventServiceInterface {
 	public function replayMessage(string $id, string $actorUid): ObjectEntity {
 		$message = $this->objectService->find(
 			id: $id,
-			register: 'integriq',
-			schema: 'event_message'
+			options: new ObjectFindOptions(register: 'integriq', schema: 'event_message')
 		);
 		$messageData = $message->getObject();
 		$status = ($messageData['status'] ?? '');
@@ -2414,9 +2507,7 @@ class EventService implements EventServiceInterface {
 		// Attempts[] is deliberately preserved across the replay campaign.
 		$saved = $this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid())
 		);
 
 		// Re-enter the delivery machine immediately, through the SAME action
@@ -2427,8 +2518,7 @@ class EventService implements EventServiceInterface {
 
 		return $this->objectService->find(
 			id: $message->getUuid(),
-			register: 'integriq',
-			schema: 'event_message'
+			options: new ObjectFindOptions(register: 'integriq', schema: 'event_message')
 		);
 
 	}//end replayMessage()
@@ -2456,8 +2546,7 @@ class EventService implements EventServiceInterface {
 		if ($subscriptionId !== null) {
 			$subscription = $this->objectService->find(
 				id: $subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription')
 			);
 
 			if ($subscription !== null) {
@@ -2510,8 +2599,7 @@ class EventService implements EventServiceInterface {
 	public function discardMessage(string $id, string $actorUid): ObjectEntity {
 		$message = $this->objectService->find(
 			id: $id,
-			register: 'integriq',
-			schema: 'event_message'
+			options: new ObjectFindOptions(register: 'integriq', schema: 'event_message')
 		);
 		$messageData = $message->getObject();
 		$status = ($messageData['status'] ?? '');
@@ -2531,9 +2619,7 @@ class EventService implements EventServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid())
 		);
 
 	}//end discardMessage()
@@ -2564,11 +2650,9 @@ class EventService implements EventServiceInterface {
 			// `(string)` cast is defensive (find() signs for a string $id).
 			$subscription = $this->objectService->find(
 				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
 			return self::DEFAULT_MAX_RETRIES;
@@ -2606,9 +2690,7 @@ class EventService implements EventServiceInterface {
 			$message->setObject($messageData);
 			$this->objectService->saveObject(
 				object: $messageData,
-				register: 'integriq',
-				schema: 'event_message',
-				uuid: $message->getUuid()
+				options: RegisterSave::options(register: 'integriq', schema: 'event_message', uuid: $message->getUuid())
 			);
 			$this->logger->warning(
 				'Abandoned event message "' . $message->getUuid() . '" after exhausting ' . $limit
@@ -2797,11 +2879,7 @@ class EventService implements EventServiceInterface {
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2845,34 +2923,65 @@ class EventService implements EventServiceInterface {
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
 	 */
 	public function ingestDeliveryRequest(DeliveryRequestedEvent $request): array {
-		$payload = $request->getPayload();
-		$optOut = $this->decideDelivery(request: $request, payload: $payload);
-		if ($optOut !== null && $optOut['decision']['send'] === true) {
-			$payload = $optOut['payload'];
+		$run = $this->startDeliveryIngest(request: $request);
+		if ($run->isRefused() === true) {
+			return $this->deliveryAnswer(run: $run, refusal: $this->refuseDelivery(request: $request, optOut: $run->optOut));
 		}
 
-		$event = $this->saveDeliveryEvent(
+		$run->messages = $this->processEvent(event: $run->event);
+		$this->recordDelivery(run: $run);
+
+		return $this->deliveryAnswer(run: $run, refusal: null);
+	}//end ingestDeliveryRequest()
+
+	/**
+	 * Ask the opt-out list about a delivery request and store its CloudEvent.
+	 *
+	 * @param DeliveryRequestedEvent $request The typed cross-app delivery request.
+	 *
+	 * @return DeliveryIngestRun The run, with the decision, the stored payload and the event.
+	 *
+	 * @throws Exception On persistence failure.
+	 */
+	private function startDeliveryIngest(DeliveryRequestedEvent $request): DeliveryIngestRun {
+		$run = new DeliveryIngestRun(request: $request);
+		$run->payload = $request->getPayload();
+		$selection = $this->resolvedRecipients(request: $request);
+		if ($selection !== null) {
+			// The transport receives the resolved list: standing minus suppressed plus added.
+			$run->payload['recipients'] = $selection['resolved'];
+		}
+
+		$run->optOut = $this->decideDelivery(request: $request, payload: $run->payload);
+		if ($run->optOut !== null && $run->optOut['decision']['send'] === true) {
+			$run->payload = $run->optOut['payload'];
+		}
+
+		$run->event = $this->saveDeliveryEvent(
 			request: $request,
-			data: ['delivery' => $this->deliveryRecord(request: $request, optOut: $optOut), 'payload' => $payload]
+			data: ['delivery' => $this->deliveryRecord(request: $request, optOut: $run->optOut), 'payload' => $run->payload]
 		);
 
-		if ($optOut !== null && $optOut['decision']['send'] !== true) {
-			return [
-				'event' => $event,
-				'messages' => [],
-				'refusal' => $this->refuseDelivery(request: $request, optOut: $optOut),
-			];
-		}
+		return $run;
 
-		$messages = $this->processEvent(event: $event);
-		$this->recordDelivery(request: $request, optOut: $optOut, payload: $payload, event: $event, messages: $messages);
+	}//end startDeliveryIngest()
 
+	/**
+	 * What ingestDeliveryRequest() answers.
+	 *
+	 * @param DeliveryIngestRun $run The run.
+	 * @param array{code:string,reason:string}|null $refusal The opt-out refusal, or null when routed.
+	 *
+	 * @return array{event: ObjectEntity, messages: ObjectEntity[], refusal: array{code:string,reason:string}|null} The answer.
+	 */
+	private function deliveryAnswer(DeliveryIngestRun $run, ?array $refusal): array {
 		return [
-			'event' => $event,
-			'messages' => $messages,
-			'refusal' => null,
+			'event' => $run->event,
+			'messages' => $run->messages,
+			'refusal' => $refusal,
 		];
-	}//end ingestDeliveryRequest()
+
+	}//end deliveryAnswer()
 
 	/**
 	 * The `data.delivery` block of a delivery request's CloudEvent.
@@ -2894,6 +3003,11 @@ class EventService implements EventServiceInterface {
 			'correlationId' => $request->getCorrelationId(),
 			'externalReference' => $request->getExternalReference(),
 		];
+		$selection = $request->getRecipientSelection();
+		if ($selection !== null) {
+			$delivery['recipientSelection'] = $this->recordedSelection(selection: $selection);
+		}
+
 		if ($optOut !== null) {
 			$delivery['optOut'] = [
 				'send' => $optOut['decision']['send'],
@@ -2932,11 +3046,7 @@ class EventService implements EventServiceInterface {
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2970,47 +3080,121 @@ class EventService implements EventServiceInterface {
 	/**
 	 * Keep the outbound log row of a personal delivery that was routed.
 	 *
-	 * @param DeliveryRequestedEvent $request The request.
-	 * @param array<string,mixed>|null $optOut The opt-out decision, or null when no person was named.
-	 * @param array<string,mixed> $payload The payload as stored.
-	 * @param ObjectEntity $event The stored CloudEvent.
-	 * @param ObjectEntity[] $messages The delivery messages routing created.
+	 * @param DeliveryIngestRun $run The run, with its routed messages.
 	 *
 	 * @return void
 	 */
-	private function recordDelivery(
-		DeliveryRequestedEvent $request,
-		?array $optOut,
-		array $payload,
-		ObjectEntity $event,
-		array $messages,
-	): void {
-		if ($optOut === null || $this->sendGate === null) {
+	private function recordDelivery(DeliveryIngestRun $run): void {
+		if ($run->optOut === null || $this->sendGate === null) {
 			return;
 		}
 
-		$address = (string)$optOut['decision']['address'];
-		$logRow = $this->sendGate->open(
-			channel: $optOut['channel'],
-			subjectRef: $request->getSubjectId(),
-			subject: $request->getSubjectLabel(),
-			body: (string)($payload['body'] ?? ''),
-			address: $address,
-			options: [
-				'sourceApp' => $request->getSourceApp(),
-				'correlationId' => $request->getCorrelationId(),
-				'caseRef' => (string)($payload['caseRef'] ?? ''),
-			],
-			decision: $optOut['decision']
-		);
-		if ($messages === []) {
+		$address = (string)$run->optOut['decision']['address'];
+		$logRow  = $this->openDeliveryLogRow(run: $run, address: $address);
+		if ($run->messages === []) {
 			$this->sendGate->failed(uuid: $logRow, address: $address, step: 'route', reason: 'No event subscription matched this delivery.');
 			return;
 		}
 
-		$this->sendGate->handedOver(uuid: $logRow, address: $address, reference: (string)$event->getUuid());
+		$this->sendGate->handedOver(uuid: $logRow, address: $address, reference: (string)$run->event->getUuid());
 
 	}//end recordDelivery()
+
+	/**
+	 * Open the outbound log row of a routed personal delivery.
+	 *
+	 * @param DeliveryIngestRun $run     The run.
+	 * @param string            $address The recipient key.
+	 *
+	 * @return string|null The row uuid, or null when it could not be written.
+	 */
+	private function openDeliveryLogRow(DeliveryIngestRun $run, string $address): ?string {
+		return $this->sendGate->open(
+			channel: $run->optOut['channel'],
+			subjectRef: $run->request->getSubjectId(),
+			subject: $run->request->getSubjectLabel(),
+			body: (string)($run->payload['body'] ?? ''),
+			address: $address,
+			options: $this->deliveryLogOptions(run: $run),
+			decision: $run->optOut['decision']
+		);
+
+	}//end openDeliveryLogRow()
+
+	/**
+	 * The log-row options of a routed personal delivery.
+	 *
+	 * @param DeliveryIngestRun $run The run.
+	 *
+	 * @return array<string,mixed> The source app, correlation id and case reference, and the
+	 *                             recipient decision when the request carried one.
+	 */
+	private function deliveryLogOptions(DeliveryIngestRun $run): array {
+		$options = [
+			'sourceApp' => $run->request->getSourceApp(),
+			'correlationId' => $run->request->getCorrelationId(),
+			'caseRef' => (string)($run->payload['caseRef'] ?? ''),
+		];
+		$selection = $run->request->getRecipientSelection();
+		if ($selection !== null) {
+			$options['recipientSelection'] = $this->recordedSelection(selection: $selection);
+		}
+
+		return $options;
+
+	}//end deliveryLogOptions()
+
+	/**
+	 * The resolved recipient decision of a request, or null when it carries none.
+	 *
+	 * The decision is resolved by integriq's own listener before ingest. A request
+	 * that carries a decision nobody resolved fails closed rather than sending to
+	 * a list nobody decided.
+	 *
+	 * @param DeliveryRequestedEvent $request The request.
+	 *
+	 * @return array<string,mixed>|null The standing, added, suppressed and resolved parts.
+	 *
+	 * @throws RuntimeException When a decision was handed over but not resolved.
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 */
+	private function resolvedRecipients(DeliveryRequestedEvent $request): ?array {
+		$selection = $request->getRecipientSelection();
+		if ($selection !== null) {
+			return $selection;
+		}
+
+		$asked = array_filter(
+			$request->getRecipientDecision(),
+			static fn (mixed $part): bool => (is_array($part) === true && $part !== [])
+		);
+		if ($asked !== []) {
+			throw new RuntimeException('The delivery request carries a recipient decision that was not resolved; nothing was sent.');
+		}
+
+		return null;
+
+	}//end resolvedRecipients()
+
+	/**
+	 * The parts of a recipient decision the record keeps: standing, added and
+	 * suppressed, each on its own, never the flattened list alone.
+	 *
+	 * @param array<string,mixed> $selection The resolved selection.
+	 *
+	 * @return array{standing: array<int,mixed>, added: array<int,mixed>, suppressed: array<int,mixed>}
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+	 */
+	private function recordedSelection(array $selection): array {
+		return [
+			'standing' => (array)($selection['standing'] ?? []),
+			'added' => (array)($selection['added'] ?? []),
+			'suppressed' => (array)($selection['suppressed'] ?? []),
+		];
+
+	}//end recordedSelection()
 
 	/**
 	 * Ask the opt-out list about a delivery that names a personal recipient.
@@ -3128,11 +3312,7 @@ class EventService implements EventServiceInterface {
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3152,6 +3332,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function handleObjectCreated(ObjectEntity $object): array {
 		$objectData = $object->getObject();
@@ -3171,12 +3352,8 @@ class EventService implements EventServiceInterface {
 				// even when the schema ids cannot identify it (a renamed register, or
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
-			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			] + $this->organisationAttribute(object: $object),
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3197,6 +3374,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function handleObjectUpdated(ObjectEntity $oldObject, ObjectEntity $newObject): array {
 		$oldData = $oldObject->getObject();
@@ -3221,12 +3399,8 @@ class EventService implements EventServiceInterface {
 				// even when the schema ids cannot identify it (a renamed register, or
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
-			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			] + $this->organisationAttribute(object: $newObject),
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3246,6 +3420,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function handleObjectDeleted(ObjectEntity $object): array {
 		$objectData = $object->getObject();
@@ -3265,12 +3440,8 @@ class EventService implements EventServiceInterface {
 				// even when the schema ids cannot identify it (a renamed register, or
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
-			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			] + $this->organisationAttribute(object: $object),
+			options: RegisterSave::options(register: 'integriq', schema: 'event'),
 			_rbac: false,
 			_multitenancy: false
 		);

@@ -76,6 +76,7 @@ import { showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcDialog, NcNoteCard, NcSelect } from '@nextcloud/vue'
 import closableDialog from '../mixins/closableDialog.js'
+import { downloadJson } from './downloadJson.js'
 
 export default {
 	name: 'ExportConfigurationDialog',
@@ -181,16 +182,7 @@ export default {
 					`/apps/integriq/api/configurations/${this.selected.id}/export`,
 				)
 				const { data } = await axios.post(url)
-				const blob = new Blob([JSON.stringify(data, null, 2)], {
-					type: 'application/json',
-				})
-				const link = document.createElement('a')
-				link.href = URL.createObjectURL(blob)
-				link.download = `configuration-${this.selected.id}.json`
-				document.body.appendChild(link)
-				link.click()
-				document.body.removeChild(link)
-				URL.revokeObjectURL(link.href)
+				downloadJson(`configuration-${this.selected.id}.json`, data)
 				showSuccess(t('integriq', 'Configuration exported'))
 				this.close()
 			} catch (err) {

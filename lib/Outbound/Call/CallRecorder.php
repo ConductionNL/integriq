@@ -35,8 +35,10 @@ namespace OCA\Integriq\Outbound\Call;
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\SecretRedactorInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
@@ -137,8 +139,9 @@ class CallRecorder implements CallRecorderInterface {
 			'target' => (string)($call['target'] ?? ''),
 			'traceId' => (string)($call['traceId'] ?? ''),
 			'direction' => 'outbound',
-			// The stored request is what a replay sends, so it keeps BodyRedactor's rules only.
-			'request' => $this->redactor->redactContext($this->asArray(value: ($call['request'] ?? []))),
+			// The stored request is what a replay sends, so it keeps BodyRedactor's secret
+			// rules only until the body policy has copied it to `replayRequest`.
+			'request' => $this->redactor->redactContext($this->asArray(value: ($call['request'] ?? [])), personalData: false),
 			'response' => $this->redactExchange(exchange: $this->asArray(value: ($call['response'] ?? []))),
 			'statusCode' => $statusCode,
 			'statusMessage' => (string)($call['statusMessage'] ?? ''),
@@ -177,12 +180,15 @@ class CallRecorder implements CallRecorderInterface {
 			errorExpires: null
 		);
 
+		// Personal data is masked in what an administrator reads; `replayRequest`
+		// keeps the values a replay sends, and is never listed (REQ-PDM-001).
+		$record = $this->maskPersonalData(record: $record);
+
 		return $this->objectService->saveObject(
 			object: $record,
-			register: MessageRecorder::REGISTER,
-			schema: self::SCHEMA,
+			options: RegisterSave::options(register: MessageRecorder::REGISTER, schema: self::SCHEMA),
 			_rbac: false,
-			_multitenancy: false,
+			_multitenancy: false
 		);
 
 	}//end record()
@@ -227,7 +233,7 @@ class CallRecorder implements CallRecorderInterface {
 				unset($response['body']);
 			}
 
-			$record['response'] = $response;
+			$record['response'] = $this->redactor->maskPersonalData(context: $response);
 		}
 
 		// A replay that succeeded no longer needs the request it replayed (REQ-OCD-009).
@@ -269,12 +275,45 @@ class CallRecorder implements CallRecorderInterface {
 	 * @throws DoesNotExistException When there is no such call.
 	 */
 	public function read(string $uuid): array {
+		// Unscoped: read by the forward and hold queues and the replay as the system; a user read goes through readInOrganisation().
+		return $this->readRecord(uuid: $uuid, multitenancy: false);
+
+	}//end read()
+
+	/**
+	 * Read one call record of the caller's organisation, for a user request.
+	 *
+	 * Another organisation's call answers exactly as an unknown one.
+	 *
+	 * @param string $uuid The record uuid.
+	 *
+	 * @return array<string,mixed> The record.
+	 *
+	 * @throws DoesNotExistException When there is no such call in the caller's organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	public function readInOrganisation(string $uuid): array {
+		return $this->readRecord(uuid: $uuid, multitenancy: true);
+
+	}//end readInOrganisation()
+
+	/**
+	 * Read one call record, with or without the organisation filter.
+	 *
+	 * @param string $uuid         The record uuid.
+	 * @param bool   $multitenancy Whether OpenRegister keeps the read to the caller's organisation.
+	 *
+	 * @return array<string,mixed> The record.
+	 *
+	 * @throws DoesNotExistException When there is no such call.
+	 */
+	private function readRecord(string $uuid, bool $multitenancy): array {
 		$entity = $this->objectService->find(
 			id: $uuid,
-			register: MessageRecorder::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectFindOptions(register: MessageRecorder::REGISTER, schema: self::SCHEMA),
 			_rbac: false,
-			_multitenancy: false,
+			_multitenancy: $multitenancy
 		);
 
 		if (($entity instanceof ObjectEntity) === false) {
@@ -288,7 +327,7 @@ class CallRecorder implements CallRecorderInterface {
 
 		return $record;
 
-	}//end read()
+	}//end readRecord()
 
 	/**
 	 * The source relation for a call, when there is one.
@@ -336,10 +375,9 @@ class CallRecorder implements CallRecorderInterface {
 		try {
 			$source = $this->objectService->find(
 				id: $uuid,
-				register: MessageRecorder::REGISTER,
-				schema: 'source',
+				options: new ObjectFindOptions(register: MessageRecorder::REGISTER, schema: 'source'),
 				_rbac: false,
-				_multitenancy: false,
+				_multitenancy: false
 			);
 		} catch (Throwable) {
 			return [];
@@ -405,6 +443,26 @@ class CallRecorder implements CallRecorderInterface {
 	}//end redactExchange()
 
 	/**
+	 * A record with the personal data in its stored request and response masked.
+	 *
+	 * @param array<string,mixed> $record The record.
+	 *
+	 * @return array<string,mixed> The masked record.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 */
+	private function maskPersonalData(array $record): array {
+		foreach (['request', 'response'] as $bag) {
+			if (is_array(($record[$bag] ?? null)) === true) {
+				$record[$bag] = $this->redactor->maskPersonalData(context: $record[$bag]);
+			}
+		}
+
+		return $record;
+
+	}//end maskPersonalData()
+
+	/**
 	 * Coerce a request or response bag to an array.
 	 *
 	 * @param mixed $value The bag.
@@ -435,11 +493,9 @@ class CallRecorder implements CallRecorderInterface {
 	private function write(string $uuid, array $record): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $record,
-			register: MessageRecorder::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuid,
+			options: RegisterSave::options(register: MessageRecorder::REGISTER, schema: self::SCHEMA, uuid: $uuid),
 			_rbac: false,
-			_multitenancy: false,
+			_multitenancy: false
 		);
 
 	}//end write()

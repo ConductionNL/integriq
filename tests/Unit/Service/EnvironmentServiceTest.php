@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/environments-and-promotion/spec.md#requirement-named-environments-are-openregister-objects-that-wrap-an-existing-source-for-connectivity-req-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -21,6 +24,7 @@ use InvalidArgumentException;
 use OCA\Integriq\Service\EnvironmentService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests environment CRUD + sourceRef existence validation.
@@ -66,11 +70,11 @@ class EnvironmentServiceTest extends TestCase {
 		);
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				['name' => 'Acceptance', 'slug' => 'acceptance', 'role' => 'target', 'sourceRef' => 'source-uuid'],
-				'integriq',
-				'environment'
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => ['name' => 'Acceptance', 'slug' => 'acceptance', 'role' => 'target', 'sourceRef' => 'source-uuid'],
+					'register' => 'integriq',
+					'schema' => 'environment',
+				]))
 			->willReturn($created);
 
 		$result = $this->service->create(['name' => 'Acceptance', 'slug' => 'acceptance', 'role' => 'target', 'sourceRef' => 'source-uuid']);

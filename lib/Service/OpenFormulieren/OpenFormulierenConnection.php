@@ -3,6 +3,9 @@
 /**
  * Integriq Open Formulieren Connection.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Open Formulieren posts submissions without a Nextcloud session. This
  * service gives such a submission an identity the way the DSO STAM intake
  * got one (dso-intake-through-an-integriq-connection): through a `consumer`.
@@ -28,9 +31,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://conduction.nl
  *
  * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#requirement-the-intake-acts-as-the-open-formulieren-connections-account-req-006
@@ -44,6 +44,7 @@ use OCA\Integriq\Exception\DsoConnectionUnavailableException;
 use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Intake\WebhookConnection;
 use OCA\Integriq\Service\Intake\WebhookProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -219,9 +220,7 @@ class OpenFormulierenConnection {
 	public function saveConsumer(array $data, ?string $uuid): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: DsoConnection::REGISTER,
-			schema: DsoConnection::SCHEMA_CONSUMER,
-			uuid: $uuid
+			options: RegisterSave::options(register: DsoConnection::REGISTER, schema: DsoConnection::SCHEMA_CONSUMER, uuid: $uuid)
 		);
 
 	}//end saveConsumer()

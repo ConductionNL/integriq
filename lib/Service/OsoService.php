@@ -37,10 +37,12 @@ use OCA\Integriq\Event\OsoAcknowledgementReceivedEvent;
 use OCA\Integriq\Event\OsoDossierReceivedEvent;
 use OCA\Integriq\Exception\OsoProviderException;
 use OCA\Integriq\Exception\OsoTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Oso\OsoAcknowledgementTranslator;
 use OCA\Integriq\Service\Oso\OsoExportEnvelopeTranslator;
 use OCA\Integriq\Service\Oso\OsoImportTranslator;
 use OCA\Integriq\Service\Oso\OsoProviderRegistry;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -155,8 +157,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		if ($status === 'failed') {
@@ -201,8 +202,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => null,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$this->eventDispatcher->dispatchTyped(
@@ -253,8 +253,7 @@ class OsoService implements OsoServiceInterface {
 				'error' => null,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
 
 		$this->eventDispatcher->dispatchTyped(
@@ -336,9 +335,7 @@ class OsoService implements OsoServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 	}//end retryOne()
@@ -353,26 +350,15 @@ class OsoService implements OsoServiceInterface {
 	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new OsoProviderException(
 				message: 'No active OSO source is configured (register "integriq", schema "source", type "oso", '
 					. 'isEnabled=true). Configure one before using the OSO bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 }//end class

@@ -3,6 +3,9 @@
 /**
  * What the Objecten facade asks of OpenRegister, answered by OpenRegister.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The facade's handlers take their OpenRegister access as callables so each
  * can be tested without an OpenRegister. This class is the production side of
  * every one of them, and the one place that knows which OpenRegister service
@@ -33,9 +36,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.conduction.nl
  *
  * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
@@ -47,6 +47,9 @@ namespace OCA\Integriq\Service\Objecten;
 
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -80,7 +83,16 @@ class ObjectenOpenRegisterAccess {
 	 *
 	 * @var string
 	 */
-	public const TOKEN_SCHEMA = 'objecten_token';
+	public const CREDENTIAL_SCHEMA = 'objecten_token';
+
+	/**
+	 * The former name of CREDENTIAL_SCHEMA.
+	 *
+	 * @var string
+	 *
+	 * @deprecated Use CREDENTIAL_SCHEMA.
+	 */
+	public const TOKEN_SCHEMA = self::CREDENTIAL_SCHEMA;
 
 	/**
 	 * OpenRegister's object service.
@@ -204,7 +216,10 @@ class ObjectenOpenRegisterAccess {
 
 		$stored = $this->runAs(
 			principal: $principal,
-			callback: fn (): mixed => $service->saveObject(object: $data, register: $register, schema: $schema, uuid: $uuid)
+			callback: fn (): mixed => $service->saveObject(
+				object: $data,
+				options: RegisterSave::options(register: $register, schema: $schema, uuid: $uuid)
+			)
 		);
 
 		return ($this->rows(found: [$stored])[0] ?? $data);
@@ -227,7 +242,9 @@ class ObjectenOpenRegisterAccess {
 
 		$deleted = $this->runAs(
 			principal: $principal,
-			callback: fn (): mixed => $service->deleteObject(uuid: $uuid, register: $register, schema: $schema)
+			callback: fn (): mixed => $service->deleteObject(
+				new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: $register, schema: $schema))
+			)
 		);
 
 		if ($deleted === false) {

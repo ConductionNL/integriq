@@ -40,13 +40,6 @@ use OCP\IAppConfig;
 class IdpBrokerConfig implements IdpBrokerConfigInterface {
 
 	/**
-	 * The app id these settings live under.
-	 *
-	 * @var string
-	 */
-	public const APP_ID = 'integriq';
-
-	/**
 	 * The feature flag key.
 	 *
 	 * @var string
@@ -66,28 +59,6 @@ class IdpBrokerConfig implements IdpBrokerConfigInterface {
 	 * @var string
 	 */
 	public const KEY_CONSUMERS = 'idp_broker_consumers';
-
-	/**
-	 * The per-organisation pseudonym salts, as a JSON map.
-	 *
-	 * @var string
-	 */
-	public const KEY_SALTS = 'idp_broker_salts';
-
-	/**
-	 * The per-provider assurance-level aliases, as a JSON map.
-	 *
-	 * @var string
-	 */
-	public const KEY_TRUST_ALIASES = 'idp_broker_trust_aliases';
-
-	/**
-	 * The per-provider Service Provider or Relying Party EntityID an
-	 * assertion must name as its audience, as a JSON map.
-	 *
-	 * @var string
-	 */
-	public const KEY_ENTITY_IDS = 'idp_broker_entity_ids';
 
 	/**
 	 * Constructor.
@@ -202,58 +173,6 @@ class IdpBrokerConfig implements IdpBrokerConfigInterface {
 		);
 
 	}//end saveConsumer()
-
-	/**
-	 * The EntityID an assertion from this provider must name as its audience.
-	 *
-	 * @param string $provider The provider id.
-	 *
-	 * @return string The EntityID, or an empty string when none is configured.
-	 *
-	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-replay-audience-confusion-and-idp-initiated-flows-are-rejected
-	 */
-	public function entityId(string $provider): string {
-		return (string)($this->map(key: self::KEY_ENTITY_IDS)[strtolower(trim($provider))] ?? '');
-
-	}//end entityId()
-
-	/**
-	 * One organisation's pseudonym salt.
-	 *
-	 * @param string $organisation The organisation id.
-	 *
-	 * @return string The salt, or an empty string when the organisation has none.
-	 *
-	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-bsn-pseudonymisation-at-the-broker-edge
-	 */
-	public function organisationSalt(string $organisation): string {
-		return (string)($this->map(key: self::KEY_SALTS)[strtolower(trim($organisation))] ?? '');
-
-	}//end organisationSalt()
-
-	/**
-	 * One provider's assurance-level aliases.
-	 *
-	 * @param string $provider The provider id.
-	 *
-	 * @return array<string,string> The aliases.
-	 *
-	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-trust-levels-map-to-the-eidas-aligned-vocabulary
-	 */
-	public function trustAliases(string $provider): array {
-		$aliases = ($this->map(key: self::KEY_TRUST_ALIASES)[strtolower(trim($provider))] ?? []);
-		if (is_array($aliases) === false) {
-			return [];
-		}
-
-		$narrowed = [];
-		foreach ($aliases as $raw => $canonical) {
-			$narrowed[(string)$raw] = (string)$canonical;
-		}
-
-		return $narrowed;
-
-	}//end trustAliases()
 
 	/**
 	 * One JSON-map setting.

@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -24,26 +27,59 @@ namespace OCA\Integriq\Service;
  */
 interface SettingsServiceInterface {
 	/**
-	 * Retrieve the current retention settings from app configuration.
+	 * The retention every log kind gets now, its default, and the last rebase's progress.
 	 *
-	 * @return array The current retention settings configuration.
+	 * @return array{retention: array<string,int>, defaults: array<string,int>, rebase: array<string,mixed>}
 	 *
-	 * @throws \RuntimeException If settings retrieval fails.
-	 *
-	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md#requirement-settingscontroller-must-shrink-to-connector-specific-actions-only
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function getSettings(): array;
 
 	/**
-	 * Rebase all logs with current retention settings.
+	 * Change the retention of one or more log kinds.
 	 *
-	 * This method sets expiry dates for all logs based on current retention settings,
-	 * using database operations for optimal performance.
+	 * @param array<string,mixed> $payload `retention`, an object of setting key to milliseconds.
 	 *
-	 * @return array Array containing the rebase operation results
-	 * @throws \RuntimeException If the rebase operation fails
+	 * @return array The settings after the change.
 	 *
-	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 * @throws \InvalidArgumentException When a field is unknown or its value is not a whole non-negative number.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
-	public function rebase(): array;
-}
+	public function updateSettings(array $payload): array;
+
+	/**
+	 * Queue the job that applies the current retention to existing logs.
+	 *
+	 * @param array<int,string> $kinds The log kinds to rebase; empty means every kind with an expiry.
+	 *
+	 * @return array{queued: bool, kinds: list<string>}
+	 *
+	 * @throws \InvalidArgumentException When a kind has no logs to rebase.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	public function rebase(array $kinds=[]): array;
+
+	/**
+	 * The error sink settings (`errorsink_*`), for the admin page.
+	 *
+	 * @return array<string, mixed> enabled, kind, endpoint, allowLocal, minLevel, apps, headerName, credentialName.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 */
+	public function getErrorSinkSettings(): array;
+
+	/**
+	 * Store the error sink settings an administrator saved.
+	 *
+	 * @param array<string, mixed> $values The submitted values.
+	 *
+	 * @return array<string, mixed> The stored settings.
+	 *
+	 * @throws \InvalidArgumentException When a value is refused; the message is the translated reason.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 */
+	public function saveErrorSinkSettings(array $values): array;
+}//end interface

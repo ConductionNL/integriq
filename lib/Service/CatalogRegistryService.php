@@ -3,6 +3,9 @@
 /**
  * Catalog Registry Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Single PHP-side source of truth for the Catalog page's card entries
  * (REQ-003). Assembles catalog descriptors from three existing sources —
  * never inventing an entry:
@@ -36,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Service\Catalog\ConnectorTemplateLibrary;
+use OCA\Integriq\Service\Catalog\ContributedTemplates;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -116,6 +120,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'servicenow' => 'Service management',
 		'glpi' => 'Service management',
 		'cmcom-sms' => 'Messaging',
+		'smtp-mail' => 'Messaging',
 		'messagebird-sms' => 'Messaging',
 		'twilio-sms' => 'Messaging',
 		'whatsapp-bsp' => 'Messaging',
@@ -130,7 +135,39 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		// GitHub for the publiccode harvest (sources-github-publiccode).
 		'github-api' => 'Code hosting',
 		'github-raw' => 'Code hosting',
+		// Vehicle register and route planners for sibling apps (sources-route-distance-and-rdw-lookup).
+		'rdw-open-data' => 'Government registers',
+		'route-planner-openrouteservice' => 'Geo / Maps',
+		'route-planner-tomtom' => 'Geo / Maps',
+		// Web shops whose orders go to shillinq (connectors-webshop-orders D4).
+		'woocommerce-shop' => 'Commerce',
+		'shopify-shop' => 'Commerce',
+		'lightspeed-shop' => 'Commerce',
+		// Bookkeeping connectors in the categories shillinq's integrations page filters on
+		// (platform-bookkeeping-catalogue-items D2). These names are a contract: see BOOKKEEPING_CATEGORIES.
+		'peppol-access-point' => 'E-invoicing',
+		'psd2-bank-aggregator' => 'Bank',
+		'corporate-card-feed' => 'Bank',
+		'mollie-payments' => 'Payments',
+		'digipoort-sbr' => 'Tax filing',
+		// The ECB euro reference rates, credential-free (sources-ecb-exchange-rates D4).
+		'ecb-eurofxref-daily' => 'Bank',
+		// Other vendors' gateways whose APIs integriq lists (gateway-federated-api-discovery).
+		'kong-gateway-discovery' => 'API gateways',
+		'azure-apim-discovery' => 'API gateways',
+		'aws-apigateway-discovery' => 'API gateways',
 	];
+
+	/**
+	 * The categories shillinq's integrations page filters integriq's catalogue on
+	 * (shillinq platform-integration-catalogue D1). Every bookkeeping connector
+	 * template carries one of them.
+	 *
+	 * @var list<string>
+	 *
+	 * @spec openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
+	 */
+	public const BOOKKEEPING_CATEGORIES = ['Bank', 'Payments', 'E-invoicing', 'Tax filing', 'Commerce', 'Payroll'];
 
 	/**
 	 * The Objecten API and Objecttypen API facade as one adapter card
@@ -190,6 +227,21 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'icon' => 'MapMarkerOutline',
 		],
 		[
+			'slug' => 'adapter:digid-eherkenning-auth-adapter',
+			'name' => 'DigiD, eHerkenning and eIDAS login',
+			'description' => 'Signs residents and businesses in through DigiD, eHerkenning or eIDAS for an app such as portaliq, '
+				. 'which receives a signed pseudonymous envelope, never a BSN. Each organisation gets its own SAML Service Provider '
+				. 'or OIDC Relying Party registration, configured under Beheer > Authenticatie; this entry creates no configuration '
+				. 'of its own. Keys stay in Keepiq. Substantial is the lowest level accepted. Dormant until `idp_broker_enabled` is 1.',
+			'category' => 'Identity',
+			'kind' => 'adapter',
+			'mechanism' => 'flag-gated',
+			'flagKey' => 'idp_broker_enabled',
+			'sourceTemplateSlug' => '',
+			'standards' => ['SAML 2.0', 'OpenID Connect', 'DigiD', 'eHerkenning', 'eIDAS'],
+			'icon' => 'AccountKeyOutline',
+		],
+		[
 			'slug' => 'adapter:digikoppeling',
 			'name' => 'Digikoppeling',
 			'description' => 'Dutch government messaging standard (WUS profile, ebMS2 reliable messaging, WS-Security signing, '
@@ -219,6 +271,22 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'sourceTemplateSlug' => '',
 			'standards' => ['Digikoppeling ebMS2', 'Digikoppeling WUS', 'PKIoverheid'],
 			'icon' => 'EmailOutline',
+		],
+		[
+			'slug' => 'adapter:digipoort-sbr',
+			'name' => 'Digipoort (SBR filing)',
+			'description' => 'Files XBRL instances with the Belastingdienst and the KvK through Digipoort: a sibling app such as '
+				. 'shillinq raises a filing request, integriq delivers the instance once, polls the processing status and '
+				. 'reports every status back as an event. Ships on the log provider, which answers without a network call. '
+				. 'The live WUS provider signs with your PKIoverheid certificate from the credential broker and sends over '
+				. 'two-way TLS; without the certificate it refuses and sends nothing.',
+			'category' => 'Tax filing',
+			'kind' => 'adapter',
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => 'digipoort-sbr',
+			'standards' => ['Digipoort WUS', 'SBR', 'PKIoverheid'],
+			'icon' => 'FileSendOutline',
 		],
 		[
 			'slug' => 'adapter:smartdocuments',
@@ -288,9 +356,13 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 */
 	private const PROVIDER_CATEGORY_OVERRIDES = [
 		'azure-virtual-desktop' => 'Endpoint / Workspace',
+		'intune' => 'Endpoint / Workspace',
+		'jamf-pro' => 'Endpoint / Workspace',
+		'citrix-daas' => 'Endpoint / Workspace',
 		'sharepoint-online' => 'Document / CMS',
 		'microsoft-365' => 'SaaS productivity',
 		'data-infra-s3' => 'Data infrastructure',
+		'data-infra-database' => 'Data infrastructure',
 	];
 
 	/**
@@ -301,6 +373,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @param IAppConfig $appConfig App config, used to resolve flag-gated mechanism status.
 	 * @param LoggerInterface $logger Logger for malformed seed-fragment warnings.
 	 * @param string|null $templateDir The template library to read; the shipped one when null.
+	 * @param ContributedTemplates|null $contributed The templates extension apps contributed, shown as provided by their app.
 	 */
 	public function __construct(
 		private readonly IntegrationRegistry $integrationRegistry,
@@ -308,6 +381,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		?string $templateDir = null,
+		private readonly ?ContributedTemplates $contributed = null,
 	) {
 		$this->templates = new ConnectorTemplateLibrary(directory: ($templateDir ?? self::TEMPLATE_DIR));
 	}//end __construct()
@@ -349,9 +423,15 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	private function collectFromTemplates(): array {
+		$cards = $this->templates->cards();
+		if ($this->contributed !== null) {
+			// @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+			$cards = [...$cards, ...$this->contributed->cards()];
+		}
+
 		return array_map(
 			fn (array $card): array => ['icon' => $this->iconForType(type: (string)$card['sourceType'])] + array_diff_key($card, ['sourceType' => true]),
-			$this->templates->cards()
+			$cards
 		);
 	}//end collectFromTemplates()
 
@@ -426,16 +506,8 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 */
 	private function collectFromSeedFragments(): array {
 		$entries = [];
-
-		if (is_dir(self::FRAGMENT_DIR) === false) {
-			return $entries;
-		}
-
-		$files = glob(self::FRAGMENT_DIR . '/*.json');
-		if ($files === false) {
-			return $entries;
-		}
-
+		$fragments = new SeedFragments(directory: self::FRAGMENT_DIR);
+		$files = $fragments->files();
 		sort($files);
 
 		foreach ($files as $file) {
@@ -444,54 +516,73 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 				continue;
 			}
 
-			$data = json_decode($raw, true);
-			if (json_last_error() !== JSON_ERROR_NONE || is_array($data) === false) {
+			$data = $fragments->decode(raw: $raw);
+			if ($data === null) {
 				$this->logger->warning('[integriq] CatalogRegistryService: skipping malformed seed fragment ' . basename($file));
 				continue;
 			}
 
-			$objects = ($data['components']['objects'] ?? []);
-			if (is_array($objects) === false) {
-				continue;
+			foreach ($fragments->objects(data: $data) as $object) {
+				$entries = $this->withTemplateEntry(entries: $entries, object: $object);
 			}
-
-			foreach ($objects as $object) {
-				$self = ($object['@self'] ?? []);
-				if (($self['schema'] ?? '') !== 'source') {
-					// Not a Source seed (e.g. a schema-defining fragment
-					// like eudi-wallet-credential-issuance.json) — skip.
-					continue;
-				}
-
-				$slug = (string)($self['slug'] ?? '');
-				if ($slug === '' || str_starts_with($slug, self::PLACEHOLDER_SLUG_PREFIX) === true) {
-					continue;
-				}
-
-				$type = (string)($object['type'] ?? 'api');
-				$category = (self::SLUG_CATEGORY_OVERRIDES[$slug] ?? self::TYPE_CATEGORY_LABELS[$type] ?? 'Integrations');
-
-				$entries[] = [
-					'slug' => 'source-template:' . $slug,
-					'name' => (string)($object['name'] ?? $slug),
-					'description' => (string)($object['description'] ?? ''),
-					'category' => $category,
-					'kind' => 'source-template',
-					// Design decision (proposal.md Risk 2): every register.d
-					// seed source uses the mock/isEnabled mechanism, distinct
-					// from the flag-gated container-level PDOK/Berichtenbox
-					// adapters above.
-					'mechanism' => 'mock-seeded',
-					'flagKey' => '',
-					'sourceTemplateSlug' => $slug,
-					'standards' => $this->standardsForType(type: $type),
-					'icon' => $this->iconForType(type: $type),
-				];
-			}//end foreach
-		}//end foreach
+		}
 
 		return $entries;
 	}//end collectFromSeedFragments()
+
+	/**
+	 * The entries with the catalog entry of one seeded object added, when it is a real Source seed.
+	 *
+	 * @param array<int, array<string,mixed>> $entries The entries so far.
+	 * @param mixed                           $object  One seeded object.
+	 *
+	 * @return array<int, array<string,mixed>>
+	 */
+	private function withTemplateEntry(array $entries, mixed $object): array {
+		$self = ($object['@self'] ?? []);
+		if (($self['schema'] ?? '') !== 'source') {
+			// Not a Source seed (e.g. a schema-defining fragment
+			// like eudi-wallet-credential-issuance.json) — skip.
+			return $entries;
+		}
+
+		$slug = (string)($self['slug'] ?? '');
+		if ($slug === '' || str_starts_with($slug, self::PLACEHOLDER_SLUG_PREFIX) === true) {
+			return $entries;
+		}
+
+		$entries[] = $this->templateEntry(object: $object, slug: $slug);
+		return $entries;
+	}//end withTemplateEntry()
+
+	/**
+	 * The catalog entry of a seeded Source.
+	 *
+	 * @param array<string,mixed> $object The seeded Source object.
+	 * @param string              $slug   Its slug.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function templateEntry(array $object, string $slug): array {
+		$type = (string)($object['type'] ?? 'api');
+
+		return [
+			'slug' => 'source-template:' . $slug,
+			'name' => (string)($object['name'] ?? $slug),
+			'description' => (string)($object['description'] ?? ''),
+			'category' => (self::SLUG_CATEGORY_OVERRIDES[$slug] ?? self::TYPE_CATEGORY_LABELS[$type] ?? 'Integrations'),
+			'kind' => 'source-template',
+			// Design decision (proposal.md Risk 2): every register.d
+			// seed source uses the mock/isEnabled mechanism, distinct
+			// from the flag-gated container-level PDOK/Berichtenbox
+			// adapters above.
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => $slug,
+			'standards' => $this->standardsForType(type: $type),
+			'icon' => $this->iconForType(type: $type),
+		];
+	}//end templateEntry()
 
 	/**
 	 * Small standards vocabulary lookup keyed by the source's free-form
@@ -552,46 +643,24 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function findSeedSourcePayload(string $slug): ?array {
-		$templatePayload = $this->templates->payload(slug: $slug);
+		$templatePayload = ($this->templates->payload(slug: $slug) ?? $this->contributed?->payload(slug: $slug));
 		if ($templatePayload !== null) {
 			return $templatePayload;
 		}
 
-		if (is_dir(self::FRAGMENT_DIR) === false) {
-			return null;
-		}
-
-		$files = glob(self::FRAGMENT_DIR . '/*.json');
-		if ($files === false) {
-			return null;
-		}
-
-		foreach ($files as $file) {
+		$fragments = new SeedFragments(directory: self::FRAGMENT_DIR);
+		foreach ($fragments->files() as $file) {
 			$raw = file_get_contents($file);
-			if ($raw === false) {
-				continue;
+			$data = null;
+			if ($raw !== false) {
+				$data = $fragments->decode(raw: $raw);
 			}
 
-			$data = json_decode($raw, true);
-			if (json_last_error() !== JSON_ERROR_NONE || is_array($data) === false) {
-				continue;
+			$payload = $fragments->sourcePayload(objects: $fragments->objects(data: ($data ?? [])), slug: $slug);
+			if ($payload !== null) {
+				return $payload;
 			}
-
-			$objects = ($data['components']['objects'] ?? []);
-			if (is_array($objects) === false) {
-				continue;
-			}
-
-			foreach ($objects as $object) {
-				$self = ($object['@self'] ?? []);
-				if (($self['schema'] ?? '') === 'source' && ($self['slug'] ?? '') === $slug) {
-					$payload = $object;
-					$payload['slug'] = $slug;
-					unset($payload['@self']);
-					return $payload;
-				}
-			}
-		}//end foreach
+		}
 
 		return null;
 	}//end findSeedSourcePayload()
@@ -614,53 +683,65 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		$mechanism = (string)($entry['mechanism'] ?? 'always-available');
 
 		if ($mechanism === 'flag-gated') {
-			$flagKey = (string)($entry['flagKey'] ?? '');
-			if ($flagKey === '') {
-				return 'dormant';
-			}
-
-			$raw = $this->appConfig->getValueString('integriq', $flagKey, '0');
-			if ($raw === '1' || strtolower($raw) === 'true') {
-				return 'available';
-			}
-
-			return 'dormant';
+			return $this->flagStatus(flagKey: (string)($entry['flagKey'] ?? ''));
 		}
 
 		if ($mechanism === 'mock-seeded') {
-			$slug = (string)($entry['sourceTemplateSlug'] ?? '');
-			if ($slug === '') {
-				return 'dormant';
-			}
-
-			$source = $this->findSourceBySlug(slug: $slug);
-			if ($source === null) {
-				return 'dormant';
-			}
-
-			$data = $source->getObject();
-			// Mock mode is NOT dormant — the source is reachable, just
-			// returning canned data (REQ-001 scenario).
-			if (($data['isEnabled'] ?? false) === true) {
-				return 'available';
-			}
-
-			return 'dormant';
+			return $this->seededStatus(slug: (string)($entry['sourceTemplateSlug'] ?? ''));
 		}
 
 		// 'always-available' — fall back to the collector's own
 		// isEnabled() read when present (IntegrationRegistry providers),
 		// otherwise treat as always available.
-		if (array_key_exists('_fallbackEnabled', $entry) === true) {
-			if ($entry['_fallbackEnabled'] === true) {
-				return 'available';
-			}
-
+		if (array_key_exists('_fallbackEnabled', $entry) === true && $entry['_fallbackEnabled'] !== true) {
 			return 'dormant';
 		}
 
 		return 'available';
 	}//end resolveStatus()
+
+	/**
+	 * The status of a flag-gated entry: available when its app-config flag is on.
+	 *
+	 * @param string $flagKey The app-config key, or ''.
+	 *
+	 * @return string 'available' | 'dormant'.
+	 */
+	private function flagStatus(string $flagKey): string {
+		if ($flagKey === '') {
+			return 'dormant';
+		}
+
+		$raw = $this->appConfig->getValueString('integriq', $flagKey, '0');
+		if ($raw === '1' || strtolower($raw) === 'true') {
+			return 'available';
+		}
+
+		return 'dormant';
+	}//end flagStatus()
+
+	/**
+	 * The status of a mock-seeded entry: available when its seeded Source exists and is enabled.
+	 *
+	 * Mock mode is NOT dormant — the source is reachable, just returning
+	 * canned data (REQ-001 scenario).
+	 *
+	 * @param string $slug The source template's slug, or ''.
+	 *
+	 * @return string 'available' | 'dormant'.
+	 */
+	private function seededStatus(string $slug): string {
+		if ($slug === '') {
+			return 'dormant';
+		}
+
+		$source = $this->findSourceBySlug(slug: $slug);
+		if ($source !== null && ($source->getObject()['isEnabled'] ?? false) === true) {
+			return 'available';
+		}
+
+		return 'dormant';
+	}//end seededStatus()
 
 	/**
 	 * Find a `source` OpenRegister object by its slug.

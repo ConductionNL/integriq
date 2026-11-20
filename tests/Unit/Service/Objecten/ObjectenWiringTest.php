@@ -51,6 +51,7 @@ use Psr\Container\ContainerInterface;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Verifies that the registered factories wire every seam (REQ-OAF-002..005).
@@ -312,6 +313,8 @@ class ObjectenWiringTest extends TestCase {
 			}
 		}
 
+		// Each method is routed twice: under /api/ and under the versioned /api/v1/.
+		$methods = array_values(array_unique($methods));
 		$this->assertCount(10, $methods);
 		foreach ($methods as $method) {
 			$attributes = (new \ReflectionMethod(ObjectenApiController::class, $method))->getAttributes(AnonRateLimit::class);
@@ -510,7 +513,7 @@ class ObjectenWiringTest extends TestCase {
 						'register' => 'meldingen',
 						'schema' => 'melding',
 					]]],
-					ObjectenOpenRegisterAccess::TOKEN_SCHEMA => ['results' => [[
+					ObjectenOpenRegisterAccess::CREDENTIAL_SCHEMA => ['results' => [[
 						'@self' => ['id' => 'token-1'],
 						'name' => 'Leverancier meldingen',
 						'credential' => 'cred-1',
@@ -527,6 +530,7 @@ class ObjectenWiringTest extends TestCase {
 		);
 		$service->method('saveObject')->willReturnCallback(
 			function (...$arguments): ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
 				$this->saved[] = [
 					'register' => $arguments[1],
 					'schema' => $arguments[2],

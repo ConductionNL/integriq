@@ -3,7 +3,10 @@
 /**
  * Integriq Settings Service
  *
- * This file contains the service class for handling settings in the Integriq application.
+ * The log retention integriq applies, read and changed on the admin page: the
+ * settings read and update in the index and update shape of ADR-076, and the
+ * "Apply to existing logs" action, which queues a background job over the
+ * OpenRegister log objects.
  *
  * @category Service
  * @package  OCA\Integriq\Service
@@ -15,324 +18,222 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use InvalidArgumentException;
+use LogicException;
+use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
+use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
 use OCP\IAppConfig;
-use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
 /**
- * Service for handling settings-related operations.
+ * Reads and changes the log retention, and queues its rebase.
  *
- * Provides functionality for retrieving database statistics and
- * system information for the Integriq application.
- *
- * @SuppressWarnings(PHPMD.ShortVariable)
- * @SuppressWarnings(PHPMD.CyclomaticComplexity)
- * @SuppressWarnings(PHPMD.NPathComplexity)
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.MissingImport)
+ * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
  */
 class SettingsService implements SettingsServiceInterface {
-	/**
-	 * The log tables rebase() sets expiry dates on, in order: the retention
-	 * settings that drive each, the result key, and which rows it touches.
-	 * Successful and failed call logs share one table, each setting runs its
-	 * own update, and the later setting's count is the one reported.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	private const REBASE_TABLES = [
-		[
-			'settings' => ['successLogRetention', 'callLogRetention'],
-			'table' => 'openconnector_call_logs',
-			'result' => 'callLogsUpdated',
-			'label' => 'call logs',
-			'expiresFrom' => 'created',
-			'where' => self::WHERE_NO_EXPIRY,
-			'checkColumn' => false,
-		],
-		[
-			'settings' => ['eventMessageRetention'],
-			'table' => 'openconnector_event_messages',
-			'result' => 'eventMessagesUpdated',
-			'label' => 'event messages',
-			'expiresFrom' => 'created',
-			'where' => self::WHERE_NO_EXPIRY,
-			'checkColumn' => true,
-		],
-		[
-			'settings' => ['jobLogRetention'],
-			'table' => 'openconnector_job_logs',
-			'result' => 'jobLogsUpdated',
-			'label' => 'job logs',
-			'expiresFrom' => 'created',
-			'where' => self::WHERE_NO_EXPIRY,
-			'checkColumn' => false,
-		],
-		[
-			'settings' => ['syncContractLogRetention'],
-			'table' => 'openconnector_synchronization_contract_logs',
-			'result' => 'syncContractLogsUpdated',
-			'label' => 'sync contract logs',
-			'expiresFrom' => 'createdOrNow',
-			'where' => self::WHERE_EMPTY_EXPIRY_OR_CREATED,
-			'checkColumn' => false,
-		],
-		[
-			'settings' => ['syncLogRetention'],
-			'table' => 'openconnector_synchronization_logs',
-			'result' => 'syncLogsUpdated',
-			'label' => 'sync logs',
-			'expiresFrom' => 'createdOrNow',
-			'where' => self::WHERE_EMPTY_EXPIRY_OR_CREATED,
-			'checkColumn' => false,
-		],
-	];
 
 	/**
-	 * Rows without an expiry date.
+	 * Constructor.
 	 *
-	 * @var string
-	 */
-	private const WHERE_NO_EXPIRY = "expires IS NULL OR expires = ''";
-
-	/**
-	 * Rows without a usable expiry date, or with a creation date (synchronization logs).
+	 * @param IAppConfig                        $config          The `integriq` app config the retention is kept in.
+	 * @param RetentionRebaseSchedulerInterface $rebaseScheduler Queues the rebase job.
+	 * @param LoggerInterface                   $logger          Records a change and a queued rebase.
+	 * @param ErrorSinkSettings|null            $errorSink       Reads, validates and stores the `errorsink_*` keys; the container always gives it.
 	 *
-	 * @var string
-	 */
-	private const WHERE_EMPTY_EXPIRY_OR_CREATED = "expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL";
-
-	/**
-	 * SettingsService constructor.
-	 *
-	 * @param IDBConnection $db Database connection for optimized queries.
-	 * @param IAppConfig $config App configuration interface for settings storage.
-	 * @param LoggerInterface $logger Logger interface for error handling.
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
 		private readonly IAppConfig $config,
+		private readonly RetentionRebaseSchedulerInterface $rebaseScheduler,
 		private readonly LoggerInterface $logger,
+		private readonly ?ErrorSinkSettings $errorSink = null,
 	) {
-
 	}//end __construct()
 
 	/**
-	 * Build a platform-portable SQL expression that adds a microsecond interval
-	 * to a column value.
+	 * The error sink settings (`errorsink_*`), for the admin page.
 	 *
-	 * The microsecond value is bound as a `?` placeholder. Returns the expression
-	 * as a string ready to splice into SQL.
+	 * @return array<string, mixed> enabled, kind, endpoint, allowLocal, minLevel, apps, headerName, credentialName.
 	 *
-	 * - MySQL/MariaDB:  `DATE_ADD(<column>, INTERVAL ? MICROSECOND)`.
-	 * - PostgreSQL:     `<column> + (? || ' microseconds')::interval`.
-	 *
-	 * Fixes GH #822 (Postgres portability of rebase()'s SQL).
-	 *
-	 * @param string $createdColumn The column expression to add the interval to.
-	 *
-	 * @return string The SQL expression.
-	 *
-	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 	 */
-	private function expiresExpression(string $createdColumn): string {
-		// Tested against PostgreSQL rather than FOR MySQL, deliberately.
-		// `::interval` is PostgreSQL-only syntax, so a platform this code has
-		// not met must not receive it — `DATE_ADD` at least fails on a server
-		// that can parse the rest of the statement. Inverting the test would
-		// make every unrecognised platform emit SQL nothing else understands.
-		if ($this->db->getDatabaseProvider() === IDBConnection::PLATFORM_POSTGRES) {
-			return sprintf('%s + (? || \' microseconds\')::interval', $createdColumn);
+	public function getErrorSinkSettings(): array {
+		return $this->errorSink()->all();
+
+	}//end getErrorSinkSettings()
+
+	/**
+	 * Store the error sink settings an administrator saved. An enabled sink
+	 * needs an endpoint or DSN, and a plain-http address is only taken when
+	 * the administrator marked the service as internal, as for the trace
+	 * collector (REQ-OTEL-005). A refused save stores nothing.
+	 *
+	 * @param array<string, mixed> $values The submitted values.
+	 *
+	 * @return array<string, mixed> The stored settings.
+	 *
+	 * @throws \InvalidArgumentException When a value is refused; the message is the translated reason.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 */
+	public function saveErrorSinkSettings(array $values): array {
+		return $this->errorSink()->save(values: $values);
+
+	}//end saveErrorSinkSettings()
+
+	/**
+	 * The error sink settings store.
+	 *
+	 * @return ErrorSinkSettings The store.
+	 *
+	 * @throws LogicException When the service was built without one.
+	 */
+	private function errorSink(): ErrorSinkSettings {
+		if ($this->errorSink === null) {
+			throw new LogicException('SettingsService was built without the error sink settings.');
 		}
 
-		return sprintf('DATE_ADD(%s, INTERVAL ? MICROSECOND)', $createdColumn);
-	}//end expiresExpression()
+		return $this->errorSink;
+
+	}//end errorSink()
 
 	/**
-	 * Portable replacement for `SHOW COLUMNS FROM <table> LIKE 'X'`.
+	 * The retention every log kind gets now, its default, and the last rebase's progress.
 	 *
-	 * Returns true when the named column exists on the named table.
-	 * Fixes GH #822 (Postgres portability of rebase()'s column probe).
+	 * @return array{retention: array<string,int>, defaults: array<string,int>, rebase: array<string,mixed>}
 	 *
-	 * @param string $unprefixedTable The Nextcloud table name without the `oc_` prefix.
-	 * @param string $column The column name to check.
-	 *
-	 * @return bool True when the column exists, false otherwise.
-	 *
-	 * @spec openspec/specs/logs-and-statistics/spec.md
-	 */
-	private function columnExists(string $unprefixedTable, string $column): bool {
-		try {
-			if ($this->db->getDatabaseProvider() === IDBConnection::PLATFORM_POSTGRES) {
-				$stmt = $this->db->prepare(
-					'SELECT 1 FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1'
-				);
-				$stmt->execute(['oc_' . $unprefixedTable, $column]);
-			} else {
-				$sql = sprintf(
-					'SHOW COLUMNS FROM `*PREFIX*%s` LIKE %s',
-					$unprefixedTable,
-					$this->db->quote($column)
-				);
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute();
-			}
-
-			$row = $stmt->fetch();
-			return $row !== false;
-		} catch (\Throwable) {
-			// If the table itself doesn't exist (legacy table dropped post #820),
-			// the column doesn't exist either.
-			return false;
-		}//end try
-	}//end columnExists()
-
-	/**
-	 * Retrieve the current retention settings from app configuration.
-	 *
-	 * @return array The current retention settings configuration.
-	 *
-	 * @throws \RuntimeException If settings retrieval fails.
-	 *
-	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md#requirement-settingscontroller-must-shrink-to-connector-specific-actions-only
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function getSettings(): array {
-		try {
-			$retentionConfig = $this->config->getValueString('integriq', 'retention', '');
-			$retentionData = [];
-			if (empty($retentionConfig) === false) {
-				$retentionData = json_decode($retentionConfig, true);
-			}
+		$rebase = json_decode($this->config->getValueString(app: 'integriq', key: RetentionSettings::REBASE_PROGRESS_KEY, default: ''), true);
+		if (is_array($rebase) === false) {
+			$rebase = [];
+		}
 
-			if (is_array($retentionData) === false) {
-				$retentionData = [];
-			}
-
-			// The same table the log writers fall back to, so what this read
-			// reports is what the logs get (integriq#2210).
-			$retention = [];
-			foreach (RetentionDefaults::BY_SETTING as $key => $default) {
-				$retention[$key] = ($retentionData[$key] ?? $default);
-			}
-
-			return ['retention' => $retention];
-		} catch (\Exception $e) {
-			$this->logger->error('Failed to retrieve settings', ['exception' => $e->getMessage()]);
-			throw new \RuntimeException('Failed to retrieve settings: ' . $e->getMessage());
-		}//end try
-
+		return [
+			'retention' => (new RetentionSettings(appConfig: $this->config))->all(),
+			'defaults' => RetentionDefaults::BY_SETTING,
+			'rebase' => $rebase,
+		];
 	}//end getSettings()
 
 	/**
-	 * Rebase all logs with current retention settings.
+	 * Change the retention of one or more log kinds.
 	 *
-	 * This method sets expiry dates for all logs based on current retention settings,
-	 * using database operations for optimal performance.
+	 * Values are whole milliseconds, 0 keeping a log indefinitely. A key that
+	 * is not a retention, or a value that is negative or not a whole number,
+	 * refuses the whole update and names the field. Values not sent keep what
+	 * they were.
 	 *
-	 * @return array Array containing the rebase operation results
-	 * @throws \RuntimeException If the rebase operation fails
+	 * @param array<string,mixed> $payload `retention`, an object of setting key to milliseconds.
 	 *
-	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 * @return array The settings after the change, as getSettings() returns them.
+	 *
+	 * @throws InvalidArgumentException When a field is unknown or its value is not a whole non-negative number.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
-	public function rebase(): array {
-		try {
-			$startTime = new \DateTime();
-			$results = [
-				'startTime' => $startTime,
-				'retentionResults' => [],
-				'errors' => [],
-			];
+	public function updateSettings(array $payload): array {
+		$changes = ($payload['retention'] ?? null);
+		if (is_array($changes) === false) {
+			throw new InvalidArgumentException('retention: send an object of retention values.');
+		}
 
-			// Get current settings.
-			$settings = $this->getSettings();
-			$retention = $settings['retention'] ?? [];
+		$resolver = new RetentionSettings(appConfig: $this->config);
+		$stored = $resolver->stored();
+		foreach ($changes as $field => $value) {
+			$stored[(string)$field] = self::validRetention(field: (string)$field, value: $value);
+		}
 
-			// Platform-portable `expires = <createdCol> + <microseconds>` SQL fragments.
-			// MySQL uses DATE_ADD; PostgreSQL uses native interval arithmetic.
-			// See {@see expiresExpression()} — fixes GH #822.
-			$expires = [
-				'created' => $this->expiresExpression(createdColumn: 'created'),
-				'createdOrNow' => $this->expiresExpression(createdColumn: 'COALESCE(created, NOW())'),
-			];
+		$this->config->setValueString(app: 'integriq', key: RetentionSettings::CONFIG_KEY, value: (string)json_encode($stored));
+		$this->logger->info('Integriq log retention changed', ['fields' => array_keys($changes)]);
 
-			// **DATABASE-OPTIMIZED REBASE**: Use direct SQL UPDATE queries for maximum performance.
-			foreach (self::REBASE_TABLES as $table) {
-				$table['expires'] = $expires[$table['expiresFrom']];
-				foreach ($table['settings'] as $setting) {
-					if (isset($retention[$setting]) === true && $retention[$setting] > 0) {
-						$table['retentionMs'] = $retention[$setting];
-						$this->rebaseTable(table: $table, results: $results);
-					}
-				}
-			}
+		return $this->getSettings();
+	}//end updateSettings()
 
-			$results['endTime'] = new \DateTime();
-			$results['duration'] = $results['endTime']->diff($startTime)->format('%H:%I:%S');
-			$results['success'] = empty($results['errors']) === true;
+	/**
+	 * Queue the job that applies the current retention to existing logs.
+	 *
+	 * @param array<int,string> $kinds The log kinds to rebase; empty means every kind with an expiry.
+	 *
+	 * @return array{queued: bool, kinds: list<string>}
+	 *
+	 * @throws InvalidArgumentException When a kind has no logs to rebase.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	public function rebase(array $kinds=[]): array {
+		$kinds = self::rebaseKinds(kinds: $kinds);
+		$this->config->setValueString(
+			app: 'integriq',
+			key: RetentionSettings::REBASE_PROGRESS_KEY,
+			value: (string)json_encode(['status' => 'queued', 'kinds' => $kinds, 'processed' => 0, 'updated' => 0])
+		);
+		$this->rebaseScheduler->scheduleRebase(kinds: $kinds);
+		$this->logger->info('Integriq retention rebase queued', ['kinds' => $kinds]);
 
-			$this->logger->info(
-				'Rebase operation completed',
-				[
-					'duration' => $results['duration'],
-					'success' => $results['success'],
-					'results' => $results['retentionResults'],
-					'errors' => $results['errors'],
-				]
-			);
-
-			return $results;
-		} catch (\Exception $e) {
-			$this->logger->error(
-				'Rebase operation failed',
-				[
-					'exception' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-			throw new \RuntimeException('Rebase operation failed: ' . $e->getMessage());
-		}//end try
-
+		return ['queued' => true, 'kinds' => $kinds];
 	}//end rebase()
 
 	/**
-	 * Set the expiry date of every row in one log table that has none.
+	 * The distinct log kinds a rebase covers; every kind with an expiry when none is named.
 	 *
-	 * A failure is recorded in the results and logged; the rebase goes on
-	 * with the next table.
+	 * @param array<int,mixed> $kinds The requested kinds.
 	 *
-	 * @param array $table   One entry of REBASE_TABLES, with the `retentionMs` of one of its settings and its `expires` expression.
-	 * @param array $results The rebase results, updated in place.
+	 * @return list<string>
 	 *
-	 * @return void
+	 * @throws InvalidArgumentException When a kind has no logs to rebase.
 	 *
-	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
-	private function rebaseTable(array $table, array &$results): void {
-		try {
-			if ($table['checkColumn'] === true) {
-				// Check if expires column exists before updating (portable per GH #822).
-				$results['retentionResults'][$table['result']] = 'Column expires not found - skipped';
-				if ($this->columnExists(unprefixedTable: $table['table'], column: 'expires') === false) {
-					return;
-				}
-			}
+	private static function rebaseKinds(array $kinds): array {
+		if ($kinds === []) {
+			$kinds = array_keys(RetentionSettings::REBASE_SCHEMAS);
+		}
 
-			$stmt = $this->db->prepare(
-				'UPDATE `*PREFIX*' . $table['table'] . '` SET expires = ' . $table['expires'] . ' WHERE ' . $table['where']
-			);
-			// Convert ms to microseconds.
-			$stmt->execute([$table['retentionMs'] * 1000]);
-			$results['retentionResults'][$table['result']] = $stmt->rowCount();
-		} catch (\Exception $e) {
-			$error = 'Failed to set ' . $table['label'] . ' expiry dates: ' . $e->getMessage();
-			$results['errors'][] = $error;
-			$this->logger->error($error);
-		}//end try
-	}//end rebaseTable()
+		foreach ($kinds as $kind) {
+			if (is_string($kind) === false || isset(RetentionSettings::REBASE_SCHEMAS[$kind]) === false) {
+				throw new InvalidArgumentException('kinds: ' . (string)json_encode($kind) . ' is not a log kind that can be rebased.');
+			}
+		}
+
+		return array_values(array_unique($kinds));
+	}//end rebaseKinds()
+
+	/**
+	 * A retention value as it is stored, or the refusal naming the field.
+	 *
+	 * @param string $field The setting key.
+	 * @param mixed  $value The value sent.
+	 *
+	 * @return int Milliseconds.
+	 *
+	 * @throws InvalidArgumentException When the field is unknown or the value is not a whole non-negative number.
+	 */
+	private static function validRetention(string $field, mixed $value): int {
+		if (array_key_exists($field, RetentionDefaults::BY_SETTING) === false) {
+			throw new InvalidArgumentException($field . ': not a retention setting.');
+		}
+
+		if (is_int($value) === false && (is_string($value) === false || preg_match('/^\d+$/', $value) !== 1)) {
+			throw new InvalidArgumentException($field . ': must be a whole number of milliseconds, 0 or more.');
+		}
+
+		if ((int)$value < 0) {
+			throw new InvalidArgumentException($field . ': must be a whole number of milliseconds, 0 or more.');
+		}
+
+		return (int)$value;
+	}//end validRetention()
 }//end class

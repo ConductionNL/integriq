@@ -183,6 +183,14 @@
             "visibility": "public",
             "status": "active",
             "endpoints": ["@ref:endpoint:echo"],
+            "channels": [
+              {
+                "slug": "publications",
+                "title": "Publications",
+                "types": ["nl.woo.publication.created", "nl.woo.publication.updated"],
+                "description": "A WOO publication was created or updated"
+              }
+            ],
             "tiers": {
               "free": { "rateLimit": { "requestsPerWindow": 60, "windowSeconds": 60 } },
               "gold": { "rateLimit": { "requestsPerWindow": 600, "windowSeconds": 60 }, "requiresApproval": true, "approverGroup": "gateway-approvers" }
@@ -352,6 +360,14 @@
             "type": "integer",
             "description": "Wall-clock duration in milliseconds from dispatch start to response ready. Top-level (unlike the outbound path's nested response.responseTime) so it is directly aggregatable for the gateway analytics percentile queries (api-product-gateway, prometheus-metrics).",
             "title": "Response Time (ms)"
+          },
+          "consumer": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/consumer",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the consumer an inbound product request authenticated as (UUID, many-to-one, onDelete=SET_NULL: when the consumer is destroyed its call_log rows remain for audit but lose their consumer pointer). Absent when no consumer was resolved, such as on a public endpoint. Splits the gateway analytics per consumer (gateway-usage-per-consumer-and-endpoint).",
+            "title": "Consumer"
           }
         }
       },

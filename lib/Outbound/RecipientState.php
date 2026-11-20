@@ -85,6 +85,14 @@ final class RecipientState {
 	public const STATUS_FAILED = 'failed';
 
 	/**
+	 * A recipient suppressed for one message: it stays on the record with its
+	 * reason, carries no delivery state, and is never read as `not reported`.
+	 *
+	 * @var string
+	 */
+	public const SUPPRESSED = 'suppressed';
+
+	/**
 	 * Every per-recipient status.
 	 *
 	 * @var array<int,string>

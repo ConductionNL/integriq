@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/job-scheduling/spec.md#requirement-abandoned-synchronization-runs-are-swept-to-a-terminal-state-req-006
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,6 +26,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the abandoned synchronisation-run sweep.
@@ -180,6 +184,7 @@ final class StaleRunSweepJobTest extends TestCase {
 		);
 		$objects->method('saveObject')->willReturnCallback(
 			static function (...$args) use (&$saved) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$saved = ($args[0] ?? null);
 				return null;
 			}
@@ -276,7 +281,8 @@ final class StaleRunSweepJobTest extends TestCase {
 				}
 			);
 			$objects->method('saveObject')->willReturnCallback(
-				function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $rbac = true, bool $multitenancy = true, bool $silent = false, bool $validation = true) use (&$saved) {
+				function (...$legacyArgs) use (&$saved) {
+					[$object, $register, $schema, $uuid, $rbac, $multitenancy, $silent, $validation] = LegacyObjectArgs::positional(method: 'saveObject', args: $legacyArgs);
 					if ($uuid === 'save-fails') {
 						throw new \RuntimeException('write refused');
 					}

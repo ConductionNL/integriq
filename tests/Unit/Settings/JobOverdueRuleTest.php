@@ -14,6 +14,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/openconnector-notifications/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -30,7 +33,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Runs the shipped rule through the real OpenRegister classes (tests/stubs
- * holds verbatim copies of openregister development a5832f2498).
+ * holds verbatim copies of openregister main 0f8e856049).
  */
 final class JobOverdueRuleTest extends TestCase {
 

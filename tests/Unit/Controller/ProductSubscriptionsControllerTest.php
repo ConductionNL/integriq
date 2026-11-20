@@ -33,6 +33,8 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the API Products subscription REST surface.
@@ -123,7 +125,10 @@ class ProductSubscriptionsControllerTest extends TestCase {
 
 		$saved = [];
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$saved) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saved) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'sub-1'));
 			}
@@ -159,7 +164,10 @@ class ProductSubscriptionsControllerTest extends TestCase {
 		);
 
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'sub-1'));
 			}
 		);
@@ -244,7 +252,10 @@ class ProductSubscriptionsControllerTest extends TestCase {
 
 		$saved = null;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$saved) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saved) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$saved = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'sub-1'));
 			}
@@ -325,18 +336,81 @@ class ProductSubscriptionsControllerTest extends TestCase {
 
 	/**
 	 * The call_log rows are read with RBAC off: the schema is admin-only, and a
-	 * delegated administrator would otherwise see zero traffic.
+	 * delegated administrator would otherwise see zero traffic. The
+	 * organisation filter stays on, so only the caller's organisation's
+	 * traffic is counted (REQ-TEN-001).
 	 *
 	 * @return void
 	 */
 	public function testAnalyticsReadsTheAdminOnlyCallLogWithoutRbac(): void {
 		$this->orObjectService->method('find')->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'product-1'));
 		$this->orObjectService->expects($this->once())->method('findAll')
-			->with($this->anything(), false, false)
+			->with($this->anything(), false, true)
 			->willReturn(['results' => []]);
 
 		$this->controller->analytics(productId: 'product-1');
 	}//end testAnalyticsReadsTheAdminOnlyCallLogWithoutRbac()
+
+	/**
+	 * REQ-APGU-001: the analytics split per consumer and per endpoint, busiest
+	 * first, each entry named, and the consumer entries add up to the total.
+	 * A consumer that can no longer be read keeps its id without a name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 */
+	public function testAnalyticsAreSplitPerConsumerAndPerEndpoint(): void {
+		$names = ['partner' => 'Partner B.V.', 'ep-orders' => 'Orders', 'ep-items' => 'Items', 'ep-slow' => 'Reports'];
+		$lookups = [];
+		$this->orObjectService->method('find')->willReturnCallback(
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true) use ($names, &$lookups) {
+				$id = (string)$id;
+				$schema = $options?->schema;
+				if ($id === 'product-1') {
+					return ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Product'], 'product-1');
+				}
+
+				$lookups[] = [$schema, $id, $_rbac];
+				if (isset($names[$id]) === false) {
+					throw new DoesNotExistException('gone');
+				}
+
+				return ObjectServiceMockBuilder::objectEntity($this, ['name' => $names[$id]], $id);
+			}
+		);
+
+		$rows = [];
+		$traffic = [
+			['partner', 'ep-orders', 200], ['partner', 'ep-orders', 500], ['partner', 'ep-items', 200],
+			['partner', 'ep-slow', 200], ['partner', 'ep-orders', 200], ['removed', 'ep-items', 200],
+		];
+		foreach ($traffic as $i => [$consumer, $endpoint, $code]) {
+			$rows[] = ObjectServiceMockBuilder::objectEntity(
+				$this,
+				['consumer' => $consumer, 'endpoint' => $endpoint, 'statusCode' => $code, 'responseTime' => 10],
+				'row-' . $i
+			);
+		}
+
+		$this->orObjectService->method('findAll')->willReturn(['results' => $rows]);
+
+		$data = $this->controller->analytics(productId: 'product-1')->getData();
+
+		$this->assertSame(6, $data['requestCount']);
+		$this->assertSame(
+			[['partner', 'Partner B.V.', 5, 0.2], ['removed', null, 1, 0.0]],
+			array_map(static fn (array $e): array => [$e['consumer'], $e['name'], $e['requestCount'], $e['errorRate']], $data['byConsumer'])
+		);
+		$this->assertSame($data['requestCount'], array_sum(array_column($data['byConsumer'], 'requestCount')));
+		$this->assertSame(
+			[['ep-orders', 'Orders', 3], ['ep-items', 'Items', 2], ['ep-slow', 'Reports', 1]],
+			array_map(static fn (array $e): array => [$e['endpoint'], $e['name'], $e['requestCount']], $data['byEndpoint'])
+		);
+		$this->assertSame(['p50', 'p95', 'p99'], array_keys($data['byEndpoint'][0]['latency']));
+		$this->assertContains(['consumer', 'partner', false], $lookups);
+		$this->assertContains(['endpoint', 'ep-slow', false], $lookups);
+	}//end testAnalyticsAreSplitPerConsumerAndPerEndpoint()
 
 	/**
 	 * A failed activation answers 400, not 500.
@@ -412,7 +486,10 @@ class ProductSubscriptionsControllerTest extends TestCase {
 		// the wrong reason.
 		$calls = 0;
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$calls) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$calls) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$calls++;
 				if ($calls >= 2) {
 					throw new \OCA\OpenRegister\Exception\ValidationException(

@@ -16,6 +16,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Adapter\DocumentCms;
 
 use OCA\Integriq\Service\Adapter\AbstractCategoryAdapterProvider;
+use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotPermittedException;
 use OCP\IL10N;
@@ -52,7 +56,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
  */
-class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
+class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider implements SharePointOnlineAdapterInterface {
 
 	/**
 	 * NC Files folder name documents are persisted under.
@@ -63,6 +67,20 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	// holds every document fetched so far. Renaming it creates a second folder and
 	// strands the existing one. Moves only with a folder-migration step.
 	private const TARGET_FOLDER = 'OpenConnector SharePoint Documents';
+
+	/**
+	 * The Graph permission each lookup needs, named back when Graph refuses it.
+	 *
+	 * Searching sites and listing a site's libraries need `Sites.Read.All` (or a
+	 * site-scoped grant); reading a library's folders needs `Files.Read.All`.
+	 *
+	 * @var array<string, string>
+	 */
+	public const LOOKUP_PERMISSIONS = [
+		'sites' => 'Sites.Read.All',
+		'drives' => 'Sites.Read.All',
+		'children' => 'Files.Read.All',
+	];
 
 	/**
 	 * Constructor.
@@ -180,6 +198,118 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	}//end listDocuments()
 
 	/**
+	 * Look a SharePoint site, library or folder up in Graph, with a credential the administrator picked.
+	 *
+	 * Three kinds, one per step of the setup dialog: `sites` (a search over
+	 * site names, `search` required), `drives` (the document libraries of
+	 * `siteId`) and `children` (the items in `driveId`, at its root or in the
+	 * folder `itemId`). Ids are URL-encoded into the Graph path, so a value
+	 * can never reach another Graph resource.
+	 *
+	 * When Graph refuses (401 or 403) the answer is a 403 that names the Graph
+	 * permission the step needs and repeats Graph's own code and message, so
+	 * the dialog can tell the administrator what to grant.
+	 *
+	 * @param string               $credentialId The brokered credential's uuid.
+	 * @param string               $kind         `sites`, `drives` or `children`.
+	 * @param array<string, mixed> $params       `search`, `siteId`, `driveId` and `itemId`, as the kind needs.
+	 *
+	 * @return array{status: int, items: list<array<string, mixed>>, error?: string, permission?: string, graphCode?: string, graphMessage?: string}
+	 *
+	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+	 */
+	public function lookup(string $credentialId, string $kind, array $params): array {
+		$path = $this->lookupPath(kind: $kind, params: $params);
+		if ($path === null) {
+			return ['status' => 400, 'items' => [], 'error' => 'invalid_lookup'];
+		}
+
+		if ($credentialId === '') {
+			return ['status' => 400, 'items' => [], 'error' => 'credential_required'];
+		}
+
+		$response = $this->brokeredRequest(method: 'GET', path: $path, credentialId: $credentialId);
+		if ($response === null) {
+			return ['status' => 502, 'items' => [], 'error' => 'credential_unusable'];
+		}
+
+		$decoded = json_decode($response['body'], true);
+		if ($response['status'] === 401 || $response['status'] === 403) {
+			return [
+				'status' => 403,
+				'items' => [],
+				'error' => 'graph_refused',
+				'permission' => self::LOOKUP_PERMISSIONS[$kind],
+				'graphCode' => (string)($decoded['error']['code'] ?? ''),
+				'graphMessage' => (string)($decoded['error']['message'] ?? ''),
+			];
+		}
+
+		if ($response['status'] < 200 || $response['status'] >= 300 || is_array($decoded['value'] ?? null) === false) {
+			return ['status' => 502, 'items' => [], 'error' => 'graph_error'];
+		}
+
+		return ['status' => 200, 'items' => array_values(array_map(self::lookupItem(...), array_filter($decoded['value'], 'is_array')))];
+	}//end lookup()
+
+	/**
+	 * The Graph path of a lookup, or null when the kind is unknown or a value it needs is missing.
+	 *
+	 * @param string               $kind   The lookup kind.
+	 * @param array<string, mixed> $params The lookup parameters.
+	 *
+	 * @return string|null
+	 */
+	private function lookupPath(string $kind, array $params): ?string {
+		$search = trim((string)($params['search'] ?? ''));
+		$siteId = trim((string)($params['siteId'] ?? ''));
+		$driveId = trim((string)($params['driveId'] ?? ''));
+		$itemId = trim((string)($params['itemId'] ?? ''));
+
+		if ($kind === 'sites') {
+			if ($search === '') {
+				return null;
+			}
+
+			return '/v1.0/sites?search=' . rawurlencode($search);
+		}
+
+		if ($kind === 'drives') {
+			if ($siteId === '') {
+				return null;
+			}
+
+			return sprintf('/v1.0/sites/%s/drives', rawurlencode($siteId));
+		}
+
+		if ($kind !== 'children' || $driveId === '') {
+			return null;
+		}
+
+		if ($itemId === '') {
+			return sprintf('/v1.0/drives/%s/root/children', rawurlencode($driveId));
+		}
+
+		return sprintf('/v1.0/drives/%s/items/%s/children', rawurlencode($driveId), rawurlencode($itemId));
+	}//end lookupPath()
+
+	/**
+	 * One lookup result: its id, its name and web address, and whether it is a folder.
+	 *
+	 * @param array<string, mixed> $item A Graph site, drive or drive item.
+	 *
+	 * @return array{id: mixed, name: mixed, webUrl: mixed, isFolder: bool}
+	 */
+	private static function lookupItem(array $item): array {
+		return [
+			'id' => ($item['id'] ?? null),
+			'name' => ($item['displayName'] ?? $item['name'] ?? null),
+			'webUrl' => ($item['webUrl'] ?? null),
+			'isFolder' => isset($item['folder']),
+		];
+	}//end lookupItem()
+
+	/**
 	 * Fetch a document's content from SharePoint and persist it into the
 	 * current user's Nextcloud Files storage.
 	 *
@@ -193,9 +323,8 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
 	 */
 	public function fetchDocument(string $siteId, string $itemId, string $name): ?array {
-		$path = sprintf('/v1.0/sites/%s/drive/items/%s/content', rawurlencode($siteId), rawurlencode($itemId));
-		$response = $this->brokeredRequest(method: 'GET', path: $path);
-		if ($response === null || $response['status'] < 200 || $response['status'] >= 300) {
+		$body = $this->downloadedBody(siteId: $siteId, itemId: $itemId);
+		if ($body === null) {
 			return null;
 		}
 
@@ -206,16 +335,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 
 		try {
 			$userFolder = $this->rootFolder->getUserFolder($user->getUID());
-			if ($userFolder->nodeExists(self::TARGET_FOLDER) === false) {
-				$userFolder->newFolder(self::TARGET_FOLDER);
-			}
-
-			$target = self::TARGET_FOLDER . '/' . basename($name);
-			if ($userFolder->nodeExists($target) === true) {
-				$userFolder->get($target)->delete();
-			}
-
-			$file = $userFolder->newFile($target, $response['body']);
+			$file       = $userFolder->newFile($this->freshTarget(userFolder: $userFolder, name: $name), $body);
 
 			return [
 				'path' => $file->getPath(),
@@ -229,6 +349,49 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 		}//end try
 
 	}//end fetchDocument()
+
+	/**
+	 * The content of a drive item, or null when Graph does not hand it over.
+	 *
+	 * @param string $siteId The site id.
+	 * @param string $itemId The drive item id.
+	 *
+	 * @return string|null The bytes.
+	 */
+	private function downloadedBody(string $siteId, string $itemId): ?string {
+		$path = sprintf('/v1.0/sites/%s/drive/items/%s/content', rawurlencode($siteId), rawurlencode($itemId));
+		$response = $this->brokeredRequest(method: 'GET', path: $path);
+		if ($response === null || $response['status'] < 200 || $response['status'] >= 300) {
+			return null;
+		}
+
+		return $response['body'];
+
+	}//end downloadedBody()
+
+	/**
+	 * The path the document lands at in the target folder, with the folder made and an older copy removed.
+	 *
+	 * @param Folder $userFolder The user's Files folder.
+	 * @param string $name       The document name; only its base name is used.
+	 *
+	 * @return string The path, relative to the user folder.
+	 *
+	 * @throws NotPermittedException When the folder or the older copy cannot be changed.
+	 */
+	private function freshTarget(Folder $userFolder, string $name): string {
+		if ($userFolder->nodeExists(self::TARGET_FOLDER) === false) {
+			$userFolder->newFolder(self::TARGET_FOLDER);
+		}
+
+		$target = self::TARGET_FOLDER . '/' . basename($name);
+		if ($userFolder->nodeExists($target) === true) {
+			$userFolder->get($target)->delete();
+		}
+
+		return $target;
+
+	}//end freshTarget()
 
 	/**
 	 * {@inheritDoc}

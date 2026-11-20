@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Http\ProblemResponse;
 use OCA\Integriq\Rule\AvgBsnPolicyRule;
 use OCA\Integriq\Rule\CompositeFanoutRule;
 use OCA\Integriq\Rule\ReferenceNumberRule;
@@ -36,6 +37,7 @@ use OCA\Integriq\Service\MessageValidation\OpenApiChecker;
 use OCA\Integriq\Service\MessageValidation\XsdChecker;
 use OCA\Integriq\Service\MessageValidationService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\PerUserAccountNotConnectedException;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\RuleService;
 use OCA\Integriq\Service\StorageService;
@@ -57,6 +59,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionProperty;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The whole request path of a proxying endpoint, with the real gate and the
@@ -96,7 +100,7 @@ class EndpointServiceMessageValidationTest extends TestCase {
 		$logger = new NullLogger();
 		$this->objects = ObjectServiceMockBuilder::make($this);
 		$this->objects->method('find')->willReturnCallback(
-			fn ($id, ?string $register = null, ?string $schema = null): ?ObjectEntity => match ($schema) {
+			fn ($id, ?ObjectFindOptions $options = null): ?ObjectEntity => match (($options?->schema)) {
 				'message_schema' => ObjectServiceMockBuilder::objectEntity($this, $this->personSchema(), self::SCHEMA_UUID),
 				'source' => ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://bron.example.nl', 'isEnabled' => true], 'source-1'),
 				'call_log' => ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200, 'direction' => 'outbound', 'response' => ['statusCode' => 200]], 'call-log-1'),
@@ -126,7 +130,7 @@ class EndpointServiceMessageValidationTest extends TestCase {
 					$this->createMock(ObjectService::class),
 					$this->callService,
 					$logger,
-					$this->createMock(IURLGenerator::class),
+					$this->urls(),
 					$this->createMock(MappingService::class),
 					$this->objects,
 					$this->createMock(IConfig::class),
@@ -193,6 +197,20 @@ class EndpointServiceMessageValidationTest extends TestCase {
 			'endpoint-1'
 		);
 	}//end endpoint()
+
+	/**
+	 * A URL generator that spells out the route and its parameters.
+	 *
+	 * @return IURLGenerator
+	 */
+	private function urls(): IURLGenerator {
+		$urls = $this->createMock(IURLGenerator::class);
+		$urls->method('linkToRouteAbsolute')->willReturnCallback(
+			static fn (string $route, array $parameters = []): string => 'https://cloud.example.nl/' . $route . '?' . http_build_query($parameters)
+		);
+
+		return $urls;
+	}//end urls()
 
 	/**
 	 * A POST request.
@@ -268,7 +286,10 @@ class EndpointServiceMessageValidationTest extends TestCase {
 
 		$saved = [];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) use (&$saved): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saved): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$saved[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			}
@@ -387,4 +408,75 @@ class EndpointServiceMessageValidationTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame(['statusCode' => 200, 'headers' => ['Content-Type' => ['application/json']], 'body' => '{"ok":true}'], $response->getData());
 	}//end testAProxiedAnswerCarriesNoUpstreamSecrets()
+	/**
+	 * A refused request is a problem document: a type URI, the request id, invalid-params, and the old members.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 */
+	public function testARefusedRequestIsAProblemDocument(): void {
+		$service = $this->service(rawBody: '{"naam":"Jansen"}');
+		$request = $this->request();
+		$request->method('getId')->willReturn('req-42');
+
+		$response = $service->handleRequest(
+			$this->endpoint(['mode' => 'refuse', 'request' => ['messageSchema' => self::SCHEMA_UUID]]),
+			$request,
+			'/personen'
+		);
+
+		$this->assertInstanceOf(ProblemResponse::class, $response);
+		$data = $response->getData();
+		$this->assertSame('https://integriq.nl/problems/validation-failed', $data['type']);
+		$this->assertSame(400, $data['status']);
+		$this->assertSame('req-42', $data['instance']);
+		$this->assertContains('/bsn', array_column($data['invalid-params'], 'name'));
+		$this->assertContains('/bsn', array_column($data['errors'], 'path'));
+	}//end testARefusedRequestIsAProblemDocument()
+
+	/**
+	 * An error the source itself answered is passed through as the source gave it, not as a problem document.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 */
+	public function testAProxiedSourceErrorIsPassedThrough(): void {
+		$service = $this->service(rawBody: '{"bsn":"999990019"}', withGate: false);
+		$this->callService->expects($this->once())->method('call')->willReturn(
+			ObjectServiceMockBuilder::objectEntity(
+				$this,
+				['statusCode' => 404, 'direction' => 'outbound', 'response' => ['statusCode' => 404, 'body' => '{"melding":"Persoon niet gevonden"}']],
+				'call-log-404'
+			)
+		);
+
+		$response = $service->handleRequest($this->endpoint([]), $this->request(), '/personen');
+
+		$this->assertNotInstanceOf(ProblemResponse::class, $response);
+		$this->assertSame(404, $response->getStatus());
+		$this->assertNotSame('application/problem+json', $this->header($response, 'Content-Type'));
+	}//end testAProxiedSourceErrorIsPassedThrough()
+	/**
+	 * A per-user source whose caller has not connected their account answers 401
+	 * with the connect prompt, naming the provider and the broker's connect start
+	 * (sources-per-user-oauth REQ-PUOA-002).
+	 *
+	 * @return void
+	 */
+	public function testAPerUserSourceWithoutAnAccountAnswersTheConnectPrompt(): void {
+		$service = $this->service(rawBody: '{}');
+		$this->callService->expects($this->once())->method('call')->willThrowException(new PerUserAccountNotConnectedException(provider: 'microsoft'));
+
+		$response = $service->handleRequest($this->endpoint([]), $this->request(), '/personen');
+
+		$this->assertSame(401, $response->getStatus());
+		$this->assertInstanceOf(ProblemResponse::class, $response);
+		$document = $response->getData();
+		$this->assertSame(ProblemResponse::TYPE_BASE . 'connect-account-required', $document['type']);
+		$this->assertSame('microsoft', $document['provider']);
+		$this->assertSame('https://cloud.example.nl/openregister.credentialOauth2.start?provider=microsoft&scope=personal', $document['connectUrl']);
+		$this->assertStringContainsString('"microsoft"', $document['detail']);
+	}//end testAPerUserSourceWithoutAnAccountAnswersTheConnectPrompt()
 }//end class

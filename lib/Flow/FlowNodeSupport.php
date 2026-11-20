@@ -3,6 +3,9 @@
 /**
  * Integriq Flow Node Support.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The two small run-time questions both contributed nodes have to answer, and
  * the honest answer to each given what OpenRegister's engine hands a node.
  *
@@ -33,9 +36,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -180,6 +180,26 @@ final class FlowNodeSupport {
 		}
 
 	}//end assertOnError()
+
+	/**
+	 * The config-form field of a page-level node's on-error policy.
+	 *
+	 * @param IL10N $l10n Translates the label and help.
+	 *
+	 * @return array<string, string> The field definition.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	public static function onErrorField(IL10N $l10n): array {
+		return [
+			'key' => 'onError',
+			'label' => $l10n->t('On error'),
+			'type' => 'text',
+			'help' => $l10n->t(
+				'What a failed item does to the run: stop, continue or dead_letter.'
+			),
+		];
+	}//end onErrorField()
 
 	/**
 	 * Reject a reference field that is inline or empty, at flow-save time.

@@ -21,6 +21,9 @@
  *
  * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -457,11 +460,6 @@ class DSOController extends Controller {
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
 	 */
 	private function getRawContent(): string {
-		$content = file_get_contents(filename: 'php://input');
-		if ($content === false) {
-			return '';
-		}
-
-		return $content;
+		return (new RawRequestBody())->read();
 	}//end getRawContent()
 }//end class

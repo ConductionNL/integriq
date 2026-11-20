@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://openconnector.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -167,6 +170,7 @@ foreach (['RegisterSlugResolution', 'RegisterSlugResolverInterface'] as $contrac
 // classes are defined regardless of lookup-cache state.
 if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 	$stubsDir = __DIR__ . '/stubs';
+	$autoloader->addPsr4('OCA\\OpenRegister\\', $stubsDir . '/OCA/OpenRegister/');
 	if (is_dir($stubsDir) === true) {
 		// Doctrine\DBAL stubs — required by OCP\DB\QueryBuilder\IQueryBuilder
 		// and OCP\DB\QueryBuilder\IExpressionBuilder which reference constants
@@ -215,6 +219,28 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
 		}
 
+		// OpenRegister's form submit path and destination validator, and the save
+		// options of main's object API, as on main (open-formulieren-submits-into-its-case).
+		// Schema first: FormDestination takes one; the save options last.
+		$formStubs = [
+			'OCA\\OpenRegister\\Db\\Schema' => '/OCA/OpenRegister/Db/Schema.php',
+			'OCA\\OpenRegister\\Exception\\FormSubmitRefusedException' => '/OCA/OpenRegister/Exception/FormSubmitRefusedException.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmitter' => '/OCA/OpenRegister/Service/Form/FormSubmitter.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmission' => '/OCA/OpenRegister/Service/Form/FormSubmission.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormDestination' => '/OCA/OpenRegister/Service/Form/FormDestination.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormDestinationValidatorInterface' => '/OCA/OpenRegister/Service/Form/FormDestinationValidatorInterface.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmitServiceInterface' => '/OCA/OpenRegister/Service/Form/FormSubmitServiceInterface.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectFindTarget' => '/OCA/OpenRegister/Kernel/Contracts/Value/ObjectFindTarget.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\SavePolicy' => '/OCA/OpenRegister/Kernel/Contracts/Value/SavePolicy.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\SaveActor' => '/OCA/OpenRegister/Kernel/Contracts/Value/SaveActor.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectSaveOptions' => '/OCA/OpenRegister/Kernel/Contracts/Value/ObjectSaveOptions.php',
+		];
+		foreach ($formStubs as $formClass => $formFile) {
+			if (class_exists($formClass) === false && interface_exists($formClass) === false) {
+				require_once $stubsDir . $formFile;
+			}
+		}
+
 		// The shared task entity + service the HITL mirror writes through
 		// (hitl-on-shared-tasks). The entity must load before the service:
 		// the service's signatures reference it.
@@ -232,6 +258,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
 		if (class_exists('OCA\\OpenRegister\\Event\\TaskTerminalEvent') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\RenderSelection') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/RenderSelection.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
@@ -330,6 +360,11 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
 		if (class_exists('OCA\\OpenRegister\\Service\\File\\FileUpload') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileUpload.php';
+		}
+
+		// The event apps contribute mapping Twig functions on.
+		if (class_exists('OCA\\OpenRegister\\Service\\RegisterMappingFunctionsEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterMappingFunctionsEvent.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\FileService') === false) {
@@ -490,11 +525,39 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Notifications/Service/Notification/RecipientResolverInterface.php';
 		}
 
-		// OpenRegister's scheduled-notification grammar, copied verbatim from
-		// openregister development (a5832f2498) so the register's scheduled
-		// rules are parsed and matched by the code that runs them live.
-		foreach (['ScheduledFilterGrammar', 'ScheduledFilterParser', 'ScheduledFilterTarget', 'ScheduledFilterEvaluator', 'ForcedChannelPolicy', 'NotificationAnnotationValidator'] as $notificationClass) {
-			if (class_exists('OCA\\OpenRegister\\Service\\Notification\\'.$notificationClass) === false) {
+		// OpenRegister's scheduled-notification grammar and its annotation
+		// validator with the rule validators it delegates to, copied verbatim
+		// from openregister main (0f8e856049) so the register's scheduled
+		// rules are validated, parsed and matched by the code that runs them
+		// live. Interfaces first: the validator implements one.
+		if (interface_exists('OCA\\OpenRegister\\Service\\Notification\\ReferencedAddressNotifierInterface') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/ReferencedAddressNotifierInterface.php';
+		}
+
+		$notificationClasses = [
+			'NotificationAnnotationValidatorInterface',
+			'ScheduledFilterGrammar',
+			'ScheduledFilterPosition',
+			'ScheduledFilterClause',
+			'ScheduledFilterDates',
+			'ScheduledFilterParser',
+			'ScheduledFilterTarget',
+			'ScheduledFilterEvaluator',
+			'ForcedChannelPolicy',
+			'DeclaredTrigger',
+			'RecipientEntry',
+			'NotificationRuleContext',
+			'NotificationSchemaFacts',
+			'NotificationTriggerValidator',
+			'NotificationRecipientValidator',
+			'NotificationContentValidator',
+			'NotificationDigestValidator',
+			'NotificationTransportValidator',
+			'NotificationAnnotationValidator',
+		];
+		foreach ($notificationClasses as $notificationClass) {
+			$notificationFqcn = 'OCA\\OpenRegister\\Notifications\\Service\\Notification\\'.$notificationClass;
+			if (class_exists($notificationFqcn) === false && interface_exists($notificationFqcn) === false) {
 				require_once $stubsDir . '/OCA/OpenRegister/Notifications/Service/Notification/'.$notificationClass.'.php';
 			}
 		}

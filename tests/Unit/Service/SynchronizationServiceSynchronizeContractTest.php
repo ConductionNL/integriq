@@ -13,6 +13,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -36,6 +39,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The paths of synchronizeContract().
@@ -88,6 +92,7 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 		$this->orObjectService = ObjectServiceMockBuilder::make($this);
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function (...$args) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$object = ($args['object'] ?? $args[0]);
 				$this->saved[] = $object;
 
@@ -96,6 +101,7 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 		);
 		$this->orObjectService->method('find')->willReturnCallback(
 			function (...$args) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = ($args['id'] ?? $args[0]);
 				$schema = ($args['schema'] ?? $args[2] ?? null);
 				if ($schema === 'rule') {

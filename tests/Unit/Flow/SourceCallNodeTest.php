@@ -15,6 +15,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -44,6 +47,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the governed outbound-call flow node.
@@ -906,6 +910,159 @@ class SourceCallNodeTest extends TestCase {
 	}//end testEveryCallOutcomeMatchesTheGoldenFile()
 
 	/**
+	 * A templated source sends each item through the source its own record names.
+	 *
+	 * @return void
+	 */
+	public function testTemplatedSourceSendsEachItemThroughItsOwnSource(): void {
+		$this->givenOwner();
+		$sources = $this->givenBoardSources();
+
+		$looked = [];
+		$this->objectService->method('find')->willReturnCallback(
+			static function (...$arguments) use ($sources, &$looked): ?ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'find', args: $arguments);
+				$looked[] = $arguments[0];
+
+				return ($sources[$arguments[0]] ?? null);
+			}
+		);
+
+		$sent = [];
+		$this->callService->expects($this->exactly(3))->method('callAsync')->willReturnCallback(
+			function (...$arguments) use (&$sent): FulfilledPromise {
+				$sent[] = $arguments[0]->getUuid();
+
+				return $this->promisedLog(statusCode: 201, body: '{"id":"posted"}', statusMessage: 'Created');
+			}
+		);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[
+				['json' => ['channel' => 'werk-nl']],
+				['json' => ['channel' => 'linkedin']],
+				['json' => ['channel' => 'werk-nl']],
+			],
+			array_merge($this->config(), ['source' => 'jobboard-{{ json.channel }}']),
+			$this->context()
+		));
+
+		$this->assertSame(['werk-nl-uuid', 'linkedin-uuid', 'werk-nl-uuid'], $sent);
+		$this->assertSame(['jobboard-werk-nl', 'jobboard-linkedin'], $looked);
+		$this->assertSame('jobboard-werk-nl', $out[0]['json']['echo']['source']);
+		$this->assertSame('jobboard-linkedin', $out[1]['json']['echo']['source']);
+		$this->assertSame('linkedin-uuid', $out[1]['json']['echo']['sourceId']);
+
+	}//end testTemplatedSourceSendsEachItemThroughItsOwnSource()
+
+	/**
+	 * Under `continue`, an item whose board has no source fails alone and the others are sent.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvedTemplatedSourceFailsOnlyItsItemUnderContinue(): void {
+		$this->givenOwner();
+		$sources = $this->givenBoardSources();
+		$this->objectService->method('find')->willReturnCallback(
+			static function (...$arguments) use ($sources): ?ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'find', args: $arguments);
+				return ($sources[$arguments[0]] ?? null);
+			}
+		);
+
+		$this->callService->expects($this->exactly(2))->method('callAsync')->willReturn(
+			$this->promisedLog(statusCode: 201, body: '{"id":"posted"}', statusMessage: 'Created')
+		);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[
+				['json' => ['channel' => 'werk-nl']],
+				['json' => ['channel' => 'indeed']],
+				['json' => ['channel' => 'linkedin']],
+			],
+			array_merge($this->config(), ['source' => 'jobboard-{{ json.channel }}', 'onError' => 'continue']),
+			$this->context()
+		));
+
+		$this->assertCount(3, $out);
+		$this->assertSame(201, $out[0]['json']['echo']['status']);
+		$this->assertSame(201, $out[2]['json']['echo']['status']);
+		$this->assertArrayNotHasKey('echo', $out[1]['json']);
+
+		$failed = $out[1]['json'][FlowNodeSupport::ERROR_KEY];
+		$this->assertSame('source', $failed['kind']);
+		$this->assertSame('jobboard-indeed', $failed['source']);
+		$this->assertStringContainsString('No source configured: "jobboard-indeed"', $failed['message']);
+		$this->assertSame(1, $out[1]['pairedItem']['item']);
+
+	}//end testUnresolvedTemplatedSourceFailsOnlyItsItemUnderContinue()
+
+	/**
+	 * Under the default policy, an unresolved per-item source refuses the step before any request.
+	 *
+	 * @return void
+	 */
+	public function testUnresolvedTemplatedSourceUnderStopMakesNoRequest(): void {
+		$this->givenOwner();
+		$sources = $this->givenBoardSources();
+		$this->objectService->method('find')->willReturnCallback(
+			static function (...$arguments) use ($sources): ?ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'find', args: $arguments);
+				return ($sources[$arguments[0]] ?? null);
+			}
+		);
+		$this->callService->expects($this->never())->method('callAsync');
+
+		$this->expectException(FlowNodeException::class);
+		$this->expectExceptionMessage('No source configured: "jobboard-indeed". This item makes no request.');
+
+		$this->node->execute(new FlowNodeCall(
+			[['json' => ['channel' => 'werk-nl']], ['json' => ['channel' => 'indeed']]],
+			array_merge($this->config(), ['source' => 'jobboard-{{ json.channel }}']),
+			$this->context()
+		));
+
+	}//end testUnresolvedTemplatedSourceUnderStopMakesNoRequest()
+
+	/**
+	 * A templated source that renders empty for an item names no source and makes no lookup.
+	 *
+	 * @return void
+	 */
+	public function testTemplatedSourceRenderingEmptyFailsWithoutALookup(): void {
+		$this->givenOwner();
+		$this->objectService->expects($this->never())->method('find');
+		$this->callService->expects($this->never())->method('callAsync');
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[['json' => []]],
+			array_merge($this->config(), ['source' => '{{ json.channel }}', 'onError' => 'continue']),
+			$this->context()
+		));
+
+		$this->assertSame('', $out[0]['json'][FlowNodeSupport::ERROR_KEY]['source']);
+		$this->assertSame('No source configured: "". This item makes no request.', $out[0]['json'][FlowNodeSupport::ERROR_KEY]['message']);
+
+	}//end testTemplatedSourceRenderingEmptyFailsWithoutALookup()
+
+	/**
+	 * Two job board sources keyed by their reference.
+	 *
+	 * @return array<string, ObjectEntity> The sources.
+	 */
+	private function givenBoardSources(): array {
+		$sources = [];
+		foreach (['werk-nl', 'linkedin'] as $board) {
+			$source = new ObjectEntity();
+			$source->setUuid($board . '-uuid');
+			$source->setObject(['location' => 'https://' . $board . '.example.org', 'isEnabled' => true]);
+			$sources['jobboard-' . $board] = $source;
+		}
+
+		return $sources;
+	}//end givenBoardSources()
+
+	/**
 	 * The step's default configuration used by most tests.
 	 *
 	 * @return array<string, mixed> The configuration.
@@ -1441,5 +1598,154 @@ class SourceCallNodeTest extends TestCase {
 		);
 
 	}//end testBodyAndBodyFromTogetherAreRefused()
+
+	/**
+	 * Under `continue` a failed item carries the whole error state, both items
+	 * keep their binary part and position, and the failure is logged once.
+	 *
+	 * @return void
+	 */
+	public function testContinueKeepsBinaryAndLogsTheWholeErrorState(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$responses = [
+			$this->promisedLog(statusCode: 500, body: '{"error":"boom"}', statusMessage: 'Internal Server Error'),
+			$this->promisedLog(statusCode: 200, body: '{"status":"ok"}'),
+		];
+		$this->callService->method('callAsync')->willReturnCallback(
+			static function () use (&$responses) {
+				return array_shift($responses);
+			}
+		);
+
+		$logged = [];
+		$this->logger->expects($this->once())->method('error')->willReturnCallback(
+			static function (string $message, array $context) use (&$logged): void {
+				unset($context['line']);
+				$logged = [$message, $context];
+			}
+		);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[['json' => ['n' => 1], 'binary' => ['f' => 'one']], ['json' => ['n' => 2], 'binary' => ['f' => 'two']]],
+			array_merge($this->config(), ['onError' => 'continue', 'id' => 'call-1']),
+			$this->context()
+		));
+
+		$error = $out[0]['json'][FlowNodeSupport::ERROR_KEY];
+		$this->assertSame(
+			['step', 'node', 'status', 'statusMessage', 'kind', 'message', 'source', 'endpoint', 'method'],
+			array_keys($error)
+		);
+		$this->assertSame('step-echo', $error['step']);
+		$this->assertSame('openconnector.source-call', $error['node']);
+		$this->assertSame('GET', $error['method']);
+		$this->assertSame(['json', 'binary', 'pairedItem'], array_keys($out[0]));
+		$this->assertSame(['f' => 'one'], $out[0]['binary']);
+		$this->assertSame(['item' => 0], $out[0]['pairedItem']);
+		$this->assertSame(['json', 'binary', 'pairedItem'], array_keys($out[1]));
+		$this->assertSame(['f' => 'two'], $out[1]['binary']);
+		$this->assertSame(['item' => 1], $out[1]['pairedItem']);
+
+		$this->assertSame('[openconnector.source-call] ' . $error['message'], $logged[0]);
+		$this->assertSame(['file', 'step', 'source', 'endpoint', 'method'], array_keys($logged[1]));
+		$this->assertSame([$error['step'], 'demo-echo-api', '/get', 'GET'], array_slice(array_values($logged[1]), 1));
+
+	}//end testContinueKeepsBinaryAndLogsTheWholeErrorState()
+
+	/**
+	 * A source lookup that fails raises with the reason and makes no request.
+	 *
+	 * @return void
+	 */
+	public function testASourceLookupThatFailsRaisesAndMakesNoRequest(): void {
+		$this->givenOwner();
+		$this->objectService->method('find')->willThrowException(new \RuntimeException('database unavailable'));
+		$this->callService->expects($this->never())->method('callAsync');
+
+		try {
+			$this->node->execute(new FlowNodeCall(
+				[['json' => []]],
+				['source' => 'demo-echo-api', 'endpoint' => '/get', 'method' => 'GET'],
+				$this->context()
+			));
+			$this->fail('Expected the unresolvable source to raise.');
+		} catch (FlowNodeException $exception) {
+			$this->assertSame(
+				'The source "demo-echo-api" named by this step could not be resolved: database unavailable. '
+				. 'No source is created and no request is made.',
+				$exception->getMessage()
+			);
+			$this->assertInstanceOf(\RuntimeException::class, $exception->getPrevious());
+		}
+
+	}//end testASourceLookupThatFailsRaisesAndMakesNoRequest()
+
+	/**
+	 * A logged call links to its source and its call log, under the app's hash router.
+	 *
+	 * @return void
+	 */
+	public function testALoggedCallLinksToItsSourceAndCallLog(): void {
+		$node = $this->nodeWithAppRoot(root: '/index.php/apps/integriq/');
+
+		$actions = $node->logActions([
+			'output' => [
+				'items' => [
+					['json' => ['sourceId' => ' src 1/a ', 'callLog' => 'log-9']],
+					['json' => ['sourceId' => 'src-2', 'callLog' => 'log-10']],
+				],
+			],
+		]);
+
+		$this->assertSame(
+			[
+				['label' => 'Open the source', 'href' => '/index.php/apps/integriq#/sources/src%201%2Fa'],
+				['label' => 'Open the call log', 'href' => '/index.php/apps/integriq#/sources/logs?call=log-9'],
+			],
+			$actions
+		);
+
+	}//end testALoggedCallLinksToItsSourceAndCallLog()
+
+	/**
+	 * An entry without either id offers no links at all.
+	 *
+	 * @return void
+	 */
+	public function testAnEntryWithoutIdsOffersNoLinks(): void {
+		$node = $this->nodeWithAppRoot(root: '/index.php/apps/integriq/');
+
+		$this->assertSame([], $node->logActions(['output' => ['items' => [['json' => ['sourceId' => '  ']]]]]));
+		$this->assertSame([], $node->logActions([]));
+
+	}//end testAnEntryWithoutIdsOffersNoLinks()
+
+	/**
+	 * A node whose URL generator answers the app root for the dashboard route.
+	 *
+	 * @param string $root The app root.
+	 *
+	 * @return SourceCallNode
+	 */
+	private function nodeWithAppRoot(string $root): SourceCallNode {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		$urlGenerator = $this->createMock(IURLGenerator::class);
+		$urlGenerator->method('linkToRoute')->with('integriq.ui.dashboard', ['path' => ''])->willReturn($root);
+
+		return new SourceCallNode(
+			callService: $this->callService,
+			concurrency: new FlowConcurrency(),
+			objectService: $this->objectService,
+			flowOwner: new FlowOwner(userManager: $this->userManager, userSession: $this->userSession, l10n: $l10n),
+			l10n: $l10n,
+			urlGenerator: $urlGenerator,
+			logger: $this->logger,
+			decoder: new ResponseDecoder()
+		);
+
+	}//end nodeWithAppRoot()
 
 }//end class

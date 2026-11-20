@@ -13,6 +13,9 @@
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-sibling-app-starts-a-platform-launch-with-a-typed-event-req-ltil-001
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-the-platform-authorizes-the-tools-login-redirect-and-posts-the-launch-token-req-ltil-002
  * @spec openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors/spec.md#requirement-a-providers-catalogue-arrives-in-learniq-as-draft-courses-that-launch-through-lti-req-cmkt-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -47,6 +50,8 @@ use OCP\IUserSession;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The platform launch runs the LTI 1.3 third-party-initiated login: the event
@@ -574,7 +579,7 @@ class LtiPlatformLaunchTest extends TestCase {
 			static function (string $routeName, array $arguments = []): string {
 				$routes = require __DIR__ . '/../../../../appinfo/routes.php';
 				foreach ($routes['routes'] as $route) {
-					if ('integriq.' . str_replace('#', '.', $route['name']) === $routeName && ($route['verb'] ?? 'GET') === 'GET') {
+					if ('integriq.' . str_replace('#', '.', $route['name']) . ($route['postfix'] ?? '') === $routeName && ($route['verb'] ?? 'GET') === 'GET') {
 						$url = $route['url'];
 						foreach ($arguments as $key => $value) {
 							$url = str_replace('{' . $key . '}', (string)$value, $url);
@@ -626,7 +631,9 @@ class LtiPlatformLaunchTest extends TestCase {
 			}
 		);
 		$objectService->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null): ?ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->assertSame('synchronization', $schema, 'a contract names a synchronization');
 				if (isset($this->synchronizations[(string)$id]) === false) {
 					return null;
@@ -761,7 +768,10 @@ class LtiPlatformLaunchTest extends TestCase {
 			fn ($id): ObjectEntity => $this->entity(uuid: (string)$id, data: $this->registrations[$id])
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->registrations[$uuid] = $object;
 				return $this->entity(uuid: (string)$uuid, data: $object);
 			}

@@ -94,14 +94,13 @@ class StufZknAcknowledgementBuilder {
 		$message = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:Bv03Bericht');
 		$body->appendChild($message);
 
-		$this->appendStuurgegevens(
-			document: $document,
-			parent: $message,
+		$header = new ReplyStuurgegevens(
 			berichtcode: 'Bv03',
 			crossRefnummer: $crossRefnummer,
 			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrg: $ontvangerOrg
+			ontvangerOrganisation: $ontvangerOrg
 		);
+		$this->appendStuurgegevens(parent: $message, header: $header);
 
 		return (string)$document->saveXML();
 	}//end buildBv03()
@@ -136,14 +135,13 @@ class StufZknAcknowledgementBuilder {
 		$message = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:Fo03Bericht');
 		$body->appendChild($message);
 
-		$this->appendStuurgegevens(
-			document: $document,
-			parent: $message,
+		$header = new ReplyStuurgegevens(
 			berichtcode: 'Fo03',
 			crossRefnummer: $crossRefnummer,
 			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrg: $ontvangerOrg
+			ontvangerOrganisation: $ontvangerOrg
 		);
+		$this->appendStuurgegevens(parent: $message, header: $header);
 
 		$faultBody = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:body');
 		$message->appendChild($faultBody);
@@ -175,59 +173,43 @@ class StufZknAcknowledgementBuilder {
 	/**
 	 * Append the reply `stuurgegevens` block, correlated via `crossRefnummer`.
 	 *
-	 * @param DOMDocument $document The owning document.
-	 * @param DOMElement $parent The `Bv03Bericht`/`Fo03Bericht` element.
-	 * @param string $berichtcode `Bv03` or `Fo03`.
-	 * @param string $crossRefnummer The inbound message's referentienummer (may be empty).
-	 * @param string $zenderOrganisation This bridge's own organisatie code.
-	 * @param string $ontvangerOrg The original sender's organisatie code (may be empty).
+	 * @param DOMElement         $parent The `Bv03Bericht`/`Fo03Bericht` element.
+	 * @param ReplyStuurgegevens $header What the block carries.
 	 *
 	 * @return void
 	 */
-	private function appendStuurgegevens(
-		DOMDocument $document,
-		DOMElement $parent,
-		string $berichtcode,
-		string $crossRefnummer,
-		string $zenderOrganisation,
-		string $ontvangerOrg,
-	): void {
+	private function appendStuurgegevens(DOMElement $parent, ReplyStuurgegevens $header): void {
+		$document      = $parent->ownerDocument;
 		$stuurgegevens = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:stuurgegevens');
 		$parent->appendChild($stuurgegevens);
 
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'berichtcode', value: $berichtcode);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'berichtcode', value: $header->berichtcode);
+		$this->appendOrganisations(stuurgegevens: $stuurgegevens, header: $header);
 
-		$zender = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:zender');
-		$stuurgegevens->appendChild($zender);
-		$this->appendText(document: $document, parent: $zender, name: 'organisatie', value: $zenderOrganisation);
-
-		$ontvanger = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:ontvanger');
-		$stuurgegevens->appendChild($ontvanger);
-		$this->appendText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrg);
-
-		$this->appendText(
-			document: $document,
-			parent: $stuurgegevens,
-			name: 'referentienummer',
-			value: strtoupper($berichtcode) . '-' . bin2hex(random_bytes(6))
-		);
-		$this->appendText(
-			document: $document,
-			parent: $stuurgegevens,
-			name: 'tijdstipBericht',
-			value: (new DateTime())->format('YmdHis')
-		);
-
-		if ($crossRefnummer !== '') {
-			$this->appendText(
-				document: $document,
-				parent: $stuurgegevens,
-				name: 'crossRefnummer',
-				value: $crossRefnummer
-			);
+		$reference = strtoupper($header->berichtcode) . '-' . bin2hex(random_bytes(6));
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'referentienummer', value: $reference);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'tijdstipBericht', value: (new DateTime())->format('YmdHis'));
+		if ($header->crossRefnummer !== '') {
+			$this->appendText(document: $document, parent: $stuurgegevens, name: 'crossRefnummer', value: $header->crossRefnummer);
 		}
-
 	}//end appendStuurgegevens()
+
+	/**
+	 * Append zender and ontvanger, each with its organisatie code.
+	 *
+	 * @param DOMElement         $stuurgegevens The stuurgegevens element.
+	 * @param ReplyStuurgegevens $header        What the block carries.
+	 *
+	 * @return void
+	 */
+	private function appendOrganisations(DOMElement $stuurgegevens, ReplyStuurgegevens $header): void {
+		$document = $stuurgegevens->ownerDocument;
+		foreach ($header->organisations() as $role => $organisation) {
+			$element = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:' . $role);
+			$stuurgegevens->appendChild($element);
+			$this->appendText(document: $document, parent: $element, name: 'organisatie', value: $organisation);
+		}
+	}//end appendOrganisations()
 
 	/**
 	 * Append a StUF-namespaced text-valued child element.

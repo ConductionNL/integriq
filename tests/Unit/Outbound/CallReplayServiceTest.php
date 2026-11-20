@@ -42,6 +42,7 @@ use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * A dispatcher the test drives instead of a partner.
@@ -107,6 +108,13 @@ class RecordingDispatcher implements CallDispatcherInterface {
 class CallReplayServiceTest extends TestCase {
 
 	/**
+	 * The golden hand-fired calls, taken before fire() was split.
+	 *
+	 * @var string
+	 */
+	private const GOLDEN_FIRED = '[{"result":{"call":"recorded","kind":"hand-fired","succeeded":true,"sent":true,"statusCode":200,"detail":"OK"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":200,"headers":[],"durationMs":12,"detail":"OK"},"statusCode":200,"statusMessage":"OK","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":false,"sent":true,"statusCode":199,"detail":"OK"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":199,"headers":[],"durationMs":12,"detail":"OK"},"statusCode":199,"statusMessage":"OK","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":true,"sent":true,"statusCode":299,"detail":"OK"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":299,"headers":[],"durationMs":12,"detail":"OK"},"statusCode":299,"statusMessage":"OK","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":false,"sent":true,"statusCode":300,"detail":"Service Unavailable"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":300,"headers":[],"durationMs":12,"detail":"Service Unavailable"},"statusCode":300,"statusMessage":"Service Unavailable","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":false,"sent":false,"detail":"no route to host"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":[],"statusCode":0,"statusMessage":"no route to host","durationMs":0,"kind":"hand-fired","firedBy":"beheerder"},"sent":0},{"result":{"kind":"dry-run","succeeded":true,"sent":false,"request":{"method":"POST","endpoint":"\\/notificaties","body":{"kanaal":"zaken"}},"detail":"Dry run: this is the request that would be sent. Nothing was sent."},"record":null,"sent":0},{"result":{"kind":"dry-run","succeeded":true,"sent":false,"request":{"method":"POST","endpoint":"\\/notificaties","body":{"kanaal":"zaken"}},"detail":"Dry run: this is the request that would be sent. Nothing was sent."},"record":null,"sent":0}]';
+
+	/**
 	 * The OR object service double.
 	 *
 	 * @var ORObjectService|MockObject
@@ -155,7 +163,10 @@ class CallReplayServiceTest extends TestCase {
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register = '', string $schema = '', ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register ?? '';
+				$schema = $options->target->schema ?? '';
+				$uuid = $options->uuid;
 				if ($uuid === null || $uuid === '') {
 					$this->created++;
 					$uuid = 'object-' . $this->created;
@@ -510,6 +521,41 @@ class CallReplayServiceTest extends TestCase {
 		$this->assertTrue($result['sent']);
 		$this->assertCount(1, $dispatcher->sent);
 	}//end testAGetWithoutAKeptBodyIsStillReplayed()
+
+	/**
+	 * A call that kept no replayRequest and whose stored request was masked is
+	 * not replayed: the partner would get the placeholder, not the value sent.
+	 *
+	 * @return void
+	 */
+	public function testAMaskedRequestWithoutAReplayRequestIsNotReplayed(): void {
+		$uuid = $this->failedCall();
+		unset($this->records[$uuid]['replayRequest']);
+		$this->records[$uuid]['request'] = ['method' => 'GET', 'endpoint' => '/personen', 'query' => ['bsn' => '[afgeschermd]']];
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertFalse($result['sent']);
+		$this->assertCount(0, $dispatcher->sent);
+		$this->assertStringContainsString('no longer kept', $result['detail']);
+	}//end testAMaskedRequestWithoutAReplayRequestIsNotReplayed()
+
+	/**
+	 * A masked stored request does not stop a replay from the kept replayRequest.
+	 *
+	 * @return void
+	 */
+	public function testAKeptReplayRequestIsReplayedWhenTheStoredRequestIsMasked(): void {
+		$uuid = $this->failedCall();
+		$this->records[$uuid]['request'] = ['method' => 'GET', 'endpoint' => '/personen', 'query' => ['bsn' => '[afgeschermd]']];
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertTrue($result['sent']);
+		$this->assertCount(1, $dispatcher->sent);
+	}//end testAKeptReplayRequestIsReplayedWhenTheStoredRequestIsMasked()
 
 	/**
 	 * A bulk replay reports each item, and skips none.
@@ -893,5 +939,33 @@ class CallReplayServiceTest extends TestCase {
 		return (string)$entity->getUuid();
 
 	}//end failedCall()
+
+
+	/**
+	 * GOLDEN: a hand-fired call as a dry run, answered at the 2xx boundaries,
+	 * and failed in dispatch: the outcome and what was recorded. The new record's
+	 * uuid shows only as the record it names. Pinned before fire() was split.
+	 *
+	 * @return void
+	 */
+	public function testGoldenHandFiredCalls(): void {
+		$request = ['method' => 'POST', 'endpoint' => '/notificaties', 'body' => ['kanaal' => 'zaken']];
+		$outcomes = [];
+		foreach ([[200, null, false], [199, null, false], [299, null, false], [300, null, false], [200, 'no route to host', false], [200, null, true], [500, 'x', true]] as [$status, $throw, $dryRun]) {
+			$dispatcher = new RecordingDispatcher($status, $throw);
+			$result = $this->service($dispatcher)->fire('notificaties-partner', $request, 'beheerder', $dryRun);
+			$record = null;
+			if (isset($result['call']) === true) {
+				$stored = $this->records[$result['call']];
+				$record = array_intersect_key($stored, array_flip(['target', 'request', 'response', 'statusCode', 'statusMessage', 'durationMs', 'kind', 'firedBy']));
+				$result['call'] = 'recorded';
+			}
+
+			$outcomes[] = ['result' => $result, 'record' => $record, 'sent' => count($dispatcher->sent)];
+		}
+
+		$this->assertSame(self::GOLDEN_FIRED, json_encode($outcomes));
+
+	}//end testGoldenHandFiredCalls()
 
 }//end class

@@ -19,6 +19,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Covers execution-trace REQ-004 (trace persistence), REQ-005 (dry-run
@@ -44,6 +45,7 @@ final class ExecutionTraceServiceTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				function (...$args) use (&$capturedPayload, &$capturedArgs) {
+					$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 					$capturedArgs = $args;
 					$capturedPayload = $args[0];
 					return ObjectServiceMockBuilder::objectEntity($this, $capturedPayload, 'trace-abc');
@@ -224,6 +226,7 @@ final class ExecutionTraceServiceTest extends TestCase {
 		$orObjectService = $this->createMock(ORObjectService::class);
 		$orObjectService->method('find')->willReturnCallback(
 			function (string $id, ...$rest) use ($originalTrace) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				unset($rest);
 				if ($id === 'orig-3') {
 					return $originalTrace;

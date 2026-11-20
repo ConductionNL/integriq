@@ -36,6 +36,7 @@ use OCA\Integriq\Exception\FormsUpstreamException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\Forms\FormsSyncAdapterInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -180,7 +181,7 @@ class FormsBridgeController extends Controller {
 	}//end questions()
 
 	/**
-	 * Resolve a Source by id, admin-context (the acting user need not have
+	 * Resolve a Source of the caller's organisation by id (the acting user need not have
 	 * direct OR access to the admin-only `source` schema — the engine reads
 	 * it on their behalf), mirroring `TablesBridgeController::findSourceObject()`.
 	 *
@@ -194,10 +195,8 @@ class FormsBridgeController extends Controller {
 		try {
 			return $this->orObjectService->find(
 				id: $sourceId,
-				register: 'integriq',
-				schema: 'source',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $exception) {
 			throw new FormsNotFoundException(message: 'Source not found: ' . $sourceId);
