@@ -2659,7 +2659,25 @@ OC.L10N.register(
         "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.": "Log in met de DigiD app met ID-check, of gebruik een ander DigiD-middel op niveau Substantieel.",
         "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.": "Log in met een eHerkenningsmiddel op niveau EH3 of hoger. Je eHerkenningsleverancier vertelt je hoe je er een krijgt.",
         "Log in with a means at eIDAS level substantial or high.": "Log in met een middel op eIDAS-niveau substantial of high.",
-        "Go back": "Terug"
+        "Go back": "Terug",
+        "Add a tool limit": "Toollimiet toevoegen",
+        "Every open stream holds a web server worker until it ends, so keep this short.": "Elke open stream houdt een webserverproces bezet tot hij eindigt, dus houd dit kort.",
+        "MCP tool server": "MCP-toolserver",
+        "Maximum stream duration (seconds)": "Maximale streamduur (seconden)",
+        "No tool has its own limit. Every tool shares the consumer's limits.": "Geen tool heeft een eigen limiet. Alle tools delen de limieten van de afnemer.",
+        "Off by default: tool arguments may carry personal data.": "Standaard uit: toolargumenten kunnen persoonsgegevens bevatten.",
+        "Per seconds": "Per seconden",
+        "Remove the limit of {tool}": "Limiet van {tool} verwijderen",
+        "Store tool arguments in the call log": "Toolargumenten bewaren in het aanroeplog",
+        "Tool limits": "Toollimieten",
+        "Tool server source": "Bron van de toolserver",
+        "MCP method": "MCP-methode",
+        "MCP tool": "MCP-tool",
+        "Session start": "Start van de sessie",
+        "Tool list": "Lijst van tools",
+        "Tool call": "Toolaanroep",
+        "Resource request": "Resourceverzoek",
+        "Prompt request": "Promptverzoek"
     },
     "nplurals=2; plural=(n != 1);"
 )
