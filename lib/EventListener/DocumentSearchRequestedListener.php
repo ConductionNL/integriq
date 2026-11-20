@@ -29,6 +29,7 @@ namespace OCA\Integriq\EventListener;
 use OCA\Integriq\Event\DocumentSearchRequestedEvent;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
+use OCA\Integriq\Service\Chat\TalkMessageSourceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -50,11 +51,13 @@ class DocumentSearchRequestedListener implements IEventListener {
 	 * @param Microsoft365AdapterInterface $adapter The Microsoft 365 source.
 	 * @param DocumentConnectionGuardInterface $guard Refuses an app without a linked connection.
 	 * @param LoggerInterface     $logger  Records who asked and for what terms, never what was found.
+	 * @param TalkMessageSourceInterface $talk    The Nextcloud Talk source, searched as the requesting person.
 	 */
 	public function __construct(
 		private readonly Microsoft365AdapterInterface $adapter,
 		private readonly DocumentConnectionGuardInterface $guard,
 		private readonly LoggerInterface $logger,
+		private readonly TalkMessageSourceInterface $talk,
 	) {
 	}//end __construct()
 
@@ -118,22 +121,78 @@ class DocumentSearchRequestedListener implements IEventListener {
 	}//end refuse()
 
 	/**
-	 * Answer a linked search: nothing without a connection, else the adapter's hits.
+	 * Answer a linked search from each platform asked for, merged up to the limit.
 	 *
 	 * @param DocumentSearchRequestedEvent $event The search.
 	 * @param array<string,mixed>          $audit The audit context.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-nextcloud-talk-is-a-searchable-source-as-the-requesting-person-req-dcc-011
 	 */
 	private function answer(DocumentSearchRequestedEvent $event, array $audit): void {
-		if ($this->adapter->isConnected() === false) {
-			$event->setResult(['hits' => [], 'moreCount' => 0, 'notices' => ['not-connected']]);
-			return;
+		$parts = [];
+		if ($event->wantsPlatform(platform: DocumentSearchRequestedEvent::PLATFORM_MICROSOFT_365) === true) {
+			$parts[] = $this->microsoft365(event: $event);
 		}
 
-		$event->setResult($this->search(event: $event));
+		if ($event->wantsPlatform(platform: DocumentSearchRequestedEvent::PLATFORM_NEXTCLOUD_TALK) === true && $this->asksForChat(event: $event) === true) {
+			$parts[] = $this->talk->search(search: $event);
+		}
+
+		$event->setResult($this->merge(parts: $parts, limit: $event->getLimit()));
 		$this->logger->info('Integriq: a document search was answered', $audit);
 	}//end answer()
+
+	/**
+	 * The Microsoft 365 part: the notice `not-connected` without a connection, else the adapter's hits.
+	 *
+	 * @param DocumentSearchRequestedEvent $event The search.
+	 *
+	 * @return array<string,mixed> `{hits, moreCount, notices}`.
+	 */
+	private function microsoft365(DocumentSearchRequestedEvent $event): array {
+		if ($this->adapter->isConnected() === false) {
+			return ['hits' => [], 'moreCount' => 0, 'notices' => ['not-connected']];
+		}
+
+		return $this->search(event: $event);
+	}//end microsoft365()
+
+	/**
+	 * Whether the search asks for chat messages: all types, or `chatMessage` among them.
+	 *
+	 * @param DocumentSearchRequestedEvent $event The search.
+	 *
+	 * @return bool True when Talk is in scope.
+	 */
+	private function asksForChat(DocumentSearchRequestedEvent $event): bool {
+		return $event->getEntityTypes() === [] || in_array('chatMessage', $event->getEntityTypes(), true) === true;
+	}//end asksForChat()
+
+	/**
+	 * Merge the platforms' answers: hits in order up to the limit, the rest counted, notices once each.
+	 *
+	 * @param array<int,array<string,mixed>> $parts The answers.
+	 * @param int                            $limit At most this many hits.
+	 *
+	 * @return array{hits: array<int,mixed>, moreCount: int, notices: array<int,string>} The answer.
+	 */
+	private function merge(array $parts, int $limit): array {
+		$hits = [];
+		$more = 0;
+		$notices = [];
+		foreach ($parts as $part) {
+			$hits = array_merge($hits, array_values((array)($part['hits'] ?? [])));
+			$more += (int)($part['moreCount'] ?? 0);
+			$notices = array_merge($notices, array_values((array)($part['notices'] ?? [])));
+		}
+
+		$limit = max(1, min(500, $limit));
+		$more += max(0, count($hits) - $limit);
+
+		return ['hits' => array_slice($hits, 0, $limit), 'moreCount' => $more, 'notices' => array_values(array_unique($notices))];
+	}//end merge()
 
 	/**
 	 * The adapter's hits for the search.

@@ -1,0 +1,115 @@
+{
+  "$comment": "INTEGRIQ DRAFT (native-data-gathering-provider, ported from spectr/connectors): Source and Job ship isEnabled false, per the requirement that a connector blocked on an unbuilt capability ships disabled. PARKED (Wave 3): OAuth2 client credentials; client_id and client_secret ship as <PLACEHOLDER>. Unparked by its own change, which supplies the credentials through the credential broker. ORIGINAL SPECTR NOTE: Phase-2 wave-1 OpenConnector ingestion config for Belgium (publicprocurement.be, the Belgian/Flemish federal procurement portal). Mirrors concurrentie-analyse/scripts/sync/sync_belgium.py's search endpoint and field selection. AUTH, per the audit that scoped this batch: the script authenticates with OAuth2 client_credentials against a 'frontend-public' client - its own comment says 'Uses the same OAuth2 client credentials as the website frontend... fully public API, no registration needed', and the script hardcodes both CLIENT_ID and CLIENT_SECRET in plaintext. Even though these specific values are technically not secret (anyone can read them out of the public site's own frontend bundle, no signup gate), this file still ships them as `<PLACEHOLDER>` rather than committing the real strings, for the same reason the openconnector register.d BRP/KvK seed templates never commit real-looking credential values even for otherwise-public endpoints - keeps the convention 'no credential-shaped value in this repo' uniform regardless of whether a given instance happens to be low-sensitivity. The real values are visible directly in sync_belgium.py for whoever configures this source. SOURCE-SCRIPT CORRECTION: the script also defines `get_publication_detail()`/`DETAIL_URL` (a per-workspace detail-fetch function) but `main()` never actually calls it - only `search_publications()`'s results ever reach `upsert_tender()`. This connector therefore mirrors ONLY the search endpoint that is actually exercised, not the unused detail hop - no two-hop-fetch limitation applies here (unlike dutch_laws_bwb.json's lawArticle case). STATIC POST BODY: like ted_eu.json, publicprocurement.be's search endpoint is POST-only with a JSON body and OpenConnector's SynchronizationService has no primitive for a static JSON body on a scheduled/unattended fetch (`useDataAsRequestBody` only pulls from an externally-supplied `data` param) - worked around identically, baking the body onto the Source's `configuration.body` + `configuration.listMethod: 'POST'`. The body combines both of the script's CPV codes (72000000, 48000000 - looped as two SEPARATE single-code requests in the script) into one `cpvCodes` array in a single static request, same technique ted_eu.json used to combine 48000000*/72000000* into one static query - UNVERIFIED assumption (this file is not live-tested per task scope: OAuth'd sources are skipped from live verification and shipped draft) that the array field is OR-semantics across multiple codes rather than needing one code per call; worth a live check before W2 production use. `dutch_only`/`since_date` are omitted from the body to match the script's own full-sync default call shape (`main()` always passes `dutch_only=False`, and `since_date` is only set for incremental runs) - i.e. no `publicationLanguages`/`publicationDateFrom` keys. The script's per-call `BelGov-Trace-Id` header (a fresh `uuid.uuid4()` per request) is deliberately NOT reproduced - it would need a Twig function evaluated in CallService's own outbound-header-rendering context, which was not confirmed to expose the same `generateUuid()` function MappingService's mapping-rendering context has (those may be different Twig Environments/extension sets); omitting a per-call trace id is very unlikely to affect whether the API accepts the request, so it's dropped as a documented simplification rather than guessed at. `Origin`/`Referer` ARE reproduced (static, directly copied from the script) since some frontend-facing APIs reject cross-origin-looking requests missing them. MAPPING NOTES: `cpvCodes` uses the SAME cast-to-array trick as latvia_iub.json (`cpvMainCode` bare dot-path + `cast: {cpvCodes: array}`) rather than trying to merge cpvMainCode+cpvAdditionalCodes the way the script does (`[cpv_main] + cpv_additional`) - confirmed elsewhere in this batch that MappingService's Twig fallback cannot return a computed array at all (see IMPORT.md), only a bare dot-path or a PHP-cast of one; `cpvAdditionalCodes` is dropped as a result, same documented simplification. `isEuropean` maps directly to the script's own `tedPublished` boolean field - a genuinely confirmed-semantic field (unlike Latvia's guess-free omission of the same concept), since the script's own SQL comment treats it exactly as 'also published on TED'. `description` is deliberately left unmapped: neither the script's `upsert_tender()` nor the (unused) detail endpoint's fields are read for any free-text body, confirming the search endpoint's results simply don't carry one. No sourceHashMapping - no spurious daily-recomputing field identified in the fields the script actually reads. NOT LIVE-VERIFIED (per task scope: 'skip live for OAuth'd Belgium; mark it draft') - both the Source's OAuth wiring and every mapped field path are derived purely from reading sync_belgium.py, not from a captured live response.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "belgium"
+        },
+        "name": "publicprocurement.be (Belgian/Flemish procurement portal)",
+        "description": "Belgian federal procurement portal search API. Public-client OAuth2 (client_credentials, the same 'frontend-public' client the website itself uses - see $comment on why credentials are still placeholders here) + a static POST search body (CPV-filtered). DORMANT PLACEHOLDER - paste the real client_id/client_secret from sync_belgium.py's CLIENT_ID/CLIENT_SECRET constants onto `configuration.authentication` and flip the Job below to isEnabled before relying on this in production. Feeds the spectr `tender` register/schema via the belgium-to-spectr-tender synchronization.",
+        "type": "api",
+        "location": "https://www.publicprocurement.be/api/sea",
+        "auth": "oauth",
+        "documentation": "https://www.publicprocurement.be",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json, text/plain, */*",
+            "Content-Type": "application/json;charset=UTF-8",
+            "Origin": "https://www.publicprocurement.be",
+            "Referer": "https://www.publicprocurement.be/",
+            "Authorization": "Bearer {{ oauthToken(source) }}"
+          },
+          "authentication": {
+            "grant_type": "client_credentials",
+            "authentication": "body",
+            "tokenUrl": "https://www.publicprocurement.be/auth/realms/supplier/protocol/openid-connect/token",
+            "scope": "",
+            "client_id": "<PLACEHOLDER>",
+            "client_secret": "<PLACEHOLDER>"
+          },
+          "listMethod": "POST",
+          "body": "{\"includeOrganisationChildren\":true,\"page\":1,\"pageSize\":25,\"searchTerm\":\"\",\"cpvCodes\":[\"72000000\",\"48000000\"],\"futureSubmissionDeadlineOnly\":false}"
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "belgium-to-tender"
+        },
+        "name": "Belgium to Spectr Tender",
+        "description": "DRAFT / NOT LIVE-VERIFIED (OAuth'd source, out of this batch's live-verification scope - see $comment). Maps a raw publicprocurement.be search-result publication onto the spectr `tender` schema, derived from sync_belgium.py's upsert_tender() field reads.",
+        "mapping": {
+          "sourceRef": "{{ (publicationReferenceNumbersBDA|default([])|first)|default(procedureId)|default('unknown') }}",
+          "publicatieId": "{{ (publicationReferenceNumbersBDA|default([])|first)|default(procedureId)|default('unknown') }}",
+          "source": "belgium",
+          "title": "{{ dossier.title.nl|default(dossier.title.fr)|default(dossier.title.en)|default('Belgian tender ' ~ (publicationReferenceNumbersBDA|default([])|first)|default(procedureId)|default('')) }}",
+          "displayName": "{{ (dossier.title.nl|default(dossier.title.fr)|default(dossier.title.en)|default('Belgian tender ' ~ (publicationReferenceNumbersBDA|default([])|first)|default(procedureId)|default('')))|slice(0, 250) }}",
+          "organisation": "{{ organisation.officialName|default(organisation.name)|default('') }}",
+          "country": "BE",
+          "publicationDate": "{{ (publicationDate|default(publishedAt))|default('')|slice(0, 10) }}",
+          "closingDate": "{{ submissionDeadline|default('') }}",
+          "status": "new",
+          "procedure": "{{ publicationType|default('') }}",
+          "typeOpdracht": "{{ noticeSubType|default('') }}",
+          "nutsCode": "{{ (nutsCodes|default([])|first)|default('') }}",
+          "isEuropean": "tedPublished",
+          "cpvCodes": "cpvMainCode",
+          "tenderUrl": "{{ publicationWorkspaceId ? ('https://www.publicprocurement.be/nl/publication-workspaces/' ~ publicationWorkspaceId) : '' }}"
+        },
+        "unset": [],
+        "cast": {
+          "cpvCodes": "array"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "belgium-to-spectr-tender"
+        },
+        "name": "Belgium to Spectr Tender",
+        "description": "DRAFT / NOT LIVE-VERIFIED - see this file's $comment. Wave-1 ingestion sync: publicprocurement.be search (static POST body, both script CPV codes combined into one call - page 1 only, same structural limitation as ted_eu.json since the body is static) -> spectr register, tender schema.",
+        "sourceId": "belgium",
+        "sourceType": "api",
+        "sourceTargetMapping": "belgium-to-tender",
+        "sourceConfig": {
+          "endpoint": "/search/publications",
+          "idPosition": "publicationWorkspaceId",
+          "resultsPosition": "publications",
+          "maxPages": 1,
+          "usesPagination": false
+        },
+        "targetId": "spectr/tender",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "job",
+          "slug": "belgium-weekly-sync"
+        },
+        "name": "Belgium Weekly Sync",
+        "description": "Shipped DISABLED - the Source's OAuth client_id/client_secret are empty placeholders (see $comment); a scheduled run would just fail its token request until real credentials are set. Enable once configured. Interval matches Specter's own weekly tendril cadence.",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "belgium-to-spectr-tender"
+        },
+        "interval": 604800,
+        "isEnabled": false,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
