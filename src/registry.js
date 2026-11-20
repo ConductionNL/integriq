@@ -47,6 +47,7 @@ import IntakeMessageRowActions from './components/intake/IntakeMessageRowActions
 import MailImportAction from './components/intake/MailImportAction.vue'
 import LtiPlatformDetails from './components/LtiPlatformDetails.vue'
 import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
+import SourceHostKeyPanel from './components/SourceHostKeyPanel.vue'
 import SourceRunSummaryWidget from './components/SourceRunSummaryWidget.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
 import ColumnMappingEditorModal from './modals/Migration/ColumnMappingEditorModal.vue'
@@ -191,6 +192,11 @@ export default {
 	// document-generation-vendor-adapter REQ-DGV-004.
 	DocumentGenerationSourcePanel,
 
+	// SourceDetail body widget: the host key an SFTP source's server presents,
+	// and pinning it once the administrator checked it with the partner
+	// (GET/POST /api/sources/{id}/host-key). Renders nothing for any other
+	// kind of source. sources-sftp-adapter REQ-SFTP-001.
+	SourceHostKeyPanel,
 	// SourceDetail body widget for a database source: its declared statements,
 	// a test run of a read statement (first page and duration) and the tables
 	// and columns (databaseSource#testStatement and #schema). Renders nothing

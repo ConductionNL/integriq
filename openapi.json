@@ -10224,6 +10224,187 @@
                 }
             }
         },
+        "/sources/{id}/host-key": {
+            "get": {
+                "operationId": "source-host-key-show",
+                "summary": "The host key fingerprint an SFTP source's server presents, beside the pinned one",
+                "description": "Admin-only. Connects to the source's SFTP server without logging in and returns `pinned` (or null), `presented` and `matches`. No credential is sent.",
+                "tags": [
+                    "source-host-key"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The pinned and presented fingerprints.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The source is not SFTP.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "502": {
+                        "description": "The server could not be read.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source's UUID.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "source-host-key-pin",
+                "summary": "Pin the host key fingerprint an administrator confirmed",
+                "description": "Admin-only. Saves `fingerprint` as the source's `configuration.hostKeyFingerprint` only when the server presents that key at this moment; otherwise 409 and nothing is saved.",
+                "tags": [
+                    "source-host-key"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The pinned fingerprint.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "No fingerprint, or the source is not SFTP.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "description": "The server presents another key.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "502": {
+                        "description": "The server could not be read.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source's UUID.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "fingerprint"
+                                ],
+                                "properties": {
+                                    "fingerprint": {
+                                        "type": "string",
+                                        "description": "The SHA-256 fingerprint, `SHA256:...`."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/sources/{id}/circuit-breaker/trip": {
             "post": {
                 "operationId": "sources-trip-circuit-breaker",

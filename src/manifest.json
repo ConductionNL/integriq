@@ -1538,6 +1538,12 @@
             "colSpan": 12
           },
           {
+            "id": "src-host-key",
+            "component": "SourceHostKeyPanel",
+            "placement": "after-data",
+            "colSpan": 12
+          },
+          {
             "id": "src-database",
             "component": "DatabaseSourcePanel",
             "placement": "after-data",

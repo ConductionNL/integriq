@@ -26,11 +26,13 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
+use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
 use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
 use OCA\Integriq\Service\Adapter\DataInfra\Database\DatabaseConnectionFactoryInterface;
 use OCA\Integriq\Service\Adapter\DataInfra\Database\DbalDatabaseConnectionFactory;
 use OCA\Integriq\Service\Adapter\DataInfra\DatabaseAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Adapter\DataInfra\SftpAdapter;
 use OCA\Integriq\Service\Format\ArrayToXml;
 use OCA\Integriq\Service\Format\XmlEncoderInterface;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
@@ -546,6 +548,9 @@ final class ServiceBindings {
 			$registry->addProvider($container->get(SharePointOnlineAdapter::class));
 			$registry->addProvider($container->get(Microsoft365Adapter::class));
 			$registry->addProvider($container->get(S3Adapter::class));
+			// Sources-sftp-adapter: a partner's SFTP or FTPS server (REQ-SFTP-001).
+			$registry->addProvider($container->get(SftpAdapter::class));
+			$registry->addProvider($container->get(FtpsAdapter::class));
 			$registry->addProvider($container->get(DatabaseAdapter::class));
 		} catch (\Throwable $e) {
 			// Don't crash boot — log and continue. The provider just won't appear
