@@ -81,6 +81,7 @@ import {
 	openPromotionHandler,
 	openRegistryLookupHandler,
 	previewDirectorySyncHandler,
+	releaseHeldMessageHandler,
 	rerunFailedRunHandler,
 	runDirectorySyncHandler,
 	runJobHandler,
@@ -93,6 +94,7 @@ import {
 	testSourceHandler,
 	testSynchronizationHandler,
 	viewLogsHandler,
+	withdrawHeldMessageHandler,
 } from './handlers/actionHandlers.js'
 import {
 	moveIntakeRuleDownHandler,
@@ -115,6 +117,10 @@ export default {
 	// Run again on a failed run: one POST, no dialog (connection-run-monitoring
 	// REQ-CRUN-003). Shown only on failed rows through the action's visibleWhen.
 	rerunFailedRunHandler,
+	// Release or withdraw a message a send check held for review: one POST each,
+	// gated on the send right server-side (REQ-OSI-010).
+	releaseHeldMessageHandler,
+	withdrawHeldMessageHandler,
 	testMappingModalHandler,
 	// Beheer > Service fetches: "Testen" opens TestServiceFetchModal (REQ-SF-001).
 	testServiceFetchHandler,
