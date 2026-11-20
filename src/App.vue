@@ -10,7 +10,13 @@
 			:pageTypes="pageTypes"
 			appId="integriq"
 			:translate="translateForApp"
-			:permissions="permissions" />
+			:permissions="permissions">
+			<!-- sources-per-user-oauth task 3: the user's own connected accounts,
+			     next to the library's default sections. -->
+			<template #user-settings-sections>
+				<ConnectedAccountsSection />
+			</template>
+		</CnAppRoot>
 		<!--
 		  ModalHost lives outside CnAppRoot so a route swap mid-modal
 		  cannot unmount the modal from under the user. It listens on the
@@ -24,12 +30,14 @@
 <script>
 import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { translate as ncT } from '@nextcloud/l10n'
+import ConnectedAccountsSection from './components/settings/ConnectedAccountsSection.vue'
 import ModalHost from './modals/v2/ModalHost.vue'
 
 export default {
 	name: 'App',
 	components: {
 		CnAppRoot,
+		ConnectedAccountsSection,
 		ModalHost,
 	},
 
