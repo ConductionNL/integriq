@@ -39,12 +39,12 @@ final class RemotePathTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPathIsJoinedOntoTheRoot(): void {
-		$this->assertSame('/outgoing/besluiten/a.csv', RemotePath::resolve(rootPath: '/outgoing/', path: 'besluiten/a.csv'));
-		$this->assertSame('/outgoing/a.csv', RemotePath::resolve(rootPath: 'outgoing', path: '/a.csv'), 'a leading slash is relative to the root');
-		$this->assertSame('/outgoing/a.csv', RemotePath::resolve(rootPath: '/outgoing', path: './/a.csv'));
-		$this->assertSame('/outgoing', RemotePath::resolve(rootPath: '/outgoing', path: ''));
-		$this->assertSame('/a.csv', RemotePath::resolve(rootPath: '/', path: 'a.csv'));
-		$this->assertSame('/', RemotePath::normaliseRoot(rootPath: ''));
+		$this->assertSame('/outgoing/besluiten/a.csv', (new RemotePath())->resolve(rootPath: '/outgoing/', path: 'besluiten/a.csv'));
+		$this->assertSame('/outgoing/a.csv', (new RemotePath())->resolve(rootPath: 'outgoing', path: '/a.csv'), 'a leading slash is relative to the root');
+		$this->assertSame('/outgoing/a.csv', (new RemotePath())->resolve(rootPath: '/outgoing', path: './/a.csv'));
+		$this->assertSame('/outgoing', (new RemotePath())->resolve(rootPath: '/outgoing', path: ''));
+		$this->assertSame('/a.csv', (new RemotePath())->resolve(rootPath: '/', path: 'a.csv'));
+		$this->assertSame('/', (new RemotePath())->normaliseRoot(rootPath: ''));
 	}//end testAPathIsJoinedOntoTheRoot()
 
 	/**
@@ -72,7 +72,7 @@ final class RemotePathTest extends TestCase {
 	#[DataProvider('escapes')]
 	public function testAPathThatCouldLeaveTheRootIsRefused(string $path): void {
 		$this->expectException(RemoteFileException::class);
-		RemotePath::resolve(rootPath: '/outgoing', path: $path);
+		(new RemotePath())->resolve(rootPath: '/outgoing', path: $path);
 	}//end testAPathThatCouldLeaveTheRootIsRefused()
 
 	/**
@@ -82,6 +82,6 @@ final class RemotePathTest extends TestCase {
 	 */
 	public function testARootWithParentSegmentsIsRefused(): void {
 		$this->expectExceptionMessage('The root path of the source may not contain "..".');
-		RemotePath::normaliseRoot(rootPath: '/outgoing/../etc');
+		(new RemotePath())->normaliseRoot(rootPath: '/outgoing/../etc');
 	}//end testARootWithParentSegmentsIsRefused()
 }//end class

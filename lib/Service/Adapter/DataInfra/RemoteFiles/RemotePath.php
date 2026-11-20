@@ -43,8 +43,8 @@ final class RemotePath {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
-	public static function resolve(string $rootPath, string $path): string {
-		$root = self::normaliseRoot(rootPath: $rootPath);
+	public function resolve(string $rootPath, string $path): string {
+		$root = $this->normaliseRoot(rootPath: $rootPath);
 		if (str_contains($path, "\0") === true || str_contains($path, '\\') === true) {
 			throw new RemoteFileException('The path "' . self::printable(path: $path) . '" contains a character that is not allowed.');
 		}
@@ -80,8 +80,8 @@ final class RemotePath {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
-	public static function normaliseRoot(string $rootPath): string {
-		$segments = array_values(array_filter(explode('/', trim($rootPath)), fn (string $s): bool => $s !== '' && $s !== '.'));
+	public function normaliseRoot(string $rootPath): string {
+		$segments = array_values(array_filter(explode('/', trim($rootPath)), fn (string $segment): bool => $segment !== '' && $segment !== '.'));
 		if (in_array('..', $segments, true) === true) {
 			throw new RemoteFileException('The root path of the source may not contain "..".');
 		}

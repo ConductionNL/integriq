@@ -73,8 +73,8 @@ class RemoteFileClient {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function listFiles(array $source, string $path='', string $pattern='*'): array {
-		$server    = RemoteServer::fromSource(source: $source);
-		$directory = RemotePath::resolve(rootPath: $server->rootPath, path: $path);
+		$server    = (new RemoteServerConfig())->serverOf(source: $source);
+		$directory = (new RemotePath())->resolve(rootPath: $server->rootPath, path: $path);
 		$relative  = trim($path, '/');
 
 		$entries = $this->withSession(
@@ -115,8 +115,8 @@ class RemoteFileClient {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function fetch(array $source, string $path, $target): void {
-		$server = RemoteServer::fromSource(source: $source);
-		$remote = RemotePath::resolve(rootPath: $server->rootPath, path: $path);
+		$server = (new RemoteServerConfig())->serverOf(source: $source);
+		$remote = (new RemotePath())->resolve(rootPath: $server->rootPath, path: $path);
 		$this->withSession(server: $server, operation: fn (RemoteFileSession $session) => $session->fetch(path: $remote, target: $target));
 	}//end fetch()
 
@@ -134,8 +134,8 @@ class RemoteFileClient {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function deliver(array $source, string $path, $stream): void {
-		$server = RemoteServer::fromSource(source: $source);
-		$remote = RemotePath::resolve(rootPath: $server->rootPath, path: $path);
+		$server = (new RemoteServerConfig())->serverOf(source: $source);
+		$remote = (new RemotePath())->resolve(rootPath: $server->rootPath, path: $path);
 		$this->withSession(server: $server, operation: fn (RemoteFileSession $session) => $session->deliver(path: $remote, source: $stream));
 	}//end deliver()
 
@@ -153,9 +153,9 @@ class RemoteFileClient {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function move(array $source, string $from, string $to): void {
-		$server     = RemoteServer::fromSource(source: $source);
-		$remoteFrom = RemotePath::resolve(rootPath: $server->rootPath, path: $from);
-		$remoteTo   = RemotePath::resolve(rootPath: $server->rootPath, path: $to);
+		$server     = (new RemoteServerConfig())->serverOf(source: $source);
+		$remoteFrom = (new RemotePath())->resolve(rootPath: $server->rootPath, path: $from);
+		$remoteTo   = (new RemotePath())->resolve(rootPath: $server->rootPath, path: $to);
 		$this->withSession(server: $server, operation: fn (RemoteFileSession $session) => $session->move(from: $remoteFrom, to: $remoteTo));
 	}//end move()
 
@@ -172,8 +172,8 @@ class RemoteFileClient {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function delete(array $source, string $path): void {
-		$server = RemoteServer::fromSource(source: $source);
-		$remote = RemotePath::resolve(rootPath: $server->rootPath, path: $path);
+		$server = (new RemoteServerConfig())->serverOf(source: $source);
+		$remote = (new RemotePath())->resolve(rootPath: $server->rootPath, path: $path);
 		if ($remote === $server->rootPath) {
 			throw new RemoteFileException('The root path itself cannot be deleted.');
 		}
@@ -195,7 +195,7 @@ class RemoteFileClient {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function presentedHostKey(array $source): string {
-		$server = RemoteServer::fromSource(source: $source);
+		$server = (new RemoteServerConfig())->serverOf(source: $source);
 		$this->assertEgress(server: $server);
 
 		return $this->sessionFactory->presentedFingerprint(server: $server);

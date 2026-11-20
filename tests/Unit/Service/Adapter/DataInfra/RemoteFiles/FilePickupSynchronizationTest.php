@@ -265,7 +265,7 @@ final class FilePickupSynchronizationTest extends TestCase {
 		$this->contracts->expects($this->never())->method('createFromArray');
 		$this->stored = [['id' => 'c-1', 'synchronizationId' => 'sync-1', 'originId' => 'besluiten-1.csv', 'originHash' => (self::NOW - 3600) . ':10']];
 
-		$result = $this->runner()->run(synchronization: $this->synchronization, source: [], isTest: true, now: self::NOW);
+		$result = $this->runner()->preview(synchronization: $this->synchronization, source: [], now: self::NOW);
 
 		$this->assertSame(['list besluiten-*.csv'], $this->events);
 		$this->assertSame(['besluiten-2.csv'], array_column($result['files']['new'], 'name'));

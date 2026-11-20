@@ -25,24 +25,17 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\HostKeyPin;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileClient;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
+use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\SourceHostKeyStore;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
-use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * The first test of a new SFTP source shows the server's fingerprint; the
@@ -59,29 +52,22 @@ use Throwable;
 class SourceHostKeyController extends Controller {
 
 	/**
-	 * The register sources live in.
-	 */
-	private const REGISTER = 'integriq';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param string           $appName         The name of the app.
 	 * @param IRequest         $request         The request.
-	 * @param OrObjectService  $orObjectService Reads and saves the source.
+	 * @param SourceHostKeyStore $sources Reads the source and its pin, and saves a new one.
 	 * @param RemoteFileClient $client          Reads the host key the server presents.
 	 * @param IL10N            $l               Translations.
-	 * @param LoggerInterface  $logger          Logs a failed save.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OrObjectService $orObjectService,
+		private readonly SourceHostKeyStore $sources,
 		private readonly RemoteFileClient $client,
 		private readonly IL10N $l,
-		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -108,7 +94,7 @@ class SourceHostKeyController extends Controller {
 			return $presented;
 		}
 
-		$pinned = $this->pinnedOf(source: $source);
+		$pinned = $this->sources->pinnedOf(source: $source);
 		if ($pinned === '') {
 			return new JSONResponse(['pinned' => null, 'presented' => $presented, 'matches' => false]);
 		}
@@ -128,7 +114,7 @@ class SourceHostKeyController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function pin(string $id): JSONResponse {
-		$confirmed = HostKeyPin::normalise(fingerprint: (string)$this->request->getParam('fingerprint', ''));
+		$confirmed = $this->sources->normalised(fingerprint: (string)$this->request->getParam('fingerprint', ''));
 		if ($confirmed === '') {
 			return $this->error(message: $this->l->t('Give the fingerprint you checked with the partner.'), status: Http::STATUS_BAD_REQUEST);
 		}
@@ -162,17 +148,8 @@ class SourceHostKeyController extends Controller {
 	 * @return ObjectEntity|JSONResponse The source, or the refusal.
 	 */
 	private function sftpSource(string $id): ObjectEntity|JSONResponse {
-		try {
-			$source = $this->orObjectService->find(
-				id: $id,
-				options: new ObjectFindOptions(register: self::REGISTER, schema: 'source'),
-				_rbac: false
-			);
-		} catch (DoesNotExistException $e) {
-			return $this->error(message: $this->l->t('Not Found'), status: Http::STATUS_NOT_FOUND);
-		}
-
-		if ($source instanceof ObjectEntity === false) {
+		$source = $this->sources->find(id: $id);
+		if ($source === null) {
 			return $this->error(message: $this->l->t('Not Found'), status: Http::STATUS_NOT_FOUND);
 		}
 
@@ -199,18 +176,6 @@ class SourceHostKeyController extends Controller {
 	}//end presented()
 
 	/**
-	 * The fingerprint pinned on the source, normalised, or '' when none.
-	 *
-	 * @param ObjectEntity $source The source.
-	 *
-	 * @return string
-	 */
-	private function pinnedOf(ObjectEntity $source): string {
-		$configuration = (array)($source->getObject()['configuration'] ?? []);
-		return HostKeyPin::normalise(fingerprint: (string)($configuration['hostKeyFingerprint'] ?? ''));
-	}//end pinnedOf()
-
-	/**
 	 * Save the fingerprint as the source's pin.
 	 *
 	 * @param ObjectEntity $source      The source.
@@ -219,22 +184,9 @@ class SourceHostKeyController extends Controller {
 	 * @return JSONResponse `pinned`, or 500 when the source was not saved.
 	 */
 	private function save(ObjectEntity $source, string $fingerprint): JSONResponse {
-		$data = $source->getObject();
-		$configuration = (array)($data['configuration'] ?? []);
-		$configuration['hostKeyFingerprint'] = $fingerprint;
-		$data['configuration'] = $configuration;
-
-		try {
-			$this->orObjectService->saveObject(
-				object: $data,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: self::REGISTER, schema: 'source'),
-					uuid: (string)$source->getUuid()
-				)
-			);
-		} catch (Throwable $e) {
-			$this->logger->error('[SourceHostKeyController] the host key was not pinned', ['exception' => $e->getMessage()]);
-			return $this->error(message: $this->l->t('The host key was not saved: %s', [$e->getMessage()]), status: Http::STATUS_INTERNAL_SERVER_ERROR);
+		$failure = $this->sources->pin(source: $source, fingerprint: $fingerprint);
+		if ($failure !== null) {
+			return $this->error(message: $this->l->t('The host key was not saved: %s', [$failure]), status: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
 		return new JSONResponse(['pinned' => $fingerprint]);

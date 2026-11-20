@@ -102,12 +102,11 @@ class FilePickupSynchronization {
 	}//end feedsMapping()
 
 	/**
-	 * Pick the source's new files up into Files, or, in a test run, list what would be picked up.
+	 * Pick the source's new files up into Files.
 	 *
-	 * @param array   $synchronization The synchronization, with `id` and `@self.owner`.
-	 * @param array   $source          The source it reads.
-	 * @param boolean $isTest          True to list the new files without fetching, storing or archiving anything.
-	 * @param integer|null $now        The current time, for the stability window; null for now.
+	 * @param array        $synchronization The synchronization, with `id` and `@self.owner`.
+	 * @param array        $source          The source it reads.
+	 * @param integer|null $now             The current time, for the stability window; null for now.
 	 *
 	 * @return array{found: int, created: int, updated: int, skipped: int, invalid: int, files: array<string, list<array<string, mixed>>>}
 	 *
@@ -115,15 +114,11 @@ class FilePickupSynchronization {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
-	public function run(array $synchronization, array $source, bool $isTest=false, ?int $now=null): array {
+	public function run(array $synchronization, array $source, ?int $now=null): array {
 		[$synchronizationId, $config] = $this->configOf(synchronization: $synchronization, target: 'files');
 
 		$known = $this->knownFiles(synchronizationId: $synchronizationId);
 		$seen  = array_map(static fn (array $contract): string => (string)($contract['originHash'] ?? ''), $known);
-
-		if ($isTest === true) {
-			return $this->listNew(source: $source, config: $config, seen: $seen, now: ($now ?? time()));
-		}
 
 		$owner = (string)($synchronization['@self']['owner'] ?? '');
 		if ($owner === '') {
@@ -141,6 +136,29 @@ class FilePickupSynchronization {
 		return $this->recordPicked(synchronizationId: $synchronizationId, known: $known, result: $result, now: $now);
 
 	}//end run()
+
+	/**
+	 * List what a run would pick up, without fetching, storing or archiving anything (a test run).
+	 *
+	 * @param array        $synchronization The synchronization, with `id`.
+	 * @param array        $source          The source it reads.
+	 * @param integer|null $now             The current time, for the stability window; null for now.
+	 *
+	 * @return array{found: int, created: int, updated: int, skipped: int, invalid: int, files: array<string, list<array<string, mixed>>>}
+	 *
+	 * @throws RemoteFileException When the synchronization or its configuration cannot be run.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	public function preview(array $synchronization, array $source, ?int $now=null): array {
+		[$synchronizationId, $config] = $this->configOf(synchronization: $synchronization, target: 'files');
+
+		$known = $this->knownFiles(synchronizationId: $synchronizationId);
+		$seen  = array_map(static fn (array $contract): string => (string)($contract['originHash'] ?? ''), $known);
+
+		return $this->listNew(source: $source, config: $config, seen: $seen, now: ($now ?? time()));
+
+	}//end preview()
 
 	/**
 	 * Fetch the source's new files and read their records, leaving every file on the server.
@@ -168,7 +186,7 @@ class FilePickupSynchronization {
 		$seen  = array_map(static fn (array $contract): string => (string)($contract['originHash'] ?? ''), $known);
 		$store = new MappingRecordStore(config: $config);
 
-		$result = $this->pickup->run(source: $source, config: $config, store: $store, seen: $seen, now: $now, archive: false);
+		$result = $this->pickup->fetch(source: $source, config: $config, store: $store, seen: $seen, now: $now);
 
 		return ['objects' => $store->records(), 'pickup' => $result];
 
@@ -328,7 +346,7 @@ class FilePickupSynchronization {
 		$skipped       = [];
 		$files         = $this->client->listFiles(source: $source, path: (string)($config['path'] ?? ''), pattern: (string)($config['pattern'] ?? '*'));
 		foreach ($files as $file) {
-			if (($seen[$file->name] ?? null) === FilePickup::versionOf(file: $file)) {
+			if (($seen[$file->name] ?? null) === $file->version()) {
 				continue;
 			}
 

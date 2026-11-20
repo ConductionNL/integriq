@@ -72,7 +72,7 @@ final class PickedFileRecords {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
-	public static function formatOf(string $name, array $config): string {
+	public function formatOf(string $name, array $config): string {
 		$configured = strtolower(trim((string)($config['fileFormat'] ?? '')));
 		if ($configured !== '' && $configured !== 'auto') {
 			if (in_array($configured, self::FORMATS, true) === false) {
@@ -103,7 +103,7 @@ final class PickedFileRecords {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
-	public static function read(string $name, string $content, array $config): array {
+	public function read(string $name, string $content, array $config): array {
 		if (strlen($content) > self::MAX_BYTES) {
 			throw new RemoteFileException('"' . $name . '" is larger than ' . self::MAX_BYTES . ' bytes and is not read into records.');
 		}
@@ -113,7 +113,7 @@ final class PickedFileRecords {
 			$content = substr($content, 3);
 		}
 
-		return match (self::formatOf(name: $name, config: $config)) {
+		return match ($this->formatOf(name: $name, config: $config)) {
 			'csv'   => self::csv(name: $name, content: $content, delimiter: self::delimiterOf(config: $config)),
 			'json'  => self::json(name: $name, content: $content),
 			'jsonl' => self::jsonLines(name: $name, content: $content),

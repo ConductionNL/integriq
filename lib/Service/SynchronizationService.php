@@ -2853,11 +2853,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$source         = $this->filePickupSource(run: $run);
 
 		try {
-			$summary = $pickup->run(
-				synchronization: $run->synchronization,
-				source: $source,
-				isTest: ($run->isTest === true)
-			);
+			$summary = $this->filePickupSummary(pickup: $pickup, run: $run, source: $source);
 		} catch (RemoteFileException $exception) {
 			$this->failExternRun(run: $run, message: $exception->getMessage());
 		}
@@ -2872,6 +2868,27 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			'description' => 'List, fetch, store and archive the remote files',
 		];
 	}//end runFilePickup()
+
+	/**
+	 * Run a file pickup, or in a test run list what it would pick up.
+	 *
+	 * @param FilePickupSynchronization $pickup The file pickup.
+	 * @param ExternSyncRun             $run    The run.
+	 * @param array<string, mixed>      $source The source it reads.
+	 *
+	 * @return array<string, mixed> The pickup's summary.
+	 *
+	 * @throws RemoteFileException When the synchronization or its configuration cannot be run.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	private function filePickupSummary(FilePickupSynchronization $pickup, ExternSyncRun $run, array $source): array {
+		if ($run->isTest === true) {
+			return $pickup->preview(synchronization: $run->synchronization, source: $source);
+		}
+
+		return $pickup->run(synchronization: $run->synchronization, source: $source);
+	}//end filePickupSummary()
 
 	/**
 	 * Run a file pickup whose records go through the mapping, then archive the files.

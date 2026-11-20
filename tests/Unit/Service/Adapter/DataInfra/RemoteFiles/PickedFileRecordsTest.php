@@ -45,7 +45,7 @@ final class PickedFileRecordsTest extends TestCase {
 	public function testCsvRowsBecomeRecordsByHeader(): void {
 		$csv = "\xEF\xBB\xBFid,title,body\n1,\"Besluit, eerste\",raad\n\n2,Tweede,college\n";
 
-		$records = PickedFileRecords::read(name: 'besluiten-1.csv', content: $csv, config: []);
+		$records = (new PickedFileRecords())->read(name: 'besluiten-1.csv', content: $csv, config: []);
 
 		$this->assertSame(
 			[
@@ -64,15 +64,15 @@ final class PickedFileRecordsTest extends TestCase {
 	public function testCsvDelimiterIsConfigurable(): void {
 		$this->assertSame(
 			[['a' => '1', 'b' => '2']],
-			PickedFileRecords::read(name: 'x.csv', content: "a;b\n1;2\n", config: ['csvDelimiter' => ';'])
+			(new PickedFileRecords())->read(name: 'x.csv', content: "a;b\n1;2\n", config: ['csvDelimiter' => ';'])
 		);
 		$this->assertSame(
 			[['a' => '1', 'b' => '2']],
-			PickedFileRecords::read(name: 'x.txt', content: "a\tb\n1\t2\n", config: ['csvDelimiter' => '\t', 'fileFormat' => 'csv'])
+			(new PickedFileRecords())->read(name: 'x.txt', content: "a\tb\n1\t2\n", config: ['csvDelimiter' => '\t', 'fileFormat' => 'csv'])
 		);
 		$this->assertSame(
 			[['a' => '1', 'b' => '2']],
-			PickedFileRecords::read(name: 'x.tsv', content: "a\tb\n1\t2\n", config: ['csvDelimiter' => 'TAB', 'fileFormat' => 'csv'])
+			(new PickedFileRecords())->read(name: 'x.tsv', content: "a\tb\n1\t2\n", config: ['csvDelimiter' => 'TAB', 'fileFormat' => 'csv'])
 		);
 	}//end testCsvDelimiterIsConfigurable()
 
@@ -85,7 +85,7 @@ final class PickedFileRecordsTest extends TestCase {
 		$this->expectException(RemoteFileException::class);
 		$this->expectExceptionMessage('"x.csv" line 3 has 1 columns, the header has 2.');
 
-		PickedFileRecords::read(name: 'x.csv', content: "a,b\n1,2\n3\n", config: []);
+		(new PickedFileRecords())->read(name: 'x.csv', content: "a,b\n1,2\n3\n", config: []);
 	}//end testCsvRowWithWrongColumnCountRefusesTheFile()
 
 	/**
@@ -96,15 +96,15 @@ final class PickedFileRecordsTest extends TestCase {
 	public function testJsonListObjectAndLines(): void {
 		$this->assertSame(
 			[['id' => 1], ['id' => 2]],
-			PickedFileRecords::read(name: 'x.json', content: '[{"id":1},{"id":2}]', config: [])
+			(new PickedFileRecords())->read(name: 'x.json', content: '[{"id":1},{"id":2}]', config: [])
 		);
 		$this->assertSame(
 			[['id' => 1, 'tags' => ['a']]],
-			PickedFileRecords::read(name: 'x.json', content: '{"id":1,"tags":["a"]}', config: [])
+			(new PickedFileRecords())->read(name: 'x.json', content: '{"id":1,"tags":["a"]}', config: [])
 		);
 		$this->assertSame(
 			[['id' => 1], ['id' => 2]],
-			PickedFileRecords::read(name: 'x.ndjson', content: "{\"id\":1}\n\n{\"id\":2}\n", config: [])
+			(new PickedFileRecords())->read(name: 'x.ndjson', content: "{\"id\":1}\n\n{\"id\":2}\n", config: [])
 		);
 	}//end testJsonListObjectAndLines()
 
@@ -122,7 +122,7 @@ final class PickedFileRecordsTest extends TestCase {
 		];
 		foreach ($cases as $case => [$json, $message]) {
 			try {
-				PickedFileRecords::read(name: 'x.json', content: $json, config: []);
+				(new PickedFileRecords())->read(name: 'x.json', content: $json, config: []);
 				$this->fail($case . ' was read');
 			} catch (RemoteFileException $exception) {
 				$this->assertStringContainsString($message, $exception->getMessage(), $case);
@@ -144,7 +144,7 @@ final class PickedFileRecordsTest extends TestCase {
 				['id' => '2', 'titel' => 'Tweede'],
 				['value' => 'los'],
 			],
-			PickedFileRecords::read(name: 'x.xml', content: $xml, config: [])
+			(new PickedFileRecords())->read(name: 'x.xml', content: $xml, config: [])
 		);
 	}//end testXmlChildrenOfTheRootAreRecords()
 
@@ -156,7 +156,7 @@ final class PickedFileRecordsTest extends TestCase {
 	public function testXmlWithADocumentTypeOrBrokenXmlIsRefused(): void {
 		$xml = '<?xml version="1.0"?><!DOCTYPE r [<!ENTITY e SYSTEM "file:///etc/hostname">]><r><a>&e;</a></r>';
 		try {
-			PickedFileRecords::read(name: 'x.xml', content: $xml, config: []);
+			(new PickedFileRecords())->read(name: 'x.xml', content: $xml, config: []);
 			$this->fail('an XML file with a document type was read');
 		} catch (RemoteFileException $exception) {
 			$this->assertSame('"x.xml" declares a document type, which a pickup does not read.', $exception->getMessage());
@@ -164,7 +164,7 @@ final class PickedFileRecordsTest extends TestCase {
 
 		$this->expectException(RemoteFileException::class);
 		$this->expectExceptionMessage('"y.xml" is not well-formed XML.');
-		PickedFileRecords::read(name: 'y.xml', content: '<r><a></r>', config: []);
+		(new PickedFileRecords())->read(name: 'y.xml', content: '<r><a></r>', config: []);
 	}//end testXmlWithADocumentTypeOrBrokenXmlIsRefused()
 
 	/**
@@ -173,13 +173,13 @@ final class PickedFileRecordsTest extends TestCase {
 	 * @return void
 	 */
 	public function testFormatFromConfigurationOrExtension(): void {
-		$this->assertSame('xml', PickedFileRecords::formatOf(name: 'a.XML', config: []));
-		$this->assertSame('jsonl', PickedFileRecords::formatOf(name: 'a.jsonl', config: ['fileFormat' => 'auto']));
-		$this->assertSame('json', PickedFileRecords::formatOf(name: 'a.dat', config: ['fileFormat' => 'JSON']));
+		$this->assertSame('xml', (new PickedFileRecords())->formatOf(name: 'a.XML', config: []));
+		$this->assertSame('jsonl', (new PickedFileRecords())->formatOf(name: 'a.jsonl', config: ['fileFormat' => 'auto']));
+		$this->assertSame('json', (new PickedFileRecords())->formatOf(name: 'a.dat', config: ['fileFormat' => 'JSON']));
 
 		foreach ([['a.dat', []], ['a.csv', ['fileFormat' => 'xlsx']], ['a.csv', ['csvDelimiter' => ';;']]] as [$name, $config]) {
 			try {
-				PickedFileRecords::read(name: $name, content: "a\n1\n", config: $config);
+				(new PickedFileRecords())->read(name: $name, content: "a\n1\n", config: $config);
 				$this->fail($name . ' was read');
 			} catch (RemoteFileException $exception) {
 				$this->assertMatchesRegularExpression('/fileFormat|csvDelimiter/', $exception->getMessage());
@@ -196,7 +196,7 @@ final class PickedFileRecordsTest extends TestCase {
 		$this->expectException(RemoteFileException::class);
 		$this->expectExceptionMessage('is larger than ' . PickedFileRecords::MAX_BYTES . ' bytes');
 
-		PickedFileRecords::read(name: 'big.json', content: str_repeat(' ', (PickedFileRecords::MAX_BYTES + 1)), config: []);
+		(new PickedFileRecords())->read(name: 'big.json', content: str_repeat(' ', (PickedFileRecords::MAX_BYTES + 1)), config: []);
 	}//end testTooLargeFileIsRefused()
 
 	/**

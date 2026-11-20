@@ -122,7 +122,7 @@ final class RemoteFileSessionFactoryTest extends TestCase {
 			$this->fail('A changed key was accepted.');
 		} catch (RemoteFileException $refusal) {
 			$this->assertStringContainsString('SHA256:somethingElse', $refusal->getMessage());
-			$this->assertStringContainsString(HostKeyPin::fingerprintOf(publicKey: self::KEY), $refusal->getMessage());
+			$this->assertStringContainsString((new HostKeyPin())->fingerprintOf(publicKey: self::KEY), $refusal->getMessage());
 		}
 
 		$this->assertSame(['hostkey'], $sftp->calls, 'only the host key was asked; no login');
@@ -135,7 +135,7 @@ final class RemoteFileSessionFactoryTest extends TestCase {
 	 */
 	public function testThePinnedKeyLogsInAndTheSessionLists(): void {
 		$sftp    = $this->sftp();
-		$session = (new RemoteFileSessionFactory())->loggedIn(sftp: $sftp, server: $this->server(pin: HostKeyPin::fingerprintOf(publicKey: self::KEY)), secret: 'geheim');
+		$session = (new RemoteFileSessionFactory())->loggedIn(sftp: $sftp, server: $this->server(pin: (new HostKeyPin())->fingerprintOf(publicKey: self::KEY)), secret: 'geheim');
 
 		$this->assertSame(
 			[
@@ -155,7 +155,7 @@ final class RemoteFileSessionFactoryTest extends TestCase {
 	public function testARefusedLoginDisconnects(): void {
 		$sftp = $this->sftp(loginSucceeds: false);
 		try {
-			(new RemoteFileSessionFactory())->loggedIn(sftp: $sftp, server: $this->server(pin: HostKeyPin::fingerprintOf(publicKey: self::KEY)), secret: 'geheim');
+			(new RemoteFileSessionFactory())->loggedIn(sftp: $sftp, server: $this->server(pin: (new HostKeyPin())->fingerprintOf(publicKey: self::KEY)), secret: 'geheim');
 			$this->fail('A refused login opened a session.');
 		} catch (RemoteFileException $refusal) {
 			$this->assertSame('The SFTP server sftp.example.nl refused the login of "gemeente".', $refusal->getMessage());
@@ -197,7 +197,7 @@ final class RemoteFileSessionFactoryTest extends TestCase {
 
 		$fingerprint = (new RemoteFileSessionFactory())->fingerprintOfConnection(sftp: $sftp, server: $this->server(pin: ''));
 
-		$this->assertSame(HostKeyPin::fingerprintOf(publicKey: self::KEY), $fingerprint);
+		$this->assertSame((new HostKeyPin())->fingerprintOf(publicKey: self::KEY), $fingerprint);
 		$this->assertSame(['hostkey', 'disconnect'], $sftp->calls);
 	}//end testTheFingerprintOfAConnectionIsReadWithoutALogin()
 

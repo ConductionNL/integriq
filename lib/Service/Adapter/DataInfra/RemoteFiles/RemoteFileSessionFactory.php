@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles;
 
+use SensitiveParameter;
+
 /**
  * For SFTP the host key is checked against the pin BEFORE the credential is
  * sent: phpseclib exchanges keys on the first call that needs the connection,
@@ -96,7 +98,7 @@ class RemoteFileSessionFactory {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
-	public function open(RemoteServer $server, #[\SensitiveParameter] string $secret): RemoteFileSession {
+	public function open(RemoteServer $server, #[SensitiveParameter] string $secret): RemoteFileSession {
 		if ($this->isAvailable(protocol: $server->protocol) === false) {
 			throw new RemoteFileException(
 				sprintf('%s is not available on this instance: %s.', strtoupper($server->protocol), self::MISSING[$server->protocol])
@@ -178,7 +180,7 @@ class RemoteFileSessionFactory {
 			throw new RemoteFileException('The SFTP server ' . $server->host . ' presented no host key.');
 		}
 
-		return HostKeyPin::fingerprintOf(publicKey: $hostKey);
+		return (new HostKeyPin())->fingerprintOf(publicKey: $hostKey);
 	}//end fingerprintPresentedBy()
 
 	/**
@@ -194,8 +196,8 @@ class RemoteFileSessionFactory {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
-	public function loggedIn(object $sftp, RemoteServer $server, #[\SensitiveParameter] string $secret): SftpSession {
-		HostKeyPin::assertMatches(
+	public function loggedIn(object $sftp, RemoteServer $server, #[SensitiveParameter] string $secret): SftpSession {
+		(new HostKeyPin())->assertMatches(
 			pinned: $server->hostKeyFingerprint,
 			presented: $this->fingerprintPresentedBy(sftp: $sftp, server: $server),
 			host: $server->host

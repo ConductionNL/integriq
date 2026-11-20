@@ -24,6 +24,7 @@ use OCA\Integriq\Controller\SourceHostKeyController;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\HostKeyPin;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileClient;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
+use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\SourceHostKeyStore;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -49,6 +50,7 @@ use RuntimeException;
  */
 #[CoversClass(SourceHostKeyController::class)]
 #[UsesClass(HostKeyPin::class)]
+#[UsesClass(SourceHostKeyStore::class)]
 #[UsesClass(RemoteFileException::class)]
 final class SourceHostKeyControllerTest extends TestCase {
 
@@ -125,10 +127,9 @@ final class SourceHostKeyControllerTest extends TestCase {
 		return new SourceHostKeyController(
 			appName: 'integriq',
 			request: $this->request,
-			orObjectService: $this->objects,
+			sources: new SourceHostKeyStore(orObjectService: $this->objects, logger: $this->createMock(LoggerInterface::class)),
 			client: $this->client,
-			l: $l10n,
-			logger: $this->createMock(LoggerInterface::class)
+			l: $l10n
 		);
 	}//end controller()
 

@@ -41,9 +41,9 @@ final class HostKeyPinTest extends TestCase {
 		$blob     = random_bytes(51);
 		$expected = 'SHA256:' . rtrim(base64_encode(hash('sha256', $blob, true)), '=');
 
-		$this->assertSame($expected, HostKeyPin::fingerprintOf(publicKey: 'ssh-ed25519 ' . base64_encode($blob) . ' root@partner'));
-		$this->assertSame($expected, HostKeyPin::fingerprintOf(publicKey: 'ecdsa-sha2-nistp256 ' . base64_encode($blob)));
-		$this->assertSame($expected, HostKeyPin::fingerprintOf(publicKey: $blob), 'a raw blob hashes the same');
+		$this->assertSame($expected, (new HostKeyPin())->fingerprintOf(publicKey: 'ssh-ed25519 ' . base64_encode($blob) . ' root@partner'));
+		$this->assertSame($expected, (new HostKeyPin())->fingerprintOf(publicKey: 'ecdsa-sha2-nistp256 ' . base64_encode($blob)));
+		$this->assertSame($expected, (new HostKeyPin())->fingerprintOf(publicKey: $blob), 'a raw blob hashes the same');
 		$this->assertStringNotContainsString('=', $expected);
 	}//end testTheFingerprintIsTheOpenSshForm()
 
@@ -53,9 +53,9 @@ final class HostKeyPinTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMatchingKeyPasses(): void {
-		HostKeyPin::assertMatches(pinned: 'SHA256:abcDEF', presented: 'SHA256:abcDEF', host: 'sftp.example.nl');
-		HostKeyPin::assertMatches(pinned: ' abcDEF= ', presented: 'SHA256:abcDEF', host: 'sftp.example.nl');
-		$this->assertSame('SHA256:abcDEF', HostKeyPin::normalise(fingerprint: 'sha256:abcDEF=='));
+		(new HostKeyPin())->assertMatches(pinned: 'SHA256:abcDEF', presented: 'SHA256:abcDEF', host: 'sftp.example.nl');
+		(new HostKeyPin())->assertMatches(pinned: ' abcDEF= ', presented: 'SHA256:abcDEF', host: 'sftp.example.nl');
+		$this->assertSame('SHA256:abcDEF', (new HostKeyPin())->normalise(fingerprint: 'sha256:abcDEF=='));
 	}//end testAMatchingKeyPasses()
 
 	/**
@@ -67,7 +67,7 @@ final class HostKeyPinTest extends TestCase {
 		$this->expectException(RemoteFileException::class);
 		$this->expectExceptionMessage('The host key of sftp.example.nl has changed: the source is pinned to SHA256:pinned, the server presents SHA256:other. The connection was refused and no credential was sent.');
 
-		HostKeyPin::assertMatches(pinned: 'SHA256:pinned', presented: 'SHA256:other', host: 'sftp.example.nl');
+		(new HostKeyPin())->assertMatches(pinned: 'SHA256:pinned', presented: 'SHA256:other', host: 'sftp.example.nl');
 	}//end testAChangedKeyIsRefusedNamingBothFingerprints()
 
 	/**
@@ -77,7 +77,7 @@ final class HostKeyPinTest extends TestCase {
 	 */
 	public function testWithoutAPinTheServerFingerprintIsShown(): void {
 		try {
-			HostKeyPin::assertMatches(pinned: '', presented: 'SHA256:server', host: 'sftp.example.nl');
+			(new HostKeyPin())->assertMatches(pinned: '', presented: 'SHA256:server', host: 'sftp.example.nl');
 			$this->fail('A source without a pin connected.');
 		} catch (RemoteFileException $refusal) {
 			$this->assertStringContainsString('has no pinned host key', $refusal->getMessage());
@@ -92,6 +92,6 @@ final class HostKeyPinTest extends TestCase {
 	 */
 	public function testAnUnreadableKeyIsRefused(): void {
 		$this->expectExceptionMessage('The server presented a host key that cannot be read.');
-		HostKeyPin::fingerprintOf(publicKey: 'ssh-rsa !!!notbase64');
+		(new HostKeyPin())->fingerprintOf(publicKey: 'ssh-rsa !!!notbase64');
 	}//end testAnUnreadableKeyIsRefused()
 }//end class

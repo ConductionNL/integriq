@@ -70,7 +70,7 @@ final class MappingRecordStore implements PickedFileStore {
 			throw new RemoteFileException('"' . $name . '" could not be read.');
 		}
 
-		$records = PickedFileRecords::read(name: $name, content: $content, config: $this->config);
+		$records = (new PickedFileRecords())->read(name: $name, content: $content, config: $this->config);
 		foreach ($records as $record) {
 			$this->records[] = $record;
 		}

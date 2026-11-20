@@ -44,7 +44,7 @@ final class HostKeyPin {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
-	public static function fingerprintOf(string $publicKey): string {
+	public function fingerprintOf(string $publicKey): string {
 		$blob  = $publicKey;
 		$parts = preg_split('/\s+/', trim($publicKey));
 		if (is_array($parts) === true && count($parts) >= 2 && preg_match('/^(ssh|ecdsa)-/', $parts[0]) === 1) {
@@ -74,8 +74,8 @@ final class HostKeyPin {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
-	public static function assertMatches(string $pinned, string $presented, string $host): void {
-		$pinned = self::normalise(fingerprint: $pinned);
+	public function assertMatches(string $pinned, string $presented, string $host): void {
+		$pinned = $this->normalise(fingerprint: $pinned);
 		if ($pinned === '') {
 			throw new RemoteFileException(
 				sprintf(
@@ -87,7 +87,7 @@ final class HostKeyPin {
 			);
 		}
 
-		if (hash_equals($pinned, self::normalise(fingerprint: $presented)) === false) {
+		if (hash_equals($pinned, $this->normalise(fingerprint: $presented)) === false) {
 			throw new RemoteFileException(
 				sprintf(
 					'The host key of %s has changed: the source is pinned to %s, the server presents %s. The connection was refused and no credential was sent.',
@@ -108,7 +108,7 @@ final class HostKeyPin {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
-	public static function normalise(string $fingerprint): string {
+	public function normalise(string $fingerprint): string {
 		$fingerprint = trim($fingerprint);
 		if ($fingerprint === '') {
 			return '';

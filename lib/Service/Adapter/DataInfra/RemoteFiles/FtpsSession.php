@@ -22,6 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles;
 
+use DateTimeZone;
+use SensitiveParameter;
+
 /**
  * curl, not PHP's `ftp_ssl_connect()`: the ftp extension does not verify the
  * server's certificate, and an FTPS source that accepts any certificate gives
@@ -43,7 +46,7 @@ final class FtpsSession implements RemoteFileSession {
 	 */
 	public function __construct(
 		private readonly RemoteServer $server,
-		#[\SensitiveParameter]
+		#[SensitiveParameter]
 		private readonly string $password,
 	) {
 
@@ -71,13 +74,7 @@ final class FtpsSession implements RemoteFileSession {
 				continue;
 			}
 
-			$facts = [];
-			foreach (explode(';', substr($line, 0, $space)) as $fact) {
-				if (str_contains($fact, '=') === true) {
-					[$key, $value] = explode('=', $fact, 2);
-					$facts[strtolower($key)] = $value;
-				}
-			}
+			$facts = self::factsOf(field: substr($line, 0, $space));
 
 			$name = substr($line, $space + 1);
 			$type = strtolower($facts['type'] ?? 'file');
@@ -85,29 +82,70 @@ final class FtpsSession implements RemoteFileSession {
 				continue;
 			}
 
-			$modified = null;
-			if (isset($facts['modify']) === true) {
-				$time     = \DateTimeImmutable::createFromFormat('YmdHis', substr($facts['modify'], 0, 14), new \DateTimeZone('UTC'));
-				if ($time !== false) {
-					$modified = $time->getTimestamp();
-				}
-			}
-
-			$size = null;
-			if (isset($facts['size']) === true) {
-				$size = (int)$facts['size'];
-			}
-
 			$entries[] = [
 				'name'        => $name,
-				'size'        => $size,
-				'modifiedAt'  => $modified,
+				'size'        => self::sizeOf(facts: $facts),
+				'modifiedAt'  => self::modifiedOf(facts: $facts),
 				'isDirectory' => $type === 'dir',
 			];
 		}//end foreach
 
 		return $entries;
 	}//end parseMlsd()
+
+	/**
+	 * The facts of an MLSD line's fact field, keys lower-cased.
+	 *
+	 * @param string $field The facts, `key=value;` each.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function factsOf(string $field): array {
+		$facts = [];
+		foreach (explode(';', $field) as $fact) {
+			if (str_contains($fact, '=') === true) {
+				[$key, $value] = explode('=', $fact, 2);
+				$facts[strtolower($key)] = $value;
+			}
+		}
+
+		return $facts;
+	}//end factsOf()
+
+	/**
+	 * The size fact as an integer, or null when there is none.
+	 *
+	 * @param array<string, string> $facts The facts.
+	 *
+	 * @return int|null
+	 */
+	private static function sizeOf(array $facts): ?int {
+		if (isset($facts['size']) === false) {
+			return null;
+		}
+
+		return (int)$facts['size'];
+	}//end sizeOf()
+
+	/**
+	 * The modify fact as a Unix timestamp, or null when there is none or it cannot be read.
+	 *
+	 * @param array<string, string> $facts The facts.
+	 *
+	 * @return int|null
+	 */
+	private static function modifiedOf(array $facts): ?int {
+		if (isset($facts['modify']) === false) {
+			return null;
+		}
+
+		$time = date_create_immutable_from_format('YmdHis', substr($facts['modify'], 0, 14), new DateTimeZone('UTC'));
+		if ($time === false) {
+			return null;
+		}
+
+		return $time->getTimestamp();
+	}//end modifiedOf()
 
 	/**
 	 * {@inheritDoc}

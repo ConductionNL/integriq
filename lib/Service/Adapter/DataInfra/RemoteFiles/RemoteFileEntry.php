@@ -36,7 +36,6 @@ final class RemoteFileEntry {
 	 * @param string   $path        The entry's path relative to the source's root path.
 	 * @param int|null $size        The size in bytes, when the server reports it.
 	 * @param int|null $modifiedAt  The modification time as a Unix timestamp, when the server reports it.
-	 * @param bool     $isDirectory Whether the entry is a folder.
 	 *
 	 * @return void
 	 */
@@ -45,7 +44,6 @@ final class RemoteFileEntry {
 		public readonly string $path,
 		public readonly ?int $size=null,
 		public readonly ?int $modifiedAt=null,
-		public readonly bool $isDirectory=false,
 	) {
 
 	}//end __construct()
@@ -63,7 +61,18 @@ final class RemoteFileEntry {
 			'path'        => $this->path,
 			'size'        => $this->size,
 			'modifiedAt'  => $this->modifiedAt,
-			'isDirectory' => $this->isDirectory,
+			'isDirectory' => false,
 		];
 	}//end toArray()
+
+	/**
+	 * The version a later run compares against: when it was modified and its size.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	public function version(): string {
+		return (string)($this->modifiedAt ?? '') . ':' . (string)($this->size ?? '');
+	}//end version()
 }//end class

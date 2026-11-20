@@ -79,41 +79,6 @@ final class RemoteServer {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public static function fromSource(array $source): self {
-		$configuration = (array)($source['configuration'] ?? []);
-		$location      = trim((string)($source['location'] ?? ''));
-		$parts         = ['host' => $location];
-		if (str_contains($location, '://') === true) {
-			$parts = (array)parse_url($location);
-		}
-
-		$protocol      = strtolower((string)($source['type'] ?? ($parts['scheme'] ?? '')));
-		if (array_key_exists($protocol, self::PROTOCOLS) === false) {
-			throw new RemoteFileException('The source type must be sftp or ftps; plain FTP is not supported because it sends the password in the clear.');
-		}
-
-		$host = strtolower(trim((string)($parts['host'] ?? ''), '[]'));
-		if ($host === '') {
-			throw new RemoteFileException('The source has no host: set its location to the server name, for example sftp.example.nl.');
-		}
-
-		$port = (int)($configuration['port'] ?? ($parts['port'] ?? self::PROTOCOLS[$protocol]));
-		if ($port < 1 || $port > 65535) {
-			throw new RemoteFileException('The port of the source must be between 1 and 65535.');
-		}
-
-		$authentication = (array)($configuration['authentication'] ?? []);
-		$credentialRef  = (array)($authentication['credentialRef'] ?? []);
-
-		return new self(
-			protocol: $protocol,
-			host: $host,
-			port: $port,
-			username: (string)($configuration['username'] ?? ''),
-			rootPath: RemotePath::normaliseRoot(rootPath: (string)($configuration['rootPath'] ?? '/')),
-			hostKeyFingerprint: (string)($configuration['hostKeyFingerprint'] ?? ''),
-			authMode: (string)($authentication['mode'] ?? 'password'),
-			credentialId: (string)($credentialRef['credentialId'] ?? ''),
-			organisation: (string)($source['@self']['organisation'] ?? ($source['organisation'] ?? '')),
-		);
+		return (new RemoteServerConfig())->serverOf(source: $source);
 	}//end fromSource()
 }//end class

@@ -48,6 +48,20 @@ use Psr\Log\LoggerInterface;
 class FilePickup {
 
 	/**
+	 * Archive each picked file at once.
+	 *
+	 * @var string
+	 */
+	private const ARCHIVE = 'archive';
+
+	/**
+	 * Leave each picked file on the server for archivePicked().
+	 *
+	 * @var string
+	 */
+	private const KEEP = 'keep';
+
+	/**
 	 * What may follow a safe local write.
 	 */
 	public const AFTER = ['move', 'delete', 'keep'];
@@ -75,8 +89,6 @@ class FilePickup {
 	 * @param PickedFileStore       $store   Where the files go.
 	 * @param array<string, string> $seen    The files seen by earlier runs, name to version.
 	 * @param int|null              $now     The current time, for the stability window.
-	 * @param bool                  $archive False leaves every picked file on the server, `after` `pending`,
-	 *                                       for archivePicked() once the caller has kept what was read.
 	 *
 	 * @return array<string, mixed> `picked` (name, path, storedAt, after), `failed` and `skipped` (name, reason), and `seen` (name to version).
 	 *
@@ -84,7 +96,59 @@ class FilePickup {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
-	public function run(array $source, array $config, PickedFileStore $store, array $seen=[], ?int $now=null, bool $archive=true): array {
+	public function run(array $source, array $config, PickedFileStore $store, array $seen=[], ?int $now=null): array {
+		return $this->pick(
+			source: $source,
+			config: $config,
+			store: $store,
+			seen: $seen,
+			now: $now,
+			after: self::ARCHIVE
+		);
+	}//end run()
+
+	/**
+	 * Fetch and store the new files like run(), but leave every picked file on the server, `after` `pending`.
+	 *
+	 * The caller archives them with archivePicked() once their records went
+	 * through the mapping, so a run that stops in between archives nothing.
+	 *
+	 * @param array<string, mixed>  $source The source object.
+	 * @param array<string, mixed>  $config The synchronization's `sourceConfig`.
+	 * @param PickedFileStore       $store  Where the files are written.
+	 * @param array<string, string> $seen   The versions already picked up, by name.
+	 * @param int|null              $now    The current time; null for now.
+	 *
+	 * @return array{picked: list<array<string, mixed>>, failed: list<array<string, mixed>>,
+	 *               skipped: list<array<string, mixed>>, seen: array<string, string>}
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	public function fetch(array $source, array $config, PickedFileStore $store, array $seen=[], ?int $now=null): array {
+		return $this->pick(
+			source: $source,
+			config: $config,
+			store: $store,
+			seen: $seen,
+			now: $now,
+			after: self::KEEP
+		);
+	}//end fetch()
+
+	/**
+	 * Pick the new files up; what follows each picked file depends on $after.
+	 *
+	 * @param array<string, mixed>  $source The source object.
+	 * @param array<string, mixed>  $config The synchronization's `sourceConfig`.
+	 * @param PickedFileStore       $store  Where the files are written.
+	 * @param array<string, string> $seen   The versions already picked up, by name.
+	 * @param int|null              $now    The current time; null for now.
+	 * @param string                $after  ARCHIVE to archive each picked file now, KEEP to leave it on the server.
+	 *
+	 * @return array{picked: list<array<string, mixed>>, failed: list<array<string, mixed>>,
+	 *               skipped: list<array<string, mixed>>, seen: array<string, string>}
+	 */
+	private function pick(array $source, array $config, PickedFileStore $store, array $seen, ?int $now, string $after): array {
 		$target = self::archiveTargetOf(config: $config);
 		$folder = trim((string)($config['filesFolder'] ?? ''));
 		if ($folder === '' && ($config['target'] ?? 'files') === 'files') {
@@ -97,7 +161,7 @@ class FilePickup {
 
 		$files = $this->client->listFiles(source: $source, path: (string)($config['path'] ?? ''), pattern: (string)($config['pattern'] ?? '*'));
 		foreach ($files as $file) {
-			$version = self::versionOf(file: $file);
+			$version = $file->version();
 			if (($seen[$file->name] ?? null) === $version) {
 				continue;
 			}
@@ -107,15 +171,15 @@ class FilePickup {
 				continue;
 			}
 
-			$fileTarget = $target + ['folder' => $folder, 'archive' => $archive];
+			$fileTarget = $target + ['folder' => $folder, 'archive' => ($after === self::ARCHIVE)];
 			$result     = $this->pickOne(source: $source, file: $file, store: $store, target: $fileTarget, result: $result);
 		}
 
 		return $result;
-	}//end run()
+	}//end pick()
 
 	/**
-	 * Archive the files a run with `archive: false` picked up, now that the caller has kept what it read.
+	 * Archive the files fetch() picked up, now that the caller has kept what it read.
 	 *
 	 * @param array<string, mixed>       $source The source object.
 	 * @param array<string, mixed>       $config The pickup configuration.
@@ -165,19 +229,6 @@ class FilePickup {
 	}//end archiveTargetOf()
 
 	/**
-	 * The version of a file a later run compares against.
-	 *
-	 * @param RemoteFileEntry $file The file.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
-	 */
-	public static function versionOf(RemoteFileEntry $file): string {
-		return (string)($file->modifiedAt ?? '') . ':' . (string)($file->size ?? '');
-	}//end versionOf()
-
-	/**
 	 * Fetch, store and then archive one file.
 	 *
 	 * @param array<string, mixed> $source The source object.
@@ -207,7 +258,7 @@ class FilePickup {
 			fclose($stream);
 		}
 
-		$result['seen'][$file->name] = self::versionOf(file: $file);
+		$result['seen'][$file->name] = $file->version();
 		$remote = 'pending';
 		if ($target['archive'] === true) {
 			$remote = $this->archive(source: $source, file: $file, target: $target);
