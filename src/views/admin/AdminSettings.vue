@@ -25,6 +25,7 @@
 			<OtelSettings />
 			<ErrorSinkSettings />
 			<RetentionSettings />
+			<WooStarterSetSettings />
 		</div>
 	</CnAdminSettingsShell>
 </template>
@@ -46,6 +47,7 @@ import OtelSettings from './OtelSettings.vue'
 import PersonalDataFieldsSettings from './PersonalDataFieldsSettings.vue'
 import RetentionSettings from './RetentionSettings.vue'
 import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
+import WooStarterSetSettings from './WooStarterSetSettings.vue'
 
 /**
  * Root admin settings panel for Integriq.
@@ -96,6 +98,7 @@ export default {
 		PersonalDataFieldsSettings,
 		RetentionSettings,
 		WebhookConnectionsSettings,
+		WooStarterSetSettings,
 	},
 }
 </script>
