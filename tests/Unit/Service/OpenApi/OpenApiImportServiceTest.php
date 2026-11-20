@@ -32,6 +32,8 @@ use OCA\Integriq\Service\OpenApi\OpenApiCredentialShapes;
 use OCA\Integriq\Service\OpenApi\OpenApiDocumentNormaliser;
 use OCA\Integriq\Service\OpenApi\OpenApiDocumentReader;
 use OCA\Integriq\Service\OpenApi\OpenApiImportService;
+use OCA\Integriq\Service\OpenApi\OpenApiPreviewPage;
+use OCA\Integriq\Service\OpenApi\OpenApiSourceChoice;
 use OCA\Integriq\Service\OpenApi\SwaggerOperationConverter;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
@@ -54,6 +56,8 @@ use Psr\Log\LoggerInterface;
 #[CoversClass(OpenApiImportService::class)]
 #[UsesClass(OpenApiDocumentNormaliser::class)]
 #[UsesClass(OpenApiDocumentReader::class)]
+#[UsesClass(OpenApiPreviewPage::class)]
+#[UsesClass(OpenApiSourceChoice::class)]
 #[UsesClass(OpenApiCredentialShapes::class)]
 #[UsesClass(SwaggerOperationConverter::class)]
 #[UsesClass(SourceHandler::class)]
@@ -256,7 +260,7 @@ class OpenApiImportServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePreviewPagesTheOperations(): void {
-		$preview = $this->service()->preview(document: self::petstore(version: '3.1'), prefix: 'vendor', offset: 1, limit: 1);
+		$preview = $this->service()->preview(document: self::petstore(version: '3.1'), prefix: 'vendor', page: new OpenApiPreviewPage(offset: 1, limit: 1));
 
 		$this->assertSame(3, $preview['total']);
 		$this->assertSame(['createPets'], array_column($preview['operations'], 'key'));

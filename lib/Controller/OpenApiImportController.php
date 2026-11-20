@@ -29,6 +29,8 @@ use InvalidArgumentException;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Service\OpenApi\OpenApiDocumentReader;
 use OCA\Integriq\Service\OpenApi\OpenApiImportService;
+use OCA\Integriq\Service\OpenApi\OpenApiPreviewPage;
+use OCA\Integriq\Service\OpenApi\OpenApiSourceChoice;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -78,8 +80,10 @@ class OpenApiImportController extends Controller {
 				document: $this->document(),
 				prefix: (string) $this->request->getParam('prefix', ''),
 				serverIndex: self::optionalInt(value: $this->request->getParam('serverIndex')),
-				offset: max(0, (int) $this->request->getParam('offset', 0)),
-				limit: self::optionalInt(value: $this->request->getParam('limit'))
+				page: new OpenApiPreviewPage(
+					offset: max(0, (int) $this->request->getParam('offset', 0)),
+					limit: self::optionalInt(value: $this->request->getParam('limit'))
+				)
 			);
 		} catch (EgressRefusedException $exception) {
 			return new JSONResponse(['error' => 'egress_refused', 'message' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
@@ -110,8 +114,10 @@ class OpenApiImportController extends Controller {
 				document: $this->document(),
 				prefix: (string) $this->request->getParam('prefix', ''),
 				operationKeys: array_values(array_filter($operations, 'is_string')),
-				serverIndex: self::optionalInt(value: $this->request->getParam('serverIndex')),
-				name: (string) $this->request->getParam('name', '')
+				source: new OpenApiSourceChoice(
+					serverIndex: self::optionalInt(value: $this->request->getParam('serverIndex')),
+					name: (string) $this->request->getParam('name', '')
+				)
 			);
 		} catch (EgressRefusedException $exception) {
 			return new JSONResponse(['error' => 'egress_refused', 'message' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);

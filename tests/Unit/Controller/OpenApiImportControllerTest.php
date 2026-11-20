@@ -29,6 +29,8 @@ use OCA\Integriq\Service\OpenApi\OpenApiCredentialShapes;
 use OCA\Integriq\Service\OpenApi\OpenApiDocumentNormaliser;
 use OCA\Integriq\Service\OpenApi\OpenApiDocumentReader;
 use OCA\Integriq\Service\OpenApi\OpenApiImportService;
+use OCA\Integriq\Service\OpenApi\OpenApiPreviewPage;
+use OCA\Integriq\Service\OpenApi\OpenApiSourceChoice;
 use OCA\Integriq\Service\OpenApi\SwaggerOperationConverter;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
@@ -55,6 +57,8 @@ use ReflectionMethod;
 #[UsesClass(OpenApiImportService::class)]
 #[UsesClass(OpenApiDocumentNormaliser::class)]
 #[UsesClass(OpenApiDocumentReader::class)]
+#[UsesClass(OpenApiPreviewPage::class)]
+#[UsesClass(OpenApiSourceChoice::class)]
 #[UsesClass(OpenApiCredentialShapes::class)]
 #[UsesClass(SwaggerOperationConverter::class)]
 #[UsesClass(SourceHandler::class)]

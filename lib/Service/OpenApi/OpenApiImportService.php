@@ -92,8 +92,7 @@ class OpenApiImportService {
 	 * @param array<string,mixed> $document    The decoded vendor document.
 	 * @param string              $prefix      The gateway path prefix, e.g. `vendor`.
 	 * @param int|null            $serverIndex The chosen server; the first when null.
-	 * @param int                 $offset      The first operation listed, for paging a large document.
-	 * @param int|null            $limit       How many operations are listed; all when null.
+	 * @param OpenApiPreviewPage  $page        Which operations are listed, for paging a large document.
 	 *
 	 * @return array<string,mixed> The source, the operations with their collision flag, the credential placeholders.
 	 *
@@ -101,7 +100,7 @@ class OpenApiImportService {
 	 *
 	 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
 	 */
-	public function preview(array $document, string $prefix, ?int $serverIndex = null, int $offset = 0, ?int $limit = null): array {
+	public function preview(array $document, string $prefix, ?int $serverIndex = null, OpenApiPreviewPage $page = new OpenApiPreviewPage()): array {
 		$version = $this->normaliser->versionOf(document: $document);
 		$normalised = $this->normaliser->normalise(document: $document);
 		$prefix = self::cleanPrefix(prefix: $prefix);
@@ -129,7 +128,7 @@ class OpenApiImportService {
 				'type' => 'api',
 			],
 			'total' => count($operations),
-			'operations' => array_slice($operations, max(0, $offset), $limit),
+			'operations' => array_slice($operations, max(0, $page->offset), $page->limit),
 			'credentials' => $this->credentials->credentialPlaceholders(document: $normalised),
 		];
 	}//end preview()
@@ -166,8 +165,7 @@ class OpenApiImportService {
 	 * @param array<string,mixed> $document     The decoded vendor document.
 	 * @param string              $prefix       The gateway path prefix.
 	 * @param array<int,string>   $operationKeys The chosen operations, by the key the preview gave them.
-	 * @param int|null            $serverIndex  The chosen server; the first when null.
-	 * @param string|null         $name         The source name; the document title when null or empty.
+	 * @param OpenApiSourceChoice $source       The chosen server and source name.
 	 *
 	 * @return array<string,mixed> The source, the per-operation outcomes and their counts.
 	 *
@@ -175,8 +173,8 @@ class OpenApiImportService {
 	 *
 	 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
 	 */
-	public function import(array $document, string $prefix, array $operationKeys, ?int $serverIndex = null, ?string $name = null): array {
-		$preview = $this->preview(document: $document, prefix: $prefix, serverIndex: $serverIndex);
+	public function import(array $document, string $prefix, array $operationKeys, OpenApiSourceChoice $source = new OpenApiSourceChoice()): array {
+		$preview = $this->preview(document: $document, prefix: $prefix, serverIndex: $source->serverIndex);
 		$chosen = self::chosenKeys(location: (string) $preview['source']['location'], operationKeys: $operationKeys);
 
 		[$selected, $outcomes] = self::selectOperations(operations: $preview['operations'], chosen: $chosen);
@@ -184,12 +182,12 @@ class OpenApiImportService {
 			return ['source' => null, 'endpoints' => $outcomes] + self::counts(outcomes: $outcomes);
 		}
 
-		$source = $this->createSource(document: $document, preview: $preview, name: $name);
-		foreach ($this->createEndpoints(operations: $selected, sourceUuid: $source['uuid']) as $outcome) {
+		$created = $this->createSource(document: $document, preview: $preview, name: $source->name);
+		foreach ($this->createEndpoints(operations: $selected, sourceUuid: $created['uuid']) as $outcome) {
 			$outcomes[] = $outcome;
 		}
 
-		return ['source' => $source, 'endpoints' => $outcomes] + self::counts(outcomes: $outcomes);
+		return ['source' => $created, 'endpoints' => $outcomes] + self::counts(outcomes: $outcomes);
 	}//end import()
 
 	/**
