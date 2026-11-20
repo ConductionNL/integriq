@@ -171,6 +171,7 @@
   need an instance).
 - [ ] Implement
 - [ ] Test (`tests/e2e/objecten-api-facade.spec.ts`, Newman over the two APIs)
+  - Written, not yet run (they need the live instance): `tests/e2e/objecten-api-facade.spec.ts` covers the five scenarios the spec names for it, every counterparty call in a request context with an empty storage state; Newman folder "16a — Objecten and Objecttypen API" in `tests/postman/integriq.postman_collection.json` walks the objecttype reads, the token matrix, create, read, `data_attrs`, the geometry search, partial update and delete, and cleans up.
 
 ## Verification
 

@@ -249,9 +249,10 @@ class AuthenticationService implements AuthenticationServiceInterface {
 			$callConfig['form_params']['client_id'] = $configuration['client_id'];
 			$callConfig['form_params']['client_secret'] = $configuration['client_secret'];
 		} elseif ($configuration['authentication'] === 'basic_auth') {
+			// Guzzle reads the auth option positionally: [username, password].
 			$callConfig['auth'] = [
-				'username' => $configuration['client_id'],
-				'password' => $configuration['client_secret'],
+				$configuration['client_id'],
+				$configuration['client_secret'],
 			];
 		}
 
@@ -316,9 +317,10 @@ class AuthenticationService implements AuthenticationServiceInterface {
 			$callConfig['form_params']['username'] = $configuration['username'];
 			$callConfig['form_params']['password'] = $configuration['password'];
 		} elseif ($configuration['authentication'] === 'basic_auth') {
+			// Guzzle reads the auth option positionally: [username, password].
 			$callConfig['auth'] = [
-				'username' => $configuration['username'],
-				'password' => $configuration['password'],
+				$configuration['username'],
+				$configuration['password'],
 			];
 		}
 
