@@ -323,12 +323,12 @@ class SourcePacer {
 	 */
 	private function maxWaitMicros(array $pace, bool $live): int {
 		if ($live === true) {
-			$ms = ($pace['maxLiveWaitMs'] ?? self::DEFAULT_MAX_LIVE_WAIT_MS);
-			if (is_numeric($ms) === false || (int)$ms < 0) {
-				$ms = self::DEFAULT_MAX_LIVE_WAIT_MS;
+			$maxWaitMs = ($pace['maxLiveWaitMs'] ?? self::DEFAULT_MAX_LIVE_WAIT_MS);
+			if (is_numeric($maxWaitMs) === false || (int)$maxWaitMs < 0) {
+				$maxWaitMs = self::DEFAULT_MAX_LIVE_WAIT_MS;
 			}
 
-			return ((int)$ms * 1000);
+			return ((int)$maxWaitMs * 1000);
 		}
 
 		$seconds = ($pace['maxBackgroundWaitSeconds'] ?? self::DEFAULT_MAX_BACKGROUND_WAIT_SECONDS);

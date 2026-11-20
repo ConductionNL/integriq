@@ -34,6 +34,10 @@ final class PacingDecision {
 	 * @param int $waitMicros How long the call waits before it is sent (0 when refused).
 	 * @param bool $refused True when the wait exceeds what the caller may wait; the call is not sent.
 	 * @param int $retryAfterSeconds When refused: the seconds until the call's turn, at least 1.
+	 *
+	 * A readonly value object: $refused is the decision it carries, not a mode switch.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
 	public function __construct(
 		public readonly int $waitMicros = 0,
