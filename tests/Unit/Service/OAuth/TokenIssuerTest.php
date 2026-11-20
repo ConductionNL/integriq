@@ -299,13 +299,21 @@ final class TokenIssuerTest extends TestCase {
 		$this->assertStringNotContainsString(needle: $privatePem, haystack: $stored);
 		$this->assertSame(expected: ['name', 'authorizationType', 'scopes', 'clientSecretHash'], actual: array_keys($this->consumers['c-partner']));
 
-		$base = json_decode(json: (string) file_get_contents(filename: __DIR__ . '/../../../../lib/Settings/integriq_register.json'), associative: true);
-		$fragment = json_decode(json: (string) file_get_contents(filename: __DIR__ . '/../../../../lib/Settings/register.d/99-consumer-secrets-writeonly.json'), associative: true);
+		$settings = __DIR__ . '/../../../../lib/Settings/';
+		$base = json_decode(json: (string) file_get_contents(filename: $settings . 'integriq_register.json'), associative: true);
+		$fragment = json_decode(
+			json: (string) file_get_contents(filename: $settings . 'register.d/99-consumer-secrets-writeonly.json'),
+			associative: true
+		);
 		$consumer = $base['components']['schemas']['consumer']['properties'];
 		$this->assertArrayHasKey(key: 'clientSecretHash', array: $consumer);
 		$this->assertTrue(condition: $fragment['components']['schemas']['consumer']['properties']['clientSecretHash']['writeOnly']);
 		foreach (array_keys($consumer) as $property) {
-			$this->assertDoesNotMatchRegularExpression(pattern: '/private|secret$/i', string: $property, message: 'consumer.' . $property . ' would hold key or secret material in the clear');
+			$this->assertDoesNotMatchRegularExpression(
+				pattern: '/private|secret$/i',
+				string: $property,
+				message: 'consumer.' . $property . ' would hold key or secret material in the clear'
+			);
 		}
 	}//end testNoObjectReadCarriesThePrivateKeyOrAClientSecret()
 
