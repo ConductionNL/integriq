@@ -14,3 +14,10 @@ path = ["l10n/**.js", "l10n/**.json"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Conduction B.V. <info@conduction.nl>"
 SPDX-License-Identifier = "EUPL-1.2"
+
+# Recorded test fixtures (JSON answers and golden files), which cannot carry a header.
+[[annotations]]
+path = ["tests/fixtures/**.json"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Conduction B.V. <info@conduction.nl>"
+SPDX-License-Identifier = "EUPL-1.2"

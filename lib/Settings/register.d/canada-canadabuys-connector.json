@@ -1,0 +1,98 @@
+{
+  "$comment": "INTEGRIQ DRAFT (native-data-gathering-provider, ported from spectr/connectors): Source and Job ship isEnabled false, per the requirement that a connector blocked on an unbuilt capability ships disabled. GAP: CSV parsing. That capability has landed in Integriq through the change mapping-formats-and-lookups (sourceConfig.format 'csv', REQ-MFL-001), but this draft's synchronization is not yet switched to it and its bilingual column mapping has never run live; the per-fiscal-year files run to ~150 MB, which is the open large-file streaming follow-up. Enable only after switching the format and one watched live run. ORIGINAL SPECTR NOTE: Phase-2 wave-2 OpenConnector ingestion config for Canada CanadaBuys (federal procurement open data). concurrentie-analyse/scripts/sync/sync_canada_canadabuys.py downloads per-fiscal-year CSV bulk files (`{FY}-TenderNotice-AvisAppelOffres.csv`, 67 bilingual EN/FR columns, ~153MB full historical / smaller per-FY, daily-updated). Public, unauthenticated (keyless - docstring: 'No authentication required - direct download'). SHIPPED AS A DOCUMENTED DRAFT, Source + Job DISABLED, blocked by the same CSV engine gap as Ireland: openconnector#105 added JSONL + single-file gzip, NOT CSV parsing - fetchSinglePageData() tries gunzip (n/a), json_decode (fails on CSV), simplexml (fails on CSV), silently yielding zero. Second consideration even if CSV were supported: the per-FY files are large (the full historical file is ~153MB); a whole-file in-memory parse would be a real memory risk (cf. estonia_rhr.json's 36MB XML caution). Field paths from the script (bilingual columns): referenceNumber/solicitationNumber (id), tenderDescription (title), contractingEntityName (organisation), publicationDate, tenderClosingDate, unspsc (classification - UNSPSC not CPV), procurementCategory (GD/SRV/CNST -> contract type), procurementMethod (procedure), noticeURL. The mapping below uses those column names so it is a starting point for a future CSV mode; not usable today. Recommended interim path: the existing etl/ CSV loader (etl/bulk_load.sh) for the per-FY files. The script's own UNSPSC 43/8111 + keyword IT filter is a DB-side classification layer over the full CSV, not an API constraint - a connector would ingest the full feed.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "canada-canadabuys"
+        },
+        "name": "CanadaBuys (Government of Canada procurement)",
+        "description": "Canadian federal procurement open-data CSV (canadabuys.canada.ca/opendata/pub). Public, unauthenticated, per-fiscal-year bulk CSV. DRAFT - ships DISABLED: Integriq parses CSV (a synchronization with sourceConfig.format 'csv'), but this draft's synchronization is not switched to it yet and has not run live, and the files are large; see $comment. Would feed the spectr `tender` register/schema.",
+        "type": "api",
+        "location": "https://canadabuys.canada.ca/opendata/pub",
+        "auth": "none",
+        "documentation": "https://canadabuys.canada.ca/en/tender-opportunities",
+        "configuration": {
+          "headers": {
+            "Accept": "text/csv"
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "canada-canadabuys-to-tender"
+        },
+        "name": "CanadaBuys to Spectr Tender",
+        "description": "Maps a CanadaBuys CSV row onto the spectr `tender` schema, keyed on sync_canada_canadabuys.py's column names. Unused today (source is CSV, unreachable - see file $comment); ready for a future CSV engine mode.",
+        "mapping": {
+          "sourceRef": "referenceNumber",
+          "publicatieId": "{{ 'CA-' ~ (attribute(_context, 'referenceNumber')|default('')) }}",
+          "source": "canada-canadabuys",
+          "title": "{{ attribute(_context, 'tenderDescription-en')|default(attribute(_context, 'tenderDescription'))|default('Canadian tender') }}",
+          "displayName": "{{ (attribute(_context, 'tenderDescription-en')|default(attribute(_context, 'tenderDescription'))|default('Canadian tender'))|slice(0, 250) }}",
+          "organisation": "{{ attribute(_context, 'contractingEntityName-en')|default(attribute(_context, 'contractingEntityName'))|default('') }}",
+          "country": "CA",
+          "publicationDate": "{{ attribute(_context, 'publicationDate')|default('') }}",
+          "closingDate": "{{ attribute(_context, 'tenderClosingDate')|default('') }}",
+          "status": "new",
+          "procedure": "{{ attribute(_context, 'procurementMethod')|default('') }}",
+          "typeOpdracht": "{{ attribute(_context, 'procurementCategory')|default('') }}",
+          "cpvCodes": "unspsc",
+          "tenderUrl": "{{ attribute(_context, 'noticeURL-en')|default(attribute(_context, 'noticeURL'))|default('') }}"
+        },
+        "unset": [],
+        "cast": {
+          "cpvCodes": "array"
+        },
+        "passThrough": false,
+        "version": "0.1.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "canada-canadabuys-to-spectr-tender"
+        },
+        "name": "CanadaBuys to Spectr Tender",
+        "description": "DRAFT sync (blocked): would ingest a CanadaBuys per-FY CSV -> spectr register, tender schema. Cannot run - OpenConnector has no CSV parser (see $comment). Kept for documentation and future readiness.",
+        "sourceId": "canada-canadabuys",
+        "sourceType": "api",
+        "sourceTargetMapping": "canada-canadabuys-to-tender",
+        "sourceConfig": {
+          "endpoint": "/2025-2026-TenderNotice-AvisAppelOffres.csv",
+          "idPosition": "referenceNumber",
+          "resultsPosition": "_root",
+          "usesPagination": false
+        },
+        "targetId": "spectr/tender",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "job",
+          "slug": "canada-canadabuys-weekly-sync"
+        },
+        "name": "CanadaBuys Weekly Sync",
+        "description": "Would run the canada-canadabuys-to-spectr-tender synchronization weekly - ships DISABLED (blocked by the CSV engine gap + large-file memory risk, see $comment).",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "canada-canadabuys-to-spectr-tender"
+        },
+        "interval": 604800,
+        "isEnabled": false,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
