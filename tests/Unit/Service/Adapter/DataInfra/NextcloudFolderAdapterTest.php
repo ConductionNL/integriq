@@ -212,6 +212,21 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	}//end testASourceWithoutAnOwnerFailsTheTest()
 
 	/**
+	 * The watched folder itself is the folder at the root path, and a folder path with `..` is refused.
+	 *
+	 * @return void
+	 */
+	public function testTheFolderOfTheSourceIsItsRootPath(): void {
+		$inbox = $this->folder();
+		$this->userFolder->method('get')->with('Woo/inkomend')->willReturn($inbox);
+
+		$this->assertSame(expected: $inbox, actual: $this->files()->folder(source: $this->source()));
+
+		$this->expectException(RemoteFileException::class);
+		$this->files()->folder(source: $this->source(), path: '../private');
+	}//end testTheFolderOfTheSourceIsItsRootPath()
+
+	/**
 	 * A path with `..` is refused by every operation, before any file is touched.
 	 *
 	 * @return void

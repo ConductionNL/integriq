@@ -392,6 +392,8 @@
 	"dispatcher.addServiceListener(OCP\\Files\\Events\\Node\\NodeWrittenEvent, OCA\\Integriq\\EventListener\\NextcloudFileEventListener, int)",
 	"dispatcher.addServiceListener(OCP\\Files\\Events\\Node\\NodeDeletedEvent, OCA\\Integriq\\EventListener\\NextcloudFileEventListener, int)",
 	"dispatcher.addServiceListener(OCP\\SystemTag\\MapperEvent, OCA\\Integriq\\EventListener\\NextcloudFileTagEventListener, int)",
+	"dispatcher.addServiceListener(OCP\\Files\\Events\\Node\\NodeCreatedEvent, OCA\\Integriq\\EventListener\\WatchedFolderListener, int)",
+	"dispatcher.addServiceListener(OCP\\Files\\Events\\Node\\NodeWrittenEvent, OCA\\Integriq\\EventListener\\WatchedFolderListener, int)",
 	"dispatcher.addServiceListener(OCP\\Calendar\\Events\\CalendarObjectCreatedEvent, OCA\\Integriq\\EventListener\\NextcloudCalendarEventListener, int)",
 	"dispatcher.addServiceListener(OCP\\Calendar\\Events\\CalendarObjectUpdatedEvent, OCA\\Integriq\\EventListener\\NextcloudCalendarEventListener, int)",
 	"dispatcher.addServiceListener(OCP\\Calendar\\Events\\CalendarObjectDeletedEvent, OCA\\Integriq\\EventListener\\NextcloudCalendarEventListener, int)",

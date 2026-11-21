@@ -95,6 +95,23 @@ class NextcloudFolderFiles {
 	}//end handles()
 
 	/**
+	 * A folder of the source, as its owner sees it: the watched folder itself
+	 * for an empty path.
+	 *
+	 * @param array<string,mixed> $source The source object.
+	 * @param string              $path   The folder, relative to the source's root path.
+	 *
+	 * @return Folder
+	 *
+	 * @throws RemoteFileException When the path leaves the root, or names no folder.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+	 */
+	public function folder(array $source, string $path=''): Folder {
+		return $this->folderAt(source: $source, path: $path);
+	}//end folder()
+
+	/**
 	 * The files in a folder of the source whose names match a pattern.
 	 *
 	 * @param array<string,mixed> $source  The source object.
