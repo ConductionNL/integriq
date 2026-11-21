@@ -8,8 +8,12 @@ Kind: code. Size M. Row: portaliq `sig-yivi`. Depends on `portal-idp-broker-conf
 - **acceptance_criteria**:
   - GIVEN the fragment WHEN it imports THEN `provider` accepts `yivi` and the D2 properties exist with titles, with no `PARTIAL IMPORT` line
   - GIVEN a `yivi` registration with kind `saml-sp` WHEN it is saved THEN the save is refused
-- [ ] Implement
+- [x] Implement
+  - `40-idp-registration.json` (idpRegistration 1.1.0): `provider` gains `yivi`, and the D2 properties `yiviAttributes` (items `{ id, claim, label, carriesBsn }`, id and claim required), `yiviTrust` (`low`, `substantial`, default `low`) and `yiviBsnToConsumer` (default `false`) are added, each with a title.
+  - The save rule is `IdpRegistrationRule::refusal()`: a provider only reached over OIDC (Yivi) is refused unless its kind is `oidc-rp`. `IdpRegistrationService::save()` throws `IdpRegistrationRefusedException` with it. The Authentication settings screen writes registrations through OpenRegister's object API, not through that method, so `IdpRegistrationGuardListener` applies the same rule on OpenRegister's create and update path and answers 400 `idp_registration_needs_oidc`, saying Yivi needs an OIDC bridge. The message is in `l10n/en.json` and `l10n/nl.json`.
+  - `IdpAdapterRegistry::PROVIDERS` does not list `yivi` yet: the start and the callback are tasks 2 and 3.
 - [ ] Test
+  - PHPUnit done: `IdpRegistrationFragmentTest::testTheYiviPropertiesAndTheirDefaults` (and the property list of D2), `IdpRegistrationServiceTest::testAYiviRegistrationOverSamlIsRefused` and `::testAYiviOidcRegistrationIsSaved`, `IdpRegistrationGuardListenerTest`. Open: the first criterion's "no `PARTIAL IMPORT` line", which is read from the import log on a live instance, so the box stays unticked.
 
 ## Task 2: The start with attributes
 - **spec_ref**: `specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002`
