@@ -65,6 +65,13 @@ final class SubjectEnvelope {
 	public const MAX_TTL_SECONDS = 60;
 
 	/**
+	 * The disclosed attributes of an attribute login, by attribute id; set through withAttributes().
+	 *
+	 * @var array<string,string>
+	 */
+	private array $attributes = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $subject The pseudonym, KvK, RSIN or eIDAS PersonIdentifier.
@@ -74,9 +81,6 @@ final class SubjectEnvelope {
 	 * @param string $organisation The tenant the login happened in.
 	 * @param string $trust `low`, `substantial` or `high`.
 	 * @param string $branch The eHerkenning vestigingsnummer the login was restricted to, or empty.
-	 * @param array<string,string> $attributes The disclosed attributes of an attribute login, by attribute id.
-	 *
-	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	public function __construct(
 		private readonly string $subject,
@@ -86,7 +90,6 @@ final class SubjectEnvelope {
 		private readonly string $organisation,
 		private readonly string $trust,
 		private readonly string $branch = '',
-		private readonly array $attributes = [],
 	) {
 
 	}//end __construct()
@@ -172,6 +175,23 @@ final class SubjectEnvelope {
 	}//end getBranch()
 
 	/**
+	 * The same envelope carrying the disclosed attributes of an attribute login.
+	 *
+	 * @param array<string,string> $attributes The disclosed attributes, by attribute id.
+	 *
+	 * @return self A copy with the attributes; this envelope is left as it is.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	public function withAttributes(array $attributes): self {
+		$copy = clone $this;
+		$copy->attributes = $attributes;
+
+		return $copy;
+
+	}//end withAttributes()
+
+	/**
 	 * The disclosed attributes, by attribute id.
 	 *
 	 * Only an attribute login (`subType` `attributes`) carries them. For any
@@ -241,7 +261,7 @@ final class SubjectEnvelope {
 	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	public static function fromClaims(array $claims): self {
-		return new self(
+		$envelope = new self(
 			(string)($claims['sub'] ?? ''),
 			(string)($claims['subType'] ?? ''),
 			(string)($claims['provider'] ?? ''),
@@ -249,8 +269,9 @@ final class SubjectEnvelope {
 			(string)($claims['organisation'] ?? ''),
 			(string)($claims['trust'] ?? ''),
 			(string)($claims['branch'] ?? ''),
-			attributes: self::stringMap(value: ($claims['attributes'] ?? [])),
 		);
+
+		return $envelope->withAttributes(attributes: self::stringMap(value: ($claims['attributes'] ?? [])));
 
 	}//end fromClaims()
 

@@ -109,11 +109,10 @@ class AttributeEnvelopeFactory {
 	 * it. A BSN attribute is replaced by the pseudonym a DigiD login would
 	 * get, unless the registration passes it to the consumer.
 	 *
-	 * @param IdpRegistration      $registration The organisation's registration.
-	 * @param array<string,string> $attributes   The disclosed values, by attribute id.
-	 * @param string               $salt         The registration's salt.
-	 * @param string               $audience     The consumer the envelope is minted for.
-	 * @param string               $trust        The trust the login carries.
+	 * @param IdpRegistration  $registration The organisation's registration.
+	 * @param IdpLoginCallback $login        The login being finished: its disclosed attributes and its mapped trust.
+	 * @param string           $audience     The consumer the envelope is minted for.
+	 * @param string           $salt         The registration's salt.
 	 *
 	 * @return SubjectEnvelope The envelope.
 	 *
@@ -121,12 +120,11 @@ class AttributeEnvelopeFactory {
 	 *
 	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
-	public function envelope(IdpRegistration $registration, array $attributes, string $salt, string $audience, string $trust): SubjectEnvelope {
+	public function envelope(IdpRegistration $registration, IdpLoginCallback $login, string $audience, string $salt): SubjectEnvelope {
 		$organisation = strtolower($registration->organisation());
-
-		return new SubjectEnvelope(
+		$envelope = new SubjectEnvelope(
 			subject: $this->pseudonyms->pseudonymFor(
-				bsn: (string)json_encode($attributes, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+				bsn: (string)json_encode($login->attributes, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
 				organisation: $organisation,
 				salt: $salt
 			),
@@ -134,8 +132,11 @@ class AttributeEnvelopeFactory {
 			provider: $registration->provider(),
 			audience: $audience,
 			organisation: $organisation,
-			trust: $trust,
-			attributes: $this->released(registration: $registration, attributes: $attributes, salt: $salt)
+			trust: $login->trust
+		);
+
+		return $envelope->withAttributes(
+			attributes: $this->released(registration: $registration, attributes: $login->attributes, salt: $salt)
 		);
 
 	}//end envelope()

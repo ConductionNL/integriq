@@ -37,6 +37,7 @@ use OCA\Integriq\Auth\Idp\EnvelopeExchangeService;
 use OCA\Integriq\Auth\Idp\EnvelopeReplayGuard;
 use OCA\Integriq\Auth\Idp\IdpAdapterRegistry;
 use OCA\Integriq\Auth\Idp\IdpBrokerConfig;
+use OCA\Integriq\Auth\Idp\IdpLoginCallback;
 use OCA\Integriq\Auth\Idp\IdpLoginService;
 use OCA\Integriq\Auth\Idp\IdpLoginStateStore;
 use OCA\Integriq\Auth\Idp\IdpRegistration;
@@ -169,6 +170,21 @@ class YiviEnvelopeTest extends TestCase {
 			)
 		);
 	}//end registration()
+
+	/**
+	 * A Yivi login being finished, with its disclosed attributes and a `low` trust.
+	 *
+	 * @param array<string,string> $attributes The disclosed values, by attribute id.
+	 *
+	 * @return IdpLoginCallback The login.
+	 */
+	private function login(array $attributes): IdpLoginCallback {
+		$login = new IdpLoginCallback(provider: 'yivi', assertion: []);
+		$login->attributes = $attributes;
+		$login->trust = 'low';
+
+		return $login;
+	}//end login()
 
 	/**
 	 * A cache factory over the shared fake.
@@ -409,7 +425,7 @@ class YiviEnvelopeTest extends TestCase {
 		$factory = new AttributeEnvelopeFactory(pseudonyms: new SubjectPseudonymService());
 		$attributes = [self::FULLNAME => 'Sanne de Vries', self::BSN => '999993653'];
 
-		$kept = $factory->envelope(registration: $this->registration(), attributes: $attributes, salt: self::SALT, audience: 'portaliq', trust: 'low');
+		$kept = $factory->envelope(registration: $this->registration(), login: $this->login(attributes: $attributes), audience: 'portaliq', salt: self::SALT);
 		$this->assertSame(
 			expected: (new SubjectPseudonymService())->pseudonymFor(bsn: '999993653', organisation: 'gemeente-x', salt: self::SALT),
 			actual: $kept->getAttributes()[self::BSN]
@@ -419,10 +435,9 @@ class YiviEnvelopeTest extends TestCase {
 
 		$passed = $factory->envelope(
 			registration: $this->registration(overrides: ['yiviBsnToConsumer' => true]),
-			attributes: $attributes,
-			salt: self::SALT,
+			login: $this->login(attributes: $attributes),
 			audience: 'portaliq',
-			trust: 'low'
+			salt: self::SALT
 		);
 		$this->assertSame(expected: $attributes, actual: $passed->getAttributes());
 		$this->assertSame(expected: 'low', actual: $passed->getTrust());
@@ -439,10 +454,9 @@ class YiviEnvelopeTest extends TestCase {
 		$factory = new AttributeEnvelopeFactory(pseudonyms: new SubjectPseudonymService());
 		$subject = fn (IdpRegistration $registration, array $attributes): string => $factory->envelope(
 			registration: $registration,
-			attributes: $attributes,
-			salt: self::SALT,
+			login: $this->login(attributes: $attributes),
 			audience: 'portaliq',
-			trust: 'low'
+			salt: self::SALT
 		)->getSubject();
 
 		$one = $subject($this->registration(), [self::EMAIL => 'sanne@example.nl']);
@@ -454,7 +468,7 @@ class YiviEnvelopeTest extends TestCase {
 		);
 
 		$this->expectException(exception: IdpAssertionException::class);
-		$factory->envelope(registration: $this->registration(), attributes: [self::EMAIL => 'x'], salt: 'short', audience: 'portaliq', trust: 'low');
+		$factory->envelope(registration: $this->registration(), login: $this->login(attributes: [self::EMAIL => 'x']), audience: 'portaliq', salt: 'short');
 	}//end testTheSubjectIsAStablePseudonymOfTheDisclosure()
 
 	/**
@@ -489,15 +503,14 @@ class YiviEnvelopeTest extends TestCase {
 	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	public function testOnlyAnAttributeEnvelopeCarriesAttributes(): void {
-		$digid = new SubjectEnvelope(
+		$digid = (new SubjectEnvelope(
 			subject: 'p',
 			subType: 'bsn-pseudonym',
 			provider: 'digid',
 			audience: 'portaliq',
 			organisation: 'gemeente-x',
-			trust: 'substantial',
-			attributes: [self::EMAIL => 'sanne@example.nl']
-		);
+			trust: 'substantial'
+		))->withAttributes(attributes: [self::EMAIL => 'sanne@example.nl']);
 		$this->assertSame(expected: [], actual: $digid->getAttributes());
 		$this->assertArrayNotHasKey(key: 'attributes', array: $digid->toClaims());
 

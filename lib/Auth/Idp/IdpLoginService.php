@@ -492,10 +492,9 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		if ($login->provider === TrustLevelMapper::PROVIDER_YIVI) {
 			return $this->attributeEnvelopes()->envelope(
 				registration: $registration,
-				attributes: $login->attributes,
-				salt: $this->saltFor(registration: $registration),
+				login: $login,
 				audience: $consumer->getId(),
-				trust: $login->trust
+				salt: $this->saltFor(registration: $registration)
 			);
 		}
 

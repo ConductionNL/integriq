@@ -247,10 +247,9 @@ class IdpBrokerController extends Controller {
 	 */
 	private function belowFloorPage(IdpAssuranceBelowFloorException $refusal): TemplateResponse {
 		$provider = $refusal->getProvider();
-		$response = new TemplateResponse(
-			appName: $this->appName,
-			templateName: 'idp/refused',
-			params: [
+
+		return $this->refusalPage(
+			text: [
 				'title' => $this->l10n->t('This service needs a stronger login'),
 				'message' => $this->l10n->t(
 					'You logged in with %1$s. This service needs at least %2$s.',
@@ -260,16 +259,35 @@ class IdpBrokerController extends Controller {
 					]
 				),
 				'hint' => $this->howToGetTheFloor(provider: $provider),
-				'action' => $this->l10n->t('Go back'),
-				'actionUrl' => $refusal->getReturnUrl(),
 			],
+			actionUrl: $refusal->getReturnUrl()
+		);
+
+	}//end belowFloorPage()
+
+	/**
+	 * Integriq's own page for a refusal it explains, with one action back to the consumer.
+	 *
+	 * @param array{title: string, message: string, hint: string} $text      What the page says.
+	 * @param string                                              $actionUrl Where its one action leads.
+	 *
+	 * @return TemplateResponse The page, with status 403.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	private function refusalPage(array $text, string $actionUrl): TemplateResponse {
+		$response = new TemplateResponse(
+			appName: $this->appName,
+			templateName: 'idp/refused',
+			params: array_merge($text, ['action' => $this->l10n->t('Go back'), 'actionUrl' => $actionUrl]),
 			renderAs: TemplateResponse::RENDER_AS_GUEST
 		);
 		$response->setStatus(status: Http::STATUS_FORBIDDEN);
 
 		return $response;
 
-	}//end belowFloorPage()
+	}//end refusalPage()
 
 	/**
 	 * Integriq's own page for an attribute login that shared less than it asked.
@@ -284,21 +302,14 @@ class IdpBrokerController extends Controller {
 	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	private function disclosureIncompletePage(IdpDisclosureIncompleteException $refusal): TemplateResponse {
-		$response = new TemplateResponse(
-			appName: $this->appName,
-			templateName: 'idp/refused',
-			params: [
+		return $this->refusalPage(
+			text: [
 				'title' => $this->l10n->t('You did not share all the requested details'),
 				'message' => $this->l10n->t('This service asked for details that were not shared in the Yivi app.'),
 				'hint' => $this->l10n->t('Go back and share every detail the service asks for to continue.'),
-				'action' => $this->l10n->t('Go back'),
-				'actionUrl' => $refusal->getReturnUrl(),
 			],
-			renderAs: TemplateResponse::RENDER_AS_GUEST
+			actionUrl: $refusal->getReturnUrl()
 		);
-		$response->setStatus(status: Http::STATUS_FORBIDDEN);
-
-		return $response;
 
 	}//end disclosureIncompletePage()
 
