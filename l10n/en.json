@@ -1,5 +1,6 @@
 {
     "translations": {
+        "The application could not be read. Try again later.": "The application could not be read. Try again later.",
         "%s is reached through an OIDC bridge. Save this registration with the protocol OIDC Relying Party.": "%s is reached through an OIDC bridge. Save this registration with the protocol OIDC Relying Party.",
         "Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)": "Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)",
         "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `mcp` (a source that is an MCP tool server over streamable HTTP, relayed with its session headers and event streams), `job`, `synchronization`.": "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `mcp` (a source that is an MCP tool server over streamable HTTP, relayed with its session headers and event streams), `job`, `synchronization`.",
