@@ -154,8 +154,10 @@ type ManifestPage = {
 }
 
 /**
- * Every manifest page (49 on 2026-09-16). Kept in manifest order so a diff against
- * `src/manifest.json` reads straight down.
+ * Every manifest page the app renders (79 on 2026-11-21: 54 in
+ * `src/manifest.json`, 25 from the `src/manifest.d` fragments). Kept in
+ * manifest order, fragments last, so a diff against the manifest reads
+ * straight down.
  *
  * Guarded by `manifest page table is complete and current` — do not edit this
  * without editing the manifest, or vice versa.
@@ -269,6 +271,51 @@ const MANIFEST_PAGES: ManifestPage[] = [
 		type: 'custom',
 		component: 'DeadLettersPage',
 	},
+	{ id: 'ServiceFetches', route: '/service-fetches', type: 'index' },
+	{
+		id: 'DeveloperPortal',
+		route: '/developer-portal',
+		type: 'custom',
+		component: 'DeveloperPortalPage',
+	},
+	{ id: 'DigipoortFilings', route: '/messages/digipoort', type: 'logs' },
+	{
+		id: 'EgressDestinations',
+		route: '/egress-destinations',
+		type: 'custom',
+		component: 'EgressDestinationsPage',
+	},
+	// The pages of the src/manifest.d fragments (ADR-037), merged as buildManifest() merges them.
+	{ id: 'FscServices', route: '/fsc-services', type: 'index' },
+	{ id: 'BankfeedConnections', route: '/bank-feeds', type: 'index' },
+	{ id: 'CardfeedAccounts', route: '/card-feeds', type: 'index' },
+	{ id: 'OpenFormulierenForms', route: '/open-formulieren-forms', type: 'index' },
+	{ id: 'LtiPlatforms', route: '/lti-platforms', type: 'index' },
+	{ id: 'LtiPlatformDetail', route: '/lti-platforms/:id', type: 'detail' },
+	{ id: 'LtiTools', route: '/lti-tools', type: 'index' },
+	{ id: 'LtiToolDetail', route: '/lti-tools/:id', type: 'detail' },
+	{ id: 'ApiInventory', route: '/inventory', type: 'index' },
+	{ id: 'ConnectionMonitor', route: '/connection-monitor/:id', type: 'dashboard' },
+	{ id: 'ApiDesignRulesets', route: '/api-design-rules', type: 'index' },
+	{ id: 'HeldMessages', route: '/messages/held', type: 'index' },
+	{ id: 'IntakeMessages', route: '/messages/intake', type: 'logs' },
+	{ id: 'IntakeRoutingRules', route: '/intake/routing-rules', type: 'index' },
+	{ id: 'TestCases', route: '/test-cases', type: 'index' },
+	{ id: 'TestRuns', route: '/test-runs', type: 'logs' },
+	{ id: 'MailMessages', route: '/messages/mail', type: 'logs' },
+	{ id: 'MessageSchemas', route: '/message-schemas', type: 'index' },
+	{ id: 'ConnectionAlerts', route: '/connection-alerts', type: 'logs' },
+	{ id: 'Verdicts', route: '/verdicts', type: 'logs' },
+	{ id: 'OutboundMessages', route: '/messages/outbound', type: 'logs' },
+	{ id: 'Payments', route: '/payments', type: 'index' },
+	{ id: 'SenderIdentities', route: '/outbound/identities', type: 'logs' },
+	{
+		id: 'RecipientOptOuts',
+		route: '/outbound/opt-outs',
+		type: 'custom',
+		component: 'RecipientOptOutsPage',
+	},
+	{ id: 'RegistrationTargets', route: '/registration-targets', type: 'index' },
 ]
 
 /**
@@ -563,10 +610,38 @@ test.describe('manifest schema validation', () => {
 		)
 	})
 
-	test('manifest page table is complete and current', async () => {
-		const m = readManifest()
+	/**
+	 * The pages the app renders: `src/manifest.json`'s, then each
+	 * `src/manifest.d` fragment's in file-name order, a page whose id is
+	 * already known replacing the earlier one, as buildManifest() merges them.
+	 * Reading `src/manifest.json` alone left every fragment page unvisited.
+	 *
+	 * @return The merged pages.
+	 */
+	function readMergedPages(): Array<Record<string, any>> {
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		const fs = require('fs')
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		const path = require('path')
+		const pages = [...(readManifest().pages as Array<Record<string, any>>)]
+		const dir = path.resolve(__dirname, '../../../src/manifest.d')
+		const files = (fs.readdirSync(dir) as string[]).filter((f) => f.endsWith('.json')).sort()
+		for (const file of files) {
+			const fragment = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf-8'))
+			for (const page of (fragment.pages ?? []) as Array<Record<string, any>>) {
+				const at = pages.findIndex((p) => p.id === page.id)
+				if (at === -1) {
+					pages.push(page)
+				} else {
+					pages[at] = page
+				}
+			}
+		}
+		return pages
+	}
 
-		const fromManifest = (m.pages as Array<Record<string, any>>).map((p) => ({
+	test('manifest page table is complete and current', async () => {
+		const fromManifest = readMergedPages().map((p) => ({
 			id: String(p.id),
 			route: String(p.route),
 			type: String(p.type),
