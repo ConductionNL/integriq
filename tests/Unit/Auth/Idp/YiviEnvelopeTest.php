@@ -425,7 +425,8 @@ class YiviEnvelopeTest extends TestCase {
 		$factory = new AttributeEnvelopeFactory(pseudonyms: new SubjectPseudonymService());
 		$attributes = [self::FULLNAME => 'Sanne de Vries', self::BSN => '999993653'];
 
-		$kept = $factory->envelope(registration: $this->registration(), login: $this->login(attributes: $attributes), audience: 'portaliq', salt: self::SALT);
+		$login = $this->login(attributes: $attributes);
+		$kept = $factory->envelope(registration: $this->registration(), login: $login, audience: 'portaliq', salt: self::SALT);
 		$this->assertSame(
 			expected: (new SubjectPseudonymService())->pseudonymFor(bsn: '999993653', organisation: 'gemeente-x', salt: self::SALT),
 			actual: $kept->getAttributes()[self::BSN]
@@ -468,7 +469,8 @@ class YiviEnvelopeTest extends TestCase {
 		);
 
 		$this->expectException(exception: IdpAssertionException::class);
-		$factory->envelope(registration: $this->registration(), login: $this->login(attributes: [self::EMAIL => 'x']), audience: 'portaliq', salt: 'short');
+		$login = $this->login(attributes: [self::EMAIL => 'x']);
+		$factory->envelope(registration: $this->registration(), login: $login, audience: 'portaliq', salt: 'short');
 	}//end testTheSubjectIsAStablePseudonymOfTheDisclosure()
 
 	/**
