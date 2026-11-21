@@ -53,8 +53,22 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **files**: `lib/Service/EndpointService.php`, the endpoint rule editor
 - **acceptance_criteria**:
   - GIVEN an endpoint with anyOf apikey and jwt WHEN a caller presents either THEN it passes, and with neither the 401 lists both reasons
-- [ ] Implement
+- [x] Implement
+  - Backend: `EndpointService::authenticateAnyOf()` tries the methods in order, applies the rule's
+    `requiredScopes` to every method without its own, and answers 401 with `details.anyOf`, one
+    reason per method keyed `<position>:<type>`. PHPUnit: `EndpointAuthenticationAnyOfTest`.
+  - Rule editor: `AuthenticationForm.vue` has the switch "Accept any one of several methods". It
+    turns the current method into the first of an `anyOf` list (and back into the first method),
+    edits each method with the same form nested (no switch and no scope lists of its own, since a
+    nested `anyOf` is refused), adds and removes methods (the last one stays), and keeps the scope
+    lists on the rule. The shape changes are in `actionForms/authMethods.js`. Vitest:
+    `tests/vitest/authenticationAnyOf.spec.js`.
 - [ ] Test (PHPUnit; Newman with each method and with none)
+  - PHPUnit done (`EndpointAuthenticationAnyOfTest`). Newman written, not run (no live instance):
+    `tests/postman/integriq-auth-any-of.postman_collection.json` creates a rule with `anyOf` [an API
+    key, basic auth for the admin user] behind an endpoint, calls it with each method alone and with
+    neither (401 with the reasons `0:apikey` and `1:basic`), and deletes both again. The box stays
+    unticked until a Newman run reads green.
 
 ## Verification
 - [ ] `openspec validate access-consumer-credentials --type change --strict` passes
