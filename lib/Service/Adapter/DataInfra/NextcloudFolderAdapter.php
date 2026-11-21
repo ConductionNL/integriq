@@ -22,17 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Adapter\DataInfra;
 
-use OCA\Integriq\Service\Adapter\AbstractCategoryAdapterProvider;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemotePath;
-use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
-use OCP\IAppConfig;
 use OCP\IL10N;
-use Psr\Log\LoggerInterface;
 
 /**
  * A source of type `nextcloud-folder` names a folder by its owner
@@ -44,7 +41,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
  */
-class NextcloudFolderAdapter extends AbstractCategoryAdapterProvider {
+class NextcloudFolderAdapter extends AbstractIntegrationProvider {
 
 	/**
 	 * The source type this adapter serves.
@@ -54,22 +51,15 @@ class NextcloudFolderAdapter extends AbstractCategoryAdapterProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param CredentialBrokerService $credentialBroker OpenRegister's credential broker (unused: no credential).
-	 * @param IAppConfig              $appConfig        App config.
-	 * @param LoggerInterface         $logger           Logger.
-	 * @param IL10N                   $l10n             Translator for labels and messages.
-	 * @param IRootFolder             $rootFolder       Nextcloud's file tree.
+	 * @param IL10N       $l10n       Translator for labels and messages.
+	 * @param IRootFolder $rootFolder Nextcloud's file tree.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		CredentialBrokerService $credentialBroker,
-		IAppConfig $appConfig,
-		LoggerInterface $logger,
 		private readonly IL10N $l10n,
 		private readonly IRootFolder $rootFolder,
 	) {
-		parent::__construct(credentialBroker: $credentialBroker, appConfig: $appConfig, logger: $logger);
 	}//end __construct()
 
 	/**
@@ -117,7 +107,7 @@ class NextcloudFolderAdapter extends AbstractCategoryAdapterProvider {
 	}//end getRequiredApp()
 
 	/**
-	 * {@inheritDoc}
+	 * The capability slugs of the data-infra category this adapter implements.
 	 *
 	 * @return array<int,string>
 	 *
@@ -126,6 +116,19 @@ class NextcloudFolderAdapter extends AbstractCategoryAdapterProvider {
 	public function getCapabilities(): array {
 		return ['read'];
 	}//end getCapabilities()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * The files are read live from Nextcloud Files; nothing is stored here.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+	 */
+	public function getStorageStrategy(): string {
+		return 'query-time';
+	}//end getStorageStrategy()
 
 	/**
 	 * {@inheritDoc}
@@ -194,7 +197,7 @@ class NextcloudFolderAdapter extends AbstractCategoryAdapterProvider {
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters=[]): array {
-		if (is_array($filters['source'] ?? null) === false || self::handles(source: $filters['source']) === false) {
+		if (is_array($filters['source'] ?? null) === false || $this->handles(source: $filters['source']) === false) {
 			return [];
 		}
 
@@ -214,7 +217,7 @@ class NextcloudFolderAdapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
-	public static function handles(array $source): bool {
+	public function handles(array $source): bool {
 		return strtolower((string)($source['type'] ?? '')) === self::SOURCE_TYPE;
 	}//end handles()
 

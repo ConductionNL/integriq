@@ -22,28 +22,23 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Adapter\DataInfra;
 
-use OCA\Integriq\Service\Adapter\AbstractCategoryAdapterProvider;
 use OCA\Integriq\Service\Adapter\DataInfra\NextcloudFolderAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemotePath;
-use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Covers NextcloudFolderAdapter.
  */
 #[CoversClass(NextcloudFolderAdapter::class)]
-#[UsesClass(AbstractCategoryAdapterProvider::class)]
 #[UsesClass(RemotePath::class)]
 #[UsesClass(RemoteFileException::class)]
 final class NextcloudFolderAdapterTest extends TestCase {
@@ -68,16 +63,10 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	 * @return NextcloudFolderAdapter
 	 */
 	private function adapter(): NextcloudFolderAdapter {
-		$l10n = $this->createMock(IL10N::class);
-		$l10n->method('t')->willReturnCallback(static fn (string $text, array $parameters=[]): string => vsprintf($text, $parameters));
+		$l10n = $this->createMock(originalClassName: IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text, array $parameters=[]): string => vsprintf(format: $text, values: $parameters));
 
-		return new NextcloudFolderAdapter(
-			credentialBroker: $this->createMock(CredentialBrokerService::class),
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class),
-			l10n: $l10n,
-			rootFolder: $this->rootFolder,
-		);
+		return new NextcloudFolderAdapter(l10n: $l10n, rootFolder: $this->rootFolder);
 	}//end adapter()
 
 	/**
@@ -94,22 +83,35 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	/**
 	 * A file node double.
 	 *
-	 * @param int    $id    The file id.
-	 * @param string $name  The name.
-	 * @param int    $mtime The modification time.
+	 * @param int    $id   The file id.
+	 * @param string $name The name.
 	 *
 	 * @return File&MockObject
 	 */
-	private function file(int $id, string $name, int $mtime=1700000000): File {
-		$file = $this->createMock(File::class);
+	private function file(int $id, string $name): File {
+		$file = $this->createMock(originalClassName: File::class);
 		$file->method('getId')->willReturn($id);
 		$file->method('getName')->willReturn($name);
 		$file->method('getMimetype')->willReturn('application/pdf');
 		$file->method('getSize')->willReturn(2048);
-		$file->method('getMTime')->willReturn($mtime);
+		$file->method('getMTime')->willReturn(1700000000);
 
 		return $file;
 	}//end file()
+
+	/**
+	 * A folder double listing the given nodes.
+	 *
+	 * @param list<object> $nodes The listing.
+	 *
+	 * @return Folder&MockObject
+	 */
+	private function folder(array $nodes=[]): Folder {
+		$folder = $this->createMock(originalClassName: Folder::class);
+		$folder->method('getDirectoryListing')->willReturn($nodes);
+
+		return $folder;
+	}//end folder()
 
 	/**
 	 * Set up the file tree double.
@@ -117,8 +119,8 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->userFolder = $this->createMock(Folder::class);
-		$this->rootFolder = $this->createMock(IRootFolder::class);
+		$this->userFolder = $this->createMock(originalClassName: Folder::class);
+		$this->rootFolder = $this->createMock(originalClassName: IRootFolder::class);
 		$this->rootFolder->method('getUserFolder')->with('woo-intake')->willReturn($this->userFolder);
 	}//end setUp()
 
@@ -130,13 +132,23 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	public function testTheProviderDescribesTheFolderSource(): void {
 		$adapter = $this->adapter();
 
+		$described = [
+			$adapter->getId(),
+			$adapter->getLabel(),
+			$adapter->getCapabilities(),
+			$adapter->isEnabled(),
+			$adapter->getRequiredApp(),
+			$adapter->getStorageStrategy(),
+			$adapter->authRequirements()['type'],
+			$adapter->health()['status'],
+		];
+
 		$this->assertSame(
-			['data-infra-nextcloud-folder', 'Folder in Nextcloud Files', ['read'], true, null, 'none'],
-			[$adapter->getId(), $adapter->getLabel(), $adapter->getCapabilities(), $adapter->isEnabled(), $adapter->getRequiredApp(), $adapter->authRequirements()['type']]
+			expected: ['data-infra-nextcloud-folder', 'Folder in Nextcloud Files', ['read'], true, null, 'query-time', 'none', 'ok'],
+			actual: $described
 		);
-		$this->assertSame('ok', $adapter->health()['status']);
-		$this->assertTrue(NextcloudFolderAdapter::handles(source: ['type' => 'Nextcloud-Folder']));
-		$this->assertFalse(NextcloudFolderAdapter::handles(source: ['type' => 'sftp']));
+		$this->assertTrue(condition: $adapter->handles(source: ['type' => 'Nextcloud-Folder']));
+		$this->assertFalse(condition: $adapter->handles(source: ['type' => 'sftp']));
 	}//end testTheProviderDescribesTheFolderSource()
 
 	/**
@@ -145,12 +157,12 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMissingFolderFailsTheTest(): void {
-		$this->userFolder->method('get')->with('Woo/inkomend')->willThrowException(new NotFoundException('not found'));
+		$this->userFolder->method('get')->with('Woo/inkomend')->willThrowException(new NotFoundException(message: 'not found'));
 
 		$test = $this->adapter()->test(source: $this->source());
 
-		$this->assertFalse($test['ok']);
-		$this->assertStringContainsString('/Woo/inkomend', $test['message']);
+		$this->assertFalse(condition: $test['ok']);
+		$this->assertStringContainsString(needle: '/Woo/inkomend', haystack: $test['message']);
 	}//end testAMissingFolderFailsTheTest()
 
 	/**
@@ -159,13 +171,12 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnExistingFolderPassesTheTest(): void {
-		$folder = $this->createMock(Folder::class);
-		$folder->method('getDirectoryListing')->willReturn([$this->file(id: 1, name: 'a.pdf'), $this->createMock(Folder::class)]);
-		$this->userFolder->method('get')->with('Woo/inkomend')->willReturn($folder);
+		$listing = [$this->file(id: 1, name: 'a.pdf'), $this->folder()];
+		$this->userFolder->method('get')->with('Woo/inkomend')->willReturn($this->folder(nodes: $listing));
 
 		$test = $this->adapter()->test(source: $this->source());
 
-		$this->assertSame(['ok' => true, 'message' => 'The folder /Woo/inkomend holds 1 files.'], $test);
+		$this->assertSame(expected: ['ok' => true, 'message' => 'The folder /Woo/inkomend holds 1 files.'], actual: $test);
 	}//end testAnExistingFolderPassesTheTest()
 
 	/**
@@ -176,8 +187,8 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	public function testASourceWithoutAnOwnerFailsTheTest(): void {
 		$test = $this->adapter()->test(source: ['type' => 'nextcloud-folder', 'configuration' => ['rootPath' => 'x']]);
 
-		$this->assertFalse($test['ok']);
-		$this->assertStringContainsString('ownerUid', $test['message']);
+		$this->assertFalse(condition: $test['ok']);
+		$this->assertStringContainsString(needle: 'ownerUid', haystack: $test['message']);
 	}//end testASourceWithoutAnOwnerFailsTheTest()
 
 	/**
@@ -189,20 +200,21 @@ final class NextcloudFolderAdapterTest extends TestCase {
 		$this->userFolder->expects($this->never())->method('get');
 		$adapter = $this->adapter();
 
-		foreach ([
+		$operations = [
 			fn () => $adapter->listFiles(source: $this->source(), path: '../private'),
 			fn () => $adapter->fetch(source: $this->source(), path: 'sub/../../secret.pdf'),
 			fn () => $adapter->listFiles(source: $this->source(rootPath: 'Woo/../other')),
-		] as $operation) {
+		];
+		foreach ($operations as $operation) {
 			try {
 				$operation();
-				$this->fail('A path with .. was not refused.');
+				$this->fail(message: 'A path with .. was not refused.');
 			} catch (RemoteFileException $e) {
-				$this->assertStringContainsString('..', $e->getMessage());
+				$this->assertStringContainsString(needle: '..', haystack: $e->getMessage());
 			}
 		}
 
-		$this->assertFalse($adapter->test(source: $this->source(rootPath: '../home'))['ok']);
+		$this->assertFalse(condition: $adapter->test(source: $this->source(rootPath: '../home'))['ok']);
 	}//end testDotDotIsRefused()
 
 	/**
@@ -211,21 +223,29 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	 * @return void
 	 */
 	public function testListingAnswersTheMatchingFilesSorted(): void {
-		$folder = $this->createMock(Folder::class);
-		$folder->method('getDirectoryListing')->willReturn([
+		$listing = [
 			$this->file(id: 7, name: 'b.pdf'),
 			$this->file(id: 6, name: 'a.pdf'),
 			$this->file(id: 8, name: 'notes.txt'),
-			$this->createMock(Folder::class),
-		]);
-		$this->userFolder->method('get')->with('Woo/inkomend/2026')->willReturn($folder);
+			$this->folder(),
+		];
+		$this->userFolder->method('get')->with('Woo/inkomend/2026')->willReturn($this->folder(nodes: $listing));
 
-		$files = $this->adapter()->list(register: '', schema: '', objectId: '', filters: ['source' => $this->source(), 'path' => '2026', 'pattern' => '*.pdf']);
+		$filters = ['source' => $this->source(), 'path' => '2026', 'pattern' => '*.pdf'];
+		$files   = $this->adapter()->list(register: '', schema: '', objectId: '', filters: $filters);
 
-		$this->assertSame(['a.pdf', 'b.pdf'], array_column($files, 'name'));
+		$this->assertSame(expected: ['a.pdf', 'b.pdf'], actual: array_column(array: $files, column_key: 'name'));
 		$this->assertSame(
-			['fileId' => 6, 'name' => 'a.pdf', 'path' => '2026/a.pdf', 'mimetype' => 'application/pdf', 'size' => 2048, 'mtime' => 1700000000, 'owner' => 'woo-intake'],
-			$files[0]
+			expected: [
+				'fileId'   => 6,
+				'name'     => 'a.pdf',
+				'path'     => '2026/a.pdf',
+				'mimetype' => 'application/pdf',
+				'size'     => 2048,
+				'mtime'    => 1700000000,
+				'owner'    => 'woo-intake',
+			],
+			actual: $files[0]
 		);
 	}//end testListingAnswersTheMatchingFilesSorted()
 
@@ -238,8 +258,8 @@ final class NextcloudFolderAdapterTest extends TestCase {
 		$this->rootFolder->expects($this->never())->method('getUserFolder');
 		$adapter = $this->adapter();
 
-		$this->assertSame([], $adapter->list(register: '', schema: '', objectId: '', filters: ['source' => ['type' => 'sftp']]));
-		$this->assertSame([], $adapter->list(register: '', schema: '', objectId: ''));
+		$this->assertSame(expected: [], actual: $adapter->list(register: '', schema: '', objectId: '', filters: ['source' => ['type' => 'sftp']]));
+		$this->assertSame(expected: [], actual: $adapter->list(register: '', schema: '', objectId: ''));
 	}//end testListingAnotherSourceTypeIsEmpty()
 
 	/**
@@ -248,26 +268,27 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	 * @return void
 	 */
 	public function testFetchAnswersTheFileAndRefusesAFolder(): void {
-		$file = $this->file(id: 9, name: 'besluit.pdf');
+		$file   = $this->file(id: 9, name: 'besluit.pdf');
+		$folder = $this->folder();
 		$this->userFolder->method('get')->willReturnCallback(
-			function (string $path) use ($file) {
+			static function (string $path) use ($file, $folder): object {
 				return match ($path) {
 					'Woo/inkomend/besluit.pdf' => $file,
-					'Woo/inkomend/sub' => $this->createMock(Folder::class),
-					default => throw new NotFoundException($path),
+					'Woo/inkomend/sub' => $folder,
+					default => throw new NotFoundException(message: $path),
 				};
 			}
 		);
 		$adapter = $this->adapter();
 
-		$this->assertSame($file, $adapter->fetch(source: $this->source(), path: 'besluit.pdf'));
+		$this->assertSame(expected: $file, actual: $adapter->fetch(source: $this->source(), path: 'besluit.pdf'));
 
 		foreach (['sub' => 'is a folder', 'gone.pdf' => 'does not exist'] as $path => $reason) {
 			try {
 				$adapter->fetch(source: $this->source(), path: $path);
-				$this->fail($path . ' was fetched.');
+				$this->fail(message: $path . ' was fetched.');
 			} catch (RemoteFileException $e) {
-				$this->assertStringContainsString($reason, $e->getMessage());
+				$this->assertStringContainsString(needle: $reason, haystack: $e->getMessage());
 			}
 		}
 	}//end testFetchAnswersTheFileAndRefusesAFolder()
@@ -283,6 +304,6 @@ final class NextcloudFolderAdapterTest extends TestCase {
 
 		$files = $this->adapter()->listFiles(source: $this->source(rootPath: '/'));
 
-		$this->assertSame(['top.pdf'], array_column($files, 'path'));
+		$this->assertSame(expected: ['top.pdf'], actual: array_column(array: $files, column_key: 'path'));
 	}//end testTheRootPathSlashIsTheOwnersFiles()
 }//end class

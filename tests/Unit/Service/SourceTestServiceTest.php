@@ -130,13 +130,17 @@ class SourceTestServiceTest extends TestCase {
 		$source = new ObjectEntity();
 		$source->setUuid('s-2');
 		$source->setObject(['type' => 'nextcloud-folder', 'configuration' => ['ownerUid' => 'woo-intake', 'rootPath' => 'Woo/inkomend']]);
-		$service = new SourceTestService(callService: $callService, logger: $this->createMock(originalClassName: LoggerInterface::class), folderAdapter: $adapter);
+		$logger  = $this->createMock(originalClassName: LoggerInterface::class);
+		$service = new SourceTestService(callService: $callService, logger: $logger, folderAdapter: $adapter);
 
-		$failed = $service->run($source);
-		$passed = $service->run($source);
+		$failed = $service->run(source: $source);
+		$passed = $service->run(source: $source);
 
-		$this->assertSame([SourceTestService::OUTCOME_FAILED, null], [$failed['outcome'], $failed['statusCode']]);
-		$this->assertStringContainsString('/Woo/inkomend', $failed['error']);
-		$this->assertSame([SourceTestService::OUTCOME_RESPONSE, 200, 'The folder /Woo/inkomend holds 2 files.'], [$passed['outcome'], $passed['statusCode'], $passed['statusMessage']]);
+		$this->assertSame(expected: [SourceTestService::OUTCOME_FAILED, null], actual: [$failed['outcome'], $failed['statusCode']]);
+		$this->assertStringContainsString(needle: '/Woo/inkomend', haystack: $failed['error']);
+		$this->assertSame(
+			expected: [SourceTestService::OUTCOME_RESPONSE, 200, 'The folder /Woo/inkomend holds 2 files.'],
+			actual: [$passed['outcome'], $passed['statusCode'], $passed['statusMessage']]
+		);
 	}//end testAFolderSourceIsTestedByItsAdapter()
 }//end class

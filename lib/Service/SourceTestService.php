@@ -83,7 +83,7 @@ class SourceTestService implements SourceTestServiceInterface {
 	 */
 	public function run(ObjectEntity $source, string $endpoint = '', string $method = 'GET', array $config = []): array {
 		$object = $source->getObject();
-		if ($this->folderAdapter !== null && is_array($object) === true && NextcloudFolderAdapter::handles(source: $object) === true) {
+		if ($this->folderAdapter !== null && is_array($object) === true && $this->folderAdapter->handles(source: $object) === true) {
 			return $this->folderOutcome(test: $this->folderAdapter->test(source: $object));
 		}
 
