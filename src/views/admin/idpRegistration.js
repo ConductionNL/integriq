@@ -40,7 +40,26 @@ export const SUBJECT_FIELDS = [
 	'eidasPersonIdentifier',
 ]
 
+/**
+ * The providers whose login discloses attributes rather than an identity.
+ * Each is reached over an OIDC bridge only, so its protocol is fixed.
+ *
+ * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
+ */
+export const ATTRIBUTE_PROVIDERS = ['yivi']
+
 const text = (value) => (typeof value === 'string' ? value.trim() : '')
+
+/**
+ * Whether a provider's login discloses attributes (Yivi).
+ *
+ * @param {string} provider The provider id.
+ * @return {boolean} True for an attribute provider.
+ * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
+ */
+export function isAttributeProvider(provider) {
+	return ATTRIBUTE_PROVIDERS.includes(provider)
+}
 
 /**
  * The value when it is a plain object, otherwise an empty one.
@@ -82,6 +101,7 @@ export function providerOptions() {
 		{ id: 'digid', label: t('integriq', 'DigiD') },
 		{ id: 'eherkenning', label: t('integriq', 'eHerkenning') },
 		{ id: 'eidas', label: t('integriq', 'eIDAS') },
+		{ id: 'yivi', label: t('integriq', 'Yivi') },
 	]
 }
 
@@ -170,6 +190,9 @@ export function emptyDraft() {
 		pseudonymisation: 'hmac',
 		subjectMapping: Object.fromEntries(SUBJECT_FIELDS.map((field) => [field, ''])),
 		assuranceMapping: [],
+		attributes: [],
+		yiviTrust: '',
+		yiviBsnToConsumer: false,
 		credentials: {
 			signing: '',
 			decryption: '',
@@ -220,7 +243,49 @@ export function draftFromObject(object) {
 	for (const role of Object.keys(draft.credentials)) {
 		draft.credentials[role] = text(credentials[role])
 	}
+	draft.attributes = (Array.isArray(row.yiviAttributes) ? row.yiviAttributes : [])
+		.filter((entry) => Object.keys(record(entry)).length > 0)
+		.map((entry) => ({ id: text(entry.id), claim: text(entry.claim), label: text(entry.label), carriesBsn: entry.carriesBsn === true }))
+	// Not edited on this screen, but carried so a save does not reset them.
+	draft.yiviTrust = text(row.yiviTrust)
+	draft.yiviBsnToConsumer = row.yiviBsnToConsumer === true
+	return fixedForProvider(draft)
+}
+
+/**
+ * A draft with what its provider fixes applied: an attribute provider is
+ * reached over OIDC and pseudonymises with the salt, whatever the draft said.
+ *
+ * @param {object} draft The draft; changed in place.
+ * @return {object} The same draft.
+ * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
+ */
+export function fixedForProvider(draft) {
+	if (isAttributeProvider(draft.provider)) {
+		draft.kind = 'oidc-rp'
+		draft.pseudonymisation = 'hmac'
+	}
 	return draft
+}
+
+/**
+ * The attribute lines a service may ask for, as stored: lines without an id
+ * or a claim name left out, the label trimmed and left out when empty.
+ *
+ * @param {Array<object>} attributes The draft's attribute lines.
+ * @return {Array<object>} The `yiviAttributes` entries.
+ * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
+ */
+export function attributeEntries(attributes) {
+	return (Array.isArray(attributes) ? attributes : [])
+		.filter((line) => text(line.id) && text(line.claim))
+		.map((line) => {
+			const entry = { id: text(line.id), claim: text(line.claim), carriesBsn: line.carriesBsn === true }
+			if (text(line.label)) {
+				entry.label = text(line.label)
+			}
+			return entry
+		})
 }
 
 /**
@@ -274,6 +339,7 @@ export function draftProblems(draft) {
 	if (draft.kind === 'saml-sp' && !/^https:\/\//.test(text(draft.idpMetadataUrl))) {
 		problems.push(t('integriq', 'Enter the identity provider metadata URL, starting with https://.'))
 	}
+	problems.push(...attributeProblems(draft))
 	if (draft.kind === 'oidc-rp') {
 		if (!/^https:\/\//.test(text(draft.issuer))) {
 			problems.push(t('integriq', 'Enter the issuer, starting with https://.'))
@@ -291,6 +357,28 @@ export function draftProblems(draft) {
 }
 
 /**
+ * What is wrong with an attribute provider's attribute list; empty for any other provider.
+ *
+ * @param {object} draft The draft.
+ * @return {string[]} The problems.
+ * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
+ */
+function attributeProblems(draft) {
+	if (!isAttributeProvider(draft.provider)) {
+		return []
+	}
+	const lines = Array.isArray(draft.attributes) ? draft.attributes : []
+	const problems = []
+	if (attributeEntries(lines).length === 0) {
+		problems.push(t('integriq', 'Add at least one attribute a service may ask for.'))
+	}
+	if (lines.some((line) => !text(line.id) || !text(line.claim))) {
+		problems.push(t('integriq', 'Give every attribute an id and a claim name.'))
+	}
+	return problems
+}
+
+/**
  * The payload OpenRegister stores for a draft: the fields of the draft's
  * kind only, empty values left out, and credential ids for the offered
  * roles only.
@@ -299,6 +387,9 @@ export function draftProblems(draft) {
  * @return {object} The payload.
  */
 export function payloadFromDraft(draft) {
+	if (isAttributeProvider(draft.provider)) {
+		return attributePayload(draft)
+	}
 	const payload = {
 		organisation: text(draft.organisation),
 		provider: draft.provider,
@@ -333,6 +424,45 @@ export function payloadFromDraft(draft) {
 	for (const role of offeredRoles(draft)) {
 		if (text(draft.credentials[role])) {
 			credentials[role] = text(draft.credentials[role])
+		}
+	}
+	payload.credentials = credentials
+	return payload
+}
+
+/**
+ * The payload of an attribute provider's draft: the OIDC fields, the
+ * attribute list, and the credentials it offers. No subject or assurance
+ * mapping: an attribute login has neither.
+ *
+ * @param {object} draft The draft.
+ * @return {object} The payload.
+ * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
+ */
+function attributePayload(draft) {
+	const fixed = fixedForProvider({ ...draft })
+	const payload = {
+		organisation: text(fixed.organisation),
+		provider: fixed.provider,
+		kind: fixed.kind,
+		enabled: fixed.enabled === true,
+		pseudonymisation: fixed.pseudonymisation,
+		clientAuth: fixed.clientAuth,
+		yiviAttributes: attributeEntries(fixed.attributes),
+		yiviBsnToConsumer: fixed.yiviBsnToConsumer === true,
+	}
+	if (text(fixed.yiviTrust)) {
+		payload.yiviTrust = text(fixed.yiviTrust)
+	}
+	for (const key of ['label', 'issuer', 'clientId']) {
+		if (text(fixed[key])) {
+			payload[key] = text(fixed[key])
+		}
+	}
+	const credentials = {}
+	for (const role of offeredRoles(fixed)) {
+		if (text(fixed.credentials[role])) {
+			credentials[role] = text(fixed.credentials[role])
 		}
 	}
 	payload.credentials = credentials

@@ -12,7 +12,12 @@
  * registration POSTed with references only, Test reporting each check, and a
  * delete confirmed by a dialog that names the organisation.
  *
+ * The Yivi tests pin that an attribute provider is OIDC only and edits its
+ * attribute list instead of the subject, assurance and pseudonymisation
+ * settings (change idp-broker-yivi-route, task 5).
+ *
  * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-beheer-authenticatie-configures-the-registrations-req-idpc-008
+ * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -24,6 +29,7 @@ import {
 	draftFromObject,
 	draftProblems,
 	emptyDraft,
+	fixedForProvider,
 	offeredRoles,
 	organisationOptions,
 	payloadFromDraft,
@@ -357,5 +363,145 @@ describe('the Authenticatie section', () => {
 		await wrapper.find('[data-testid="idp-registration-delete-confirm"]').trigger('click')
 		await flushPromises()
 		expect(del).toHaveBeenCalledWith(`${OBJECTS_URL}/reg-1`)
+	})
+})
+
+describe('a Yivi registration', () => {
+	const YIVI = {
+		id: 'reg-y',
+		organisation: ORG,
+		provider: 'yivi',
+		kind: 'saml-sp',
+		pseudonymisation: 'polymorphic',
+		enabled: true,
+		issuer: 'https://yivi-bridge.example',
+		clientId: 'client-y',
+		clientAuth: 'client_secret_basic',
+		subjectMapping: { bsn: 'urn:bsn' },
+		assuranceMapping: { basis: 'low' },
+		yiviTrust: 'low',
+		yiviBsnToConsumer: true,
+		yiviAttributes: [
+			{ id: 'pbdf.gemeente.personalData.fullname', claim: 'fullname', label: 'Naam' },
+			{ id: 'pbdf.gemeente.bsn.bsn', claim: 'bsn', carriesBsn: true },
+			'not-an-entry',
+		],
+		credentials: { clientSecret: '7', salt: '8', signing: '9' },
+	}
+
+	beforeEach(() => {
+		get.mockReset()
+		post.mockReset()
+		put.mockReset()
+		answer({ registrations: [] })
+	})
+
+	it('reads back as an OIDC draft with its attributes, whatever was stored', () => {
+		const draft = draftFromObject(YIVI)
+		expect(draft.kind).toBe('oidc-rp')
+		expect(draft.pseudonymisation).toBe('hmac')
+		expect(draft.attributes).toEqual([
+			{ id: 'pbdf.gemeente.personalData.fullname', claim: 'fullname', label: 'Naam', carriesBsn: false },
+			{ id: 'pbdf.gemeente.bsn.bsn', claim: 'bsn', label: '', carriesBsn: true },
+		])
+		expect(draftFromObject({ provider: 'digid' }).attributes).toEqual([])
+	})
+
+	it('stores the OIDC fields and the attribute list, and keeps the trust and BSN settings', () => {
+		const draft = draftFromObject(YIVI)
+		expect(draftProblems(draft)).toEqual([])
+		expect(payloadFromDraft(draft)).toEqual({
+			organisation: ORG,
+			provider: 'yivi',
+			kind: 'oidc-rp',
+			enabled: true,
+			pseudonymisation: 'hmac',
+			clientAuth: 'client_secret_basic',
+			issuer: 'https://yivi-bridge.example',
+			clientId: 'client-y',
+			yiviAttributes: [
+				{ id: 'pbdf.gemeente.personalData.fullname', claim: 'fullname', label: 'Naam', carriesBsn: false },
+				{ id: 'pbdf.gemeente.bsn.bsn', claim: 'bsn', carriesBsn: true },
+			],
+			yiviBsnToConsumer: true,
+			yiviTrust: 'low',
+			credentials: { clientSecret: '7', salt: '8' },
+		})
+	})
+
+	it('names an empty attribute list and a line without id or claim', () => {
+		const draft = fixedForProvider({ ...emptyDraft(), provider: 'yivi', organisation: ORG, issuer: 'https://b.example', clientId: 'c' })
+		draft.credentials.signing = '9'
+		draft.credentials.salt = '8'
+		expect(draftProblems(draft)).toEqual(['Add at least one attribute a service may ask for.'])
+
+		draft.attributes = [{ id: 'pbdf.x', claim: '', label: '', carriesBsn: false }]
+		expect(draftProblems(draft)).toEqual([
+			'Add at least one attribute a service may ask for.',
+			'Give every attribute an id and a claim name.',
+		])
+
+		draft.attributes.push({ id: 'pbdf.y', claim: 'y', label: '', carriesBsn: false })
+		expect(draftProblems(draft)).toEqual(['Give every attribute an id and a claim name.'])
+		expect(payloadFromDraft(draft).yiviAttributes).toEqual([{ id: 'pbdf.y', claim: 'y', carriesBsn: false }])
+		expect(payloadFromDraft(draft)).not.toHaveProperty('yiviTrust')
+	})
+
+	it('shows only the OIDC fields and the attribute list, with the protocol fixed', async () => {
+		const wrapper = mount(IdpRegistrationSettings)
+		await flushPromises()
+		await wrapper.find('[data-testid="idp-registrations-add-empty"]').trigger('click')
+		const modal = wrapper.findComponent(IdpRegistrationModal)
+		expect(modal.find('[data-testid="idp-registration-add-attribute"]').exists()).toBe(false)
+
+		modal.vm.set('provider', { id: 'yivi' })
+		await flushPromises()
+
+		expect(modal.vm.draft.kind).toBe('oidc-rp')
+		expect(modal.find('[data-testid="idp-registration-kind"]').attributes('disabled')).toBe('true')
+		expect(modal.find('[data-testid="idp-registration-kind-fixed"]').exists()).toBe(true)
+		expect(modal.find('[data-testid="idp-registration-metadata-url"]').exists()).toBe(false)
+		expect(modal.find('[data-testid="idp-registration-issuer"]').exists()).toBe(true)
+		expect(modal.find('[data-testid="idp-registration-client-id"]').exists()).toBe(true)
+		expect(modal.find('[data-testid="idp-registration-pseudonymisation"]').exists()).toBe(false)
+		expect(modal.find('[data-testid="idp-registration-subject-bsn"]').exists()).toBe(false)
+		expect(modal.find('[data-testid="idp-registration-add-level"]').exists()).toBe(false)
+
+		modal.vm.set('kind', { id: 'saml-sp' })
+		await flushPromises()
+		expect(modal.vm.draft.kind).toBe('oidc-rp')
+
+		await modal.find('[data-testid="idp-registration-add-attribute"]').trigger('click')
+		await flushPromises()
+		expect(modal.find('[data-testid="idp-registration-attribute-0"]').exists()).toBe(true)
+	})
+
+	it('saves a Yivi registration with its attributes', async () => {
+		post.mockResolvedValue({ data: {} })
+		const wrapper = mount(IdpRegistrationSettings)
+		await flushPromises()
+		await wrapper.find('[data-testid="idp-registrations-add-empty"]').trigger('click')
+		const modal = wrapper.findComponent(IdpRegistrationModal)
+		modal.vm.set('provider', { id: 'yivi' })
+		Object.assign(modal.vm.draft, { organisation: ORG, issuer: 'https://yivi-bridge.example', clientId: 'client-y' })
+		modal.vm.draft.credentials.signing = '7'
+		modal.vm.draft.credentials.salt = '8'
+		modal.vm.draft.attributes.push({ id: 'pbdf.sidn-pbdf.email.email', claim: 'email', label: 'E-mail', carriesBsn: false })
+		await modal.find('form').trigger('submit')
+		await flushPromises()
+
+		expect(post).toHaveBeenCalledWith(OBJECTS_URL, {
+			organisation: ORG,
+			provider: 'yivi',
+			kind: 'oidc-rp',
+			enabled: false,
+			pseudonymisation: 'hmac',
+			clientAuth: 'private_key_jwt',
+			issuer: 'https://yivi-bridge.example',
+			clientId: 'client-y',
+			yiviAttributes: [{ id: 'pbdf.sidn-pbdf.email.email', claim: 'email', label: 'E-mail', carriesBsn: false }],
+			yiviBsnToConsumer: false,
+			credentials: { signing: '7', salt: '8' },
+		})
 	})
 })
