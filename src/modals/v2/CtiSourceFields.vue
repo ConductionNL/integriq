@@ -150,7 +150,7 @@
 			inputId="cn-cti-caller-lookup-source"
 			:inputLabel="t('integriq', 'Caller lookup source')"
 			:modelValue="optionFor(draft.callerLookupSource)"
-			:options="lookupSourceOptions"
+			:options="sourceOptions"
 			:loading="sourcesLoading"
 			:clearable="true"
 			:placeholder="t('integriq', 'Pick a KISS source')"
@@ -164,7 +164,7 @@
 			}}
 		</p>
 		<p
-			v-if="!sourcesLoading && lookupSourceOptions.length === 0"
+			v-if="!sourcesLoading && sourceOptions.length === 0"
 			class="cn-cti-fields__note">
 			{{
 				t(
@@ -193,10 +193,10 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcSelect, NcTextField } from '@nextcloud/vue'
+import sourceConfigurationDraft from '../../mixins/sourceConfigurationDraft.js'
 
 /**
  * The bindings CtiSourceResolver knows, by the id it switches on. A provider
@@ -231,7 +231,7 @@ const KISS_SOURCE_TYPE = 'kiss'
 /**
  * A stored map, or an empty one when the stored value is not a map.
  *
- * @param {*} value the stored value
+ * @param {unknown} value the stored value
  * @return {object} the map
  */
 function mapOf(value) {
@@ -246,21 +246,11 @@ export default {
 		NcTextField,
 	},
 
+	mixins: [sourceConfigurationDraft],
+
 	props: {
-		/** The source's configuration object. */
-		configuration: { type: Object, default: () => ({}) },
 		/** The saved source's id, or empty before the first save. */
 		sourceId: { type: String, default: '' },
-	},
-
-	emits: ['update:configuration'],
-
-	data() {
-		return {
-			draft: { ...(this.configuration ?? {}) },
-			lookupSourceOptions: [],
-			sourcesLoading: false,
-		}
 	},
 
 	computed: {
@@ -345,94 +335,30 @@ export default {
 		},
 	},
 
-	watch: {
-		/**
-		 * Take over a configuration the parent swaps in, unless it is the one
-		 * this component just emitted.
-		 *
-		 * @param {object} next the new configuration
-		 * @return {void}
-		 * @spec exclude reactive-state sync passthrough
-		 */
-		configuration(next) {
-			if (next === this.lastEmitted) return
-			this.draft = { ...(next ?? {}) }
-		},
-	},
-
-	/**
-	 * Load the KISS sources the caller lookup picker offers.
-	 *
-	 * @return {void}
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
-	 */
-	created() {
-		this.lastEmitted = null
-		this.fetchLookupSources()
-	},
-
 	methods: {
 		t,
 
 		/**
-		 * Load the KISS sources on the REST provider: ConfiguredCallerSearch
-		 * asks no other kind, so offering one would save a lookup that never
-		 * runs. A failed fetch leaves an empty list, never a broken editor.
+		 * Offer only KISS sources on the REST binding: ConfiguredCallerSearch
+		 * asks no other kind, so offering one would save a lookup that never runs.
 		 *
-		 * @return {Promise<void>} resolves once the list is loaded
+		 * @param {object} item a source object
+		 * @return {boolean} true for a searchable KISS source
 		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 		 */
-		async fetchLookupSources() {
-			this.sourcesLoading = true
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/integriq/source'),
-					// `_limit`, not `limit`: an unprefixed param is a property filter.
-					{ params: { _limit: 500 } },
-				)
-				const list = Array.isArray(response?.data?.results)
-					? response.data.results
-					: []
-				this.lookupSourceOptions = list
-					.filter((item) => item?.type === KISS_SOURCE_TYPE && item?.configuration?.provider === 'rest')
-					.map((item) => ({
-						id: String(item['@self']?.id || item.id || item.uuid),
-						label: item.name || item.title || String(item.id),
-					}))
-			} catch {
-				this.lookupSourceOptions = []
-			} finally {
-				this.sourcesLoading = false
-			}
-		},
-
-		/**
-		 * The picker option for a stored source id; an id this instance does
-		 * not list is shown as itself rather than as empty.
-		 *
-		 * @param {string} id the stored source id
-		 * @return {object|null} the option
-		 * @spec exclude trivial select-value projection, presentation only
-		 */
-		optionFor(id) {
-			if (!id) return null
-			return (
-				this.lookupSourceOptions.find((option) => option.id === String(id)) ?? {
-					id: String(id),
-					label: String(id),
-				}
-			)
+		acceptsSource(item) {
+			return item?.type === KISS_SOURCE_TYPE && item?.configuration?.provider === 'rest'
 		},
 
 		/**
 		 * A stored value as input text.
 		 *
-		 * @param {*} value the stored value
+		 * @param {unknown} value the stored value
 		 * @return {string} the text
 		 * @spec exclude trivial text projection, presentation only
 		 */
 		stringOf(value) {
-			return value == null ? '' : String(value)
+			return value === null || value === undefined ? '' : String(value)
 		},
 
 		/**
@@ -447,19 +373,6 @@ export default {
 				.filter(([, ours]) => ours === kind)
 				.map(([vendor]) => vendor)
 				.join(', ')
-		},
-
-		/**
-		 * Write one key and emit the whole configuration.
-		 *
-		 * @param {string} key the configuration key the backend reads
-		 * @param {*} value the value
-		 * @return {void}
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
-		 */
-		write(key, value) {
-			this.draft = { ...this.draft, [key]: value }
-			this.emitDraft()
 		},
 
 		/**
@@ -504,19 +417,6 @@ export default {
 				}
 			}
 			this.write('kindMapping', kindMapping)
-		},
-
-		/**
-		 * Emit a copy of the draft and remember it, so the watcher does not
-		 * reset the draft when the parent hands it back.
-		 *
-		 * @return {void}
-		 * @spec exclude emit passthrough
-		 */
-		emitDraft() {
-			const configuration = { ...this.draft }
-			this.lastEmitted = configuration
-			this.$emit('update:configuration', configuration)
 		},
 	},
 }
