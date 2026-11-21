@@ -3,8 +3,8 @@
 /**
  * Hands one watched file to the intake app its synchronization names.
  *
- * @category Service
- * @package  OCA\Integriq\Service\WatchedFolder
+ * @category Event
+ * @package  OCA\Integriq\Event
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,8 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service\WatchedFolder;
+namespace OCA\Integriq\Event;
 
-use OCA\Integriq\Event\WatchedFileArrivedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
 
@@ -30,7 +29,8 @@ use OCP\Files\File;
  * Target `intake` of design D6: the file is announced as a
  * WatchedFileArrivedEvent, and only the app the synchronization names may
  * accept it. What that app makes of it (filinq's scan batch, for one) is its
- * own; integriq keeps the reference it answered.
+ * own; integriq keeps the reference it answered. It sits beside the event,
+ * and takes the synchronization and its source as they are stored.
  *
  * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
  */
@@ -49,24 +49,25 @@ class WatchedFileHandOver {
 	/**
 	 * Announce the file and answer the reference of the app that accepted it.
 	 *
-	 * @param WatchedFolder $watched The watched folder, with `target: intake`.
-	 * @param File          $file    The file.
+	 * @param array<string, mixed> $synchronization The synchronization, with `target: intake`.
+	 * @param array<string, mixed> $source          Its `nextcloud-folder` source.
+	 * @param File                 $file            The file.
 	 *
 	 * @return string|null The accepting app's reference, or null when nobody accepted.
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
 	 */
-	public function handOver(WatchedFolder $watched, File $file): ?string {
-		$intakeApp = (string)$watched->intakeApp();
+	public function handOver(array $synchronization, array $source, File $file): ?string {
+		$intakeApp = trim((string)(($synchronization['sourceConfig'] ?? [])['intakeApp'] ?? ''));
 		if ($intakeApp === '') {
 			// No app is named, so none may accept; announcing it would let accept('') through.
 			return null;
 		}
 
-		$owner = $watched->ownerUid();
+		$owner = trim((string)(($source['configuration'] ?? [])['ownerUid'] ?? ''));
 		$event = new WatchedFileArrivedEvent(
-			synchronizationId: $watched->synchronizationId(),
-			sourceId: (string)($watched->source['id'] ?? $watched->source['uuid'] ?? $watched->synchronization['sourceId'] ?? ''),
+			synchronizationId: (string)($synchronization['id'] ?? $synchronization['uuid'] ?? ''),
+			sourceId: (string)($source['id'] ?? $source['uuid'] ?? $synchronization['sourceId'] ?? ''),
 			intakeApp: $intakeApp,
 			fileId: (int)$file->getId(),
 			path: $this->relativePath(absolute: $file->getPath(), owner: $owner),

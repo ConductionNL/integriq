@@ -31,8 +31,8 @@ use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\NextcloudFolderFiles;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\Integriq\Event\WatchedFileArrivedEvent;
+use OCA\Integriq\Event\WatchedFileHandOver;
 use OCA\Integriq\Service\WatchedFolder\WatchedFileDelivery;
-use OCA\Integriq\Service\WatchedFolder\WatchedFileHandOver;
 use OCA\Integriq\Service\WatchedFolder\WatchedFileMarker;
 use OCA\Integriq\Service\WatchedFolder\WatchedFileWriter;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolder;
@@ -63,7 +63,7 @@ use RuntimeException;
  * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileWriter
  * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileMarker
  * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileDelivery
- * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileHandOver
+ * @covers \OCA\Integriq\Event\WatchedFileHandOver
  * @uses   \OCA\Integriq\Event\WatchedFileArrivedEvent
  * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFolder
  */

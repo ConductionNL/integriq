@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\WatchedFolder;
 
+use OCA\Integriq\Event\WatchedFileHandOver;
 use OCP\Files\File;
 use RuntimeException;
 
@@ -61,7 +62,7 @@ class WatchedFileDelivery {
 	 */
 	public function deliver(WatchedFolder $watched, File $file): ?string {
 		if ($watched->intakeApp() !== null) {
-			return $this->handOver->handOver(watched: $watched, file: $file);
+			return $this->handOver->handOver(synchronization: $watched->synchronization, source: $watched->source, file: $file);
 		}
 
 		$target = $watched->target();
