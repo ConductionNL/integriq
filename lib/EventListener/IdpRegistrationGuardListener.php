@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
@@ -61,15 +62,30 @@ class IdpRegistrationGuardListener implements IEventListener {
 	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
 	 */
 	public function handle(Event $event): void {
-		$refusal = null;
 		if ($event instanceof ObjectCreatingEvent) {
-			$refusal = $this->check->refusal(object: $event->getObject());
+			$this->judge(event: $event, object: $event->getObject());
 		}
 
 		if ($event instanceof ObjectUpdatingEvent) {
-			$refusal = $this->check->refusal(object: $event->getNewObject());
+			$this->judge(event: $event, object: $event->getNewObject());
 		}
 
+	}//end handle()
+
+	/**
+	 * Stop the save when the check refuses the object.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event  The event.
+	 * @param ObjectEntity                            $object The object being saved.
+	 *
+	 * @return void
+	 */
+	private function judge(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
+		$refusal = $this->check->refusal(
+			data: (array)$object->getObject(),
+			register: $object->getRegister(),
+			schema: $object->getSchema()
+		);
 		if ($refusal === null) {
 			return;
 		}
@@ -77,5 +93,5 @@ class IdpRegistrationGuardListener implements IEventListener {
 		$event->setErrors($refusal);
 		$event->stopPropagation();
 
-	}//end handle()
+	}//end judge()
 }//end class

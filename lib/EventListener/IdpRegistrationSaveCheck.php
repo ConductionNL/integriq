@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IL10N;
@@ -93,18 +92,19 @@ class IdpRegistrationSaveCheck {
 	 * Only an idpRegistration in the integriq register is judged; any other
 	 * object passes.
 	 *
-	 * @param ObjectEntity $object The object being saved.
+	 * @param array<string, mixed> $data     The object's data.
+	 * @param string|null          $register The object's register id.
+	 * @param string|null          $schema   The object's schema id.
 	 *
 	 * @return array{code: string, message: string, status: int}|null The errors.
 	 *
 	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
 	 */
-	public function refusal(ObjectEntity $object): ?array {
-		if ($this->isRegistration(object: $object) === false) {
+	public function refusal(array $data, ?string $register, ?string $schema): ?array {
+		if ($this->isRegistration(register: $register, schema: $schema) === false) {
 			return null;
 		}
 
-		$data = (array)$object->getObject();
 		$provider = trim((string)($data['provider'] ?? ''));
 		$kind = trim((string)($data['kind'] ?? ''));
 		if (in_array(needle: $provider, haystack: self::OIDC_ONLY_PROVIDERS, strict: true) === false || $kind === self::KIND_OIDC) {
@@ -125,20 +125,21 @@ class IdpRegistrationSaveCheck {
 	/**
 	 * Whether the object is an idpRegistration in the integriq register.
 	 *
-	 * @param ObjectEntity $object The object being saved.
+	 * @param string|null $register The object's register id.
+	 * @param string|null $schema   The object's schema id.
 	 *
 	 * @return bool
 	 */
-	private function isRegistration(ObjectEntity $object): bool {
+	private function isRegistration(?string $register, ?string $schema): bool {
 		try {
-			$schema = $this->schemaMapper->find($object->getSchema())->getSlug();
-			$register = $this->registerMapper->find($object->getRegister())->getSlug();
+			$schemaSlug = $this->schemaMapper->find($schema)->getSlug();
+			$registerSlug = $this->registerMapper->find($register)->getSlug();
 		} catch (Throwable $failure) {
 			$this->logger->debug('[integriq] idp registration check: could not resolve register/schema: ' . $failure->getMessage());
 			return false;
 		}
 
-		return $schema === self::REGISTRATION['schema'] && $register === self::REGISTRATION['register'];
+		return $schemaSlug === self::REGISTRATION['schema'] && $registerSlug === self::REGISTRATION['register'];
 
 	}//end isRegistration()
 }//end class
