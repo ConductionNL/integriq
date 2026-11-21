@@ -42,6 +42,7 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectFindOptions as PublishedObjectFindOptions;
 
 /**
  * Reproduces OpenRegister's render boundary for source-secret tests.
@@ -116,7 +117,7 @@ class RenderBoundarySimulatingObjectService extends OrObjectService {
 	 */
 	public function find(
 		$id,
-		?ObjectFindOptions $options = null,
+		ObjectFindOptions|PublishedObjectFindOptions|null $options = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true
 	): ?ObjectEntity {
