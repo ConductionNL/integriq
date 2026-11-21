@@ -690,6 +690,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'portal#applications', 'url' => '/api/portal/applications', 'verb' => 'GET'],
 		['name' => 'portal#createApplication', 'url' => '/api/portal/applications', 'verb' => 'POST'],
 		['name' => 'portal#requestAccess', 'url' => '/api/portal/applications/{consumerId}/subscriptions', 'verb' => 'POST'],
+		// A developer's own application keys (access-developer-portal-and-subscriptions D4): the developer group and the ownership are checked in the body.
+		['name' => 'portalKeys#index', 'url' => '/api/portal/applications/{consumerId}/keys', 'verb' => 'GET'],
+		['name' => 'portalKeys#create', 'url' => '/api/portal/applications/{consumerId}/keys', 'verb' => 'POST'],
+		['name' => 'portalKeys#destroy', 'url' => '/api/portal/applications/{consumerId}/keys/{credentialId}', 'verb' => 'DELETE'],
 		['name' => 'portal#getSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'GET'],
 		['name' => 'portal#setSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'PUT'],
 		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],

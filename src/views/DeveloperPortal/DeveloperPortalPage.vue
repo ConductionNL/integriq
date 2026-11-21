@@ -11,7 +11,8 @@
   /api/portal/applications), which check the developer group and return only
   public products and the developer's own applications; requesting access
   posts to /api/portal/applications/{id}/subscriptions, which opens the
-  product's approval.
+  product's approval. Each application's API keys are managed by
+  PortalApplicationKeys over /api/portal/applications/{id}/keys.
 
   @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
   @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
@@ -116,6 +117,7 @@
 							{{ t('integriq', 'Request access') }}
 						</NcButton>
 					</div>
+					<PortalApplicationKeys :applicationId="application.id" />
 				</div>
 			</section>
 		</template>
@@ -129,6 +131,7 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import PortalApplicationKeys from './PortalApplicationKeys.vue'
 import { productOptionsOf, requestOutcome, subscriptionStatusLabel, tierNamesOf } from './portal.js'
 
 const BASE = '/apps/integriq/api/portal'
@@ -136,7 +139,7 @@ const BASE = '/apps/integriq/api/portal'
 export default {
 	name: 'DeveloperPortalPage',
 
-	components: { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField, LockOutline },
+	components: { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField, LockOutline, PortalApplicationKeys },
 
 	data() {
 		return {

@@ -15,8 +15,9 @@
  * (REQ-DEVP-001), creating an application and requesting access that waits for
  * the approver, and another developer's application being out of reach
  * (REQ-DEVP-002), and the seeded products being there on a fresh install
- * (task 6). Self-service keys (REQ-DEVP-003) wait for access-consumer-credentials;
- * the notice fan-out and the end-date check are covered by PHPUnit and by the
+ * (task 6), and a developer replacing a key of their own application through
+ * the portal key routes, which another developer cannot reach (REQ-DEVP-003).
+ * The notice fan-out and the end-date check are covered by PHPUnit and by the
  * Newman folder "Developer portal" in tests/postman/integriq.postman_collection.json.
  */
 
@@ -256,6 +257,55 @@ test.describe('developer portal', () => {
 		} finally {
 			await devA.dispose()
 			await devB.dispose()
+		}
+	})
+
+	// @e2e access-developer-portal-and-subscriptions::a-developer-replaces-a-leaked-key
+	test('a developer replaces a key of their own application, and another developer cannot reach it', async ({ browser, playwright }) => {
+		const name = `E2E keys app ${Date.now()}`
+		const devA = await asAccount(playwright, DEV_A)
+		const devB = await asAccount(playwright, DEV_B)
+		try {
+			const appId = await applicationOf(devA, name)
+			const keys = `${PORTAL_API}/applications/${appId}/keys`
+
+			const leaked = await devA.post(keys, { data: { label: 'leaked' } })
+			expect(leaked.status(), 'generating a key answers 201').toBe(201)
+			const leakedBody = await leaked.json()
+			expect(leakedBody.key, 'the key is in the create response').toBeTruthy()
+
+			const fresh = await devA.post(keys, { data: { label: 'fresh' } })
+			expect(fresh.status()).toBe(201)
+			const freshBody = await fresh.json()
+
+			const revoked = await devA.delete(`${keys}/${leakedBody.credential.id}`)
+			expect(revoked.status(), 'revoking the leaked key answers 200').toBe(200)
+
+			const listed = await (await devA.get(keys)).json()
+			const ids = (listed.results ?? []).map((credential: any) => credential.id)
+			expect(ids).toContain(freshBody.credential.id)
+			expect(ids).not.toContain(leakedBody.credential.id)
+			expect(JSON.stringify(listed), 'a key is never listed again').not.toContain(freshBody.key)
+
+			expect((await devB.get(keys)).status(), "another developer's application answers 404").toBe(404)
+			expect((await devB.post(keys, { data: { label: 'mine' } })).status()).toBe(404)
+			expect((await devB.delete(`${keys}/${freshBody.credential.id}`)).status()).toBe(404)
+		} finally {
+			await devA.dispose()
+			await devB.dispose()
+		}
+
+		const context = await browserAs(browser, DEV_A)
+		try {
+			const page = await context.newPage()
+			await page.goto(`${APP_BASE}/developer-portal`, { waitUntil: 'domcontentloaded' })
+			const card = page.getByTestId('developer-portal-application').filter({ hasText: name })
+			await expect(card.getByTestId('developer-portal-key').filter({ hasText: 'fresh' })).toBeVisible({ timeout: 30_000 })
+			await card.getByLabel('Key label').fill('from the page')
+			await card.getByTestId('developer-portal-generate-key').click()
+			await expect(card.getByTestId('developer-portal-new-key')).toContainText('only time the key is shown')
+		} finally {
+			await context.close()
 		}
 	})
 })
