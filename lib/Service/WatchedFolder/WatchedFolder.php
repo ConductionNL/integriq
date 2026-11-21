@@ -134,17 +134,6 @@ final class WatchedFolder {
 	}//end intakeApp()
 
 	/**
-	 * The id of the `nextcloud-folder` source.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
-	 */
-	public function sourceId(): string {
-		return (string)($this->source['id'] ?? $this->source['uuid'] ?? $this->synchronization['sourceId'] ?? '');
-	}//end sourceId()
-
-	/**
 	 * The owner of the watched folder.
 	 *
 	 * @return string

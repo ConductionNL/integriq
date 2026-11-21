@@ -66,7 +66,7 @@ class WatchedFileHandOver {
 		$owner = $watched->ownerUid();
 		$event = new WatchedFileArrivedEvent(
 			synchronizationId: $watched->synchronizationId(),
-			sourceId: $watched->sourceId(),
+			sourceId: (string)($watched->source['id'] ?? $watched->source['uuid'] ?? $watched->synchronization['sourceId'] ?? ''),
 			intakeApp: $intakeApp,
 			fileId: (int)$file->getId(),
 			path: $this->relativePath(absolute: $file->getPath(), owner: $owner),
