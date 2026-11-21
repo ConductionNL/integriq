@@ -25,8 +25,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * The pages the app renders are src/manifest.json's plus every src/manifest.d fragment's.
  *
- * buildManifest() merges the fragments in file-name order and a page whose id
- * is already known REPLACES the earlier one without a word. So a page id
+ * The fragments are merged by buildManifest() in file-name order, and a page
+ * whose id is already known REPLACES the earlier one without a word. So a page id
  * declared twice is a page whose first definition never renders, while a
  * test that reads only that one fragment keeps passing.
  */
@@ -86,9 +86,13 @@ class ManifestFragmentPagesTest extends TestCase {
 			}
 		}
 
-		$this->assertGreaterThan(50, count($declaredIn), 'the manifest files must declare pages for this check to mean anything');
+		$this->assertGreaterThan(
+			expected: 50,
+			actual: count($declaredIn),
+			message: 'the manifest files must declare pages for this check to mean anything'
+		);
 		$duplicates = array_filter($declaredIn, static fn (array $files): bool => count($files) > 1);
-		$this->assertSame([], $duplicates, 'page ids declared more than once: only the last definition renders');
+		$this->assertSame(expected: [], actual: $duplicates, message: 'page ids declared more than once: only the last definition renders');
 	}//end testEveryPageIdIsDeclaredOnce()
 
 	/**
@@ -105,11 +109,11 @@ class ManifestFragmentPagesTest extends TestCase {
 		$index = array_column(($pages['LtiTools']['config']['actions'] ?? []), 'id');
 		$detail = array_column(($pages['LtiToolDetail']['config']['headerActions'] ?? []), 'id');
 		foreach (['approve', 'suspend', 'generate-key', 'rotate-key'] as $action) {
-			$this->assertContains($action, $index, 'row action ' . $action . ' on LtiTools');
-			$this->assertContains($action, $detail, 'header action ' . $action . ' on LtiToolDetail');
+			$this->assertContains(needle: $action, haystack: $index, message: 'row action ' . $action . ' on LtiTools');
+			$this->assertContains(needle: $action, haystack: $detail, message: 'header action ' . $action . ' on LtiToolDetail');
 		}
 
 		$panels = array_column(($pages['LtiToolDetail']['config']['bodyWidgets'] ?? []), 'component');
-		$this->assertSame(['LtiPlatformDetails'], $panels);
+		$this->assertSame(expected: ['LtiPlatformDetails'], actual: $panels);
 	}//end testTheRenderedLtiToolPageHasItsActionsAndThePlatformDetails()
 }//end class
