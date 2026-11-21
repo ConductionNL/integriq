@@ -137,6 +137,16 @@
       "version": "1.0.0"
     },
     {
+      "@self": { "register": "integriq", "schema": "source", "slug": "example-watched-folder" },
+      "name": "Example watched folder",
+      "description": "Dormant Nextcloud folder source: the folder Woo/inkomend in the Files of woo-intake. Set the owner and the folder before enabling; the first test names the folder when it does not exist.",
+      "type": "nextcloud-folder",
+      "location": "",
+      "configuration": { "ownerUid": "woo-intake", "rootPath": "Woo/inkomend" },
+      "isEnabled": false,
+      "version": "1.0.0"
+    },
+    {
       "@self": {
         "register": "integriq",
         "schema": "source",
@@ -469,6 +479,18 @@
       "sourceType": "sftp",
       "sourceConfig": { "pattern": "*.csv", "after": "move", "archivePath": "processed", "filesFolder": "Partner/inbox" },
       "targetId": "<placeholder>",
+      "targetType": "register/schema",
+      "status": "disabled",
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "integriq", "schema": "synchronization", "slug": "example-watched-folder-publications" },
+      "name": "Example watched folder into draft publications",
+      "description": "Disabled: each PDF an officer drops in the example watched folder becomes a draft publication in opencatalogi, with the PDF attached and no publication date, and is moved to processed (or failed). Point sourceId at the example-watched-folder source and pick a mapping before enabling.",
+      "sourceId": "<placeholder>",
+      "sourceType": "nextcloud-folder",
+      "sourceConfig": { "pattern": "*.pdf", "after": "move", "processedPath": "processed", "failedPath": "failed", "stableSeconds": 60 },
+      "targetId": "opencatalogi/publication",
       "targetType": "register/schema",
       "status": "disabled",
       "version": "1.0.0"

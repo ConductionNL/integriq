@@ -59,7 +59,8 @@ listener, ingest job or `WatchedFileArrivedEvent` exists.
 - **acceptance_criteria**:
   - GIVEN a fresh install WHEN the seed loads THEN the example exists and is disabled
   - GIVEN the officer drops a PDF in the watched folder WHEN the job has run THEN the draft publication is listed in opencatalogi with the PDF attached and no publication date
-- [ ] Implement. Add the seed row by hand; do not run a generator over the seed file.
+- [x] Implement. Add the seed row by hand; do not run a generator over the seed file.
+  > Seeded by hand in `lib/Settings/integriq_seed_data.json`: the dormant source `example-watched-folder` (`nextcloud-folder`, `woo-intake`'s `Woo/inkomend`) and the disabled synchronization `example-watched-folder-publications` (PDFs into `opencatalogi/publication` as drafts, moved to `processed` or `failed`). The editor fields are Task 5, the strings are in `l10n/en.js` and `l10n/nl.js`, and `docs/features/watched-folder.md` is the page (with the intake contract). Test: `tests/Unit/Settings/WatchedFolderSeedTest.php`. The screenshots and the Playwright run need a live instance.
 - [ ] Test: Playwright `tests/e2e/watched-folder.spec.ts` (enable the example, upload a file through the Files app, see the draft publication)
 
 ## Verification
