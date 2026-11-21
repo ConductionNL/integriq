@@ -40,6 +40,10 @@ use Throwable;
  * The sweep is the safety net behind the file event listener: it lists each
  * watched folder and queues the same job for every file not yet in a contract.
  *
+ * A synchronization with `target: intake` hands its files to an app instead
+ * (sources-sftp-adapter-intake-hand-over). Until that hand-over is built such
+ * a file is left alone, never written through the mapping.
+ *
  * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
  */
 class WatchedFolderService {
@@ -74,7 +78,7 @@ class WatchedFolderService {
 	 * @param int      $fileId            The file.
 	 * @param int|null $now               The clock, for tests.
 	 *
-	 * @return string What happened: `unwatched`, `known`, `gone`, `young`, `unresolved`, `failed` or `ingested`.
+	 * @return string What happened: `unwatched`, `intake`, `known`, `gone`, `young`, `unresolved`, `failed` or `ingested`.
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-run-never-publishes-and-only-marks-a-file-after-a-safe-write-req-sftp-004
 	 */
@@ -82,6 +86,10 @@ class WatchedFolderService {
 		$watched = $this->folders->byId(synchronizationId: $synchronizationId);
 		if ($watched === null) {
 			return 'unwatched';
+		}
+
+		if ($watched->isIntake() === true) {
+			return 'intake';
 		}
 
 		$contract = $this->contracts->findBySyncAndOrigin(synchronizationId: $synchronizationId, originId: self::ORIGIN_PREFIX . $fileId);
@@ -112,6 +120,10 @@ class WatchedFolderService {
 	public function sweep(): array {
 		$result = ['queued' => 0, 'stopped' => []];
 		foreach ($this->folders->all() as $watched) {
+			if ($watched->isIntake() === true) {
+				continue;
+			}
+
 			if ($watched->target() === null) {
 				$result['stopped'][] = $watched->synchronizationId();
 				continue;

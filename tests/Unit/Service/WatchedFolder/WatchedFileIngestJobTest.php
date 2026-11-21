@@ -243,6 +243,18 @@ final class WatchedFileIngestJobTest extends TestCase {
 	}//end testAnUnresolvedTargetWritesNothing()
 
 	/**
+	 * A synchronization with `target: intake` leaves the file alone until the hand-over exists: nothing is written.
+	 *
+	 * @return void
+	 */
+	public function testAnIntakeTargetIsNeverWrittenThroughTheMapping(): void {
+		$this->sourceConfig['target'] = 'intake';
+
+		$this->assertSame(expected: 'intake', actual: $this->service()->ingest(synchronizationId: 'sync-1', fileId: 42, now: self::NOW));
+		$this->assertSame(expected: [[], [], [], []], actual: [$this->saved, $this->made, $this->moves, $this->tagged]);
+	}//end testAnIntakeTargetIsNeverWrittenThroughTheMapping()
+
+	/**
 	 * The job runs the ingest for its argument, and drops an argument without a file and a synchronization.
 	 *
 	 * @return void

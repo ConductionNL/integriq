@@ -70,6 +70,7 @@ describe('state factories', () => {
 			'nextcloud-form': 'loadFormLists',
 			sftp: 'loadSourcesOnce',
 			ftps: 'loadSourcesOnce',
+			'nextcloud-folder': 'loadSourcesOnce',
 		})
 	})
 })

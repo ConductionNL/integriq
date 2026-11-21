@@ -127,6 +127,17 @@ final class WatchedFolder {
 	}//end failedPath()
 
 	/**
+	 * Whether a dropped file goes to an intake app (`target: intake`) rather than through the mapping.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+	 */
+	public function isIntake(): bool {
+		return $this->text(key: 'target', default: 'mapping') === 'intake';
+	}//end isIntake()
+
+	/**
 	 * The mapping that turns a file into the target object, or '' for none.
 	 *
 	 * @return string

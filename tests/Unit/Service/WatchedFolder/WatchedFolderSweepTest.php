@@ -80,6 +80,23 @@ final class WatchedFolderSweepTest extends TestCase {
 	}//end testAnUnresolvedTargetStopsBeforeAnyFile()
 
 	/**
+	 * An intake synchronization is not swept: its files wait for the hand-over.
+	 *
+	 * @return void
+	 */
+	public function testAnIntakeSynchronizationIsNotSwept(): void {
+		$intake = new WatchedFolder(
+			synchronization: ['id' => 'sync-intake', 'targetId' => 'a/b', 'sourceConfig' => ['target' => 'intake', 'intakeApp' => 'filinq']],
+			source: []
+		);
+
+		$result = $this->service(watched: [$intake], listed: ['sync-intake' => [41]], alreadyQueued: [])->sweep();
+
+		$this->assertSame(expected: ['queued' => 0, 'stopped' => []], actual: $result);
+		$this->assertSame(expected: [], actual: $this->listings);
+	}//end testAnIntakeSynchronizationIsNotSwept()
+
+	/**
 	 * One watched folder.
 	 *
 	 * @param string $id       The synchronization id.

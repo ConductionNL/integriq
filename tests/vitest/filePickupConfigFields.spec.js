@@ -18,6 +18,8 @@ import FilePickupConfigFields, {
 	AFTER_VALUES,
 	FORMAT_VALUES,
 	TARGET_VALUES,
+	WATCHED_AFTER_VALUES,
+	WATCHED_TARGET_VALUES,
 } from '@/views/Synchronization/FilePickupConfigFields.vue'
 import SyncConfigWidget from '@/views/Synchronization/SyncConfigWidget.vue'
 import syncKindOptions from '@/mixins/syncKindOptions.js'
@@ -278,5 +280,96 @@ describe('the file pickup kinds in the synchronization editor', () => {
 		expect(wrapper.emitted('update:config')[0][0]).toEqual({
 			filesFolder: 'Out',
 		})
+	})
+})
+
+/**
+ * The settings WatchedFolder reads (sources-sftp-adapter-watched-folder Task 5).
+ *
+ * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+ */
+describe('a watched Nextcloud folder', () => {
+	/**
+	 * Mount the fields in watched mode.
+	 *
+	 * @param {object} config the sourceConfig
+	 * @return {object} the wrapper
+	 */
+	function mountWatched(config = {}) {
+		return mount(FilePickupConfigFields, { props: { config, watched: true } })
+	}
+
+	it('offers the targets and marks a watched folder has, mapping and move by default', () => {
+		const wrapper = mountWatched()
+		const target = control(wrapper, 'NcSelect', '-target')
+		const after = control(wrapper, 'NcSelect', '-after')
+
+		expect(target.props('options').map((o) => o.id)).toEqual(WATCHED_TARGET_VALUES)
+		expect(WATCHED_TARGET_VALUES).toEqual(['mapping', 'intake'])
+		expect(target.props('modelValue').id).toBe('mapping')
+		expect(after.props('options').map((o) => o.id)).toEqual(WATCHED_AFTER_VALUES)
+		expect(WATCHED_AFTER_VALUES).toEqual(['move', 'tag'])
+		expect(after.props('modelValue').id).toBe('move')
+	})
+
+	it('shows none of the file server settings', () => {
+		const wrapper = mountWatched({ target: 'mapping' })
+		for (const suffix of ['-files-folder', '-archive-path', '-csv-delimiter']) {
+			expect(control(wrapper, 'NcTextField', suffix)).toBeUndefined()
+		}
+		const ids = wrapper.findAllComponents({ name: 'NcTextField' }).map((c) => String(c.attributes('data-id')))
+		expect(ids.some((id) => /-\d+-path$/.test(id)), 'no remote folder field').toBe(false)
+		expect(control(wrapper, 'NcSelect', '-file-format')).toBeUndefined()
+		expect(control(wrapper, 'NcTextField', '-pattern')).toBeDefined()
+		expect(control(wrapper, 'NcTextField', '-stable-seconds')).toBeDefined()
+	})
+
+	it('writes the processed and failed folders while files are moved, and drops them for tagging', () => {
+		const wrapper = mountWatched({ unrelated: 'kept' })
+		control(wrapper, 'NcTextField', '-processed-path').vm.$emit('update:modelValue', ' klaar ')
+		control(wrapper, 'NcTextField', '-failed-path').vm.$emit('update:modelValue', 'mislukt')
+		expect(wrapper.emitted('update:config').map((e) => e[0])).toEqual([
+			{ unrelated: 'kept', processedPath: 'klaar' },
+			{ unrelated: 'kept', failedPath: 'mislukt' },
+		])
+
+		const tagged = mountWatched({ after: 'tag' })
+		expect(control(tagged, 'NcTextField', '-processed-path')).toBeUndefined()
+		expect(control(tagged, 'NcTextField', '-failed-path')).toBeUndefined()
+	})
+
+	it('asks an intake target for its app, and stores mapping as no key', () => {
+		const mapping = mountWatched()
+		expect(control(mapping, 'NcTextField', '-intake-app')).toBeUndefined()
+		control(mapping, 'NcSelect', '-target').vm.$emit('update:modelValue', { id: 'intake' })
+		expect(lastEmitted(mapping)).toEqual({ target: 'intake' })
+
+		const intake = mountWatched({ target: 'intake' })
+		const app = control(intake, 'NcTextField', '-intake-app')
+		expect(app.props('error')).toBe(true)
+		app.vm.$emit('update:modelValue', ' filinq ')
+		expect(lastEmitted(intake)).toEqual({ target: 'intake', intakeApp: 'filinq' })
+
+		control(intake, 'NcSelect', '-target').vm.$emit('update:modelValue', { id: 'mapping' })
+		expect(lastEmitted(intake)).toEqual({})
+	})
+
+	it('is a source kind of the editor, and the widget passes watched for it', async () => {
+		get.mockReset()
+		get.mockResolvedValue({ data: { results: [{ id: 'src-folder', name: 'Woo inbox' }] } })
+		const ctx = { draft: {}, tablesEnabled: false, formsEnabled: false }
+		const typeOptions = syncKindOptions.computed.typeOptions.call(ctx)
+		const sourceTypeOptions = syncKindOptions.computed.sourceTypeOptions.call({ ...ctx, typeOptions })
+		expect(sourceTypeOptions.map((o) => o.id)).toContain('nextcloud-folder')
+		expect(typeOptions.map((o) => o.id)).not.toContain('nextcloud-folder')
+
+		const wrapper = mount(SyncConfigWidget, {
+			props: { kind: 'source', type: 'nextcloud-folder', sourceId: 'src-folder', config: {} },
+			global: { mocks: { t: translate } },
+		})
+		await flushPromises()
+
+		expect(control(wrapper, 'NcSelect', '-pickup-source').props('options')).toEqual([{ id: 'src-folder', label: 'Woo inbox' }])
+		expect(wrapper.findComponent(FilePickupConfigFields).props('watched')).toBe(true)
 	})
 })

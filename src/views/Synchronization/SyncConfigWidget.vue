@@ -380,11 +380,12 @@
 				:formId="configValue('formId')" />
 		</template>
 
-		<!-- File pickup mode (source only, sources-sftp-adapter Task 3) -->
-		<template v-else-if="type === 'sftp' || type === 'ftps'">
+		<!-- File pickup mode (source only, sources-sftp-adapter Task 3), and a
+		     watched Nextcloud folder (sources-sftp-adapter-watched-folder D6). -->
+		<template v-else-if="type === 'sftp' || type === 'ftps' || type === 'nextcloud-folder'">
 			<div class="sync-config__field">
 				<label :for="pickupSourceId" class="sync-config__label">
-					{{ kindLabel }} {{ t('integriq', 'source (file server)') }}
+					{{ kindLabel }} {{ type === 'nextcloud-folder' ? t('integriq', 'source (Nextcloud folder)') : t('integriq', 'source (file server)') }}
 				</label>
 				<NcSelect
 					:inputId="pickupSourceId"
@@ -396,16 +397,16 @@
 					@update:modelValue="onSourcePick" />
 				<span class="sync-config__helper">
 					{{
-						t(
-							'integriq',
-							'An SFTP or FTPS source: it holds the server, its root path, its host key and its credential.',
-						)
+						type === 'nextcloud-folder'
+							? t('integriq', 'A Nextcloud folder source: it holds the owner and the folder that is watched.')
+							: t('integriq', 'An SFTP or FTPS source: it holds the server, its root path, its host key and its credential.')
 					}}
 				</span>
 			</div>
 
 			<FilePickupConfigFields
 				:config="config || {}"
+				:watched="type === 'nextcloud-folder'"
 				@update:config="$emit('update:config', $event)" />
 		</template>
 

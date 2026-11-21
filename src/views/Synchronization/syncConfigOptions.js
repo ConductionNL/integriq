@@ -22,6 +22,7 @@ export const TYPE_LOADERS = {
 	'nextcloud-form': 'loadFormLists',
 	sftp: 'loadSourcesOnce',
 	ftps: 'loadSourcesOnce',
+	'nextcloud-folder': 'loadSourcesOnce',
 }
 
 /**
