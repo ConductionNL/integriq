@@ -24,7 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Service\WatchedFolder;
 
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\Integriq\Service\WatchedFolder\WatchedFileMarker;
-use OCA\Integriq\Service\WatchedFolder\WatchedFileWriter;
+use OCA\Integriq\Service\WatchedFolder\WatchedFileDelivery;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolder;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolders;
 use OCA\Integriq\Service\WatchedFolderService;
@@ -80,21 +80,21 @@ final class WatchedFolderSweepTest extends TestCase {
 	}//end testAnUnresolvedTargetStopsBeforeAnyFile()
 
 	/**
-	 * An intake synchronization is not swept: its files wait for the hand-over.
+	 * An intake synchronization is swept too, whatever its target register: its files go to an app.
 	 *
 	 * @return void
 	 */
-	public function testAnIntakeSynchronizationIsNotSwept(): void {
+	public function testAnIntakeSynchronizationIsSwept(): void {
 		$intake = new WatchedFolder(
-			synchronization: ['id' => 'sync-intake', 'targetId' => 'a/b', 'sourceConfig' => ['target' => 'intake', 'intakeApp' => 'filinq']],
+			synchronization: ['id' => 'sync-intake', 'sourceConfig' => ['target' => 'intake', 'intakeApp' => 'filinq']],
 			source: []
 		);
 
-		$result = $this->service(watched: [$intake], listed: ['sync-intake' => [41]], alreadyQueued: [])->sweep();
+		$result = $this->service(watched: [$intake], listed: ['sync-intake' => [44]], alreadyQueued: [])->sweep();
 
-		$this->assertSame(expected: ['queued' => 0, 'stopped' => []], actual: $result);
-		$this->assertSame(expected: [], actual: $this->listings);
-	}//end testAnIntakeSynchronizationIsNotSwept()
+		$this->assertSame(expected: ['queued' => 1, 'stopped' => []], actual: $result);
+		$this->assertSame(expected: ['44@sync-intake'], actual: $this->queued);
+	}//end testAnIntakeSynchronizationIsSwept()
 
 	/**
 	 * One watched folder.
@@ -151,7 +151,7 @@ final class WatchedFolderSweepTest extends TestCase {
 		return new WatchedFolderService(
 			folders: $folders,
 			contracts: $contracts,
-			writer: $this->createMock(originalClassName: WatchedFileWriter::class),
+			delivery: $this->createMock(originalClassName: WatchedFileDelivery::class),
 			marker: $this->createMock(originalClassName: WatchedFileMarker::class)
 		);
 	}//end service()

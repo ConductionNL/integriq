@@ -155,7 +155,7 @@ class WatchedFileWriter {
 			'mimetype' => $file->getMimetype(),
 			'size'     => (int)$file->getSize(),
 			'mtime'    => (int)$file->getMTime(),
-			'owner'    => (string)(($watched->source['configuration'] ?? [])['ownerUid'] ?? ''),
+			'owner'    => $watched->ownerUid(),
 		];
 		if (in_array($input['mimetype'], self::TEXT_TYPES, true) === true) {
 			$input['content'] = $file->getContent();

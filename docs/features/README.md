@@ -49,6 +49,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Registering form submissions](submission-registration.md) | A sibling app registers a form submission at an outside system (JSON endpoint, Objects API) with one typed command, once per submission | Partial |
 | [SFTP and FTPS file servers](sftp-ftps-file-pickup.md) | A partner's SFTP or FTPS server as a source with a pinned host key, and a synchronization that picks its new files up into Nextcloud Files, archiving them only after a safe write | Partial |
 | [Telephony (CTI) sources](telephony-cti.md) | A phone system posts its call events; integriq verifies them, finds the caller in KISS and hands the call to the app that shows it | Implemented |
+| [Watched folders](watched-folder.md) | A file dropped in a Nextcloud folder becomes a draft object through a mapping, or is handed to an app that takes it in | Partial |
 
 ## Architecture Overview
 

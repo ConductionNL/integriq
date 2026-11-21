@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Service\WatchedFolder\WatchedFileMarker;
-use OCA\Integriq\Service\WatchedFolder\WatchedFileWriter;
+use OCA\Integriq\Service\WatchedFolder\WatchedFileDelivery;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolder;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolders;
 use OCP\Files\File;
@@ -40,9 +40,10 @@ use Throwable;
  * The sweep is the safety net behind the file event listener: it lists each
  * watched folder and queues the same job for every file not yet in a contract.
  *
- * A synchronization with `target: intake` hands its files to an app instead
- * (sources-sftp-adapter-intake-hand-over). Until that hand-over is built such
- * a file is left alone, never written through the mapping.
+ * A synchronization with `target: intake` hands its files to the app it
+ * names instead (sources-sftp-adapter-intake-hand-over). Only an acceptance
+ * makes the contract and marks the file; a hand-over nobody accepts leaves
+ * it in place, unmarked, and counts as `unclaimed`.
  *
  * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
  */
@@ -60,13 +61,13 @@ class WatchedFolderService {
 	 *
 	 * @param WatchedFolders                          $folders   The watched folders, their files and the job queue.
 	 * @param SynchronizationContractServiceInterface $contracts The once-per-file record.
-	 * @param WatchedFileWriter                       $writer    Writes the draft with the file attached.
+	 * @param WatchedFileDelivery                     $delivery  Writes the draft, or hands the file to an intake app.
 	 * @param WatchedFileMarker                       $marker    Moves or tags the file afterwards.
 	 */
 	public function __construct(
 		private readonly WatchedFolders $folders,
 		private readonly SynchronizationContractServiceInterface $contracts,
-		private readonly WatchedFileWriter $writer,
+		private readonly WatchedFileDelivery $delivery,
 		private readonly WatchedFileMarker $marker,
 	) {
 	}//end __construct()
@@ -78,7 +79,8 @@ class WatchedFolderService {
 	 * @param int      $fileId            The file.
 	 * @param int|null $now               The clock, for tests.
 	 *
-	 * @return string What happened: `unwatched`, `intake`, `known`, `gone`, `young`, `unresolved`, `failed` or `ingested`.
+	 * @return string What happened: `unwatched`, `known`, `gone`, `young`, `unresolved`, `failed`, `unclaimed`,
+	 *                `handed-over` or `ingested`.
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-run-never-publishes-and-only-marks-a-file-after-a-safe-write-req-sftp-004
 	 */
@@ -86,10 +88,6 @@ class WatchedFolderService {
 		$watched = $this->folders->byId(synchronizationId: $synchronizationId);
 		if ($watched === null) {
 			return 'unwatched';
-		}
-
-		if ($watched->isIntake() === true) {
-			return 'intake';
 		}
 
 		$contract = $this->contracts->findBySyncAndOrigin(synchronizationId: $synchronizationId, originId: self::ORIGIN_PREFIX . $fileId);
@@ -112,19 +110,15 @@ class WatchedFolderService {
 	/**
 	 * Queue the ingest of every file in every watched folder that has no contract yet.
 	 *
-	 * @return array{queued: int, stopped: list<string>} How many jobs were added, and the synchronizations stopped
-	 *                                                  before listing their folder because their target does not resolve.
+	 * @return array{queued: int, stopped: list<string>} How many jobs were added, and the mapping synchronizations
+	 *                                                  stopped before listing their folder because their target does not resolve.
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function sweep(): array {
 		$result = ['queued' => 0, 'stopped' => []];
 		foreach ($this->folders->all() as $watched) {
-			if ($watched->isIntake() === true) {
-				continue;
-			}
-
-			if ($watched->target() === null) {
+			if ($watched->intakeApp() === null && $watched->target() === null) {
 				$result['stopped'][] = $watched->synchronizationId();
 				continue;
 			}
@@ -159,37 +153,44 @@ class WatchedFolderService {
 	}//end sweepOne()
 
 	/**
-	 * Write the file, then make its contract and mark it; or mark it failed.
+	 * Deliver the file, then make its contract and mark it; or mark it failed; or, unclaimed, leave it.
 	 *
 	 * @param WatchedFolder $watched The watched folder.
 	 * @param File          $file    The file, stable and not yet in a contract.
 	 * @param int           $now     The clock.
 	 *
-	 * @return string `unresolved`, `failed` or `ingested`.
+	 * @return string `unresolved`, `failed`, `unclaimed`, `handed-over` or `ingested`.
 	 */
 	private function write(WatchedFolder $watched, File $file, int $now): string {
-		$target = $watched->target();
-		if ($target === null) {
+		if ($watched->intakeApp() === null && $watched->target() === null) {
 			return 'unresolved';
 		}
 
 		try {
-			$uuid = $this->writer->write(watched: $watched, file: $file, target: $target);
+			$targetId = $this->delivery->deliver(watched: $watched, file: $file);
 		} catch (Throwable $e) {
 			$this->marker->failed(watched: $watched, file: $file, reason: $e->getMessage());
 			return 'failed';
+		}
+
+		if ($targetId === null) {
+			// No intake app accepted it: the file stays where it is, unmarked, for the next sweep.
+			return 'unclaimed';
 		}
 
 		$this->contracts->createFromArray(
 			object: [
 				'synchronizationId' => $watched->synchronizationId(),
 				'originId'          => self::ORIGIN_PREFIX . $file->getId(),
-				'targetId'          => $uuid,
+				'targetId'          => $targetId,
 				'targetLastAction'  => 'create',
 				'sourceLastSynced'  => date(DATE_ATOM, $now),
 			]
 		);
 		$this->marker->succeeded(watched: $watched, file: $file);
+		if ($watched->intakeApp() !== null) {
+			return 'handed-over';
+		}
 
 		return 'ingested';
 	}//end write()
