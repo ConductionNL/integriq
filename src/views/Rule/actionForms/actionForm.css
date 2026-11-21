@@ -19,3 +19,11 @@
 	color: var(--color-text-maxcontrast);
 	font-size: 12px;
 }
+
+.action-form__method {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding-inline-start: 12px;
+	border-inline-start: 2px solid var(--color-border);
+}

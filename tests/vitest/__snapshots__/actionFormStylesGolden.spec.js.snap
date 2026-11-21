@@ -13,6 +13,7 @@ exports[`action form styles > AuthenticationForm.vue applies the same rules 1`] 
   ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
   ".action-form__label[data-v-golden] { font-weight: bold }",
   ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+  ".action-form__method[data-v-golden] { display: flex; flex-direction: column; gap: 10px; padding-inline-start: 12px; border-inline-start: 2px solid var(--color-border) }",
 ]
 `;
 
