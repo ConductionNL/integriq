@@ -155,7 +155,7 @@ class YiviStartTest extends TestCase {
 	 * @return ICacheFactory The factory.
 	 */
 	private function cacheFactory(): ICacheFactory {
-		$factory = $this->createMock(ICacheFactory::class);
+		$factory = $this->createMock(originalClassName: ICacheFactory::class);
 		$factory->method('isAvailable')->willReturn(true);
 		$factory->method('createDistributed')->willReturn($this->cache);
 		return $factory;
@@ -174,12 +174,12 @@ class YiviStartTest extends TestCase {
 				['portaliq' => ['enabled' => true, 'returnUrls' => [self::RETURN_URL], 'secretRef' => 'cred-1', 'secretOrganisation' => '']]
 			),
 		];
-		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(
 			static fn (string $app, string $key, string $default = '') => ($settings[$key] ?? $default)
 		);
 
-		return new IdpBrokerConfig($appConfig);
+		return new IdpBrokerConfig(appConfig: $appConfig);
 	}//end config()
 
 	/**
@@ -188,7 +188,7 @@ class YiviStartTest extends TestCase {
 	 * @return IdpRegistrationService The registrations.
 	 */
 	private function registrations(): IdpRegistrationService {
-		$registrations = $this->createMock(IdpRegistrationService::class);
+		$registrations = $this->createMock(originalClassName: IdpRegistrationService::class);
 		$registrations->method('find')->willReturnCallback(
 			function (string $organisation, string $provider): ?IdpRegistration {
 				if ($organisation !== 'gemeente-x') {
@@ -217,15 +217,15 @@ class YiviStartTest extends TestCase {
 		$factory = $this->cacheFactory();
 		return new IdpLoginService(
 			config: $this->config(),
-			adapters: new IdpAdapterRegistry(boundAdapter: $adapter, logger: $this->createMock(LoggerInterface::class)),
-			states: new IdpLoginStateStore($factory),
-			assertionGuard: new AssertionGuard(replayGuard: new EnvelopeReplayGuard($factory)),
+			adapters: new IdpAdapterRegistry(boundAdapter: $adapter, logger: $this->createMock(originalClassName: LoggerInterface::class)),
+			states: new IdpLoginStateStore(cacheFactory: $factory),
+			assertionGuard: new AssertionGuard(replayGuard: new EnvelopeReplayGuard(cacheFactory: $factory)),
 			trustMapper: new TrustLevelMapper(),
 			pseudonyms: new SubjectPseudonymService(),
-			exchange: $this->createMock(EnvelopeExchangeService::class),
-			logger: $this->createMock(LoggerInterface::class),
+			exchange: $this->createMock(originalClassName: EnvelopeExchangeService::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
 			registrations: $this->registrations(),
-			secrets: $this->createMock(IdpSecretSeam::class)
+			secrets: $this->createMock(originalClassName: IdpSecretSeam::class)
 		);
 	}//end service()
 
@@ -236,22 +236,22 @@ class YiviStartTest extends TestCase {
 	 */
 	private function oidcAdapter(): OidcRelyingPartyAdapter {
 		$issuer = new OidcStubIssuer(clientId: 'client-yivi', now: time());
-		$client = $this->createMock(IClient::class);
+		$client = $this->createMock(originalClassName: IClient::class);
 		$client->method('get')->willReturnCallback(
 			function (string $uri, array $options = []) use ($issuer): IResponse {
-				$response = $this->createMock(IResponse::class);
+				$response = $this->createMock(originalClassName: IResponse::class);
 				$response->method('getBody')->willReturn($issuer->answer(method: 'GET', url: $uri, options: $options));
 				return $response;
 			}
 		);
-		$http = $this->createMock(IClientService::class);
+		$http = $this->createMock(originalClassName: IClientService::class);
 		$http->method('newClient')->willReturn($client);
 
 		return new OidcRelyingPartyAdapter(
 			registration: $this->registration,
-			secrets: $this->createMock(IdpSecretSeam::class),
+			secrets: $this->createMock(originalClassName: IdpSecretSeam::class),
 			http: $http,
-			logins: new OidcLoginStore($this->cacheFactory()),
+			logins: new OidcLoginStore(cacheFactory: $this->cacheFactory()),
 			trust: new TrustLevelMapper(),
 			redirectUri: 'https://nc.example/apps/integriq/api/idp/yivi/callback'
 		);
@@ -285,14 +285,14 @@ class YiviStartTest extends TestCase {
 	private function assertStartRefused(array $params): void {
 		$adapter = new ScriptedGovernmentIdpAdapter(providerId: 'yivi');
 		try {
-			$this->service($adapter)->start(provider: 'yivi', params: $params);
-			$this->fail('The start was not refused.');
+			$this->service(adapter: $adapter)->start(provider: 'yivi', params: $params);
+			$this->fail(message: 'The start was not refused.');
 		} catch (IdpAssertionException $exception) {
-			$this->assertStringContainsString('no login starts', $exception->getMessage());
+			$this->assertStringContainsString(needle: 'no login starts', haystack: $exception->getMessage());
 		}
 
-		$this->assertSame([], $adapter->begun, 'The browser was sent to the bridge.');
-		$this->assertSame([], $this->cache->entries, 'A state was stored for a refused start.');
+		$this->assertSame(expected: [], actual: $adapter->begun, message: 'The browser was sent to the bridge.');
+		$this->assertSame(expected: [], actual: $this->cache->entries, message: 'A state was stored for a refused start.');
 	}//end assertStartRefused()
 
 	/**
@@ -304,22 +304,22 @@ class YiviStartTest extends TestCase {
 	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	public function testAFormAskingForNameAndEmailAsksTheBridgeForExactlyThoseTwo(): void {
-		$redirect = $this->service($this->oidcAdapter())->start(
+		$redirect = $this->service(adapter: $this->oidcAdapter())->start(
 			provider: 'yivi',
-			params: $this->startParams(self::FULLNAME . ', ' . self::EMAIL)
+			params: $this->startParams(attributes: self::FULLNAME . ', ' . self::EMAIL)
 		);
 
-		$this->assertStringStartsWith(OidcStubIssuer::AUTHORIZE . '?', $redirect);
+		$this->assertStringStartsWith(prefix: OidcStubIssuer::AUTHORIZE . '?', string: $redirect);
 		parse_str((string)parse_url($redirect, PHP_URL_QUERY), $query);
 		$this->assertSame(
-			['id_token' => ['fullname' => ['essential' => true], 'email' => ['essential' => true]]],
-			json_decode((string)$query['claims'], true)
+			expected: ['id_token' => ['fullname' => ['essential' => true], 'email' => ['essential' => true]]],
+			actual: json_decode((string)$query['claims'], true)
 		);
 
-		$state = (new IdpLoginStateStore($this->cacheFactory()))->consume(requestId: (string)$query['nonce'], signingKey: self::SIGNING_KEY);
-		$this->assertSame(self::FULLNAME . ',' . self::EMAIL, $state['attributes']);
-		$this->assertSame('yivi', $state['provider']);
-		$this->assertSame(self::RETURN_URL, $state['returnUrl']);
+		$state = (new IdpLoginStateStore(cacheFactory: $this->cacheFactory()))->consume(requestId: (string)$query['nonce'], signingKey: self::SIGNING_KEY);
+		$this->assertSame(expected: self::FULLNAME . ',' . self::EMAIL, actual: $state['attributes']);
+		$this->assertSame(expected: 'yivi', actual: $state['provider']);
+		$this->assertSame(expected: self::RETURN_URL, actual: $state['returnUrl']);
 	}//end testAFormAskingForNameAndEmailAsksTheBridgeForExactlyThoseTwo()
 
 	/**
@@ -331,13 +331,14 @@ class YiviStartTest extends TestCase {
 	 */
 	public function testTheAdapterIsHandedTheClaimNamesOnly(): void {
 		$adapter = new ScriptedGovernmentIdpAdapter(providerId: 'yivi');
-		$this->service($adapter)->start(provider: 'yivi', params: $this->startParams(self::ZIPCODE . ',' . self::FULLNAME . ',' . self::ZIPCODE));
+		$asked = self::ZIPCODE . ',' . self::FULLNAME . ',' . self::ZIPCODE;
+		$this->service(adapter: $adapter)->start(provider: 'yivi', params: $this->startParams(attributes: $asked));
 
-		$this->assertCount(1, $adapter->begun);
-		$this->assertSame(['zipcode', 'fullname'], $adapter->begun[0]['claims']);
+		$this->assertCount(expectedCount: 1, haystack: $adapter->begun);
+		$this->assertSame(expected: ['zipcode', 'fullname'], actual: $adapter->begun[0]['claims']);
 
-		$state = (new IdpLoginStateStore($this->cacheFactory()))->consume(requestId: $adapter->lastRequestId, signingKey: self::SIGNING_KEY);
-		$this->assertSame(self::ZIPCODE . ',' . self::FULLNAME, $state['attributes']);
+		$state = (new IdpLoginStateStore(cacheFactory: $this->cacheFactory()))->consume(requestId: $adapter->lastRequestId, signingKey: self::SIGNING_KEY);
+		$this->assertSame(expected: self::ZIPCODE . ',' . self::FULLNAME, actual: $state['attributes']);
 	}//end testTheAdapterIsHandedTheClaimNamesOnly()
 
 	/**
@@ -349,11 +350,11 @@ class YiviStartTest extends TestCase {
 	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	public function testAnAttributeOutsideTheAllowlistOrNoneAtAllIsRefused(): void {
-		$this->assertStartRefused($this->startParams(self::FULLNAME . ',pbdf.gemeente.bsn.bsn'));
-		$this->assertStartRefused($this->startParams(''));
-		$this->assertStartRefused($this->startParams(' , ,'));
-		$this->assertStartRefused($this->startParams('pbdf.broken.noclaim'));
-		$this->assertStartRefused(array_diff_key($this->startParams(self::EMAIL), ['attributes' => true]));
+		$this->assertStartRefused(params: $this->startParams(attributes: self::FULLNAME . ',pbdf.gemeente.bsn.bsn'));
+		$this->assertStartRefused(params: $this->startParams(attributes: ''));
+		$this->assertStartRefused(params: $this->startParams(attributes: ' , ,'));
+		$this->assertStartRefused(params: $this->startParams(attributes: 'pbdf.broken.noclaim'));
+		$this->assertStartRefused(params: array_diff_key($this->startParams(attributes: self::EMAIL), ['attributes' => true]));
 	}//end testAnAttributeOutsideTheAllowlistOrNoneAtAllIsRefused()
 
 	/**
@@ -371,13 +372,14 @@ class YiviStartTest extends TestCase {
 			$ids[] = 'attr.' . $i;
 		}
 
-		$this->registration = $this->yiviRegistration(['yiviAttributes' => $entries]);
-		$this->assertStartRefused($this->startParams(implode(',', $ids)));
+		$this->registration = $this->yiviRegistration(overrides: ['yiviAttributes' => $entries]);
+		$this->assertStartRefused(params: $this->startParams(attributes: implode(',', $ids)));
 
-		$this->registration = $this->yiviRegistration(['yiviAttributes' => array_slice($entries, 0, AttributeDisclosureRequest::MAX_ATTRIBUTES)]);
+		$max = AttributeDisclosureRequest::MAX_ATTRIBUTES;
+		$this->registration = $this->yiviRegistration(overrides: ['yiviAttributes' => array_slice($entries, 0, $max)]);
 		$adapter = new ScriptedGovernmentIdpAdapter(providerId: 'yivi');
-		$this->service($adapter)->start(provider: 'yivi', params: $this->startParams(implode(',', array_slice($ids, 0, AttributeDisclosureRequest::MAX_ATTRIBUTES))));
-		$this->assertCount(AttributeDisclosureRequest::MAX_ATTRIBUTES, $adapter->begun[0]['claims']);
+		$this->service(adapter: $adapter)->start(provider: 'yivi', params: $this->startParams(attributes: implode(',', array_slice($ids, 0, $max))));
+		$this->assertCount(expectedCount: AttributeDisclosureRequest::MAX_ATTRIBUTES, haystack: $adapter->begun[0]['claims']);
 	}//end testTooManyAttributesAreRefused()
 
 	/**
@@ -389,16 +391,16 @@ class YiviStartTest extends TestCase {
 	 */
 	public function testNoEnabledRegistrationOrNoUsableAllowlistStartsNothing(): void {
 		$this->registration = null;
-		$this->assertStartRefused($this->startParams(self::EMAIL));
+		$this->assertStartRefused(params: $this->startParams(attributes: self::EMAIL));
 
-		$this->registration = $this->yiviRegistration(['enabled' => false]);
-		$this->assertStartRefused($this->startParams(self::EMAIL));
+		$this->registration = $this->yiviRegistration(overrides: ['enabled' => false]);
+		$this->assertStartRefused(params: $this->startParams(attributes: self::EMAIL));
 
-		$this->registration = $this->yiviRegistration(['yiviAttributes' => 'pbdf.sidn-pbdf.email.email']);
-		$this->assertStartRefused($this->startParams(self::EMAIL));
+		$this->registration = $this->yiviRegistration(overrides: ['yiviAttributes' => 'pbdf.sidn-pbdf.email.email']);
+		$this->assertStartRefused(params: $this->startParams(attributes: self::EMAIL));
 
-		$this->registration = $this->yiviRegistration(['yiviAttributes' => ['not-an-entry', ['id' => ['x'], 'claim' => 'email']]]);
-		$this->assertStartRefused($this->startParams(self::EMAIL));
+		$this->registration = $this->yiviRegistration(overrides: ['yiviAttributes' => ['not-an-entry', ['id' => ['x'], 'claim' => 'email']]]);
+		$this->assertStartRefused(params: $this->startParams(attributes: self::EMAIL));
 	}//end testNoEnabledRegistrationOrNoUsableAllowlistStartsNothing()
 
 	/**
@@ -410,11 +412,11 @@ class YiviStartTest extends TestCase {
 	 */
 	public function testAnotherProviderIgnoresTheAttributesParameter(): void {
 		$adapter = new ScriptedGovernmentIdpAdapter(providerId: 'digid');
-		$this->service($adapter)->start(provider: 'digid', params: $this->startParams(self::EMAIL));
+		$this->service(adapter: $adapter)->start(provider: 'digid', params: $this->startParams(attributes: self::EMAIL));
 
-		$this->assertArrayNotHasKey('claims', $adapter->begun[0]);
-		$state = (new IdpLoginStateStore($this->cacheFactory()))->consume(requestId: $adapter->lastRequestId, signingKey: self::SIGNING_KEY);
-		$this->assertSame('', $state['attributes']);
+		$this->assertArrayNotHasKey(key: 'claims', array: $adapter->begun[0]);
+		$state = (new IdpLoginStateStore(cacheFactory: $this->cacheFactory()))->consume(requestId: $adapter->lastRequestId, signingKey: self::SIGNING_KEY);
+		$this->assertSame(expected: '', actual: $state['attributes']);
 	}//end testAnotherProviderIgnoresTheAttributesParameter()
 
 	/**
@@ -433,7 +435,7 @@ class YiviStartTest extends TestCase {
 
 			$begun = $this->oidcAdapter()->beginAuthentication($context);
 			parse_str((string)parse_url($begun['redirectUrl'], PHP_URL_QUERY), $query);
-			$this->assertArrayNotHasKey('claims', $query);
+			$this->assertArrayNotHasKey(key: 'claims', array: $query);
 		}
 	}//end testTheOidcAdapterAsksNoClaimsWithoutClaimNames()
 }//end class

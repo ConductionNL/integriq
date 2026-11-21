@@ -52,15 +52,11 @@ final class AttributeDisclosureRequest {
 	public const MAX_ATTRIBUTES = 32;
 
 	/**
-	 * Constructor.
+	 * The claim name per requested attribute id, in the order asked.
 	 *
-	 * @param array<string, string> $claims The claim name per requested attribute id, in the order asked.
+	 * @var array<string, string>
 	 */
-	private function __construct(
-		private readonly array $claims,
-	) {
-
-	}//end __construct()
+	private readonly array $claims;
 
 	/**
 	 * Check the attributes a start asks for against the registration's allowlist.
@@ -68,13 +64,11 @@ final class AttributeDisclosureRequest {
 	 * @param IdpRegistration $registration The organisation's registration for the provider.
 	 * @param string          $requested    The attribute ids, comma-separated, as the start received them.
 	 *
-	 * @return self The checked request.
-	 *
 	 * @throws IdpAssertionException When the list is empty, too long, or names an attribute the registration does not allow.
 	 *
 	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
-	public static function fromStart(IdpRegistration $registration, string $requested): self {
+	public function __construct(IdpRegistration $registration, string $requested) {
 		$ids = self::idsOf(requested: $requested);
 		if ($ids === []) {
 			throw new IdpAssertionException(message: 'The login names no attributes to disclose, so no login starts.');
@@ -96,9 +90,9 @@ final class AttributeDisclosureRequest {
 			$claims[$id] = $allowed[$id];
 		}
 
-		return new self(claims: $claims);
+		$this->claims = $claims;
 
-	}//end fromStart()
+	}//end __construct()
 
 	/**
 	 * The requested attribute ids, as the signed state records them.

@@ -642,7 +642,7 @@ class IdpLoginService implements IdpLoginServiceInterface {
 			throw new IdpAssertionException(message: 'The organisation has no enabled Yivi registration, so no login starts.');
 		}
 
-		return AttributeDisclosureRequest::fromStart(registration: $registration, requested: $requested);
+		return new AttributeDisclosureRequest(registration: $registration, requested: $requested);
 
 	}//end disclosureFor()
 

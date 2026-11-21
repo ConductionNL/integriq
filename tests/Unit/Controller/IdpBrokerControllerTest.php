@@ -259,13 +259,13 @@ class IdpBrokerControllerTest extends TestCase {
 			'relayState' => 'r1',
 			'attributes' => 'pbdf.gemeente.personalData.fullname,pbdf.sidn-pbdf.email.email',
 		];
-		$service = $this->createMock(IdpLoginService::class);
+		$service = $this->createMock(originalClassName: IdpLoginService::class);
 		$service->expects($this->once())->method('start')->with('yivi', $params)->willReturn('https://bridge.example.nl/authorize');
 
-		$response = $this->loginController($service, $params)->start('yivi');
+		$response = $this->loginController(loginService: $service, params: $params)->start('yivi');
 
-		$this->assertInstanceOf(RedirectResponse::class, $response);
-		$this->assertSame('https://bridge.example.nl/authorize', $response->getRedirectURL());
+		$this->assertInstanceOf(expected: RedirectResponse::class, actual: $response);
+		$this->assertSame(expected: 'https://bridge.example.nl/authorize', actual: $response->getRedirectURL());
 	}//end testAYiviStartPassesTheAttributesOn()
 
 	/**
