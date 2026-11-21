@@ -17,6 +17,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -39,6 +40,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -61,6 +63,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -84,6 +87,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -107,6 +111,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -129,6 +134,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -151,6 +157,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -173,6 +180,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -195,6 +203,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -218,6 +227,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -241,6 +251,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -263,6 +274,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -285,6 +297,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -307,6 +320,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -329,6 +343,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -352,6 +367,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -375,6 +391,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -397,6 +414,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -420,6 +438,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -444,6 +463,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -468,6 +488,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -492,6 +513,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -516,6 +538,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -540,6 +563,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -564,6 +588,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -587,6 +612,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -610,6 +636,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -634,6 +661,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -658,6 +686,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -681,6 +710,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -703,6 +733,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -725,6 +756,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -747,6 +779,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -770,6 +803,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -793,6 +827,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -815,6 +850,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -838,6 +874,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -861,6 +898,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -884,6 +922,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -908,6 +947,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -932,6 +972,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -955,6 +996,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -978,6 +1020,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1001,6 +1044,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1024,6 +1068,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1048,6 +1093,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1072,6 +1118,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1095,6 +1142,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1118,6 +1166,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1141,6 +1190,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1164,6 +1214,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1188,6 +1239,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1212,6 +1264,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1235,6 +1288,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1259,6 +1313,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1284,6 +1339,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1309,6 +1365,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1334,6 +1391,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1359,6 +1417,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1384,6 +1443,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1408,6 +1468,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1431,6 +1492,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1454,6 +1516,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1478,6 +1541,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1502,6 +1566,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1525,6 +1590,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1548,6 +1614,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1571,6 +1638,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1594,6 +1662,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1618,6 +1687,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1642,6 +1712,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1665,6 +1736,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1688,6 +1760,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1712,6 +1785,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1736,6 +1810,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1760,6 +1835,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1784,6 +1860,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1808,6 +1885,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1832,6 +1910,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1856,6 +1935,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1880,6 +1960,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1904,6 +1985,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1928,6 +2010,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1952,6 +2035,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -1976,6 +2060,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2000,6 +2085,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2024,6 +2110,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2048,6 +2135,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2072,6 +2160,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2096,6 +2185,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2120,6 +2210,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2144,6 +2235,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2168,6 +2260,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2192,6 +2285,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2216,6 +2310,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2240,6 +2335,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2265,6 +2361,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2290,6 +2387,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2315,6 +2413,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2340,6 +2439,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2365,6 +2465,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2390,6 +2491,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2414,6 +2516,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2438,6 +2541,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2462,6 +2566,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2486,6 +2591,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2510,6 +2616,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2534,6 +2641,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2559,6 +2667,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2584,6 +2693,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2609,6 +2719,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2634,6 +2745,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2659,6 +2771,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2684,6 +2797,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2709,6 +2823,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2734,6 +2849,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2759,6 +2875,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2784,6 +2901,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2809,6 +2927,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2834,6 +2953,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2859,6 +2979,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2884,6 +3005,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2909,6 +3031,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2934,6 +3057,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2959,6 +3083,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -2984,6 +3109,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3009,6 +3135,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3034,6 +3161,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3059,6 +3187,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3084,6 +3213,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3109,6 +3239,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3134,6 +3265,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3159,6 +3291,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3184,6 +3317,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3209,6 +3343,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3234,6 +3369,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3259,6 +3395,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3284,6 +3421,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3309,6 +3447,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3334,6 +3473,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3359,6 +3499,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3384,6 +3525,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3409,6 +3551,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3434,6 +3577,7 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3481,6 +3625,10 @@ exports[`SynchronizationDetailPage > reads no draft at all 1`] = `
     {
       "id": "ftps",
       "label": "FTPS (file pickup)",
+    },
+    {
+      "id": "nextcloud-folder",
+      "label": "Nextcloud folder (watched)",
     },
   ],
   {
@@ -3620,6 +3768,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3642,6 +3791,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3664,6 +3814,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3687,6 +3838,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3710,6 +3862,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3732,6 +3885,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3754,6 +3908,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3776,6 +3931,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3798,6 +3954,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3821,6 +3978,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3844,6 +4002,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3866,6 +4025,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3888,6 +4048,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3910,6 +4071,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3932,6 +4094,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3955,6 +4118,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -3978,6 +4142,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4000,6 +4165,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4023,6 +4189,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4047,6 +4214,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4071,6 +4239,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4095,6 +4264,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4119,6 +4289,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4143,6 +4314,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4167,6 +4339,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4190,6 +4363,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4213,6 +4387,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4237,6 +4412,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4261,6 +4437,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4284,6 +4461,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4306,6 +4484,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4328,6 +4507,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4350,6 +4530,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4373,6 +4554,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4396,6 +4578,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4418,6 +4601,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4441,6 +4625,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4464,6 +4649,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4487,6 +4673,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4511,6 +4698,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4535,6 +4723,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4558,6 +4747,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4581,6 +4771,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4604,6 +4795,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4627,6 +4819,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4651,6 +4844,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4675,6 +4869,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4698,6 +4893,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4721,6 +4917,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4744,6 +4941,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4767,6 +4965,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4791,6 +4990,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4815,6 +5015,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4838,6 +5039,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4862,6 +5064,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4887,6 +5090,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4912,6 +5116,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4937,6 +5142,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4962,6 +5168,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -4987,6 +5194,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5011,6 +5219,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5034,6 +5243,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5057,6 +5267,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5081,6 +5292,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5105,6 +5317,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5128,6 +5341,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5151,6 +5365,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5174,6 +5389,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5197,6 +5413,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5221,6 +5438,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5245,6 +5463,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5268,6 +5487,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5291,6 +5511,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5315,6 +5536,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5339,6 +5561,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5363,6 +5586,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5387,6 +5611,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5411,6 +5636,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5435,6 +5661,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5459,6 +5686,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5483,6 +5711,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5507,6 +5736,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5531,6 +5761,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5555,6 +5786,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5579,6 +5811,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5603,6 +5836,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5627,6 +5861,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5651,6 +5886,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5675,6 +5911,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5699,6 +5936,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5723,6 +5961,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5747,6 +5986,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5771,6 +6011,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5795,6 +6036,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5819,6 +6061,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5843,6 +6086,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5868,6 +6112,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5893,6 +6138,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5918,6 +6164,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5943,6 +6190,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5968,6 +6216,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -5993,6 +6242,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6017,6 +6267,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6041,6 +6292,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6065,6 +6317,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6089,6 +6342,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6113,6 +6367,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6137,6 +6392,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-table",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6162,6 +6418,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6187,6 +6444,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6212,6 +6470,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6237,6 +6496,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6262,6 +6522,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6287,6 +6548,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6312,6 +6574,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6337,6 +6600,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6362,6 +6626,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6387,6 +6652,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6412,6 +6678,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6437,6 +6704,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6462,6 +6730,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6487,6 +6756,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6512,6 +6782,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6537,6 +6808,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6562,6 +6834,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6587,6 +6860,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6612,6 +6886,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6637,6 +6912,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6662,6 +6938,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6687,6 +6964,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6712,6 +6990,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6737,6 +7016,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6762,6 +7042,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6787,6 +7068,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6812,6 +7094,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6837,6 +7120,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6862,6 +7146,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6887,6 +7172,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6912,6 +7198,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6937,6 +7224,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6962,6 +7250,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -6987,6 +7276,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -7012,6 +7302,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -7037,6 +7328,7 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "nextcloud-form",
       "sftp",
       "ftps",
+      "nextcloud-folder",
     ],
     "type": [
       "api",
@@ -7084,6 +7376,10 @@ exports[`SynchronizationEditorModal > reads no draft at all 1`] = `
     {
       "id": "ftps",
       "label": "FTPS (file pickup)",
+    },
+    {
+      "id": "nextcloud-folder",
+      "label": "Nextcloud folder (watched)",
     },
   ],
   {

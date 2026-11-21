@@ -14,10 +14,16 @@
   owner's Files, in `filesFolder`; with target `mapping` the records in each
   file (CSV, JSON or XML) go through the synchronization's mapping. Either way
   the remote file is moved or deleted only after that has succeeded.
+
+  With `watched` (a `nextcloud-folder` source) the same component edits what
+  WatchedFolder reads instead: pattern, target (`mapping`, the default, or
+  `intake` with its `intakeApp`), after (`move` or `tag`), processedPath,
+  failedPath and stableSeconds. The watched folder itself is the source's.
 -->
 <template>
 	<div class="sync-pickup">
 		<NcTextField
+			v-if="!watched"
 			:id="uid + '-path'"
 			:label="t('integriq', 'Remote folder')"
 			:modelValue="text('path')"
@@ -44,14 +50,23 @@
 
 		<NcSelect
 			:inputId="uid + '-target'"
-			:inputLabel="t('integriq', 'Picked-up files go to')"
+			:inputLabel="watched ? t('integriq', 'Dropped files go to') : t('integriq', 'Picked-up files go to')"
 			:modelValue="targetOption"
 			:options="targetOptions"
 			:clearable="false"
-			@update:modelValue="(option) => write('target', option?.id === 'mapping' ? 'mapping' : '')" />
+			@update:modelValue="writeTarget" />
 
 		<NcTextField
-			v-if="target === 'files'"
+			v-if="watched && target === 'intake'"
+			:id="uid + '-intake-app'"
+			:label="t('integriq', 'Intake app') + ' *'"
+			:modelValue="text('intakeApp')"
+			:error="text('intakeApp') === ''"
+			:helperText="t('integriq', 'The id of the app that takes a dropped file in, for example filinq.')"
+			@update:modelValue="(value) => write('intakeApp', value.trim())" />
+
+		<NcTextField
+			v-if="!watched && target === 'files'"
 			:id="uid + '-files-folder'"
 			:label="t('integriq', 'Nextcloud folder') + ' *'"
 			:modelValue="text('filesFolder')"
@@ -65,7 +80,7 @@
 			@update:modelValue="(value) => write('filesFolder', value.trim())" />
 
 		<NcSelect
-			v-if="target === 'mapping'"
+			v-if="!watched && target === 'mapping'"
 			:inputId="uid + '-file-format'"
 			:inputLabel="t('integriq', 'File format')"
 			:modelValue="formatOption"
@@ -74,7 +89,7 @@
 			@update:modelValue="(option) => write('fileFormat', option?.id === 'auto' ? '' : option?.id)" />
 
 		<NcTextField
-			v-if="target === 'mapping' && (fileFormat === 'csv' || fileFormat === 'auto')"
+			v-if="!watched && target === 'mapping' && (fileFormat === 'csv' || fileFormat === 'auto')"
 			:id="uid + '-csv-delimiter'"
 			:label="t('integriq', 'CSV delimiter')"
 			:modelValue="text('csvDelimiter')"
@@ -90,7 +105,7 @@
 			@update:modelValue="(option) => write('after', option?.id ?? 'move')" />
 
 		<NcTextField
-			v-if="after === 'move'"
+			v-if="!watched && after === 'move'"
 			:id="uid + '-archive-path'"
 			:label="t('integriq', 'Archive folder') + ' *'"
 			:modelValue="text('archivePath')"
@@ -102,6 +117,23 @@
 				)
 			"
 			@update:modelValue="(value) => write('archivePath', value.trim())" />
+
+		<template v-if="watched && after === 'move'">
+			<NcTextField
+				:id="uid + '-processed-path'"
+				:label="t('integriq', 'Processed folder')"
+				:modelValue="text('processedPath')"
+				placeholder="processed"
+				:helperText="t('integriq', 'The folder inside the watched folder a file is moved to after it was written. Default processed.')"
+				@update:modelValue="(value) => write('processedPath', value.trim())" />
+			<NcTextField
+				:id="uid + '-failed-path'"
+				:label="t('integriq', 'Failed folder')"
+				:modelValue="text('failedPath')"
+				placeholder="failed"
+				:helperText="t('integriq', 'The folder inside the watched folder a file is moved to when it could not be written. Default failed.')"
+				@update:modelValue="(value) => write('failedPath', value.trim())" />
+		</template>
 
 		<NcTextField
 			:id="uid + '-stable-seconds'"
@@ -128,6 +160,12 @@ export const AFTER_VALUES = Object.freeze(['move', 'delete', 'keep'])
 /** Where picked-up files go, FilePickupSynchronization::TARGETS. */
 export const TARGET_VALUES = Object.freeze(['files', 'mapping'])
 
+/** Where a watched folder's files go, WatchedFolder::target and design D6. */
+export const WATCHED_TARGET_VALUES = Object.freeze(['mapping', 'intake'])
+
+/** How a watched folder marks a handled file, WatchedFolder::AFTER_MOVE and AFTER_TAG. */
+export const WATCHED_AFTER_VALUES = Object.freeze(['move', 'tag'])
+
 /** The file formats a mapping pickup reads, PickedFileRecords::FORMATS, plus `auto` (by extension). */
 export const FORMAT_VALUES = Object.freeze(['auto', 'csv', 'json', 'jsonl', 'xml'])
 
@@ -144,6 +182,8 @@ export default {
 	props: {
 		/** The synchronization's sourceConfig. */
 		config: { type: Object, default: () => ({}) },
+		/** Whether this is a watched Nextcloud folder rather than a file server pickup. */
+		watched: { type: Boolean, default: false },
 	},
 
 	emits: ['update:config'],
@@ -173,11 +213,13 @@ export default {
 		 */
 		afterOptions() {
 			const labels = {
-				move: t('integriq', 'Move it to the archive folder'),
+				move: this.watched ? t('integriq', 'Move it to the processed or failed folder') : t('integriq', 'Move it to the archive folder'),
 				delete: t('integriq', 'Delete it from the server'),
 				keep: t('integriq', 'Leave it on the server'),
+				tag: t('integriq', 'Tag it as ingested or failed'),
 			}
-			return AFTER_VALUES.map((id) => ({ id, label: labels[id] }))
+			const values = this.watched ? WATCHED_AFTER_VALUES : AFTER_VALUES
+			return values.map((id) => ({ id, label: labels[id] }))
 		},
 
 		/**
@@ -202,7 +244,8 @@ export default {
 		 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 		 */
 		target() {
-			return String(this.config?.target ?? 'files') || 'files'
+			const fallback = this.watched ? 'mapping' : 'files'
+			return String(this.config?.target ?? fallback) || fallback
 		},
 
 		/**
@@ -214,9 +257,11 @@ export default {
 		targetOptions() {
 			const labels = {
 				files: t('integriq', 'A folder in Nextcloud Files'),
-				mapping: t('integriq', 'The mapping, one object per record'),
+				mapping: this.watched ? t('integriq', 'The mapping, one draft object per file') : t('integriq', 'The mapping, one object per record'),
+				intake: t('integriq', 'An app that takes the file in'),
 			}
-			return TARGET_VALUES.map((id) => ({ id, label: labels[id] }))
+			const values = this.watched ? WATCHED_TARGET_VALUES : TARGET_VALUES
+			return values.map((id) => ({ id, label: labels[id] }))
 		},
 
 		/**
@@ -310,6 +355,20 @@ export default {
 				next[key] = value
 			}
 			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Write the target. The default (files for a pickup, mapping for a
+		 * watched folder) is stored as no key, so the backend's default applies.
+		 *
+		 * @param {object|null} option the picked target
+		 * @return {void}
+		 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+		 */
+		writeTarget(option) {
+			const fallback = this.watched ? 'mapping' : 'files'
+			const id = String(option?.id ?? fallback)
+			this.write('target', id === fallback ? '' : id)
 		},
 
 		/**

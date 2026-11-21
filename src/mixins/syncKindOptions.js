@@ -4,6 +4,7 @@
 import { NEXTCLOUD_FORM_KIND } from '../views/Synchronization/formsBridge.js'
 import {
 	FILE_PICKUP_OPTIONS,
+	WATCHED_FOLDER_OPTION,
 	NEXTCLOUD_FORM_OPTION,
 	NEXTCLOUD_TABLE_OPTION,
 	SYNC_MODE_OPTIONS,
@@ -54,7 +55,7 @@ export default {
 				options.push(NEXTCLOUD_FORM_OPTION)
 			}
 			// A file pickup only reads, so like the Forms kind it is source-only.
-			return [...options, ...FILE_PICKUP_OPTIONS]
+			return [...options, ...FILE_PICKUP_OPTIONS, WATCHED_FOLDER_OPTION]
 		},
 
 		/**

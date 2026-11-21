@@ -82,6 +82,13 @@ export const FILE_PICKUP_OPTIONS = [
 ]
 
 /**
+ * Source-only kind of a watched Nextcloud folder (sources-sftp-adapter-watched-folder
+ * D6): a file dropped in the folder is ingested once. Keep in sync with
+ * NextcloudFolderFiles::SOURCE_TYPE.
+ */
+export const WATCHED_FOLDER_OPTION = { id: 'nextcloud-folder', label: 'Nextcloud folder (watched)' }
+
+/**
  * `syncMode` options (REQ-016, change cdc-incremental-sync). Keep in sync with
  * the `syncMode` enum in `lib/Settings/integriq_register.json`.
  */
