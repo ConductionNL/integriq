@@ -17,7 +17,7 @@
 
 		<NcSelect
 			:inputLabel="t('integriq', 'Tool server source')"
-			:modelValue="sourceOption"
+			:modelValue="optionFor(formData.targetId)"
 			:options="sourceOptions"
 			:loading="sourcesLoading"
 			:clearable="false"
@@ -85,75 +85,22 @@
 
 <script>
 import { CnFieldHelper } from '@conduction/nextcloud-vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import endpointSourceFields from '../../mixins/endpointSourceFields.js'
 import { limitRowsOf, toolLimitsOf } from './mcpToolLimits.js'
 
 export default {
 	name: 'McpEndpointFields',
 	components: { CnFieldHelper, NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField },
-
-	props: {
-		/** Reactive form data object owned by CnFormDialog. */
-		formData: { type: Object, default: () => ({}) },
-		/** Mutator forwarded from CnFormDialog. Signature: (key, value). */
-		updateField: { type: Function, required: true },
-	},
+	mixins: [endpointSourceFields],
 
 	data() {
 		return {
-			sources: [],
-			sourcesLoading: false,
 			limitRows: limitRowsOf(this.formData.mcpToolLimits),
 		}
 	},
 
-	computed: {
-		/**
-		 * The sources to pick the tool server from.
-		 *
-		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
-		 */
-		sourceOptions() {
-			return this.sources.map((source) => ({ id: source.id || source.uuid, label: source.name || source.id || source.uuid }))
-		},
-
-		/**
-		 * The picked source.
-		 *
-		 * @return {{id: string, label: string}|null}
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
-		 */
-		sourceOption() {
-			return this.sourceOptions.find((option) => option.id === this.formData.targetId) || null
-		},
-	},
-
-	async created() {
-		await this.fetchSources()
-	},
-
 	methods: {
-		/**
-		 * Load the sources.
-		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
-		 */
-		async fetchSources() {
-			this.sourcesLoading = true
-			try {
-				const { data } = await axios.get(generateUrl('/apps/openregister/api/objects/integriq/source'), { params: { _limit: 200 } })
-				this.sources = Array.isArray(data?.results) ? data.results : []
-			} catch {
-				this.sources = []
-			} finally {
-				this.sourcesLoading = false
-			}
-		},
-
 		/**
 		 * Add an empty limit row.
 		 *
