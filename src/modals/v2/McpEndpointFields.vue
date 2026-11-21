@@ -17,7 +17,7 @@
 
 		<NcSelect
 			:inputLabel="t('integriq', 'Tool server source')"
-			:modelValue="sourceOption"
+			:modelValue="optionFor(formData.targetId)"
 			:options="sourceOptions"
 			:loading="sourcesLoading"
 			:clearable="false"
@@ -84,44 +84,18 @@
 </template>
 
 <script>
-import { CnFieldHelper } from '@conduction/nextcloud-vue'
-import { NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
-import sourceOptions from '../../mixins/sourceOptions.js'
+import endpointSourceFields from '../../mixins/endpointSourceFields.js'
 import { limitRowsOf, toolLimitsOf } from './mcpToolLimits.js'
 
 export default {
 	name: 'McpEndpointFields',
-	components: { CnFieldHelper, NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField },
 
-	mixins: [sourceOptions],
-
-	props: {
-		/** Reactive form data object owned by CnFormDialog. */
-		formData: { type: Object, default: () => ({}) },
-		/** Mutator forwarded from CnFormDialog. Signature: (key, value). */
-		updateField: { type: Function, required: true },
-	},
+	mixins: [endpointSourceFields],
 
 	data() {
 		return {
 			limitRows: limitRowsOf(this.formData.mcpToolLimits),
 		}
-	},
-
-	computed: {
-		/**
-		 * The picked source.
-		 *
-		 * @return {{id: string, label: string}|null}
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
-		 */
-		sourceOption() {
-			return this.sourceOptions.find((option) => option.id === this.formData.targetId) || null
-		},
-	},
-
-	async created() {
-		await this.fetchSources()
 	},
 
 	methods: {

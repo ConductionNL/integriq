@@ -88,23 +88,13 @@
 </template>
 
 <script>
-import { CnFieldHelper } from '@conduction/nextcloud-vue'
-import { NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
-import sourceOptions from '../../mixins/sourceOptions.js'
+import endpointSourceFields from '../../mixins/endpointSourceFields.js'
 import { sharesOf, targetRowsOf, targetsOf } from './endpointTargets.js'
 
 export default {
 	name: 'EndpointTargetsFields',
-	components: { CnFieldHelper, NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField },
 
-	mixins: [sourceOptions],
-
-	props: {
-		/** Reactive form data object owned by CnFormDialog. */
-		formData: { type: Object, default: () => ({}) },
-		/** Mutator forwarded from CnFormDialog. Signature: (key, value). */
-		updateField: { type: Function, required: true },
-	},
+	mixins: [endpointSourceFields],
 
 	data() {
 		return {
@@ -124,22 +114,7 @@ export default {
 		},
 	},
 
-	async created() {
-		await this.fetchSources()
-	},
-
 	methods: {
-		/**
-		 * The option of a source uuid, null when it is not among the sources.
-		 *
-		 * @param {string} id The source uuid.
-		 * @return {{id: string, label: string}|null}
-		 * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
-		 */
-		optionFor(id) {
-			return this.sourceOptions.find((option) => option.id === id) || null
-		},
-
 		/**
 		 * Add a target. The first target starts from the endpoint's own source,
 		 * so turning one source into a split keeps it.
