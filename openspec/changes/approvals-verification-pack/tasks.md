@@ -33,6 +33,7 @@
   - GIVEN a pending request THEN reject with a comment records the rejection
 - [ ] Implement
 - [ ] Test
+  - Written, not run here: `tests/e2e/spec-coverage/approval-workflow.spec.ts` (the list shows two staged pending requests; approve with a comment takes one off the pending list; Reject stays disabled until a comment is typed, and a rejection records the comment, `approverUserId` and `rejectedAt`).
 
 ### Task 4: Rule editor `approval` action form
 - **spec_ref**: `openspec/changes/archive/2026-07-15-hitl-approval-rule-action/specs/approval-workflow/spec.md`
@@ -41,6 +42,7 @@
   - GIVEN the rule editor WHEN `approval` is chosen as the action type THEN the approver-group, expiry and onReject/onTimeout fields render and persist on save
 - [ ] Implement
 - [ ] Test
+  - Written, not run here: the same file's rule editor test (picking `approval` shows approver group, time to live, on reject and on timeout; the group and the time to live persist on save as `configuration.approval`).
 
 ## 4. Docs & l10n
 
