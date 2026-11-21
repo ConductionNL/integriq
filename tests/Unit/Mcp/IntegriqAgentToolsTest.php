@@ -56,6 +56,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Contract\ObjectFindOptions as PublishedObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectSaveOptions as PublishedObjectSaveOptions;
 
 /**
  * An in-memory OpenRegister: objects by schema and uuid.
@@ -81,7 +83,7 @@ class InMemoryObjects extends ObjectService {
 		$this->objects[$schema][$uuid] = $data;
 	}
 
-	public function find($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true): ?ObjectEntity {
+	public function find($id, ObjectFindOptions|PublishedObjectFindOptions|null $options = null, bool $_rbac = true, bool $_multitenancy = true): ?ObjectEntity {
 		$register = $options?->register;
 		$schema = $options?->schema;
 		$_render = $options?->render ?? true;
@@ -116,7 +118,7 @@ class InMemoryObjects extends ObjectService {
 		return ['results' => $rows, 'total' => count($rows)];
 	}
 
-	public function saveObject($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+	public function saveObject($object, ObjectSaveOptions|PublishedObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 		$register = $options->target->register;
 		$schema = $options->target->schema;
 		$uuid = $options->uuid;
