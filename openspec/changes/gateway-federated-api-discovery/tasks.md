@@ -34,7 +34,9 @@ Kind: code. Size M. Row `integriq:gw-federated`.
 - **acceptance_criteria**:
   - GIVEN a discovered API with a stored description WHEN the administrator chooses bring behind integriq THEN the import preview opens with its operations
 - [ ] Implement
+  - Row action half built: the API inventory's row action "Bring behind integriq" (`bringApiBehindIntegriqHandler`, shown only on a row whose `openApiDocument` is not empty) opens `OpenApiImportDialog` with that description as text and a prefix slugged from the API's name (`prefixFor`, `documentText` in `src/dialogs/openApiImport.js`), and the dialog previews it at once. Vitest: `tests/vitest/bringApiBehindIntegriq.spec.js`, `tests/vitest/openApiImportDialog.spec.js`, `tests/vitest/modalHostEvents.spec.js`. Left: the export synchronizations that fill `openApiDocument` (Kong attaches no document to a service; Azure and Amazon do not fetch theirs yet).
 - [ ] Test (Playwright from the inventory row to the import preview)
+  - Written, not run here: `tests/e2e/api-inventory.spec.ts` (the inventory lists both gateways and filters on Azure; the row action opens the preview with the API's operations).
 
 ## Verification
 - [ ] `openspec validate gateway-federated-api-discovery --type change --strict` passes

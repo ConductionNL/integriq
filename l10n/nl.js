@@ -310,6 +310,7 @@ OC.L10N.register(
     "Body, as JSON" : "Inhoud, als JSON",
     "Both halves of a pair are needed for it to apply — a half-filled rate limit or quota is saved as unlimited. Leave all four empty for no limits at all." : "Beide helften van een paar zijn nodig om het te laten gelden — een half ingevulde snelheidslimiet of quotum wordt als onbeperkt opgeslagen. Laat alle vier leeg voor helemaal geen limieten.",
     "Both lists are empty, so this consumer may call from any source. Add an entry to restrict it." : "Beide lijsten zijn leeg, dus deze consumer mag vanaf elke bron aanroepen. Voeg een vermelding toe om dat te beperken.",
+    "Bring behind integriq" : "Achter integriq plaatsen",
     "Broker" : "Broker",
     "Broker address" : "Adres van de broker",
     "Brokered credential" : "Bemiddelde referentie",

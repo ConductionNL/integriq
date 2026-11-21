@@ -21,6 +21,7 @@
 //   POST /api/jobs/{run,test}/{id}          — RunActionModal
 //   POST /api/synchronizations/{id}/{run,test} — RunActionModal
 
+import { documentText, prefixFor } from '../dialogs/openApiImport.js'
 import { releaseHeldMessage, withdrawHeldMessage } from './heldMessage.js'
 import { logsLocation, VIEW_LOGS_TARGETS } from './logTargets.js'
 import {
@@ -316,6 +317,23 @@ export function openGatewayCatalogueHandler() {
  */
 export function openOpenApiImportHandler() {
 	modalBus.emit(EVENT_OPEN_OPENAPI_IMPORT, {})
+}
+
+/**
+ * Bring a discovered API behind integriq (gateway-federated-api-discovery
+ * REQ-FEDG-003): open the OpenAPI import with the description its gateway
+ * exported and a prefix from its name, so the preview lists its operations.
+ * Wired to the API inventory's row action, shown only on a row with a stored
+ * description.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-a-discovered-api-can-be-brought-behind-integriq-req-fedg-003
+ */
+export function bringApiBehindIntegriqHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_OPENAPI_IMPORT, {
+		initialDocument: documentText(item?.openApiDocument),
+		initialPrefix: prefixFor(item),
+	})
 }
 
 /**

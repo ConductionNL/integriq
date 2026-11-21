@@ -128,6 +128,27 @@ describe('OpenApiImportDialog', () => {
 		changed.mockReset()
 	})
 
+	it('opened with a stored description, fills it in with the prefix and previews it at once', async () => {
+		post.mockResolvedValueOnce({ data: PREVIEW })
+		const document = '{"openapi":"3.0.1"}'
+		const wrapper = mount(OpenApiImportDialog, { props: { open: false, initialDocument: document, initialPrefix: 'orders' } })
+		await wrapper.setProps({ open: true })
+		await flushPromises()
+
+		expect(post).toHaveBeenCalledTimes(1)
+		expect(post).toHaveBeenCalledWith('/apps/integriq/api/openapi/import/preview', { prefix: 'orders', document })
+		expect(wrapper.find('#openapi-import-document').element.value).toBe(document)
+		expect(wrapper.find('[data-operation="getZaak"]').exists()).toBe(true)
+	})
+
+	it('opened without a description, starts empty and previews nothing', async () => {
+		const wrapper = await opened()
+		await flushPromises()
+
+		expect(post).not.toHaveBeenCalled()
+		expect(wrapper.find('#openapi-import-document').element.value).toBe('')
+	})
+
 	it('previews without importing and marks a colliding operation as not pickable', async () => {
 		post.mockResolvedValueOnce({ data: PREVIEW })
 		const wrapper = await opened()
