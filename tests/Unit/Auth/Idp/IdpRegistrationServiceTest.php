@@ -28,13 +28,11 @@ use OCA\Integriq\Auth\Idp\IdpAdapterRegistry;
 use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
 use OCA\Integriq\Auth\Idp\IdpReadiness;
 use OCA\Integriq\Auth\Idp\IdpRegistration;
-use OCA\Integriq\Auth\Idp\IdpRegistrationRule;
 use OCA\Integriq\Auth\Idp\IdpRegistrationService;
 use OCA\Integriq\Auth\Idp\IdpSecretSeam;
 use OCA\Integriq\Auth\Idp\LogGovernmentIdpAdapter;
 use OCA\Integriq\Exception\IdpAssertionException;
 use OCA\Integriq\Exception\IdpRegistrationConflictException;
-use OCA\Integriq\Exception\IdpRegistrationRefusedException;
 use OCA\Integriq\Exception\IdpSecretRefusedException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -50,8 +48,6 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @covers \OCA\Integriq\Auth\Idp\IdpReadiness
  * @covers \OCA\Integriq\Auth\Idp\IdpAdapterRegistry
  * @covers \OCA\Integriq\Exception\IdpRegistrationConflictException
- * @covers \OCA\Integriq\Exception\IdpRegistrationRefusedException
- * @covers \OCA\Integriq\Auth\Idp\IdpRegistrationRule
  * @uses \OCA\Integriq\Auth\Idp\LogGovernmentIdpAdapter
  * @uses \OCA\Integriq\Exception\IdpSecretRefusedException
  * @uses \OCA\Integriq\Exception\IdpAssertionException
@@ -346,61 +342,6 @@ class IdpRegistrationServiceTest extends TestCase {
 		$this->assertSame('new-uuid', $service->save(data: self::oidc(['organisation' => 'gemeente-y']))->id);
 		$this->assertCount(3, $this->saved);
 	}//end testEditingAndOtherPairsAreSaved()
-
-
-	/**
-	 * A Yivi registration over SAML is refused before anything is read or saved.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
-	 */
-	public function testAYiviRegistrationOverSamlIsRefused(): void {
-		try {
-			$this->service()->save(data: self::oidc(overrides: ['provider' => 'yivi', 'kind' => 'saml-sp', 'label' => 'Yivi']));
-			$this->fail(message: 'A Yivi registration over SAML was saved.');
-		} catch (IdpRegistrationRefusedException $refused) {
-			$this->assertSame(expected: 'idp_registration_needs_oidc', actual: $refused->reason);
-			$this->assertSame(
-				expected: 'Yivi is reached through an OIDC bridge. Save the registration with the protocol oidc-rp.',
-				actual: $refused->getMessage()
-			);
-		}
-
-		$this->assertSame(expected: [], actual: $this->saved);
-	}//end testAYiviRegistrationOverSamlIsRefused()
-
-
-	/**
-	 * A Yivi registration as an OIDC Relying Party is saved, and the rule leaves the other providers alone.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
-	 */
-	public function testAYiviOidcRegistrationIsSaved(): void {
-		$yivi = self::oidc(
-			overrides: [
-				'provider' => 'yivi',
-				'label' => 'Yivi',
-				'issuer' => 'https://yivi-bridge.example',
-				'yiviAttributes' => [
-					['id' => 'pbdf.gemeente.personalData.fullname', 'claim' => 'fullname'],
-					['id' => 'pbdf.sidn-pbdf.email.email', 'claim' => 'email'],
-				],
-			]
-		);
-
-		$this->assertSame(expected: 'new-uuid', actual: $this->service()->save(data: $yivi)->id);
-		$this->assertSame(expected: 'new-uuid', actual: $this->service()->save(data: self::oidc(overrides: ['kind' => 'saml-sp']))->id);
-		$this->assertCount(expectedCount: 2, haystack: $this->saved);
-		$rule = new IdpRegistrationRule();
-		$this->assertNull(actual: $rule->refusal(data: ['provider' => 'yivi', 'kind' => ' oidc-rp ']));
-		$this->assertSame(
-			expected: ['code' => 'idp_registration_needs_oidc', 'provider' => 'yivi'],
-			actual: $rule->refusal(data: ['provider' => 'yivi'])
-		);
-	}//end testAYiviOidcRegistrationIsSaved()
 
 
 	/**

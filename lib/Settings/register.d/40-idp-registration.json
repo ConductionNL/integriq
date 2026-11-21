@@ -197,20 +197,24 @@
 							"properties": {
 								"id": {
 									"type": "string",
-									"title": "Attribute id"
+									"title": "Attribute id",
+									"description": "The Yivi attribute id, for example pbdf.gemeente.personalData.fullname."
 								},
 								"claim": {
 									"type": "string",
-									"title": "Claim"
+									"title": "Claim",
+									"description": "The claim the OIDC bridge returns the attribute in."
 								},
 								"label": {
 									"type": "string",
-									"title": "Label"
+									"title": "Label",
+									"description": "The name the resident and the administrator read."
 								},
 								"carriesBsn": {
 									"type": "boolean",
 									"default": false,
-									"title": "Carries a BSN"
+									"title": "Carries a BSN",
+									"description": "Whether the value is a BSN, which is pseudonymised unless the registration passes it to the consumer."
 								}
 							},
 							"required": [

@@ -29,7 +29,6 @@ namespace OCA\Integriq\Auth\Idp;
 namespace OCA\Integriq\Auth\Idp;
 
 use OCA\Integriq\Exception\IdpRegistrationConflictException;
-use OCA\Integriq\Exception\IdpRegistrationRefusedException;
 use OCA\Integriq\Exception\IdpSecretRefusedException;
 use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -64,14 +63,12 @@ class IdpRegistrationService {
 	 * @param IdpSecretSeam            $secretSeam    Reads a credential reference, failing closed.
 	 * @param IdpBrokerConfigInterface $brokerConfig  The broker flag.
 	 * @param IAppManager              $appManager    Answers whether Keepiq is enabled.
-	 * @param IdpRegistrationRule      $rule          The rules a registration's own fields must meet.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
 		private readonly IdpSecretSeam $secretSeam,
 		private readonly IdpBrokerConfigInterface $brokerConfig,
 		private readonly IAppManager $appManager,
-		private readonly IdpRegistrationRule $rule=new IdpRegistrationRule(),
 	) {
 
 	}//end __construct()
@@ -179,23 +176,10 @@ class IdpRegistrationService {
 	 * @return IdpRegistration The saved registration.
 	 *
 	 * @throws IdpRegistrationConflictException When another registration exists for the organisation and provider.
-	 * @throws IdpRegistrationRefusedException  When the registration's own fields break a save rule (IdpRegistrationRule).
 	 *
 	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-each-organisation-has-its-own-registration-per-provider-req-idpc-002
-	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
 	 */
 	public function save(array $data, ?string $uuid = null): IdpRegistration {
-		$refusal = $this->rule->refusal(data: $data);
-		if ($refusal !== null) {
-			throw new IdpRegistrationRefusedException(
-				reason: $refusal['code'],
-				message: sprintf(
-					'%s is reached through an OIDC bridge. Save the registration with the protocol oidc-rp.',
-					ucfirst(string: $refusal['provider'])
-				)
-			);
-		}
-
 		$candidate = new IdpRegistration(id: (string)$uuid, data: $data);
 		foreach ($this->findAll(organisation: $candidate->organisation(), provider: $candidate->provider()) as $existing) {
 			if ($existing->id !== (string)$uuid) {

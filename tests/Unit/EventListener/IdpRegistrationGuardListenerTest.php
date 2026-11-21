@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\EventListener;
 
-use OCA\Integriq\Auth\Idp\IdpRegistrationRule;
 use OCA\Integriq\EventListener\IdpRegistrationGuardListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -39,7 +38,6 @@ use RuntimeException;
  * OpenRegister classes (tests/stubs holds copies).
  *
  * @covers \OCA\Integriq\EventListener\IdpRegistrationGuardListener
- * @covers \OCA\Integriq\Auth\Idp\IdpRegistrationRule
  */
 class IdpRegistrationGuardListenerTest extends TestCase {
 
@@ -66,7 +64,6 @@ class IdpRegistrationGuardListenerTest extends TestCase {
 		);
 
 		return new IdpRegistrationGuardListener(
-			rule: new IdpRegistrationRule(),
 			schemaMapper: $schemaMapper,
 			registerMapper: $registerMapper,
 			l10n: $l10n,
@@ -152,6 +149,7 @@ class IdpRegistrationGuardListenerTest extends TestCase {
 	public function testEverythingElsePasses(): void {
 		$cases = [
 			[$this->listener(), new ObjectCreatingEvent($this->entity(data: ['provider' => 'yivi', 'kind' => 'oidc-rp']))],
+			[$this->listener(), new ObjectCreatingEvent($this->entity(data: ['provider' => ' yivi ', 'kind' => ' oidc-rp ']))],
 			[$this->listener(), new ObjectCreatingEvent($this->entity(data: ['provider' => 'digid', 'kind' => 'saml-sp']))],
 			[$this->listener(schemaSlug: 'source'), new ObjectCreatingEvent($this->entity(data: ['provider' => 'yivi', 'kind' => 'saml-sp']))],
 			[$this->listener(schemaSlug: null), new ObjectCreatingEvent($this->entity(data: ['provider' => 'yivi', 'kind' => 'saml-sp']))],
