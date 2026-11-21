@@ -65,5 +65,6 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 ## Verification
 - [ ] `openspec validate access-developer-portal-and-subscriptions --type change --strict` passes
   - Run on 17 Nov: the only issue is the warning on the Status/Scope header above `## Purpose` in `specs/api-product-gateway/spec.md`, which `--strict` treats as an error; the header follows the app's spec layout, so it is left for the spec pass.
-- [ ] Hydra gates `no-admin-idor` and `route-auth` pass on the new routes
+- [x] Hydra gates `no-admin-idor` and `route-auth` pass on the new routes
+  > 2026-11-21, `run-hydra-gates.sh` on the full tree: gate-5 `route-auth` passes. gate-7 `no-admin-idor` names three methods, all outside this change (`ProductChannelsController::asyncapi`, `RegistrationTargetController::index`, `ServiceFetchController::index`); `PortalController` and `PortalKeysController` are not among them.
 - [ ] PHPUnit, Newman and Playwright run, exit codes read
