@@ -464,9 +464,18 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// its registered return address before anything leaves integriq; the
 		// callback sends the browser back only to the address kept in the
 		// signed state (openspec/changes/archive/2026-09-29-identity-broker-browser-login).
-		['name' => 'idpBroker#start', 'url' => '/api/idp/{provider}/start', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi']],
-		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi']],
-		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'POST', 'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi'], 'postfix' => 'post'],
+		[
+			'name' => 'idpBroker#start', 'url' => '/api/idp/{provider}/start', 'verb' => 'GET',
+			'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi'],
+		],
+		[
+			'name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'GET',
+			'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi'],
+		],
+		[
+			'name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'POST',
+			'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi'], 'postfix' => 'post',
+		],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
