@@ -467,7 +467,7 @@ class SenderIdentityTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	public function testABrokeredReferenceYieldsKeyMaterial(): void {
 		$broker = new class {
@@ -503,7 +503,7 @@ class SenderIdentityTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	public function testARefusedReferenceIsUnresolvableNotAbsent(): void {
 		$broker = new class {
@@ -552,7 +552,7 @@ class SenderIdentityTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	public function testAnUnmigratedIdentityStillYieldsItsInlineKey(): void {
 		$service = $this->brokeredService(broker: null, storedKey: 'INLINE_KEY_MATERIAL');
@@ -569,7 +569,7 @@ class SenderIdentityTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	public function testAnIdentityWithNoKeyAtAllReportsAbsent(): void {
 		$service = $this->brokeredService(broker: null, storedKey: '');

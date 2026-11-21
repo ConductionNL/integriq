@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md
+ * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the outbound S/MIME protection path.
  *
- * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+ * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
  */
 class OutboundSecurityTest extends TestCase {
 
@@ -85,7 +85,7 @@ class OutboundSecurityTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	public function testAnUnresolvableCredentialSaysSo(): void {
 		$result = $this->protectUnder(state: SenderIdentityService::SIGNING_KEY_UNRESOLVABLE);
@@ -100,7 +100,7 @@ class OutboundSecurityTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	public function testAnIdentityWithNoKeySaysThatInstead(): void {
 		$result = $this->protectUnder(state: SenderIdentityService::SIGNING_KEY_ABSENT);
@@ -120,7 +120,7 @@ class OutboundSecurityTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	public function testTheTwoFailureReasonsAreDistinguishable(): void {
 		$unresolvable = $this->protectUnder(state: SenderIdentityService::SIGNING_KEY_UNRESOLVABLE);
@@ -135,7 +135,7 @@ class OutboundSecurityTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	public function testAnIdentityThatDoesNotSignIsAnsweredFirst(): void {
 		$identities = $this->createMock(SenderIdentityService::class);
@@ -163,7 +163,7 @@ class OutboundSecurityTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	public function testAMissingCertificateIsItsOwnAnswer(): void {
 		$identities = $this->createMock(SenderIdentityService::class);
