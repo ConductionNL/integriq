@@ -148,7 +148,14 @@ final class WatchedFileArrivedEventTest extends TestCase {
 
 		$this->assertSame(
 			expected: ['sync-1', 'source-1', 'filinq', 42, 'Scans/in/scan.pdf', 'scanner'],
-			actual: [$event->getSynchronizationId(), $event->getSourceId(), $event->getIntakeApp(), $event->getFileId(), $event->getPath(), $event->getOwnerUid()]
+			actual: [
+				$event->getSynchronizationId(),
+				$event->getSourceId(),
+				$event->getIntakeApp(),
+				$event->getFileId(),
+				$event->getPath(),
+				$event->getOwnerUid(),
+			]
 		);
 	}//end testTheGettersAnswerTheConstructorArguments()
 

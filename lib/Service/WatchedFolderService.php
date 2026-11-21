@@ -118,7 +118,7 @@ class WatchedFolderService {
 	public function sweep(): array {
 		$result = ['queued' => 0, 'stopped' => []];
 		foreach ($this->folders->all() as $watched) {
-			if ($watched->isIntake() === false && $watched->target() === null) {
+			if ($watched->intakeApp() === null && $watched->target() === null) {
 				$result['stopped'][] = $watched->synchronizationId();
 				continue;
 			}
@@ -162,7 +162,7 @@ class WatchedFolderService {
 	 * @return string `unresolved`, `failed`, `unclaimed`, `handed-over` or `ingested`.
 	 */
 	private function write(WatchedFolder $watched, File $file, int $now): string {
-		if ($watched->isIntake() === false && $watched->target() === null) {
+		if ($watched->intakeApp() === null && $watched->target() === null) {
 			return 'unresolved';
 		}
 
@@ -188,7 +188,7 @@ class WatchedFolderService {
 			]
 		);
 		$this->marker->succeeded(watched: $watched, file: $file);
-		if ($watched->isIntake() === true) {
+		if ($watched->intakeApp() !== null) {
 			return 'handed-over';
 		}
 

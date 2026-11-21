@@ -105,46 +105,31 @@ final class WatchedFolder {
 	}//end after()
 
 	/**
-	 * Where a file goes after a safe write, relative to the watched folder.
+	 * The folder a handled file is moved to, relative to the watched folder: `processedPath` after a safe write,
+	 * `failedPath` after a failed one, each defaulting to its own name.
+	 *
+	 * @param string $outcome `processed` or `failed`.
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-run-never-publishes-and-only-marks-a-file-after-a-safe-write-req-sftp-004
 	 */
-	public function processedPath(): string {
-		return $this->text(key: 'processedPath', default: 'processed');
-	}//end processedPath()
+	public function folderFor(string $outcome): string {
+		return $this->text(key: $outcome . 'Path', default: $outcome);
+	}//end folderFor()
 
 	/**
-	 * Where a file goes after a failed write, relative to the watched folder.
+	 * For `target: intake`, the app id that may accept a dropped file ('' when none is named); null for `mapping`.
 	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
-	 */
-	public function failedPath(): string {
-		return $this->text(key: 'failedPath', default: 'failed');
-	}//end failedPath()
-
-	/**
-	 * Whether a dropped file goes to an intake app (`target: intake`) rather than through the mapping.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
-	 */
-	public function isIntake(): bool {
-		return $this->text(key: 'target', default: 'mapping') === 'intake';
-	}//end isIntake()
-
-	/**
-	 * The app id that may accept a dropped file, for `target: intake`; '' when none is named.
-	 *
-	 * @return string
+	 * @return string|null
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
 	 */
-	public function intakeApp(): string {
+	public function intakeApp(): ?string {
+		if ($this->text(key: 'target', default: 'mapping') !== 'intake') {
+			return null;
+		}
+
 		return $this->text(key: 'intakeApp', default: '');
 	}//end intakeApp()
 

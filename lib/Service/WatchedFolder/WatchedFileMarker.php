@@ -82,7 +82,7 @@ class WatchedFileMarker {
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-run-never-publishes-and-only-marks-a-file-after-a-safe-write-req-sftp-004
 	 */
 	public function succeeded(WatchedFolder $watched, File $file): void {
-		$this->mark(watched: $watched, file: $file, folder: $watched->processedPath(), tag: self::TAG_INGESTED);
+		$this->mark(watched: $watched, file: $file, folder: $watched->folderFor(outcome: 'processed'), tag: self::TAG_INGESTED);
 	}//end succeeded()
 
 	/**
@@ -101,7 +101,7 @@ class WatchedFileMarker {
 			'integriq: watched file "' . $file->getName() . '" was not written: ' . $reason,
 			['synchronization' => $watched->synchronizationId()]
 		);
-		$this->mark(watched: $watched, file: $file, folder: $watched->failedPath(), tag: self::TAG_FAILED);
+		$this->mark(watched: $watched, file: $file, folder: $watched->folderFor(outcome: 'failed'), tag: self::TAG_FAILED);
 	}//end failed()
 
 	/**

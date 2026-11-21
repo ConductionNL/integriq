@@ -57,7 +57,8 @@ class WatchedFileHandOver {
 	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
 	 */
 	public function handOver(WatchedFolder $watched, File $file): ?string {
-		if ($watched->intakeApp() === '') {
+		$intakeApp = (string)$watched->intakeApp();
+		if ($intakeApp === '') {
 			// No app is named, so none may accept; announcing it would let accept('') through.
 			return null;
 		}
@@ -66,7 +67,7 @@ class WatchedFileHandOver {
 		$event = new WatchedFileArrivedEvent(
 			synchronizationId: $watched->synchronizationId(),
 			sourceId: $watched->sourceId(),
-			intakeApp: $watched->intakeApp(),
+			intakeApp: $intakeApp,
 			fileId: (int)$file->getId(),
 			path: $this->relativePath(absolute: $file->getPath(), owner: $owner),
 			ownerUid: $owner

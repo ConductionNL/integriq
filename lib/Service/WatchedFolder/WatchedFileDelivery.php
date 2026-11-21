@@ -60,7 +60,7 @@ class WatchedFileDelivery {
 	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
 	 */
 	public function deliver(WatchedFolder $watched, File $file): ?string {
-		if ($watched->isIntake() === true) {
+		if ($watched->intakeApp() !== null) {
 			return $this->handOver->handOver(watched: $watched, file: $file);
 		}
 

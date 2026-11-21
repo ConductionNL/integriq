@@ -335,7 +335,14 @@ final class WatchedFileIngestJobTest extends TestCase {
 		$event = $this->announced[0];
 		$this->assertSame(
 			expected: ['sync-1', 'source-1', 'filinq', 42, 'Inbox/besluit.pdf', 'alice'],
-			actual: [$event->getSynchronizationId(), $event->getSourceId(), $event->getIntakeApp(), $event->getFileId(), $event->getPath(), $event->getOwnerUid()]
+			actual: [
+				$event->getSynchronizationId(),
+				$event->getSourceId(),
+				$event->getIntakeApp(),
+				$event->getFileId(),
+				$event->getPath(),
+				$event->getOwnerUid(),
+			]
 		);
 	}//end testTheEventCarriesTheFileItFound()
 
