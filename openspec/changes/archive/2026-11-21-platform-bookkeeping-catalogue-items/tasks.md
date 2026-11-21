@@ -28,8 +28,11 @@ Kind: config. Size S. Half for shillinq `platform-integration-catalogue` (row sh
 - **acceptance_criteria**:
   - GIVEN the catalogue docs WHEN a developer adds a bookkeeping connector THEN the page names the six categories and says the sandbox seed records are for demos only
 - [x] Implement
-- [ ] Test (docs build)
+- [x] Test (docs build)
+  - `npm ci --legacy-peer-deps && npm run build` in `docs/` on 2026-11-21: the build succeeds, all 10 AI-baseline checks pass, and the build reports no warning for `docs/features/connector-catalog.md`.
 
 ## Verification
-- [ ] `openspec validate platform-bookkeeping-catalogue-items --strict` passes
-- [ ] `composer check:strict` once before push; PHPUnit exit code read
+- [x] `openspec validate platform-bookkeeping-catalogue-items --strict` passes
+  - OpenSpec 2.1.1, 2026-11-21: the change validates ("is valid") under `--strict`.
+- [x] `composer check:strict` once before push; PHPUnit exit code read
+  - Run on development 2026-11-21 with this change merged. PHPUnit exits 2: 10708 tests, with the same errors and failures as development (missing ext-soap and ext-bcmath in the cloud image), none in the catalogue code. `--filter CatalogRegistry` passes, 37 tests. phpstan passes, psalm is at the development count (369), and the change adds JSON templates and one category map, which phpcs and phpmd do not flag.

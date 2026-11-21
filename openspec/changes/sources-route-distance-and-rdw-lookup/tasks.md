@@ -37,7 +37,8 @@ Kind: code. Size M. Halves for humaniq `expenses-travel-calculation` and `people
 - **acceptance_criteria**:
   - GIVEN the docs WHEN an app developer reads them THEN both events, their fields and refusal codes are listed
 - [x] Implement
-- [ ] Test (docs build)
+- [x] Test (docs build)
+  - `npm ci --legacy-peer-deps && npm run build` in `docs/` on 2026-11-21: the build succeeds, all 10 AI-baseline checks pass, and the build reports no warning for `docs/features/connection-calls.md`, which documents the route and RDW sources.
 
 ## Verification
 - [ ] `openspec validate sources-route-distance-and-rdw-lookup --strict` passes

@@ -15,4 +15,5 @@ Kind: code. Size M. Row `integriq:con-endpoint-workspace`.
 - [ ] Test (PHPUnit for the route; Playwright for the tab)
 
 ## Verification
-- [ ] `openspec validate connectors-endpoint-workspace-adapters --type change --strict` passes
+- [x] `openspec validate connectors-endpoint-workspace-adapters --type change --strict` passes
+  - OpenSpec 2.1.1, 2026-11-21: the change validates ("is valid") under `--strict`.
