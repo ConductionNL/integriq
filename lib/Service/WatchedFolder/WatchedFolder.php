@@ -60,15 +60,19 @@ final class WatchedFolder {
 	 * The synchronization's id.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
-	public function id(): string {
+	public function synchronizationId(): string {
 		return (string)($this->synchronization['id'] ?? $this->synchronization['uuid'] ?? '');
-	}//end id()
+	}//end synchronizationId()
 
 	/**
 	 * The shell pattern of the names it picks up.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function pattern(): string {
 		return $this->text(key: 'pattern', default: '*');
@@ -78,6 +82,8 @@ final class WatchedFolder {
 	 * How long a file must be left alone before it is picked up, in seconds.
 	 *
 	 * @return int
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function stableSeconds(): int {
 		return max(0, (int)($this->config()['stableSeconds'] ?? 60));
@@ -87,6 +93,8 @@ final class WatchedFolder {
 	 * How a handled file is marked: `move` (the default) or `tag`.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function after(): string {
 		if ($this->text(key: 'after', default: self::AFTER_MOVE) === self::AFTER_TAG) {
@@ -100,6 +108,8 @@ final class WatchedFolder {
 	 * Where a file goes after a safe write, relative to the watched folder.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function processedPath(): string {
 		return $this->text(key: 'processedPath', default: 'processed');
@@ -109,6 +119,8 @@ final class WatchedFolder {
 	 * Where a file goes after a failed write, relative to the watched folder.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function failedPath(): string {
 		return $this->text(key: 'failedPath', default: 'failed');
@@ -118,6 +130,8 @@ final class WatchedFolder {
 	 * The mapping that turns a file into the target object, or '' for none.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function mappingId(): string {
 		return trim((string)($this->synchronization['sourceTargetMapping'] ?? ''));
@@ -127,6 +141,8 @@ final class WatchedFolder {
 	 * The target register and schema, or null when `targetId` names no `register/schema`.
 	 *
 	 * @return array{register: string, schema: string}|null
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function target(): ?array {
 		$parts = explode('/', trim((string)($this->synchronization['targetId'] ?? '')));

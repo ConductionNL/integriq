@@ -130,7 +130,7 @@ class WatchedFileWriter {
 				unset($object[$key]);
 				$this->logger->info(
 					'integriq: watched folder removed "' . $key . '" from the object for "' . (string)($input['name'] ?? '') . '"; it is saved as a draft.',
-					['synchronization' => $watched->id()]
+					['synchronization' => $watched->synchronizationId()]
 				);
 			}
 		}

@@ -3,8 +3,8 @@
 /**
  * Integriq Watched File Ingest Job: ingests one file of a watched folder, off the upload's request.
  *
- * @category BackgroundJob
- * @package  OCA\Integriq\BackgroundJob
+ * @category Service
+ * @package  OCA\Integriq\Service\WatchedFolder
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\BackgroundJob;
+namespace OCA\Integriq\Service\WatchedFolder;
 
 use OCA\Integriq\Service\WatchedFolderService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * A queued job, added by the file event listener or by the sweep with the
+ * A queued job (beside the service it runs, like FetchFilesJob), added by the file event listener or by the sweep with the
  * file id and the synchronization id (design D6). It is not a TimedJob: the
  * schedule of the sweep is the platform's (REQ-DIC-005).
  *
@@ -62,8 +62,13 @@ class WatchedFileIngestJob extends QueuedJob {
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	protected function run($argument): void {
-		$fileId = (is_array($argument) === true) ? ($argument['fileId'] ?? null) : null;
-		$synchronizationId = (is_array($argument) === true) ? ($argument['synchronizationId'] ?? null) : null;
+		$fileId            = null;
+		$synchronizationId = null;
+		if (is_array($argument) === true) {
+			$fileId            = ($argument['fileId'] ?? null);
+			$synchronizationId = ($argument['synchronizationId'] ?? null);
+		}
+
 		if (is_int($fileId) === false || is_string($synchronizationId) === false || $synchronizationId === '') {
 			$this->logger->warning('integriq: a watched file job without a file id and a synchronization id was dropped.');
 			return;

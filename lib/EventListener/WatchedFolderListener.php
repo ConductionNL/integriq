@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\WatchedFolder\WatchedFolders;
+use OCA\Integriq\Service\WatchedFolder\WatchedFolderMap;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Files\Events\Node\NodeCreatedEvent;
@@ -50,10 +50,10 @@ class WatchedFolderListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param WatchedFolders $folders The watched-folder map and the job queue.
+	 * @param WatchedFolderMap $folders The watched-folder map and the job queue.
 	 */
 	public function __construct(
-		private readonly WatchedFolders $folders,
+		private readonly WatchedFolderMap $folders,
 	) {
 	}//end __construct()
 

@@ -22,13 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\NextcloudFolderFiles;
 use OCA\Integriq\Service\WatchedFolder\WatchedFileMarker;
 use OCA\Integriq\Service\WatchedFolder\WatchedFileWriter;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolder;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolders;
 use OCP\Files\File;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -56,20 +54,16 @@ class WatchedFolderService {
 	/**
 	 * Constructor.
 	 *
-	 * @param WatchedFolders                          $folders   The watched folders and the job queue.
-	 * @param NextcloudFolderFiles                    $files     The files of a watched folder.
+	 * @param WatchedFolders                          $folders   The watched folders, their files and the job queue.
 	 * @param SynchronizationContractServiceInterface $contracts The once-per-file record.
 	 * @param WatchedFileWriter                       $writer    Writes the draft with the file attached.
 	 * @param WatchedFileMarker                       $marker    Moves or tags the file afterwards.
-	 * @param LoggerInterface                         $logger    Records a failed write and a stopped sweep.
 	 */
 	public function __construct(
 		private readonly WatchedFolders $folders,
-		private readonly NextcloudFolderFiles $files,
 		private readonly SynchronizationContractServiceInterface $contracts,
 		private readonly WatchedFileWriter $writer,
 		private readonly WatchedFileMarker $marker,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -90,11 +84,12 @@ class WatchedFolderService {
 			return 'unwatched';
 		}
 
-		if ($this->contracts->findBySyncAndOrigin(synchronizationId: $synchronizationId, originId: self::ORIGIN_PREFIX . $fileId) !== null) {
+		$contract = $this->contracts->findBySyncAndOrigin(synchronizationId: $synchronizationId, originId: self::ORIGIN_PREFIX . $fileId);
+		if ($contract !== null) {
 			return 'known';
 		}
 
-		$file = $this->fileIn(watched: $watched, fileId: $fileId);
+		$file = $this->folders->fileIn(watched: $watched, fileId: $fileId);
 		if ($file === null) {
 			return 'gone';
 		}
@@ -110,7 +105,7 @@ class WatchedFolderService {
 	 * Queue the ingest of every file in every watched folder that has no contract yet.
 	 *
 	 * @return array{queued: int, stopped: list<string>} How many jobs were added, and the synchronizations stopped
-	 *                                                  before reading a file because their target does not resolve.
+	 *                                                  before listing their folder because their target does not resolve.
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
@@ -118,8 +113,7 @@ class WatchedFolderService {
 		$result = ['queued' => 0, 'stopped' => []];
 		foreach ($this->folders->all() as $watched) {
 			if ($watched->target() === null) {
-				$this->logger->warning('integriq: watched folder sweep stopped: the synchronization names no target register and schema.', ['synchronization' => $watched->id()]);
-				$result['stopped'][] = $watched->id();
+				$result['stopped'][] = $watched->synchronizationId();
 				continue;
 			}
 
@@ -137,18 +131,14 @@ class WatchedFolderService {
 	 * @return int How many jobs were added.
 	 */
 	private function sweepOne(WatchedFolder $watched): int {
-		try {
-			$listed = $this->files->listFiles(source: $watched->source, path: '', pattern: $watched->pattern());
-		} catch (Throwable $e) {
-			$this->logger->warning('integriq: watched folder sweep could not list the folder: ' . $e->getMessage(), ['synchronization' => $watched->id()]);
-			return 0;
-		}
-
-		$known  = $this->knownOrigins(synchronizationId: $watched->id());
+		$known  = $this->knownOrigins(synchronizationId: $watched->synchronizationId());
 		$queued = 0;
-		foreach ($listed as $entry) {
-			$fileId = (int)$entry['fileId'];
-			if (isset($known[self::ORIGIN_PREFIX . $fileId]) === false && $this->folders->queue(fileId: $fileId, synchronizationId: $watched->id()) === true) {
+		foreach ($this->folders->listed(watched: $watched) as $fileId) {
+			if (isset($known[self::ORIGIN_PREFIX . $fileId]) === true) {
+				continue;
+			}
+
+			if ($this->folders->queue(fileId: $fileId, synchronizationId: $watched->synchronizationId()) === true) {
 				$queued++;
 			}
 		}
@@ -174,14 +164,13 @@ class WatchedFolderService {
 		try {
 			$uuid = $this->writer->write(watched: $watched, file: $file, target: $target);
 		} catch (Throwable $e) {
-			$this->logger->warning('integriq: watched file "' . $file->getName() . '" was not written: ' . $e->getMessage(), ['synchronization' => $watched->id()]);
-			$this->marker->failed(watched: $watched, file: $file);
+			$this->marker->failed(watched: $watched, file: $file, reason: $e->getMessage());
 			return 'failed';
 		}
 
 		$this->contracts->createFromArray(
 			object: [
-				'synchronizationId' => $watched->id(),
+				'synchronizationId' => $watched->synchronizationId(),
 				'originId'          => self::ORIGIN_PREFIX . $file->getId(),
 				'targetId'          => $uuid,
 				'targetLastAction'  => 'create',
@@ -192,31 +181,6 @@ class WatchedFolderService {
 
 		return 'ingested';
 	}//end write()
-
-	/**
-	 * The file with this id directly in the watched folder, or null.
-	 *
-	 * @param WatchedFolder $watched The watched folder.
-	 * @param int           $fileId  The file.
-	 *
-	 * @return File|null
-	 */
-	private function fileIn(WatchedFolder $watched, int $fileId): ?File {
-		try {
-			$folder = $this->files->folder(source: $watched->source);
-			$nodes  = $folder->getById($fileId);
-		} catch (Throwable) {
-			return null;
-		}
-
-		foreach ($nodes as $node) {
-			if ($node instanceof File && $node->getParent()->getId() === $folder->getId()) {
-				return $node;
-			}
-		}
-
-		return null;
-	}//end fileIn()
 
 	/**
 	 * The origin ids a synchronization has a contract for.

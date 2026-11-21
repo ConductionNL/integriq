@@ -22,17 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\WatchedFolder;
 
-use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\NextcloudFolderFiles;
-use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\Integriq\Service\WatchedFolder\WatchedFileMarker;
 use OCA\Integriq\Service\WatchedFolder\WatchedFileWriter;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolder;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolders;
 use OCA\Integriq\Service\WatchedFolderService;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\Integriq\Service\WatchedFolderService
@@ -48,44 +44,39 @@ final class WatchedFolderSweepTest extends TestCase {
 	private array $queued = [];
 
 	/**
+	 * The synchronizations whose folder was listed.
+	 *
+	 * @var list<string>
+	 */
+	private array $listings = [];
+
+	/**
 	 * A file without a contract is queued; a file with one is not; a file already queued is not counted again.
 	 *
 	 * @return void
 	 */
 	public function testAnUnannouncedFileIsQueued(): void {
-		$files = $this->createMock(originalClassName: NextcloudFolderFiles::class);
-		$files->expects($this->once())->method('listFiles')->with($this->anything(), '', '*.pdf')->willReturn(
-			[
-				['fileId' => 41, 'name' => 'a.pdf'],
-				['fileId' => 42, 'name' => 'b.pdf'],
-				['fileId' => 43, 'name' => 'c.pdf'],
-			]
-		);
+		$watched = [$this->watched(id: 'sync-1', targetId: 'opencatalogi/publication')];
 
-		$result = $this->service(watched: [$this->watched(id: 'sync-1', targetId: 'opencatalogi/publication')], files: $files, alreadyQueued: [43])->sweep();
+		$result = $this->service(watched: $watched, listed: ['sync-1' => [41, 42, 43]], alreadyQueued: [43])->sweep();
 
 		$this->assertSame(expected: ['queued' => 1, 'stopped' => []], actual: $result);
 		$this->assertSame(expected: ['42@sync-1'], actual: $this->queued);
 	}//end testAnUnannouncedFileIsQueued()
 
 	/**
-	 * A synchronization whose target names no register and schema is stopped before its folder is listed;
-	 * the next one still runs, and a folder that cannot be listed queues nothing.
+	 * A synchronization whose target names no register and schema is stopped before its folder is listed,
+	 * and the next one still runs.
 	 *
 	 * @return void
 	 */
 	public function testAnUnresolvedTargetStopsBeforeAnyFile(): void {
-		$files = $this->createMock(originalClassName: NextcloudFolderFiles::class);
-		$files->expects($this->once())->method('listFiles')->willThrowException(new RemoteFileException('The folder "/Inbox" does not exist.'));
+		$watched = [$this->watched(id: 'sync-bad', targetId: ''), $this->watched(id: 'sync-2', targetId: 'opencatalogi/publication')];
 
-		$result = $this->service(
-			watched: [$this->watched(id: 'sync-bad', targetId: ''), $this->watched(id: 'sync-2', targetId: 'opencatalogi/publication')],
-			files: $files,
-			alreadyQueued: []
-		)->sweep();
+		$result = $this->service(watched: $watched, listed: ['sync-2' => []], alreadyQueued: [])->sweep();
 
 		$this->assertSame(expected: ['queued' => 0, 'stopped' => ['sync-bad']], actual: $result);
-		$this->assertSame(expected: [], actual: $this->queued);
+		$this->assertSame(expected: ['sync-2'], actual: $this->listings, message: 'the stopped synchronization was not listed');
 	}//end testAnUnresolvedTargetStopsBeforeAnyFile()
 
 	/**
@@ -106,15 +97,21 @@ final class WatchedFolderSweepTest extends TestCase {
 	/**
 	 * The service over the doubles. Contract `nextcloud-file:41` exists for sync-1.
 	 *
-	 * @param list<WatchedFolder>         $watched       The watched folders.
-	 * @param NextcloudFolderFiles&MockObject $files     The folder files.
-	 * @param list<int>                   $alreadyQueued Files whose job is already queued.
+	 * @param list<WatchedFolder>      $watched       The watched folders.
+	 * @param array<string, list<int>> $listed        The file ids in each folder.
+	 * @param list<int>                $alreadyQueued Files whose job is already queued.
 	 *
 	 * @return WatchedFolderService
 	 */
-	private function service(array $watched, NextcloudFolderFiles $files, array $alreadyQueued): WatchedFolderService {
+	private function service(array $watched, array $listed, array $alreadyQueued): WatchedFolderService {
 		$folders = $this->createMock(originalClassName: WatchedFolders::class);
 		$folders->method('all')->willReturn($watched);
+		$folders->method('listed')->willReturnCallback(
+			function (WatchedFolder $folder) use ($listed): array {
+				$this->listings[] = $folder->synchronizationId();
+				return $listed[$folder->synchronizationId()] ?? [];
+			}
+		);
 		$folders->method('queue')->willReturnCallback(
 			function (int $fileId, string $synchronizationId) use ($alreadyQueued): bool {
 				if (in_array($fileId, $alreadyQueued, true) === true) {
@@ -136,11 +133,9 @@ final class WatchedFolderSweepTest extends TestCase {
 
 		return new WatchedFolderService(
 			folders: $folders,
-			files: $files,
 			contracts: $contracts,
 			writer: $this->createMock(originalClassName: WatchedFileWriter::class),
-			marker: $this->createMock(originalClassName: WatchedFileMarker::class),
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
+			marker: $this->createMock(originalClassName: WatchedFileMarker::class)
 		);
 	}//end service()
 }//end class

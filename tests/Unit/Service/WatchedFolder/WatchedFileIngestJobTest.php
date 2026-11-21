@@ -10,7 +10,7 @@
  * the contracts and Nextcloud Files are doubled.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\BackgroundJob
+ * @package  OCA\Integriq\Tests\Unit\Service\WatchedFolder
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,9 +24,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\BackgroundJob;
+namespace OCA\Integriq\Tests\Unit\Service\WatchedFolder;
 
-use OCA\Integriq\BackgroundJob\WatchedFileIngestJob;
+use OCA\Integriq\Service\WatchedFolder\WatchedFileIngestJob;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\NextcloudFolderFiles;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
@@ -54,7 +54,7 @@ use ReflectionMethod;
 use RuntimeException;
 
 /**
- * @covers \OCA\Integriq\BackgroundJob\WatchedFileIngestJob
+ * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileIngestJob
  * @covers \OCA\Integriq\Service\WatchedFolderService
  * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileWriter
  * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileMarker
@@ -267,25 +267,32 @@ final class WatchedFileIngestJobTest extends TestCase {
 	 * @return WatchedFolderService
 	 */
 	private function service(string $targetId='opencatalogi/publication'): WatchedFolderService {
+		$synchronization = [
+			'id'                  => 'sync-1',
+			'sourceType'          => 'nextcloud-folder',
+			'sourceTargetMapping' => 'map-1',
+			'targetId'            => $targetId,
+			'sourceConfig'        => $this->sourceConfig,
+		];
 		$watched = new WatchedFolder(
-			synchronization: ['id' => 'sync-1', 'sourceType' => 'nextcloud-folder', 'sourceTargetMapping' => 'map-1', 'targetId' => $targetId, 'sourceConfig' => $this->sourceConfig],
+			synchronization: $synchronization,
 			source: ['id' => 'source-1', 'type' => 'nextcloud-folder', 'configuration' => ['ownerUid' => 'alice', 'rootPath' => '/Inbox']]
 		);
+		$inbox   = $this->inbox();
 		$folders = $this->createMock(originalClassName: WatchedFolders::class);
 		$folders->method('byId')->willReturn($watched);
+		$folders->method('fileIn')->willReturnCallback(static fn (WatchedFolder $folder, int $fileId): ?File => ($inbox->getById($fileId)[0] ?? null));
 
 		$files = $this->createMock(originalClassName: NextcloudFolderFiles::class);
-		$files->method('folder')->willReturn($this->inbox());
+		$files->method('folder')->willReturn($inbox);
 
 		$logger = $this->createMock(originalClassName: LoggerInterface::class);
 
 		return new WatchedFolderService(
 			folders: $folders,
-			files: $files,
 			contracts: $this->contracts(),
 			writer: new WatchedFileWriter(mappings: $this->mappings(), objects: $this->objects(), files: $this->fileService(), logger: $logger),
-			marker: new WatchedFileMarker(files: $files, tags: $this->tags(), tagMapper: $this->tagMapper()),
-			logger: $logger
+			marker: new WatchedFileMarker(files: $files, tags: $this->tags(), tagMapper: $this->tagMapper(), logger: $logger)
 		);
 	}//end service()
 

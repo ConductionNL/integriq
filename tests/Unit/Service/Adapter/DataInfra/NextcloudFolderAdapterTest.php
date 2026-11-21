@@ -222,7 +222,7 @@ final class NextcloudFolderAdapterTest extends TestCase {
 
 		$this->assertSame(expected: $inbox, actual: $this->files()->folder(source: $this->source()));
 
-		$this->expectException(RemoteFileException::class);
+		$this->expectException(exception: RemoteFileException::class);
 		$this->files()->folder(source: $this->source(), path: '../private');
 	}//end testTheFolderOfTheSourceIsItsRootPath()
 

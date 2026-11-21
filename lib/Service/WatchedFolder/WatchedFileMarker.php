@@ -28,6 +28,7 @@ use OCP\Files\Folder;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use OCP\SystemTag\TagNotFoundException;
+use Psr\Log\LoggerInterface;
 
 /**
  * `after: move` puts the file in `processedPath` after a safe write and in
@@ -57,14 +58,16 @@ class WatchedFileMarker {
 	/**
 	 * Constructor.
 	 *
-	 * @param NextcloudFolderFiles   $files      The watched folder.
-	 * @param ISystemTagManager      $tags       Finds or makes the system tags.
-	 * @param ISystemTagObjectMapper $tagMapper  Assigns a tag to the file.
+	 * @param NextcloudFolderFiles   $files     The watched folder.
+	 * @param ISystemTagManager      $tags      Finds or makes the system tags.
+	 * @param ISystemTagObjectMapper $tagMapper Assigns a tag to the file.
+	 * @param LoggerInterface        $logger    Records why a write failed.
 	 */
 	public function __construct(
 		private readonly NextcloudFolderFiles $files,
 		private readonly ISystemTagManager $tags,
 		private readonly ISystemTagObjectMapper $tagMapper,
+		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -83,16 +86,21 @@ class WatchedFileMarker {
 	}//end succeeded()
 
 	/**
-	 * Mark a file whose write failed. It is not marked ingested.
+	 * Mark a file whose write failed, and log why. It is not marked ingested.
 	 *
 	 * @param WatchedFolder $watched The watched folder.
 	 * @param File          $file    The file.
+	 * @param string        $reason  Why the write failed.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-run-never-publishes-and-only-marks-a-file-after-a-safe-write-req-sftp-004
 	 */
-	public function failed(WatchedFolder $watched, File $file): void {
+	public function failed(WatchedFolder $watched, File $file, string $reason): void {
+		$this->logger->warning(
+			'integriq: watched file "' . $file->getName() . '" was not written: ' . $reason,
+			['synchronization' => $watched->synchronizationId()]
+		);
 		$this->mark(watched: $watched, file: $file, folder: $watched->failedPath(), tag: self::TAG_FAILED);
 	}//end failed()
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The watched folders: which synchronizations watch which Nextcloud folder.
+ * The watched folders: which synchronizations watch which Nextcloud folder, and the files in them.
  *
  * @category Service
  * @package  OCA\Integriq\Service\WatchedFolder
@@ -22,22 +22,20 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\WatchedFolder;
 
-use OCA\Integriq\BackgroundJob\WatchedFileIngestJob;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\NextcloudFolderFiles;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\BackgroundJob\IJobList;
-use OCP\ICache;
-use OCP\ICacheFactory;
+use OCP\Files\File;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * A watched folder is the folder of a `nextcloud-folder` source that a
- * synchronization reads (design D6). The map from folder id to
- * synchronization ids is cached, so the file event listener answers without
- * reading OpenRegister on every upload; it is rebuilt when the cache entry
- * expires, which is at most a minute after a synchronization changes.
+ * synchronization reads (design D6). This class finds them and the files in
+ * them, and queues the ingest of a file; WatchedFolderMap keeps the cached
+ * map the file event listener reads.
  *
  * Everything is read in system context: the listener and the job run for
  * whoever uploaded, or for nobody.
@@ -54,61 +52,20 @@ class WatchedFolders {
 	public const SOURCE_TYPE = NextcloudFolderFiles::SOURCE_TYPE;
 
 	/**
-	 * The cache key of the folder map.
-	 *
-	 * @var string
-	 */
-	private const MAP_KEY = 'watched-folder-map';
-
-	/**
-	 * How long the folder map is kept, in seconds.
-	 *
-	 * @var integer
-	 */
-	private const MAP_TTL = 60;
-
-	/**
-	 * The cache the folder map lives in.
-	 *
-	 * @var ICache
-	 */
-	private readonly ICache $cache;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService        $objects      OpenRegister, for the synchronizations and their sources.
-	 * @param NextcloudFolderFiles $files        The folder of a source.
-	 * @param IJobList             $jobs         Where the ingest jobs are queued.
-	 * @param ICacheFactory        $cacheFactory The distributed cache, for the folder map.
+	 * @param ObjectService        $objects OpenRegister, for the synchronizations and their sources.
+	 * @param NextcloudFolderFiles $files   The folder of a source.
+	 * @param IJobList             $jobs    Where the ingest jobs are queued.
+	 * @param LoggerInterface      $logger  Records a folder that cannot be listed.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
 		private readonly NextcloudFolderFiles $files,
 		private readonly IJobList $jobs,
-		ICacheFactory $cacheFactory,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->cache = $cacheFactory->createDistributed('integriq-watched-folders');
 	}//end __construct()
-
-	/**
-	 * The synchronizations that watch a folder.
-	 *
-	 * @param int $folderId The folder's file id.
-	 *
-	 * @return list<string> The synchronization ids; empty for a folder nobody watches.
-	 *
-	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
-	 */
-	public function watching(int $folderId): array {
-		$map = $this->cache->get(self::MAP_KEY);
-		if (is_array($map) === false) {
-			$map = $this->buildMap();
-			$this->cache->set(self::MAP_KEY, $map, self::MAP_TTL);
-		}
-
-		return array_values($map[(string)$folderId] ?? []);
-	}//end watching()
 
 	/**
 	 * Every watched folder: each active synchronization on a `nextcloud-folder` source, with that source.
@@ -148,6 +105,79 @@ class WatchedFolders {
 	}//end byId()
 
 	/**
+	 * The folder map: the folder id of each watched folder, to the synchronizations that watch it.
+	 *
+	 * @return array<int, list<string>>
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+	 */
+	public function map(): array {
+		$map = [];
+		foreach ($this->all() as $watched) {
+			try {
+				$folderId = (int)$this->files->folder(source: $watched->source)->getId();
+			} catch (Throwable) {
+				// A source whose folder is gone watches nothing; its health probe says why.
+				continue;
+			}
+
+			$map[$folderId][] = $watched->synchronizationId();
+		}
+
+		return $map;
+	}//end map()
+
+	/**
+	 * The file with this id directly in the watched folder, or null.
+	 *
+	 * @param WatchedFolder $watched The watched folder.
+	 * @param int           $fileId  The file.
+	 *
+	 * @return File|null
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+	 */
+	public function fileIn(WatchedFolder $watched, int $fileId): ?File {
+		try {
+			$folder = $this->files->folder(source: $watched->source);
+			$nodes  = $folder->getById($fileId);
+		} catch (Throwable) {
+			return null;
+		}
+
+		foreach ($nodes as $node) {
+			if ($node instanceof File && $node->getParent()->getId() === $folder->getId()) {
+				return $node;
+			}
+		}
+
+		return null;
+	}//end fileIn()
+
+	/**
+	 * The ids of the files in a watched folder whose names match its pattern; none when it cannot be listed.
+	 *
+	 * @param WatchedFolder $watched The watched folder.
+	 *
+	 * @return list<int>
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+	 */
+	public function listed(WatchedFolder $watched): array {
+		try {
+			$listed = $this->files->listFiles(source: $watched->source, path: '', pattern: $watched->pattern());
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'integriq: a watched folder could not be listed: ' . $e->getMessage(),
+				['synchronization' => $watched->synchronizationId()]
+			);
+			return [];
+		}
+
+		return array_map(static fn (array $entry): int => (int)$entry['fileId'], $listed);
+	}//end listed()
+
+	/**
 	 * Queue the ingest of one file for one synchronization, once.
 	 *
 	 * @param int    $fileId            The file.
@@ -166,27 +196,6 @@ class WatchedFolders {
 		$this->jobs->add(WatchedFileIngestJob::class, $argument);
 		return true;
 	}//end queue()
-
-	/**
-	 * The folder map: folder id to the synchronizations that watch it.
-	 *
-	 * @return array<string, list<string>>
-	 */
-	private function buildMap(): array {
-		$map = [];
-		foreach ($this->all() as $watched) {
-			try {
-				$folderId = (string)$this->files->folder(source: $watched->source)->getId();
-			} catch (Throwable) {
-				// A source whose folder is gone watches nothing; its health probe says why.
-				continue;
-			}
-
-			$map[$folderId][] = $watched->id();
-		}
-
-		return $map;
-	}//end buildMap()
 
 	/**
 	 * The watched folder a synchronization describes, or null when it is not an active folder synchronization.
@@ -244,12 +253,20 @@ class WatchedFolders {
 	private function find(array $filters): array {
 		try {
 			// Unscoped, for the same reason as findOne().
-			$found = $this->objects->findAll(config: ['filters' => ['register' => 'integriq'] + $filters], _rbac: false, _multitenancy: false);
+			$found = $this->objects->findAll(
+				config: ['filters' => ['register' => 'integriq'] + $filters],
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable) {
 			return [];
 		}
 
 		$results = ($found['results'] ?? $found);
-		return array_values(array_filter(is_array($results) === true ? $results : [], static fn ($row): bool => $row instanceof ObjectEntity));
+		if (is_array($results) === false) {
+			return [];
+		}
+
+		return array_values(array_filter($results, static fn ($row): bool => $row instanceof ObjectEntity));
 	}//end find()
 }//end class

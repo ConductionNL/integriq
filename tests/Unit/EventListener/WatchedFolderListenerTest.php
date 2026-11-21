@@ -22,7 +22,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\EventListener;
 
 use OCA\Integriq\EventListener\WatchedFolderListener;
-use OCA\Integriq\Service\WatchedFolder\WatchedFolders;
+use OCA\Integriq\Service\WatchedFolder\WatchedFolderMap;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCP\Files\File;
@@ -45,7 +45,7 @@ final class WatchedFolderListenerTest extends TestCase {
 		$file    = $this->file(id: 42, folderId: 7);
 		$folders = $this->folders(watching: [7 => ['sync-1', 'sync-2']]);
 		$file->expects($this->never())->method('getContent');
-		$folders->expects($this->exactly(2))->method('queue')->willReturnCallback(
+		$folders->expects($this->exactly(count: 2))->method('queue')->willReturnCallback(
 			function (int $fileId, string $synchronizationId): bool {
 				$this->assertSame(expected: 42, actual: $fileId);
 				$this->assertContains(needle: $synchronizationId, haystack: ['sync-1', 'sync-2']);
@@ -111,10 +111,10 @@ final class WatchedFolderListenerTest extends TestCase {
 	 *
 	 * @param array<int, list<string>> $watching Folder id to synchronization ids.
 	 *
-	 * @return WatchedFolders&MockObject
+	 * @return WatchedFolderMap&MockObject
 	 */
-	private function folders(array $watching): WatchedFolders {
-		$folders = $this->createMock(originalClassName: WatchedFolders::class);
+	private function folders(array $watching): WatchedFolderMap {
+		$folders = $this->createMock(originalClassName: WatchedFolderMap::class);
 		$folders->method('watching')->willReturnCallback(static fn (int $folderId): array => ($watching[$folderId] ?? []));
 
 		return $folders;
