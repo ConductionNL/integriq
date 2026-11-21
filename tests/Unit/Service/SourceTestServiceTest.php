@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Service\Adapter\DataInfra\NextcloudFolderAdapter;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\SourceTestService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -110,4 +111,32 @@ class SourceTestServiceTest extends TestCase {
 		$this->assertSame(expected: 'connection refused', actual: $outcome['error']);
 		$this->assertNull(actual: $outcome['statusCode']);
 	}//end testFailedOutcome()
+
+	/**
+	 * A folder in Nextcloud Files is tested by its adapter, with no HTTP call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+	 */
+	public function testAFolderSourceIsTestedByItsAdapter(): void {
+		$callService = $this->getMockBuilder(className: CallService::class)->disableOriginalConstructor()->onlyMethods(['call'])->getMock();
+		$callService->expects($this->never())->method('call');
+		$adapter = $this->getMockBuilder(className: NextcloudFolderAdapter::class)->disableOriginalConstructor()->onlyMethods(['test'])->getMock();
+		$adapter->method('test')->willReturnOnConsecutiveCalls(
+			['ok' => false, 'message' => 'The folder "/Woo/inkomend" does not exist in the Files of the source\'s owner.'],
+			['ok' => true, 'message' => 'The folder /Woo/inkomend holds 2 files.']
+		);
+		$source = new ObjectEntity();
+		$source->setUuid('s-2');
+		$source->setObject(['type' => 'nextcloud-folder', 'configuration' => ['ownerUid' => 'woo-intake', 'rootPath' => 'Woo/inkomend']]);
+		$service = new SourceTestService(callService: $callService, logger: $this->createMock(originalClassName: LoggerInterface::class), folderAdapter: $adapter);
+
+		$failed = $service->run($source);
+		$passed = $service->run($source);
+
+		$this->assertSame([SourceTestService::OUTCOME_FAILED, null], [$failed['outcome'], $failed['statusCode']]);
+		$this->assertStringContainsString('/Woo/inkomend', $failed['error']);
+		$this->assertSame([SourceTestService::OUTCOME_RESPONSE, 200, 'The folder /Woo/inkomend holds 2 files.'], [$passed['outcome'], $passed['statusCode'], $passed['statusMessage']]);
+	}//end testAFolderSourceIsTestedByItsAdapter()
 }//end class

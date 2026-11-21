@@ -32,6 +32,7 @@ use OCA\Integriq\Service\Adapter\DataInfra\Database\DatabaseConnectionFactoryInt
 use OCA\Integriq\Service\Adapter\DataInfra\Database\DbalDatabaseConnectionFactory;
 use OCA\Integriq\Service\Adapter\DataInfra\DatabaseAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Adapter\DataInfra\NextcloudFolderAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\SftpAdapter;
 use OCA\Integriq\Service\Format\ArrayToXml;
 use OCA\Integriq\Service\Format\XmlEncoderInterface;
@@ -551,6 +552,8 @@ final class ServiceBindings {
 			// Sources-sftp-adapter: a partner's SFTP or FTPS server (REQ-SFTP-001).
 			$registry->addProvider($container->get(SftpAdapter::class));
 			$registry->addProvider($container->get(FtpsAdapter::class));
+			// Sources-sftp-adapter-watched-folder: a folder in Nextcloud Files (REQ-SFTP-003).
+			$registry->addProvider($container->get(NextcloudFolderAdapter::class));
 			$registry->addProvider($container->get(DatabaseAdapter::class));
 		} catch (\Throwable $e) {
 			// Don't crash boot — log and continue. The provider just won't appear
