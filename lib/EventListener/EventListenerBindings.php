@@ -460,6 +460,10 @@ final class EventListenerBindings {
 		$dispatcher->addServiceListener(eventName: NodeDeletedEvent::class, className: NextcloudFileEventListener::class);
 		$dispatcher->addServiceListener(eventName: MapperEvent::class, className: NextcloudFileTagEventListener::class);
 
+		// A file landing in a watched folder queues its ingest (sources-sftp-adapter-watched-folder D6).
+		$dispatcher->addServiceListener(eventName: NodeCreatedEvent::class, className: WatchedFolderListener::class);
+		$dispatcher->addServiceListener(eventName: NodeWrittenEvent::class, className: WatchedFolderListener::class);
+
 		// Calendar (REQ-002) — unconditional; `dav` ships with every
 		// instance. Both the NC32+ OCP "own calendar" family and the
 		// always-available OCA "cached subscription" family are wired so
