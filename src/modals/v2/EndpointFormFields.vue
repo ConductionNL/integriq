@@ -215,6 +215,11 @@
 			:formData="formData"
 			:updateField="updateField" />
 
+		<EndpointTargetsFields
+			v-if="isApiTarget"
+			:formData="formData"
+			:updateField="updateField" />
+
 		<!-- REQ-MSV-002: the message schemas the request and the proxied
 		     answer must match, and whether a mismatch is refused or recorded. -->
 		<fieldset class="cn-endpoint-form-fields__validation">
@@ -323,6 +328,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import EndpointTargetsFields from './EndpointTargetsFields.vue'
 import McpEndpointFields from './McpEndpointFields.vue'
 
 /** HTTP methods the method select offers, in display order. */
@@ -334,17 +340,23 @@ const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({
 /**
  * Target kinds. The original modal offered ONLY `register/schema`, which is why
  * it always showed (and required) the Register + Schema pickers. The schema
- * documents `api`, `job` and `synchronization` too, but authoring those needs a
+ * documents `job` and `synchronization` too, but authoring those needs a
  * different target input than a register/schema pair — kept out until asked for.
+ * `mcp` and `api` pick sources, in McpEndpointFields and EndpointTargetsFields.
  */
 const TARGET_TYPE_OPTIONS = [
 	{ id: 'register/schema', label: 'register/schema' },
 	// An outside MCP tool server behind the gateway (gateway-mcp-proxy); its fields are McpEndpointFields.
 	{ id: 'mcp', label: 'mcp' },
+	// A proxy onto one source, or onto several by weight (gateway-upstream-routing); its fields are EndpointTargetsFields.
+	{ id: 'api', label: 'api' },
 ]
 
 /** The endpoint properties McpEndpointFields edits, kept out of the generic field list. */
 const MCP_FIELDS = ['mcpToolLimits', 'mcpMaxStreamSeconds', 'mcpStoreArguments']
+
+/** The endpoint properties EndpointTargetsFields edits, kept out of the generic field list. */
+const TARGET_FIELDS = ['targets', 'sticky']
 
 /**
  * Example values shown as placeholders. `endpoint` and `endpointArray` describe
@@ -375,6 +387,7 @@ export default {
 		NcButton,
 		CnFieldHelper,
 		McpEndpointFields,
+		EndpointTargetsFields,
 	},
 
 	mixins: [messageSchemaOptions],
@@ -478,7 +491,8 @@ export default {
 					field.key !== 'targetId'
 					&& field.key !== 'validation'
 					&& field.key !== 'cache'
-					&& MCP_FIELDS.includes(field.key) === false,
+					&& MCP_FIELDS.includes(field.key) === false
+					&& TARGET_FIELDS.includes(field.key) === false,
 			)
 		},
 
@@ -530,6 +544,16 @@ export default {
 		 */
 		isMcpTarget() {
 			return this.formData?.targetType === 'mcp'
+		},
+
+		/**
+		 * Whether the endpoint proxies to one or several sources.
+		 *
+		 * @return {boolean} True when Target Type is `api`.
+		 * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+		 */
+		isApiTarget() {
+			return this.formData?.targetType === 'api'
 		},
 
 		/**

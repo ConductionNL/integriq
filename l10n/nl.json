@@ -3045,7 +3045,9 @@
         "Passed: {count}": "Geslaagd: {count}",
         "Failed: {count}": "Mislukt: {count}",
         "The configured mapping applied to every item in the page.": "De geconfigureerde mapping die op elk item in de pagina wordt toegepast.",
-        "The configured source this step calls. The call inherits its base URL, authentication and rate limits.": "De geconfigureerde bron die deze stap aanroept. De aanroep neemt de basis-URL, authenticatie en limieten van de bron over."
+        "The configured source this step calls. The call inherits its base URL, authentication and rate limits.": "De geconfigureerde bron die deze stap aanroept. De aanroep neemt de basis-URL, authenticatie en limieten van de bron over.",
+        "Calls per target": "Aanroepen per doel",
+        "No call has been routed to a target yet.": "Nog geen enkel doel heeft een aanroep afgehandeld."
     },
     "plurals": {}
 }

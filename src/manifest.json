@@ -2001,6 +2001,38 @@
             "type": "related",
             "icon": "LinkVariant",
             "title": "Wired to"
+          },
+          {
+            "id": "ep-target-split",
+            "type": "chart",
+            "icon": "ChartBoxOutline",
+            "title": "Calls per target",
+            "_note": "gateway-upstream-routing REQ-UPRT-003: how many calls each target of an endpoint with several targets served, from call_log.routedTarget (the callsPerTarget grouping), labelled with the source's name. Shown only when the endpoint has targets; an endpoint with one source has no split to show.",
+            "visibleWhen": {
+              "field": "targets",
+              "op": "notEmpty"
+            },
+            "props": {
+              "chartKind": "donut",
+              "legendPosition": "bottom",
+              "emptyLabel": "No call has been routed to a target yet."
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "call_log",
+              "filter": {
+                "endpoint": "@objectId"
+              },
+              "aggregate": {
+                "groupBy": "routedTarget",
+                "metric": "count",
+                "labelResolve": {
+                  "register": "integriq",
+                  "schema": "source",
+                  "labelField": "name"
+                }
+              }
+            }
           }
         ],
         "layout": [
@@ -2019,6 +2051,14 @@
             "gridY": 0,
             "gridWidth": 4,
             "gridHeight": 7
+          },
+          {
+            "id": "3",
+            "widgetId": "ep-target-split",
+            "gridX": 0,
+            "gridY": 7,
+            "gridWidth": 6,
+            "gridHeight": 5
           }
         ],
         "bodyWidgets": [
