@@ -491,11 +491,17 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 	/**
 	 * The normalised assertion of verified claims, read through the registration's subject mapping only.
 	 *
+	 * An attribute login (Yivi) also answers `disclosed`: the claim name and
+	 * value of each claim on the registration's attribute allowlist that the
+	 * token carries. A claim the allowlist does not name is never read.
+	 *
 	 * @param array<string, mixed> $claims  The verified claims.
 	 * @param string               $idToken The compact ID token, for an id when it carries no `jti`.
 	 * @param string               $nonce   The nonce the token answers.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	private function normalised(array $claims, string $idToken, string $nonce): array {
 		$mapping = $this->registration->stringMap(key: 'subjectMapping');
@@ -521,9 +527,35 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 			$assertion['branch'] = self::claimText(claims: $claims, name: $branchClaim);
 		}
 
+		if ($this->registration->provider() === TrustLevelMapper::PROVIDER_YIVI) {
+			$assertion['disclosed'] = $this->disclosed(claims: $claims);
+		}
+
 		return $assertion;
 
 	}//end normalised()
+
+	/**
+	 * The allowlisted claims the token carries, by claim name.
+	 *
+	 * @param array<string, mixed> $claims The verified claims.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	private function disclosed(array $claims): array {
+		$disclosed = [];
+		foreach ($this->registration->attributeAllowlist() as $attribute) {
+			$value = self::claimText(claims: $claims, name: $attribute['claim']);
+			if ($value !== '') {
+				$disclosed[$attribute['claim']] = $value;
+			}
+		}
+
+		return $disclosed;
+
+	}//end disclosed()
 
 	/**
 	 * The first mapped subject field the claims carry, with its subject type.

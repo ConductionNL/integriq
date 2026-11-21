@@ -35,6 +35,7 @@ namespace OCA\Integriq\Auth\Idp;
 
 use OCA\Integriq\Exception\IdpAssertionException;
 use OCA\Integriq\Exception\IdpAssuranceBelowFloorException;
+use OCA\Integriq\Exception\IdpDisclosureIncompleteException;
 use OCA\Integriq\Exception\IdpSecretRefusedException;
 use Psr\Log\LoggerInterface;
 
@@ -65,6 +66,18 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
 	 */
 	public const ERROR_ASSURANCE_BELOW_FLOOR = 'assurance_below_floor';
+
+	/**
+	 * The error a consumer is told about when the person did not share every attribute asked for.
+	 *
+	 * Like the floor refusal it is not generic: integriq's own page already
+	 * told the person, and the consumer may offer the login again.
+	 *
+	 * @var string
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	public const ERROR_ATTRIBUTES_NOT_DISCLOSED = 'attributes_not_disclosed';
 
 	/**
 	 * The longest relay state a consumer may hand in.
@@ -239,10 +252,13 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 *
 	 * @throws IdpAssuranceBelowFloorException When the assertion is below the floor; it carries the consumer's
 	 *                                         return address with `error=assurance_below_floor` and the relay state.
+	 * @throws IdpDisclosureIncompleteException When an attribute login lacks a requested attribute; it carries
+	 *                                          the consumer's return address with `error=attributes_not_disclosed`.
 	 * @throws IdpAssertionException When the response answers no stored state (an IdP-initiated flow included).
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
 	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	public function callback(string $provider, array $callback, ?int $now = null): string {
 		$adapter = $this->adapters->forProvider(provider: $provider);
@@ -273,6 +289,18 @@ class IdpLoginService implements IdpLoginServiceInterface {
 					query: ['error' => self::ERROR_ASSURANCE_BELOW_FLOOR, 'relayState' => $state['relayState']]
 				)
 			);
+		} catch (IdpDisclosureIncompleteException $exception) {
+			$this->logger->warning(
+				'Integriq idp-broker: a login was refused at the callback: ' . $exception->getMessage(),
+				['provider' => $provider, 'consumer' => $state['consumer']]
+			);
+
+			throw $exception->withReturnUrl(
+				returnUrl: $this->withQuery(
+					url: $state['returnUrl'],
+					query: ['error' => self::ERROR_ATTRIBUTES_NOT_DISCLOSED, 'relayState' => $state['relayState']]
+				)
+			);
 		} catch (IdpAssertionException $exception) {
 			$this->logger->warning(
 				'Integriq idp-broker: a login was refused at the callback: ' . $exception->getMessage(),
@@ -297,6 +325,8 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @return string The one-time code.
 	 *
 	 * @throws IdpAssertionException On any failure.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	private function finish(IdpLoginCallback $login): string {
 		if ($login->state['provider'] !== $login->provider) {
@@ -316,6 +346,17 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		);
 
 		$this->assertSameOrganisation(login: $login);
+
+		// Before the trust: a person who shared less than asked is told so,
+		// whatever the trust of the registration.
+		if ($login->provider === TrustLevelMapper::PROVIDER_YIVI) {
+			$login->attributes = $this->attributeEnvelopes()->disclosed(
+				registration: $registration,
+				requested: (string)($login->state['attributes'] ?? ''),
+				assertion: $login->assertion
+			);
+		}
+
 		$login->trust = $this->sufficientTrust(login: $login, registration: $registration);
 
 		return $this->exchange->issueCode(envelope: $this->envelopeFor(login: $login, consumer: $consumer, registration: $registration));
@@ -444,8 +485,19 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @return SubjectEnvelope The envelope.
 	 *
 	 * @throws IdpAssertionException When the subject or the branch is unusable.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	private function envelopeFor(IdpLoginCallback $login, IdpConsumer $consumer, IdpRegistration $registration): SubjectEnvelope {
+		if ($login->provider === TrustLevelMapper::PROVIDER_YIVI) {
+			return $this->attributeEnvelopes()->envelope(
+				registration: $registration,
+				login: $login,
+				audience: $consumer->getId(),
+				salt: $this->saltFor(registration: $registration)
+			);
+		}
+
 		[$subject, $subType] = $this->subjectOf(login: $login, registration: $registration);
 
 		return new SubjectEnvelope(
@@ -459,6 +511,18 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		);
 
 	}//end envelopeFor()
+
+	/**
+	 * The attribute login's reader and envelope maker, over this service's pseudonyms.
+	 *
+	 * @return AttributeEnvelopeFactory
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	private function attributeEnvelopes(): AttributeEnvelopeFactory {
+		return new AttributeEnvelopeFactory(pseudonyms: $this->pseudonyms);
+
+	}//end attributeEnvelopes()
 
 	/**
 	 * The subject and its type, with a BSN turned into a pseudonym here.

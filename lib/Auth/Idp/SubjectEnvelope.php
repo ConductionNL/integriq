@@ -51,11 +51,25 @@ final class SubjectEnvelope {
 	public const ISSUER = 'openconnector-idp-broker';
 
 	/**
+	 * The subject type of an attribute login: the subject is a pseudonym of the disclosure.
+	 *
+	 * @var string
+	 */
+	public const SUBTYPE_ATTRIBUTES = 'attributes';
+
+	/**
 	 * The longest an envelope may live.
 	 *
 	 * @var integer
 	 */
 	public const MAX_TTL_SECONDS = 60;
+
+	/**
+	 * The disclosed attributes of an attribute login, by attribute id; set through withAttributes().
+	 *
+	 * @var array<string,string>
+	 */
+	private array $attributes = [];
 
 	/**
 	 * Constructor.
@@ -161,15 +175,53 @@ final class SubjectEnvelope {
 	}//end getBranch()
 
 	/**
+	 * The same envelope carrying the disclosed attributes of an attribute login.
+	 *
+	 * @param array<string,string> $attributes The disclosed attributes, by attribute id.
+	 *
+	 * @return self A copy with the attributes; this envelope is left as it is.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	public function withAttributes(array $attributes): self {
+		$copy = clone $this;
+		$copy->attributes = $attributes;
+
+		return $copy;
+
+	}//end withAttributes()
+
+	/**
+	 * The disclosed attributes, by attribute id.
+	 *
+	 * Only an attribute login (`subType` `attributes`) carries them. For any
+	 * other envelope this answers an empty list, whatever the constructor was
+	 * given, so a DigiD envelope can never carry an attribute.
+	 *
+	 * @return array<string,string> The attributes.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	public function getAttributes(): array {
+		if ($this->subType !== self::SUBTYPE_ATTRIBUTES) {
+			return [];
+		}
+
+		return $this->attributes;
+
+	}//end getAttributes()
+
+	/**
 	 * The envelope's claims, without the time-bound ones.
 	 *
 	 * `jti`, `iat` and `exp` are added when it is signed, because they belong
 	 * to one minting rather than to the subject.
 	 *
-	 * @return array<string,string> The claims.
+	 * @return array<string,string|array<string,string>> The claims.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-one-time-signed-subject-envelope-handoff
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	public function toClaims(): array {
 		$claims = [
@@ -190,6 +242,10 @@ final class SubjectEnvelope {
 			$claims['branch'] = $this->getBranch();
 		}
 
+		if ($this->subType === self::SUBTYPE_ATTRIBUTES) {
+			$claims['attributes'] = $this->getAttributes();
+		}
+
 		return $claims;
 
 	}//end toClaims()
@@ -202,9 +258,10 @@ final class SubjectEnvelope {
 	 * @return self The envelope.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-an-eherkenning-envelope-carries-the-branch-the-login-was-restricted-to-req-idp-004
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	public static function fromClaims(array $claims): self {
-		return new self(
+		$envelope = new self(
 			(string)($claims['sub'] ?? ''),
 			(string)($claims['subType'] ?? ''),
 			(string)($claims['provider'] ?? ''),
@@ -214,6 +271,31 @@ final class SubjectEnvelope {
 			(string)($claims['branch'] ?? ''),
 		);
 
+		return $envelope->withAttributes(attributes: self::stringMap(value: ($claims['attributes'] ?? [])));
+
 	}//end fromClaims()
+
+	/**
+	 * A claim as a string-to-string map; non-string entries are dropped.
+	 *
+	 * @param mixed $value The claim.
+	 *
+	 * @return array<string,string>
+	 */
+	private static function stringMap(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		$map = [];
+		foreach ($value as $key => $entry) {
+			if (is_string($entry) === true) {
+				$map[(string)$key] = $entry;
+			}
+		}
+
+		return $map;
+
+	}//end stringMap()
 
 }//end class
