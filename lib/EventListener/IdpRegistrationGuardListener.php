@@ -26,23 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCP\IL10N;
-use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
- * Refuse an idpRegistration that breaks a save rule, with 400.
- *
- * A provider that is only reached over OIDC (Yivi, through an OIDC bridge) may
- * not be saved with the SAML kind: no SAML adapter can serve it, so the
- * registration would look configured and never log anyone in.
+ * Stop the save of an idpRegistration that IdpRegistrationSaveCheck refuses.
  *
  * @template-implements IEventListener<Event>
  *
@@ -51,46 +41,12 @@ use Throwable;
 class IdpRegistrationGuardListener implements IEventListener {
 
 	/**
-	 * The providers that are only reached as an OIDC Relying Party.
-	 *
-	 * @var list<string>
-	 */
-	public const OIDC_ONLY_PROVIDERS = ['yivi'];
-
-	/**
-	 * The register and schema of a registration, as IdpRegistrationService names them.
-	 *
-	 * @var array{register: string, schema: string}
-	 */
-	private const REGISTRATION = ['register' => 'integriq', 'schema' => 'idpRegistration'];
-
-	/**
-	 * The OIDC Relying Party kind, as IdpRegistration::KIND_OIDC names it.
-	 *
-	 * @var string
-	 */
-	private const KIND_OIDC = 'oidc-rp';
-
-	/**
-	 * The refusal code for an OIDC-only provider saved with another kind.
-	 *
-	 * @var string
-	 */
-	public const CODE_NEEDS_OIDC = 'idp_registration_needs_oidc';
-
-	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper    $schemaMapper   Resolves the saved object's schema slug.
-	 * @param RegisterMapper  $registerMapper Resolves the saved object's register slug.
-	 * @param IL10N           $l10n           Translates the refusal.
-	 * @param LoggerInterface $logger         Diagnostics.
+	 * @param IdpRegistrationSaveCheck $check Judges the object being saved.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly IL10N $l10n,
-		private readonly LoggerInterface $logger,
+		private readonly IdpRegistrationSaveCheck $check,
 	) {
 
 	}//end __construct()
@@ -105,67 +61,21 @@ class IdpRegistrationGuardListener implements IEventListener {
 	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
 	 */
 	public function handle(Event $event): void {
+		$refusal = null;
 		if ($event instanceof ObjectCreatingEvent) {
-			$this->check(event: $event, registration: $event->getObject());
+			$refusal = $this->check->refusal(object: $event->getObject());
 		}
 
 		if ($event instanceof ObjectUpdatingEvent) {
-			$this->check(event: $event, registration: $event->getNewObject());
+			$refusal = $this->check->refusal(object: $event->getNewObject());
 		}
 
-	}//end handle()
-
-	/**
-	 * Stop the save of an idpRegistration the rule refuses, with 400.
-	 *
-	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event        The event.
-	 * @param ObjectEntity                            $registration The object being saved.
-	 *
-	 * @return void
-	 */
-	private function check(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $registration): void {
-		if ($this->isRegistration(object: $registration) === false) {
+		if ($refusal === null) {
 			return;
 		}
 
-		$data = (array)$registration->getObject();
-		$provider = trim((string)($data['provider'] ?? ''));
-		$kind = trim((string)($data['kind'] ?? ''));
-		if (in_array(needle: $provider, haystack: self::OIDC_ONLY_PROVIDERS, strict: true) === false || $kind === self::KIND_OIDC) {
-			return;
-		}
-
-		$event->setErrors(
-			[
-				'code'    => self::CODE_NEEDS_OIDC,
-				'message' => $this->l10n->t(
-					'%s is reached through an OIDC bridge. Save this registration with the protocol OIDC Relying Party.',
-					[ucfirst(string: $provider)]
-				),
-				'status'  => 400,
-			]
-		);
+		$event->setErrors($refusal);
 		$event->stopPropagation();
 
-	}//end check()
-
-	/**
-	 * Whether the object is an idpRegistration in the integriq register.
-	 *
-	 * @param ObjectEntity $object The object being saved.
-	 *
-	 * @return bool
-	 */
-	private function isRegistration(ObjectEntity $object): bool {
-		try {
-			$schema = $this->schemaMapper->find($object->getSchema())->getSlug();
-			$register = $this->registerMapper->find($object->getRegister())->getSlug();
-		} catch (Throwable $failure) {
-			$this->logger->debug('[integriq] idp registration check: could not resolve register/schema: ' . $failure->getMessage());
-			return false;
-		}
-
-		return $schema === self::REGISTRATION['schema'] && $register === self::REGISTRATION['register'];
-
-	}//end isRegistration()
+	}//end handle()
 }//end class

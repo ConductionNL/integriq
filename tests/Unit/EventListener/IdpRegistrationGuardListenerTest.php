@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\EventListener;
 
 use OCA\Integriq\EventListener\IdpRegistrationGuardListener;
+use OCA\Integriq\EventListener\IdpRegistrationSaveCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -38,6 +39,7 @@ use RuntimeException;
  * OpenRegister classes (tests/stubs holds copies).
  *
  * @covers \OCA\Integriq\EventListener\IdpRegistrationGuardListener
+ * @covers \OCA\Integriq\EventListener\IdpRegistrationSaveCheck
  */
 class IdpRegistrationGuardListenerTest extends TestCase {
 
@@ -64,10 +66,12 @@ class IdpRegistrationGuardListenerTest extends TestCase {
 		);
 
 		return new IdpRegistrationGuardListener(
-			schemaMapper: $schemaMapper,
-			registerMapper: $registerMapper,
-			l10n: $l10n,
-			logger: new NullLogger(),
+			check: new IdpRegistrationSaveCheck(
+				schemaMapper: $schemaMapper,
+				registerMapper: $registerMapper,
+				l10n: $l10n,
+				logger: new NullLogger(),
+			),
 		);
 	}//end listener()
 
