@@ -177,6 +177,9 @@
                 <referencedClass name="OCA\OpenRegister\AppHost\Service\GenericActionAuthService"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericAdminSettings"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericSettingsSection"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\SettingsPlacement"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\SectionAppearance"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\AdminFormServices"/>
                 <!-- Service classes from OpenRegister used via OR integration layer -->
                 <referencedClass name="OCA\OpenRegister\Service\OrganisationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterResolverService"/>

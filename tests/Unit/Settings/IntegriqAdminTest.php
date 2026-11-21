@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Settings;
 
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\AppHost\Settings\AdminFormServices;
+use OCA\OpenRegister\AppHost\Settings\SettingsPlacement;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IAppConfig;
@@ -47,12 +49,12 @@ class IntegriqAdminTest extends TestCase {
 		$appManager->method('getAppVersion')->willReturn('0.2.21');
 
 		return new IntegriqAdmin(
-			appId: 'integriq',
-			sectionId: 'integriq',
-			priority: 10,
-			appManager: $appManager,
-			initialState: $this->createMock(IInitialState::class),
-			appConfig: $this->createMock(IAppConfig::class)
+			placement: new SettingsPlacement(appId: 'integriq', sectionId: 'integriq', priority: 10),
+			services: new AdminFormServices(
+				appManager: $appManager,
+				initialState: $this->createMock(IInitialState::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			)
 		);
 	}//end makeSettings()
 
