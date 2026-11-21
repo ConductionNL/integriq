@@ -155,6 +155,7 @@ class IdpLoginStateStoreTest extends TestCase {
 				'trust' => 'substantial',
 				'returnUrl' => '',
 				'relayState' => '',
+				'attributes' => '',
 				'expiresAt' => (string)(self::NOW + 300),
 			],
 			$store->consume(requestId: ' r-1 ', signingKey: self::KEY, now: self::NOW + 299)

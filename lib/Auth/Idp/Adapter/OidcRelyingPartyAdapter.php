@@ -154,12 +154,15 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 	 * Start an authorization code login at the issuer.
 	 *
 	 * @param array<string,mixed> $context `{organisation, consumer, trust, relayState}`; the relay state is the `state`.
+	 *                                     An attribute login adds `claims`, the claim names to ask for, each as an
+	 *                                     essential claim of the ID token.
 	 *
 	 * @return array{requestId: string, redirectUrl: string} The nonce, which the ID token answers, and the issuer's address.
 	 *
 	 * @throws IdpAssertionException When there is no state, or the issuer or the cache cannot be used.
 	 *
 	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	public function beginAuthentication(array $context): array {
 		$state = trim((string)($context['relayState'] ?? ''));
@@ -185,6 +188,11 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 		$acrValues = $this->acrValues();
 		if ($acrValues !== []) {
 			$query['acr_values'] = implode(' ', $acrValues);
+		}
+
+		$claims = self::claimsRequest(claims: ($context['claims'] ?? []));
+		if ($claims !== '') {
+			$query['claims'] = $claims;
 		}
 
 		$separator = '?';
@@ -229,6 +237,35 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 		return $this->normalised(claims: $claims, idToken: $idToken, nonce: $login['nonce']);
 
 	}//end readAssertion()
+
+	/**
+	 * The OIDC `claims` request parameter asking for each claim as essential in the ID token.
+	 *
+	 * @param mixed $claims The claim names an attribute login asks for.
+	 *
+	 * @return string The JSON request, or '' when no claim is asked for.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
+	 */
+	private static function claimsRequest(mixed $claims): string {
+		if (is_array($claims) === false) {
+			return '';
+		}
+
+		$idToken = [];
+		foreach ($claims as $claim) {
+			if (is_string($claim) === true && trim($claim) !== '') {
+				$idToken[trim($claim)] = ['essential' => true];
+			}
+		}
+
+		if ($idToken === []) {
+			return '';
+		}
+
+		return (string)json_encode(['id_token' => $idToken], JSON_UNESCAPED_SLASHES);
+
+	}//end claimsRequest()
 
 	/**
 	 * The spellings of the registration's assurance mapping at or above the floor, for `acr_values`.
