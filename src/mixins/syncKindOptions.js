@@ -4,11 +4,11 @@
 import { NEXTCLOUD_FORM_KIND } from '../views/Synchronization/formsBridge.js'
 import {
 	FILE_PICKUP_OPTIONS,
-	WATCHED_FOLDER_OPTION,
 	NEXTCLOUD_FORM_OPTION,
 	NEXTCLOUD_TABLE_OPTION,
 	SYNC_MODE_OPTIONS,
 	TYPE_OPTIONS,
+	WATCHED_FOLDER_OPTION,
 } from '../views/Synchronization/syncDraft.js'
 import { NEXTCLOUD_TABLE_KIND } from '../views/Synchronization/tablesBridge.js'
 
