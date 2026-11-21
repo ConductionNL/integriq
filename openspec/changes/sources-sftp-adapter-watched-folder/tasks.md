@@ -15,7 +15,9 @@ listener, ingest job or `WatchedFileArrivedEvent` exists.
   - GIVEN a source with an owner and a path that does not exist WHEN it is tested THEN the test fails naming the path
   - GIVEN a path with `..` WHEN any operation is called THEN it is refused
 - [ ] Implement
-- [ ] Test: PHPUnit `tests/Unit/Service/Adapter/DataInfra/NextcloudFolderAdapterTest.php` (`testAMissingFolderFailsTheTest`, `testDotDotIsRefused`)
+  > 2026-11-21, adapter built: `RemoteFiles\NextcloudFolderFiles` (`listFiles()`, `fetch()` and `test()` through `IRootFolder::getUserFolder($ownerUid)`, every path resolved inside `rootPath` by the same `RemotePath` the SFTP source uses, so `..` is refused before any file is touched) and `NextcloudFolderAdapter`, its data-infra provider face on the category base like the SFTP and FTPS adapters, registered with OpenRegister's `IntegrationRegistry` in `ServiceBindings::boot()`. `SourceTestService::run()` (the "Test connection" route and the hourly health probe) tests a `nextcloud-folder` source through `NextcloudFolderFiles`: a missing folder is a failed test naming the path. `ownerUid` and `rootPath` live in the source's free-form `configuration`, as `rootPath` does for an SFTP source, so the register needs no new property for them. Left, so the box stays unticked: the synchronization editor's fields for `target`, `intakeApp`, `after`, `processedPath`, `failedPath` and `stableSeconds`, which are built with tasks 6 and 7 that read them.
+- [x] Test: PHPUnit `tests/Unit/Service/Adapter/DataInfra/NextcloudFolderAdapterTest.php` (`testAMissingFolderFailsTheTest`, `testDotDotIsRefused`)
+  - Also `SourceTestServiceTest::testAFolderSourceIsTestedByItsAdapter` (the caller) and `ServiceBindingsFactoriesTest` (the registration).
 
 ### Task 6: The listener, the job and the sweep
 - **spec_ref**: `openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003`
