@@ -32,6 +32,7 @@ use OCA\Integriq\Auth\Idp\IdpLoginServiceInterface;
 use OCA\Integriq\Auth\Idp\TrustLevelMapper;
 use OCA\Integriq\Exception\IdpAssertionException;
 use OCA\Integriq\Exception\IdpAssuranceBelowFloorException;
+use OCA\Integriq\Exception\IdpDisclosureIncompleteException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -204,6 +205,7 @@ class IdpBrokerController extends Controller {
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
 	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -214,6 +216,9 @@ class IdpBrokerController extends Controller {
 		} catch (IdpAssuranceBelowFloorException $exception) {
 			// The one refusal that is explained: the service already logged it.
 			return $this->belowFloorPage(refusal: $exception);
+		} catch (IdpDisclosureIncompleteException $exception) {
+			// Explained too: the person can go back and share what was asked.
+			return $this->disclosureIncompletePage(refusal: $exception);
 		} catch (IdpAssertionException $exception) {
 			$this->logger->warning(
 				'Integriq idp-broker: a login response was refused: ' . $exception->getMessage(),
@@ -265,6 +270,37 @@ class IdpBrokerController extends Controller {
 		return $response;
 
 	}//end belowFloorPage()
+
+	/**
+	 * Integriq's own page for an attribute login that shared less than it asked.
+	 *
+	 * Its one action goes back to the consumer with
+	 * `error=attributes_not_disclosed` and the relay state.
+	 *
+	 * @param IdpDisclosureIncompleteException $refusal The refusal, with the address to go back to.
+	 *
+	 * @return TemplateResponse The page, with status 403.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	private function disclosureIncompletePage(IdpDisclosureIncompleteException $refusal): TemplateResponse {
+		$response = new TemplateResponse(
+			appName: $this->appName,
+			templateName: 'idp/refused',
+			params: [
+				'title' => $this->l10n->t('You did not share all the requested details'),
+				'message' => $this->l10n->t('This service asked for details that were not shared in the Yivi app.'),
+				'hint' => $this->l10n->t('Go back and share every detail the service asks for to continue.'),
+				'action' => $this->l10n->t('Go back'),
+				'actionUrl' => $refusal->getReturnUrl(),
+			],
+			renderAs: TemplateResponse::RENDER_AS_GUEST
+		);
+		$response->setStatus(status: Http::STATUS_FORBIDDEN);
+
+		return $response;
+
+	}//end disclosureIncompletePage()
 
 	/**
 	 * How a person gets a means at the floor, for one provider.

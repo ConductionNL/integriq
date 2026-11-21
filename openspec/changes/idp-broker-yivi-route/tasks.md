@@ -34,8 +34,13 @@ Kind: code. Size M. Row: portaliq `sig-yivi`. Depends on `portal-idp-broker-conf
   - GIVEN the stub returns extra claims WHEN the envelope is built THEN only the requested attributes are in it
   - GIVEN a BSN attribute and `yiviBsnToConsumer` false WHEN the envelope is built THEN the value is the pseudonym
   - GIVEN a missing essential claim WHEN the callback runs THEN no code is issued
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+  - `OidcRelyingPartyAdapter` answers, for a Yivi registration, `disclosed`: only the claims the registration's `yiviAttributes` names (`IdpRegistration::attributeAllowlist()`), so an extra claim is never read. `AttributeEnvelopeFactory::disclosed()` reads exactly the ids in the state through their claim names and throws `IdpDisclosureIncompleteException` when one is missing or blank; `IdpLoginService::finish()` runs it before the trust, so the refusal is reached today. The callback turns it into integriq's own page (`IdpBrokerController::disclosureIncompletePage()`, "You did not share all the requested details", nl "Je hebt niet alle gevraagde gegevens gedeeld" in the informal register `nl` uses) with one way back carrying `error=attributes_not_disclosed`.
+  - The envelope (`AttributeEnvelopeFactory::envelope()`): `provider` `yivi`, `subType` `attributes`, `sub` an HMAC under the registration's salt over the organisation and the disclosed ids and values, and `attributes` with only those values; a `carriesBsn` attribute becomes the DigiD pseudonym unless `yiviBsnToConsumer` is true. `SubjectEnvelope` carries `attributes` only for subtype `attributes`, and they survive signing and verifying.
+  - The trust: the envelope takes the trust the mapper gives. `TrustLevelMapper` has no Yivi row until task 4 (D5), so on a live instance a Yivi callback still ends with `error=login_failed` and no code.
+- [x] Test
+  - `tests/Unit/Auth/Idp/YiviEnvelopeTest.php`: a round trip through the real login service and OIDC adapter over the stub issuer (with a mapper standing in for the D5 answer) gives an envelope with name and e-mail and none of the BSN or phone claims the stub also returned, verified after minting; a missing, blank or non-string e-mail claim throws the refusal with the way back and issues no code; BSN pseudonymised or passed on; the subject stable per disclosure and per organisation; an empty state or a withdrawn attribute refused; a DigiD envelope never carries attributes; with the real mapper the callback stays fail-closed. `IdpBrokerControllerFloorTest::testAYiviLoginThatSharedLessIsExplained` for the page.
+  - Not written: `tests/postman/idp-yivi.json`. A Newman round trip needs the stub issuer reachable from an instance and cannot end in a code until task 4 maps the Yivi trust.
 
 ## Task 4: The trust per provider
 - **spec_ref**: `specs/idp-broker-yivi/spec.md#requirement-the-assurance-floor-applies-to-the-government-providers-a-yivi-login-carries-its-registrations-trust-req-yivi-004`

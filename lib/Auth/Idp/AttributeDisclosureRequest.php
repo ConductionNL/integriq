@@ -38,13 +38,6 @@ use OCA\Integriq\Exception\IdpAssertionException;
 final class AttributeDisclosureRequest {
 
 	/**
-	 * The registration property that lists the attributes an organisation allows.
-	 *
-	 * @var string
-	 */
-	public const ALLOWLIST_PROPERTY = 'yiviAttributes';
-
-	/**
 	 * The most attributes one login may ask for.
 	 *
 	 * @var integer
@@ -78,7 +71,7 @@ final class AttributeDisclosureRequest {
 			throw new IdpAssertionException(message: 'The login asks for too many attributes, so no login starts.');
 		}
 
-		$allowed = self::allowlist(registration: $registration);
+		$allowed = $registration->attributeAllowlist();
 		$claims = [];
 		foreach ($ids as $id) {
 			if (isset($allowed[$id]) === false) {
@@ -87,7 +80,7 @@ final class AttributeDisclosureRequest {
 				);
 			}
 
-			$claims[$id] = $allowed[$id];
+			$claims[$id] = $allowed[$id]['claim'];
 		}
 
 		$this->claims = $claims;
@@ -137,54 +130,5 @@ final class AttributeDisclosureRequest {
 		return $ids;
 
 	}//end idsOf()
-
-	/**
-	 * The claim name per attribute id the registration allows.
-	 *
-	 * An entry without an id or a claim name is no entry: it cannot be asked
-	 * for, so it allows nothing.
-	 *
-	 * @param IdpRegistration $registration The registration.
-	 *
-	 * @return array<string, string>
-	 */
-	private static function allowlist(IdpRegistration $registration): array {
-		$entries = ($registration->data[self::ALLOWLIST_PROPERTY] ?? []);
-		if (is_array($entries) === false) {
-			return [];
-		}
-
-		$allowed = [];
-		foreach ($entries as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			$id = self::scalarText(value: ($entry['id'] ?? null));
-			$claim = self::scalarText(value: ($entry['claim'] ?? null));
-			if ($id !== '' && $claim !== '') {
-				$allowed[$id] = $claim;
-			}
-		}
-
-		return $allowed;
-
-	}//end allowlist()
-
-	/**
-	 * A scalar as trimmed text; '' for anything else.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string
-	 */
-	private static function scalarText(mixed $value): string {
-		if (is_scalar($value) === false) {
-			return '';
-		}
-
-		return trim((string)$value);
-
-	}//end scalarText()
 
 }//end class

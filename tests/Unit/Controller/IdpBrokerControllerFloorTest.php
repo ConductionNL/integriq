@@ -26,6 +26,7 @@ use OCA\Integriq\Auth\Idp\TrustLevelMapper;
 use OCA\Integriq\Controller\IdpBrokerController;
 use OCA\Integriq\Exception\IdpAssertionException;
 use OCA\Integriq\Exception\IdpAssuranceBelowFloorException;
+use OCA\Integriq\Exception\IdpDisclosureIncompleteException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IL10N;
@@ -43,6 +44,7 @@ use Psr\Log\LoggerInterface;
 #[CoversClass(IdpBrokerController::class)]
 #[UsesClass(TrustLevelMapper::class)]
 #[UsesClass(IdpAssuranceBelowFloorException::class)]
+#[UsesClass(IdpDisclosureIncompleteException::class)]
 class IdpBrokerControllerFloorTest extends TestCase {
 
 	/**
@@ -151,4 +153,43 @@ class IdpBrokerControllerFloorTest extends TestCase {
 		$this->assertSame('idp-error', $response->getTemplateName());
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 	}//end testOtherRefusalsStayGeneric()
+
+	/**
+	 * A Yivi login that shared less than it asked is explained on integriq's
+	 * own page, with one way back carrying `error=attributes_not_disclosed`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	public function testAYiviLoginThatSharedLessIsExplained(): void {
+		$back = 'https://portal.example.nl/cb?error=attributes_not_disclosed&relayState=portal-relay-42';
+		$request = $this->createMock(originalClassName: IRequest::class);
+		$request->method('getParams')->willReturn(['code' => 'c', 'state' => 's']);
+		$service = $this->createMock(originalClassName: IdpLoginService::class);
+		$service->method('callback')->willThrowException((new IdpDisclosureIncompleteException())->withReturnUrl(returnUrl: $back));
+		$l10n = $this->createMock(originalClassName: IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+
+		$controller = new IdpBrokerController(
+			appName: 'integriq',
+			request: $request,
+			exchangeService: $this->createMock(originalClassName: EnvelopeExchangeService::class),
+			loginService: $service,
+			l10n: $l10n,
+			logger: $logger,
+			trustMapper: new TrustLevelMapper()
+		);
+		$response = $controller->callback(provider: 'yivi');
+
+		$this->assertInstanceOf(expected: TemplateResponse::class, actual: $response);
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $response->getStatus());
+		$this->assertSame(expected: 'idp/refused', actual: $response->getTemplateName());
+		$params = $response->getParams();
+		$this->assertSame(expected: 'You did not share all the requested details', actual: $params['title']);
+		$this->assertSame(expected: 'Go back', actual: $params['action']);
+		$this->assertSame(expected: $back, actual: $params['actionUrl']);
+	}//end testAYiviLoginThatSharedLessIsExplained()
 }//end class
