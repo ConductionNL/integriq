@@ -40,5 +40,6 @@ Task 1 is built: `credentialRef` accepts `{"provider": "<slug>", "perUser": true
 
 ## Verification
 - [ ] `openspec validate sources-per-user-oauth --type change --strict` passes
-- [ ] No token value appears in any integriq object, log or response, asserted in a test
+- [x] No token value appears in any integriq object, log or response, asserted in a test
+  - `BrokeredCallServiceTest::testNoTokenValueReachesAnObjectALogOrTheAnswer`: a per-user call is prepared and dispatched against a broker that holds the token; the prepared call, the broker request, every log line and the answer carry the credential id at most, and integriq never asks the broker for the raw token.
 - [ ] PHPUnit, Newman and Playwright run, exit codes read

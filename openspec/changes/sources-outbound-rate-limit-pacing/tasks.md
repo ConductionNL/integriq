@@ -38,5 +38,6 @@ Kind: code. Size S to M. Row `integriq:src-ratelimit-out`.
 
 ## Verification
 - [ ] `openspec validate sources-outbound-rate-limit-pacing --type change --strict` passes
-- [ ] Existing rate limit and retry tests pass unchanged
+- [x] Existing rate limit and retry tests pass unchanged
+  - Checked on development 60f97d46: the merge of this change (#3596) adds tests and edits no existing rate-limit or retry test (`git diff --stat b6a13df83^1 b6a13df83 -- tests`); `phpunit --filter '/(RateLimit|Retry|RetryPolicy|Backoff)/'` passes, 146 tests.
 - [ ] PHPUnit, Newman and Playwright run, exit codes read
