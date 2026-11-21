@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\Integriq\Service\Adapter\DataInfra\NextcloudFolderAdapter;
+use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\NextcloudFolderFiles;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\SourceTestService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -113,17 +113,17 @@ class SourceTestServiceTest extends TestCase {
 	}//end testFailedOutcome()
 
 	/**
-	 * A folder in Nextcloud Files is tested by its adapter, with no HTTP call.
+	 * A folder in Nextcloud Files is tested through its files, with no HTTP call.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
-	public function testAFolderSourceIsTestedByItsAdapter(): void {
+	public function testAFolderSourceIsTestedThroughItsFiles(): void {
 		$callService = $this->getMockBuilder(className: CallService::class)->disableOriginalConstructor()->onlyMethods(['call'])->getMock();
 		$callService->expects($this->never())->method('call');
-		$adapter = $this->getMockBuilder(className: NextcloudFolderAdapter::class)->disableOriginalConstructor()->onlyMethods(['test'])->getMock();
-		$adapter->method('test')->willReturnOnConsecutiveCalls(
+		$folder = $this->getMockBuilder(className: NextcloudFolderFiles::class)->disableOriginalConstructor()->onlyMethods(['test'])->getMock();
+		$folder->method('test')->willReturnOnConsecutiveCalls(
 			['ok' => false, 'message' => 'The folder "/Woo/inkomend" does not exist in the Files of the source\'s owner.'],
 			['ok' => true, 'message' => 'The folder /Woo/inkomend holds 2 files.']
 		);
@@ -131,7 +131,7 @@ class SourceTestServiceTest extends TestCase {
 		$source->setUuid('s-2');
 		$source->setObject(['type' => 'nextcloud-folder', 'configuration' => ['ownerUid' => 'woo-intake', 'rootPath' => 'Woo/inkomend']]);
 		$logger  = $this->createMock(originalClassName: LoggerInterface::class);
-		$service = new SourceTestService(callService: $callService, logger: $logger, folderAdapter: $adapter);
+		$service = new SourceTestService(callService: $callService, logger: $logger, folderFiles: $folder);
 
 		$failed = $service->run(source: $source);
 		$passed = $service->run(source: $source);
@@ -142,5 +142,5 @@ class SourceTestServiceTest extends TestCase {
 			expected: [SourceTestService::OUTCOME_RESPONSE, 200, 'The folder /Woo/inkomend holds 2 files.'],
 			actual: [$passed['outcome'], $passed['statusCode'], $passed['statusMessage']]
 		);
-	}//end testAFolderSourceIsTestedByItsAdapter()
+	}//end testAFolderSourceIsTestedThroughItsFiles()
 }//end class

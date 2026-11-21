@@ -22,44 +22,40 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Adapter\DataInfra;
 
+use OCA\Integriq\Service\Adapter\AbstractCategoryAdapterProvider;
+use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\NextcloudFolderFiles;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
-use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemotePath;
-use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCP\Files\File;
-use OCP\Files\Folder;
-use OCP\Files\IRootFolder;
-use OCP\Files\NotFoundException;
-use OCP\IL10N;
+use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCP\IAppConfig;
+use Psr\Log\LoggerInterface;
 
 /**
- * A source of type `nextcloud-folder` names a folder by its owner
- * (`configuration.ownerUid`) and its path in that owner's Files
- * (`configuration.rootPath`). Every operation resolves its path inside that
- * root, so a `..` segment is refused before any file is touched, exactly as
- * for an SFTP or FTPS source. No credential is involved: the folder is read
- * as its owner through `IRootFolder::getUserFolder()`.
+ * The data-infra provider face of a folder in Nextcloud Files (REQ-DIC-001).
+ * The file work is NextcloudFolderFiles'; this registers it with OpenRegister's
+ * integration registry beside the SFTP and FTPS adapters. No credential is
+ * involved, so the broker the category base carries is never called.
  *
  * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
  */
-class NextcloudFolderAdapter extends AbstractIntegrationProvider {
-
-	/**
-	 * The source type this adapter serves.
-	 */
-	public const SOURCE_TYPE = 'nextcloud-folder';
+class NextcloudFolderAdapter extends AbstractCategoryAdapterProvider {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param IL10N       $l10n       Translator for labels and messages.
-	 * @param IRootFolder $rootFolder Nextcloud's file tree.
+	 * @param CredentialBrokerService $credentialBroker OpenRegister's credential broker (unused: no credential).
+	 * @param IAppConfig              $appConfig        App config.
+	 * @param LoggerInterface         $logger           Logger.
+	 * @param NextcloudFolderFiles    $files            The folder's files.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IRootFolder $rootFolder,
+		CredentialBrokerService $credentialBroker,
+		IAppConfig $appConfig,
+		LoggerInterface $logger,
+		private readonly NextcloudFolderFiles $files,
 	) {
+		parent::__construct(credentialBroker: $credentialBroker, appConfig: $appConfig, logger: $logger);
 	}//end __construct()
 
 	/**
@@ -81,7 +77,7 @@ class NextcloudFolderAdapter extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function getLabel(): string {
-		return $this->l10n->t('Folder in Nextcloud Files');
+		return $this->files->label();
 	}//end getLabel()
 
 	/**
@@ -107,7 +103,7 @@ class NextcloudFolderAdapter extends AbstractIntegrationProvider {
 	}//end getRequiredApp()
 
 	/**
-	 * The capability slugs of the data-infra category this adapter implements.
+	 * {@inheritDoc}
 	 *
 	 * @return array<int,string>
 	 *
@@ -116,19 +112,6 @@ class NextcloudFolderAdapter extends AbstractIntegrationProvider {
 	public function getCapabilities(): array {
 		return ['read'];
 	}//end getCapabilities()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * The files are read live from Nextcloud Files; nothing is stored here.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
-	 */
-	public function getStorageStrategy(): string {
-		return 'query-time';
-	}//end getStorageStrategy()
 
 	/**
 	 * {@inheritDoc}
@@ -172,7 +155,7 @@ class NextcloudFolderAdapter extends AbstractIntegrationProvider {
 		return [
 			'status'     => 'ok',
 			'authStatus' => 'per-source',
-			'message'    => $this->l10n->t('Each source names its own owner and folder in Nextcloud Files.'),
+			'message'    => $this->files->healthMessage(),
 		];
 	}//end health()
 
@@ -197,11 +180,11 @@ class NextcloudFolderAdapter extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters=[]): array {
-		if (is_array($filters['source'] ?? null) === false || $this->handles(source: $filters['source']) === false) {
+		if (is_array($filters['source'] ?? null) === false || $this->files->handles(source: $filters['source']) === false) {
 			return [];
 		}
 
-		return $this->listFiles(
+		return $this->files->listFiles(
 			source: $filters['source'],
 			path: (string)($filters['path'] ?? ''),
 			pattern: (string)($filters['pattern'] ?? '*')
@@ -209,90 +192,7 @@ class NextcloudFolderAdapter extends AbstractIntegrationProvider {
 	}//end list()
 
 	/**
-	 * Whether a source is a folder in Nextcloud Files.
-	 *
-	 * @param array<string,mixed> $source The source object.
-	 *
-	 * @return bool True for type `nextcloud-folder`.
-	 *
-	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
-	 */
-	public function handles(array $source): bool {
-		return strtolower((string)($source['type'] ?? '')) === self::SOURCE_TYPE;
-	}//end handles()
-
-	/**
-	 * The files in a folder of the source whose names match a pattern.
-	 *
-	 * @param array<string,mixed> $source  The source object.
-	 * @param string              $path    The folder, relative to the source's root path.
-	 * @param string              $pattern A shell pattern for the names, such as `*.pdf`.
-	 *
-	 * @return list<array{fileId: int, name: string, path: string, mimetype: string, size: int, mtime: int, owner: string}> Files only, sorted by name.
-	 *
-	 * @throws RemoteFileException When the path leaves the root or the folder is missing.
-	 *
-	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
-	 */
-	public function listFiles(array $source, string $path='', string $pattern='*'): array {
-		$owner    = $this->ownerOf(source: $source);
-		$folder   = $this->folderAt(source: $source, path: $path);
-		$relative = trim($path, '/');
-		if ($pattern === '') {
-			$pattern = '*';
-		}
-
-		$files = [];
-		foreach ($folder->getDirectoryListing() as $node) {
-			if (($node instanceof File) === false || fnmatch($pattern, $node->getName()) === false) {
-				continue;
-			}
-
-			$files[] = [
-				'fileId'   => (int)$node->getId(),
-				'name'     => $node->getName(),
-				'path'     => ltrim($relative . '/' . $node->getName(), '/'),
-				'mimetype' => $node->getMimetype(),
-				'size'     => (int)$node->getSize(),
-				'mtime'    => (int)$node->getMTime(),
-				'owner'    => $owner,
-			];
-		}
-
-		usort($files, fn (array $a, array $b): int => strcmp($a['name'], $b['name']));
-
-		return $files;
-	}//end listFiles()
-
-	/**
-	 * One file of the source.
-	 *
-	 * @param array<string,mixed> $source The source object.
-	 * @param string              $path   The file, relative to the source's root path.
-	 *
-	 * @return File The file node, read as the source's owner.
-	 *
-	 * @throws RemoteFileException When the path leaves the root, or names no file.
-	 *
-	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
-	 */
-	public function fetch(array $source, string $path): File {
-		$absolute = $this->resolve(source: $source, path: $path);
-		try {
-			$node = $this->userFolder(source: $source)->get(ltrim($absolute, '/'));
-		} catch (NotFoundException $e) {
-			throw new RemoteFileException(message: 'The file "' . $absolute . '" does not exist in the Files of the source\'s owner.', code: 0, previous: $e);
-		}
-
-		if (($node instanceof File) === false) {
-			throw new RemoteFileException(message: '"' . $absolute . '" is a folder, not a file.');
-		}
-
-		return $node;
-	}//end fetch()
-
-	/**
-	 * Test the source: its owner exists and its root path is a folder.
+	 * Test a folder source.
 	 *
 	 * @param array<string,mixed> $source The source object.
 	 *
@@ -301,128 +201,6 @@ class NextcloudFolderAdapter extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function test(array $source): array {
-		try {
-			$folder = $this->folderAt(source: $source, path: '');
-		} catch (RemoteFileException $e) {
-			return ['ok' => false, 'message' => $e->getMessage()];
-		}
-
-		$files = array_filter($folder->getDirectoryListing(), fn ($node): bool => $node instanceof File);
-
-		return [
-			'ok'      => true,
-			'message' => $this->l10n->t('The folder %1$s holds %2$s files.', [$this->resolve(source: $source, path: ''), (string)count($files)]),
-		];
+		return $this->files->test(source: $source);
 	}//end test()
-
-	/**
-	 * The folder at a path of the source.
-	 *
-	 * @param array<string,mixed> $source The source object.
-	 * @param string              $path   The folder, relative to the source's root path.
-	 *
-	 * @return Folder
-	 *
-	 * @throws RemoteFileException When the path leaves the root, or names no folder.
-	 */
-	private function folderAt(array $source, string $path): Folder {
-		$absolute = $this->resolve(source: $source, path: $path);
-		$userRoot = $this->userFolder(source: $source);
-		if ($absolute === '/') {
-			return $userRoot;
-		}
-
-		try {
-			$node = $userRoot->get(ltrim($absolute, '/'));
-		} catch (NotFoundException $e) {
-			throw new RemoteFileException(
-				message: 'The folder "' . $absolute . '" does not exist in the Files of the source\'s owner.',
-				code: 0,
-				previous: $e
-			);
-		}
-
-		if (($node instanceof Folder) === false) {
-			throw new RemoteFileException(message: '"' . $absolute . '" is a file, not a folder.');
-		}
-
-		return $node;
-	}//end folderAt()
-
-	/**
-	 * The owner's Files.
-	 *
-	 * @param array<string,mixed> $source The source object.
-	 *
-	 * @return Folder
-	 *
-	 * @throws RemoteFileException When the source names no owner, or the owner has no Files.
-	 */
-	private function userFolder(array $source): Folder {
-		$owner = $this->ownerOf(source: $source);
-		try {
-			return $this->rootFolder->getUserFolder($owner);
-		} catch (\Throwable $e) {
-			throw new RemoteFileException(message: 'The Files of user "' . $owner . '" cannot be opened: ' . $e->getMessage(), code: 0, previous: $e);
-		}
-	}//end userFolder()
-
-	/**
-	 * The path inside the owner's Files, checked against the root.
-	 *
-	 * @param array<string,mixed> $source The source object.
-	 * @param string              $path   The path relative to the root.
-	 *
-	 * @return string An absolute path inside the owner's Files.
-	 *
-	 * @throws RemoteFileException When the root or the path contains `..`.
-	 */
-	private function resolve(array $source, string $path): string {
-		return (new RemotePath())->resolve(rootPath: $this->rootOf(source: $source), path: $path);
-	}//end resolve()
-
-	/**
-	 * The configured owner.
-	 *
-	 * @param array<string,mixed> $source The source object.
-	 *
-	 * @return string
-	 *
-	 * @throws RemoteFileException When the source names no owner.
-	 */
-	private function ownerOf(array $source): string {
-		$owner = trim((string)($this->configurationOf(source: $source)['ownerUid'] ?? ''));
-		if ($owner === '') {
-			throw new RemoteFileException(message: 'A folder source needs configuration.ownerUid: the Nextcloud user whose Files hold the folder.');
-		}
-
-		return $owner;
-	}//end ownerOf()
-
-	/**
-	 * The configured root path.
-	 *
-	 * @param array<string,mixed> $source The source object.
-	 *
-	 * @return string
-	 */
-	private function rootOf(array $source): string {
-		return (string)($this->configurationOf(source: $source)['rootPath'] ?? '/');
-	}//end rootOf()
-
-	/**
-	 * The source's configuration object.
-	 *
-	 * @param array<string,mixed> $source The source object.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function configurationOf(array $source): array {
-		$configuration = ($source['configuration'] ?? []);
-		if (is_array($configuration) === false) {
-			return [];
-		}
-
-		return $configuration;
-	}//end configurationOf()
 }//end class

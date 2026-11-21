@@ -22,23 +22,30 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Adapter\DataInfra;
 
+use OCA\Integriq\Service\Adapter\AbstractCategoryAdapterProvider;
 use OCA\Integriq\Service\Adapter\DataInfra\NextcloudFolderAdapter;
+use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\NextcloudFolderFiles;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemotePath;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCP\IAppConfig;
 use OCP\IL10N;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
- * Covers NextcloudFolderAdapter.
+ * Covers NextcloudFolderAdapter and the NextcloudFolderFiles it reads through.
  */
 #[CoversClass(NextcloudFolderAdapter::class)]
+#[CoversClass(NextcloudFolderFiles::class)]
+#[UsesClass(AbstractCategoryAdapterProvider::class)]
 #[UsesClass(RemotePath::class)]
 #[UsesClass(RemoteFileException::class)]
 final class NextcloudFolderAdapterTest extends TestCase {
@@ -58,15 +65,29 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	private Folder $userFolder;
 
 	/**
-	 * Build the adapter over a file tree double.
+	 * The folder's files over the file tree double.
+	 *
+	 * @return NextcloudFolderFiles
+	 */
+	private function files(): NextcloudFolderFiles {
+		$l10n = $this->createMock(originalClassName: IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text, array $parameters=[]): string => vsprintf(format: $text, values: $parameters));
+
+		return new NextcloudFolderFiles(rootFolder: $this->rootFolder, l10n: $l10n);
+	}//end files()
+
+	/**
+	 * Build the adapter over the folder's files.
 	 *
 	 * @return NextcloudFolderAdapter
 	 */
 	private function adapter(): NextcloudFolderAdapter {
-		$l10n = $this->createMock(originalClassName: IL10N::class);
-		$l10n->method('t')->willReturnCallback(static fn (string $text, array $parameters=[]): string => vsprintf(format: $text, values: $parameters));
-
-		return new NextcloudFolderAdapter(l10n: $l10n, rootFolder: $this->rootFolder);
+		return new NextcloudFolderAdapter(
+			credentialBroker: $this->createMock(originalClassName: CredentialBrokerService::class),
+			appConfig: $this->createMock(originalClassName: IAppConfig::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			files: $this->files(),
+		);
 	}//end adapter()
 
 	/**
@@ -138,17 +159,16 @@ final class NextcloudFolderAdapterTest extends TestCase {
 			$adapter->getCapabilities(),
 			$adapter->isEnabled(),
 			$adapter->getRequiredApp(),
-			$adapter->getStorageStrategy(),
 			$adapter->authRequirements()['type'],
 			$adapter->health()['status'],
 		];
 
 		$this->assertSame(
-			expected: ['data-infra-nextcloud-folder', 'Folder in Nextcloud Files', ['read'], true, null, 'query-time', 'none', 'ok'],
+			expected: ['data-infra-nextcloud-folder', 'Folder in Nextcloud Files', ['read'], true, null, 'none', 'ok'],
 			actual: $described
 		);
-		$this->assertTrue(condition: $adapter->handles(source: ['type' => 'Nextcloud-Folder']));
-		$this->assertFalse(condition: $adapter->handles(source: ['type' => 'sftp']));
+		$this->assertTrue(condition: $this->files()->handles(source: ['type' => 'Nextcloud-Folder']));
+		$this->assertFalse(condition: $this->files()->handles(source: ['type' => 'sftp']));
 	}//end testTheProviderDescribesTheFolderSource()
 
 	/**
@@ -199,11 +219,12 @@ final class NextcloudFolderAdapterTest extends TestCase {
 	public function testDotDotIsRefused(): void {
 		$this->userFolder->expects($this->never())->method('get');
 		$adapter = $this->adapter();
+		$files   = $this->files();
 
 		$operations = [
-			fn () => $adapter->listFiles(source: $this->source(), path: '../private'),
-			fn () => $adapter->fetch(source: $this->source(), path: 'sub/../../secret.pdf'),
-			fn () => $adapter->listFiles(source: $this->source(rootPath: 'Woo/../other')),
+			fn () => $files->listFiles(source: $this->source(), path: '../private'),
+			fn () => $files->fetch(source: $this->source(), path: 'sub/../../secret.pdf'),
+			fn () => $adapter->list(register: '', schema: '', objectId: '', filters: ['source' => $this->source(rootPath: 'Woo/../other')]),
 		];
 		foreach ($operations as $operation) {
 			try {
@@ -279,13 +300,13 @@ final class NextcloudFolderAdapterTest extends TestCase {
 				};
 			}
 		);
-		$adapter = $this->adapter();
+		$files = $this->files();
 
-		$this->assertSame(expected: $file, actual: $adapter->fetch(source: $this->source(), path: 'besluit.pdf'));
+		$this->assertSame(expected: $file, actual: $files->fetch(source: $this->source(), path: 'besluit.pdf'));
 
 		foreach (['sub' => 'is a folder', 'gone.pdf' => 'does not exist'] as $path => $reason) {
 			try {
-				$adapter->fetch(source: $this->source(), path: $path);
+				$files->fetch(source: $this->source(), path: $path);
 				$this->fail(message: $path . ' was fetched.');
 			} catch (RemoteFileException $e) {
 				$this->assertStringContainsString(needle: $reason, haystack: $e->getMessage());
@@ -302,7 +323,7 @@ final class NextcloudFolderAdapterTest extends TestCase {
 		$this->userFolder->expects($this->never())->method('get');
 		$this->userFolder->method('getDirectoryListing')->willReturn([$this->file(id: 1, name: 'top.pdf')]);
 
-		$files = $this->adapter()->listFiles(source: $this->source(rootPath: '/'));
+		$files = $this->files()->listFiles(source: $this->source(rootPath: '/'));
 
 		$this->assertSame(expected: ['top.pdf'], actual: array_column(array: $files, column_key: 'path'));
 	}//end testTheRootPathSlashIsTheOwnersFiles()

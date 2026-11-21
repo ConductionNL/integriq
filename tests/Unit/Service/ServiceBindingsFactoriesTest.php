@@ -135,6 +135,11 @@ class ServiceBindingsFactoriesTest extends TestCase {
 		}
 	}//end testTheSettingsServiceIsBuiltFromTheConfigRebaseSchedulerAndLogger()
 
+	/**
+	 * Boot hands OpenRegister's registry the twelve integration providers, in order.
+	 *
+	 * @return void
+	 */
 	public function testBootHandsTheTwelveIntegrationProvidersToOpenRegisterInOrder(): void {
 		$registry = new class extends IntegrationRegistry {
 			/** @var array<int, object> */
@@ -156,7 +161,20 @@ class ServiceBindingsFactoriesTest extends TestCase {
 		(new ServiceBindings())->boot(context: $context);
 
 		$this->assertSame(
-			[SynchronizationContractProvider::class, AzureVirtualDesktopAdapter::class, IntuneAdapter::class, JamfProAdapter::class, CitrixDaasAdapter::class, SharePointOnlineAdapter::class, Microsoft365Adapter::class, S3Adapter::class, SftpAdapter::class, FtpsAdapter::class, NextcloudFolderAdapter::class, DatabaseAdapter::class],
+			[
+				SynchronizationContractProvider::class,
+				AzureVirtualDesktopAdapter::class,
+				IntuneAdapter::class,
+				JamfProAdapter::class,
+				CitrixDaasAdapter::class,
+				SharePointOnlineAdapter::class,
+				Microsoft365Adapter::class,
+				S3Adapter::class,
+				SftpAdapter::class,
+				FtpsAdapter::class,
+				NextcloudFolderAdapter::class,
+				DatabaseAdapter::class,
+			],
 			array_map(fn (object $provider): string => $this->classOf($provider), $registry->added)
 		);
 	}//end testBootHandsTheTwelveIntegrationProvidersToOpenRegisterInOrder()
