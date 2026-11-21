@@ -48,6 +48,7 @@ Kind: code. Size M. Half for shillinq `tax-digipoort-filing` (rows shillinq `tax
   - Owed: the Playwright spec for the page against a live instance.
 
 ## Verification
-- [ ] `openspec validate connectors-digipoort-sbr-filing --strict` passes
+- [x] `openspec validate connectors-digipoort-sbr-filing --strict` passes
+  - OpenSpec 2.1.1, 2026-11-21: the change validates ("is valid") under `--strict`.
 - [ ] `composer check:strict` once before push; PHPUnit, Newman and Playwright exit codes read
 - [ ] The shillinq lane confirms the event names and fields against `tax-digipoort-filing`

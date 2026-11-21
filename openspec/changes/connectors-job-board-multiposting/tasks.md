@@ -42,8 +42,10 @@ Kind: code. Size M. Half for humaniq `hiring-multiposting` (row humaniq `hir-mul
   - GIVEN the docs WHEN an administrator connects a board THEN the partner programme and the feed URL registration are named
 - [x] Implement
   > 2026-11-15, built: `docs/features/job-board-connectors.md` (per-item board references, connecting LinkedIn through its partner programme, the Indeed feed URL and its registration, werk.nl not shipped and why), linked from `docs/features/README.md`. No new user-facing strings: the change adds no screen. Left: the docs build.
-- [ ] Test (docs build)
+- [x] Test (docs build)
+  - `npm ci --legacy-peer-deps && npm run build` in `docs/` on 2026-11-21: the build succeeds, all 10 AI-baseline checks pass, and the build reports no warning for `docs/features/job-board-connectors.md`.
 
 ## Verification
-- [ ] `openspec validate connectors-job-board-multiposting --strict` passes
+- [x] `openspec validate connectors-job-board-multiposting --strict` passes
+  - OpenSpec 2.1.1, 2026-11-21: the change validates ("is valid") under `--strict`.
 - [ ] `composer check:strict` once before push; PHPUnit and Newman exit codes read

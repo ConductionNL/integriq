@@ -47,6 +47,7 @@ Kind: code. Size M. Half for shillinq `reporting-data-delivery` (row shillinq `r
   - Open: needs a running instance.
 
 ## Verification
-- [ ] `openspec validate gateway-declared-data-feeds --strict` passes
+- [x] `openspec validate gateway-declared-data-feeds --strict` passes
+  - OpenSpec 2.1.1, 2026-11-21: the change validates ("is valid") under `--strict`.
 - [ ] `composer check:strict` once before push; PHPUnit, Newman and Playwright exit codes read
 - [ ] Power BI Desktop (or its OData connector) pulls `ledger-lines` from a dev instance, noted in the PR

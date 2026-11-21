@@ -499,7 +499,7 @@ class CatalogRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
+	 * @spec openspec/changes/archive/2026-11-21-platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
 	 */
 	public function testTheBookkeepingConnectorsAreDormantTemplatesInTheirCategories(): void {
 		$service = $this->makeService();
@@ -532,7 +532,7 @@ class CatalogRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
+	 * @spec openspec/changes/archive/2026-11-21-platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
 	 */
 	public function testEveryBookkeepingTemplateHasABookkeepingCategory(): void {
 		$this->assertSame(['Bank', 'Payments', 'E-invoicing', 'Tax filing', 'Commerce', 'Payroll'], CatalogRegistryService::BOOKKEEPING_CATEGORIES);
