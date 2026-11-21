@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Mints a credential, verifies it by resolving it back, and revokes it when needed.
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
  */
 class VerifiedCredentialMinter {
 
@@ -79,7 +79,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return string|null The credential id, or null when there is no organisation or broker, or the mint or the verify failed.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	public function mint(array $mint): ?string {
 		$broker = $this->broker();
@@ -115,7 +115,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	public function revoke(string $credentialId, string $part): void {
 		try {
@@ -142,7 +142,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return string|null The credential id, or null when the verify failed.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function verify(object $broker, string $credentialId, array $mint): ?string {
 		try {
@@ -173,7 +173,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function mintCredential(object $broker, array $mint): string {
 		if (self::hasValueMint(broker: $broker) === true) {
@@ -213,7 +213,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function hasValueMint(object $broker): bool {
 		return method_exists($broker, 'mintCredential') === true
@@ -229,7 +229,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function credentialIdOf(mixed $credential): string {
 		if ($credential instanceof ObjectEntity === true) {
@@ -248,7 +248,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function isSameSecret(string $secret, mixed $verified): bool {
 		return is_string($verified) === true && hash_equals($secret, $verified) === true;
@@ -260,7 +260,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return object|null
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function broker(): ?object {
 		try {
@@ -284,7 +284,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function canMintAndVerify(mixed $broker): bool {
 		return is_object($broker) === true
@@ -302,7 +302,7 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	public function logFailure(string $step, string $part, ?Throwable $e): void {
 		$context = ['step' => $step, 'part' => $part];

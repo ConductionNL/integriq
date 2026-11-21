@@ -75,7 +75,7 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
 	 */
 	public function testTheEcbRatesAreListedUnderBank(): void {
 		$entries = array_values(array_filter(

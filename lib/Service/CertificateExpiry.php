@@ -16,7 +16,7 @@
  *
  * @link https://github.com/ConductionNL/integriq
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
  */
 
 declare(strict_types=1);
@@ -26,7 +26,7 @@ namespace OCA\Integriq\Service;
 /**
  * One certificate's expiry as ConnectionCertificateReader found it.
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
  */
 final class CertificateExpiry {
 	/**

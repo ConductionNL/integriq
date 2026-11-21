@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -92,7 +92,7 @@ namespace OCA\Integriq\Tests\Unit\Service {
 	/**
 	 * The certificate block for each place a certificate can be kept and each expiry state.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
 	 */
 	class ConnectionCertificateReaderTest extends TestCase {
 		private const NOW = '2026-10-07T12:00:00+00:00';

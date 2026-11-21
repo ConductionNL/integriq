@@ -61,7 +61,7 @@ class ConnectionMonitorController extends Controller {
 	 *
 	 * @return JSONResponse The report, 400 without a source, 404 for an unknown one.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-how-it-performed-in-the-last-24-hours-req-crun-006
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-how-it-performed-in-the-last-24-hours-req-crun-006
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function show(): JSONResponse {

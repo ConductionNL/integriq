@@ -49,7 +49,10 @@ here fails on today's code, because none of these classes exists.
   - GIVEN the sink enabled with no endpoint WHEN saved THEN the save is refused
   - GIVEN an `http` endpoint not marked internal WHEN saved THEN the save is refused
 - [x] Implement
-- [ ] Test: PHPUnit `SettingsServiceTest::testAnEnabledErrorSinkNeedsAnEndpoint`; Playwright `tests/e2e/opentelemetry-export.spec.ts` extended with the error sink section
+- [x] Test: PHPUnit `SettingsServiceTest::testAnEnabledErrorSinkNeedsAnEndpoint`
+  - Lives in `tests/Unit/Service/SettingsServiceErrorSinkTest.php`, beside the internal-mark, storage and malformed-value refusals; the suite passes.
+- [ ] Test: Playwright `tests/e2e/opentelemetry-export.spec.ts` extended with the error sink section
+  - Written (#3748), not yet run: it waits for the nightly Playwright job against a live instance.
 
 ### Verification for tasks 6 to 9
 

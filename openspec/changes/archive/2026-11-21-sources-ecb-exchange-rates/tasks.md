@@ -34,4 +34,5 @@ Kind: code. Size S. Half for shillinq `banking-fx-at-booking` (row shillinq `bnk
 
 ## Verification
 - [x] `openspec validate sources-ecb-exchange-rates --strict` passes
-- [ ] `composer check:strict` once before push; PHPUnit exit code read
+- [x] `composer check:strict` once before push; PHPUnit exit code read
+  - Run on development 2026-11-21 with every task of this change merged. PHPUnit exits 2: 10708 tests, with the same 4 errors and 4 failures as development (missing ext-soap and ext-bcmath in the cloud image), none in the exchange-rate code. `--filter '/(ExchangeRate|Ecb)/'` passes, 33 tests. phpstan passes and phpcs reports no error in this change's files. psalm is at the development count (369). In `ExchangeRateImportService` its findings are the repo-wide UndefinedClass on OpenRegister's `ObjectFindOptions`, which the stubs do not carry. phpmd's findings here are the repo-wide StaticAccess on `RegisterSave` and `DateTimeImmutable`.

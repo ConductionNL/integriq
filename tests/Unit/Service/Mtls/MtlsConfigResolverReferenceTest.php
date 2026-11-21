@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2

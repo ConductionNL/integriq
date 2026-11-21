@@ -25,7 +25,7 @@ namespace OCA\Integriq\Service\Security;
 /**
  * Reads and writes a value at a key path inside nested object data.
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
  */
 final class NestedValuePath {
 
@@ -37,7 +37,7 @@ final class NestedValuePath {
 	 *
 	 * @return mixed
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	public function get(array $data, array $path): mixed {
 		$node = $data;
@@ -62,7 +62,7 @@ final class NestedValuePath {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	public function set(array $data, array $path, mixed $value): array {
 		$key = array_shift($path);
@@ -89,7 +89,7 @@ final class NestedValuePath {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	public function isEmpty(mixed $value): bool {
 		return $value === null || $value === [] || (is_string($value) === true && trim($value) === '');

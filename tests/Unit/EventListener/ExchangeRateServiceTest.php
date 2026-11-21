@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\Integriq\EventListener\ExchangeRateService
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
  */
 class ExchangeRateServiceTest extends TestCase {
 

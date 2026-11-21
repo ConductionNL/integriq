@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Calls, errors by kind, response times and certificate expiry for one source.
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-how-it-performed-in-the-last-24-hours-req-crun-006
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-how-it-performed-in-the-last-24-hours-req-crun-006
  */
 final class ConnectionMonitorServiceTest extends TestCase {
 
@@ -197,7 +197,7 @@ final class ConnectionMonitorServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
 	 */
 	public function testACertificateThatExpiresSoonSaysSo(): void {
 		$this->brpWithCalls();
@@ -216,7 +216,7 @@ final class ConnectionMonitorServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
 	 */
 	public function testAKeepiqReferenceWithoutAnAnswerIsUnknown(): void {
 		$this->store['source'] = [

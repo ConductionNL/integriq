@@ -293,7 +293,7 @@ class ConnectionHealthJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
 	 */
 	public function testOpensCertificateExpiryAlertsLast(): void {
 		$calls = [];
