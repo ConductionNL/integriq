@@ -121,13 +121,15 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * browser to.
 	 *
 	 * @param string $provider The provider id from the route.
-	 * @param array<string,mixed> $params `{organisation, consumer, trust, returnUrl, relayState}`.
+	 * @param array<string,mixed> $params `{organisation, consumer, trust, returnUrl, relayState}`, and for an
+	 *                                    attribute login `attributes`, the comma-separated attribute ids.
 	 *
 	 * @return string The identity provider's address.
 	 *
 	 * @throws IdpAssertionException When anything about the request or the broker is not in order.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	public function start(string $provider, array $params): string {
 		$login = new IdpLoginStart(provider: $provider, organisation: strtolower(trim((string)($params['organisation'] ?? ''))));
@@ -141,6 +143,7 @@ class IdpLoginService implements IdpLoginServiceInterface {
 
 		$login->consumer = $this->startableConsumer(consumerId: $login->consumer, returnUrl: $login->returnUrl)->getId();
 		$this->assertStartParameters(login: $login);
+		$login->disclosure = $this->disclosureFor(login: $login, requested: (string)($params['attributes'] ?? ''));
 
 		if ($adapter->isConfigured() === false) {
 			throw new IdpAssertionException(
@@ -165,16 +168,23 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @return array{0: string, 1: string} The request id and the identity provider's address.
 	 *
 	 * @throws IdpAssertionException When the adapter gave no request to follow.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	private function beginAt(GovernmentIdpAdapterInterface $adapter, IdpLoginStart $login): array {
-		$begun = $adapter->beginAuthentication(
-			[
-				'organisation' => $login->organisation,
-				'consumer' => $login->consumer,
-				'trust' => $login->trust,
-				'relayState' => $login->nonce,
-			]
-		);
+		$context = [
+			'organisation' => $login->organisation,
+			'consumer' => $login->consumer,
+			'trust' => $login->trust,
+			'relayState' => $login->nonce,
+		];
+		if ($login->disclosure !== null) {
+			// The claim names only: the adapter asks for each as essential and
+			// never sees the attribute ids or the registration's allowlist.
+			$context['claims'] = $login->disclosure->claimNames();
+		}
+
+		$begun = $adapter->beginAuthentication($context);
 
 		$requestId = trim((string)($begun['requestId'] ?? ''));
 		$redirectUrl = trim((string)($begun['redirectUrl'] ?? ''));
@@ -193,6 +203,8 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @param string        $requestId The request the identity provider will answer.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	private function storeState(IdpLoginStart $login, string $requestId): void {
 		$this->states->store(
@@ -205,6 +217,7 @@ class IdpLoginService implements IdpLoginServiceInterface {
 				'trust' => $login->trust,
 				'returnUrl' => $login->returnUrl,
 				'relayState' => $login->relayState,
+				'attributes' => ($login->disclosure?->stateValue() ?? ''),
 			],
 			signingKey: $this->config->signingKey()
 		);
@@ -602,6 +615,36 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		}
 
 	}//end assertStartParameters()
+
+	/**
+	 * The attributes an attribute login asks for, checked against the organisation's registration.
+	 *
+	 * Only a Yivi login asks for attributes; for every other provider this is
+	 * null and an `attributes` parameter is ignored.
+	 *
+	 * @param IdpLoginStart $login     The login being started.
+	 * @param string        $requested The attribute ids the start received, comma-separated.
+	 *
+	 * @return AttributeDisclosureRequest|null
+	 *
+	 * @throws IdpAssertionException When the organisation has no enabled registration for the provider, or the list
+	 *                               is empty or names an attribute the registration does not allow.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
+	 */
+	private function disclosureFor(IdpLoginStart $login, string $requested): ?AttributeDisclosureRequest {
+		if ($login->provider !== TrustLevelMapper::PROVIDER_YIVI) {
+			return null;
+		}
+
+		$registration = $this->registrations->find(organisation: $login->organisation, provider: $login->provider);
+		if ($registration === null || $registration->isEnabled() === false) {
+			throw new IdpAssertionException(message: 'The organisation has no enabled Yivi registration, so no login starts.');
+		}
+
+		return AttributeDisclosureRequest::fromStart(registration: $registration, requested: $requested);
+
+	}//end disclosureFor()
 
 	/**
 	 * Refuse while the broker is off or cannot sign.

@@ -21,8 +21,11 @@ Kind: code. Size M. Row: portaliq `sig-yivi`. Depends on `portal-idp-broker-conf
 - **acceptance_criteria**:
   - GIVEN an allowed list WHEN the start runs THEN the signed state holds the list and the authorization request carries one essential claim per attribute
   - GIVEN an empty list or an unknown id WHEN the start runs THEN integriq's error page shows and there is no redirect
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+  - `AttributeDisclosureRequest` checks the start's `attributes` (comma-separated ids, trimmed, repeats dropped, at most 32) against the registration's `yiviAttributes`; an entry without an id or a claim name allows nothing. `IdpLoginService::start()` builds it for provider `yivi` only, from the organisation's enabled Yivi registration, before the adapter is reached; any refusal throws, so the controller shows integriq's error page. The state store gained the field `attributes`, and the adapter context gains `claims` (the claim names only). `OidcRelyingPartyAdapter::beginAuthentication()` turns those into `claims={"id_token":{"<claim>":{"essential":true}}}`. `yivi` is now in `IdpAdapterRegistry::PROVIDERS` and the start and callback routes, and `TrustLevelMapper::PROVIDER_YIVI` exists without a mapping row, so the callback stays fail-closed until tasks 3 and 4.
+  - Not in this task: the start and callback still resolve the container-bound adapter (`forProvider`), not the registration's own (`forRegistration`); that switch is the end-to-end wiring of `portal-idp-broker-config` task 12.
+- [x] Test
+  - `tests/Unit/Auth/Idp/YiviStartTest.php`: the real login service and the real OIDC adapter over the stub issuer send the bridge exactly the two claims and record both ids in the signed state; an id outside the list, an empty list, an entry without a claim, no or a disabled registration, an unusable allowlist and 33 ids are refused with nothing begun and nothing stored; DigiD ignores `attributes`. `IdpBrokerControllerTest::testAYiviStartPassesTheAttributesOn`.
 
 ## Task 3: The callback and the envelope
 - **spec_ref**: `specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003`

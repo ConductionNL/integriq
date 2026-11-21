@@ -235,13 +235,38 @@ class IdpBrokerControllerTest extends TestCase {
 			'relayState' => 'r1',
 		];
 		$service = $this->createMock(IdpLoginService::class);
-		$service->expects($this->once())->method('start')->with('digid', $params)->willReturn('https://idp.example.nl/sso');
+		$service->expects($this->once())->method('start')->with('digid', $params + ['attributes' => ''])->willReturn('https://idp.example.nl/sso');
 
 		$response = $this->loginController($service, $params)->start('digid');
 
 		$this->assertInstanceOf(RedirectResponse::class, $response);
 		$this->assertSame('https://idp.example.nl/sso', $response->getRedirectURL());
 	}//end testAnAcceptedStartRedirectsToTheIdentityProvider()
+
+	/**
+	 * A Yivi start hands the attribute ids it received to the login service.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
+	 */
+	public function testAYiviStartPassesTheAttributesOn(): void {
+		$params = [
+			'organisation' => 'gemeente-x',
+			'consumer' => 'portaliq',
+			'trust' => 'substantial',
+			'returnUrl' => 'https://portal.example.nl/portal/api/session/broker/callback',
+			'relayState' => 'r1',
+			'attributes' => 'pbdf.gemeente.personalData.fullname,pbdf.sidn-pbdf.email.email',
+		];
+		$service = $this->createMock(IdpLoginService::class);
+		$service->expects($this->once())->method('start')->with('yivi', $params)->willReturn('https://bridge.example.nl/authorize');
+
+		$response = $this->loginController($service, $params)->start('yivi');
+
+		$this->assertInstanceOf(RedirectResponse::class, $response);
+		$this->assertSame('https://bridge.example.nl/authorize', $response->getRedirectURL());
+	}//end testAYiviStartPassesTheAttributesOn()
 
 	/**
 	 * A response that answers no stored state shows the error page; one that

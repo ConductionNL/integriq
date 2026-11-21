@@ -147,11 +147,16 @@ class IdpBrokerController extends Controller {
 	 * accepted call stores a state for five minutes, so the limit bounds how
 	 * much cache one address can fill.
 	 *
-	 * @param string $provider `digid`, `eherkenning` or `eidas`.
+	 * A Yivi login also names the attributes to disclose (`attributes`,
+	 * comma-separated ids); a list that is empty or names one the
+	 * organisation does not allow is refused the same way.
+	 *
+	 * @param string $provider `digid`, `eherkenning`, `eidas` or `yivi`.
 	 *
 	 * @return RedirectResponse|TemplateResponse The redirect to the identity provider, or the error page.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -166,6 +171,7 @@ class IdpBrokerController extends Controller {
 					'trust' => (string)($this->request->getParam('trust') ?? ''),
 					'returnUrl' => (string)($this->request->getParam('returnUrl') ?? ''),
 					'relayState' => (string)($this->request->getParam('relayState') ?? ''),
+					'attributes' => (string)($this->request->getParam('attributes') ?? ''),
 				]
 			);
 		} catch (IdpAssertionException $exception) {
@@ -192,7 +198,7 @@ class IdpBrokerController extends Controller {
 	 * target of every provider response, so the limit is generous but bounds
 	 * a replay loop.
 	 *
-	 * @param string $provider `digid`, `eherkenning` or `eidas`.
+	 * @param string $provider `digid`, `eherkenning`, `eidas` or `yivi`.
 	 *
 	 * @return RedirectResponse|TemplateResponse The redirect to the consumer, the floor refusal page, or the error page.
 	 *

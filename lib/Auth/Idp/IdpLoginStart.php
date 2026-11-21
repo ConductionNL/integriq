@@ -66,6 +66,15 @@ final class IdpLoginStart {
 	public string $nonce = '';
 
 	/**
+	 * The attributes an attribute login asks the person to disclose; null for any other login.
+	 *
+	 * @var AttributeDisclosureRequest|null
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
+	 */
+	public ?AttributeDisclosureRequest $disclosure = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $provider     The provider id from the route.
