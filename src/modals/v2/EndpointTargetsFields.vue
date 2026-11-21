@@ -69,8 +69,9 @@
 			<NcButton variant="secondary" data-testid="endpoint-add-target" @click="addRow">
 				{{ t('integriq', 'Add a target') }}
 			</NcButton>
-			<CnFieldHelper
-				:text="t('integriq', 'Calls are split by weight within a group: 95 and 5 send about one call in twenty to the second. A target whose source is down is skipped.')" />
+			<p class="cn-endpoint-targets-fields__hint">
+				{{ t('integriq', 'Calls are split by weight within a group: 95 and 5 send about one call in twenty to the second. A target whose source is down is skipped.') }}
+			</p>
 		</div>
 
 		<template v-if="rows.length > 1">
@@ -81,21 +82,21 @@
 				@update:modelValue="updateField('sticky', $event === true)">
 				{{ t('integriq', 'Keep each consumer on the same target') }}
 			</NcCheckboxRadioSwitch>
-			<CnFieldHelper
-				:text="t('integriq', 'With few consumers this unbalances the weights.')" />
+			<p class="cn-endpoint-targets-fields__hint">
+				{{ t('integriq', 'With few consumers this unbalances the weights.') }}
+			</p>
 		</template>
 	</fieldset>
 </template>
 
 <script>
-import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import { NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
 import endpointSourceFields from '../../mixins/endpointSourceFields.js'
 import { sharesOf, targetRowsOf, targetsOf } from './endpointTargets.js'
 
 export default {
 	name: 'EndpointTargetsFields',
-	components: { CnFieldHelper, NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField },
+	components: { NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField },
 	mixins: [endpointSourceFields],
 
 	data() {
