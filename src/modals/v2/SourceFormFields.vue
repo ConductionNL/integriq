@@ -161,6 +161,16 @@
 			:configuration="caseSystemConfiguration"
 			@update:configuration="updateField('configuration', $event)" />
 
+		<!-- A CTI source picks its telephony provider, maps the phone
+		     system's event fields and names the KISS source callers are
+		     looked up in (kcc-cti-adapter task 4). -->
+		<CtiSourceFields
+			v-if="isCti"
+			class="cn-source-form-fields__field"
+			:configuration="caseSystemConfiguration"
+			:sourceId="savedSourceId"
+			@update:configuration="updateField('configuration', $event)" />
+
 		<!-- A payment source picks its provider here and checks its brokered
 		     key before it goes live (messaging-payments-review D3). -->
 		<PaymentProviderFields
@@ -389,6 +399,7 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import CaseSystemSourceFields from './CaseSystemSourceFields.vue'
+import CtiSourceFields from './CtiSourceFields.vue'
 import PaymentProviderFields from './PaymentProviderFields.vue'
 import SchemaTextField from './SchemaTextField.vue'
 import jsonFieldDrafts from '../../mixins/jsonFieldDrafts.js'
@@ -419,6 +430,7 @@ const SOURCE_TYPE_OPTIONS = [
 	{ id: 'dso', label: 'DSO' },
 	{ id: 'case-system', label: 'Case system (ZGW)' },
 	{ id: 'sms', label: 'SMS' },
+	{ id: 'cti', label: 'Telephony (CTI)' },
 ]
 
 /**
@@ -443,6 +455,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		CnFieldHelper,
 		CaseSystemSourceFields,
+		CtiSourceFields,
 		PaymentProviderFields,
 	},
 
@@ -493,9 +506,9 @@ export default {
 		 */
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
-			// On a case-system source CaseSystemSourceFields owns the
+			// On a case-system or CTI source its own fields component owns the
 			// configuration; a raw JSON editor beside it would hold a stale draft.
-			const fields = this.isCaseSystem
+			const fields = this.isCaseSystem || this.isCti
 				? this.fields.filter((field) => field.key !== 'configuration')
 				: this.fields
 			if (!this.brokeredEnabled) return fields
@@ -512,6 +525,27 @@ export default {
 		 */
 		isCaseSystem() {
 			return String(this.formData?.type ?? '') === 'case-system'
+		},
+
+		/**
+		 * Whether this is a CTI source, which gets its own telephony fields.
+		 *
+		 * @return {boolean} True for a cti source.
+		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 */
+		isCti() {
+			return String(this.formData?.type ?? '') === 'cti'
+		},
+
+		/**
+		 * The id of the saved source, or empty before the first save.
+		 *
+		 * @return {string} The id.
+		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 */
+		savedSourceId() {
+			const data = this.formData ?? {}
+			return String(data['@self']?.id || data.id || data.uuid || '')
 		},
 
 		/**
