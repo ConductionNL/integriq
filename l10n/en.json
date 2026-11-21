@@ -1,5 +1,6 @@
 {
     "translations": {
+        "Credentials": "Credentials",
         "The application could not be read. Try again later.": "The application could not be read. Try again later.",
         "%s is reached through an OIDC bridge. Save this registration with the protocol OIDC Relying Party.": "%s is reached through an OIDC bridge. Save this registration with the protocol OIDC Relying Party.",
         "Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)": "Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)",

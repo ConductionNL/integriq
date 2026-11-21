@@ -39,6 +39,7 @@ import CallLogDetail from './components/callLog/CallLogDetail.vue'
 import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import ConsumerCredentialsPanel from './components/ConsumerCredentialsPanel.vue'
 import CloudEventReceiverUrl from './components/CloudEventReceiverUrl.vue'
 import DatabaseSourcePanel from './components/DatabaseSourcePanel.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
@@ -205,6 +206,11 @@ export default {
 	// (GET/POST /api/sources/{id}/host-key). Renders nothing for any other
 	// kind of source. sources-sftp-adapter REQ-SFTP-001.
 	SourceHostKeyPanel,
+	// ConsumerDetail body widget: the consumer's API keys (generated, shown
+	// once with a copy button, last used, revoked) and its pinned client
+	// certificates, over /api/consumers/{id}/credentials (administrator only).
+	// access-consumer-credentials REQ-CRED-002 to REQ-CRED-004.
+	ConsumerCredentialsPanel,
 	// SourceDetail body widget for a database source: its declared statements,
 	// a test run of a read statement (first page and duration) and the tables
 	// and columns (databaseSource#testStatement and #schema). Renders nothing

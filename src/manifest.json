@@ -2483,6 +2483,15 @@
             }
           }
         ],
+        "bodyWidgets": [
+          {
+            "id": "con-credentials",
+            "component": "ConsumerCredentialsPanel",
+            "title": "Credentials",
+            "placement": "after-data",
+            "colSpan": 12
+          }
+        ],
         "layout": [
           {
             "id": "1",
