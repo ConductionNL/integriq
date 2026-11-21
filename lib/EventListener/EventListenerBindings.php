@@ -312,6 +312,11 @@ final class EventListenerBindings {
 		// imowId; refused on OpenRegister's own save path.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoActivityMappingGuardListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoActivityMappingGuardListener::class);
+		// The idp-broker-yivi-route change: a provider only reached over OIDC (Yivi) may not be
+		// saved as a SAML registration; refused on OpenRegister's own save path,
+		// which is the path the Authentication settings screen writes through.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: IdpRegistrationGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: IdpRegistrationGuardListener::class);
 		// open-formulieren-submits-into-its-case: an Open Formulieren form mapping is
 		// checked against its destination schema before it may be active.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: OpenFormulierenMappingGuardListener::class);
