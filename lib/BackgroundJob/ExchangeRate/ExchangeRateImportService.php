@@ -17,7 +17,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -45,7 +45,7 @@ use Throwable;
  * daily file at the source's `location`. A failed fetch or parse stores
  * nothing and leaves the stored rates as they are.
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
  */
 class ExchangeRateImportService {
 
@@ -107,7 +107,7 @@ class ExchangeRateImportService {
 	 * @param EventServiceInterface $eventService Emits the published CloudEvent.
 	 * @param LoggerInterface $logger Logger for run outcomes.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -127,7 +127,7 @@ class ExchangeRateImportService {
 	 *
 	 * @throws RuntimeException When the file cannot be fetched or read.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
 	 */
 	public function importFromSource(): array {
 		$source = $this->resolveSource();
@@ -163,7 +163,7 @@ class ExchangeRateImportService {
 	 *
 	 * @return array{stored: int, dates: list<string>} The number of rates stored and the newly stored dates.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
 	 */
 	public function storeRates(array $rates): array {
 		$stored   = 0;

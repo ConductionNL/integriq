@@ -37,7 +37,7 @@ use Throwable;
  * else the default for that event), and the answer goes back through
  * `setAnswer()`.
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
  */
 class ConnectionHandoverEventHandler {
 
@@ -61,7 +61,7 @@ class ConnectionHandoverEventHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	public function handle(Event $event): void {
 		$defaultSlug = self::defaultSlugFor(eventClass: get_class($event));
@@ -88,7 +88,7 @@ class ConnectionHandoverEventHandler {
 	 *
 	 * @return array<string, string> Per given part: taken, already-set, conflict or failed.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function takeOver(string $slug, array $settings): array {
 		try {
@@ -115,7 +115,7 @@ class ConnectionHandoverEventHandler {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function sourceSlug(Event $event, string $defaultSlug): string {
 		$slug = self::read(event: $event, getter: 'getSourceSlug', property: 'sourceSlug');
@@ -136,7 +136,7 @@ class ConnectionHandoverEventHandler {
 	 *
 	 * @return mixed
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function read(Event $event, string $getter, string $property): mixed {
 		if (method_exists($event, $getter) === true) {
@@ -157,7 +157,7 @@ class ConnectionHandoverEventHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function answer(Event $event, array $answer): void {
 		if (method_exists($event, 'setAnswer') === true) {
@@ -173,7 +173,7 @@ class ConnectionHandoverEventHandler {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function defaultSlugFor(string $eventClass): ?string {
 		foreach (ConnectionHandoverListener::EVENTS as $handoverEvent => $slug) {

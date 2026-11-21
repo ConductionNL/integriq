@@ -22,7 +22,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+ * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCA\Integriq\Adapters\Support\SupplierSourceCall;
 /**
  * Live UWLR results, in the UWLR field names the source adapter maps.
  *
- * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+ * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
  */
 final class UwlrResultImportClientHttp extends UwlrResultImportClient {
 
@@ -61,7 +61,7 @@ final class UwlrResultImportClientHttp extends UwlrResultImportClient {
 	 *
 	 * @return string Always `https`.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
 	 */
 	public function flavour(): string {
 		return 'https';
@@ -80,7 +80,7 @@ final class UwlrResultImportClientHttp extends UwlrResultImportClient {
 	 *
 	 * @throws SupplierCallException When the supplier refuses or fails the call, or answers another supplier's batch.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
 	 */
 	public function fetchResults(string $supplierId): array {
 		$batch = $this->calls->json(slug: $supplierId, endpoint: self::ENDPOINT, withholdBodies: true);

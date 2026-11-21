@@ -25,4 +25,5 @@ Tier V1. Section 2 waits on keepiq `connection-certificate-expiry-for-integriq`.
 
 ## 4. Verify
 
-- [ ] 4.1 `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run test:l10n` once before push.
+- [x] 4.1 `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run test:l10n` once before push.
+  - Run on development 2026-11-21 with every task of this change merged. check:no-legacy-types, check:routes, lint and phpstan pass. phpcs errors sit only in `SmsDispatchService*` and `EventListenerBindings`, not in this change's files. psalm is at the development count (369). In this change's files its findings are the repo-wide UndefinedClass on OpenRegister's `Kernel\Contracts\Value` option classes (293 such findings across `lib/`), which the stubs do not carry. phpmd's findings here are the repo-wide StaticAccess on `RegisterSave` (240 across `lib/`). PHPUnit: 10708 tests, the same 4 errors and 4 failures as development (missing ext-soap and ext-bcmath in the cloud image). The change's own tests (`ConnectionMonitor`, `MtlsConfigResolver`, handover) pass, 60 tests. `npm run lint` has 0 errors. `npm run test:l10n` is OK after #3757 added the 177 keys development was missing; none of those keys came from this change.

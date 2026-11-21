@@ -76,7 +76,7 @@ class ConnectionMonitorService implements ConnectionMonitorServiceInterface {
 	 *
 	 * @return array<string, mixed>|null The report, or null when no such source exists.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-how-it-performed-in-the-last-24-hours-req-crun-006
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-how-it-performed-in-the-last-24-hours-req-crun-006
 	 */
 	public function report(string $sourceRef, DateTimeImmutable $now): ?array {
 		$source = $this->findSource(sourceRef: $sourceRef);

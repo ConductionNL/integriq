@@ -21,4 +21,5 @@ Kind: code. Size M. Rows `integriq:con-timetable`, `integriq:con-lvs-results`, `
 - [x] Test (PHPUnit against a recorded acknowledgement)
 
 ## Verification
-- [ ] `openspec validate connectors-education-live-clients --type change --strict` passes
+- [x] `openspec validate connectors-education-live-clients --type change --strict` passes
+  - OpenSpec 2.1.1, 2026-11-21: "Change 'connectors-education-live-clients' is valid". The live-client tests (`Uwlr|Swv|Rostering|Lvs`) pass, 84 tests.

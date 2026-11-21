@@ -41,7 +41,7 @@ use Throwable;
 /**
  * Fills an existing source from handed-over connection settings.
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
  */
 class ConnectionHandoverService {
 
@@ -157,7 +157,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return array<string, string> Per given part: taken, already-set, conflict or failed.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	public function takeOver(string $sourceSlug, array $settings): array {
 		$given = self::givenParts(settings: $settings);
@@ -193,7 +193,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return array{0: array<string, string>, 1: array<string, mixed>} The answers and the (filled) data.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function takeParts(ObjectEntity $source, array $given): array {
 		$data   = $source->getObject();
@@ -218,7 +218,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return array{0: string, 1: array<string, mixed>} The outcome and the (filled) data.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function takePart(ObjectEntity $source, array $data, string $part, string $value): array {
 		if (isset(self::PLAIN_PARTS[$part]) === true) {
@@ -242,7 +242,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return array{0: string, 1: array<string, mixed>} The outcome and the (filled) data.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function placeTaken(string $outcome, array $data, array $path, mixed $stored): array {
 		if ($outcome !== self::TAKEN) {
@@ -260,7 +260,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return array<string, string>
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function givenParts(array $settings): array {
 		$given = [];
@@ -284,7 +284,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function plainOutcome(array $data, string $part, string $value): string {
 		$current = $this->paths->get(data: $data, path: self::PLAIN_PARTS[$part]);
@@ -310,7 +310,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return string taken, already-set or failed.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function takeSecret(ObjectEntity $source, array $data, string $part, string $secret): string {
 		$path = self::SECRET_PARTS[$part][0];
@@ -340,7 +340,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return string|null The credential id.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function mintFor(ObjectEntity $source, array $data, string $part, string $secret): ?string {
 		$mint = [
@@ -366,7 +366,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return array<string, string>
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function save(ObjectEntity $source, array $data, array $answer, array $pending): array {
 		try {
@@ -405,7 +405,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function revokeMinted(array $data, array $pending): void {
 		foreach ($pending as $part) {
@@ -435,7 +435,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function findSource(string $slug): ?ObjectEntity {
 		if ($slug === '') {
@@ -469,7 +469,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function firstWithSlug(iterable $items, string $slug): ?ObjectEntity {
 		foreach ($items as $item) {
@@ -490,7 +490,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private static function isSourceWithSlug(mixed $item, string $slug): bool {
 		return $item instanceof ObjectEntity === true && ($item->getObject()['slug'] ?? '') === $slug;
@@ -504,7 +504,7 @@ class ConnectionHandoverService {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
 	 */
 	private function readRaw(string $uuid): ?ObjectEntity {
 		try {

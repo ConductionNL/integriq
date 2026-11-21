@@ -2,7 +2,7 @@
 
 ### Requirement: A connection handed over by another app keeps its secrets in keepiq
 
-When another app hands integriq the settings of a connection it used to run itself (first: pipelinq's BRP connection), integriq SHALL fill only the fields of the matching source that are empty, SHALL mint a keepiq secret through the credential broker for every secret part (client secret, certificate, key, CA bundle), SHALL verify each resolves byte for byte before writing the reference, and SHALL answer per part whether it was taken, already set or failed. It SHALL never overwrite a value an administrator set, and SHALL never log or return a secret.
+When another app hands integriq the settings of a connection it ran itself, integriq SHALL fill only the empty fields of the matching source, SHALL mint a keepiq secret through the credential broker for every secret part (client secret, certificate, key, CA bundle), SHALL verify each resolves byte for byte before writing the reference, and SHALL answer per part whether it was taken, already set or failed. It SHALL never overwrite an administrator's value, and SHALL never log or return a secret.
 
 #### Scenario: pipelinq's BRP settings arrive in an empty source
 

@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+ * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Calls a supplier's source row and returns its decoded JSON answer.
  *
- * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+ * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
  */
 class SupplierSourceCall {
 
@@ -65,7 +65,7 @@ class SupplierSourceCall {
 	 *
 	 * @throws SupplierCallException When the source is missing, the call fails, the status is not 2xx or the body is not JSON.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
 	 */
 	public function json(string $slug, string $endpoint, string $method = 'GET', array $config = [], bool $withholdBodies = false): array {
 		$source = $this->source(slug: $slug);

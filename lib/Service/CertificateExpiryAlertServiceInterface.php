@@ -15,7 +15,7 @@
  *
  * @link https://github.com/ConductionNL/integriq
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ interface CertificateExpiryAlertServiceInterface {
 	 *
 	 * @return array{opened: int, cleared: int}
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
 	 */
 	public function evaluate(DateTimeImmutable $now): array;
 }

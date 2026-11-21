@@ -336,7 +336,7 @@ final class AdaptersBindings {
 	 *
 	 * @return string The class to resolve.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
 	 */
 	public static function liveOrMock(IAppConfig $appConfig, string $flagKey, string $live, string $mock): string {
 		$raw = strtolower($appConfig->getValueString('integriq', $flagKey, '0'));

@@ -131,7 +131,7 @@ class MtlsConfigResolver implements MtlsConfigResolverInterface {
 	 * @throws MtlsConfigurationException Fail-closed on any missing/invalid/expired/undecryptable material.
 	 *
 	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-shared-mtls-transport-builds-guzzle-tls-options-from-encrypted-at-rest-certificate-material-req-001
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
 	 */
 	public function resolve(array $authConfig): MtlsCertificateBundle {
 		$mtls = self::mtlsSection(authConfig: $authConfig);
@@ -237,7 +237,7 @@ class MtlsConfigResolver implements MtlsConfigResolverInterface {
 	 *
 	 * @throws MtlsConfigurationException When the part does not resolve or decrypt.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
 	 */
 	private function part(array $mtls, string $label): ?string {
 		[$referenceKey, $inlineKey] = self::PARTS[$label];
@@ -261,7 +261,7 @@ class MtlsConfigResolver implements MtlsConfigResolverInterface {
 	 *
 	 * @throws MtlsConfigurationException When the broker is absent, refuses, or answers nothing.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
 	 */
 	private function resolveReference(string $label, array $reference): string {
 		if ($this->brokeredCalls === null) {
@@ -318,7 +318,7 @@ class MtlsConfigResolver implements MtlsConfigResolverInterface {
 	 *
 	 * @return integer|null The certificate's notAfter as a unix time, or null without readable inline material.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
 	 */
 	public function certificateNotAfter(array $authConfig): ?int {
 		$mtls = ($authConfig['mtls'] ?? null);

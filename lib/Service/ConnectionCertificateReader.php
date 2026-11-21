@@ -72,7 +72,7 @@ class ConnectionCertificateReader {
 	 *
 	 * @return array<string, mixed> The certificate block; `configured: false` without one.
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
 	 */
 	public function certificate(array $data, DateTimeImmutable $now): array {
 		$expiry = $this->findExpiry(data: $data);
