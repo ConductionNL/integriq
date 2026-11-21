@@ -149,7 +149,7 @@ class PortalController extends Controller {
 
 		$applications = [];
 		foreach ($this->find(filters: ['schema' => 'consumer', 'userId' => $user->getUID()]) as $consumer) {
-			if ($this->access->owns(user: $user, consumer: $consumer) === false) {
+			if (DeveloperApplications::owns(user: $user, consumer: $consumer) === false) {
 				continue;
 			}
 
@@ -219,7 +219,7 @@ class PortalController extends Controller {
 		}
 
 		$consumer = $this->findOne(id: $consumerId, schema: 'consumer');
-		if ($this->access->owns(user: $user, consumer: $consumer) === false) {
+		if (DeveloperApplications::owns(user: $user, consumer: $consumer) === false) {
 			return new JSONResponse(['error' => $this->l->t('No such application')], Http::STATUS_NOT_FOUND);
 		}
 

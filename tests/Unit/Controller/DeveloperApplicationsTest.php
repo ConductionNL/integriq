@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Unit tests for DeveloperPortalAccess: who a developer is and which
- * consumers are an application they own.
+ * Unit tests for DeveloperApplications::owns(): which consumers are an
+ * application the developer owns.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Service
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,19 +19,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\Integriq\Service\DeveloperPortalAccess;
+use OCA\Integriq\Controller\DeveloperApplications;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\IAppConfig;
-use OCP\IGroupManager;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\Integriq\Service\DeveloperPortalAccess
+ * @covers \OCA\Integriq\Controller\DeveloperApplications
  */
-final class DeveloperPortalAccessTest extends TestCase {
+final class DeveloperApplicationsTest extends TestCase {
 
 	/**
 	 * Only a consumer made in the portal by this developer is theirs.
@@ -39,10 +37,6 @@ final class DeveloperPortalAccessTest extends TestCase {
 	 * @return void
 	 */
 	public function testADeveloperOwnsOnlyTheApplicationsTheyMadeInThePortal(): void {
-		$access = new DeveloperPortalAccess(
-			appConfig: $this->createMock(originalClassName: IAppConfig::class),
-			groupManager: $this->createMock(originalClassName: IGroupManager::class)
-		);
 		$developer = $this->createMock(originalClassName: IUser::class);
 		$developer->method('getUID')->willReturn('developer-a');
 
@@ -51,11 +45,11 @@ final class DeveloperPortalAccessTest extends TestCase {
 		$adminOne = self::consumer(data: ['userId' => 'developer-a']);
 		$adminTwo = self::consumer(data: ['ownerKind' => 'admin', 'userId' => 'developer-a']);
 
-		$this->assertTrue(condition: $access->owns(user: $developer, consumer: $mine));
-		$this->assertFalse(condition: $access->owns(user: $developer, consumer: $theirs));
-		$this->assertFalse(condition: $access->owns(user: $developer, consumer: $adminOne), message: 'a consumer an administrator made');
-		$this->assertFalse(condition: $access->owns(user: $developer, consumer: $adminTwo));
-		$this->assertFalse(condition: $access->owns(user: $developer, consumer: null));
+		$this->assertTrue(condition: DeveloperApplications::owns(user: $developer, consumer: $mine));
+		$this->assertFalse(condition: DeveloperApplications::owns(user: $developer, consumer: $theirs));
+		$this->assertFalse(condition: DeveloperApplications::owns(user: $developer, consumer: $adminOne), message: 'a consumer an administrator made');
+		$this->assertFalse(condition: DeveloperApplications::owns(user: $developer, consumer: $adminTwo));
+		$this->assertFalse(condition: DeveloperApplications::owns(user: $developer, consumer: null));
 	}//end testADeveloperOwnsOnlyTheApplicationsTheyMadeInThePortal()
 
 	/**

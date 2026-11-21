@@ -28,7 +28,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -96,29 +95,6 @@ class DeveloperPortalAccess {
 	public function isDeveloper(IUser $user): bool {
 		return $this->groupManager->isInGroup($user->getUID(), $this->group());
 	}//end isDeveloper()
-
-	/**
-	 * Whether a consumer is an application the developer owns.
-	 *
-	 * A developer owns the consumers they made in the portal, which carry
-	 * `ownerKind: developer` and their user id. A consumer an administrator
-	 * made is never a developer's, whatever user id it names.
-	 *
-	 * @param IUser             $user     The developer.
-	 * @param ObjectEntity|null $consumer The consumer, or null when there is none.
-	 *
-	 * @return bool True when its owner is this developer.
-	 *
-	 * @phpstan-assert-if-true ObjectEntity $consumer
-	 * @psalm-assert-if-true ObjectEntity $consumer
-	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
-	 */
-	public function owns(IUser $user, ?ObjectEntity $consumer): bool {
-		$data = ($consumer?->getObject() ?? []);
-
-		return ($data['ownerKind'] ?? '') === 'developer' && (string)($data['userId'] ?? '') === $user->getUID();
-	}//end owns()
 
 	/**
 	 * How many accounts are in the developer group, or null when the group does not exist.

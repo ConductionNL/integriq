@@ -9,8 +9,8 @@
  * D2 and D4), and a refusal is answered as the HTTP status to give, so the
  * controller only words it.
  *
- * @category Service
- * @package  OCA\Integriq\Service
+ * @category Controller
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,16 +26,19 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service;
+namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\Consumer\ConsumerCredentialList;
+use OCA\Integriq\Service\DeveloperPortalAccess;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
+use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
 
 /**
- * The signed-in developer's own applications and their credentials.
+ * The signed-in developer's own applications and their credentials. It sits
+ * beside the portal controllers because only they use it.
  *
  * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
  */
@@ -83,12 +86,35 @@ class DeveloperApplications {
 			return Http::STATUS_SERVICE_UNAVAILABLE;
 		}
 
-		if ($this->access->owns(user: $user, consumer: $application) === false) {
+		if (self::owns(user: $user, consumer: $application) === false) {
 			return Http::STATUS_NOT_FOUND;
 		}
 
 		return $application;
 	}//end owned()
+
+	/**
+	 * Whether a consumer is an application the developer owns.
+	 *
+	 * A developer owns the consumers they made in the portal, which carry
+	 * `ownerKind: developer` and their user id. A consumer an administrator
+	 * made is never a developer's, whatever user id it names.
+	 *
+	 * @param IUser             $user     The developer.
+	 * @param ObjectEntity|null $consumer The consumer, or null when there is none.
+	 *
+	 * @return bool True when its owner is this developer.
+	 *
+	 * @phpstan-assert-if-true ObjectEntity $consumer
+	 * @psalm-assert-if-true ObjectEntity $consumer
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
+	 */
+	public static function owns(IUser $user, ?ObjectEntity $consumer): bool {
+		$data = ($consumer?->getObject() ?? []);
+
+		return ($data['ownerKind'] ?? '') === 'developer' && (string)($data['userId'] ?? '') === $user->getUID();
+	}//end owns()
 
 	/**
 	 * The application's stored credentials, hashes included.

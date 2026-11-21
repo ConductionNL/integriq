@@ -27,7 +27,7 @@ use DateTimeImmutable;
 use OCA\Integriq\Controller\PortalKeysController;
 use OCA\Integriq\Service\Consumer\ConsumerCredentialList;
 use OCA\Integriq\Service\Consumer\ConsumerCredentials;
-use OCA\Integriq\Service\DeveloperApplications;
+use OCA\Integriq\Controller\DeveloperApplications;
 use OCA\Integriq\Service\DeveloperPortalAccess;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
@@ -47,8 +47,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\Integriq\Controller\PortalKeysController
- * @covers \OCA\Integriq\Service\DeveloperApplications
- * @covers \OCA\Integriq\Service\DeveloperPortalAccess
+ * @covers \OCA\Integriq\Controller\DeveloperApplications
+ * @uses   \OCA\Integriq\Service\DeveloperPortalAccess
  * @uses   \OCA\Integriq\Service\Consumer\ConsumerCredentialList
  * @uses   \OCA\Integriq\Service\Consumer\ConsumerCredentials
  * @uses   \OCA\Integriq\Service\Helper\RandomUuid

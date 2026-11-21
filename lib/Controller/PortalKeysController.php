@@ -32,7 +32,6 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\Consumer\ConsumerCredentials;
-use OCA\Integriq\Service\DeveloperApplications;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
