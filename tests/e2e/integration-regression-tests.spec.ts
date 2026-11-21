@@ -24,10 +24,11 @@
  *   are tried and the one that answers is kept. Confirm is never pressed: it
  *   would import the configuration into this same instance.
  *
- * "An engineer adds a case by hand" is `test.fixme`: `input` and
- * `expectedOutput` are `type: object` in the schema and the page gives them no
- * widget, and `fieldsFromSchema` in @conduction/nextcloud-vue drops an object
- * property without one, so the add dialog has no control to enter either.
+ * "An engineer adds a case by hand" is `test.fixme`: its body is not written
+ * yet. The add dialog edits `input` and `expectedOutput` as JSON (the page
+ * gives both `widget: 'json'`, pinned by
+ * tests/vitest/manifestObjectFieldsInDialog.spec.js); driving that JSON editor
+ * has no precedent in this suite to copy.
  *
  * Not here, and why: the synchronization suite leaving the target untouched,
  * the ignored path, the 403 for a user without `regression-suite.run`, and
@@ -247,7 +248,7 @@ test.describe('integration-regression-tests', () => {
 		test('an engineer adds a case by hand', () => {
 			test.fixme(
 				true,
-				'input and expectedOutput are type object with no widget on the Test cases page, so the add dialog renders no control for either; see the header',
+				'the body is not written yet; the JSON editor for input and expected output has no driven precedent here, see the header',
 			)
 		})
 	})
