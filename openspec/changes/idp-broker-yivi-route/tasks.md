@@ -55,5 +55,8 @@ Kind: code. Size M. Row: portaliq `sig-yivi`. Depends on `portal-idp-broker-conf
 - **files**: `src/views/admin/IdpRegistrationSettings.vue`, `src/modals/IdpRegistrationModal.vue`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN provider `yivi` WHEN the modal opens THEN only OIDC fields and the attribute list show, and kind is fixed to `oidc-rp`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+  - `src/views/admin/idpRegistration.js`: Yivi is a provider option; `isAttributeProvider()` and `fixedForProvider()` fix an attribute provider to `oidc-rp` with `hmac` pseudonyms whatever was stored or picked; `draftFromObject()` reads `yiviAttributes` (non-object entries dropped) and carries `yiviTrust` and `yiviBsnToConsumer`, which this screen does not edit, so a save never resets them; `draftProblems()` asks for at least one attribute and an id and claim on every line; `payloadFromDraft()` stores the OIDC fields, `yiviAttributes` and the offered credentials, without subject or assurance mapping. `IdpRegistrationModal.vue` disables the protocol with a one-line reason, hides the pseudonymisation, subject and assurance mappings for Yivi, and edits the attribute list (id, claim name, label, carries a BSN). Strings in `l10n/en.js` and `l10n/nl.js`; "Yivi" is a name and has no nl value.
+  - Not on the screen: editing `yiviTrust`, which waits on task 4 (D5), and `yiviBsnToConsumer`.
+- [x] Test
+  - `tests/vitest/idpRegistrationSettings.spec.js`, "a Yivi registration": the draft read back as OIDC with its attributes; the payload with the attribute list and the kept trust and BSN settings; the two problems; the mounted modal shows only the OIDC fields and the attribute list with the protocol disabled and fixed even when SAML is picked; a Yivi registration POSTed with its attributes.

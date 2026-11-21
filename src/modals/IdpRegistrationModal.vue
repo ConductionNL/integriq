@@ -11,7 +11,12 @@
   are picked by reference from the OpenRegister credentials integriq may use;
   no field accepts or shows a secret value. The parent stores the payload.
 
+  An attribute provider (Yivi) is reached over an OIDC bridge only: its
+  protocol is fixed to OIDC, and instead of the pseudonymisation, subject and
+  assurance mappings it shows the list of attributes a service may ask for.
+
   @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-beheer-authenticatie-configures-the-registrations-req-idpc-008
+  @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
 -->
 <template>
 	<NcModal
@@ -47,7 +52,11 @@
 				:inputLabel="t('integriq', 'Protocol')"
 				:options="kinds"
 				:clearable="false"
+				:disabled="attributeLogin"
 				@update:modelValue="(option) => set('kind', option)" />
+			<p v-if="attributeLogin" class="idp-registration__hint" data-testid="idp-registration-kind-fixed">
+				{{ t('integriq', 'Yivi is reached through an OIDC bridge, so the protocol is always OIDC Relying Party.') }}
+			</p>
 
 			<NcTextField
 				v-model="draft.label"
@@ -85,12 +94,49 @@
 			</template>
 
 			<NcSelect
+				v-if="!attributeLogin"
 				:modelValue="pick(pseudonymisations, draft.pseudonymisation)"
 				data-testid="idp-registration-pseudonymisation"
 				:inputLabel="t('integriq', 'Pseudonymisation')"
 				:options="pseudonymisations"
 				:clearable="false"
 				@update:modelValue="(option) => set('pseudonymisation', option)" />
+
+			<template v-if="attributeLogin">
+				<h3>{{ t('integriq', 'Attributes') }}</h3>
+				<p class="idp-registration__hint">
+					{{ t('integriq', 'The Yivi attributes a service of this organisation may ask for, and the claim name the bridge returns for each.') }}
+				</p>
+				<div
+					v-for="(line, index) in draft.attributes"
+					:key="index"
+					class="idp-registration__line"
+					:data-testid="`idp-registration-attribute-${index}`">
+					<NcTextField
+						v-model="line.id"
+						:label="t('integriq', 'Attribute id')" />
+					<NcTextField
+						v-model="line.claim"
+						:label="t('integriq', 'Claim name')" />
+					<NcTextField
+						v-model="line.label"
+						:label="t('integriq', 'Label')" />
+					<NcCheckboxRadioSwitch v-model="line.carriesBsn">
+						{{ t('integriq', 'Carries a BSN') }}
+					</NcCheckboxRadioSwitch>
+					<NcButton
+						variant="tertiary"
+						:aria-label="t('integriq', 'Remove attribute')"
+						@click="draft.attributes.splice(index, 1)">
+						{{ t('integriq', 'Remove') }}
+					</NcButton>
+				</div>
+				<NcButton
+					data-testid="idp-registration-add-attribute"
+					@click="draft.attributes.push({ id: '', claim: '', label: '', carriesBsn: false })">
+					{{ t('integriq', 'Add attribute') }}
+				</NcButton>
+			</template>
 
 			<h3>{{ t('integriq', 'Credentials') }}</h3>
 			<p class="idp-registration__hint">
@@ -109,43 +155,45 @@
 				{{ t('integriq', 'No credential allows integriq yet. Create one in OpenRegister first.') }}
 			</p>
 
-			<h3>{{ t('integriq', 'Subject mapping') }}</h3>
-			<p class="idp-registration__hint">
-				{{ t('integriq', 'The attribute or claim name the identity provider uses for each field. Leave a field empty when it does not send it.') }}
-			</p>
-			<NcTextField
-				v-for="field in subjectFields"
-				:key="field"
-				v-model="draft.subjectMapping[field]"
-				:data-testid="`idp-registration-subject-${field}`"
-				:label="subjectLabel(field)" />
+			<template v-if="!attributeLogin">
+				<h3>{{ t('integriq', 'Subject mapping') }}</h3>
+				<p class="idp-registration__hint">
+					{{ t('integriq', 'The attribute or claim name the identity provider uses for each field. Leave a field empty when it does not send it.') }}
+				</p>
+				<NcTextField
+					v-for="field in subjectFields"
+					:key="field"
+					v-model="draft.subjectMapping[field]"
+					:data-testid="`idp-registration-subject-${field}`"
+					:label="subjectLabel(field)" />
 
-			<h3>{{ t('integriq', 'Assurance mapping') }}</h3>
-			<p class="idp-registration__hint">
-				{{ t('integriq', 'The level spelling the identity provider sends, and the level it means.') }}
-			</p>
-			<div
-				v-for="(line, index) in draft.assuranceMapping"
-				:key="index"
-				class="idp-registration__line">
-				<NcTextField
-					v-model="line.sent"
-					:label="t('integriq', 'Level as sent')" />
-				<NcTextField
-					v-model="line.level"
-					:label="t('integriq', 'Level it means')" />
+				<h3>{{ t('integriq', 'Assurance mapping') }}</h3>
+				<p class="idp-registration__hint">
+					{{ t('integriq', 'The level spelling the identity provider sends, and the level it means.') }}
+				</p>
+				<div
+					v-for="(line, index) in draft.assuranceMapping"
+					:key="index"
+					class="idp-registration__line">
+					<NcTextField
+						v-model="line.sent"
+						:label="t('integriq', 'Level as sent')" />
+					<NcTextField
+						v-model="line.level"
+						:label="t('integriq', 'Level it means')" />
+					<NcButton
+						variant="tertiary"
+						:aria-label="t('integriq', 'Remove level')"
+						@click="draft.assuranceMapping.splice(index, 1)">
+						{{ t('integriq', 'Remove') }}
+					</NcButton>
+				</div>
 				<NcButton
-					variant="tertiary"
-					:aria-label="t('integriq', 'Remove level')"
-					@click="draft.assuranceMapping.splice(index, 1)">
-					{{ t('integriq', 'Remove') }}
+					data-testid="idp-registration-add-level"
+					@click="draft.assuranceMapping.push({ sent: '', level: '' })">
+					{{ t('integriq', 'Add level') }}
 				</NcButton>
-			</div>
-			<NcButton
-				data-testid="idp-registration-add-level"
-				@click="draft.assuranceMapping.push({ sent: '', level: '' })">
-				{{ t('integriq', 'Add level') }}
-			</NcButton>
+			</template>
 
 			<NcCheckboxRadioSwitch
 				v-model="draft.enabled"
@@ -195,6 +243,8 @@ import {
 	clientAuthOptions,
 	draftProblems,
 	emptyDraft,
+	fixedForProvider,
+	isAttributeProvider,
 	kindOptions,
 	offeredRoles,
 	payloadFromDraft,
@@ -276,6 +326,15 @@ export default {
 
 	computed: {
 		/**
+		 * Whether the chosen provider discloses attributes (Yivi).
+		 *
+		 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
+		 */
+		attributeLogin() {
+			return isAttributeProvider(this.draft.provider)
+		},
+
+		/**
 		 * The credential roles the chosen kind and modes use.
 		 *
 		 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-beheer-authenticatie-configures-the-registrations-req-idpc-008
@@ -329,14 +388,16 @@ export default {
 		},
 
 		/**
-		 * Store a picked option's id on the draft.
+		 * Store a picked option's id on the draft, then what its provider fixes.
 		 *
 		 * @param {string} key The draft key.
 		 * @param {object|null} option The picked option.
 		 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-beheer-authenticatie-configures-the-registrations-req-idpc-008
+		 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
 		 */
 		set(key, option) {
 			this.draft[key] = option ? option.id : ''
+			fixedForProvider(this.draft)
 		},
 
 		/**
