@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\Integriq\Controller\DeveloperApplications;
 use OCA\Integriq\Controller\PortalController;
 use OCA\Integriq\Service\DeveloperPortalAccess;
 use OCA\Integriq\Service\Helper\RegisterSave;
@@ -49,7 +48,6 @@ use RuntimeException;
  */
 #[CoversClass(PortalController::class)]
 #[UsesClass(DeveloperPortalAccess::class)]
-#[UsesClass(DeveloperApplications::class)]
 #[UsesClass(RegisterSave::class)]
 class PortalControllerTest extends TestCase {
 

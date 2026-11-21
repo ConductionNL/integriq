@@ -86,7 +86,7 @@ class DeveloperApplications {
 			return Http::STATUS_SERVICE_UNAVAILABLE;
 		}
 
-		if (self::owns(user: $user, consumer: $application) === false) {
+		if ($this->owns(user: $user, consumer: $application) === false) {
 			return Http::STATUS_NOT_FOUND;
 		}
 
@@ -98,7 +98,8 @@ class DeveloperApplications {
 	 *
 	 * A developer owns the consumers they made in the portal, which carry
 	 * `ownerKind: developer` and their user id. A consumer an administrator
-	 * made is never a developer's, whatever user id it names.
+	 * made is never a developer's, whatever user id it names. The same rule
+	 * as PortalController's, which the other portal routes use.
 	 *
 	 * @param IUser             $user     The developer.
 	 * @param ObjectEntity|null $consumer The consumer, or null when there is none.
@@ -110,7 +111,7 @@ class DeveloperApplications {
 	 *
 	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
 	 */
-	public static function owns(IUser $user, ?ObjectEntity $consumer): bool {
+	private function owns(IUser $user, ?ObjectEntity $consumer): bool {
 		$data = ($consumer?->getObject() ?? []);
 
 		return ($data['ownerKind'] ?? '') === 'developer' && (string)($data['userId'] ?? '') === $user->getUID();

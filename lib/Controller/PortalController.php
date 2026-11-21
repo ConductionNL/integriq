@@ -149,7 +149,7 @@ class PortalController extends Controller {
 
 		$applications = [];
 		foreach ($this->find(filters: ['schema' => 'consumer', 'userId' => $user->getUID()]) as $consumer) {
-			if (DeveloperApplications::owns(user: $user, consumer: $consumer) === false) {
+			if ($this->owns(user: $user, consumer: $consumer) === false) {
 				continue;
 			}
 
@@ -219,7 +219,7 @@ class PortalController extends Controller {
 		}
 
 		$consumer = $this->findOne(id: $consumerId, schema: 'consumer');
-		if (DeveloperApplications::owns(user: $user, consumer: $consumer) === false) {
+		if ($this->owns(user: $user, consumer: $consumer) === false) {
 			return new JSONResponse(['error' => $this->l->t('No such application')], Http::STATUS_NOT_FOUND);
 		}
 
@@ -310,6 +310,25 @@ class PortalController extends Controller {
 
 		return [$user, new JSONResponse([])];
 	}//end requireDeveloper()
+
+	/**
+	 * Whether a consumer is an application the developer owns.
+	 *
+	 * @param IUser             $user     The developer.
+	 * @param ObjectEntity|null $consumer The consumer, or null when there is none.
+	 *
+	 * @return bool True when its owner is this developer.
+	 *
+	 * @phpstan-assert-if-true ObjectEntity $consumer
+	 * @psalm-assert-if-true ObjectEntity $consumer
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
+	 */
+	private function owns(IUser $user, ?ObjectEntity $consumer): bool {
+		$data = ($consumer?->getObject() ?? []);
+
+		return ($data['ownerKind'] ?? '') === 'developer' && (string)($data['userId'] ?? '') === $user->getUID();
+	}//end owns()
 
 	/**
 	 * Whether a product is offered in the portal: public and not retired.
