@@ -21,13 +21,11 @@
  * scenario tags. The dry run has no scenario of its own (it is design D6), so
  * those tests carry none.
  *
- * The dialog test is `test.fixme`: the manifest gives the four kind settings
- * (`zgw`, `objectsApi`, `stufZds`, `json`) a `visibleWhen` but no `widget`,
- * and they are `type: object` in the schema. `fieldsFromSchema` in
- * @conduction/nextcloud-vue drops an object property without a widget, so the
- * dialog renders none of them for any kind: the "only the StUF-ZDS settings
- * show" acceptance of Task 8 has nothing to show yet. The body states what
- * the test asserts once the fragment gives those fields a widget.
+ * The dialog test relies on the fragment giving the four kind settings
+ * (`zgw`, `objectsApi`, `stufZds`, `json`) `widget: 'json'`: they are
+ * `type: object` in the schema, and `fieldsFromSchema` in
+ * @conduction/nextcloud-vue leaves out an object property with no widget.
+ * `tests/vitest/manifestObjectFieldsInDialog.spec.js` pins that in CI.
  *
  * Not here, and why: every REQ-SREG-002 and REQ-SREG-003 scenario (the ZGW,
  * Objects API, StUF-ZDS and JSON legs, the 503 refusal, resume and the repeat
@@ -253,11 +251,6 @@ test.describe('submission-registration: the Registration targets admin page', ()
 
 	// @e2e submission-registration::an-administrator-adds-the-municipalitys-case-system
 	test('the dialog shows only the settings of the chosen kind', async ({ page }) => {
-		test.fixme(
-			true,
-			'the four kind settings are type object with no widget in the manifest fragment, so CnFormDialog renders none of them; see the header',
-		)
-
 		await targetRow(page, ZGW_SLUG)
 		await page.getByRole('button', { name: 'Add registration target' }).first().click()
 		const dialog = appDialog(page)
