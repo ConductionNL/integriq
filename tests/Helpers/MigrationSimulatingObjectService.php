@@ -44,6 +44,9 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Contract\ObjectDeletion as PublishedObjectDeletion;
+use OCA\OpenRegister\Contract\ObjectFindOptions as PublishedObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectSaveOptions as PublishedObjectSaveOptions;
 
 /**
  * Reproduces the render boundary AND entity columns AND persisting saves.
@@ -131,7 +134,7 @@ class MigrationSimulatingObjectService extends OrObjectService {
 	 */
 	public function find(
 		$id,
-		?ObjectFindOptions $options = null,
+		ObjectFindOptions|PublishedObjectFindOptions|null $options = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true
 	): ?ObjectEntity {
@@ -197,7 +200,7 @@ class MigrationSimulatingObjectService extends OrObjectService {
 	 */
 	public function saveObject(
 		$object,
-		ObjectSaveOptions $options = new ObjectSaveOptions(),
+		ObjectSaveOptions|PublishedObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
 		bool $_multitenancy = true
 	): ObjectEntity {
@@ -239,15 +242,15 @@ class MigrationSimulatingObjectService extends OrObjectService {
 	/**
 	 * Record a deletion.
 	 *
-	 * @param ObjectDeletion $deletion       The deletion.
-	 * @param bool           $_rbac          Unused.
-	 * @param bool           $_multitenancy  Unused.
-	 * @param bool           $_retentionSweep Unused.
+	 * @param ObjectDeletion|PublishedObjectDeletion $deletion        The deletion.
+	 * @param bool                                   $_rbac           Unused.
+	 * @param bool                                   $_multitenancy   Unused.
+	 * @param bool                                   $_retentionSweep Unused.
 	 *
 	 * @return bool
 	 */
 	public function deleteObject(
-		ObjectDeletion $deletion,
+		ObjectDeletion|PublishedObjectDeletion $deletion,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		bool $_retentionSweep = false
