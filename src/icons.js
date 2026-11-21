@@ -86,11 +86,13 @@ import KeyChange from 'vue-material-design-icons/KeyChange.vue'
 import KeyOutline from 'vue-material-design-icons/KeyOutline.vue'
 import KeyPlus from 'vue-material-design-icons/KeyPlus.vue'
 import LanConnect from 'vue-material-design-icons/LanConnect.vue'
+import Laptop from 'vue-material-design-icons/Laptop.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import MapMarkerRadiusOutline from 'vue-material-design-icons/MapMarkerRadiusOutline.vue'
 import MedicalBag from 'vue-material-design-icons/MedicalBag.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
+import MonitorAccount from 'vue-material-design-icons/MonitorAccount.vue'
 import Package from 'vue-material-design-icons/Package.vue'
 import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
 import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
@@ -208,11 +210,13 @@ export default {
 	KeyOutline,
 	KeyPlus,
 	LanConnect,
+	Laptop,
 	LinkVariant,
 	MapMarkerPath,
 	MapMarkerRadiusOutline,
 	MedicalBag,
 	MessageTextOutline,
+	MonitorAccount,
 	Package,
 	DatabaseExportOutline,
 	PackageVariantClosed,

@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: EUPL-1.2
 // Copyright (C) 2026 Conduction B.V.
 
-import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
 
 /**
  * A source as a select option: its uuid and its name.
@@ -20,15 +18,13 @@ export function sourceOption(source) {
 
 /**
  * What the endpoint editor's per-target-type fields (McpEndpointFields,
- * EndpointTargetsFields) share: the controls they draw, the form data and
+ * EndpointTargetsFields) share: the form data and
  * mutator EndpointFormFields hands them, and the sources they pick from,
  * loaded when the fields are created. A failed load leaves the list empty.
  *
  * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
  */
 export default {
-	components: { CnFieldHelper, NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField },
-
 	props: {
 		/** Reactive form data object owned by CnFormDialog. */
 		formData: { type: Object, default: () => ({}) },

@@ -88,12 +88,14 @@
 </template>
 
 <script>
+import { CnFieldHelper } from '@conduction/nextcloud-vue'
+import { NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
 import endpointSourceFields from '../../mixins/endpointSourceFields.js'
 import { sharesOf, targetRowsOf, targetsOf } from './endpointTargets.js'
 
 export default {
 	name: 'EndpointTargetsFields',
-
+	components: { CnFieldHelper, NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField },
 	mixins: [endpointSourceFields],
 
 	data() {
