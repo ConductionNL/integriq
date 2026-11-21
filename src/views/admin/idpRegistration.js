@@ -339,15 +339,7 @@ export function draftProblems(draft) {
 	if (draft.kind === 'saml-sp' && !/^https:\/\//.test(text(draft.idpMetadataUrl))) {
 		problems.push(t('integriq', 'Enter the identity provider metadata URL, starting with https://.'))
 	}
-	if (isAttributeProvider(draft.provider)) {
-		const lines = Array.isArray(draft.attributes) ? draft.attributes : []
-		if (attributeEntries(lines).length === 0) {
-			problems.push(t('integriq', 'Add at least one attribute a service may ask for.'))
-		}
-		if (lines.some((line) => !text(line.id) || !text(line.claim))) {
-			problems.push(t('integriq', 'Give every attribute an id and a claim name.'))
-		}
-	}
+	problems.push(...attributeProblems(draft))
 	if (draft.kind === 'oidc-rp') {
 		if (!/^https:\/\//.test(text(draft.issuer))) {
 			problems.push(t('integriq', 'Enter the issuer, starting with https://.'))
@@ -360,6 +352,28 @@ export function draftProblems(draft) {
 		if (!text(draft.credentials[role])) {
 			problems.push(t('integriq', 'Choose the {role}.', { role: roleLabel(role).toLowerCase() }))
 		}
+	}
+	return problems
+}
+
+/**
+ * What is wrong with an attribute provider's attribute list; empty for any other provider.
+ *
+ * @param {object} draft The draft.
+ * @return {string[]} The problems.
+ * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
+ */
+function attributeProblems(draft) {
+	if (!isAttributeProvider(draft.provider)) {
+		return []
+	}
+	const lines = Array.isArray(draft.attributes) ? draft.attributes : []
+	const problems = []
+	if (attributeEntries(lines).length === 0) {
+		problems.push(t('integriq', 'Add at least one attribute a service may ask for.'))
+	}
+	if (lines.some((line) => !text(line.id) || !text(line.claim))) {
+		problems.push(t('integriq', 'Give every attribute an id and a claim name.'))
 	}
 	return problems
 }
