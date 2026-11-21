@@ -138,6 +138,44 @@ final class WatchedFolder {
 	}//end isIntake()
 
 	/**
+	 * The app id that may accept a dropped file, for `target: intake`; '' when none is named.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+	 */
+	public function intakeApp(): string {
+		return $this->text(key: 'intakeApp', default: '');
+	}//end intakeApp()
+
+	/**
+	 * The id of the `nextcloud-folder` source.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+	 */
+	public function sourceId(): string {
+		return (string)($this->source['id'] ?? $this->source['uuid'] ?? $this->synchronization['sourceId'] ?? '');
+	}//end sourceId()
+
+	/**
+	 * The owner of the watched folder.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+	 */
+	public function ownerUid(): string {
+		$configuration = ($this->source['configuration'] ?? []);
+		if (is_array($configuration) === false) {
+			return '';
+		}
+
+		return trim((string)($configuration['ownerUid'] ?? ''));
+	}//end ownerUid()
+
+	/**
 	 * The mapping that turns a file into the target object, or '' for none.
 	 *
 	 * @return string

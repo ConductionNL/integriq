@@ -30,11 +30,15 @@ use OCA\Integriq\Service\WatchedFolder\WatchedFileIngestJob;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\NextcloudFolderFiles;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
+use OCA\Integriq\Event\WatchedFileArrivedEvent;
+use OCA\Integriq\Service\WatchedFolder\WatchedFileDelivery;
+use OCA\Integriq\Service\WatchedFolder\WatchedFileHandOver;
 use OCA\Integriq\Service\WatchedFolder\WatchedFileMarker;
 use OCA\Integriq\Service\WatchedFolder\WatchedFileWriter;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolder;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolders;
 use OCA\Integriq\Service\WatchedFolderService;
+use OCA\Integriq\Tests\Helpers\ServiceListenerDispatcher;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\File\FileTarget;
@@ -58,6 +62,9 @@ use RuntimeException;
  * @covers \OCA\Integriq\Service\WatchedFolderService
  * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileWriter
  * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileMarker
+ * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileDelivery
+ * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFileHandOver
+ * @uses   \OCA\Integriq\Event\WatchedFileArrivedEvent
  * @covers \OCA\Integriq\Service\WatchedFolder\WatchedFolder
  */
 final class WatchedFileIngestJobTest extends TestCase {
@@ -145,6 +152,35 @@ final class WatchedFileIngestJobTest extends TestCase {
 	 * @var integer
 	 */
 	private int $mtime = (self::NOW - 600);
+
+	/**
+	 * The dispatcher the hand-over announces on.
+	 *
+	 * @var ServiceListenerDispatcher
+	 */
+	private ServiceListenerDispatcher $dispatcher;
+
+	/**
+	 * The hand-over events dispatched.
+	 *
+	 * @var list<WatchedFileArrivedEvent>
+	 */
+	private array $announced = [];
+
+	/**
+	 * A dispatcher with no listeners yet.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->dispatcher = new ServiceListenerDispatcher(services: []);
+		$this->dispatcher->addListener(
+			eventName: WatchedFileArrivedEvent::class,
+			listener: function (WatchedFileArrivedEvent $event): void {
+				$this->announced[] = $event;
+			}
+		);
+	}//end setUp()
 
 	/**
 	 * A file already in the contract ends the job: nothing is read, saved or moved.
@@ -243,16 +279,95 @@ final class WatchedFileIngestJobTest extends TestCase {
 	}//end testAnUnresolvedTargetWritesNothing()
 
 	/**
-	 * A synchronization with `target: intake` leaves the file alone until the hand-over exists: nothing is written.
+	 * REQ-SFTP-005: the named intake accepts; the contract records its reference and the file is marked.
 	 *
 	 * @return void
 	 */
-	public function testAnIntakeTargetIsNeverWrittenThroughTheMapping(): void {
+	public function testAnAcceptedHandOverMarksTheFile(): void {
+		$this->sourceConfig += ['target' => 'intake', 'intakeApp' => 'filinq'];
+		$this->listen(appId: 'filinq', reference: 'batch-77', expect: true);
+
+		$this->assertSame(expected: 'handed-over', actual: $this->service()->ingest(synchronizationId: 'sync-1', fileId: 42, now: self::NOW));
+
+		$this->assertSame(expected: ['accepted' => true, 'intakeApp' => 'filinq', 'reference' => 'batch-77'], actual: $this->announced[0]->getResult());
+		$this->assertSame(expected: 'batch-77', actual: $this->made[0]['targetId']);
+		$this->assertSame(expected: ['/alice/files/Inbox/processed/besluit.pdf'], actual: $this->moves);
+		$this->assertSame(expected: [], actual: $this->saved, message: 'an intake target writes nothing through the mapping');
+	}//end testAnAcceptedHandOverMarksTheFile()
+
+	/**
+	 * A hand-over nobody accepts leaves the file in place, unmarked, with no contract, and counts as unclaimed.
+	 *
+	 * @return void
+	 */
+	public function testAnUnclaimedHandOverLeavesTheFile(): void {
+		$this->sourceConfig += ['target' => 'intake', 'intakeApp' => 'filinq', 'after' => 'tag'];
+
+		$this->assertSame(expected: 'unclaimed', actual: $this->service()->ingest(synchronizationId: 'sync-1', fileId: 42, now: self::NOW));
+
+		$this->assertFalse(condition: $this->announced[0]->getResult()['accepted']);
+		$this->assertSame(expected: [[], [], [], []], actual: [$this->saved, $this->made, $this->moves, $this->tagged]);
+	}//end testAnUnclaimedHandOverLeavesTheFile()
+
+	/**
+	 * Another app accepting is refused, and the file is left as unclaimed.
+	 *
+	 * @return void
+	 */
+	public function testAnAcceptanceByAnotherAppLeavesTheFile(): void {
+		$this->sourceConfig += ['target' => 'intake', 'intakeApp' => 'filinq'];
+		$this->listen(appId: 'dossiq', reference: 'case-12', expect: false);
+
+		$this->assertSame(expected: 'unclaimed', actual: $this->service()->ingest(synchronizationId: 'sync-1', fileId: 42, now: self::NOW));
+		$this->assertSame(expected: [[], []], actual: [$this->made, $this->moves]);
+	}//end testAnAcceptanceByAnotherAppLeavesTheFile()
+
+	/**
+	 * The event carries the synchronization, source, intake app, file id, path and owner the job found.
+	 *
+	 * @return void
+	 */
+	public function testTheEventCarriesTheFileItFound(): void {
+		$this->sourceConfig += ['target' => 'intake', 'intakeApp' => 'filinq'];
+
+		$this->service()->ingest(synchronizationId: 'sync-1', fileId: 42, now: self::NOW);
+
+		$event = $this->announced[0];
+		$this->assertSame(
+			expected: ['sync-1', 'source-1', 'filinq', 42, 'Inbox/besluit.pdf', 'alice'],
+			actual: [$event->getSynchronizationId(), $event->getSourceId(), $event->getIntakeApp(), $event->getFileId(), $event->getPath(), $event->getOwnerUid()]
+		);
+	}//end testTheEventCarriesTheFileItFound()
+
+	/**
+	 * An intake synchronization that names no app announces nothing, so nobody can accept with an empty id.
+	 *
+	 * @return void
+	 */
+	public function testAnIntakeWithoutAnAppAnnouncesNothing(): void {
 		$this->sourceConfig['target'] = 'intake';
 
-		$this->assertSame(expected: 'intake', actual: $this->service()->ingest(synchronizationId: 'sync-1', fileId: 42, now: self::NOW));
-		$this->assertSame(expected: [[], [], [], []], actual: [$this->saved, $this->made, $this->moves, $this->tagged]);
-	}//end testAnIntakeTargetIsNeverWrittenThroughTheMapping()
+		$this->assertSame(expected: 'unclaimed', actual: $this->service()->ingest(synchronizationId: 'sync-1', fileId: 42, now: self::NOW));
+		$this->assertSame(expected: [], actual: $this->announced);
+	}//end testAnIntakeWithoutAnAppAnnouncesNothing()
+
+	/**
+	 * An intake app's listener that accepts with an app id and a reference.
+	 *
+	 * @param string $appId     The id it accepts as.
+	 * @param string $reference Its reference.
+	 * @param bool   $expect    What accept() should answer.
+	 *
+	 * @return void
+	 */
+	private function listen(string $appId, string $reference, bool $expect): void {
+		$this->dispatcher->addListener(
+			eventName: WatchedFileArrivedEvent::class,
+			listener: function (WatchedFileArrivedEvent $event) use ($appId, $reference, $expect): void {
+				$this->assertSame(expected: $expect, actual: $event->accept(appId: $appId, reference: $reference));
+			}
+		);
+	}//end listen()
 
 	/**
 	 * The job runs the ingest for its argument, and drops an argument without a file and a synchronization.
@@ -303,7 +418,10 @@ final class WatchedFileIngestJobTest extends TestCase {
 		return new WatchedFolderService(
 			folders: $folders,
 			contracts: $this->contracts(),
-			writer: new WatchedFileWriter(mappings: $this->mappings(), objects: $this->objects(), files: $this->fileService(), logger: $logger),
+			delivery: new WatchedFileDelivery(
+				writer: new WatchedFileWriter(mappings: $this->mappings(), objects: $this->objects(), files: $this->fileService(), logger: $logger),
+				handOver: new WatchedFileHandOver(dispatcher: $this->dispatcher)
+			),
 			marker: new WatchedFileMarker(files: $files, tags: $this->tags(), tagMapper: $this->tagMapper(), logger: $logger)
 		);
 	}//end service()
