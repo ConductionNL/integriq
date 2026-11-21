@@ -40,17 +40,22 @@ final class DeveloperPortalAccessTest extends TestCase {
 	 */
 	public function testADeveloperOwnsOnlyTheApplicationsTheyMadeInThePortal(): void {
 		$access = new DeveloperPortalAccess(
-			appConfig: $this->createMock(IAppConfig::class),
-			groupManager: $this->createMock(IGroupManager::class)
+			appConfig: $this->createMock(originalClassName: IAppConfig::class),
+			groupManager: $this->createMock(originalClassName: IGroupManager::class)
 		);
-		$developer = $this->createMock(IUser::class);
+		$developer = $this->createMock(originalClassName: IUser::class);
 		$developer->method('getUID')->willReturn('developer-a');
 
-		$this->assertTrue($access->owns(user: $developer, consumer: self::consumer(['ownerKind' => 'developer', 'userId' => 'developer-a'])));
-		$this->assertFalse($access->owns(user: $developer, consumer: self::consumer(['ownerKind' => 'developer', 'userId' => 'developer-b'])));
-		$this->assertFalse($access->owns(user: $developer, consumer: self::consumer(['userId' => 'developer-a'])), 'a consumer an administrator made');
-		$this->assertFalse($access->owns(user: $developer, consumer: self::consumer(['ownerKind' => 'admin', 'userId' => 'developer-a'])));
-		$this->assertFalse($access->owns(user: $developer, consumer: null));
+		$mine     = self::consumer(data: ['ownerKind' => 'developer', 'userId' => 'developer-a']);
+		$theirs   = self::consumer(data: ['ownerKind' => 'developer', 'userId' => 'developer-b']);
+		$adminOne = self::consumer(data: ['userId' => 'developer-a']);
+		$adminTwo = self::consumer(data: ['ownerKind' => 'admin', 'userId' => 'developer-a']);
+
+		$this->assertTrue(condition: $access->owns(user: $developer, consumer: $mine));
+		$this->assertFalse(condition: $access->owns(user: $developer, consumer: $theirs));
+		$this->assertFalse(condition: $access->owns(user: $developer, consumer: $adminOne), message: 'a consumer an administrator made');
+		$this->assertFalse(condition: $access->owns(user: $developer, consumer: $adminTwo));
+		$this->assertFalse(condition: $access->owns(user: $developer, consumer: null));
 	}//end testADeveloperOwnsOnlyTheApplicationsTheyMadeInThePortal()
 
 	/**

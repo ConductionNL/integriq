@@ -31,17 +31,14 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
-use OCA\Integriq\Service\Consumer\ConsumerCredentialList;
 use OCA\Integriq\Service\Consumer\ConsumerCredentials;
-use OCA\Integriq\Service\DeveloperPortalAccess;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Integriq\Service\DeveloperApplications;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
-use OCP\IUserSession;
 
 /**
  * The keys of a developer's own application.
@@ -60,20 +57,16 @@ class PortalKeysController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest               $request     The request.
-	 * @param DeveloperPortalAccess  $access      Who a developer is and what they own.
-	 * @param IUserSession           $userSession The session.
-	 * @param ConsumerCredentialList $consumers   Reads and writes an application's credentials list.
-	 * @param ConsumerCredentials    $credentials The credentials list rules.
-	 * @param IL10N                  $l           Translates the refusals.
+	 * @param IRequest              $request      The request.
+	 * @param DeveloperApplications $applications The signed-in developer's own applications.
+	 * @param ConsumerCredentials   $credentials  The credentials list rules.
+	 * @param IL10N                 $l            Translates the refusals.
 	 *
 	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly DeveloperPortalAccess $access,
-		private readonly IUserSession $userSession,
-		private readonly ConsumerCredentialList $consumers,
+		private readonly DeveloperApplications $applications,
 		private readonly ConsumerCredentials $credentials,
 		private readonly IL10N $l,
 	) {
@@ -85,18 +78,18 @@ class PortalKeysController extends Controller {
 	 *
 	 * @param string $consumerId The application's id.
 	 *
-	 * @return JSONResponse `{results: list}`, or 401, 403 or 404.
+	 * @return JSONResponse `{results: list}`, or 401, 403, 404 or 503.
 	 *
 	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	#[NoAdminRequired]
 	public function index(string $consumerId): JSONResponse {
-		$application = $this->ownedApplication(consumerId: $consumerId);
-		if ($application instanceof JSONResponse) {
-			return $application;
+		$application = $this->applications->owned(consumerId: $consumerId);
+		if (is_int($application) === true) {
+			return $this->refusal(status: $application);
 		}
 
-		$entries = $this->consumers->entries(data: $application->getObject());
+		$entries = $this->applications->credentials(application: $application);
 
 		return new JSONResponse(['results' => $this->credentials->listed(entries: $entries)]);
 	}//end index()
@@ -106,15 +99,15 @@ class PortalKeysController extends Controller {
 	 *
 	 * @param string $consumerId The application's id.
 	 *
-	 * @return JSONResponse 201 with `{key, credential}`, or 400, 401, 403, 404 or 500.
+	 * @return JSONResponse 201 with `{key, credential}`, or 400, 401, 403, 404, 500 or 503.
 	 *
 	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	#[NoAdminRequired]
 	public function create(string $consumerId): JSONResponse {
-		$application = $this->ownedApplication(consumerId: $consumerId);
-		if ($application instanceof JSONResponse) {
-			return $application;
+		$application = $this->applications->owned(consumerId: $consumerId);
+		if (is_int($application) === true) {
+			return $this->refusal(status: $application);
 		}
 
 		$label = trim((string)$this->request->getParam('label', ''));
@@ -124,8 +117,8 @@ class PortalKeysController extends Controller {
 		}
 
 		$generated = $this->credentials->generate(label: $label);
-		if ($this->consumers->add(consumer: $application, entry: $generated['credential']) === false) {
-			return $this->notSaved();
+		if ($this->applications->addCredential(application: $application, entry: $generated['credential']) === false) {
+			return $this->refusal(status: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
 		$shown = $this->credentials->shown(credential: $generated['credential']);
@@ -136,89 +129,52 @@ class PortalKeysController extends Controller {
 	/**
 	 * Revoke one API key of the application, leaving its other credentials as they are.
 	 *
-	 * Only an API key: a client certificate is pinned by an administrator, so
-	 * the portal does not remove one.
-	 *
 	 * @param string $consumerId   The application's id.
 	 * @param string $credentialId The key's id.
 	 *
-	 * @return JSONResponse `{revoked}`, or 401, 403, 404 or 500.
+	 * @return JSONResponse `{revoked}`, or 401, 403, 404, 500 or 503.
 	 *
 	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	#[NoAdminRequired]
 	public function destroy(string $consumerId, string $credentialId): JSONResponse {
-		$application = $this->ownedApplication(consumerId: $consumerId);
-		if ($application instanceof JSONResponse) {
-			return $application;
+		$application = $this->applications->owned(consumerId: $consumerId);
+		if (is_int($application) === true) {
+			return $this->refusal(status: $application);
 		}
 
-		if ($this->isApiKey(application: $application, credentialId: $credentialId) === false) {
+		$revoked = $this->applications->revokeKey(
+			application: $application,
+			credentialId: $credentialId,
+			apiKeyType: ConsumerCredentials::TYPE_API_KEY
+		);
+		if ($revoked === null) {
 			return new JSONResponse(['error' => $this->l->t('Not Found')], Http::STATUS_NOT_FOUND);
 		}
 
-		if ($this->consumers->remove(consumer: $application, credentialId: $credentialId) !== true) {
-			return $this->notSaved();
+		if ($revoked === false) {
+			return $this->refusal(status: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
 		return new JSONResponse(['revoked' => $credentialId]);
 	}//end destroy()
 
 	/**
-	 * The application when the signed-in account is a developer who owns it,
-	 * else the refusal to answer with: 401 signed out, 403 outside the
-	 * developer group, 404 for an application that is not theirs or not there.
+	 * The refusal for a status, worded.
 	 *
-	 * @param string $consumerId The application's id.
+	 * @param int $status The HTTP status.
 	 *
-	 * @return ObjectEntity|JSONResponse The application, or the refusal.
-	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
+	 * @return JSONResponse The refusal.
 	 */
-	private function ownedApplication(string $consumerId): ObjectEntity|JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
+	private function refusal(int $status): JSONResponse {
+		$message = match ($status) {
+			Http::STATUS_UNAUTHORIZED => $this->l->t('Not authenticated'),
+			Http::STATUS_FORBIDDEN => $this->l->t('The developer portal is open to members of the developer group only.'),
+			Http::STATUS_NOT_FOUND => $this->l->t('No such application'),
+			Http::STATUS_SERVICE_UNAVAILABLE => $this->l->t('The application could not be read. Try again later.'),
+			default => $this->l->t('The consumer could not be saved. Nothing changed.'),
+		};
 
-		if ($this->access->isDeveloper(user: $user) === false) {
-			$refusal = $this->l->t('The developer portal is open to members of the developer group only.');
-			return new JSONResponse(['error' => $refusal], Http::STATUS_FORBIDDEN);
-		}
-
-		$application = $this->consumers->find(id: $consumerId);
-		if ($this->access->owns(user: $user, consumer: $application) === false) {
-			return new JSONResponse(['error' => $this->l->t('No such application')], Http::STATUS_NOT_FOUND);
-		}
-
-		return $application;
-	}//end ownedApplication()
-
-	/**
-	 * Whether the application holds an API key with this id.
-	 *
-	 * @param ObjectEntity $application  The application.
-	 * @param string       $credentialId The credential's id.
-	 *
-	 * @return bool True for an API key of this application.
-	 */
-	private function isApiKey(ObjectEntity $application, string $credentialId): bool {
-		foreach ($this->consumers->entries(data: $application->getObject()) as $entry) {
-			if (($entry['id'] ?? null) === $credentialId) {
-				return ($entry['type'] ?? null) === ConsumerCredentials::TYPE_API_KEY;
-			}
-		}
-
-		return false;
-	}//end isApiKey()
-
-	/**
-	 * The 500 answered when the application could not be saved.
-	 *
-	 * @return JSONResponse
-	 */
-	private function notSaved(): JSONResponse {
-		$message = $this->l->t('The consumer could not be saved. Nothing changed.');
-		return new JSONResponse(['error' => $message], Http::STATUS_INTERNAL_SERVER_ERROR);
-	}//end notSaved()
+		return new JSONResponse(['error' => $message], $status);
+	}//end refusal()
 }//end class

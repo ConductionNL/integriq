@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Unit tests for PortalKeysController: a developer generates, lists and
- * revokes the keys of an application they own; another developer's
- * application, or an account outside the developer group, is refused and
- * nothing is read or written.
+ * Unit tests for PortalKeysController and DeveloperApplications: a developer
+ * generates, lists and revokes the keys of an application they own; another
+ * developer's application, or an account outside the developer group, is
+ * refused and nothing is read or written.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Controller
@@ -27,6 +27,7 @@ use DateTimeImmutable;
 use OCA\Integriq\Controller\PortalKeysController;
 use OCA\Integriq\Service\Consumer\ConsumerCredentialList;
 use OCA\Integriq\Service\Consumer\ConsumerCredentials;
+use OCA\Integriq\Service\DeveloperApplications;
 use OCA\Integriq\Service\DeveloperPortalAccess;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
@@ -46,6 +47,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\Integriq\Controller\PortalKeysController
+ * @covers \OCA\Integriq\Service\DeveloperApplications
  * @covers \OCA\Integriq\Service\DeveloperPortalAccess
  * @uses   \OCA\Integriq\Service\Consumer\ConsumerCredentialList
  * @uses   \OCA\Integriq\Service\Consumer\ConsumerCredentials
@@ -75,6 +77,13 @@ final class PortalKeysControllerTest extends TestCase {
 	private bool $saveFails = false;
 
 	/**
+	 * Whether reading a consumer fails.
+	 *
+	 * @var boolean
+	 */
+	private bool $readFails = false;
+
+	/**
 	 * How many times a consumer was saved.
 	 *
 	 * @var integer
@@ -94,17 +103,15 @@ final class PortalKeysControllerTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$appConfig = $this->createMock(IAppConfig::class);
-		$appConfig->method('getValueString')->willReturnCallback(static fn (string $app, string $key, string $default=''): string => $default);
 		$counter = 0;
-		$random = $this->createMock(ISecureRandom::class);
+		$random  = $this->createMock(originalClassName: ISecureRandom::class);
 		$random->method('generate')->willReturnCallback(
 			static function (int $length) use (&$counter): string {
 				$counter++;
 				return substr(str_repeat('K'.$counter.'abcdefgh', 10), 0, $length);
 			}
 		);
-		$this->credentials = new ConsumerCredentials($appConfig, $random);
+		$this->credentials = new ConsumerCredentials(appConfig: $this->defaultConfig(), random: $random);
 
 		$this->stored = [
 			'app-a' => [
@@ -112,7 +119,7 @@ final class PortalKeysControllerTest extends TestCase {
 				'ownerKind' => 'developer',
 				'userId'    => 'developer-a',
 				ConsumerCredentials::FIELD => [
-					['id' => 'key-old', 'label' => 'old', 'type' => 'apiKey', 'keyPrefix' => 'oldkey', 'keyHash' => 'h-old', 'expiresAt' => null, 'lastUsedAt' => null],
+					['id' => 'key-old', 'label' => 'old', 'type' => 'apiKey', 'keyPrefix' => 'oldkey', 'keyHash' => 'h-old', 'lastUsedAt' => null],
 					['id' => 'cert-1', 'label' => 'pinned', 'type' => 'clientCertificate', 'fingerprint' => 'ab'],
 				],
 			],
@@ -140,39 +147,39 @@ final class PortalKeysControllerTest extends TestCase {
 	public function testAGeneratedKeyIsShownOnceAndListedWithoutItsHash(): void {
 		$this->params = ['label' => '  Production  '];
 
-		$created = $this->controller()->create('app-a');
+		$created = $this->controller()->create(consumerId: 'app-a');
 
-		$this->assertSame(Http::STATUS_CREATED, $created->getStatus());
+		$this->assertSame(expected: Http::STATUS_CREATED, actual: $created->getStatus());
 		$key = $created->getData()['key'];
-		$this->assertNotSame('', $key);
-		$this->assertSame('Production', $created->getData()['credential']['label']);
-		$this->assertArrayNotHasKey('keyHash', $created->getData()['credential']);
+		$this->assertNotSame(expected: '', actual: $key);
+		$this->assertSame(expected: 'Production', actual: $created->getData()['credential']['label']);
+		$this->assertArrayNotHasKey(key: 'keyHash', array: $created->getData()['credential']);
 
 		$stored = end($this->stored['app-a'][ConsumerCredentials::FIELD]);
-		$this->assertSame($this->credentials->hashKey(key: $key), $stored['keyHash']);
+		$this->assertSame(expected: $this->credentials->hashKey(key: $key), actual: $stored['keyHash']);
 
-		$listed = $this->controller()->index('app-a')->getData()['results'];
-		$this->assertSame(['key-old', 'cert-1', $stored['id']], array_column($listed, 'id'));
-		$this->assertStringNotContainsString($key, (string)json_encode($listed));
-		$this->assertStringNotContainsString('h-old', (string)json_encode($listed));
+		$listed = $this->controller()->index(consumerId: 'app-a')->getData()['results'];
+		$this->assertSame(expected: ['key-old', 'cert-1', $stored['id']], actual: array_column($listed, 'id'));
+		$this->assertStringNotContainsString(needle: $key, haystack: (string)json_encode($listed));
+		$this->assertStringNotContainsString(needle: 'h-old', haystack: (string)json_encode($listed));
 	}//end testAGeneratedKeyIsShownOnceAndListedWithoutItsHash()
 
 	/**
-	 * REQ-DEVP-003: a developer replaces a leaked key; the new key passes and the revoked one no longer matches.
+	 * REQ-DEVP-003: a developer replaces a leaked key; the new key matches and the revoked one is gone.
 	 *
 	 * @return void
 	 */
-	public function testARevokedKeyNoLongerMatchesAndTheNewOneDoes(): void {
+	public function testARevokedKeyIsGoneAndTheNewOneMatches(): void {
 		$this->params = ['label' => 'new'];
-		$key = $this->controller()->create('app-a')->getData()['key'];
+		$key = $this->controller()->create(consumerId: 'app-a')->getData()['key'];
 
-		$revoked = $this->controller()->destroy('app-a', 'key-old');
+		$revoked = $this->controller()->destroy(consumerId: 'app-a', credentialId: 'key-old');
 
-		$this->assertSame(['revoked' => 'key-old'], $revoked->getData());
+		$this->assertSame(expected: ['revoked' => 'key-old'], actual: $revoked->getData());
 		$list = $this->stored['app-a'][ConsumerCredentials::FIELD];
-		$this->assertNotContains('key-old', array_column($list, 'id'));
-		$this->assertNotNull($this->credentials->matchingApiKey(credentials: $list, key: $key, now: new DateTimeImmutable()));
-	}//end testARevokedKeyNoLongerMatchesAndTheNewOneDoes()
+		$this->assertNotContains(needle: 'key-old', haystack: array_column($list, 'id'));
+		$this->assertNotNull(actual: $this->credentials->matchingApiKey(credentials: $list, key: $key, now: new DateTimeImmutable()));
+	}//end testARevokedKeyIsGoneAndTheNewOneMatches()
 
 	/**
 	 * The portal revokes API keys only: a pinned client certificate is the administrator's.
@@ -180,12 +187,13 @@ final class PortalKeysControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPinnedCertificateIsNotRevokedFromThePortal(): void {
-		$response = $this->controller()->destroy('app-a', 'cert-1');
+		$response = $this->controller()->destroy(consumerId: 'app-a', credentialId: 'cert-1');
 
-		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-		$this->assertSame(0, $this->saves);
-		$this->assertContains('cert-1', array_column($this->stored['app-a'][ConsumerCredentials::FIELD], 'id'));
-		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller()->destroy('app-a', 'no-such-key')->getStatus());
+		$this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $response->getStatus());
+		$this->assertSame(expected: 0, actual: $this->saves);
+		$this->assertContains(needle: 'cert-1', haystack: array_column($this->stored['app-a'][ConsumerCredentials::FIELD], 'id'));
+		$unknown = $this->controller()->destroy(consumerId: 'app-a', credentialId: 'no-such-key');
+		$this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $unknown->getStatus());
 	}//end testAPinnedCertificateIsNotRevokedFromThePortal()
 
 	/**
@@ -197,14 +205,15 @@ final class PortalKeysControllerTest extends TestCase {
 	public function testAnApplicationTheDeveloperDoesNotOwnIsNotFound(): void {
 		$this->params = ['label' => 'mine now'];
 		foreach (['app-b', 'admin-made', 'missing'] as $id) {
-			$controller = $this->controller();
-			$this->assertSame(Http::STATUS_NOT_FOUND, $controller->index($id)->getStatus(), $id);
-			$this->assertSame(Http::STATUS_NOT_FOUND, $controller->create($id)->getStatus(), $id);
-			$this->assertSame(Http::STATUS_NOT_FOUND, $controller->destroy($id, 'key-b')->getStatus(), $id);
+			$this->assertSame(
+				expected: [Http::STATUS_NOT_FOUND, Http::STATUS_NOT_FOUND, Http::STATUS_NOT_FOUND],
+				actual: $this->statuses(controller: $this->controller(), consumerId: $id),
+				message: $id
+			);
 		}
 
-		$this->assertSame(0, $this->saves);
-		$this->assertSame(['key-b'], array_column($this->stored['app-b'][ConsumerCredentials::FIELD], 'id'));
+		$this->assertSame(expected: 0, actual: $this->saves);
+		$this->assertSame(expected: ['key-b'], actual: array_column($this->stored['app-b'][ConsumerCredentials::FIELD], 'id'));
 	}//end testAnApplicationTheDeveloperDoesNotOwnIsNotFound()
 
 	/**
@@ -213,17 +222,31 @@ final class PortalKeysControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testOnlyASignedInDeveloperReachesTheKeys(): void {
-		$signedOut = $this->controller(uid: null);
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $signedOut->index('app-a')->getStatus());
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $signedOut->create('app-a')->getStatus());
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $signedOut->destroy('app-a', 'key-old')->getStatus());
+		$this->readFails = true;
+		$this->params    = ['label' => 'x'];
 
-		$outsider = $this->controller(isDeveloper: false);
-		$this->assertSame(Http::STATUS_FORBIDDEN, $outsider->index('app-a')->getStatus());
-		$this->assertSame(Http::STATUS_FORBIDDEN, $outsider->create('app-a')->getStatus());
-		$this->assertSame(Http::STATUS_FORBIDDEN, $outsider->destroy('app-a', 'key-old')->getStatus());
-		$this->assertSame(0, $this->saves);
+		$signedOut = $this->statuses(controller: $this->controller(uid: null), consumerId: 'app-a');
+		$this->assertSame(expected: array_fill(0, 3, Http::STATUS_UNAUTHORIZED), actual: $signedOut);
+
+		$outsider = $this->statuses(controller: $this->controller(isDeveloper: false), consumerId: 'app-a');
+		$this->assertSame(expected: array_fill(0, 3, Http::STATUS_FORBIDDEN), actual: $outsider);
+		$this->assertSame(expected: 0, actual: $this->saves);
 	}//end testOnlyASignedInDeveloperReachesTheKeys()
+
+	/**
+	 * An application that cannot be read answers 503, not 404: an outage does not read as a missing application.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableApplicationIsAnOutage(): void {
+		$this->readFails = true;
+		$this->params    = ['label' => 'x'];
+
+		$statuses = $this->statuses(controller: $this->controller(), consumerId: 'app-a');
+
+		$this->assertSame(expected: array_fill(0, 3, Http::STATUS_SERVICE_UNAVAILABLE), actual: $statuses);
+		$this->assertSame(expected: 0, actual: $this->saves);
+	}//end testAnUnreadableApplicationIsAnOutage()
 
 	/**
 	 * An empty or too long label is a 400, and a failed save a 500; neither changes the list.
@@ -233,15 +256,33 @@ final class PortalKeysControllerTest extends TestCase {
 	public function testABadLabelOrAFailedSaveChangesNothing(): void {
 		foreach (['', '   ', str_repeat('x', 101)] as $label) {
 			$this->params = ['label' => $label];
-			$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller()->create('app-a')->getStatus());
+			$this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $this->controller()->create(consumerId: 'app-a')->getStatus());
 		}
 
-		$this->params = ['label' => 'ok'];
+		$this->params    = ['label' => 'ok'];
 		$this->saveFails = true;
-		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $this->controller()->create('app-a')->getStatus());
-		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $this->controller()->destroy('app-a', 'key-old')->getStatus());
-		$this->assertCount(2, $this->stored['app-a'][ConsumerCredentials::FIELD]);
+		$failedCreate    = $this->controller()->create(consumerId: 'app-a');
+		$failedRevoke    = $this->controller()->destroy(consumerId: 'app-a', credentialId: 'key-old');
+		$this->assertSame(expected: Http::STATUS_INTERNAL_SERVER_ERROR, actual: $failedCreate->getStatus());
+		$this->assertSame(expected: Http::STATUS_INTERNAL_SERVER_ERROR, actual: $failedRevoke->getStatus());
+		$this->assertCount(expectedCount: 2, haystack: $this->stored['app-a'][ConsumerCredentials::FIELD]);
 	}//end testABadLabelOrAFailedSaveChangesNothing()
+
+	/**
+	 * The statuses of list, generate and revoke on one application.
+	 *
+	 * @param PortalKeysController $controller The controller.
+	 * @param string               $consumerId The application.
+	 *
+	 * @return list<int> The three statuses.
+	 */
+	private function statuses(PortalKeysController $controller, string $consumerId): array {
+		return [
+			$controller->index(consumerId: $consumerId)->getStatus(),
+			$controller->create(consumerId: $consumerId)->getStatus(),
+			$controller->destroy(consumerId: $consumerId, credentialId: 'key-b')->getStatus(),
+		];
+	}//end statuses()
 
 	/**
 	 * The controller for an account.
@@ -252,37 +293,48 @@ final class PortalKeysControllerTest extends TestCase {
 	 * @return PortalKeysController The controller.
 	 */
 	private function controller(?string $uid='developer-a', bool $isDeveloper=true): PortalKeysController {
-		$request = $this->createMock(IRequest::class);
+		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getParam')->willReturnCallback(fn (string $key, mixed $default=null): mixed => ($this->params[$key] ?? $default));
 
 		$user = null;
 		if ($uid !== null) {
-			$user = $this->createMock(IUser::class);
+			$user = $this->createMock(originalClassName: IUser::class);
 			$user->method('getUID')->willReturn($uid);
 		}
 
-		$session = $this->createMock(IUserSession::class);
+		$session = $this->createMock(originalClassName: IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		$appConfig = $this->createMock(IAppConfig::class);
-		$appConfig->method('getValueString')->willReturnCallback(static fn (string $app, string $key, string $default=''): string => $default);
-		$groups = $this->createMock(IGroupManager::class);
+		$groups = $this->createMock(originalClassName: IGroupManager::class);
 		$groups->method('isInGroup')->willReturnCallback(
 			static fn (string $member, string $group): bool => $isDeveloper === true && $group === 'integriq-developers'
 		);
 
-		$l = $this->createMock(IL10N::class);
-		$l->method('t')->willReturnCallback(static fn (string $text, array $parameters=[]): string => vsprintf(str_replace('%1$s', '%s', $text), $parameters));
-
-		return new PortalKeysController(
-			request: $request,
-			access: new DeveloperPortalAccess(appConfig: $appConfig, groupManager: $groups),
-			userSession: $session,
-			consumers: new ConsumerCredentialList($this->objects()),
-			credentials: $this->credentials,
-			l: $l
+		$l = $this->createMock(originalClassName: IL10N::class);
+		$l->method('t')->willReturnCallback(
+			static fn (string $text, array $parameters=[]): string => vsprintf(str_replace('%1$s', '%s', $text), $parameters)
 		);
+
+		$applications = new DeveloperApplications(
+			userSession: $session,
+			access: new DeveloperPortalAccess(appConfig: $this->defaultConfig(), groupManager: $groups),
+			consumers: new ConsumerCredentialList(objectService: $this->objects())
+		);
+
+		return new PortalKeysController(request: $request, applications: $applications, credentials: $this->credentials, l: $l);
 	}//end controller()
+
+	/**
+	 * An app config that answers every key with its default.
+	 *
+	 * @return IAppConfig The config.
+	 */
+	private function defaultConfig(): IAppConfig {
+		$config = $this->createMock(originalClassName: IAppConfig::class);
+		$config->method('getValueString')->willReturnCallback(static fn (string $app, string $key, string $default=''): string => $default);
+
+		return $config;
+	}//end defaultConfig()
 
 	/**
 	 * An object service over the stored consumers.
@@ -290,10 +342,14 @@ final class PortalKeysControllerTest extends TestCase {
 	 * @return ObjectService The service.
 	 */
 	private function objects(): ObjectService {
-		$objects = $this->createMock(ObjectService::class);
+		$objects = $this->createMock(originalClassName: ObjectService::class);
 		$objects->method('find')->willReturnCallback(
 			function ($id, ?ObjectFindOptions $options=null): ObjectEntity {
-				$this->assertSame(['integriq', 'consumer'], [$options?->register, $options?->schema]);
+				$this->assertSame(expected: ['integriq', 'consumer'], actual: [$options?->register, $options?->schema]);
+				if ($this->readFails === true) {
+					throw new RuntimeException('down');
+				}
+
 				if (isset($this->stored[$id]) === false) {
 					throw new DoesNotExistException('no');
 				}

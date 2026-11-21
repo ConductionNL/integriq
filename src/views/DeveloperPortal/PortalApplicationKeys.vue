@@ -74,14 +74,10 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcTextField } from '@nextcloud/vue'
-
-/** The credential type of an API key (ConsumerCredentials::TYPE_API_KEY). */
-const API_KEY = 'apiKey'
+import { API_KEY, generateKey, listKeys, revokeKey } from './portalKeys.js'
 
 export default {
 	name: 'PortalApplicationKeys',
@@ -115,16 +111,6 @@ export default {
 		apiKeys() {
 			return this.credentials.filter((credential) => credential?.type === API_KEY)
 		},
-
-		/**
-		 * The application's key routes.
-		 *
-		 * @return {string} the URL
-		 * @spec exclude URL composition, presentation only
-		 */
-		keysUrl() {
-			return generateUrl('/apps/integriq/api/portal/applications/{id}/keys', { id: this.applicationId })
-		},
 	},
 
 	/**
@@ -149,8 +135,7 @@ export default {
 		async load() {
 			this.loading = true
 			try {
-				const response = await axios.get(this.keysUrl)
-				this.credentials = Array.isArray(response?.data?.results) ? response.data.results : []
+				this.credentials = await listKeys(this.applicationId)
 				this.loadError = ''
 			} catch (e) {
 				this.credentials = []
@@ -171,10 +156,10 @@ export default {
 			if (!label || this.busy) return
 			this.busy = true
 			try {
-				const response = await axios.post(this.keysUrl, { label })
-				this.newKey = String(response?.data?.key ?? '')
-				if (response?.data?.credential) {
-					this.credentials = [...this.credentials, response.data.credential]
+				const generated = await generateKey(this.applicationId, label)
+				this.newKey = generated.key
+				if (generated.credential) {
+					this.credentials = [...this.credentials, generated.credential]
 				}
 				this.label = ''
 			} catch (e) {
@@ -195,7 +180,7 @@ export default {
 			if (this.busy) return
 			this.busy = true
 			try {
-				await axios.delete(this.keysUrl + '/' + encodeURIComponent(key.id))
+				await revokeKey(this.applicationId, key.id)
 				this.credentials = this.credentials.filter((credential) => credential.id !== key.id)
 				showSuccess(t('integriq', 'Key {label} is revoked.', { label: key.label }))
 			} catch (e) {
