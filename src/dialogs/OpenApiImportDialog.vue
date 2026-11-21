@@ -3,7 +3,9 @@
 
 <!--
   OpenApiImportDialog: "Import an OpenAPI description" on the Sources page.
-  Mounted once in ModalHost.
+  Mounted once in ModalHost. The API inventory's "Bring behind integriq" row
+  action opens it with that API's stored description and a prefix, and the
+  preview runs at once.
 
   An administrator gives a vendor's OpenAPI or Swagger document, by URL or by
   pasting it, and a gateway prefix. The preview lists every operation and
@@ -163,6 +165,18 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
+		/** A description to start from, as text: an inventory row's stored export. */
+		initialDocument: {
+			type: String,
+			default: '',
+		},
+
+		/** The gateway prefix to start from. */
+		initialPrefix: {
+			type: String,
+			default: '',
+		},
 	},
 
 	emits: ['close'],
@@ -229,14 +243,20 @@ export default {
 
 	watch: {
 		/**
-		 * Start empty each time the dialog opens.
+		 * Start empty each time the dialog opens, or from the description it
+		 * was opened with; a given description is previewed at once.
 		 *
 		 * @param {boolean} isOpen Whether the dialog is open.
-		 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+		 * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-a-discovered-api-can-be-brought-behind-integriq-req-fedg-003
 		 */
 		open(isOpen) {
 			if (isOpen) {
 				Object.assign(this.$data, this.$options.data.call(this))
+				this.text = this.initialDocument
+				this.prefix = this.initialPrefix
+				if (this.initialDocument.trim() !== '' && this.canPreview) {
+					this.runPreview()
+				}
 			}
 		},
 	},

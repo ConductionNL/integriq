@@ -75,6 +75,8 @@
 			@close="closeGatewayCatalogue" />
 		<OpenApiImportDialog
 			:open="openApiImport.open"
+			:initialDocument="openApiImport.initialDocument"
+			:initialPrefix="openApiImport.initialPrefix"
 			@close="closeOpenApiImport" />
 		<RegistrationTargetTestModal
 			:open="registrationTest.open"
@@ -175,7 +177,7 @@ export default {
 			sharePointPublicationSetup: { open: false },
 			registryLookup: { open: false },
 			gatewayCatalogue: { open: false },
-			openApiImport: { open: false },
+			openApiImport: { open: false, initialDocument: '', initialPrefix: '' },
 			sourceResidency: { open: false, source: null },
 			linkSource: { open: false, app: '' },
 			registrationTest: { open: false, target: null },
@@ -439,14 +441,21 @@ export default {
 			this.gatewayCatalogue = { open: false }
 		},
 
-		/** @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001 */
-		openOpenApiImport() {
-			this.openApiImport = { open: true }
+		/**
+		 * @param {object} [payload] `{ initialDocument, initialPrefix }`, given by the API inventory's row action.
+		 * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-a-discovered-api-can-be-brought-behind-integriq-req-fedg-003
+		 */
+		openOpenApiImport(payload) {
+			this.openApiImport = {
+				open: true,
+				initialDocument: payload?.initialDocument || '',
+				initialPrefix: payload?.initialPrefix || '',
+			}
 		},
 
 		/** @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001 */
 		closeOpenApiImport() {
-			this.openApiImport = { open: false }
+			this.openApiImport = { open: false, initialDocument: '', initialPrefix: '' }
 		},
 
 		/**

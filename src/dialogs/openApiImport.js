@@ -78,3 +78,40 @@ export function credentialSummary(result, t) {
 	const schemes = credentials.map((credential) => credential.scheme).filter(Boolean).join(', ')
 	return t('integriq', 'The source calls nothing until you add its credential ({schemes}) on the source.', { schemes }, undefined, { escape: false })
 }
+
+/**
+ * A gateway prefix suggested for a discovered API: its name in lower case,
+ * every run of other characters a single hyphen.
+ *
+ * @param {object} api An external_api row: `{ name, gatewayApiId }`.
+ * @return {string} The prefix, `imported-api` when the name gives none.
+ * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-a-discovered-api-can-be-brought-behind-integriq-req-fedg-003
+ */
+export function prefixFor(api) {
+	const name = String(api?.name || api?.gatewayApiId || '')
+	const slug = name
+		.normalize('NFKD')
+		.replace(/[̀-ͯ]/g, '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+	return slug !== '' ? slug : 'imported-api'
+}
+
+/**
+ * A stored OpenAPI description as the text the import dialog's paste field
+ * holds: a string as it is, an object as indented JSON, nothing as ''.
+ *
+ * @param {object|string|null|undefined} document The external_api's `openApiDocument`.
+ * @return {string} The text.
+ * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-a-discovered-api-can-be-brought-behind-integriq-req-fedg-003
+ */
+export function documentText(document) {
+	if (typeof document === 'string') {
+		return document
+	}
+	if (document && typeof document === 'object' && Object.keys(document).length > 0) {
+		return JSON.stringify(document, null, 2)
+	}
+	return ''
+}

@@ -76,6 +76,7 @@ import SynchronizationDetailPage from './views/Synchronization/SynchronizationDe
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import {
 	addEndpointRuleHandler,
+	bringApiBehindIntegriqHandler,
 	manageSigningHandler,
 	openConfigurationExportHandler,
 	openConfigurationImportHandler,
@@ -163,6 +164,9 @@ export default {
 	// Sources page header action (gateway-openapi-import-and-publish): import
 	// a vendor's OpenAPI document as a source and endpoints.
 	openOpenApiImportHandler,
+	// API inventory row action (gateway-federated-api-discovery REQ-FEDG-003):
+	// open that import with the description a discovered API's gateway exported.
+	bringApiBehindIntegriqHandler,
 	// Intake routing page row actions (messaging-intake-routing-rules REQ-IRE-001):
 	// reorder and enable/disable a rule, each written through saveRule() so
 	// its validation runs on every write.

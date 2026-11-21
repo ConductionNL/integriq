@@ -52,7 +52,7 @@ stubModal('../../src/modals/PromotePreviewModal.vue', 'PromotePreviewModal', [])
 stubModal('../../src/dialogs/SharePointPublicationSetupDialog.vue', 'SharePointPublicationSetupDialog', [])
 stubModal('../../src/dialogs/RegistryLookupDialog.vue', 'RegistryLookupDialog', [])
 stubModal('../../src/dialogs/GatewayCatalogueDialog.vue', 'GatewayCatalogueDialog', [])
-stubModal('../../src/dialogs/OpenApiImportDialog.vue', 'OpenApiImportDialog', [])
+stubModal('../../src/dialogs/OpenApiImportDialog.vue', 'OpenApiImportDialog', ['initialDocument', 'initialPrefix'])
 stubModal('../../src/dialogs/LinkSourceDialog.vue', 'LinkSourceDialog', ['app'])
 stubModal('../../src/modals/Registration/RegistrationTargetTestModal.vue', 'RegistrationTargetTestModal', ['target'])
 stubModal('../../src/dialogs/SourceResidencyDialog.vue', 'SourceResidencyDialog', ['source'])
@@ -102,7 +102,7 @@ const cases = [
 	[bus.EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, 'SharePointPublicationSetupDialog', {}, {}],
 	[bus.EVENT_OPEN_REGISTRY_LOOKUP, 'RegistryLookupDialog', {}, {}],
 	[bus.EVENT_OPEN_GATEWAY_CATALOGUE, 'GatewayCatalogueDialog', {}, {}],
-	[bus.EVENT_OPEN_OPENAPI_IMPORT, 'OpenApiImportDialog', {}, {}],
+	[bus.EVENT_OPEN_OPENAPI_IMPORT, 'OpenApiImportDialog', { initialDocument: '{"openapi":"3.0.1"}', initialPrefix: 'orders' }, { initialDocument: '', initialPrefix: '' }],
 	[bus.EVENT_OPEN_LINK_SOURCE, 'LinkSourceDialog', { app: 'dossiq' }, { app: '' }],
 	[bus.EVENT_OPEN_REGISTRATION_TEST, 'RegistrationTargetTestModal', { target: { slug: 'json-milieu' } }, { target: null }],
 	[bus.EVENT_OPEN_SOURCE_RESIDENCY, 'SourceResidencyDialog', { source: { id: 's1' } }, { source: null }],
