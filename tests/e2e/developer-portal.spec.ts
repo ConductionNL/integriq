@@ -300,10 +300,10 @@ test.describe('developer portal', () => {
 			const page = await context.newPage()
 			await page.goto(`${APP_BASE}/developer-portal`, { waitUntil: 'domcontentloaded' })
 			const card = page.getByTestId('developer-portal-application').filter({ hasText: name })
-			await expect(card.getByTestId('developer-portal-key').filter({ hasText: 'fresh' })).toBeVisible({ timeout: 30_000 })
+			await expect(card.getByTestId('credential-key').filter({ hasText: 'fresh' })).toBeVisible({ timeout: 30_000 })
 			await card.getByLabel('Key label').fill('from the page')
-			await card.getByTestId('developer-portal-generate-key').click()
-			await expect(card.getByTestId('developer-portal-new-key')).toContainText('only time the key is shown')
+			await card.getByTestId('credential-generate-key').click()
+			await expect(card.getByTestId('credential-new-key')).toContainText('only time the key is shown')
 		} finally {
 			await context.close()
 		}

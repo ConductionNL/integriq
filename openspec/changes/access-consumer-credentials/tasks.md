@@ -17,7 +17,8 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **files**: `lib/Controller/ConsumerCredentialsController.php`, `appinfo/routes.php`, the consumer detail page, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN an administrator on a consumer WHEN they generate a key THEN it is shown once with a copy button, and reloading the page shows only its prefix
-- [ ] Implement
+- [x] Implement
+  > 2026-11-21, the screen: `src/components/ConsumerCredentialsPanel.vue`, a ConsumerDetail body widget over `CredentialKeysPanel` (shared with the developer portal), reads and writes `/api/consumers/{id}/credentials`. Generating shows the key once, with a copy button. Reloading shows only its label and prefix, because no route answers a key again. Revoking removes one credential and leaves the others. Vitest: `tests/vitest/credentialKeysPanel.spec.js`.
 - [ ] Test (Playwright for generate, copy and revoke; PHPUnit that no route returns a key)
 
 ### Task 3: Two keys at once and last used
@@ -25,7 +26,8 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **files**: `lib/Service/AuthorizationService.php`, the consumer detail page
 - **acceptance_criteria**:
   - GIVEN a consumer with two keys WHEN the partner switches to the new key THEN both pass until the old is revoked, and the list shows when each was last used
-- [ ] Implement
+- [x] Implement
+  > 2026-11-21, the screen: the consumer's keys are listed side by side with when each was last used, its expiry and whether it expired, and a new key can carry an expiry, so a partner switches before the old key is revoked (`CredentialKeysPanel`, vitest in `tests/vitest/credentialKeysPanel.spec.js`).
 - [x] Test (PHPUnit on lookup and throttled lastUsedAt writes)
 
 ### Task 4: Client certificate credentials and the mtls type
@@ -34,7 +36,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **acceptance_criteria**:
   - GIVEN a pinned certificate WHEN a call arrives with it verified by the web server THEN it passes as that consumer
   - GIVEN the certificate header WHEN it arrives from an address that is not a trusted proxy THEN it is ignored
-- [ ] Implement
+- [x] Implement
   - Backend done: `ClientCertificateReader` (server `SSL_CLIENT_VERIFY`/`SSL_CLIENT_CERT`, else the
     `mtls_certificate_header` header only from a `trusted_proxies` address; OIN from the subject
     serialNumber), `clientCertificate` credentials pinned by fingerprint or by issuing CA plus subject
@@ -42,6 +44,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
     `authorizeClientCertificate()` resolving the consumer, the `mtls` rule type (also inside `anyOf`,
     with an optional `consumers` list), and `POST /api/consumers/{id}/credentials` with
     `type=clientCertificate`. The consumer detail page part is left with the other screens.
+  - 2026-11-21, the screen: `CredentialKeysPanel` in its administrator mode lists the pinned certificates (fingerprint, subject pattern, OIN), pins a PEM certificate or an issuing CA with a subject pattern, shows a refusal as the server words it, and revokes one. Vitest in `tests/vitest/credentialKeysPanel.spec.js`.
 - [ ] Test (PHPUnit with fixture certificates including a PKIoverheid subject; a documented Apache and nginx config walked once)
   - PHPUnit done with certificates generated at test time (CA, PKIoverheid-style leaf with an OIN,
     a same-subject leaf from another CA): `ClientCertificateReaderTest`,

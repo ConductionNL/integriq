@@ -1,5 +1,6 @@
 {
     "translations": {
+        "Credentials": "Inloggegevens",
         "The application could not be read. Try again later.": "De applicatie kon niet worden gelezen. Probeer het later opnieuw.",
         "%s is reached through an OIDC bridge. Save this registration with the protocol OIDC Relying Party.": "%s wordt bereikt via een OIDC-brug. Sla deze registratie op met het protocol OIDC Relying Party.",
         "Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)": "Relationele database (PostgreSQL, MySQL, MariaDB, SQL Server)",
