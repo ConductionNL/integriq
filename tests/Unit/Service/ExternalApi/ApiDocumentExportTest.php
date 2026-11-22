@@ -332,7 +332,8 @@ final class ApiDocumentExportTest extends TestCase {
 	public function testAFailedExportFailsThatApiOnly(): void {
 		$row = [self::api(uuid: 'api-1', data: [])];
 
-		$report = $this->export(rows: $row, answer: new SupplierCallException(message: 'azure-apim-discovery answered /apis/vergunningen with status 403.', status: 403))
+		$refused = new SupplierCallException(message: 'azure-apim-discovery answered /apis/vergunningen with status 403.', status: 403);
+		$report  = $this->export(rows: $row, answer: $refused)
 			->run(settings: self::azureSettings());
 		$this->assertSame(expected: ['Vergunningen' => 'azure-apim-discovery answered /apis/vergunningen with status 403.'], actual: $report['failed']);
 
@@ -347,7 +348,8 @@ final class ApiDocumentExportTest extends TestCase {
 			->run(settings: self::azureSettings());
 		$this->assertStringContainsString(needle: 'not an OpenAPI 3.0, 3.1 or Swagger 2.0 document', haystack: $report['failed']['Vergunningen']);
 
-		$report = $this->export(rows: $row, answer: self::fixture(name: 'azure-api-export.json'), linked: new InvalidArgumentException('The document URL answered HTTP 403.'))
+		$linkRefused = new InvalidArgumentException(message: 'The document URL answered HTTP 403.');
+		$report      = $this->export(rows: $row, answer: self::fixture(name: 'azure-api-export.json'), linked: $linkRefused)
 			->run(settings: self::azureSettings());
 		$this->assertSame(expected: 'The document URL answered HTTP 403.', actual: $report['failed']['Vergunningen']);
 
