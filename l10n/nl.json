@@ -2795,6 +2795,8 @@
         "No longer seen since": "Niet meer gezien sinds",
         "On the gateway": "Op de gateway",
         "OpenAPI description": "OpenAPI-beschrijving",
+        "Document exported at version": "Document geëxporteerd bij versie",
+        "The API version the stored OpenAPI document was exported at. A document export run skips an API whose version still matches": "De API-versie waarbij het opgeslagen OpenAPI-document is geëxporteerd. Een documentexport slaat een API over waarvan de versie nog gelijk is",
         "The API version the gateway reports; empty when it reports none": "De API-versie die de gateway opgeeft; leeg als die er geen opgeeft",
         "The API's name on its gateway": "De naam van de API op zijn gateway",
         "The OpenAPI document the gateway exports for this API, when it exposes one": "Het OpenAPI-document dat de gateway voor deze API exporteert, als die er een aanbiedt",
