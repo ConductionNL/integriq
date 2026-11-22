@@ -32,11 +32,41 @@ use OCP\Settings\IIconSection;
  * Minimal stand-in mirroring the engine's generic admin settings section.
  */
 class GenericSettingsSection implements IIconSection {
+	/**
+	 * The sectionId.
+	 *
+	 * @var string
+	 */
 	protected readonly string $sectionId;
+
+	/**
+	 * The name.
+	 *
+	 * @var string
+	 */
 	protected readonly string $name;
+
+	/**
+	 * The appId.
+	 *
+	 * @var string
+	 */
 	protected readonly string $appId;
+
+	/**
+	 * The iconFile.
+	 *
+	 * @var string
+	 */
 	protected readonly string $iconFile;
+
+	/**
+	 * The priority.
+	 *
+	 * @var int
+	 */
 	protected readonly int $priority;
+
 
 	/**
 	 * Construct the settings section.

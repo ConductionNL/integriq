@@ -35,12 +35,48 @@ use OCP\Settings\IDelegatedSettings;
  * Minimal stand-in mirroring the engine's generic admin settings form.
  */
 class GenericAdminSettings implements IDelegatedSettings {
+	/**
+	 * The appId.
+	 *
+	 * @var string
+	 */
 	protected readonly string $appId;
+
+	/**
+	 * The sectionId.
+	 *
+	 * @var string
+	 */
 	protected readonly string $sectionId;
+
+	/**
+	 * The priority.
+	 *
+	 * @var int
+	 */
 	protected readonly int $priority;
+
+	/**
+	 * The appManager.
+	 *
+	 * @var IAppManager
+	 */
 	protected readonly IAppManager $appManager;
+
+	/**
+	 * The initialState.
+	 *
+	 * @var IInitialState
+	 */
 	protected readonly IInitialState $initialState;
+
+	/**
+	 * The appConfig.
+	 *
+	 * @var ?IAppConfig
+	 */
 	protected readonly ?IAppConfig $appConfig;
+
 
 	/**
 	 * Construct the admin settings panel.

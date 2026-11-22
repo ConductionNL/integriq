@@ -52,8 +52,8 @@ class IntegriqAdminTest extends TestCase {
 			placement: new SettingsPlacement(appId: 'integriq', sectionId: 'integriq', priority: 10),
 			services: new AdminFormServices(
 				appManager: $appManager,
-				initialState: $this->createMock(IInitialState::class),
-				appConfig: $this->createMock(IAppConfig::class)
+				initialState: $this->createMock(originalClassName: IInitialState::class),
+				appConfig: $this->createMock(originalClassName: IAppConfig::class)
 			)
 		);
 	}//end makeSettings()
