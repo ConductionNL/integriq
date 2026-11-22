@@ -89,7 +89,8 @@
 
 ## Tests (company-wide ADR-009)
 
-- [ ] PHPUnit unit tests for `EndpointService::getObjects()`'s new id-fetch guard (Task 2) and for the mapping recipes' field-projection output (Task 1)
+- [x] PHPUnit unit tests for `EndpointService::getObjects()`'s new id-fetch guard (Task 2) and for the mapping recipes' field-projection output (Task 1)
+  - Run 22 Nov: `EndpointIdFetchGuardTest` (7), `EndpointServiceTest::testASingleObjectFailingTheEndpointsFixedFiltersAnswersNotFound` and `::testADraftAnswersTheSameNotFoundAsAMissingObject` (2), and `OriPublicEndpointsTest` (14), which runs the seeded ORI mappings through a real `MappingService`: the list and item shapes, a field the object lacks left out, an unlisted field kept in the register, and an e-mail only on organizations and persons. All pass.
 - [ ] Newman/Postman collection covering test-plan.md TC-1 through TC-14 against the validation-prefix Endpoints
 - [ ] Browser tests (Playwright MCP) — N/A, this change has no Vue/UI surface; ORI is a public JSON API only
 - [ ] All tests pass (`composer test`, `newman run`)
