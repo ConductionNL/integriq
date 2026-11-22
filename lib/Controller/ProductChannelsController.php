@@ -151,6 +151,7 @@ class ProductChannelsController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 600, period: 60)]
 	public function pull(string $productSlug, string $channel, ?string $cursor = null, int $limit = 100): JSONResponse {
 		$access = $this->channelAccess(productSlug: $productSlug, channel: $channel);
 		if ($access instanceof JSONResponse) {
@@ -210,6 +211,7 @@ class ProductChannelsController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function subscribe(string $productSlug, string $channel): JSONResponse {
 		$access = $this->channelAccess(productSlug: $productSlug, channel: $channel);
 		if ($access instanceof JSONResponse) {
@@ -282,6 +284,7 @@ class ProductChannelsController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function unsubscribe(string $productSlug, string $channel, string $id): JSONResponse {
 		$access = $this->channelAccess(productSlug: $productSlug, channel: $channel);
 		if ($access instanceof JSONResponse) {
