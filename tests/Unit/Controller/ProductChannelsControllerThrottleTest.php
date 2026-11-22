@@ -65,7 +65,7 @@ class ProductChannelsControllerThrottleTest extends TestCase {
 			}
 
 			$limits = $method->getAttributes(AnonRateLimit::class);
-			$this->assertCount(1, $limits, $method->getName() . ' is public and needs one AnonRateLimit.');
+			$this->assertCount(expectedCount: 1, haystack: $limits, message: $method->getName() . ' is public and needs one AnonRateLimit.');
 			$arguments = $limits[0]->getArguments();
 			$found[$method->getName()] = [(int)$arguments['limit'], (int)$arguments['period']];
 		}
@@ -77,6 +77,6 @@ class ProductChannelsControllerThrottleTest extends TestCase {
 		}
 
 		ksort($expected);
-		$this->assertSame($expected, $found);
+		$this->assertSame(expected: $expected, actual: $found);
 	}//end testEveryPublicRouteHasAnAnonymousCeiling()
 }//end class
