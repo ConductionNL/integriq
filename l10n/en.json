@@ -4066,6 +4066,8 @@
         "No longer seen since": "No longer seen since",
         "On the gateway": "On the gateway",
         "OpenAPI description": "OpenAPI description",
+        "Document exported at version": "Document exported at version",
+        "The API version the stored OpenAPI document was exported at. A document export run skips an API whose version still matches": "The API version the stored OpenAPI document was exported at. A document export run skips an API whose version still matches",
         "The API version the gateway reports; empty when it reports none": "The API version the gateway reports; empty when it reports none",
         "The API's name on its gateway": "The API's name on its gateway",
         "The OpenAPI document the gateway exports for this API, when it exposes one": "The OpenAPI document the gateway exports for this API, when it exposes one",
