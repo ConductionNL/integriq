@@ -49,7 +49,8 @@ final class ApiDocumentExportTest extends TestCase {
 	/**
 	 * The recorded API id the export fixture answers for.
 	 */
-	private const API_ID = '/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-api/providers/Microsoft.ApiManagement/service/apim-gemeente/apis/vergunningen';
+	private const API_ID = '/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-api'
+		. '/providers/Microsoft.ApiManagement/service/apim-gemeente/apis/vergunningen';
 
 	/**
 	 * Calls made through the source: [slug, endpoint, config].
@@ -99,7 +100,7 @@ final class ApiDocumentExportTest extends TestCase {
 			}
 		}
 
-		self::fail('The Azure fragment ships no documents job.');
+		self::fail(message: 'The Azure fragment ships no documents job.');
 	}//end azureDocumentsJob()
 
 	/**
@@ -133,7 +134,7 @@ final class ApiDocumentExportTest extends TestCase {
 	 * @return ApiDocumentExport
 	 */
 	private function export(array $rows, array|\Throwable $answer, array|\Throwable|null $linked = null): ApiDocumentExport {
-		$sourceCall = $this->createMock(SupplierSourceCall::class);
+		$sourceCall = $this->createMock(originalClassName: SupplierSourceCall::class);
 		$sourceCall->method('json')->willReturnCallback(
 			function (string $slug, string $endpoint, string $method = 'GET', array $config = []) use ($answer): array {
 				$this->calls[] = [$slug, $endpoint, $config];
@@ -145,12 +146,12 @@ final class ApiDocumentExportTest extends TestCase {
 			}
 		);
 
-		$objects = $this->createMock(ObjectService::class);
+		$objects = $this->createMock(originalClassName: ObjectService::class);
 		$objects->method('findAll')->willReturnCallback(
 			function (array $config) use ($rows): array {
 				$this->assertSame(
-					['register' => 'integriq', 'schema' => 'external_api', 'gateway' => self::GATEWAY],
-					$config['filters']
+					expected: ['register' => 'integriq', 'schema' => 'external_api', 'gateway' => self::GATEWAY],
+					actual: $config['filters']
 				);
 
 				return ['results' => $rows, 'total' => count($rows)];
@@ -158,15 +159,15 @@ final class ApiDocumentExportTest extends TestCase {
 		);
 		$objects->method('saveObject')->willReturnCallback(
 			function (mixed $object, ObjectSaveOptions $options): ObjectEntity {
-				$this->assertSame('integriq', $options->target->register);
-				$this->assertSame('external_api', $options->target->schema);
+				$this->assertSame(expected: 'integriq', actual: $options->target->register);
+				$this->assertSame(expected: 'external_api', actual: $options->target->schema);
 				$this->saves[] = [$object, (string)$options->uuid];
 
 				return new ObjectEntity();
 			}
 		);
 
-		$reader = $this->createMock(OpenApiDocumentReader::class);
+		$reader = $this->createMock(originalClassName: OpenApiDocumentReader::class);
 		$reader->method('fetch')->willReturnCallback(
 			function (string $url) use ($linked): array {
 				$this->fetched[] = $url;
@@ -178,7 +179,7 @@ final class ApiDocumentExportTest extends TestCase {
 			}
 		);
 
-		return new ApiDocumentExport($sourceCall, $objects, $reader, new OpenApiDocumentNormaliser());
+		return new ApiDocumentExport(sourceCall: $sourceCall, objectService: $objects, reader: $reader, normaliser: new OpenApiDocumentNormaliser());
 	}//end export()
 
 	/**
@@ -192,7 +193,7 @@ final class ApiDocumentExportTest extends TestCase {
 		$arguments          = self::azureDocumentsJob()['arguments'];
 		$arguments['force'] = $force;
 
-		return ApiDocumentExportSettings::fromArguments(arguments: $arguments);
+		return new ApiDocumentExportSettings(gateway: $arguments['gateway'], exportEndpoint: $arguments['exportEndpoint'], options: $arguments);
 	}//end azureSettings()
 
 	/**
@@ -209,21 +210,21 @@ final class ApiDocumentExportTest extends TestCase {
 
 		$report = $export->run(settings: self::azureSettings());
 
-		$this->assertSame(['stored' => ['Vergunningen'], 'unchanged' => [], 'failed' => []], $report);
-		$this->assertSame(self::GATEWAY, $this->calls[0][0]);
-		$this->assertSame('/apis/vergunningen', $this->calls[0][1]);
+		$this->assertSame(expected: ['stored' => ['Vergunningen'], 'unchanged' => [], 'failed' => []], actual: $report);
+		$this->assertSame(expected: self::GATEWAY, actual: $this->calls[0][0]);
+		$this->assertSame(expected: '/apis/vergunningen', actual: $this->calls[0][1]);
 		$this->assertSame(
-			['format' => 'openapi+json-link', 'export' => 'true', 'api-version' => '2022-08-01'],
-			$this->calls[0][2]['query']
+			expected: ['format' => 'openapi+json-link', 'export' => 'true', 'api-version' => '2022-08-01'],
+			actual: $this->calls[0][2]['query']
 		);
-		$this->assertSame([self::fixture(name: 'azure-api-export.json')['value']['link']], $this->fetched);
+		$this->assertSame(expected: [self::fixture(name: 'azure-api-export.json')['value']['link']], actual: $this->fetched);
 
 		[$saved, $uuid] = $this->saves[0];
-		$this->assertSame('api-1', $uuid);
-		$this->assertSame('v2', $saved['openApiDocumentVersion']);
-		$this->assertSame('Vergunningen', $saved['openApiDocument']['info']['title']);
-		$this->assertArrayHasKey('/aanvragen', $saved['openApiDocument']['paths']);
-		$this->assertSame('Vergunningen', $saved['name'], 'the row keeps its discovered values');
+		$this->assertSame(expected: 'api-1', actual: $uuid);
+		$this->assertSame(expected: 'v2', actual: $saved['openApiDocumentVersion']);
+		$this->assertSame(expected: 'Vergunningen', actual: $saved['openApiDocument']['info']['title']);
+		$this->assertArrayHasKey(key: '/aanvragen', array: $saved['openApiDocument']['paths']);
+		$this->assertSame(expected: 'Vergunningen', actual: $saved['name'], message: 'the row keeps its discovered values');
 	}//end testTheAzureExportIsFetchedThroughItsLinkAndStored()
 
 	/**
@@ -241,9 +242,9 @@ final class ApiDocumentExportTest extends TestCase {
 		$export->run(settings: self::azureSettings());
 
 		$scheme = $this->saves[0][0]['openApiDocument']['components']['securitySchemes']['apiKeyHeader'];
-		$this->assertSame('Ocp-Apim-Subscription-Key', $scheme['name']);
-		$this->assertArrayNotHasKey('x-example', $scheme);
-		$this->assertStringNotContainsString('4f6c0a7b2d9e4c1a8b3f5e6d7c8b9a0f', (string)json_encode($this->saves[0][0]));
+		$this->assertSame(expected: 'Ocp-Apim-Subscription-Key', actual: $scheme['name']);
+		$this->assertArrayNotHasKey(key: 'x-example', array: $scheme);
+		$this->assertStringNotContainsString(needle: '4f6c0a7b2d9e4c1a8b3f5e6d7c8b9a0f', haystack: (string)json_encode($this->saves[0][0]));
 	}//end testASecuritySchemeIsStoredAsItsShapeOnly()
 
 	/**
@@ -263,8 +264,8 @@ final class ApiDocumentExportTest extends TestCase {
 		$path     = dirname(__DIR__, 4) . '/lib/Settings/register.d/external-api-inventory.json';
 		$fragment = json_decode((string)file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
 		$schema   = $fragment['components']['schemas']['external_api'];
-		$this->assertArrayHasKey('openApiDocumentVersion', $schema['properties']);
-		$this->assertSame([], RegisterSchemaValidator::errorsAgainst(schema: $schema, object: $this->saves[0][0]));
+		$this->assertArrayHasKey(key: 'openApiDocumentVersion', array: $schema['properties']);
+		$this->assertSame(expected: [], actual: RegisterSchemaValidator::errorsAgainst(schema: $schema, object: $this->saves[0][0]));
 	}//end testTheStoredRowIsAcceptedByTheSchema()
 
 	/**
@@ -279,11 +280,11 @@ final class ApiDocumentExportTest extends TestCase {
 		$linked = self::fixture(name: 'azure-vergunningen-openapi.json');
 
 		$report = $this->export(rows: $rows, answer: $answer, linked: $linked)->run(settings: self::azureSettings());
-		$this->assertSame(['stored' => [], 'unchanged' => ['Vergunningen'], 'failed' => []], $report);
-		$this->assertSame([], $this->calls, 'nothing is called for an unchanged API');
+		$this->assertSame(expected: ['stored' => [], 'unchanged' => ['Vergunningen'], 'failed' => []], actual: $report);
+		$this->assertSame(expected: [], actual: $this->calls, message: 'nothing is called for an unchanged API');
 
 		$report = $this->export(rows: $rows, answer: $answer, linked: $linked)->run(settings: self::azureSettings(force: true));
-		$this->assertSame(['Vergunningen'], $report['stored']);
+		$this->assertSame(expected: ['Vergunningen'], actual: $report['stored']);
 	}//end testAnUnchangedApiIsSkippedUnlessForced()
 
 	/**
@@ -303,7 +304,7 @@ final class ApiDocumentExportTest extends TestCase {
 			linked: self::fixture(name: 'azure-vergunningen-openapi.json')
 		)->run(settings: self::azureSettings());
 
-		$this->assertSame(['Vergunningen', 'Afval'], $report['stored']);
+		$this->assertSame(expected: ['Vergunningen', 'Afval'], actual: $report['stored']);
 	}//end testANewVersionIsFetchedAgain()
 
 	/**
@@ -319,8 +320,8 @@ final class ApiDocumentExportTest extends TestCase {
 
 		$report = $this->export(rows: $rows, answer: [])->run(settings: self::azureSettings());
 
-		$this->assertSame(['stored' => [], 'unchanged' => [], 'failed' => []], $report);
-		$this->assertSame([], $this->calls);
+		$this->assertSame(expected: ['stored' => [], 'unchanged' => [], 'failed' => []], actual: $report);
+		$this->assertSame(expected: [], actual: $this->calls);
 	}//end testAnEndedApiAndAnotherGatewaysApiAreSkipped()
 
 	/**
@@ -333,24 +334,24 @@ final class ApiDocumentExportTest extends TestCase {
 
 		$report = $this->export(rows: $row, answer: new SupplierCallException(message: 'azure-apim-discovery answered /apis/vergunningen with status 403.', status: 403))
 			->run(settings: self::azureSettings());
-		$this->assertSame(['Vergunningen' => 'azure-apim-discovery answered /apis/vergunningen with status 403.'], $report['failed']);
+		$this->assertSame(expected: ['Vergunningen' => 'azure-apim-discovery answered /apis/vergunningen with status 403.'], actual: $report['failed']);
 
 		$report = $this->export(rows: $row, answer: ['value' => []])->run(settings: self::azureSettings());
-		$this->assertStringContainsString('no https link at value.link', $report['failed']['Vergunningen']);
+		$this->assertStringContainsString(needle: 'no https link at value.link', haystack: $report['failed']['Vergunningen']);
 
 		$report = $this->export(rows: $row, answer: ['value' => ['link' => 'http://blob.example/x.json']])->run(settings: self::azureSettings());
-		$this->assertStringContainsString('no https link', $report['failed']['Vergunningen']);
-		$this->assertSame([], $this->fetched, 'a plain http link is never fetched');
+		$this->assertStringContainsString(needle: 'no https link', haystack: $report['failed']['Vergunningen']);
+		$this->assertSame(expected: [], actual: $this->fetched, message: 'a plain http link is never fetched');
 
 		$report = $this->export(rows: $row, answer: self::fixture(name: 'azure-api-export.json'), linked: ['title' => 'not a spec'])
 			->run(settings: self::azureSettings());
-		$this->assertStringContainsString('not an OpenAPI 3.0, 3.1 or Swagger 2.0 document', $report['failed']['Vergunningen']);
+		$this->assertStringContainsString(needle: 'not an OpenAPI 3.0, 3.1 or Swagger 2.0 document', haystack: $report['failed']['Vergunningen']);
 
 		$report = $this->export(rows: $row, answer: self::fixture(name: 'azure-api-export.json'), linked: new InvalidArgumentException('The document URL answered HTTP 403.'))
 			->run(settings: self::azureSettings());
-		$this->assertSame('The document URL answered HTTP 403.', $report['failed']['Vergunningen']);
+		$this->assertSame(expected: 'The document URL answered HTTP 403.', actual: $report['failed']['Vergunningen']);
 
-		$this->assertSame([], $this->saves, 'a failed API is never saved');
+		$this->assertSame(expected: [], actual: $this->saves, message: 'a failed API is never saved');
 	}//end testAFailedExportFailsThatApiOnly()
 
 	/**
@@ -364,18 +365,18 @@ final class ApiDocumentExportTest extends TestCase {
 
 		$settings = new ApiDocumentExportSettings(gateway: self::GATEWAY, exportEndpoint: '/restapis/{apiId}/exports/oas30');
 		$report   = $this->export(rows: $row, answer: $document)->run(settings: $settings);
-		$this->assertSame(['Vergunningen'], $report['stored']);
-		$this->assertSame('/restapis/abc123/exports/oas30', $this->calls[0][1]);
+		$this->assertSame(expected: ['Vergunningen'], actual: $report['stored']);
+		$this->assertSame(expected: '/restapis/abc123/exports/oas30', actual: $this->calls[0][1]);
 
-		$settings = new ApiDocumentExportSettings(gateway: self::GATEWAY, exportEndpoint: '/apis/{apiId}', documentPosition: 'value');
+		$settings = new ApiDocumentExportSettings(gateway: self::GATEWAY, exportEndpoint: '/apis/{apiId}', options: ['documentPosition' => 'value']);
 		$report   = $this->export(rows: $row, answer: ['value' => $document])->run(settings: $settings);
-		$this->assertSame(['Vergunningen'], $report['stored']);
+		$this->assertSame(expected: ['Vergunningen'], actual: $report['stored']);
 
 		$report = $this->export(rows: $row, answer: ['other' => $document])->run(settings: $settings);
-		$this->assertStringContainsString('no document at value', $report['failed']['Vergunningen']);
+		$this->assertStringContainsString(needle: 'no document at value', haystack: $report['failed']['Vergunningen']);
 
 		$report = $this->export(rows: [self::api(uuid: 'api-2', data: ['gatewayApiId' => ''])], answer: $document)->run(settings: $settings);
-		$this->assertSame(['Vergunningen' => 'The API has no gateway id to export it by.'], $report['failed']);
+		$this->assertSame(expected: ['Vergunningen' => 'The API has no gateway id to export it by.'], actual: $report['failed']);
 	}//end testADocumentInTheAnswerIsReadAtItsPosition()
 
 	/**
@@ -384,23 +385,25 @@ final class ApiDocumentExportTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSettingsNeedAGatewayAndAPlaceholder(): void {
-		foreach ([['exportEndpoint' => '/apis/{apiId}'], ['gateway' => 'g', 'exportEndpoint' => '/apis/export']] as $arguments) {
+		foreach ([['', '/apis/{apiId}'], ['g', '/apis/export']] as [$gateway, $endpoint]) {
 			try {
-				ApiDocumentExportSettings::fromArguments(arguments: $arguments);
-				$this->fail('Settings without a gateway or a placeholder must be refused.');
+				new ApiDocumentExportSettings(gateway: $gateway, exportEndpoint: $endpoint);
+				$this->fail(message: 'Settings without a gateway or a placeholder must be refused.');
 			} catch (InvalidArgumentException $exception) {
-				$this->assertStringContainsString('A document export needs', $exception->getMessage());
+				$this->assertStringContainsString(needle: 'A document export needs', haystack: $exception->getMessage());
 			}
 		}
 
-		$settings = ApiDocumentExportSettings::fromArguments(
-			arguments: ['gateway' => ' g ', 'exportEndpoint' => '/apis/{apiName}/{apiId}', 'query' => 'x', 'limit' => -1, 'force' => 'true']
+		$settings = new ApiDocumentExportSettings(
+			gateway: ' g ',
+			exportEndpoint: '/apis/{apiName}/{apiId}',
+			options: ['query' => 'x', 'limit' => -1, 'force' => 'true']
 		);
-		$this->assertSame('g', $settings->gateway);
-		$this->assertSame([], $settings->query);
-		$this->assertSame(ApiDocumentExport::DEFAULT_LIMIT, $settings->limit);
-		$this->assertTrue($settings->force);
-		$this->assertSame('/apis/afval;rev=3/a%2Fb%20c%2Fafval;rev=3', $settings->endpointFor(apiId: 'a/b c/afval;rev=3'));
+		$this->assertSame(expected: 'g', actual: $settings->gateway);
+		$this->assertSame(expected: [], actual: $settings->query);
+		$this->assertSame(expected: ApiDocumentExport::DEFAULT_LIMIT, actual: $settings->limit);
+		$this->assertTrue(condition: $settings->force);
+		$this->assertSame(expected: '/apis/afval;rev=3/a%2Fb%20c%2Fafval;rev=3', actual: $settings->endpointFor(apiId: 'a/b c/afval;rev=3'));
 	}//end testTheSettingsNeedAGatewayAndAPlaceholder()
 
 	/**
@@ -411,11 +414,14 @@ final class ApiDocumentExportTest extends TestCase {
 	public function testTheShippedJobIsDormantAndDaily(): void {
 		$job = self::azureDocumentsJob();
 
-		$this->assertSame(ApiDocumentExportAction::class, $job['jobClass']);
-		$this->assertTrue(class_exists($job['jobClass']));
-		$this->assertFalse($job['isEnabled']);
-		$this->assertSame(86400, $job['interval']);
-		$this->assertSame(self::GATEWAY, ApiDocumentExportSettings::fromArguments(arguments: $job['arguments'])->gateway);
+		$this->assertSame(expected: ApiDocumentExportAction::class, actual: $job['jobClass']);
+		$this->assertTrue(condition: class_exists($job['jobClass']));
+		$this->assertFalse(condition: $job['isEnabled']);
+		$this->assertSame(expected: 86400, actual: $job['interval']);
+		$arguments = $job['arguments'];
+		$settings  = new ApiDocumentExportSettings(gateway: $arguments['gateway'], exportEndpoint: $arguments['exportEndpoint'], options: $arguments);
+		$this->assertSame(expected: '/apis/vergunningen', actual: $settings->endpointFor(apiId: self::API_ID));
+		$this->assertSame(expected: 'value.link', actual: $settings->linkPosition);
 	}//end testTheShippedJobIsDormantAndDaily()
 
 	/**
@@ -425,14 +431,14 @@ final class ApiDocumentExportTest extends TestCase {
 	 */
 	public function testTheActionReportsWhatTheRunDid(): void {
 		$action = new ApiDocumentExportAction(export: $this->export(rows: [], answer: []));
-		$this->assertSame('ERROR', $action->run(arguments: [])['level']);
+		$this->assertSame(expected: 'ERROR', actual: $action->run(arguments: [])['level']);
 
 		$action = new ApiDocumentExportAction(
 			export: $this->export(rows: [self::api(uuid: 'api-1', data: [])], answer: ['value' => []])
 		);
 		$result = $action->run(arguments: self::azureDocumentsJob()['arguments']);
-		$this->assertSame('WARNING', $result['level']);
-		$this->assertSame('azure-apim-discovery: 0 documents stored, 0 unchanged, 1 failed.', $result['message']);
+		$this->assertSame(expected: 'WARNING', actual: $result['level']);
+		$this->assertSame(expected: 'azure-apim-discovery: 0 documents stored, 0 unchanged, 1 failed.', actual: $result['message']);
 
 		$action = new ApiDocumentExportAction(
 			export: $this->export(
@@ -442,7 +448,7 @@ final class ApiDocumentExportTest extends TestCase {
 			)
 		);
 		$result = $action->run(arguments: self::azureDocumentsJob()['arguments']);
-		$this->assertSame('INFO', $result['level']);
-		$this->assertSame(['Vergunningen'], $result['stored']);
+		$this->assertSame(expected: 'INFO', actual: $result['level']);
+		$this->assertSame(expected: ['Vergunningen'], actual: $result['stored']);
 	}//end testTheActionReportsWhatTheRunDid()
 }//end class

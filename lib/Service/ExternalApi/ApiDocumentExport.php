@@ -210,17 +210,7 @@ class ApiDocumentExport {
 			config: ['query' => $settings->query]
 		);
 
-		if ($settings->linkPosition !== '') {
-			$link = self::at(answer: $answer, position: $settings->linkPosition);
-			if (is_string($link) === false || str_starts_with($link, 'https://') === false) {
-				throw new InvalidArgumentException('The export answer has no https link at '.$settings->linkPosition.'.');
-			}
-
-			$document = $this->reader->fetch(url: $link);
-		} else {
-			$document = self::at(answer: $answer, position: $settings->documentPosition);
-		}
-
+		$document = $this->documentIn(settings: $settings, answer: $answer);
 		if (is_array($document) === false) {
 			throw new InvalidArgumentException('The export answer has no document at '.$settings->documentPosition.'.');
 		}
@@ -231,6 +221,29 @@ class ApiDocumentExport {
 	}//end export()
 
 	/**
+	 * The document the export answer holds, or the one behind the link it holds.
+	 *
+	 * @param ApiDocumentExportSettings $settings The run's settings.
+	 * @param array<mixed>              $answer   The gateway's export answer.
+	 *
+	 * @return mixed The document, or what sits where it should be.
+	 *
+	 * @throws InvalidArgumentException When the link is missing, not https, or cannot be fetched.
+	 */
+	private function documentIn(ApiDocumentExportSettings $settings, array $answer): mixed {
+		if ($settings->linkPosition === '') {
+			return self::valueAt(answer: $answer, position: $settings->documentPosition);
+		}
+
+		$link = self::valueAt(answer: $answer, position: $settings->linkPosition);
+		if (is_string($link) === false || str_starts_with($link, 'https://') === false) {
+			throw new InvalidArgumentException('The export answer has no https link at '.$settings->linkPosition.'.');
+		}
+
+		return $this->reader->fetch(url: $link);
+	}//end documentIn()
+
+	/**
 	 * The value at a dot path in an answer; the whole answer for an empty path.
 	 *
 	 * @param array<mixed> $answer   The decoded answer.
@@ -238,7 +251,7 @@ class ApiDocumentExport {
 	 *
 	 * @return mixed
 	 */
-	private static function at(array $answer, string $position): mixed {
+	private static function valueAt(array $answer, string $position): mixed {
 		$value = $answer;
 		foreach (array_filter(explode('.', $position), static fn (string $key): bool => $key !== '') as $key) {
 			if (is_array($value) === false || array_key_exists($key, $value) === false) {
@@ -249,5 +262,5 @@ class ApiDocumentExport {
 		}
 
 		return $value;
-	}//end at()
+	}//end valueAt()
 }//end class

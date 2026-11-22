@@ -57,7 +57,11 @@ class ApiDocumentExportAction {
 	 */
 	public function run(array $arguments): array {
 		try {
-			$settings = ApiDocumentExportSettings::fromArguments(arguments: $arguments);
+			$settings = new ApiDocumentExportSettings(
+				gateway: (string)($arguments['gateway'] ?? ''),
+				exportEndpoint: (string)($arguments['exportEndpoint'] ?? ''),
+				options: $arguments
+			);
 		} catch (InvalidArgumentException $exception) {
 			return ['level' => 'ERROR', 'message' => $exception->getMessage()];
 		}

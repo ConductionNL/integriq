@@ -34,67 +34,103 @@ use InvalidArgumentException;
  * path segment of it (an Azure resource id ends in the API's name). Both are
  * encoded as one path segment.
  *
+ * The options are the job's other arguments: `query` (the export call's
+ * query), `documentPosition` (where the document sits in the answer; empty for
+ * the whole answer), `linkPosition` (where a link to the document sits; empty
+ * when there is none), `limit` (the most APIs one run reads) and `force`
+ * (fetch an unchanged API again).
+ *
  * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-a-discovered-api-can-be-brought-behind-integriq-req-fedg-003
  */
 final class ApiDocumentExportSettings {
 
 	/**
-	 * Constructor.
+	 * The discovery source's slug, as `external_api.gateway` names it.
 	 *
-	 * @param string               $gateway          The discovery source's slug, as `external_api.gateway` names it.
-	 * @param string               $exportEndpoint   The export path, with `{apiId}` or `{apiName}`.
-	 * @param array<string, mixed> $query            The export call's query.
-	 * @param string               $documentPosition Where the document sits in the answer; empty for the whole answer.
-	 * @param string               $linkPosition     Where a link to the document sits in the answer; empty when there is none.
-	 * @param int                  $limit            The most APIs one run reads.
-	 * @param bool                 $force            True to fetch an unchanged API again.
+	 * @var string
 	 */
-	public function __construct(
-		public readonly string $gateway,
-		public readonly string $exportEndpoint,
-		public readonly array $query = [],
-		public readonly string $documentPosition = '',
-		public readonly string $linkPosition = '',
-		public readonly int $limit = ApiDocumentExport::DEFAULT_LIMIT,
-		public readonly bool $force = false,
-	) {
-	}//end __construct()
+	public readonly string $gateway;
 
 	/**
-	 * Read the settings from a job's arguments.
+	 * The export path, with `{apiId}` or `{apiName}`.
 	 *
-	 * @param array<string, mixed> $arguments The job's arguments.
+	 * @var string
+	 */
+	public readonly string $exportEndpoint;
+
+	/**
+	 * The export call's query.
 	 *
-	 * @return self
+	 * @var array<string, mixed>
+	 */
+	public readonly array $query;
+
+	/**
+	 * Where the document sits in the answer; empty for the whole answer.
+	 *
+	 * @var string
+	 */
+	public readonly string $documentPosition;
+
+	/**
+	 * Where a link to the document sits in the answer; empty when there is none.
+	 *
+	 * @var string
+	 */
+	public readonly string $linkPosition;
+
+	/**
+	 * The most APIs one run reads.
+	 *
+	 * @var int
+	 */
+	public readonly int $limit;
+
+	/**
+	 * Whether an unchanged API is fetched again.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $force;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param string               $gateway        The discovery source's slug.
+	 * @param string               $exportEndpoint The export path, with `{apiId}` or `{apiName}`.
+	 * @param array<string, mixed> $options        `query`, `documentPosition`, `linkPosition`, `limit`, `force`.
 	 *
 	 * @throws InvalidArgumentException When the gateway or the export path is missing.
 	 *
 	 * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-a-discovered-api-can-be-brought-behind-integriq-req-fedg-003
 	 */
-	public static function fromArguments(array $arguments): self {
-		$gateway  = trim((string)($arguments['gateway'] ?? ''));
-		$endpoint = trim((string)($arguments['exportEndpoint'] ?? ''));
-		if ($gateway === '') {
+	public function __construct(string $gateway, string $exportEndpoint, array $options = []) {
+		$this->gateway        = trim($gateway);
+		$this->exportEndpoint = trim($exportEndpoint);
+		if ($this->gateway === '') {
 			throw new InvalidArgumentException('A document export needs `gateway`: the slug of the discovery source.');
 		}
 
-		if (str_contains($endpoint, '{apiId}') === false && str_contains($endpoint, '{apiName}') === false) {
+		if (str_contains($this->exportEndpoint, '{apiId}') === false && str_contains($this->exportEndpoint, '{apiName}') === false) {
 			throw new InvalidArgumentException('A document export needs `exportEndpoint` with {apiId} or {apiName} in it.');
 		}
 
-		$query = ($arguments['query'] ?? []);
-		$limit = (int)($arguments['limit'] ?? ApiDocumentExport::DEFAULT_LIMIT);
+		$query = ($options['query'] ?? []);
+		if (is_array($query) === false) {
+			$query = [];
+		}
 
-		return new self(
-			gateway: $gateway,
-			exportEndpoint: $endpoint,
-			query: (is_array($query) === true ? $query : []),
-			documentPosition: trim((string)($arguments['documentPosition'] ?? '')),
-			linkPosition: trim((string)($arguments['linkPosition'] ?? '')),
-			limit: ($limit > 0 ? $limit : ApiDocumentExport::DEFAULT_LIMIT),
-			force: filter_var(($arguments['force'] ?? false), FILTER_VALIDATE_BOOLEAN)
-		);
-	}//end fromArguments()
+		$limit = (int)($options['limit'] ?? ApiDocumentExport::DEFAULT_LIMIT);
+		if ($limit < 1) {
+			$limit = ApiDocumentExport::DEFAULT_LIMIT;
+		}
+
+		$this->query            = $query;
+		$this->limit            = $limit;
+		$this->documentPosition = trim((string)($options['documentPosition'] ?? ''));
+		$this->linkPosition     = trim((string)($options['linkPosition'] ?? ''));
+		$this->force            = filter_var(($options['force'] ?? false), FILTER_VALIDATE_BOOLEAN);
+	}//end __construct()
 
 	/**
 	 * The export path of one API.
