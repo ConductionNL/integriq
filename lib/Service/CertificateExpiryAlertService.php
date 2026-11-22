@@ -16,7 +16,7 @@
  *
  * @link https://github.com/ConductionNL/integriq
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
  */
 
 declare(strict_types=1);
@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTimeImmutable;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -37,9 +38,9 @@ use Psr\Log\LoggerInterface;
  * twice for the same certificate and threshold; a renewed certificate has
  * another expiry date, which clears the old alerts and arms the thresholds again.
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
  */
-class CertificateExpiryAlertService {
+class CertificateExpiryAlertService implements CertificateExpiryAlertServiceInterface {
 
 	/**
 	 * The alert rule of a certificate expiry.
@@ -83,7 +84,7 @@ class CertificateExpiryAlertService {
 	 *
 	 * @return array{opened: int, cleared: int}
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
 	 */
 	public function evaluate(DateTimeImmutable $now): array {
 		$outcome = ['opened' => 0, 'cleared' => 0];
@@ -108,7 +109,7 @@ class CertificateExpiryAlertService {
 	 *
 	 * @return int[]
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
 	 */
 	public static function thresholdsOf(array $source): array {
 		$configured = (($source['alertThresholds'] ?? [])['certificateExpiryDays'] ?? null);
@@ -266,12 +267,9 @@ class CertificateExpiryAlertService {
 		try {
 			$this->objectService->saveObject(
 				object: $alert,
-				register: ConnectionAlertService::REGISTER,
-				schema: ConnectionAlertService::SCHEMA,
-				uuid: $uuid,
+				options: RegisterSave::options(register: ConnectionAlertService::REGISTER, schema: ConnectionAlertService::SCHEMA, uuid: $uuid),
 				_rbac: false,
-				// Unscoped: system write of an alert raised by the certificate expiry job.
-				_multitenancy: false,
+				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
 			$this->logger->warning(

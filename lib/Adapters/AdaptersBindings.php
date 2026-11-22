@@ -38,6 +38,8 @@ use OCA\Integriq\Adapters\Digikoppeling\WusProfileService;
 use OCA\Integriq\Adapters\LearningMaterial\EdurepHttpTransport;
 use OCA\Integriq\Adapters\LearningMaterial\EdurepSourceHttp;
 use OCA\Integriq\Adapters\LearningMaterial\EdurepSourceMock;
+use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialService;
+use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialServiceInterface;
 use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialSource;
 use OCA\Integriq\Adapters\LearningMaterial\SruTransport;
 use OCA\Integriq\Adapters\Lvs\UwlrResultImportClient;
@@ -101,6 +103,7 @@ final class AdaptersBindings {
 		$context->registerServiceAlias(SloCurriculumPresetRegistryInterface::class, SloCurriculumPresetRegistry::class);
 		$context->registerServiceAlias(SloCurriculumMapperInterface::class, SloCurriculumMapper::class);
 		$context->registerServiceAlias(PkiOverheidCredentialResolverInterface::class, PkiOverheidCredentialResolver::class);
+		$context->registerServiceAlias(LearningMaterialServiceInterface::class, LearningMaterialService::class);
 		$this->registerPdokClients(context: $context);
 		$this->registerDormantSourceClients(context: $context);
 		$this->registerSwvHandoffClient(context: $context);
@@ -333,7 +336,7 @@ final class AdaptersBindings {
 	 *
 	 * @return string The class to resolve.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
 	 */
 	public static function liveOrMock(IAppConfig $appConfig, string $flagKey, string $live, string $mock): string {
 		$raw = strtolower($appConfig->getValueString('integriq', $flagKey, '0'));

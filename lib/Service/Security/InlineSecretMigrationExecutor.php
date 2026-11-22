@@ -71,6 +71,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Security;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -270,7 +273,7 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 	 *         manual-review field counts as `skipped` — and nothing read it
 	 *         (integriq#2104 review 5266971176).
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function migrateEverything(int $limit = 1000): array {
 		$schemas  = [];
@@ -317,7 +320,7 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 	 * @return array{schema: string, objects: array<int, array<string, mixed>>, totalObjects: int,
 	 *     migrated: int, failed: int, blocked: int, skipped: int, postRun: array<string, mixed>}
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function migrateSchema(string $schema, int $limit = 1000): array {
 		$broker = $this->assertBrokerCapable();
@@ -648,9 +651,7 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 		try {
 			$this->objectService->saveObject(
 				object: $candidate,
-				register: InlineSecretMigrationPlanner::REGISTER,
-				schema: InlineSecretMigrationPlanner::SCHEMA,
-				uuid: $uuid,
+				options: $this->migratedSourceOptions(uuid: $uuid),
 				_rbac: false,
 				// Unscoped: the inline secret migration runs as the system.
 				_multitenancy: false
@@ -753,12 +754,13 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: InlineSecretMigrationPlanner::REGISTER,
-				schema: $this->currentSchema,
+				options: new ObjectFindOptions(
+					register: InlineSecretMigrationPlanner::REGISTER,
+					schema: $this->currentSchema,
+					render: false
+				),
 				_rbac: false,
-				// Unscoped: the inline secret migration reads the raw stored object, run as the system.
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -943,4 +945,18 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 			'bucket' => $bucket,
 		];
 	}//end fieldRecord()
+
+	/**
+	 * Where a migrated source is saved: its register, schema and uuid.
+	 *
+	 * @param string $uuid The source's uuid.
+	 *
+	 * @return ObjectSaveOptions
+	 */
+	private function migratedSourceOptions(string $uuid): ObjectSaveOptions {
+		$target = new ObjectFindTarget(register: InlineSecretMigrationPlanner::REGISTER, schema: InlineSecretMigrationPlanner::SCHEMA);
+
+		return new ObjectSaveOptions(target: $target, uuid: $uuid);
+
+	}//end migratedSourceOptions()
 }//end class

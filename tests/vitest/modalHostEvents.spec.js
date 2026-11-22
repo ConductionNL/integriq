@@ -39,6 +39,7 @@ function stubModal(path, name, props) {
 }
 
 stubModal('../../src/modals/v2/TestMappingModal.vue', 'TestMappingModal', ['mapping'])
+stubModal('../../src/modals/v2/TestServiceFetchModal.vue', 'TestServiceFetchModal', ['fetch'])
 stubModal('../../src/modals/v2/TestSourceModal.vue', 'TestSourceModal', ['source'])
 stubModal('../../src/modals/v2/AddEndpointRuleModal.vue', 'AddEndpointRuleModal', ['endpoint'])
 stubModal('../../src/modals/v2/RunActionModal.vue', 'RunActionModal', ['target', 'mode', 'item'])
@@ -51,7 +52,9 @@ stubModal('../../src/modals/PromotePreviewModal.vue', 'PromotePreviewModal', [])
 stubModal('../../src/dialogs/SharePointPublicationSetupDialog.vue', 'SharePointPublicationSetupDialog', [])
 stubModal('../../src/dialogs/RegistryLookupDialog.vue', 'RegistryLookupDialog', [])
 stubModal('../../src/dialogs/GatewayCatalogueDialog.vue', 'GatewayCatalogueDialog', [])
+stubModal('../../src/dialogs/OpenApiImportDialog.vue', 'OpenApiImportDialog', ['initialDocument', 'initialPrefix'])
 stubModal('../../src/dialogs/LinkSourceDialog.vue', 'LinkSourceDialog', ['app'])
+stubModal('../../src/modals/Registration/RegistrationTargetTestModal.vue', 'RegistrationTargetTestModal', ['target'])
 stubModal('../../src/dialogs/SourceResidencyDialog.vue', 'SourceResidencyDialog', ['source'])
 
 const bus = await import('../../src/handlers/modalBus.js')
@@ -86,6 +89,7 @@ afterEach(() => {
 
 const cases = [
 	[bus.EVENT_OPEN_TEST_MAPPING, 'TestMappingModal', { mapping: { id: 'm1' } }, { mapping: null }],
+	[bus.EVENT_OPEN_TEST_SERVICE_FETCH, 'TestServiceFetchModal', { fetch: { slug: 'kadaster-eigenaar' } }, { fetch: null }],
 	[bus.EVENT_OPEN_TEST_SOURCE, 'TestSourceModal', { source: { id: 's1' } }, { source: null }],
 	[bus.EVENT_OPEN_ADD_ENDPOINT_RULE, 'AddEndpointRuleModal', { endpoint: { id: 'e1' } }, { endpoint: null }],
 	[bus.EVENT_OPEN_RUN_ACTION, 'RunActionModal', { target: 'synchronization', mode: 'test', item: { id: 'y1' } }, { target: '', mode: '', item: null }],
@@ -98,7 +102,9 @@ const cases = [
 	[bus.EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, 'SharePointPublicationSetupDialog', {}, {}],
 	[bus.EVENT_OPEN_REGISTRY_LOOKUP, 'RegistryLookupDialog', {}, {}],
 	[bus.EVENT_OPEN_GATEWAY_CATALOGUE, 'GatewayCatalogueDialog', {}, {}],
+	[bus.EVENT_OPEN_OPENAPI_IMPORT, 'OpenApiImportDialog', { initialDocument: '{"openapi":"3.0.1"}', initialPrefix: 'orders' }, { initialDocument: '', initialPrefix: '' }],
 	[bus.EVENT_OPEN_LINK_SOURCE, 'LinkSourceDialog', { app: 'dossiq' }, { app: '' }],
+	[bus.EVENT_OPEN_REGISTRATION_TEST, 'RegistrationTargetTestModal', { target: { slug: 'json-milieu' } }, { target: null }],
 	[bus.EVENT_OPEN_SOURCE_RESIDENCY, 'SourceResidencyDialog', { source: { id: 's1' } }, { source: null }],
 ]
 

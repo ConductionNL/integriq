@@ -158,4 +158,17 @@ interface Microsoft365AdapterInterface {
 	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
 	 */
 	public function fetch(string $handle, string $userId): ?array;
+
+	/**
+	 * Fetch a Teams chat or channel message with its conversation, with the requester's delegated grant.
+	 *
+	 * @param string $handle  A `chatMessage:teams:…` handle.
+	 * @param string $userId  The person fetching.
+	 * @param int    $context Messages to read on each side of the hit.
+	 *
+	 * @return array<string,mixed>|null `{fileName, mimeType, content, thread}`, `{error}`, or null.
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-a-fetched-chat-message-comes-with-its-conversation-req-dcc-010
+	 */
+	public function fetchThread(string $handle, string $userId, int $context): ?array;
 }

@@ -21,6 +21,8 @@
 //   POST /api/jobs/{run,test}/{id}          — RunActionModal
 //   POST /api/synchronizations/{id}/{run,test} — RunActionModal
 
+import { documentText, prefixFor } from '../dialogs/openApiImport.js'
+import { releaseHeldMessage, withdrawHeldMessage } from './heldMessage.js'
 import { logsLocation, VIEW_LOGS_TARGETS } from './logTargets.js'
 import {
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
@@ -29,15 +31,19 @@ import {
 	EVENT_OPEN_DIRECTORY_RUN,
 	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
+	EVENT_OPEN_OPENAPI_IMPORT,
 	EVENT_OPEN_PROMOTION,
+	EVENT_OPEN_REGISTRATION_TEST,
 	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SOURCE_RESIDENCY,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_TEST_MAPPING,
+	EVENT_OPEN_TEST_SERVICE_FETCH,
 	EVENT_OPEN_TEST_SOURCE,
 	modalBus,
 } from './modalBus.js'
+import { refreshPayment } from './refreshPayment.js'
 import { getRouter } from './routerRef.js'
 import { rowId } from './rowId.js'
 import { runAgain } from './runAgain.js'
@@ -118,6 +124,39 @@ export function rerunFailedRunHandler({ item }) {
 }
 
 /**
+ * Refresh a payment's status from its provider: one POST, no dialog.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @return {Promise<object|null>} The refresh result.
+ * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
+ */
+export function refreshPaymentHandler({ item }) {
+	return refreshPayment(item)
+}
+
+/**
+ * Release a message held for review and send it, from the held-messages list.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @return {Promise<object|null>} The server's answer.
+ * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+ */
+export function releaseHeldMessageHandler({ item }) {
+	return releaseHeldMessage(item)
+}
+
+/**
+ * Withdraw a message held for review, from the held-messages list.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @return {Promise<object|null>} The server's answer.
+ * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+ */
+export function withdrawHeldMessageHandler({ item }) {
+	return withdrawHeldMessage(item)
+}
+
+/**
  * Open the run/test modal for a synchronization "Test (dry run)" row action.
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
@@ -168,12 +207,35 @@ export function testMappingModalHandler({ item }) {
 }
 
 /**
+ * Open the service fetch test modal ("Testen") for the clicked serviceFetch row.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+ */
+export function testServiceFetchHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_TEST_SERVICE_FETCH, { fetch: item })
+}
+
+/**
  * Open the Add-rule-to-endpoint modal for the clicked endpoint row.
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  */
 export function addEndpointRuleHandler({ item }) {
 	modalBus.emit(EVENT_OPEN_ADD_ENDPOINT_RULE, { endpoint: item })
+}
+
+/**
+ * Open the dry run of a registration target row ("Test", design D6).
+ *
+ * The modal owns the POST to /api/registration-targets/{slug}/test, which
+ * maps a sample hand-over and stops before the first write.
+ *
+ * @param {{ item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
+ */
+export function testRegistrationTargetHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_REGISTRATION_TEST, { target: item })
 }
 
 /**
@@ -243,6 +305,35 @@ export function openRegistryLookupHandler() {
  */
 export function openGatewayCatalogueHandler() {
 	modalBus.emit(EVENT_OPEN_GATEWAY_CATALOGUE, {})
+}
+
+/**
+ * Open the OpenAPI import (gateway-openapi-import-and-publish): give a vendor's
+ * document by address or paste it, preview the operations without writing,
+ * and create one source and the picked endpoints. Wired to the Sources page's
+ * "Import an OpenAPI description" header action.
+ *
+ * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+ */
+export function openOpenApiImportHandler() {
+	modalBus.emit(EVENT_OPEN_OPENAPI_IMPORT, {})
+}
+
+/**
+ * Bring a discovered API behind integriq (gateway-federated-api-discovery
+ * REQ-FEDG-003): open the OpenAPI import with the description its gateway
+ * exported and a prefix from its name, so the preview lists its operations.
+ * Wired to the API inventory's row action, shown only on a row with a stored
+ * description.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-a-discovered-api-can-be-brought-behind-integriq-req-fedg-003
+ */
+export function bringApiBehindIntegriqHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_OPENAPI_IMPORT, {
+		initialDocument: documentText(item?.openApiDocument),
+		initialPrefix: prefixFor(item),
+	})
 }
 
 /**

@@ -143,7 +143,7 @@ interface InlineSecretMigrationPlannerInterface {
 	 *
 	 * @return array<int,string> The field names, empty when the schema is unknown.
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function fieldsFor(string $schema): array;
 
@@ -155,7 +155,7 @@ interface InlineSecretMigrationPlannerInterface {
 	 *
 	 * @return string|null The separate reference property, or null to write in place.
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function referenceFieldFor(string $schema, string $field): ?string;
 
@@ -174,7 +174,7 @@ interface InlineSecretMigrationPlannerInterface {
 	 * @return array{schema: string, objects: array<int, array<string,mixed>>,
 	 *     totalObjects: int, wouldMigrate: int, needsReview: int, clean: bool}
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function planSchema(string $schema, int $limit = 1000): array;
 
@@ -186,7 +186,7 @@ interface InlineSecretMigrationPlannerInterface {
 	 * @return array{schemas: array<string, array<string,mixed>>, wouldMigrate: int,
 	 *     needsReview: int, clean: bool} The estate, and whether ALL of it is clean.
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function planEverything(int $limit = 1000): array;
 
@@ -268,7 +268,7 @@ interface InlineSecretMigrationPlannerInterface {
 	 *
 	 * @return array<string, string> uuid => name.
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function listUuids(string $schema, int $limit): array;
 }

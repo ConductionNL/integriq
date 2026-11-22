@@ -24,6 +24,8 @@
 
 namespace OCA\Integriq\Service\Security;
 
+use OCP\IAppConfig;
+
 /**
  * Detects secret-shaped field/header names and redacts matching values from
  * an array, irreversibly (masking, never encryption).
@@ -39,6 +41,42 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 * @var string
 	 */
 	public const PLACEHOLDER = '***REDACTED***';
+
+	/**
+	 * The personal data field list, built once over the app config.
+	 *
+	 * @var PersonalDataFieldList|null
+	 */
+	private ?PersonalDataFieldList $personalDataFields = null;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppConfig|null $appConfig Reads the personal data fields an administrator added;
+	 *                                   without it only the default list applies.
+	 */
+	public function __construct(
+		private readonly ?IAppConfig $appConfig = null,
+	) {
+
+	}//end __construct()
+
+	/**
+	 * A logged value with its personal data masked; see {@see PersonalDataFieldList::maskPersonalData()}.
+	 *
+	 * @param mixed $value The logged value.
+	 *
+	 * @return mixed The masked copy.
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 */
+	public function maskPersonalData(mixed $value): mixed {
+		if ($this->personalDataFields === null) {
+			$this->personalDataFields = new PersonalDataFieldList(appConfig: $this->appConfig);
+		}
+
+		return $this->personalDataFields->maskPersonalData(value: $value);
+	}//end maskPersonalData()
 
 	/**
 	 * Keys whose map is an API-key table (`keys: {"<api key>": "<user>"}`):

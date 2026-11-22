@@ -29,7 +29,6 @@ use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 use OCA\OpenRegister\Service\Task\TaskService as ORTaskService;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -44,6 +43,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Tests for the task-first mirror behaviour.
@@ -93,6 +94,7 @@ class ApprovalServiceTaskFirstTest extends TestCase {
 		$this->saved = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$this->saved[] = $object;
 				$entity = new ObjectEntity();
 				$entity->setUuid('approval-created');

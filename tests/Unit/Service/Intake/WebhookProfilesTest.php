@@ -74,7 +74,7 @@ class WebhookProfilesTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 	 */
 	public function testEachCloudEventsSourceHasItsOwnProfile(): void {
 		$profile = WebhookProfiles::byAuthorizationType(authorizationType: 'CloudEvents-Source-WebShop');

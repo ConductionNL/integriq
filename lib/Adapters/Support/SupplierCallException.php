@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+ * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use Throwable;
 /**
  * A failed supplier call, carrying the HTTP status when there was one.
  *
- * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+ * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
  */
 class SupplierCallException extends RuntimeException {
 
@@ -52,7 +52,7 @@ class SupplierCallException extends RuntimeException {
 	 *
 	 * @return int HTTP status.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
 	 */
 	public function getStatus(): int {
 		return $this->status;
@@ -63,7 +63,7 @@ class SupplierCallException extends RuntimeException {
 	 *
 	 * @return bool True for a refused credential.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/lvs-result-import/spec.md#requirement-a-live-uwlr-client-reads-results-from-the-pupil-tracking-system-req-004
 	 */
 	public function isRefusedCredential(): bool {
 		return $this->status === 401 || $this->status === 403;

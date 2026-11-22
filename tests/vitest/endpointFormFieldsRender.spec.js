@@ -38,7 +38,7 @@ vi.mock('@nextcloud/vue', async () => {
 			return h('div', { class: name, 'data-input-id': this.inputId }, this.$slots.default?.())
 		},
 	})
-	return { NcCheckboxRadioSwitch: control('NcCheckboxRadioSwitch'), NcSelect: control('NcSelect'), NcTextField: control('NcTextField') }
+	return { NcButton: control('NcButton'), NcCheckboxRadioSwitch: control('NcCheckboxRadioSwitch'), NcSelect: control('NcSelect'), NcTextField: control('NcTextField') }
 })
 vi.mock('@conduction/nextcloud-vue', async () => {
 	const { defineComponent, h } = await import('vue')
@@ -118,11 +118,23 @@ describe('method and target type', () => {
 		expect(updateField.mock.calls).toEqual([['method', 'GET'], ['method', null]])
 	})
 
-	it('shows a stored target type the list does not offer as itself', async () => {
+	it('offers api and shows its upstream fields instead of the register pair', async () => {
 		const { wrapper } = await mountFields([{ key: 'targetType', label: 'Target' }], { targetType: 'api' })
 
+		expect(select(wrapper, 'cn-endpoint-form-targetType').props('options')).toContainEqual({ id: 'api', label: 'api' })
 		expect(select(wrapper, 'cn-endpoint-form-targetType').props('modelValue')).toEqual({ id: 'api', label: 'api' })
 		expect(select(wrapper, 'cn-endpoint-form-register')).toBeUndefined()
+		expect(wrapper.findComponent({ name: 'EndpointTargetsFields' }).exists()).toBe(true)
+	})
+
+	it('leaves the targets and the sticky switch to the upstream fields', async () => {
+		const { wrapper } = await mountFields(
+			[{ key: 'targets', label: 'Targets' }, { key: 'sticky', label: 'Sticky', widget: 'checkbox' }, { key: 'endpoint', label: 'Endpoint' }],
+			{ targetType: 'register/schema' },
+		)
+
+		expect(wrapper.findAll('.cn-endpoint-form-fields__field')).toHaveLength(1)
+		expect(wrapper.findComponent({ name: 'EndpointTargetsFields' }).exists()).toBe(false)
 	})
 })
 

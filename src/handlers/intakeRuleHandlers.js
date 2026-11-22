@@ -80,7 +80,7 @@ async function moveIntakeRule(item, direction) {
 		return false
 	}
 
-	const writes = moveWrites(rules, item, direction)
+	const writes = moveWrites(rules, { rule: item, direction })
 	if (writes.length === 0) {
 		showError(direction === 'up'
 			? t('integriq', 'This rule is already first on its channel.')

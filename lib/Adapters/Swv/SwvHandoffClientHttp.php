@@ -24,7 +24,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/connectors-education-live-clients/specs/swv-handoff/spec.md#requirement-a-live-client-hands-a-support-request-to-the-swv-system-req-005
+ * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/swv-handoff/spec.md#requirement-a-live-client-hands-a-support-request-to-the-swv-system-req-005
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCA\Integriq\Adapters\Support\SupplierSourceCall;
 /**
  * Live hand-off of a dossier, answered by the receiver's acknowledgement.
  *
- * @spec openspec/changes/connectors-education-live-clients/specs/swv-handoff/spec.md#requirement-a-live-client-hands-a-support-request-to-the-swv-system-req-005
+ * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/swv-handoff/spec.md#requirement-a-live-client-hands-a-support-request-to-the-swv-system-req-005
  */
 final class SwvHandoffClientHttp extends SwvHandoffClient {
 
@@ -63,7 +63,7 @@ final class SwvHandoffClientHttp extends SwvHandoffClient {
 	 *
 	 * @return string Always `https`.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/swv-handoff/spec.md#requirement-a-live-client-hands-a-support-request-to-the-swv-system-req-005
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/swv-handoff/spec.md#requirement-a-live-client-hands-a-support-request-to-the-swv-system-req-005
 	 */
 	public function flavour(): string {
 		return 'https';
@@ -79,7 +79,7 @@ final class SwvHandoffClientHttp extends SwvHandoffClient {
 	 *
 	 * @throws SupplierCallException When the receiver is unreachable, refuses, or answers without a reference.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/swv-handoff/spec.md#requirement-a-live-client-hands-a-support-request-to-the-swv-system-req-005
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/swv-handoff/spec.md#requirement-a-live-client-hands-a-support-request-to-the-swv-system-req-005
 	 */
 	public function handOff(string $receiverId, array $dossier): array {
 		$answer = $this->calls->json(

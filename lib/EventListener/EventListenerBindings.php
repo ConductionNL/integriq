@@ -29,6 +29,7 @@ use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
 use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
 use OCA\Forms\Events\FormSubmittedEvent;
 use OCA\Integriq\BackgroundJob\ViewDeletedEventListener;
+use OCA\Integriq\Event\ConnectionCallRequestedEvent;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
@@ -47,6 +48,7 @@ use OCA\Integriq\Event\OptOutChangeRequestedEvent;
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
 use OCA\Integriq\Event\PaymentRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
+use OCA\Integriq\Event\RouteDistanceRequestedEvent;
 use OCA\Integriq\Event\ServiceFetchRequestedEvent;
 use OCA\Integriq\Event\SourceRequestedEvent;
 use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
@@ -54,6 +56,7 @@ use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
 use OCA\Integriq\Event\StufZdsConfirmationReceivedEvent;
 use OCA\Integriq\Event\SubmissionRegistrationRequestedEvent;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
+use OCA\Integriq\Service\Security\ConnectionHandoverListener;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -309,6 +312,19 @@ final class EventListenerBindings {
 		// imowId; refused on OpenRegister's own save path.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoActivityMappingGuardListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoActivityMappingGuardListener::class);
+		// The idp-broker-yivi-route change: a provider only reached over OIDC (Yivi) may not be
+		// saved as a SAML registration; refused on OpenRegister's own save path,
+		// which is the path the Authentication settings screen writes through.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: IdpRegistrationGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: IdpRegistrationGuardListener::class);
+		// open-formulieren-submits-into-its-case: an Open Formulieren form mapping is
+		// checked against its destination schema before it may be active.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: OpenFormulierenMappingGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: OpenFormulierenMappingGuardListener::class);
+		// Access-developer-portal-and-subscriptions D5: a deprecated, re-dated,
+		// retired or newly versioned API product tells its subscribers.
+		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ProductChangeNoticeListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ProductChangeNoticeListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: ProductChannelSlugGuardListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: ProductChannelSlugGuardListener::class);
 		// REQ-SOW-001 (signed-outbound-webhooks): the Webhooks page saves a
@@ -317,6 +333,11 @@ final class EventListenerBindings {
 		// creating/updating events, whichever page or app saves it.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: SubscriptionSigningDefaultListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: SubscriptionSigningDefaultListener::class);
+		// REQ-SMSP-004 (messaging-sms-providers-and-notifynl-mail): an SMS source
+		// gets its status-callback token, and a typed signing key is encrypted,
+		// on OpenRegister's own save path, whichever page or app saves it.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: SmsSourceCallbackListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: SmsSourceCallbackListener::class);
 		// REQ-MSV-001 (mapping-message-schema-validation): a message schema whose
 		// document does not parse for its kind is refused on OpenRegister's own
 		// save path, so the refusal holds whichever page or app saves it.
@@ -330,6 +351,9 @@ final class EventListenerBindings {
 		// dso-stam consumer, so the STAM intake never has to guess its account.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoStamConsumerListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoStamConsumerListener::class);
+		// Gateway-api-design-rules-check D4: a product with an open design rule error is not made active.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: ApiProductPublishGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: ApiProductPublishGuardListener::class);
 	}//end registerObjectSaveGuards()
 
 	/**
@@ -344,6 +368,10 @@ final class EventListenerBindings {
 		// CloudEvents (register `openconnector` — the OpenRegister register slug,
 		// frozen across the app-id rename; schema event) created by any app.
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: PeppolOutboundConsumer::class);
+		// Connectors-digipoort-sbr-filing: reacts to nl.conduction.sbr.filing.requested
+		// CloudEvents in the same register and `event` schema, and files the
+		// XBRL instance with Digipoort.
+		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: SbrFilingConsumer::class);
 		// Outbound webhooks / CloudEvent subscriptions: turns any OR object
 		// create/update/delete (any app) into a CloudEvent fanned out to
 		// matching `event_subscription`s (events-cloudevents spec REQ-004).
@@ -379,6 +407,12 @@ final class EventListenerBindings {
 		// webhook steps) asks for the Source for that base URL here, so the call
 		// can run through `openconnector.source-call` like every other one.
 		$dispatcher->addServiceListener(eventName: SourceRequestedEvent::class, className: SourceRequestedListener::class);
+		// A sibling app hands over a connection it used to run itself (first:
+		// pipelinq's BRP connection). Named by string: the event is the sender's.
+		foreach (array_keys(ConnectionHandoverListener::EVENTS) as $handoverEvent) {
+			$dispatcher->addServiceListener(eventName: $handoverEvent, className: ConnectionHandoverListener::class);
+		}
+
 		// Forms-service-fetch-for-apps (REQ-SF-002): a sibling app runs a service
 		// fetch an administrator defined, and gets its declared outputs or a refusal.
 		$dispatcher->addServiceListener(eventName: ServiceFetchRequestedEvent::class, className: ServiceFetchRequestedListener::class);
@@ -387,6 +421,9 @@ final class EventListenerBindings {
 		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);
 		// Sources-ecb-exchange-rates D2: a sibling app (shillinq) asks for the rate of a currency pair on a date.
 		$dispatcher->addServiceListener(eventName: ExchangeRateRequestedEvent::class, className: ExchangeRateRequestedListener::class);
+		// Sources-route-distance-and-rdw-lookup: a sibling app calls a connection it declared, and asks a road distance.
+		$dispatcher->addServiceListener(eventName: ConnectionCallRequestedEvent::class, className: ConnectionCallRequestedListener::class);
+		$dispatcher->addServiceListener(eventName: RouteDistanceRequestedEvent::class, className: RouteDistanceRequestedListener::class);
 		// Form-submission-registration-targets D2: portaliq registers a form submission at an outside system.
 		$dispatcher->addServiceListener(eventName: SubmissionRegistrationRequestedEvent::class, className: SubmissionRegistrationListener::class);
 	}//end registerSiblingRequestListeners()
@@ -422,6 +459,10 @@ final class EventListenerBindings {
 		$dispatcher->addServiceListener(eventName: NodeWrittenEvent::class, className: NextcloudFileEventListener::class);
 		$dispatcher->addServiceListener(eventName: NodeDeletedEvent::class, className: NextcloudFileEventListener::class);
 		$dispatcher->addServiceListener(eventName: MapperEvent::class, className: NextcloudFileTagEventListener::class);
+
+		// A file landing in a watched folder queues its ingest (sources-sftp-adapter-watched-folder D6).
+		$dispatcher->addServiceListener(eventName: NodeCreatedEvent::class, className: WatchedFolderListener::class);
+		$dispatcher->addServiceListener(eventName: NodeWrittenEvent::class, className: WatchedFolderListener::class);
 
 		// Calendar (REQ-002) — unconditional; `dav` ships with every
 		// instance. Both the NC32+ OCP "own calendar" family and the

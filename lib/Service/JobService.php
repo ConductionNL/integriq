@@ -27,6 +27,7 @@ use DateTime;
 use DateTimeImmutable;
 use Exception;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJob;
@@ -251,9 +252,7 @@ class JobService implements JobServiceInterface {
 			$jobData['jobListId'] = null;
 			return $this->objectService->saveObject(
 				object: $jobData,
-				register: 'integriq',
-				schema: 'job',
-				uuid: $job->getUuid()
+				options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid())
 			);
 		}
 
@@ -277,9 +276,7 @@ class JobService implements JobServiceInterface {
 		// Save the job to the database.
 		return $this->objectService->saveObject(
 			object: $jobData,
-			register: 'integriq',
-			schema: 'job',
-			uuid: $job->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid())
 		);
 
 	}//end scheduleJob()
@@ -615,11 +612,12 @@ class JobService implements JobServiceInterface {
 		$logData = $this->buildJobLogData(jobConfig: $jobConfig, outcome: $outcome, stackTrace: $stackTrace);
 		$logEntry = $this->saveJobLog(job: $job, jobData: $jobData, logData: $logData);
 
+		// System write, unscoped: a cron run has no user, and the run itself was already allowed.
 		$this->objectService->saveObject(
 			object: $jobData,
-			register: 'integriq',
-			schema: 'job',
-			uuid: $job->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid()),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		return $logEntry;
@@ -683,11 +681,12 @@ class JobService implements JobServiceInterface {
 	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
 	 */
 	private function scheduleCalendarJob(ObjectEntity $job, array $jobData): void {
+		// System write, unscoped: the cron pass that schedules it has no user.
 		$this->objectService->saveObject(
 			object: $this->withCalendarNextRun(jobData: $jobData),
-			register: 'integriq',
-			schema: 'job',
-			uuid: $job->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid()),
+			_rbac: false,
+			_multitenancy: false
 		);
 	}//end scheduleCalendarJob()
 
@@ -1007,10 +1006,12 @@ class JobService implements JobServiceInterface {
 			}
 		}
 
+		// System write, unscoped: a cron run has no user, and the run itself was already allowed.
 		return $this->objectService->saveObject(
 			object: $logObject,
-			register: 'integriq',
-			schema: 'job_log'
+			options: RegisterSave::options(register: 'integriq', schema: 'job_log'),
+			_rbac: false,
+			_multitenancy: false
 		);
 	}//end saveJobLog()
 

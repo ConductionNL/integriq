@@ -207,12 +207,39 @@
 			</div>
 
 			<div class="sync-config__field">
-				<NcTextField
-					:label="t('integriq', 'File format')"
-					:modelValue="configValue('format')"
-					placeholder="json | xml | csv"
-					@update:modelValue="onConfigUpdate('format', $event)" />
+				<NcSelect
+					:inputLabel="t('integriq', 'File format')"
+					:modelValue="formatOption"
+					:options="formatOptions"
+					@update:modelValue="onConfigUpdate('format', $event?.id || '')" />
 			</div>
+
+			<template v-if="configValue('format') === 'csv'">
+				<div class="sync-config__field">
+					<NcTextField
+						:label="t('integriq', 'CSV delimiter')"
+						:modelValue="configValue('csvDelimiter')"
+						placeholder=","
+						maxlength="1"
+						@update:modelValue="onConfigUpdate('csvDelimiter', $event)" />
+				</div>
+				<div class="sync-config__field">
+					<NcTextField
+						:label="t('integriq', 'CSV enclosure')"
+						:modelValue="configValue('csvEnclosure')"
+						placeholder="&quot;"
+						maxlength="1"
+						@update:modelValue="onConfigUpdate('csvEnclosure', $event)" />
+				</div>
+				<div class="sync-config__field">
+					<NcCheckboxRadioSwitch
+						:modelValue="config?.csvHeader !== false"
+						type="switch"
+						@update:modelValue="onConfigUpdate('csvHeader', $event ? null : false)">
+						{{ t('integriq', 'The first row names the columns') }}
+					</NcCheckboxRadioSwitch>
+				</div>
+			</template>
 
 			<div class="sync-config__field">
 				<NcTextField
@@ -353,6 +380,36 @@
 				:formId="configValue('formId')" />
 		</template>
 
+		<!-- File pickup mode (source only, sources-sftp-adapter Task 3), and a
+		     watched Nextcloud folder (sources-sftp-adapter-watched-folder D6). -->
+		<template v-else-if="type === 'sftp' || type === 'ftps' || type === 'nextcloud-folder'">
+			<div class="sync-config__field">
+				<label :for="pickupSourceId" class="sync-config__label">
+					{{ kindLabel }} {{ type === 'nextcloud-folder' ? t('integriq', 'source (Nextcloud folder)') : t('integriq', 'source (file server)') }}
+				</label>
+				<NcSelect
+					:inputId="pickupSourceId"
+					:aria-label-combobox="t('integriq', 'Source (file server)')"
+					:modelValue="selectedSource"
+					:options="sourceOptions"
+					:loading="sourcesLoading"
+					:placeholder="t('integriq', 'Pick a configured source')"
+					@update:modelValue="onSourcePick" />
+				<span class="sync-config__helper">
+					{{
+						type === 'nextcloud-folder'
+							? t('integriq', 'A Nextcloud folder source: it holds the owner and the folder that is watched.')
+							: t('integriq', 'An SFTP or FTPS source: it holds the server, its root path, its host key and its credential.')
+					}}
+				</span>
+			</div>
+
+			<FilePickupConfigFields
+				:config="config || {}"
+				:watched="type === 'nextcloud-folder'"
+				@update:config="$emit('update:config', $event)" />
+		</template>
+
 		<!-- Unknown / not set -->
 		<div v-else class="sync-config__placeholder">
 			{{
@@ -367,8 +424,9 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
+import { NcButton, NcCheckboxRadioSwitch, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
+import FilePickupConfigFields from './FilePickupConfigFields.vue'
 import FormsFieldMapping from './FormsFieldMapping.vue'
 import TablesColumnMapping from './TablesColumnMapping.vue'
 import messageSchemaOptions from '../../mixins/messageSchemaOptions.js'
@@ -402,11 +460,13 @@ export default {
 	components: {
 		NcButton,
 		NcLoadingIcon,
+		NcCheckboxRadioSwitch,
 		NcSelect,
 		NcTextField,
 		FolderOpenOutline,
 		TablesColumnMapping,
 		FormsFieldMapping,
+		FilePickupConfigFields,
 	},
 
 	mixins: [messageSchemaOptions],
@@ -478,6 +538,31 @@ export default {
 			return this.kind === 'source'
 				? t('integriq', 'Source')
 				: t('integriq', 'Target')
+		},
+
+		/**
+		 * The file formats a synchronization reads.
+		 *
+		 * @return {Array<{id: string, label: string}>} The options.
+		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+		 */
+		formatOptions() {
+			return [
+				{ id: 'json', label: 'JSON' },
+				{ id: 'jsonl', label: 'JSON Lines' },
+				{ id: 'xml', label: 'XML' },
+				{ id: 'csv', label: 'CSV' },
+			]
+		},
+
+		/**
+		 * The selected file format, or null when none is set.
+		 *
+		 * @return {object|null} The option.
+		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+		 */
+		formatOption() {
+			return this.formatOptions.find((option) => option.id === this.configValue('format')) || null
 		},
 
 		/**
@@ -617,6 +702,11 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
 		formSourceId() {
 			return `sync-config-${this.widgetUid}-form-source`
+		},
+
+		/** @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002 */
+		pickupSourceId() {
+			return `sync-config-${this.widgetUid}-pickup-source`
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */

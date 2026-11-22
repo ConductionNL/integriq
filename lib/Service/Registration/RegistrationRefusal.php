@@ -68,6 +68,41 @@ class RegistrationRefusal extends RuntimeException {
 	}//end __construct()
 
 	/**
+	 * The steps a leg completed before it was refused, or null when it named none.
+	 *
+	 * @var array<int,array<string,mixed>>|null
+	 */
+	private ?array $steps = null;
+
+	/**
+	 * Attach the steps the leg completed before this refusal (exceptions cannot be cloned).
+	 *
+	 * The service stores them on the failed record, so a repeated hand-over
+	 * resumes after them instead of creating a case or document again.
+	 *
+	 * @param array<int,array<string,mixed>> $steps Every step done so far.
+	 *
+	 * @return self This refusal, now carrying the steps.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
+	 */
+	public function withSteps(array $steps): self {
+		$this->steps = $steps;
+		return $this;
+	}//end withSteps()
+
+	/**
+	 * The steps the leg completed before this refusal.
+	 *
+	 * @return array<int,array<string,mixed>>|null The steps, or null when the leg named none.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
+	 */
+	public function getSteps(): ?array {
+		return $this->steps;
+	}//end getSteps()
+
+	/**
 	 * The refusal for an outside answer that is not a success.
 	 *
 	 * A 5xx or a 429 means the outside system is not available now and the

@@ -92,6 +92,19 @@ class TrustLevelMapper {
 	public const PROVIDER_EIDAS = 'eidas';
 
 	/**
+	 * The Yivi provider id: an attribute login, reached over an OIDC bridge.
+	 *
+	 * Not in the mapping table yet: which trust a Yivi login carries waits on
+	 * the decision in `idp-broker-yivi-route` (design D5), so `map()` refuses
+	 * it, fail-closed, and no Yivi envelope is issued until then.
+	 *
+	 * @var string
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
+	 */
+	public const PROVIDER_YIVI = 'yivi';
+
+	/**
 	 * The mapping table, keyed by provider and then by the level's canonical
 	 * lowercase name.
 	 *

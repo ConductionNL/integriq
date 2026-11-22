@@ -66,6 +66,13 @@ final class IdpLoginStart {
 	public string $nonce = '';
 
 	/**
+	 * The attributes an attribute login asks the person to disclose; null for any other login.
+	 *
+	 * @var AttributeDisclosureRequest|null
+	 */
+	public ?AttributeDisclosureRequest $disclosure = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $provider     The provider id from the route.

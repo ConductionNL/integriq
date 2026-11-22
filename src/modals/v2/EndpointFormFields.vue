@@ -2,9 +2,8 @@
 <!-- Copyright (C) 2026 Conduction B.V. -->
 <!--
   EndpointFormFields — slotted override for CnFormDialog's `#form` content on
-  the Endpoints index page. Restores the field set the pre-manifest
-  EditEndpoint.vue modal offered (src/modals/Endpoint/EditEndpoint.vue), which
-  the schema-driven form could not express declaratively:
+  the Endpoints index page. Adds the fields the schema-driven form could not
+  express declaratively:
 
     • Register + Schema pickers. These are NOT schema properties — the endpoint
       schema stores a single polymorphic `targetId`, and for
@@ -211,6 +210,16 @@
 			</template>
 		</div>
 
+		<McpEndpointFields
+			v-if="isMcpTarget"
+			:formData="formData"
+			:updateField="updateField" />
+
+		<EndpointTargetsFields
+			v-if="isApiTarget"
+			:formData="formData"
+			:updateField="updateField" />
+
 		<!-- REQ-MSV-002: the message schemas the request and the proxied
 		     answer must match, and whether a mismatch is refused or recorded. -->
 		<fieldset class="cn-endpoint-form-fields__validation">
@@ -245,6 +254,67 @@
 					)
 				" />
 		</fieldset>
+
+		<!-- REQ-RCPE-001: the response cache of the endpoint's answers. -->
+		<fieldset class="cn-endpoint-form-fields__validation">
+			<legend class="cn-endpoint-form-fields__label">
+				{{ t('integriq', 'Response cache') }}
+			</legend>
+			<NcCheckboxRadioSwitch
+				:modelValue="cacheSettings.enabled === true"
+				type="switch"
+				@update:modelValue="setCache('enabled', $event)">
+				{{ t('integriq', 'Cache answers') }}
+			</NcCheckboxRadioSwitch>
+			<template v-if="cacheSettings.enabled === true">
+				<NcTextField
+					:label="t('integriq', 'Lifetime in seconds')"
+					type="number"
+					min="1"
+					max="86400"
+					:modelValue="String(cacheSettings.ttlSeconds ?? 60)"
+					@update:modelValue="setCacheTtl" />
+				<NcTextField
+					:label="t('integriq', 'Headers that vary the answer')"
+					:modelValue="cacheVaryText"
+					@update:modelValue="setCacheVary" />
+				<NcCheckboxRadioSwitch
+					:modelValue="cacheSettings.sharedAcrossConsumers === true"
+					type="switch"
+					@update:modelValue="setCache('sharedAcrossConsumers', $event)">
+					{{ t('integriq', 'Same answer for every consumer') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch
+					:modelValue="cacheSettings.ignoreUpstreamMaxAge === true"
+					type="switch"
+					@update:modelValue="setCache('ignoreUpstreamMaxAge', $event)">
+					{{ t('integriq', 'Ignore the source\'s max-age') }}
+				</NcCheckboxRadioSwitch>
+			</template>
+			<CnFieldHelper
+				:text="
+					t(
+						'integriq',
+						'Answers to GET and HEAD from a source are kept for the lifetime, per consumer unless shared. Answers the source marks private or no-store are never kept.',
+					)
+				" />
+			<div v-if="endpointId">
+				<NcButton
+					variant="secondary"
+					:disabled="cacheClearing"
+					@click="clearCache">
+					{{ t('integriq', 'Clear cache') }}
+				</NcButton>
+				<p
+					v-if="cacheNotice"
+					role="status"
+					class="cn-endpoint-form-fields__note" :class="[
+						{ 'cn-endpoint-form-fields__note--warn': cacheNotice.failed },
+					]">
+					{{ cacheNotice.text }}
+				</p>
+			</div>
+		</fieldset>
 	</div>
 </template>
 
@@ -252,9 +322,16 @@
 import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
+import EndpointTargetsFields from './EndpointTargetsFields.vue'
+import McpEndpointFields from './McpEndpointFields.vue'
 
-/** HTTP methods the original EditEndpoint modal offered, in its order. */
+/** HTTP methods the method select offers, in display order. */
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({
 	id,
 	label: id,
@@ -263,10 +340,23 @@ const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({
 /**
  * Target kinds. The original modal offered ONLY `register/schema`, which is why
  * it always showed (and required) the Register + Schema pickers. The schema
- * documents `api`, `job` and `synchronization` too, but authoring those needs a
+ * documents `job` and `synchronization` too, but authoring those needs a
  * different target input than a register/schema pair — kept out until asked for.
+ * `mcp` and `api` pick sources, in McpEndpointFields and EndpointTargetsFields.
  */
-const TARGET_TYPE_OPTIONS = [{ id: 'register/schema', label: 'register/schema' }]
+const TARGET_TYPE_OPTIONS = [
+	{ id: 'register/schema', label: 'register/schema' },
+	// An outside MCP tool server behind the gateway (gateway-mcp-proxy); its fields are McpEndpointFields.
+	{ id: 'mcp', label: 'mcp' },
+	// A proxy onto one source, or onto several by weight (gateway-upstream-routing); its fields are EndpointTargetsFields.
+	{ id: 'api', label: 'api' },
+]
+
+/** The endpoint properties McpEndpointFields edits, kept out of the generic field list. */
+const MCP_FIELDS = ['mcpToolLimits', 'mcpMaxStreamSeconds', 'mcpStoreArguments']
+
+/** The endpoint properties EndpointTargetsFields edits, kept out of the generic field list. */
+const TARGET_FIELDS = ['targets', 'sticky']
 
 /**
  * Example values shown as placeholders. `endpoint` and `endpointArray` describe
@@ -294,7 +384,10 @@ export default {
 		NcTextField,
 		NcSelect,
 		NcCheckboxRadioSwitch,
+		NcButton,
 		CnFieldHelper,
+		McpEndpointFields,
+		EndpointTargetsFields,
 	},
 
 	mixins: [messageSchemaOptions],
@@ -324,10 +417,46 @@ export default {
 			configurationsLoading: false,
 			/** True once the OpenRegister registers endpoint has soft-failed. */
 			registerUnavailable: false,
+			/** True while a clear-cache request is out. */
+			cacheClearing: false,
+			/** The outcome of the last clear: { text, failed }, or null. */
+			cacheNotice: null,
 		}
 	},
 
 	computed: {
+		/**
+		 * The endpoint's cache block, empty when it has none.
+		 *
+		 * @return {object} The cache settings.
+		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 */
+		cacheSettings() {
+			const cache = this.formData.cache
+			return cache && typeof cache === 'object' ? cache : {}
+		},
+
+		/**
+		 * The vary headers as a comma-separated list.
+		 *
+		 * @return {string} The headers.
+		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 */
+		cacheVaryText() {
+			const headers = this.cacheSettings.varyHeaders
+			return Array.isArray(headers) ? headers.join(', ') : ''
+		},
+
+		/**
+		 * The id of the endpoint being edited, null for a new one.
+		 *
+		 * @return {string|null} The id.
+		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 */
+		endpointId() {
+			return this.formData.id || this.formData['@self']?.id || null
+		},
+
 		/**
 		 * @return {object[]} The two validation modes.
 		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
@@ -358,7 +487,12 @@ export default {
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
 			return this.fields.filter(
-				(field) => field.key !== 'targetId' && field.key !== 'validation',
+				(field) =>
+					field.key !== 'targetId'
+					&& field.key !== 'validation'
+					&& field.key !== 'cache'
+					&& MCP_FIELDS.includes(field.key) === false
+					&& TARGET_FIELDS.includes(field.key) === false,
 			)
 		},
 
@@ -400,6 +534,26 @@ export default {
 		 */
 		isRegisterSchemaTarget() {
 			return this.formData?.targetType === 'register/schema'
+		},
+
+		/**
+		 * Whether the endpoint relays to an outside MCP tool server.
+		 *
+		 * @return {boolean} True when Target Type is `mcp`.
+		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+		 */
+		isMcpTarget() {
+			return this.formData?.targetType === 'mcp'
+		},
+
+		/**
+		 * Whether the endpoint proxies to one or several sources.
+		 *
+		 * @return {boolean} True when Target Type is `api`.
+		 * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+		 */
+		isApiTarget() {
+			return this.formData?.targetType === 'api'
 		},
 
 		/**
@@ -718,6 +872,82 @@ export default {
 			return this.messageSchemaOptionFor(
 				this.formData.validation?.[direction]?.messageSchema,
 			)
+		},
+
+		/**
+		 * Write one key of the cache block.
+		 *
+		 * @param {string} key The key.
+		 * @param {boolean|number|string[]} value The value.
+		 * @return {void}
+		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 */
+		setCache(key, value) {
+			this.updateField('cache', { ...this.cacheSettings, [key]: value })
+		},
+
+		/**
+		 * Write the lifetime, a whole number of seconds from 1 to 86400.
+		 *
+		 * @param {string} value The typed value.
+		 * @return {void}
+		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 */
+		setCacheTtl(value) {
+			const seconds = Math.round(Number(value))
+			if (!Number.isFinite(seconds) || seconds < 1) {
+				return
+			}
+			this.setCache('ttlSeconds', Math.min(seconds, 86400))
+		},
+
+		/**
+		 * Write the vary headers from a comma-separated list.
+		 *
+		 * @param {string} value The typed list.
+		 * @return {void}
+		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 */
+		setCacheVary(value) {
+			const headers = String(value || '')
+				.split(',')
+				.map((header) => header.trim())
+				.filter((header) => header !== '')
+			this.setCache('varyHeaders', headers)
+		},
+
+		/**
+		 * Clear the endpoint's cache, so the next call reaches the source.
+		 *
+		 * @return {Promise<boolean>} Whether it was cleared.
+		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 */
+		async clearCache() {
+			if (!this.endpointId) {
+				return false
+			}
+			this.cacheClearing = true
+			this.cacheNotice = null
+			try {
+				await axios.post(
+					generateUrl(
+						`/apps/integriq/api/endpoints/${encodeURIComponent(this.endpointId)}/cache/clear`,
+					),
+				)
+				this.cacheNotice = {
+					text: this.t('integriq', 'The cache of this endpoint is cleared.'),
+					failed: false,
+				}
+				return true
+			} catch {
+				this.cacheNotice = {
+					text: this.t('integriq', 'The cache could not be cleared.'),
+					failed: true,
+				}
+				return false
+			} finally {
+				this.cacheClearing = false
+			}
 		},
 
 		/**

@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\NextcloudFolderFiles;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 
@@ -51,10 +52,14 @@ class SourceTestService implements SourceTestServiceInterface {
 	 *
 	 * @param CallService $callService The HTTP call engine.
 	 * @param LoggerInterface $logger Logs a failed call.
+	 * @param NextcloudFolderFiles|null $folderFiles Tests a folder in Nextcloud Files, which has no HTTP call.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function __construct(
 		private readonly CallService $callService,
 		private readonly LoggerInterface $logger,
+		private readonly ?NextcloudFolderFiles $folderFiles = null,
 	) {
 	}//end __construct()
 
@@ -74,8 +79,14 @@ class SourceTestService implements SourceTestServiceInterface {
 	 * @return array{outcome:string,result:?array,statusCode:?int,statusMessage:string,error:string}
 	 *
 	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
 	 */
 	public function run(ObjectEntity $source, string $endpoint = '', string $method = 'GET', array $config = []): array {
+		$object = $source->getObject();
+		if ($this->folderFiles !== null && is_array($object) === true && $this->folderFiles->handles(source: $object) === true) {
+			return $this->folderOutcome(test: $this->folderFiles->test(source: $object));
+		}
+
 		try {
 			$callLog = $this->callService->call(
 				source: $source,
@@ -105,6 +116,30 @@ class SourceTestService implements SourceTestServiceInterface {
 
 		return $this->outcome(outcome: self::OUTCOME_RESPONSE, result: $result, error: '');
 	}//end run()
+
+	/**
+	 * The outcome of testing a folder in Nextcloud Files.
+	 *
+	 * A folder that opens answers like a 200 response with the test's message;
+	 * one that does not is a failed test whose error names the path.
+	 *
+	 * @param array{ok: bool, message: string} $test The folder's test.
+	 *
+	 * @return array{outcome:string,result:?array,statusCode:?int,statusMessage:string,error:string}
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+	 */
+	private function folderOutcome(array $test): array {
+		if ($test['ok'] === false) {
+			return $this->outcome(outcome: self::OUTCOME_FAILED, result: null, error: $test['message']);
+		}
+
+		return $this->outcome(
+			outcome: self::OUTCOME_RESPONSE,
+			result: ['response' => ['statusCode' => 200, 'statusMessage' => $test['message']]],
+			error: ''
+		);
+	}//end folderOutcome()
 
 	/**
 	 * Build the outcome array.

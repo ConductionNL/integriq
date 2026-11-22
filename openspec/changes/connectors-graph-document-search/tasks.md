@@ -35,7 +35,8 @@ Kind: code. Size M. Half for dossiq `woo-requests-gather-documents-from-sources`
 - **acceptance_criteria**:
   - GIVEN the docs WHEN an administrator sets up the search THEN the Graph permissions for files and for mail and chat are listed
 - [x] Implement (`docs/features/document-search.md`)
-- [ ] Test (docs build)
+- [x] Test (docs build)
+  - `npm ci --legacy-peer-deps && npm run build` in `docs/` on 2026-11-21: the build succeeds, all 10 AI-baseline checks pass, and the build reports no warning for `docs/features/document-search.md`.
 
 ## Verification
 - [ ] `openspec validate connectors-graph-document-search --strict` passes

@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/events-async-api-products/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-5
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -24,17 +24,21 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\EgressRefusedException;
-use OCA\Integriq\Service\AsyncApiDocumentService;
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\AsyncApiDocumentServiceInterface;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EventServiceInterface;
-use OCA\Integriq\Service\ProductPolicyService;
-use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\Integriq\Service\ProductPolicyServiceInterface;
+use OCA\Integriq\Service\ProductSubscriber;
+use OCA\Integriq\Service\RateLimit\InboundRateLimitServiceInterface;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -53,7 +57,7 @@ use Throwable;
  * subscription to the product; without one the answer is 403
  * `subscription_required`, the same refusal a product endpoint gives.
  *
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One product channel surface: the AsyncAPI
  *  document, pull, subscribe and unsubscribe share the consumer, subscription and tier-budget
@@ -67,29 +71,29 @@ class ProductChannelsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                       $appName      The app name.
-	 * @param IRequest                     $request      The request.
-	 * @param OrObjectService              $objects      OpenRegister's object service.
-	 * @param AsyncApiDocumentService      $documents    Builds the document.
-	 * @param ProductPolicyService         $policy       The product subscription lookup.
-	 * @param OpenRegisterCredentialBridge $credentials  Authenticates a consumer.
-	 * @param IURLGenerator                $urlGenerator Builds the server URL.
-	 * @param LoggerInterface              $logger       The logger.
-	 * @param InboundRateLimitService|null $rateLimits   The tier rate limit and quota counters a product endpoint uses.
-	 * @param EventServiceInterface|null   $events       Reads a pull subscription's pending events.
-	 * @param EgressGuardInterface|null    $egressGuard  Judges a consumer's push sink.
+	 * @param string                                  $appName       The app name.
+	 * @param IRequest                                $request       The request.
+	 * @param OrObjectService                         $objects       OpenRegister's object service.
+	 * @param AsyncApiDocumentServiceInterface        $documents     Builds the document.
+	 * @param ProductPolicyServiceInterface           $policy        The product subscription lookup.
+	 * @param OpenRegisterCredentialBridgeInterface   $credentials   Authenticates a consumer.
+	 * @param IURLGenerator                           $urlGenerator  Builds the server URL.
+	 * @param LoggerInterface                         $logger        The logger.
+	 * @param InboundRateLimitServiceInterface|null   $rateLimits    The tier rate limit and quota counters a product endpoint uses.
+	 * @param EventServiceInterface|null              $events        Reads a pull subscription's pending events.
+	 * @param EgressGuardInterface|null               $egressGuard   Judges a consumer's push sink.
 	 * @param SubscriptionSigningPolicyInterface|null $signingPolicy Reveals a new push subscription's signing secret once.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly OrObjectService $objects,
-		private readonly AsyncApiDocumentService $documents,
-		private readonly ProductPolicyService $policy,
-		private readonly OpenRegisterCredentialBridge $credentials,
+		private readonly AsyncApiDocumentServiceInterface $documents,
+		private readonly ProductPolicyServiceInterface $policy,
+		private readonly OpenRegisterCredentialBridgeInterface $credentials,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
-		private readonly ?InboundRateLimitService $rateLimits = null,
+		private readonly ?InboundRateLimitServiceInterface $rateLimits = null,
 		private readonly ?EventServiceInterface $events = null,
 		private readonly ?EgressGuardInterface $egressGuard = null,
 		private readonly ?SubscriptionSigningPolicyInterface $signingPolicy = null,
@@ -105,7 +109,7 @@ class ProductChannelsController extends Controller {
 	 * @return JSONResponse 200 with the document, 403 for a private product without a subscribed consumer,
 	 *                      401 for a credential that does not authenticate, 404 for an unknown product.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -143,10 +147,11 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return JSONResponse `{messages, cursor}`, or 401/403/404/429.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 600, period: 60)]
 	public function pull(string $productSlug, string $channel, ?string $cursor = null, int $limit = 100): JSONResponse {
 		$access = $this->channelAccess(productSlug: $productSlug, channel: $channel);
 		if ($access instanceof JSONResponse) {
@@ -202,10 +207,11 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return JSONResponse 201 with the subscription and its signing secret, or 400/401/403/404/429.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function subscribe(string $productSlug, string $channel): JSONResponse {
 		$access = $this->channelAccess(productSlug: $productSlug, channel: $channel);
 		if ($access instanceof JSONResponse) {
@@ -233,18 +239,21 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return array<string, mixed>|null The answer, or null when it could not be saved.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private function savePushSubscription(array $data): ?array {
 		try {
-			$saved = $this->objects->saveObject(object: $data, register: 'integriq', schema: 'event_subscription', _rbac: false, _multitenancy: false);
+			$saved = $this->objects->saveObject(
+				object: $data,
+				options: RegisterSave::options(register: 'integriq', schema: 'event_subscription'),
+				_rbac: false,
+				_multitenancy: false
+			);
 			$stored = $this->objects->find(
 				id: (string)$saved->getUuid(),
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $exception) {
 			$this->logger->warning('integriq: a product channel push subscription could not be saved: ' . $exception->getMessage());
@@ -271,10 +280,11 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return JSONResponse 200, or 401/403/404/429.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function unsubscribe(string $productSlug, string $channel, string $id): JSONResponse {
 		$access = $this->channelAccess(productSlug: $productSlug, channel: $channel);
 		if ($access instanceof JSONResponse) {
@@ -288,7 +298,11 @@ class ProductChannelsController extends Controller {
 		}
 
 		try {
-			$this->objects->deleteObject(uuid: $id, register: 'integriq', schema: 'event_subscription', _rbac: false, _multitenancy: false);
+			$this->objects->deleteObject(
+				new ObjectDeletion(uuid: $id, target: new ObjectFindTarget(register: 'integriq', schema: 'event_subscription')),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $exception) {
 			$this->logger->warning('integriq: a product channel push subscription could not be deleted: ' . $exception->getMessage());
 			return $this->unavailable();
@@ -306,7 +320,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return array<string, mixed>|JSONResponse `product`, `channel`, `consumer`, `subscription` and `headers`, or the refusal.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	private function channelAccess(string $productSlug, string $channel): array|JSONResponse {
 		$product = $this->documents->latestVersion(versions: $this->versionsOf(productSlug: $productSlug));
@@ -393,7 +407,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return JSONResponse|null The 400, or null when the sink may be called.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private function refuseSink(string $sink): ?JSONResponse {
 		if ($this->isHttpsUrl(sink: $sink) === false) {
@@ -443,8 +457,7 @@ class ProductChannelsController extends Controller {
 		try {
 			$saved = $this->objects->saveObject(
 				object: $this->subscriptionFor(access: $access, style: 'pull'),
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: RegisterSave::options(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -500,7 +513,7 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private static function matches(mixed $row, array $wanted): bool {
 		if ($row instanceof ObjectEntity === false) {
@@ -574,36 +587,13 @@ class ProductChannelsController extends Controller {
 	 *
 	 * @return array{consumer: ObjectEntity, subscription: ObjectEntity}|JSONResponse
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	private function subscriber(ObjectEntity $product): array|JSONResponse {
-		$subscriptionRequired = new JSONResponse(
-			['error' => 'subscription_required', 'message' => 'No active subscription to this API product'],
-			Http::STATUS_FORBIDDEN
+		return (new ProductSubscriber(credentials: $this->credentials, policy: $this->policy))->resolve(
+			authorization: (string)$this->request->getHeader('Authorization'),
+			product: $product
 		);
-
-		$header = (string)$this->request->getHeader('Authorization');
-		if (str_starts_with($header, 'Bearer ') === false || substr_count($header, '.') !== 2) {
-			return $subscriptionRequired;
-		}
-
-		try {
-			$this->credentials->authorizeJwt(authorization: $header);
-		} catch (AuthenticationException $exception) {
-			return new JSONResponse(['error' => 'unauthorized', 'message' => $exception->getMessage()], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$consumer = $this->credentials->getResolvedConsumer();
-		if ($consumer === null) {
-			return $subscriptionRequired;
-		}
-
-		$subscription = $this->policy->resolveActiveSubscription(consumerUuid: (string)$consumer->getUuid(), productUuid: (string)$product->getUuid());
-		if ($subscription === null) {
-			return $subscriptionRequired;
-		}
-
-		return ['consumer' => $consumer, 'subscription' => $subscription];
 	}//end subscriber()
 
 	/**

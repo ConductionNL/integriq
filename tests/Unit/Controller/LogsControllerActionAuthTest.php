@@ -32,6 +32,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Every one of these endpoints was `#[NoAdminRequired]` with an
@@ -170,7 +171,9 @@ class LogsControllerActionAuthTest extends TestCase {
 	 */
 	public function testDestroyStillDeletesForAnAuthorizedCaller(): void {
 		$this->orObjectService->method('find')->willReturn($this->someoneElsesLog());
-		$this->orObjectService->expects($this->once())->method('deleteObject')->with('uuid-1');
+		$this->orObjectService->expects($this->once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'uuid-1',
+			]));
 
 		$response = $this->controller(isAdmin: true)->destroy('log-1');
 

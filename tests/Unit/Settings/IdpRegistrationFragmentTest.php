@@ -52,19 +52,58 @@ class IdpRegistrationFragmentTest extends TestCase {
 		$schema = self::schema();
 
 		$this->assertSame(
-			['organisation', 'provider', 'kind', 'enabled', 'label', 'idpMetadataUrl', 'issuer', 'spEntityId', 'clientId', 'clientAuth', 'subjectMapping', 'assuranceMapping', 'pseudonymisation', 'credentials'],
+			[
+				'organisation',
+				'provider',
+				'kind',
+				'enabled',
+				'label',
+				'idpMetadataUrl',
+				'issuer',
+				'spEntityId',
+				'clientId',
+				'clientAuth',
+				'subjectMapping',
+				'assuranceMapping',
+				'pseudonymisation',
+				'credentials',
+				'yiviAttributes',
+				'yiviTrust',
+				'yiviBsnToConsumer',
+			],
 			array_keys($schema['properties'])
 		);
 		foreach ($schema['properties'] as $key => $property) {
 			$this->assertNotSame('', (string)($property['title'] ?? ''), $key . ' has no title');
 		}
 
-		$this->assertSame(['digid', 'eherkenning', 'eidas'], $schema['properties']['provider']['enum']);
+		$this->assertSame(expected: ['digid', 'eherkenning', 'eidas', 'yivi'], actual: $schema['properties']['provider']['enum']);
 		$this->assertSame(['saml-sp', 'oidc-rp'], $schema['properties']['kind']['enum']);
 		$this->assertFalse($schema['properties']['enabled']['default']);
 		$this->assertSame('hmac', $schema['properties']['pseudonymisation']['default']);
 		$this->assertSame(['bsn', 'pseudonym', 'kvk', 'rsin', 'branch', 'eidasPersonIdentifier'], array_keys($schema['properties']['subjectMapping']['properties']));
 	}//end testThePropertiesOfDesignD2EachWithATitle()
+
+	/**
+	 * Yivi's properties: the attribute list, the trust (low by default) and the BSN switch (off by default).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-yivi-is-a-provider-on-the-broker-reached-as-an-oidc-registration-req-yivi-001
+	 */
+	public function testTheYiviPropertiesAndTheirDefaults(): void {
+		$schema = self::schema();
+		$attributes = $schema['properties']['yiviAttributes'];
+
+		$this->assertSame(expected: '1.1.0', actual: $schema['version']);
+		$this->assertSame(expected: 'array', actual: $attributes['type']);
+		$this->assertSame(expected: ['id', 'claim', 'label', 'carriesBsn'], actual: array_keys($attributes['items']['properties']));
+		$this->assertSame(expected: ['id', 'claim'], actual: $attributes['items']['required']);
+		$this->assertSame(expected: ['low', 'substantial'], actual: $schema['properties']['yiviTrust']['enum']);
+		$this->assertSame(expected: 'low', actual: $schema['properties']['yiviTrust']['default']);
+		$this->assertFalse(condition: $schema['properties']['yiviBsnToConsumer']['default']);
+		$this->assertNotContains(needle: 'yiviTrust', haystack: $schema['required']);
+	}//end testTheYiviPropertiesAndTheirDefaults()
 
 	/**
 	 * Credentials are references only: the five roles, plain strings, nothing else allowed.

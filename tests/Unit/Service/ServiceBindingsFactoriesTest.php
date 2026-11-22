@@ -26,7 +26,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
+use OCA\Integriq\Service\Adapter\DataInfra\DatabaseAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Adapter\DataInfra\NextcloudFolderAdapter;
+use OCA\Integriq\Service\Adapter\DataInfra\SftpAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\CitrixDaasAdapter;
@@ -131,7 +135,12 @@ class ServiceBindingsFactoriesTest extends TestCase {
 		}
 	}//end testTheSettingsServiceIsBuiltFromTheConfigRebaseSchedulerAndLogger()
 
-	public function testBootHandsTheEightIntegrationProvidersToOpenRegisterInOrder(): void {
+	/**
+	 * Boot hands OpenRegister's registry the twelve integration providers, in order.
+	 *
+	 * @return void
+	 */
+	public function testBootHandsTheTwelveIntegrationProvidersToOpenRegisterInOrder(): void {
 		$registry = new class extends IntegrationRegistry {
 			/** @var array<int, object> */
 			public array $added = [];
@@ -152,10 +161,23 @@ class ServiceBindingsFactoriesTest extends TestCase {
 		(new ServiceBindings())->boot(context: $context);
 
 		$this->assertSame(
-			[SynchronizationContractProvider::class, AzureVirtualDesktopAdapter::class, IntuneAdapter::class, JamfProAdapter::class, CitrixDaasAdapter::class, SharePointOnlineAdapter::class, Microsoft365Adapter::class, S3Adapter::class],
+			[
+				SynchronizationContractProvider::class,
+				AzureVirtualDesktopAdapter::class,
+				IntuneAdapter::class,
+				JamfProAdapter::class,
+				CitrixDaasAdapter::class,
+				SharePointOnlineAdapter::class,
+				Microsoft365Adapter::class,
+				S3Adapter::class,
+				SftpAdapter::class,
+				FtpsAdapter::class,
+				NextcloudFolderAdapter::class,
+				DatabaseAdapter::class,
+			],
 			array_map(fn (object $provider): string => $this->classOf($provider), $registry->added)
 		);
-	}//end testBootHandsTheEightIntegrationProvidersToOpenRegisterInOrder()
+	}//end testBootHandsTheTwelveIntegrationProvidersToOpenRegisterInOrder()
 
 	public function testABootFailureIsLoggedNotThrown(): void {
 		$logger = $this->createMock(LoggerInterface::class);

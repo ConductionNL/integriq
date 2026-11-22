@@ -1,0 +1,27 @@
+{
+  "$comment": "ADR-037 register fragment (sources-route-distance-and-rdw-lookup D3). Seeds the DORMANT `rdw-open-data` source: the RDW open data (Socrata) API of registered vehicles, which needs no credential. A sibling app (humaniq people-register-prefill) declares a connection such as `rdw-voertuigen`; an administrator links it to this source, and the app then calls it through OCA\\Integriq\\Event\\ConnectionCallRequestedEvent, for example GET /m9d7-ebf2.json?kenteken=GB123X for the vehicle with that plate (make `merk`, `handelsbenaming`, `datum_eerste_toelating`, `catalogusprijs`). Enable the source to use it.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "rdw-open-data"
+        },
+        "name": "RDW open data",
+        "description": "The RDW register of vehicles in the Netherlands, as open data: make, first registration date and catalogue price by licence plate. No credential is needed. Link it to an app's vehicle connection and enable the source.",
+        "type": "api",
+        "location": "https://opendata.rdw.nl/resource",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

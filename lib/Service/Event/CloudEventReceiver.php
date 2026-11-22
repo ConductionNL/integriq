@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+ * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
 
 declare(strict_types=1);
@@ -29,7 +29,9 @@ namespace OCA\Integriq\Service\Event;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -37,9 +39,9 @@ use Throwable;
 /**
  * Stores a received CloudEvent once per source and id, then routes it.
  *
- * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+ * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
-class CloudEventReceiver {
+class CloudEventReceiver implements CloudEventReceiverInterface {
 
 	/**
 	 * Namespace of the uuid a received event is stored under. The uuid is
@@ -73,7 +75,7 @@ class CloudEventReceiver {
 	 *
 	 * @throws \Exception When the event cannot be stored or routed.
 	 *
-	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 	 */
 	public function receive(string $receiver, array $cloudEvent): ?ObjectEntity {
 		$uuid = $this->uuidFor(receiver: $receiver, cloudEvent: $cloudEvent);
@@ -83,12 +85,7 @@ class CloudEventReceiver {
 
 		$event = $this->objectService->saveObject(
 			object: $this->eventObject(cloudEvent: $cloudEvent),
-			register: 'integriq',
-			schema: 'event',
-			uuid: $uuid,
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API, and the sender was checked by the
-			// receiver's signature or credential before this runs.
+			options: RegisterSave::options(register: 'integriq', schema: 'event', uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -107,7 +104,7 @@ class CloudEventReceiver {
 	 *
 	 * @return string The uuid.
 	 *
-	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 	 */
 	public function uuidFor(string $receiver, array $cloudEvent): string {
 		return (string)Uuid::v5(
@@ -127,7 +124,12 @@ class CloudEventReceiver {
 	private function alreadyReceived(string $uuid): bool {
 		try {
 			// Unscoped: the inbound receiver checks for a duplicate of the event it stores unscoped above.
-			return $this->objectService->find(id: $uuid, register: 'integriq', schema: 'event', _rbac: false, _multitenancy: false) !== null;
+			return $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event'),
+				_rbac: false,
+				_multitenancy: false
+			) !== null;
 		} catch (Throwable) {
 			return false;
 		}

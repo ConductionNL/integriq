@@ -39,6 +39,8 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectFindOptions as PublishedObjectFindOptions;
 
 /**
  * A logger that records everything, so tests can assert no secret ever reaches it.
@@ -180,7 +182,7 @@ class InlineSecretMigrationPlannerTest extends TestCase {
 	public function testRenderedReadLosesTheSecretProvingTheDoubleIsHonest(): void {
 		$this->objectService->stored['src-1'] = ['name' => 'x', 'apikey' => self::SECRET];
 
-		$rendered = $this->objectService->find(id: 'src-1', register: 'integriq', schema: 'source');
+		$rendered = $this->objectService->find(id: 'src-1', options: new ObjectFindOptions(register: 'integriq', schema: 'source'));
 
 		$this->assertNotNull($rendered);
 		$this->assertArrayNotHasKey(
@@ -396,19 +398,20 @@ class InlineSecretMigrationPlannerTest extends TestCase {
 			 */
 			public function find(
 				$id,
-				?string $register = null,
-				?string $schema = null,
+				ObjectFindOptions|PublishedObjectFindOptions|null $options = null,
 				bool $_rbac = true,
-				bool $_multitenancy = true,
-				bool $_render = true,
-				bool $_audit = true,
-				?array $_extend = [],
+				bool $_multitenancy = true
 			): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
+				$_render = $options?->render ?? true;
+				$_audit = $options?->audit ?? true;
+				$_extend = $options?->extend ?? [];
 				if ((string)$id === 'bad') {
 					throw new \RuntimeException('boom');
 				}
 
-				return parent::find($id, $register, $schema, $_rbac, $_multitenancy, $_render);
+				return parent::find($id, $options, $_rbac, $_multitenancy);
 			}
 		};
 

@@ -54,6 +54,10 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Contract\ObjectFindOptions as PublishedObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectSaveOptions as PublishedObjectSaveOptions;
 
 /**
  * An in-memory OpenRegister: objects by schema and uuid.
@@ -79,7 +83,12 @@ class InMemoryObjects extends ObjectService {
 		$this->objects[$schema][$uuid] = $data;
 	}
 
-	public function find($id, ?string $register=null, ?string $schema=null, bool $_rbac=true, bool $_multitenancy=true, bool $_render=true, bool $_audit=true, ?array $_extend=[]): ?ObjectEntity {
+	public function find($id, ObjectFindOptions|PublishedObjectFindOptions|null $options = null, bool $_rbac = true, bool $_multitenancy = true): ?ObjectEntity {
+		$register = $options?->register;
+		$schema = $options?->schema;
+		$_render = $options?->render ?? true;
+		$_audit = $options?->audit ?? true;
+		$_extend = $options?->extend ?? [];
 		if (isset($this->objects[$schema][$id]) === false) {
 			throw new DoesNotExistException('missing');
 		}
@@ -109,7 +118,12 @@ class InMemoryObjects extends ObjectService {
 		return ['results' => $rows, 'total' => count($rows)];
 	}
 
-	public function saveObject($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, bool $_validation=true): ObjectEntity {
+	public function saveObject($object, ObjectSaveOptions|PublishedObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+		$register = $options->target->register;
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+		$silent = $options->policy->silent ?? false;
+		$_validation = $options->policy->validation ?? true;
 		if ($uuid === null) {
 			$this->next++;
 			$uuid = sprintf('00000000-0000-4000-8000-%012d', $this->next);

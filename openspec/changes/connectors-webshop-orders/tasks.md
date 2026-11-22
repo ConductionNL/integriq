@@ -41,8 +41,10 @@ Kind: config. Size S to M. Half for shillinq `sales-webshop-orders` (row shillin
   - GIVEN the docs WHEN a shop owner connects a shop THEN the steps name where to find the channel id in shillinq
 - [x] Implement
   - `docs/features/webshop-orders.md`: connecting a shop names the shillinq settings gear, Web shop channels, for the channel and administration ids. No new UI strings: catalogue category labels are not translated anywhere in the app.
-- [ ] Test (docs build)
+- [x] Test (docs build)
+  - `npm run build` in `docs/` succeeds (Docusaurus, AI-baseline postbuild 10/10); `features/webshop-orders` is generated and reports no broken links.
 
 ## Verification
-- [ ] `openspec validate connectors-webshop-orders --strict` passes
+- [x] `openspec validate connectors-webshop-orders --strict` passes
 - [ ] `composer check:strict` once before push; PHPUnit exit code read
+  - Left open: the whole-app suite on development has 5 failures outside this change (CallServiceTest x2, JobsControllerTest x2, SynchronizationSynchronizeEntryGoldenTest); `WebshopOrderSetsTest` passes (13 tests).

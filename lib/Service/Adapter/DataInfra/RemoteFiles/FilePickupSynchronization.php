@@ -1,0 +1,371 @@
+<?php
+
+/**
+ * Runs a file pickup as a synchronization.
+ *
+ * A synchronization whose `sourceType` is `sftp` or `ftps` does not fetch
+ * objects: it picks the source's new files up into Nextcloud Files with
+ * {@see FilePickup}. This class is the bridge between the synchronization
+ * engine and that pickup. It remembers which version of each file it has
+ * stored in one synchronization contract per file (`originId` the file name,
+ * `originHash` its modification time and size), so a file fetched once is not
+ * fetched again, and a file the partner sends again with new content is.
+ *
+ * The files land in the Files of the synchronization's owner, never of a user
+ * the configuration names: a synchronization cannot write into somebody
+ * else's Files.
+ *
+ * @category Service
+ * @package  OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @link https://www.Integriq.nl
+ *
+ * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+ */
+
+declare(strict_types=1);
+
+namespace OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles;
+
+use OCA\Integriq\Service\SynchronizationContractServiceInterface;
+use OCP\Files\IRootFolder;
+
+/**
+ * One pickup run of a synchronization, with its seen files kept in contracts.
+ */
+class FilePickupSynchronization {
+
+	/**
+	 * The synchronization source types that are a file pickup.
+	 */
+	public const SOURCE_TYPES = ['sftp', 'ftps'];
+
+	/**
+	 * The pickup targets: `files` writes each file to Nextcloud Files, `mapping`
+	 * hands the records in each file to the synchronization's mapping.
+	 */
+	public const TARGETS = ['files', 'mapping'];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param FilePickup                              $pickup     The pickup itself.
+	 * @param RemoteFileClient                        $client     The remote file operations, for a test run's listing.
+	 * @param SynchronizationContractServiceInterface $contracts  Where the seen file versions are kept.
+	 * @param IRootFolder                             $rootFolder Nextcloud Files, for the owner's folder.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly FilePickup $pickup,
+		private readonly RemoteFileClient $client,
+		private readonly SynchronizationContractServiceInterface $contracts,
+		private readonly IRootFolder $rootFolder,
+	) {
+
+	}//end __construct()
+
+	/**
+	 * Whether a synchronization is a file pickup.
+	 *
+	 * @param array $synchronization The synchronization.
+	 *
+	 * @return boolean True for an `sftp` or `ftps` source type.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	public static function handles(array $synchronization): bool {
+		return in_array(($synchronization['sourceType'] ?? null), self::SOURCE_TYPES, true);
+
+	}//end handles()
+
+	/**
+	 * Whether a file pickup hands its records to the mapping instead of writing files.
+	 *
+	 * @param array $synchronization The synchronization.
+	 *
+	 * @return boolean True for `sourceConfig.target` `mapping`.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	public static function feedsMapping(array $synchronization): bool {
+		$config = ($synchronization['sourceConfig'] ?? null);
+		return is_array($config) === true && ($config['target'] ?? null) === 'mapping';
+
+	}//end feedsMapping()
+
+	/**
+	 * Pick the source's new files up into Files.
+	 *
+	 * @param array        $synchronization The synchronization, with `id` and `@self.owner`.
+	 * @param array        $source          The source it reads.
+	 * @param integer|null $now             The current time, for the stability window; null for now.
+	 *
+	 * @return array{found: int, created: int, updated: int, skipped: int, invalid: int, files: array<string, list<array<string, mixed>>>}
+	 *
+	 * @throws RemoteFileException When the synchronization or its configuration cannot be run.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	public function run(array $synchronization, array $source, ?int $now=null): array {
+		[$synchronizationId, $config] = $this->configOf(synchronization: $synchronization, target: 'files');
+
+		$known = $this->knownFiles(synchronizationId: $synchronizationId);
+		$seen  = array_map(static fn (array $contract): string => (string)($contract['originHash'] ?? ''), $known);
+
+		$owner = (string)($synchronization['@self']['owner'] ?? '');
+		if ($owner === '') {
+			throw new RemoteFileException('A file pickup stores into the Files of the synchronization\'s owner, and this synchronization has no owner.');
+		}
+
+		$result = $this->pickup->run(
+			source: $source,
+			config: $config,
+			store: new NextcloudFolderStore(rootFolder: $this->rootFolder, userId: $owner),
+			seen: $seen,
+			now: $now
+		);
+
+		return $this->recordPicked(synchronizationId: $synchronizationId, known: $known, result: $result, now: $now);
+
+	}//end run()
+
+	/**
+	 * List what a run would pick up, without fetching, storing or archiving anything (a test run).
+	 *
+	 * @param array        $synchronization The synchronization, with `id`.
+	 * @param array        $source          The source it reads.
+	 * @param integer|null $now             The current time, for the stability window; null for now.
+	 *
+	 * @return array{found: int, created: int, updated: int, skipped: int, invalid: int, files: array<string, list<array<string, mixed>>>}
+	 *
+	 * @throws RemoteFileException When the synchronization or its configuration cannot be run.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	public function preview(array $synchronization, array $source, ?int $now=null): array {
+		[$synchronizationId, $config] = $this->configOf(synchronization: $synchronization, target: 'files');
+
+		$known = $this->knownFiles(synchronizationId: $synchronizationId);
+		$seen  = array_map(static fn (array $contract): string => (string)($contract['originHash'] ?? ''), $known);
+
+		return $this->listNew(source: $source, config: $config, seen: $seen, now: ($now ?? time()));
+
+	}//end preview()
+
+	/**
+	 * Fetch the source's new files and read their records, leaving every file on the server.
+	 *
+	 * The caller runs the records through the mapping and then calls complete()
+	 * with the returned `pickup`, which archives the files and remembers them. A
+	 * run that stops in between archives nothing, so the next run reads the same
+	 * files again. A file whose records cannot be read is counted as failed and
+	 * stays on the server.
+	 *
+	 * @param array        $synchronization The synchronization, with `id`.
+	 * @param array        $source          The source it reads.
+	 * @param integer|null $now             The current time, for the stability window; null for now.
+	 *
+	 * @return array{objects: list<array<string, mixed>>, pickup: array<string, mixed>}
+	 *
+	 * @throws RemoteFileException When the synchronization or its configuration cannot be run.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	public function collect(array $synchronization, array $source, ?int $now=null): array {
+		[$synchronizationId, $config] = $this->configOf(synchronization: $synchronization, target: 'mapping');
+
+		$known = $this->knownFiles(synchronizationId: $synchronizationId);
+		$seen  = array_map(static fn (array $contract): string => (string)($contract['originHash'] ?? ''), $known);
+		$store = new MappingRecordStore(config: $config);
+
+		$result = $this->pickup->fetch(source: $source, config: $config, store: $store, seen: $seen, now: $now);
+
+		return ['objects' => $store->records(), 'pickup' => $result];
+
+	}//end collect()
+
+	/**
+	 * Archive and remember the files collect() read, once their records went through the mapping.
+	 *
+	 * @param array                $synchronization The synchronization, with `id`.
+	 * @param array                $source          The source it reads.
+	 * @param array<string, mixed> $pickup          The `pickup` collect() returned.
+	 * @param integer|null         $now             The current time; null for now.
+	 *
+	 * @return array{found: int, created: int, updated: int, skipped: int, invalid: int, files: array<string, list<array<string, mixed>>>}
+	 *
+	 * @throws RemoteFileException When the synchronization or its configuration cannot be run.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	public function complete(array $synchronization, array $source, array $pickup, ?int $now=null): array {
+		[$synchronizationId, $config] = $this->configOf(synchronization: $synchronization, target: 'mapping');
+
+		$pickup['picked'] = $this->pickup->archivePicked(source: $source, config: $config, picked: ($pickup['picked'] ?? []));
+
+		return $this->recordPicked(
+			synchronizationId: $synchronizationId,
+			known: $this->knownFiles(synchronizationId: $synchronizationId),
+			result: $pickup,
+			now: $now
+		);
+
+	}//end complete()
+
+	/**
+	 * The synchronization's id and pickup configuration, checked.
+	 *
+	 * @param array  $synchronization The synchronization.
+	 * @param string $target          The target the caller runs.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>}
+	 *
+	 * @throws RemoteFileException When the synchronization is not saved, or its configuration is not for this target.
+	 */
+	private function configOf(array $synchronization, string $target): array {
+		$synchronizationId = (string)($synchronization['id'] ?? $synchronization['uuid'] ?? '');
+		if ($synchronizationId === '') {
+			throw new RemoteFileException('A file pickup needs a saved synchronization: its contracts remember the files already picked up.');
+		}
+
+		$config = $synchronization['sourceConfig'] ?? [];
+		if (is_array($config) === false) {
+			throw new RemoteFileException('sourceConfig must be an object.');
+		}
+
+		$configured = (string)($config['target'] ?? 'files');
+		if (in_array($configured, self::TARGETS, true) === false) {
+			throw new RemoteFileException(
+				'sourceConfig.target "' . $configured . '" is not supported; a pickup stores files ("files") or feeds the mapping ("mapping").'
+			);
+		}
+
+		if ($configured !== $target) {
+			throw new RemoteFileException('This pickup runs target "' . $target . '", the synchronization is configured for "' . $configured . '".');
+		}
+
+		return [$synchronizationId, $config];
+
+	}//end configOf()
+
+	/**
+	 * Remember the picked-up files in contracts and summarise the run.
+	 *
+	 * @param string                              $synchronizationId The synchronization.
+	 * @param array<string, array<string, mixed>> $known             Its contracts by file name.
+	 * @param array<string, mixed>                $result            The pickup's result.
+	 * @param integer|null                        $now               The current time; null for now.
+	 *
+	 * @return array{found: int, created: int, updated: int, skipped: int, invalid: int, files: array<string, list<array<string, mixed>>>}
+	 */
+	private function recordPicked(string $synchronizationId, array $known, array $result, ?int $now): array {
+		$created = 0;
+		$updated = 0;
+		foreach ($result['picked'] as $picked) {
+			$name     = (string)$picked['name'];
+			$contract = [
+				'synchronizationId' => $synchronizationId,
+				'originId'          => $name,
+				'originHash'        => (string)($result['seen'][$name] ?? ''),
+				'targetId'          => (string)$picked['storedAt'],
+				'targetLastAction'  => 'create',
+				'sourceLastSynced'  => date(DATE_ATOM, ($now ?? time())),
+			];
+			if (isset($known[$name]['id']) === true) {
+				// The partner sent the file again with new content; it was stored beside the first copy.
+				$contract['targetLastAction'] = 'update';
+				$this->contracts->updateFromArray(id: $known[$name]['id'], object: $contract);
+				$updated++;
+				continue;
+			}
+
+			$this->contracts->createFromArray(object: $contract);
+			$created++;
+		}
+
+		return [
+			'found'   => (count($result['picked']) + count($result['failed']) + count($result['skipped'])),
+			'created' => $created,
+			'updated' => $updated,
+			'skipped' => count($result['skipped']),
+			'invalid' => count($result['failed']),
+			'files'   => ['picked' => $result['picked'], 'failed' => $result['failed'], 'skipped' => $result['skipped']],
+		];
+
+	}//end recordPicked()
+
+	/**
+	 * The contracts of a synchronization, by file name.
+	 *
+	 * @param string $synchronizationId The synchronization.
+	 *
+	 * @return array<string, array<string, mixed>> The contract per file name.
+	 */
+	private function knownFiles(string $synchronizationId): array {
+		$known = [];
+		foreach ($this->contracts->findAllObjects(filters: ['synchronizationId' => $synchronizationId]) as $contract) {
+			if (is_object($contract) === true && method_exists($contract, 'jsonSerialize') === true) {
+				$contract = $contract->jsonSerialize();
+			}
+
+			if (is_array($contract) === false || ($contract['synchronizationId'] ?? null) !== $synchronizationId) {
+				continue;
+			}
+
+			$name = (string)($contract['originId'] ?? '');
+			if ($name !== '') {
+				$known[$name] = $contract;
+			}
+		}
+
+		return $known;
+
+	}//end knownFiles()
+
+	/**
+	 * A test run: the files the next run would pick up, with nothing fetched or changed.
+	 *
+	 * @param array                 $source The source.
+	 * @param array                 $config The pickup configuration.
+	 * @param array<string, string> $seen   The stored version per file name.
+	 * @param integer               $now    The current time.
+	 *
+	 * @return array{found: int, created: int, updated: int, skipped: int, invalid: int, files: array<string, list<array<string, mixed>>>}
+	 */
+	private function listNew(array $source, array $config, array $seen, int $now): array {
+		$stableSeconds = max(0, (int)($config['stableSeconds'] ?? 60));
+		$new           = [];
+		$skipped       = [];
+		$files         = $this->client->listFiles(source: $source, path: (string)($config['path'] ?? ''), pattern: (string)($config['pattern'] ?? '*'));
+		foreach ($files as $file) {
+			if (($seen[$file->name] ?? null) === $file->version()) {
+				continue;
+			}
+
+			if ($file->modifiedAt !== null && $file->modifiedAt > $now - $stableSeconds) {
+				$skipped[] = ['name' => $file->name, 'reason' => 'modified less than ' . $stableSeconds . ' seconds ago'];
+				continue;
+			}
+
+			$new[] = $file->toArray();
+		}
+
+		return [
+			'found'   => (count($new) + count($skipped)),
+			'created' => 0,
+			'updated' => 0,
+			'skipped' => count($skipped),
+			'invalid' => 0,
+			'files'   => ['new' => $new, 'skipped' => $skipped],
+		];
+
+	}//end listNew()
+}//end class

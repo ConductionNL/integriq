@@ -42,6 +42,7 @@ use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * A dispatcher the test drives instead of a partner.
@@ -162,7 +163,10 @@ class CallReplayServiceTest extends TestCase {
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, string $register = '', string $schema = '', ?string $uuid = null) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register ?? '';
+				$schema = $options->target->schema ?? '';
+				$uuid = $options->uuid;
 				if ($uuid === null || $uuid === '') {
 					$this->created++;
 					$uuid = 'object-' . $this->created;
@@ -517,6 +521,41 @@ class CallReplayServiceTest extends TestCase {
 		$this->assertTrue($result['sent']);
 		$this->assertCount(1, $dispatcher->sent);
 	}//end testAGetWithoutAKeptBodyIsStillReplayed()
+
+	/**
+	 * A call that kept no replayRequest and whose stored request was masked is
+	 * not replayed: the partner would get the placeholder, not the value sent.
+	 *
+	 * @return void
+	 */
+	public function testAMaskedRequestWithoutAReplayRequestIsNotReplayed(): void {
+		$uuid = $this->failedCall();
+		unset($this->records[$uuid]['replayRequest']);
+		$this->records[$uuid]['request'] = ['method' => 'GET', 'endpoint' => '/personen', 'query' => ['bsn' => '[afgeschermd]']];
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertFalse($result['sent']);
+		$this->assertCount(0, $dispatcher->sent);
+		$this->assertStringContainsString('no longer kept', $result['detail']);
+	}//end testAMaskedRequestWithoutAReplayRequestIsNotReplayed()
+
+	/**
+	 * A masked stored request does not stop a replay from the kept replayRequest.
+	 *
+	 * @return void
+	 */
+	public function testAKeptReplayRequestIsReplayedWhenTheStoredRequestIsMasked(): void {
+		$uuid = $this->failedCall();
+		$this->records[$uuid]['request'] = ['method' => 'GET', 'endpoint' => '/personen', 'query' => ['bsn' => '[afgeschermd]']];
+		$dispatcher = new RecordingDispatcher(200);
+
+		$result = $this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertTrue($result['sent']);
+		$this->assertCount(1, $dispatcher->sent);
+	}//end testAKeptReplayRequestIsReplayedWhenTheStoredRequestIsMasked()
 
 	/**
 	 * A bulk replay reports each item, and skips none.

@@ -25,6 +25,7 @@ use OCA\Integriq\BackgroundJob\ConnectionHealthJob;
 use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\Integriq\Service\ConnectionDeclarationValidator;
 use OCA\Integriq\Service\CertificateExpiryAlertService;
+use OCA\Integriq\Service\CertificateExpiryAlertServiceInterface;
 use OCA\Integriq\Service\ConnectionProbeService;
 use OCA\Integriq\Service\ConnectionProbeServiceInterface;
 use OCA\Integriq\Service\ConnectionRegistryService;
@@ -77,7 +78,7 @@ class ConnectionHealthJobTest extends TestCase {
 					return $probe;
 				}
 
-				if ($id === CertificateExpiryAlertService::class) {
+				if ($id === CertificateExpiryAlertServiceInterface::class) {
 					return $expiry;
 				}
 
@@ -292,7 +293,7 @@ class ConnectionHealthJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
 	 */
 	public function testOpensCertificateExpiryAlertsLast(): void {
 		$calls = [];

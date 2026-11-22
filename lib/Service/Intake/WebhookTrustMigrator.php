@@ -39,8 +39,10 @@ namespace OCA\Integriq\Service\Intake;
 
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\SystemWrite;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -110,8 +112,7 @@ class WebhookTrustMigrator implements WebhookTrustMigratorInterface {
 			what: 'the ' . $profile->label . ' connection migration',
 			operation: fn () => $this->objectService->saveObject(
 				object: $consumer,
-				register: DsoConnection::REGISTER,
-				schema: DsoConnection::SCHEMA_CONSUMER
+				options: RegisterSave::options(register: DsoConnection::REGISTER, schema: DsoConnection::SCHEMA_CONSUMER)
 			)
 		);
 
@@ -204,12 +205,13 @@ class WebhookTrustMigrator implements WebhookTrustMigratorInterface {
 	private function readRaw(ObjectEntity $source): ObjectEntity {
 		$raw = $this->objectService->find(
 			id: (string)$source->getUuid(),
-			register: DsoConnection::REGISTER,
-			schema: self::SCHEMA_SOURCE,
+			options: new ObjectFindOptions(
+				register: DsoConnection::REGISTER,
+				schema: self::SCHEMA_SOURCE,
+				render: false
+			),
 			_rbac: false,
-			// Unscoped: a migration reads the raw stored source, run as the system.
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 		if ($raw instanceof ObjectEntity === false) {
 			return $source;

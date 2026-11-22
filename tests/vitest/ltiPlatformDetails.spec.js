@@ -15,7 +15,7 @@
  */
 import { buildManifest } from '@conduction/nextcloud-vue/src/utils/buildManifest.js'
 import { flushPromises, mount } from '@vue/test-utils'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import LtiPlatformDetails from '@/components/LtiPlatformDetails.vue'
@@ -172,10 +172,17 @@ describe('LtiPlatformDetails panel', () => {
 	})
 })
 
-describe('LTI tools manifest fragment', () => {
+describe('LTI tools manifest pages', () => {
+	// Every fragment, in the order main.js passes them: a fragment that
+	// declares a page id again replaces the earlier page, so the pages under
+	// test are the ones that render, not one fragment read on its own.
+	const fragments = readdirSync(join(root, 'src/manifest.d'))
+		.filter((file) => file.endsWith('.json'))
+		.sort()
+		.map((file) => read(`src/manifest.d/${file}`))
 	const merged = buildManifest(
 		read('src/manifest.json'),
-		[read('src/manifest.d/lti-tools.json')],
+		fragments,
 		read('src/menu-layout.json'),
 	)
 	const index = merged.pages.find((page) => page.id === 'LtiTools')

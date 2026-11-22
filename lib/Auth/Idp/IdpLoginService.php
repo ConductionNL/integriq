@@ -35,6 +35,7 @@ namespace OCA\Integriq\Auth\Idp;
 
 use OCA\Integriq\Exception\IdpAssertionException;
 use OCA\Integriq\Exception\IdpAssuranceBelowFloorException;
+use OCA\Integriq\Exception\IdpDisclosureIncompleteException;
 use OCA\Integriq\Exception\IdpSecretRefusedException;
 use Psr\Log\LoggerInterface;
 
@@ -65,6 +66,18 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
 	 */
 	public const ERROR_ASSURANCE_BELOW_FLOOR = 'assurance_below_floor';
+
+	/**
+	 * The error a consumer is told about when the person did not share every attribute asked for.
+	 *
+	 * Like the floor refusal it is not generic: integriq's own page already
+	 * told the person, and the consumer may offer the login again.
+	 *
+	 * @var string
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	public const ERROR_ATTRIBUTES_NOT_DISCLOSED = 'attributes_not_disclosed';
 
 	/**
 	 * The longest relay state a consumer may hand in.
@@ -121,13 +134,15 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * browser to.
 	 *
 	 * @param string $provider The provider id from the route.
-	 * @param array<string,mixed> $params `{organisation, consumer, trust, returnUrl, relayState}`.
+	 * @param array<string,mixed> $params `{organisation, consumer, trust, returnUrl, relayState}`, and for an
+	 *                                    attribute login `attributes`, the comma-separated attribute ids.
 	 *
 	 * @return string The identity provider's address.
 	 *
 	 * @throws IdpAssertionException When anything about the request or the broker is not in order.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	public function start(string $provider, array $params): string {
 		$login = new IdpLoginStart(provider: $provider, organisation: strtolower(trim((string)($params['organisation'] ?? ''))));
@@ -141,6 +156,7 @@ class IdpLoginService implements IdpLoginServiceInterface {
 
 		$login->consumer = $this->startableConsumer(consumerId: $login->consumer, returnUrl: $login->returnUrl)->getId();
 		$this->assertStartParameters(login: $login);
+		$login->disclosure = $this->disclosureFor(login: $login, requested: (string)($params['attributes'] ?? ''));
 
 		if ($adapter->isConfigured() === false) {
 			throw new IdpAssertionException(
@@ -165,16 +181,23 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @return array{0: string, 1: string} The request id and the identity provider's address.
 	 *
 	 * @throws IdpAssertionException When the adapter gave no request to follow.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	private function beginAt(GovernmentIdpAdapterInterface $adapter, IdpLoginStart $login): array {
-		$begun = $adapter->beginAuthentication(
-			[
-				'organisation' => $login->organisation,
-				'consumer' => $login->consumer,
-				'trust' => $login->trust,
-				'relayState' => $login->nonce,
-			]
-		);
+		$context = [
+			'organisation' => $login->organisation,
+			'consumer' => $login->consumer,
+			'trust' => $login->trust,
+			'relayState' => $login->nonce,
+		];
+		if ($login->disclosure !== null) {
+			// The claim names only: the adapter asks for each as essential and
+			// never sees the attribute ids or the registration's allowlist.
+			$context['claims'] = $login->disclosure->claimNames();
+		}
+
+		$begun = $adapter->beginAuthentication($context);
 
 		$requestId = trim((string)($begun['requestId'] ?? ''));
 		$redirectUrl = trim((string)($begun['redirectUrl'] ?? ''));
@@ -193,6 +216,8 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @param string        $requestId The request the identity provider will answer.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	private function storeState(IdpLoginStart $login, string $requestId): void {
 		$this->states->store(
@@ -205,6 +230,7 @@ class IdpLoginService implements IdpLoginServiceInterface {
 				'trust' => $login->trust,
 				'returnUrl' => $login->returnUrl,
 				'relayState' => $login->relayState,
+				'attributes' => ($login->disclosure?->stateValue() ?? ''),
 			],
 			signingKey: $this->config->signingKey()
 		);
@@ -226,10 +252,13 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 *
 	 * @throws IdpAssuranceBelowFloorException When the assertion is below the floor; it carries the consumer's
 	 *                                         return address with `error=assurance_below_floor` and the relay state.
+	 * @throws IdpDisclosureIncompleteException When an attribute login lacks a requested attribute; it carries
+	 *                                          the consumer's return address with `error=attributes_not_disclosed`.
 	 * @throws IdpAssertionException When the response answers no stored state (an IdP-initiated flow included).
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
 	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	public function callback(string $provider, array $callback, ?int $now = null): string {
 		$adapter = $this->adapters->forProvider(provider: $provider);
@@ -260,6 +289,18 @@ class IdpLoginService implements IdpLoginServiceInterface {
 					query: ['error' => self::ERROR_ASSURANCE_BELOW_FLOOR, 'relayState' => $state['relayState']]
 				)
 			);
+		} catch (IdpDisclosureIncompleteException $exception) {
+			$this->logger->warning(
+				'Integriq idp-broker: a login was refused at the callback: ' . $exception->getMessage(),
+				['provider' => $provider, 'consumer' => $state['consumer']]
+			);
+
+			throw $exception->withReturnUrl(
+				returnUrl: $this->withQuery(
+					url: $state['returnUrl'],
+					query: ['error' => self::ERROR_ATTRIBUTES_NOT_DISCLOSED, 'relayState' => $state['relayState']]
+				)
+			);
 		} catch (IdpAssertionException $exception) {
 			$this->logger->warning(
 				'Integriq idp-broker: a login was refused at the callback: ' . $exception->getMessage(),
@@ -284,6 +325,8 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @return string The one-time code.
 	 *
 	 * @throws IdpAssertionException On any failure.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	private function finish(IdpLoginCallback $login): string {
 		if ($login->state['provider'] !== $login->provider) {
@@ -298,16 +341,46 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		$this->assertionGuard->assertAcceptable(
 			assertion: $login->assertion,
 			outstandingRequestId: $login->requestId,
-			expectedAudience: $registration->text(key: 'spEntityId'),
+			expectedAudience: self::expectedAudience(registration: $registration),
 			now: $login->now
 		);
 
 		$this->assertSameOrganisation(login: $login);
+
+		// Before the trust: a person who shared less than asked is told so,
+		// whatever the trust of the registration.
+		if ($login->provider === TrustLevelMapper::PROVIDER_YIVI) {
+			$login->attributes = $this->attributeEnvelopes()->disclosed(
+				registration: $registration,
+				requested: (string)($login->state['attributes'] ?? ''),
+				assertion: $login->assertion
+			);
+		}
+
 		$login->trust = $this->sufficientTrust(login: $login, registration: $registration);
 
 		return $this->exchange->issueCode(envelope: $this->envelopeFor(login: $login, consumer: $consumer, registration: $registration));
 
 	}//end finish()
+
+	/**
+	 * The audience an assertion for this registration must name: the client id of an
+	 * `oidc-rp` registration, the SP EntityID of a `saml-sp` one.
+	 *
+	 * @param IdpRegistration $registration The organisation's registration.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-pseudonymisation-mode-is-chosen-per-registration-req-idpc-005
+	 */
+	private static function expectedAudience(IdpRegistration $registration): string {
+		if ($registration->kind() === IdpRegistration::KIND_OIDC) {
+			return $registration->text(key: 'clientId');
+		}
+
+		return $registration->text(key: 'spEntityId');
+
+	}//end expectedAudience()
 
 	/**
 	 * The organisation's enabled registration for the provider the login runs on.
@@ -412,8 +485,19 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @return SubjectEnvelope The envelope.
 	 *
 	 * @throws IdpAssertionException When the subject or the branch is unusable.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	private function envelopeFor(IdpLoginCallback $login, IdpConsumer $consumer, IdpRegistration $registration): SubjectEnvelope {
+		if ($login->provider === TrustLevelMapper::PROVIDER_YIVI) {
+			return $this->attributeEnvelopes()->envelope(
+				registration: $registration,
+				login: $login,
+				audience: $consumer->getId(),
+				salt: $this->saltFor(registration: $registration)
+			);
+		}
+
 		[$subject, $subType] = $this->subjectOf(login: $login, registration: $registration);
 
 		return new SubjectEnvelope(
@@ -427,6 +511,18 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		);
 
 	}//end envelopeFor()
+
+	/**
+	 * The attribute login's reader and envelope maker, over this service's pseudonyms.
+	 *
+	 * @return AttributeEnvelopeFactory
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	private function attributeEnvelopes(): AttributeEnvelopeFactory {
+		return new AttributeEnvelopeFactory(pseudonyms: $this->pseudonyms);
+
+	}//end attributeEnvelopes()
 
 	/**
 	 * The subject and its type, with a BSN turned into a pseudonym here.
@@ -583,6 +679,36 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		}
 
 	}//end assertStartParameters()
+
+	/**
+	 * The attributes an attribute login asks for, checked against the organisation's registration.
+	 *
+	 * Only a Yivi login asks for attributes; for every other provider this is
+	 * null and an `attributes` parameter is ignored.
+	 *
+	 * @param IdpLoginStart $login     The login being started.
+	 * @param string        $requested The attribute ids the start received, comma-separated.
+	 *
+	 * @return AttributeDisclosureRequest|null
+	 *
+	 * @throws IdpAssertionException When the organisation has no enabled registration for the provider, or the list
+	 *                               is empty or names an attribute the registration does not allow.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
+	 */
+	private function disclosureFor(IdpLoginStart $login, string $requested): ?AttributeDisclosureRequest {
+		if ($login->provider !== TrustLevelMapper::PROVIDER_YIVI) {
+			return null;
+		}
+
+		$registration = $this->registrations->find(organisation: $login->organisation, provider: $login->provider);
+		if ($registration === null || $registration->isEnabled() === false) {
+			throw new IdpAssertionException(message: 'The organisation has no enabled Yivi registration, so no login starts.');
+		}
+
+		return new AttributeDisclosureRequest(registration: $registration, requested: $requested);
+
+	}//end disclosureFor()
 
 	/**
 	 * Refuse while the broker is off or cannot sign.

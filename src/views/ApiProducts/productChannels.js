@@ -10,7 +10,7 @@
  * (events-async-api-products, REQ-AAPI-001). The server refuses a repeated slug
  * as well; this answers before the save is sent.
  *
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
  */
 
 const SLUG = /^[a-z0-9][a-z0-9-]*$/
@@ -20,7 +20,7 @@ const SLUG = /^[a-z0-9][a-z0-9-]*$/
  *
  * @param {object|null} product The api_product object.
  * @return {Array<object>} The channels.
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
  */
 export function channelsOf(product) {
 	return Array.isArray(product?.channels) ? product.channels : []
@@ -31,7 +31,7 @@ export function channelsOf(product) {
  *
  * @param {string} text The typed text.
  * @return {Array<string>} The types, trimmed, without empties or repeats.
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
  */
 export function parseTypes(text) {
 	return [...new Set(String(text || '').split(/[\n,]/).map((type) => type.trim()).filter(Boolean))]
@@ -40,14 +40,13 @@ export function parseTypes(text) {
 /**
  * Why a channel draft is refused, or '' when it may be saved.
  *
- * @param {string} slug The trimmed slug.
- * @param {string} title The trimmed title.
- * @param {Array<string>} types The parsed types.
+ * @param {{slug: string, title: string, types: Array<string>}} fields The trimmed slug and title, and the parsed types.
  * @param {Array<object>} others The other channels of the product.
  * @return {string} 'slug', 'title', 'types', 'duplicate' or ''.
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
  */
-function channelError(slug, title, types, others) {
+function channelError(fields, others) {
+	const { slug, title, types } = fields
 	if (!SLUG.test(slug)) {
 		return 'slug'
 	}
@@ -64,17 +63,17 @@ function channelError(slug, title, types, others) {
  * The channel list with a draft added, or replacing the channel it edits.
  *
  * @param {Array<object>} channels The current channels.
- * @param {{slug: string, title: string, types: string, description: string}} draft The form.
- * @param {string} editing The slug of the channel being edited, or ''.
+ * @param {{draft: {slug: string, title: string, types: string, description: string}, editing?: string}} change The form, and the slug of the channel being edited or ''.
  * @return {{channels?: Array<object>, error?: string}} The new list, or why it is refused.
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
  */
-export function withChannel(channels, draft, editing = '') {
+export function withChannel(channels, change) {
+	const { draft, editing = '' } = change || {}
 	const slug = String(draft?.slug || '').trim()
 	const title = String(draft?.title || '').trim()
 	const types = parseTypes(draft?.types)
 	const others = (Array.isArray(channels) ? channels : []).filter((channel) => channel?.slug !== editing)
-	const error = channelError(slug, title, types, others)
+	const error = channelError({ slug, title, types }, others)
 	if (error !== '') {
 		return { error }
 	}
@@ -95,7 +94,7 @@ export function withChannel(channels, draft, editing = '') {
  * @param {Array<object>} channels The current channels.
  * @param {string} slug The slug to remove.
  * @return {Array<object>} The remaining channels.
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
  */
 export function withoutChannel(channels, slug) {
 	return (Array.isArray(channels) ? channels : []).filter((channel) => channel?.slug !== slug)
@@ -106,7 +105,7 @@ export function withoutChannel(channels, slug) {
  *
  * @param {object} channel The channel.
  * @return {{slug: string, title: string, types: string, description: string}} The form.
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
  */
 export function draftOf(channel) {
 	return {

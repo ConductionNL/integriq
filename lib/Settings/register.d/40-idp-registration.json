@@ -13,7 +13,7 @@
 				"slug": "idpRegistration",
 				"title": "Identity provider registration",
 				"icon": "ShieldAccountOutline",
-				"version": "1.0.0",
+				"version": "1.1.0",
 				"summary": "How one organisation logs residents and businesses in through one identity provider",
 				"description": "The configuration of one organisation's login through DigiD, eHerkenning or eIDAS, over a SAML or OIDC broker or identity provider. Holds credential references, never a secret.",
 				"type": "object",
@@ -48,10 +48,11 @@
 						"enum": [
 							"digid",
 							"eherkenning",
-							"eidas"
+							"eidas",
+							"yivi"
 						],
 						"title": "Provider",
-						"description": "The identity scheme: DigiD, eHerkenning or eIDAS."
+						"description": "The identity scheme: DigiD, eHerkenning, eIDAS or Yivi. Yivi is reached through an OIDC bridge, so a yivi registration is always an OIDC Relying Party."
 					},
 					"kind": {
 						"type": "string",
@@ -185,6 +186,58 @@
 							}
 						},
 						"additionalProperties": false
+					},
+					"yiviAttributes": {
+						"type": "array",
+						"title": "Yivi attributes",
+						"description": "Yivi only: the attributes a login may ask the resident to disclose. id is the Yivi attribute id, claim the claim the bridge returns it in, label what the resident and the administrator read, carriesBsn whether the value is a BSN.",
+						"default": [],
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {
+									"type": "string",
+									"title": "Attribute id",
+									"description": "The Yivi attribute id, for example pbdf.gemeente.personalData.fullname."
+								},
+								"claim": {
+									"type": "string",
+									"title": "Claim",
+									"description": "The claim the OIDC bridge returns the attribute in."
+								},
+								"label": {
+									"type": "string",
+									"title": "Label",
+									"description": "The name the resident and the administrator read."
+								},
+								"carriesBsn": {
+									"type": "boolean",
+									"default": false,
+									"title": "Carries a BSN",
+									"description": "Whether the value is a BSN, which is pseudonymised unless the registration passes it to the consumer."
+								}
+							},
+							"required": [
+								"id",
+								"claim"
+							]
+						}
+					},
+					"yiviTrust": {
+						"type": "string",
+						"enum": [
+							"low",
+							"substantial"
+						],
+						"default": "low",
+						"title": "Yivi trust",
+						"description": "Yivi only: the level of assurance a Yivi login carries. This is the organisation's own judgement of the attributes it accepts, set by an administrator."
+					},
+					"yiviBsnToConsumer": {
+						"type": "boolean",
+						"default": false,
+						"title": "Pass a disclosed BSN to the consumer",
+						"description": "Yivi only: off means a disclosed BSN is replaced by its pseudonym before the envelope is issued."
 					}
 				}
 			}

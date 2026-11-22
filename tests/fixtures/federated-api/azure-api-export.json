@@ -1,0 +1,7 @@
+{
+  "id": "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-api/providers/Microsoft.ApiManagement/service/apim-gemeente/apis/vergunningen",
+  "format": "openapi+json-link",
+  "value": {
+    "link": "https://apimgmtstexample.blob.core.windows.net/api-export/vergunningen.json?sv=2021-08-06&sr=b&sig=REDACTED&se=2026-11-22T02%3A05%3A00Z&sp=r"
+  }
+}

@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md
+ * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md
  */
 
 declare(strict_types=1);
@@ -34,13 +34,14 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Identity resolution and signing-key resolution.
  *
  * @covers \OCA\Integriq\Outbound\Identity\SenderIdentityService
  *
- * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+ * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
  */
 class SenderIdentityResolutionTest extends TestCase {
 
@@ -160,7 +161,14 @@ class SenderIdentityResolutionTest extends TestCase {
 		$entity = $this->entity('id-1', []);
 		$entity->setOrganisation('org-1');
 		$this->objects->expects($this->once())->method('find')
-			->with('id-1', MessageRecorder::REGISTER, 'sender_identity', false, false, false)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'id-1',
+				'register' => MessageRecorder::REGISTER,
+				'schema' => 'sender_identity',
+				'_rbac' => false,
+				'_multitenancy' => false,
+				'_render' => false,
+			]))
 			->willReturn($entity);
 
 		$broker = $this->createMock(CredentialBrokerService::class);

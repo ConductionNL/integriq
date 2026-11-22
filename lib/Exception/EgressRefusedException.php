@@ -33,7 +33,7 @@ use Exception;
 /**
  * Signals an outbound URL the egress guard refuses to call.
  *
- * @spec openspec/changes/events-async-api-products/design.md
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
  */
 class EgressRefusedException extends Exception {
 }//end class

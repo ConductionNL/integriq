@@ -59,6 +59,13 @@ final class IdpLoginCallback {
 	public string $trust = '';
 
 	/**
+	 * The disclosed attributes of an attribute login, by attribute id; empty for any other login.
+	 *
+	 * @var array<string,string>
+	 */
+	public array $attributes = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string              $provider  The provider id from the route.

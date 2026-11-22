@@ -22,7 +22,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+ * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Broker\CloudEventHttpBindingInterface;
 use OCA\Integriq\Exception\CloudEventRefusedException;
-use OCA\Integriq\Service\Event\CloudEventReceiver;
+use OCA\Integriq\Service\Event\CloudEventReceiverInterface;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
 use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -47,7 +47,7 @@ use Throwable;
 /**
  * Receives CloudEvents from outside systems.
  *
- * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+ * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
  */
 class CloudEventReceiverController extends Controller {
 
@@ -58,14 +58,14 @@ class CloudEventReceiverController extends Controller {
 	 * @param IRequest                       $request  The request.
 	 * @param WebhookGateInterface           $gate     Checks the source's signature or credential and runs the store as its account.
 	 * @param CloudEventHttpBindingInterface $binding  Reads the event in either content mode.
-	 * @param CloudEventReceiver             $receiver Stores the event once and routes it.
+	 * @param CloudEventReceiverInterface    $receiver Stores the event once and routes it.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly WebhookGateInterface $gate,
 		private readonly CloudEventHttpBindingInterface $binding,
-		private readonly CloudEventReceiver $receiver,
+		private readonly CloudEventReceiverInterface $receiver,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -80,7 +80,7 @@ class CloudEventReceiverController extends Controller {
 	 *                      400 naming what is wrong, 401 without a valid signature or credential,
 	 *                      503 when it could not be stored.
 	 *
-	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

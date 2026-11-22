@@ -170,6 +170,7 @@ foreach (['RegisterSlugResolution', 'RegisterSlugResolverInterface'] as $contrac
 // classes are defined regardless of lookup-cache state.
 if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 	$stubsDir = __DIR__ . '/stubs';
+	$autoloader->addPsr4('OCA\\OpenRegister\\', $stubsDir . '/OCA/OpenRegister/');
 	if (is_dir($stubsDir) === true) {
 		// Doctrine\DBAL stubs — required by OCP\DB\QueryBuilder\IQueryBuilder
 		// and OCP\DB\QueryBuilder\IExpressionBuilder which reference constants
@@ -218,6 +219,28 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
 		}
 
+		// OpenRegister's form submit path and destination validator, and the save
+		// options of main's object API, as on main (open-formulieren-submits-into-its-case).
+		// Schema first: FormDestination takes one; the save options last.
+		$formStubs = [
+			'OCA\\OpenRegister\\Db\\Schema' => '/OCA/OpenRegister/Db/Schema.php',
+			'OCA\\OpenRegister\\Exception\\FormSubmitRefusedException' => '/OCA/OpenRegister/Exception/FormSubmitRefusedException.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmitter' => '/OCA/OpenRegister/Service/Form/FormSubmitter.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmission' => '/OCA/OpenRegister/Service/Form/FormSubmission.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormDestination' => '/OCA/OpenRegister/Service/Form/FormDestination.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormDestinationValidatorInterface' => '/OCA/OpenRegister/Service/Form/FormDestinationValidatorInterface.php',
+			'OCA\\OpenRegister\\Service\\Form\\FormSubmitServiceInterface' => '/OCA/OpenRegister/Service/Form/FormSubmitServiceInterface.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectFindTarget' => '/OCA/OpenRegister/Kernel/Contracts/Value/ObjectFindTarget.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\SavePolicy' => '/OCA/OpenRegister/Kernel/Contracts/Value/SavePolicy.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\SaveActor' => '/OCA/OpenRegister/Kernel/Contracts/Value/SaveActor.php',
+			'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectSaveOptions' => '/OCA/OpenRegister/Kernel/Contracts/Value/ObjectSaveOptions.php',
+		];
+		foreach ($formStubs as $formClass => $formFile) {
+			if (class_exists($formClass) === false && interface_exists($formClass) === false) {
+				require_once $stubsDir . $formFile;
+			}
+		}
+
 		// The shared task entity + service the HITL mirror writes through
 		// (hitl-on-shared-tasks). The entity must load before the service:
 		// the service's signatures reference it.
@@ -237,8 +260,20 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\RenderSelection') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/RenderSelection.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
+		}
+
+		// openregister main's object API value objects (ObjectFindOptions and
+		// friends), which replaced the register:/schema: named arguments.
+		foreach (['ObjectFindTarget', 'ObjectFindOptions', 'ObjectSaveOptions', 'ObjectDeletion'] as $valueStub) {
+			if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\' . $valueStub) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/' . $valueStub . '.php';
+			}
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectServiceMapperAdapter') === false) {

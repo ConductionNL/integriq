@@ -61,6 +61,10 @@ vi.mock('@nextcloud/vue', async () => {
 		}),
 		NcEmptyContent: box('NcEmptyContent'),
 		NcLoadingIcon: box('NcLoadingIcon'),
+		// The API design findings panel and its waive dialog (gateway-api-design-rules-check).
+		NcDialog: box('NcDialog'),
+		NcNoteCard: box('NcNoteCard'),
+		NcTextField: box('NcTextField'),
 	}
 })
 
@@ -68,6 +72,8 @@ const PRODUCT_URL = '/index.php/apps/openregister/api/objects/integriq/api_produ
 const ENDPOINTS_URL = '/index.php/apps/openregister/api/objects/integriq/endpoint'
 const ANALYTICS_URL = '/index.php/apps/integriq/api/products/p1/analytics'
 const SUBS_URL = '/index.php/apps/openregister/api/objects/integriq/api_product_subscription'
+const FINDINGS_URL = '/index.php/apps/openregister/api/objects/integriq/api_design_finding'
+const NOTICES_URL = '/index.php/apps/openregister/api/objects/integriq/product_change_notice'
 
 const PRODUCT = {
 	name: 'Zaken API',
@@ -166,7 +172,7 @@ beforeEach(() => {
 })
 
 describe('ApiProductDetail loading', () => {
-	it('requests the product, endpoints, analytics and its own subscriptions', async () => {
+	it('requests the product, endpoints, analytics, its own subscriptions, its design findings and its change notices', async () => {
 		await mountPage()
 		expect(http.get.mock.calls).toEqual(
 			expect.arrayContaining([
@@ -174,9 +180,11 @@ describe('ApiProductDetail loading', () => {
 				[ENDPOINTS_URL, { params: { _limit: 500 } }],
 				[ANALYTICS_URL],
 				[SUBS_URL, { params: { product: 'p1', _limit: 100 } }],
+				[FINDINGS_URL, { params: { product: 'p1', _limit: 500 } }],
+				[NOTICES_URL, { params: { product: 'p1', _limit: 100 } }],
 			]),
 		)
-		expect(http.get).toHaveBeenCalledTimes(4)
+		expect(http.get).toHaveBeenCalledTimes(6)
 	})
 
 	it('shows the product header with the deprecation notice', async () => {

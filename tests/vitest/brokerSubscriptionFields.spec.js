@@ -121,19 +121,16 @@ describe('brokerFields', () => {
 
 		let settings = buildBrokerSettings(
 			undefined,
-			{ baseUrl: 'https://rabbit.gemeente.example.nl' },
-			'rabbitmq',
+			{ patch: { baseUrl: 'https://rabbit.gemeente.example.nl' }, brokerId: 'rabbitmq' },
 		)
-		settings = buildBrokerSettings(settings, { vhost: 'zaken' }, 'rabbitmq')
+		settings = buildBrokerSettings(settings, { patch: { vhost: 'zaken' }, brokerId: 'rabbitmq' })
 		settings = buildBrokerSettings(
 			settings,
-			{ username: 'integriq' },
-			'rabbitmq',
+			{ patch: { username: 'integriq' }, brokerId: 'rabbitmq' },
 		)
 		settings = buildBrokerSettings(
 			settings,
-			{ credentialRef: { credentialId: 'cred-rabbitmq-zaken' } },
-			'rabbitmq',
+			{ patch: { credentialRef: { credentialId: 'cred-rabbitmq-zaken' } }, brokerId: 'rabbitmq' },
 		)
 		expect(settings).toEqual(FIXTURE.protocolSettings)
 	})
@@ -169,8 +166,7 @@ describe('brokerFields', () => {
 				},
 				headers: { 'X-Tenant': 'x' },
 			},
-			{ credentialRef: { credentialId: 'cred-1' } },
-			'rabbitmq',
+			{ patch: { credentialRef: { credentialId: 'cred-1' } }, brokerId: 'rabbitmq' },
 		)
 		expect(settings.broker).toEqual({
 			baseUrl: 'https://rabbit.example.nl',

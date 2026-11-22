@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Recording and reading verdicts.
@@ -79,7 +80,9 @@ final class VerdictServiceTest extends TestCase {
 		$saved = self::entity('v-1', []);
 		$stored = null;
 		$this->objects->expects($this->once())->method('saveObject')->willReturnCallback(
-			static function (array $object, ?string $register, ?string $schema) use (&$stored, $saved): ObjectEntity {
+			static function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$stored, $saved): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$stored = [$object, $register, $schema];
 				return $saved;
 			}

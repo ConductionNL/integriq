@@ -1,0 +1,38 @@
+# Tasks: sources-ecb-exchange-rates
+
+Kind: code. Size S. Half for shillinq `banking-fx-at-booking` (row shillinq `bnk-fx-rates`).
+
+## Implementation tasks
+
+### Task 1: Source, schema, mapping, synchronizations and job
+- **spec_ref**: `openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001`
+- **files**: `lib/Settings/register.d/ecb-exchange-rates-source.json`, `lib/BackgroundJob/ExchangeRate/EcbReferenceRateParser.php`, `lib/BackgroundJob/ExchangeRate/ExchangeRateImportService.php`, `lib/BackgroundJob/ExchangeRateSyncJob.php`, `appinfo/info.xml`, a stored copy of the daily and 90-day files under `tests/fixtures/ecb/`
+- **acceptance_criteria**:
+  - GIVEN the stored daily file WHEN the synchronization runs twice THEN one `exchange_rate` per currency exists for that date
+- [x] Implement
+- [x] Test (PHPUnit against the stored files)
+- [x] One live run on a dev instance, count recorded in the PR: on a fresh NC 34.0.6 + OpenRegister main instance (live pass 2026-11-17) the job, forced three times, holds 1,856 `exchange_rate` objects, 29 currencies over 64 working days up to 2026-11-16, with no duplicate (date, currency) pair.
+
+### Task 2: The rate request
+- **spec_ref**: `openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002`
+- **files**: `lib/Event/ExchangeRateRequestedEvent.php`, `lib/EventListener/ExchangeRateRequestedListener.php`, `lib/EventListener/ExchangeRateService.php`, `lib/AppInfo/Application.php`
+- **acceptance_criteria**:
+  - GIVEN rates for Friday 2026-09-25 WHEN USD to EUR is asked for Sunday 2026-09-27 THEN the answer is 1 / 1.1203 with rate date 2026-09-25
+  - GIVEN rates for that date WHEN USD to GBP is asked THEN the answer is derived through the euro and marked derived
+  - GIVEN no rate within seven days WHEN a pair is asked THEN the refusal is `no-rate` with the newest date
+- [x] Implement
+- [x] Test (PHPUnit with the real event class)
+
+### Task 3: Published event and catalogue item
+- **spec_ref**: `openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001`
+- **files**: `lib/BackgroundJob/ExchangeRate/ExchangeRateImportService.php`, `lib/Service/CatalogRegistryService.php`, `docs/features/`, `l10n/nl.json`, `l10n/en.json`
+- **acceptance_criteria**:
+  - GIVEN a run that stores a new date WHEN it finishes THEN one `nl.conduction.fx.rates.published` event names that date
+- [x] Implement the published event (`ExchangeRateImportService::storeRates`)
+- [x] Test the published event (PHPUnit)
+- [x] Catalogue item under `Bank`, docs/features page and l10n (no new user-visible strings: catalogue category labels and refusal codes are not translated)
+
+## Verification
+- [x] `openspec validate sources-ecb-exchange-rates --strict` passes
+- [x] `composer check:strict` once before push; PHPUnit exit code read
+  - Run on development 2026-11-21 with every task of this change merged. PHPUnit exits 2: 10708 tests, with the same 4 errors and 4 failures as development (missing ext-soap and ext-bcmath in the cloud image), none in the exchange-rate code. `--filter '/(ExchangeRate|Ecb)/'` passes, 33 tests. phpstan passes and phpcs reports no error in this change's files. psalm is at the development count (369). In `ExchangeRateImportService` its findings are the repo-wide UndefinedClass on OpenRegister's `ObjectFindOptions`, which the stubs do not carry. phpmd's findings here are the repo-wide StaticAccess on `RegisterSave` and `DateTimeImmutable`.

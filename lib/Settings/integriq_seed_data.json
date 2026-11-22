@@ -125,9 +125,80 @@
           "MOCK-PAY-3": "authorized"
         }
       }
+    },
+    {
+      "@self": { "register": "integriq", "schema": "source", "slug": "example-sftp-partner" },
+      "name": "Example partner SFTP server",
+      "description": "Dormant SFTP source for a partner's file drop. Set the location, a brokered credential and the server's host key fingerprint (the first test shows it) before enabling.",
+      "type": "sftp",
+      "location": "sftp.example.nl",
+      "configuration": { "rootPath": "/outgoing" },
+      "isEnabled": false,
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "integriq", "schema": "source", "slug": "example-watched-folder" },
+      "name": "Example watched folder",
+      "description": "Dormant Nextcloud folder source: the folder Woo/inkomend in the Files of woo-intake. Set the owner and the folder before enabling; the first test names the folder when it does not exist.",
+      "type": "nextcloud-folder",
+      "location": "",
+      "configuration": { "ownerUid": "woo-intake", "rootPath": "Woo/inkomend" },
+      "isEnabled": false,
+      "version": "1.0.0"
+    },
+    {
+      "@self": {
+        "register": "integriq",
+        "schema": "source",
+        "slug": "example-postgres"
+      },
+      "name": "Example PostgreSQL database",
+      "description": "Dormant example of a database source (sources-database-adapter): a back-office PostgreSQL database read through the declared statement zaken-sinds. Set the host, the database name, a read-only account and its password as a credential reference before enabling.",
+      "type": "database",
+      "location": "",
+      "isEnabled": false,
+      "version": "1.0.0",
+      "database": {
+        "driver": "pdo_pgsql",
+        "host": "db.example.nl",
+        "port": 5432,
+        "dbname": "zaken",
+        "user": "integriq_read",
+        "timeout": 30
+      },
+      "statements": [
+        {
+          "name": "zaken-sinds",
+          "kind": "read",
+          "sql": "SELECT id, zaaknummer, omschrijving FROM zaken WHERE id > :after ORDER BY id LIMIT :limit",
+          "parameters": [],
+          "pageKey": "id",
+          "pageStart": 0,
+          "pageSize": 500
+        }
+      ]
     }
   ],
   "consumer": [
+    {
+      "@self": { "register": "integriq", "schema": "consumer", "slug": "example-oidc-consumer" },
+      "name": "Example OpenID Connect consumer",
+      "description": "Example of a consumer whose tokens come from an outside OpenID Connect provider (access-oauth-and-token-validation). The issuer below is an example address, so no token validates until an administrator enters the real realm.",
+      "authorizationType": "jwt",
+      "authorizationConfiguration": {
+        "keySource": "oidc",
+        "issuerUrl": "https://login.example.nl/realms/gemeente",
+        "audience": "integriq"
+      },
+      "scopes": []
+    },
+    {
+      "@self": { "register": "integriq", "schema": "consumer", "slug": "example-client-credentials" },
+      "name": "Example client credentials consumer",
+      "description": "Example of a partner system that gets its tokens from integriq at /api/oauth/token (access-oauth-and-token-validation). No client secret is set, so it cannot get a token until an administrator sets one.",
+      "authorizationType": "client_credentials",
+      "scopes": ["zaken:read"]
+    },
     {
       "@self": { "register": "integriq", "schema": "consumer", "slug": "internal-dashboard" },
       "name": "Internal Dashboard",
@@ -142,6 +213,13 @@
       "@self": { "register": "integriq", "schema": "consumer", "slug": "mobile-app" },
       "name": "Mobile App",
       "description": "Example consumer representing the corporate mobile app."
+    },
+    {
+      "@self": { "register": "integriq", "schema": "consumer", "slug": "example-developer-app" },
+      "name": "Example developer application",
+      "description": "Application the seeded developer account developer1 created in the developer portal.",
+      "userId": "developer1",
+      "ownerKind": "developer"
     }
   ],
   "endpoint": [
@@ -165,6 +243,52 @@
       "description": "Sample endpoint returning the running app version.",
       "endpoint": "/api/version",
       "method": "GET"
+    },
+    {
+      "@self": {
+        "register": "integriq",
+        "schema": "endpoint",
+        "slug": "graphql-example"
+      },
+      "name": "graphql/example",
+      "description": "Example GraphQL endpoint (gateway-graphql-and-streaming-protocols). Off until a GraphQL source is chosen as its target: it allows only the operations zaakDetails and zakenLijst, refuses queries nested deeper than 8 and limits zakenLijst to 60 calls a minute per consumer.",
+      "endpoint": "/api/graphql/example",
+      "method": "POST",
+      "targetType": "graphql",
+      "allowedOperations": [
+        "zaakDetails",
+        "zakenLijst"
+      ],
+      "maxDepth": 8,
+      "introspection": false,
+      "operationLimits": {
+        "zakenLijst": {
+          "requestsPerWindow": 60,
+          "windowSeconds": 60
+        }
+      }
+    },
+    {
+      "@self": {
+        "register": "integriq",
+        "schema": "endpoint",
+        "slug": "ws-meldingen"
+      },
+      "name": "ws/meldingen",
+      "description": "Example WebSocket route (gateway-graphql-and-streaming-protocols). The web server carries the connection and asks integriq whether a client may open it; see docs/gateway/streaming.md for the nginx configuration.",
+      "endpoint": "/ws/meldingen",
+      "method": "GET",
+      "targetType": "stream",
+      "streamProtocol": "websocket",
+      "streamRoute": "/ws/meldingen",
+      "streamUpstream": "http://meldingen:8080/ws",
+      "requiredScopes": [
+        "meldingen:read"
+      ],
+      "connectionRateLimit": {
+        "requestsPerWindow": 30,
+        "windowSeconds": 60
+      }
     }
   ],
   "event": [
@@ -345,6 +469,30 @@
       "sourceType": "register/schema",
       "targetId": "<placeholder>",
       "targetType": "api",
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "integriq", "schema": "synchronization", "slug": "example-sftp-pickup" },
+      "name": "Example partner file pickup",
+      "description": "Disabled pickup of the partner's new CSV files into Nextcloud Files, archived on the server to /outgoing/processed after each file is stored. Point sourceId at the example-sftp-partner source before enabling.",
+      "sourceId": "<placeholder>",
+      "sourceType": "sftp",
+      "sourceConfig": { "pattern": "*.csv", "after": "move", "archivePath": "processed", "filesFolder": "Partner/inbox" },
+      "targetId": "<placeholder>",
+      "targetType": "register/schema",
+      "status": "disabled",
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "integriq", "schema": "synchronization", "slug": "example-watched-folder-publications" },
+      "name": "Example watched folder into draft publications",
+      "description": "Disabled: each PDF an officer drops in the example watched folder becomes a draft publication in opencatalogi, with the PDF attached and no publication date, and is moved to processed (or failed). Point sourceId at the example-watched-folder source and pick a mapping before enabling.",
+      "sourceId": "<placeholder>",
+      "sourceType": "nextcloud-folder",
+      "sourceConfig": { "pattern": "*.pdf", "after": "move", "processedPath": "processed", "failedPath": "failed", "stableSeconds": 60 },
+      "targetId": "opencatalogi/publication",
+      "targetType": "register/schema",
+      "status": "disabled",
       "version": "1.0.0"
     }
   ],
@@ -585,6 +733,23 @@
       "lastOutcome": "authorized",
       "createdAt": "2026-07-13T08:00:00+00:00",
       "updatedAt": "2026-07-13T08:02:00+00:00"
+    },
+    {
+      "@self": { "register": "integriq", "schema": "payment_intent", "slug": "pi-ouderbijdrage-expired" },
+      "sourceSlug": "ideal-ouderbijdrage",
+      "provider": "log",
+      "providerPaymentId": "MOCK-PAY-4",
+      "amountValue": "45.00",
+      "amountCurrency": "EUR",
+      "description": "Ouderbijdrage schooljaar 2026-2027",
+      "method": "ideal",
+      "redirectUrl": "https://school.example/ouderbijdrage/return",
+      "checkoutUrl": "https://sandbox.payment.example/checkout/MOCK-PAY-4",
+      "metadata": {},
+      "paymentStatus": "expired",
+      "lastOutcome": "failed",
+      "createdAt": "2026-07-14T10:00:00+00:00",
+      "updatedAt": "2026-07-14T10:15:00+00:00"
     }
   ],
   "payment_settlement": [

@@ -27,10 +27,13 @@ use Exception;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -124,7 +127,11 @@ class EventsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'event.messages');
 
 		try {
-			$event = $this->orObjectService->find(id: (string)$id, register: 'integriq', schema: 'event', _rbac: false);
+			$event = $this->orObjectService->find(
+				id: (string)$id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event'),
+				_rbac: false
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Event not found')], 404);
 		}
@@ -195,7 +202,10 @@ class EventsController extends Controller {
 		try {
 			// Create subscription. SubscriptionSigningDefaultListener gives a
 			// push subscription its signing secret on OpenRegister's create path.
-			$subscription = $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'event_subscription');
+			$subscription = $this->orObjectService->saveObject(
+				object: $data,
+				options: RegisterSave::options(register: 'integriq', schema: 'event_subscription')
+			);
 
 			// REQ-SOW-001: the one reveal of a generated secret. protocolSettings is
 			// writeOnly, so the stored row is read unrendered, as delivery reads it.
@@ -203,10 +213,8 @@ class EventsController extends Controller {
 			if ($this->signingPolicy->generatesSecret(subscription: $data) === true) {
 				$stored = $this->orObjectService->find(
 					id: (string)$subscription->getUuid(),
-					register: 'integriq',
-					schema: 'event_subscription',
-					_rbac: false,
-					_render: false
+					options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
+					_rbac: false
 				);
 				$response += $this->signingPolicy->reveal(stored: (array)$stored?->getObject());
 			}
@@ -263,9 +271,7 @@ class EventsController extends Controller {
 			// Update subscription.
 			$subscription = $this->orObjectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'event_subscription',
-				uuid: (string)$subscriptionId
+				options: RegisterSave::options(register: 'integriq', schema: 'event_subscription', uuid: (string)$subscriptionId)
 			);
 
 			return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
@@ -300,15 +306,14 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
 		}
 
-		$this->orObjectService->deleteObject(uuid: $subscription->getUuid());
+		$this->orObjectService->deleteObject(new ObjectDeletion(uuid: $subscription->getUuid()));
 		return new JSONResponse([]);
 	}//end unsubscribe()
 
@@ -387,8 +392,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
@@ -439,8 +443,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
@@ -478,8 +481,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
@@ -499,9 +501,7 @@ class EventsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'event_subscription',
-			uuid: $subscription->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'event_subscription', uuid: $subscription->getUuid())
 		);
 
 		return new JSONResponse(
@@ -531,8 +531,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
@@ -555,9 +554,7 @@ class EventsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'event_subscription',
-			uuid: $subscription->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'event_subscription', uuid: $subscription->getUuid())
 		);
 
 		return new JSONResponse(
@@ -632,7 +629,7 @@ class EventsController extends Controller {
 	 * @return JSONResponse|null A 400 naming the refused rule, or null when the
 	 *                           body has no sink or its sink may be called.
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private function refuseUnsafeSink(array $data): ?JSONResponse {
 		$sink = ($data['sink'] ?? null);
@@ -792,8 +789,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
@@ -837,7 +833,11 @@ class EventsController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function deadLetterShow(string $id): JSONResponse {
 		try {
-			$message = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'event_message', _rbac: false);
+			$message = $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_message'),
+				_rbac: false
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
 		}
@@ -849,8 +849,7 @@ class EventsController extends Controller {
 			try {
 				$subscription = $this->orObjectService->find(
 					id: (string)$subscriptionId,
-					register: 'integriq',
-					schema: 'event_subscription',
+					options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 					_rbac: false
 				);
 				$subData = $subscription->getObject();

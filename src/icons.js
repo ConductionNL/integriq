@@ -34,6 +34,7 @@ import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
 import Broadcast from 'vue-material-design-icons/Broadcast.vue'
 import CalendarClock from 'vue-material-design-icons/CalendarClock.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CardAccountDetailsOutline from 'vue-material-design-icons/CardAccountDetailsOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckboxMarkedCircleOutline from 'vue-material-design-icons/CheckboxMarkedCircleOutline.vue'
@@ -42,6 +43,7 @@ import CheckDecagramOutline from 'vue-material-design-icons/CheckDecagramOutline
 import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
 import ClockTimeFour from 'vue-material-design-icons/ClockTimeFour.vue'
 import Cloud from 'vue-material-design-icons/Cloud.vue'
+import CloudSearchOutline from 'vue-material-design-icons/CloudSearchOutline.vue'
 import CloudSyncOutline from 'vue-material-design-icons/CloudSyncOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
@@ -49,6 +51,7 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CreditCardOutline from 'vue-material-design-icons/CreditCardOutline.vue'
 import CurrencyEur from 'vue-material-design-icons/CurrencyEur.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
+import DatabaseExportOutline from 'vue-material-design-icons/DatabaseExportOutline.vue'
 import DatabaseImportOutline from 'vue-material-design-icons/DatabaseImportOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import DatabaseSearchOutline from 'vue-material-design-icons/DatabaseSearchOutline.vue'
@@ -83,11 +86,13 @@ import KeyChange from 'vue-material-design-icons/KeyChange.vue'
 import KeyOutline from 'vue-material-design-icons/KeyOutline.vue'
 import KeyPlus from 'vue-material-design-icons/KeyPlus.vue'
 import LanConnect from 'vue-material-design-icons/LanConnect.vue'
+import Laptop from 'vue-material-design-icons/Laptop.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import MapMarkerRadiusOutline from 'vue-material-design-icons/MapMarkerRadiusOutline.vue'
 import MedicalBag from 'vue-material-design-icons/MedicalBag.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
+import MonitorAccount from 'vue-material-design-icons/MonitorAccount.vue'
 import Package from 'vue-material-design-icons/Package.vue'
 import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
 import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
@@ -100,8 +105,10 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import RocketLaunchOutline from 'vue-material-design-icons/RocketLaunchOutline.vue'
+import RulerSquare from 'vue-material-design-icons/RulerSquare.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SchoolOutline from 'vue-material-design-icons/SchoolOutline.vue'
+import SendCheckOutline from 'vue-material-design-icons/SendCheckOutline.vue'
 import SendOutline from 'vue-material-design-icons/SendOutline.vue'
 import ServerNetwork from 'vue-material-design-icons/ServerNetwork.vue'
 import ShieldCheckOutline from 'vue-material-design-icons/ShieldCheckOutline.vue'
@@ -152,6 +159,7 @@ export default {
 	BookOpenVariantOutline,
 	Broadcast,
 	CalendarClock,
+	Cancel,
 	CardAccountDetailsOutline,
 	ChartBoxOutline,
 	CheckCircleOutline,
@@ -160,6 +168,7 @@ export default {
 	ClockOutline,
 	ClockTimeFour,
 	Cloud,
+	CloudSearchOutline,
 	CloudSyncOutline,
 	CloudUploadOutline,
 	Cog,
@@ -201,12 +210,15 @@ export default {
 	KeyOutline,
 	KeyPlus,
 	LanConnect,
+	Laptop,
 	LinkVariant,
 	MapMarkerPath,
 	MapMarkerRadiusOutline,
 	MedicalBag,
 	MessageTextOutline,
+	MonitorAccount,
 	Package,
+	DatabaseExportOutline,
 	PackageVariantClosed,
 	PauseCircleOutline,
 	Pencil,
@@ -218,8 +230,10 @@ export default {
 	PowerPlugOutline,
 	Refresh,
 	RocketLaunchOutline,
+	RulerSquare,
 	ScaleBalance,
 	SchoolOutline,
+	SendCheckOutline,
 	SendOutline,
 	ServerNetwork,
 	ShieldCheckOutline,

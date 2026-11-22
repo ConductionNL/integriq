@@ -20,6 +20,9 @@ export const TYPE_LOADERS = {
 	'register/schema': 'loadRegisterLists',
 	'nextcloud-table': 'loadTableLists',
 	'nextcloud-form': 'loadFormLists',
+	sftp: 'loadSourcesOnce',
+	ftps: 'loadSourcesOnce',
+	'nextcloud-folder': 'loadSourcesOnce',
 }
 
 /**

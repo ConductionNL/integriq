@@ -157,6 +157,42 @@ class FakeLegacyBroker {
 }//end class
 
 /**
+ * Fake broker that holds a user's token and answers only through request(), the way the real one injects it.
+ */
+class FakeTokenHoldingBroker extends FakeLegacyBroker {
+
+	/**
+	 * The token the broker holds for the connected account.
+	 *
+	 * @var string
+	 */
+	public const TOKEN = 'eyJ0b2tlbi12YWx1ZS1mb3ItYWxpY2UifQ.never-leaves-the-broker';
+
+	/**
+	 * Every credential id a caller asked the raw secret for.
+	 *
+	 * @var array<int, string>
+	 */
+	public array $secretsAskedFor = [];
+
+	/**
+	 * The broker's resolveInjectable() shape: hands out the raw token.
+	 *
+	 * @param string      $credentialId         The credential UUID.
+	 * @param string      $appId                The calling app id.
+	 * @param string|null $actingUserId         The acting user.
+	 * @param string|null $actingOrganisationId The acting organisation.
+	 *
+	 * @return string The token.
+	 */
+	public function resolveInjectable(string $credentialId, string $appId, ?string $actingUserId = null, ?string $actingOrganisationId = null): string {
+		$this->secretsAskedFor[] = $credentialId;
+
+		return self::TOKEN;
+	}//end resolveInjectable()
+}//end class
+
+/**
  * Fake broker WITH the optional acting-user parameter (credential-doriath-leaf shape).
  */
 class FakeActingUserBroker {
@@ -568,6 +604,57 @@ class BrokeredCallServiceTest extends TestCase {
 		$this->assertSame(['credentialId' => 'cred-alice', 'actingUserId' => null], $alice);
 		$this->assertSame(['credentialId' => 'cred-bob', 'actingUserId' => null], $bob);
 	}//end testPerUserRefResolvesEachUsersOwnCredential()
+
+	/**
+	 * A per-user call reaches the upstream with the user's token while integriq never holds it.
+	 *
+	 * The prepared call, the broker request, every log line and the answer carry
+	 * the credential id at most, and the raw token is never asked for.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-per-user-oauth/tasks.md#verification
+	 */
+	public function testNoTokenValueReachesAnObjectALogOrTheAnswer(): void {
+		$this->objectService->method('findAll')->willReturn(['results' => [self::connectedAccount(uuid: 'cred-alice', owner: 'alice')]]);
+		$logged = [];
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		foreach (['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'log'] as $level) {
+			$logger->method($level)->willReturnCallback(
+				function (...$arguments) use (&$logged): void {
+					$logged[] = json_encode(value: $arguments);
+				}
+			);
+		}
+
+		$service = new TestableBrokeredCallService(
+			$this->objectService,
+			$this->appManager,
+			$this->userSession,
+			$this->userManager,
+			$logger,
+			$this->createMock(originalClassName: ContainerInterface::class),
+		);
+		$broker = new FakeTokenHoldingBroker();
+		$broker->result = ['status' => 200, 'headers' => ['Content-Type' => 'application/json'], 'body' => '{"events":[]}'];
+		$service->brokerInstance = $broker;
+
+		$prepared = $service->prepare(config: self::perUserConfig(), sourceData: [], asynchronous: false);
+		$response = $service->dispatch(
+			credentialId: $prepared['credentialId'],
+			actingUserId: $prepared['actingUserId'],
+			method: 'GET',
+			url: 'https://graph.example.org/v1.0/me/events',
+			config: ['headers' => ['Accept' => 'application/json']],
+		);
+
+		$this->assertSame(expected: ['credentialId' => 'cred-alice', 'actingUserId' => null], actual: $prepared);
+		$this->assertSame(expected: [], actual: $broker->secretsAskedFor);
+		$this->assertSame(expected: 'cred-alice', actual: $broker->calls[0]['credentialId']);
+		$seen = json_encode(value: [$prepared, $broker->calls, $logged, $response->getHeaders(), (string) $response->getBody(), self::perUserConfig()]);
+		$this->assertStringNotContainsString(needle: FakeTokenHoldingBroker::TOKEN, haystack: (string) $seen);
+		$this->assertStringNotContainsString(needle: 'Bearer', haystack: (string) $seen);
+	}//end testNoTokenValueReachesAnObjectALogOrTheAnswer()
 
 	/**
 	 * A user without their own credential is told to connect, and nobody else's credential or an organisation one is used.
