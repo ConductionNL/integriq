@@ -1,6 +1,7 @@
 <?php
 
-// Copy of openregister lib/Service/Consumer/ConsumerIdentity.php (only @spec lines dropped; ResolvedConsumer takes an identity and an authorization), so integriq's tests run OpenRegister's real credential checks.
+// Copy of openregister lib/Service/Consumer/ConsumerIdentity.php (only @spec lines dropped; ResolvedConsumer
+// takes an identity and an authorization), so integriq's tests run OpenRegister's real credential checks.
 
 /**
  * Who a resolved consumer is, whatever store it came from.

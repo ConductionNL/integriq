@@ -23,12 +23,9 @@ namespace OCA\Integriq\Service\Consumer;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\Auth\ClientCertificate;
 use OCA\Integriq\Service\OAuth\IssuerKeyService;
-use OCA\Integriq\Service\OAuth\TokenIssuer;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
-use OCA\OpenRegister\Service\Consumer\ConsumerAuthorization;
-use OCA\OpenRegister\Service\Consumer\ConsumerIdentity;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\ObjectService;
 
@@ -84,6 +81,13 @@ class IntegriqConsumerSource implements ConsumerSource {
 	private ?ConsumerCredentialUse $credentialUse = null;
 
 	/**
+	 * Builds the resolved consumer OpenRegister gets back.
+	 *
+	 * @var IntegriqResolvedConsumer
+	 */
+	private readonly IntegriqResolvedConsumer $resolved;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectService                  $objectService OpenRegister's object service.
@@ -100,6 +104,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 		private readonly ?IssuerKeyService $ownIssuer = null,
 	) {
 		$this->clientCredentials = new ClientCredentialsConsumerLookup(objectService: $objectService);
+		$this->resolved          = new IntegriqResolvedConsumer();
 		if ($credentials !== null) {
 			$this->credentialUse = new ConsumerCredentialUse(objectService: $objectService, credentials: $credentials);
 		}
@@ -194,14 +199,10 @@ class IntegriqConsumerSource implements ConsumerSource {
 
 		$data = $object->getObject();
 
-		return new ResolvedConsumer(
-			source: self::SOURCE,
-			uuid: self::uuidOf(consumer: $object, data: $data),
-			name: (string)($data['name'] ?? ''),
-			userId: self::stringOrNull(value: ($data['userId'] ?? null)),
-			authorizationType: TokenIssuer::CLIENT_CREDENTIALS,
-			configuration: ['algorithm' => IssuerKeyService::ALGORITHM, 'publicKey' => $this->ownIssuer->publicPem()],
-			record: $object,
+		return $this->resolved->ownToken(
+			who: self::whoOf(consumer: $object, data: $data),
+			publicPem: $this->ownIssuer->publicPem(),
+			record: $object
 		);
 	}//end ownTokenConsumer()
 
@@ -350,16 +351,31 @@ class IntegriqConsumerSource implements ConsumerSource {
 		$data = $consumer->getObject();
 		$uuid = self::uuidOf(consumer: $consumer, data: $data);
 
-		return new ResolvedConsumer(
-			identity: new ConsumerIdentity(source: self::SOURCE, uuid: $uuid, name: (string)($data['name'] ?? '')),
-			authorization: new ConsumerAuthorization(
-				userId: self::stringOrNull(value: ($data['userId'] ?? null)),
-				authorizationType: self::typeOf(data: $data),
-				configuration: $this->verificationConfiguration(uuid: (string)$uuid, configuration: self::configurationOf(consumer: $consumer))
-			),
-			record: $consumer,
+		return $this->resolved->fromRecord(
+			who: self::whoOf(consumer: $consumer, data: $data),
+			authorizationType: self::typeOf(data: $data),
+			configuration: $this->verificationConfiguration(uuid: (string)$uuid, configuration: self::configurationOf(consumer: $consumer)),
+			record: $consumer
 		);
 	}//end resolve()
+
+	/**
+	 * The consumer's uuid and name, and the Nextcloud user it acts as.
+	 *
+	 * @param ObjectEntity        $consumer The consumer object.
+	 * @param array<string,mixed> $data     Its data.
+	 *
+	 * @return array{uuid: string|null, name: string, userId: string|null}
+	 *
+	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 */
+	private static function whoOf(ObjectEntity $consumer, array $data): array {
+		return [
+			'uuid'   => self::uuidOf(consumer: $consumer, data: $data),
+			'name'   => (string)($data['name'] ?? ''),
+			'userId' => self::stringOrNull(value: ($data['userId'] ?? null)),
+		];
+	}//end whoOf()
 
 	/**
 	 * The consumer's authorization configuration, with the key resolved for a `jwks` or `oidc` consumer.
