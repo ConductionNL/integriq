@@ -401,7 +401,6 @@ final class ServiceBindings {
 		SourceDestructionServiceInterface::class => SourceDestructionService::class,
 		UnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
-		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
 		TalkMessageSourceInterface::class => TalkMessageSource::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
 		CallerSearchInterface::class => ConfiguredCallerSearch::class,
@@ -574,7 +573,7 @@ final class ServiceBindings {
 	}//end boot()
 
 	/**
-	 * Registers the Microsoft 365 adapter with the lookup of each person's delegated grant.
+	 * Binds the Microsoft 365 adapter the document search reads through to the lookup of each person's delegated grant.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -584,14 +583,9 @@ final class ServiceBindings {
 	 */
 	private function registerMicrosoft365Adapter(IRegistrationContext $context): void {
 		$context->registerService(
-			Microsoft365Adapter::class,
-			static function ($c): Microsoft365Adapter {
-				$adapter = new Microsoft365Adapter(
-					credentialBroker: $c->get(\OCA\OpenRegister\Service\Credential\CredentialBrokerService::class),
-					appConfig: $c->get(\OCP\IAppConfig::class),
-					logger: $c->get(\Psr\Log\LoggerInterface::class),
-					l10n: $c->get(\OCP\IL10N::class)
-				);
+			Microsoft365AdapterInterface::class,
+			static function ($c): Microsoft365AdapterInterface {
+				$adapter = $c->get(Microsoft365Adapter::class);
 				$adapter->useDelegatedGrants(personalCredentials: $c->get(PersonalCredentialLookup::class));
 
 				return $adapter;

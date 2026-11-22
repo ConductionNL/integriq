@@ -38,6 +38,7 @@ use OCA\Integriq\Service\Adapter\EndpointWorkspace\CitrixDaasAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\IntuneAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\JamfProAdapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
+use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\LogDigitalPostProvider;
@@ -137,22 +138,19 @@ class ServiceBindingsFactoriesTest extends TestCase {
 	}//end testTheSettingsServiceIsBuiltFromTheConfigRebaseSchedulerAndLogger()
 
 	/**
-	 * The Microsoft 365 adapter is built with the lookup of each person's delegated grant, and asks it on a mail search.
+	 * The Microsoft 365 adapter the document search reads through is handed the lookup of each person's delegated grant.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-microsoft-365-source-answers-a-document-search-across-files-mail-and-chat-req-dcc-008
 	 */
 	public function testTheMicrosoft365AdapterReadsEachPersonsDelegatedGrant(): void {
-		$grants = $this->createMock(originalClassName: PersonalCredentialLookup::class);
-		$grants->expects(self::once())->method('credentialIdFor')->with(provider: self::anything(), userId: 'pjansen')->willReturn(null);
-		$this->resolved[PersonalCredentialLookup::class] = $grants;
+		$container = $this->container();
+		$grants    = $container->get(PersonalCredentialLookup::class);
+		$adapter   = $container->get(Microsoft365Adapter::class);
+		$adapter->expects(self::once())->method('useDelegatedGrants')->with(personalCredentials: $grants);
 
-		$adapter = $this->factories()[Microsoft365Adapter::class]($this->container());
-
-		$this->assertInstanceOf(expected: Microsoft365Adapter::class, actual: $adapter);
-		$answer = $adapter->search(terms: 'x', from: null, to: null, entityTypes: ['message'], limit: 5, userId: 'pjansen');
-		$this->assertSame(expected: ['delegated-grant-missing'], actual: $answer['notices']);
+		$this->assertSame(expected: $adapter, actual: $this->factories()[Microsoft365AdapterInterface::class]($container));
 	}//end testTheMicrosoft365AdapterReadsEachPersonsDelegatedGrant()
 
 	/**
