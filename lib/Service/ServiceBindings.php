@@ -50,6 +50,7 @@ use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
+use OCA\Integriq\Service\Credential\PersonalCredentialLookup;
 use OCA\Integriq\Service\AgentTools\AgentActionStore;
 use OCA\Integriq\Service\AgentTools\AgentActionStoreInterface;
 use OCA\Integriq\Service\AgentTools\AgentBatchGate;
@@ -501,6 +502,7 @@ final class ServiceBindings {
 		$this->registerAgentToolClient(context: $context);
 		$this->registerObjectenApis(context: $context);
 		$this->registerTablesAndFormsClients(context: $context);
+		$this->registerMicrosoft365Adapter(context: $context);
 	}
 	/**
 	 * Register integriq-side IntegrationProviders with OR's IntegrationRegistry.
@@ -570,6 +572,32 @@ final class ServiceBindings {
 			}
 		}//end try
 	}//end boot()
+
+	/**
+	 * Registers the Microsoft 365 adapter with the lookup of each person's delegated grant.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-microsoft-365-source-answers-a-document-search-across-files-mail-and-chat-req-dcc-008
+	 */
+	private function registerMicrosoft365Adapter(IRegistrationContext $context): void {
+		$context->registerService(
+			Microsoft365Adapter::class,
+			static function ($c): Microsoft365Adapter {
+				$adapter = new Microsoft365Adapter(
+					credentialBroker: $c->get(\OCA\OpenRegister\Service\Credential\CredentialBrokerService::class),
+					appConfig: $c->get(\OCP\IAppConfig::class),
+					logger: $c->get(\Psr\Log\LoggerInterface::class),
+					l10n: $c->get(\OCP\IL10N::class)
+				);
+				$adapter->useDelegatedGrants(personalCredentials: $c->get(PersonalCredentialLookup::class));
+
+				return $adapter;
+			}
+		);
+	}//end registerMicrosoft365Adapter()
 
 	/**
 	 * Registers the settings service factory.

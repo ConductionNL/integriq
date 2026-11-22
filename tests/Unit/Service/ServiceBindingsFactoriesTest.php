@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Service\Credential\PersonalCredentialLookup;
 use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\DatabaseAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
@@ -134,6 +135,25 @@ class ServiceBindingsFactoriesTest extends TestCase {
 			$this->assertArrayHasKey($id, $this->resolved);
 		}
 	}//end testTheSettingsServiceIsBuiltFromTheConfigRebaseSchedulerAndLogger()
+
+	/**
+	 * The Microsoft 365 adapter is built with the lookup of each person's delegated grant, and asks it on a mail search.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-microsoft-365-source-answers-a-document-search-across-files-mail-and-chat-req-dcc-008
+	 */
+	public function testTheMicrosoft365AdapterReadsEachPersonsDelegatedGrant(): void {
+		$grants = $this->createMock(originalClassName: PersonalCredentialLookup::class);
+		$grants->expects(self::once())->method('credentialIdFor')->with(provider: self::anything(), userId: 'pjansen')->willReturn(null);
+		$this->resolved[PersonalCredentialLookup::class] = $grants;
+
+		$adapter = $this->factories()[Microsoft365Adapter::class]($this->container());
+
+		$this->assertInstanceOf(expected: Microsoft365Adapter::class, actual: $adapter);
+		$answer = $adapter->search(terms: 'x', from: null, to: null, entityTypes: ['message'], limit: 5, userId: 'pjansen');
+		$this->assertSame(expected: ['delegated-grant-missing'], actual: $answer['notices']);
+	}//end testTheMicrosoft365AdapterReadsEachPersonsDelegatedGrant()
 
 	/**
 	 * Boot hands OpenRegister's registry the twelve integration providers, in order.
