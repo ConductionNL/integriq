@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/record-provenance-tab/specs/synchronization/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * The contract that targets a record, its synchronization and source, and its newest log entries.
@@ -46,7 +50,9 @@ final class RecordProvenanceServiceTest extends TestCase {
 	private function makeService(): RecordProvenanceService {
 		$objects = $this->createMock(OrObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function (string|int $id, $register = null, $schema = null): ?ObjectEntity {
+			function (string|int $id, ?ObjectFindOptions $options = null): ?ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				foreach (($this->store[$schema] ?? []) as $entity) {
 					if ($entity->getUuid() === $id) {
 						return $entity;

@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZDS Message Log.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * One `stuf_message` row per ZDS case message: opened when the envelope is
  * built, moved to `retrying` while a transient failure waits for its next
  * attempt, and concluded `sent` or `failed`. The envelope is kept only while
@@ -27,9 +30,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
@@ -41,6 +41,8 @@ namespace OCA\Integriq\Service\StufZkn;
 
 use DateTime;
 use OCA\Integriq\Exception\StufZknProviderException;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Throwable;
 
@@ -110,11 +112,13 @@ class StufZdsMessageLog {
 			try {
 				$found = $this->objectService->find(
 					id: $sourceId,
-					register: self::REGISTER,
-					schema: self::SCHEMA_SOURCE,
+					options: new ObjectFindOptions(
+						register: self::REGISTER,
+						schema: self::SCHEMA_SOURCE,
+						render: false
+					),
 					_rbac: false,
-					_multitenancy: false,
-					_render: false
+					_multitenancy: false
 				);
 			} catch (Throwable $exception) {
 				$found = null;
@@ -280,30 +284,7 @@ class StufZdsMessageLog {
 			return null;
 		}
 
-		try {
-			$matches = $this->objectService->findAll(
-				config: [
-					'filters' => [
-						'register' => self::REGISTER,
-						'schema' => self::SCHEMA_MESSAGE,
-						'direction' => 'outbound',
-						'referentienummer' => $referentienummer,
-					],
-					'limit' => 1,
-				],
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $exception) {
-			return null;
-		}
-
-		$results = ($matches['results'] ?? $matches);
-		$found   = null;
-		if (is_array($results) === true) {
-			$found = ($results[0] ?? null);
-		}
-
+		$found = $this->firstOutbound(referentienummer: $referentienummer);
 		if ($found === null) {
 			return null;
 		}
@@ -312,6 +293,54 @@ class StufZdsMessageLog {
 		$row['id'] = (string)$found->getUuid();
 		return $row;
 	}//end findOutbound()
+
+	/**
+	 * The first outbound message with the referentienummer, or null when there
+	 * is none or the read fails.
+	 *
+	 * @param string $referentienummer The outbound message's referentienummer.
+	 *
+	 * @return mixed The message object, or null.
+	 */
+	private function firstOutbound(string $referentienummer): mixed {
+		try {
+			$matches = $this->outboundMatches(referentienummer: $referentienummer);
+		} catch (Throwable $exception) {
+			return null;
+		}
+
+		$results = ($matches['results'] ?? $matches);
+		if (is_array($results) === false) {
+			return null;
+		}
+
+		return ($results[0] ?? null);
+	}//end firstOutbound()
+
+	/**
+	 * The outbound messages with the referentienummer, at most one, read as
+	 * the engine.
+	 *
+	 * @param string $referentienummer The outbound message's referentienummer.
+	 *
+	 * @return mixed What findAll() answers.
+	 */
+	private function outboundMatches(string $referentienummer): mixed {
+		return $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_MESSAGE,
+					'direction' => 'outbound',
+					'referentienummer' => $referentienummer,
+				],
+				'limit' => 1,
+			],
+			_rbac: false,
+			// Unscoped: matches a confirmation from a remote StUF system to its outbound message, no user session.
+			_multitenancy: false
+		);
+	}//end outboundMatches()
 
 	/**
 	 * Read one row.
@@ -326,11 +355,9 @@ class StufZdsMessageLog {
 		try {
 			$found = $this->objectService->find(
 				id: $messageId,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $exception) {
 			return null;
@@ -361,9 +388,7 @@ class StufZdsMessageLog {
 
 		$saved     = $this->objectService->saveObject(
 			object: $row,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $uuid,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);

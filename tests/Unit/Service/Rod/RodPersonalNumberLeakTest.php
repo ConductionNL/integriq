@@ -29,6 +29,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Rod;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
 use OCA\Integriq\Exception\RodProviderException;
 use OCA\Integriq\Exception\RodTranslationException;
+use OCA\Integriq\Service\Exchange\ExchangeHandOff;
 use OCA\Integriq\Service\Exchange\ExchangeTargetDispatcher;
 use OCA\Integriq\Service\OsoService;
 use OCA\Integriq\Service\Rod\RodAcknowledgementTranslator;
@@ -50,6 +51,7 @@ use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\Integriq\Service\RodService
@@ -121,7 +123,10 @@ final class RodPersonalNumberLeakTest extends TestCase {
 		$objectService->method('findAll')->willReturn(['results' => [$source]]);
 		$objectService->method('find')->willReturn($source);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object, $register=null, $schema=null, $uuid=null): ObjectEntity {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->savedRecords[] = (string) json_encode($object);
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'saved');
 			}
@@ -275,13 +280,13 @@ final class RodPersonalNumberLeakTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		$outcome = $dispatcher->dispatch(
+		$outcome = $dispatcher->dispatch(new ExchangeHandOff(
 			'job-1',
 			'bron-rod',
 			'export',
 			['berichtsoort' => 'schooladvies'],
 			[['recordId' => 'rec-1', 'sourceKind' => 'school-advies', 'data' => $this->advies()]]
-		);
+		));
 
 		$this->assertSame('send-failed', $outcome['rejected'][0]['errorCode']);
 		$this->assertStringNotContainsString(self::NUMBER, (string) json_encode($outcome));

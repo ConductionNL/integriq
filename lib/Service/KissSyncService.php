@@ -34,10 +34,12 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\CallEventNotFoundException;
 use OCA\Integriq\Exception\KissProviderException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Service\Kiss\CallEventLog;
 use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
 use OCA\Integriq\Service\Kiss\KlantinteractiesProviderInterface;
 use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -244,9 +246,7 @@ class KissSyncService implements KissSyncServiceInterface {
 
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_SOURCE,
-				uuid: $source->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_SOURCE, uuid: $source->getUuid())
 			);
 		}
 
@@ -508,27 +508,16 @@ class KissSyncService implements KissSyncServiceInterface {
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new KissProviderException(
 				message: 'No active KISS source is configured (register "openconnector", schema "source", '
 					. 'type "kiss", isEnabled=true). Configure one before using the KISS bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**
@@ -611,16 +600,13 @@ class KissSyncService implements KissSyncServiceInterface {
 		if ($existing !== null) {
 			return $this->objectService->saveObject(
 				object: $record,
-				register: self::REGISTER,
-				schema: self::SCHEMA_KLANTCONTACT,
-				uuid: $existing->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_KLANTCONTACT, uuid: $existing->getUuid())
 			);
 		}
 
 		return $this->objectService->saveObject(
 			object: $record,
-			register: self::REGISTER,
-			schema: self::SCHEMA_KLANTCONTACT
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_KLANTCONTACT)
 		);
 
 	}//end upsertKlantcontact()

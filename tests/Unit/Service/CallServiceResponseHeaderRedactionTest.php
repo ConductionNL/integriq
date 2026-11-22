@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -34,6 +37,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Response-header redaction on the CallService write paths: the single save,
@@ -91,7 +95,9 @@ class CallServiceResponseHeaderRedactionTest extends TestCase {
 	private function service(): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));

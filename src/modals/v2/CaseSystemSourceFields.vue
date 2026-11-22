@@ -173,15 +173,14 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import sourceConfigurationDraft from '../../mixins/sourceConfigurationDraft.js'
 
 /**
  * The confidentiality levels (vertrouwelijkheidaanduiding) the ZGW Zaken 1.5
@@ -227,19 +226,11 @@ export default {
 		NcTextField,
 	},
 
-	props: {
-		/** The source's configuration object. */
-		configuration: { type: Object, default: () => ({}) },
-	},
-
-	emits: ['update:configuration'],
+	mixins: [sourceConfigurationDraft],
 
 	data() {
 		return {
-			draft: { ...(this.configuration ?? {}) },
 			kindRows: rowsFrom(this.configuration?.kinds),
-			sourceOptions: [],
-			sourcesLoading: false,
 		}
 	},
 
@@ -257,8 +248,8 @@ export default {
 
 	watch: {
 		/**
-		 * Take over a configuration the parent swaps in, unless it is the one
-		 * this component just emitted.
+		 * Rebuild the kind rows from a configuration the parent swaps in; the
+		 * mixin takes over the draft itself.
 		 *
 		 * @param {object} next the new configuration
 		 * @return {void}
@@ -266,72 +257,22 @@ export default {
 		 */
 		configuration(next) {
 			if (next === this.lastEmitted) return
-			this.draft = { ...(next ?? {}) }
 			this.kindRows = rowsFrom(next?.kinds)
 		},
-	},
-
-	/**
-	 * Load the sources the two ZGW pickers offer.
-	 *
-	 * @return {void}
-	 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-a-seeded-zgw-zaken-template-links-a-connection-at-once-req-cso-003
-	 */
-	created() {
-		this.lastEmitted = null
-		this.fetchSources()
 	},
 
 	methods: {
 		t,
 
 		/**
-		 * Load the instance's sources, leaving out case-system sources.
-		 * A failed fetch leaves an empty list, never a broken editor.
+		 * Offer every source but another case-system source.
 		 *
-		 * @return {Promise<void>} resolves once the list is loaded
+		 * @param {object} item a source object
+		 * @return {boolean} true to offer it
 		 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-a-seeded-zgw-zaken-template-links-a-connection-at-once-req-cso-003
 		 */
-		async fetchSources() {
-			this.sourcesLoading = true
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/integriq/source'),
-					// `_limit`, not `limit`: an unprefixed param is a property filter.
-					{ params: { _limit: 500 } },
-				)
-				const list = Array.isArray(response?.data?.results)
-					? response.data.results
-					: []
-				this.sourceOptions = list
-					.filter((item) => item?.type !== 'case-system')
-					.map((item) => ({
-						id: String(item['@self']?.id || item.id || item.uuid),
-						label: item.name || item.title || String(item.id),
-					}))
-			} catch {
-				this.sourceOptions = []
-			} finally {
-				this.sourcesLoading = false
-			}
-		},
-
-		/**
-		 * The picker option for a stored source id; an id this instance does
-		 * not list is shown as itself rather than as empty.
-		 *
-		 * @param {string} id the stored source id
-		 * @return {object|null} the option
-		 * @spec exclude trivial select-value projection, presentation only
-		 */
-		optionFor(id) {
-			if (!id) return null
-			return (
-				this.sourceOptions.find((option) => option.id === String(id)) ?? {
-					id: String(id),
-					label: String(id),
-				}
-			)
+		acceptsSource(item) {
+			return item?.type !== 'case-system'
 		},
 
 		/**
@@ -345,19 +286,6 @@ export default {
 		levelFor(value, fallback) {
 			const level = value || fallback
 			return { id: level, label: level }
-		},
-
-		/**
-		 * Write one key and emit the whole configuration.
-		 *
-		 * @param {string} key the configuration key the backend reads
-		 * @param {string|boolean|object} value the value
-		 * @return {void}
-		 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-a-seeded-zgw-zaken-template-links-a-connection-at-once-req-cso-003
-		 */
-		write(key, value) {
-			this.draft = { ...this.draft, [key]: value }
-			this.emitDraft()
 		},
 
 		/**
@@ -417,19 +345,6 @@ export default {
 				}
 			}
 			this.write('kinds', kinds)
-		},
-
-		/**
-		 * Emit a copy of the draft and remember it, so the watcher does not
-		 * reset the rows when the parent hands it back.
-		 *
-		 * @return {void}
-		 * @spec exclude emit passthrough
-		 */
-		emitDraft() {
-			const configuration = { ...this.draft }
-			this.lastEmitted = configuration
-			this.$emit('update:configuration', configuration)
 		},
 	},
 }

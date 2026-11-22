@@ -17,6 +17,9 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -25,6 +28,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\ObjectRightsServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -46,11 +50,13 @@ class ActionMatrixController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IGroupManager $groupManager The group manager.
+	 * @param ObjectRightsServiceInterface $objectRights Writes the object rights onto the schemas.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IGroupManager $groupManager,
+		private readonly ObjectRightsServiceInterface $objectRights,
 	) {
 		parent::__construct(
 			appName: AppIdentity::APP_ID,
@@ -65,9 +71,13 @@ class ActionMatrixController extends Controller {
 	 * the keys declared in the seed file, so the admin sees every declared
 	 * action even before any customization.
 	 *
-	 * @return JSONResponse The matrix, action keys, and group IDs.
+	 * The seed's `labels` and `areas` (action name to text) come with them, so
+	 * the screen can show one section per area and a label per action.
+	 *
+	 * @return JSONResponse The matrix, action keys, group IDs, labels and areas.
 	 *
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
+	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getMatrix(): JSONResponse {
@@ -87,11 +97,15 @@ class ActionMatrixController extends Controller {
 			$groups[] = $group->getGID();
 		}
 
+		$seed = $this->readSeed();
+
 		return new JSONResponse(
 			[
 				'matrix' => $matrix,
 				'actions' => $actionKeys,
 				'groups' => $groups,
+				'labels' => $this->seedTexts(seed: $seed, member: 'labels'),
+				'areas' => $this->seedTexts(seed: $seed, member: 'areas'),
 			]
 		);
 
@@ -101,11 +115,16 @@ class ActionMatrixController extends Controller {
 	 * Persist the action matrix.
 	 *
 	 * Reads the `matrix` parameter from the request body and writes it through
-	 * the action authorization service (which normalizes the shape).
+	 * the action authorization service (which normalizes the shape), then
+	 * writes the stored `object.*` rows onto the configuration schemas'
+	 * OpenRegister authorization blocks. A schema whose update did not go
+	 * through is named in `notApplied` and in `warning`; the matrix is stored
+	 * all the same and the ApplyObjectRights repair step retries it.
 	 *
-	 * @return JSONResponse The normalized matrix after the write.
+	 * @return JSONResponse The normalized matrix after the write, and the schemas not applied.
 	 *
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
+	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setMatrix(): JSONResponse {
@@ -123,7 +142,16 @@ class ActionMatrixController extends Controller {
 			);
 		}
 
-		return new JSONResponse(['matrix' => $this->actionAuth->getMatrix()]);
+		$stored     = $this->actionAuth->getMatrix();
+		$notApplied = $this->objectRights->apply(matrix: $stored);
+
+		$body = ['matrix' => $stored, 'notApplied' => $notApplied];
+		if ($notApplied !== []) {
+			$body['warning'] = 'The object rights of these schemas were not applied: '
+				. implode(', ', $notApplied) . '. They are applied again on the next upgrade.';
+		}
+
+		return new JSONResponse($body);
 	}//end setMatrix()
 
 	/**
@@ -132,6 +160,54 @@ class ActionMatrixController extends Controller {
 	 * @return array<int, string>
 	 */
 	private function seedActionKeys(): array {
+		$actions = ($this->readSeed()['actions'] ?? null);
+		if (is_array($actions) === false) {
+			return [];
+		}
+
+		$keys = [];
+		foreach (array_keys($actions) as $key) {
+			if (is_string($key) === true) {
+				$keys[] = $key;
+			}
+		}
+
+		return $keys;
+	}//end seedActionKeys()
+
+	/**
+	 * A seed member that maps action names to text, such as `labels` or `areas`.
+	 * Entries that are not text are left out.
+	 *
+	 * @param array<string, mixed> $seed   The decoded seed.
+	 * @param string               $member The member.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+	 */
+	private function seedTexts(array $seed, string $member): array {
+		$texts = ($seed[$member] ?? null);
+		if (is_array($texts) === false) {
+			return [];
+		}
+
+		$result = [];
+		foreach ($texts as $action => $text) {
+			if (is_string($action) === true && is_string($text) === true && $text !== '') {
+				$result[$action] = $text;
+			}
+		}
+
+		return $result;
+	}//end seedTexts()
+
+	/**
+	 * The decoded seed file; empty when it is missing or unreadable.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function readSeed(): array {
 		if (file_exists(self::SEED_PATH) === false) {
 			return [];
 		}
@@ -147,18 +223,10 @@ class ActionMatrixController extends Controller {
 			return [];
 		}
 
-		$actions = ($parsed['actions'] ?? null);
-		if (is_array($actions) === false) {
+		if (is_array($parsed) === false) {
 			return [];
 		}
 
-		$keys = [];
-		foreach (array_keys($actions) as $key) {
-			if (is_string($key) === true) {
-				$keys[] = $key;
-			}
-		}
-
-		return $keys;
-	}//end seedActionKeys()
+		return $parsed;
+	}//end readSeed()
 }//end class

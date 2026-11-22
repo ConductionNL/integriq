@@ -36,11 +36,13 @@ namespace OCA\Integriq\Tests\Unit\Service\Security;
 
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCA\Integriq\Tests\Helpers\MigrationSimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Records every log call so a test can assert no secret was ever handed to it.
@@ -329,6 +331,12 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 
 	private const OWNER = 'alice';
 
+	private const GOLDEN_FIRST_RUN = '{"sources":[{"uuid":"src-a","name":"Alpha","organisation":"org-uuid-1234","fields":[{"field":"apikey","provider":"generic-apikey","outcome":"migrated","reason":"migrated","credentialId":"cred-1"}]},{"uuid":"src-b","name":"Bravo","organisation":null,"fields":[{"field":"apikey","provider":"generic-apikey","outcome":"blocked","reason":"no-organisation","credentialId":null}]},{"uuid":"src-c","name":"Charlie","organisation":"org-uuid-1234","fields":[{"field":"authenticationConfig","provider":null,"outcome":"blocked","reason":"needs-manual-review","credentialId":null}]}],"totalSources":3,"migrated":1,"failed":0,"blocked":2,"skipped":0,"postRun":{"clean":false,"pending":1,"manual":1}}';
+
+	private const GOLDEN_DECISIONS = '{"schema":"source","objects":[{"uuid":"src-x","name":"X","organisation":"org-uuid-1234","fields":[{"field":"token","provider":null,"outcome":"skipped","reason":"already-migrated","credentialId":null},{"field":"secret","provider":null,"outcome":"blocked","reason":"needs-manual-review","credentialId":null},{"field":"clientSecret","provider":null,"outcome":"skipped","reason":"nothing-to-do","credentialId":null},{"field":"other","provider":"generic-apikey","outcome":"skipped","reason":"nothing-to-do","credentialId":null},{"field":"password","provider":"generic-password","outcome":"skipped","reason":"empty-on-reread","credentialId":null},{"field":"apikey","provider":"generic-apikey","outcome":"migrated","reason":"migrated","credentialId":"cred-1"}]},{"uuid":"src-gone","name":"Gone","organisation":null,"fields":[],"readFailed":true}],"totalObjects":3,"migrated":1,"failed":0,"blocked":1,"skipped":4,"postRun":{"clean":false,"pending":2,"manual":0}}';
+
+	private const GOLDEN_SECOND_RUN = '{"sources":[{"uuid":"src-b","name":"Bravo","organisation":null,"fields":[{"field":"apikey","provider":"generic-apikey","outcome":"blocked","reason":"no-organisation","credentialId":null}]},{"uuid":"src-c","name":"Charlie","organisation":"org-uuid-1234","fields":[{"field":"authenticationConfig","provider":null,"outcome":"blocked","reason":"needs-manual-review","credentialId":null}]}],"totalSources":3,"migrated":0,"failed":0,"blocked":2,"skipped":0,"postRun":{"clean":false,"pending":1,"manual":1}}';
+
 	/**
 	 * @var MigrationSimulatingObjectService
 	 */
@@ -381,7 +389,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 	 * @return mixed
 	 */
 	private function rawField(string $uuid, string $field): mixed {
-		$entity = $this->objectService->find(id: $uuid, register: 'integriq', schema: 'source', _render: false);
+		$entity = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false));
 		$object = ($entity?->getObject() ?? []);
 		if (array_key_exists($field, $object) === false) {
 			return '__absent__';
@@ -399,7 +407,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 	 * @return mixed
 	 */
 	private function rawRef(string $uuid, string $field): mixed {
-		$entity = $this->objectService->find(id: $uuid, register: 'integriq', schema: 'source', _render: false);
+		$entity = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false));
 		return ($entity?->getObject()['configuration']['authentication'][$field] ?? '__absent__');
 	}//end rawRef()
 
@@ -742,7 +750,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function testASeparateReferenceFieldIsWrittenAndTheKeyEmptied(): void {
 		$this->objectService->seed(
@@ -759,9 +767,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 
 		$entity = $this->objectService->find(
 			id: 'identity-1',
-			register: 'integriq',
-			schema: 'sender_identity',
-			_render: false
+			options: new ObjectFindOptions(register: 'integriq', schema: 'sender_identity', render: false)
 		);
 		$object = ($entity?->getObject() ?? []);
 
@@ -780,7 +786,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function testAFailedVerifyLeavesTheSigningKeyIntact(): void {
 		$this->objectService->seed(
@@ -798,9 +804,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 
 		$entity = $this->objectService->find(
 			id: 'identity-1',
-			register: 'integriq',
-			schema: 'sender_identity',
-			_render: false
+			options: new ObjectFindOptions(register: 'integriq', schema: 'sender_identity', render: false)
 		);
 		$object = ($entity?->getObject() ?? []);
 
@@ -823,7 +827,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function testARealRunMigratesEverySchemaNotJustSource(): void {
 		$this->objectService->seed(
@@ -844,9 +848,7 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 
 		$entity = $this->objectService->find(
 			id: 'identity-1',
-			register: 'integriq',
-			schema: 'sender_identity',
-			_render: false
+			options: new ObjectFindOptions(register: 'integriq', schema: 'sender_identity', render: false)
 		);
 		$object = ($entity?->getObject() ?? []);
 
@@ -858,4 +860,77 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 		$this->assertSame('', (string)($object['smimePrivateKey'] ?? ''), 'The inline key must be nulled.');
 
 	}//end testARealRunMigratesEverySchemaNotJustSource()
+
+	/**
+	 * GOLDEN: one run over a migratable source, a source without organisation,
+	 * an authenticationConfig source and a source read a second time pins every
+	 * field record, every count and the post-run gate. Migrated and refused
+	 * (blocked, skipped) outcomes are asserted together, so a change to the
+	 * per-field decision order shows up here.
+	 *
+	 * @return void
+	 */
+	public function testGoldenRunPinsEveryFieldOutcomeAndCount(): void {
+		$this->objectService->seed('src-a', ['name' => 'Alpha', 'apikey' => self::SECRET], self::OWNER, self::ORG);
+		$this->objectService->seed('src-b', ['name' => 'Bravo', 'apikey' => 'other-secret'], self::OWNER, null);
+		$this->objectService->seed('src-c', ['name' => 'Charlie', 'authenticationConfig' => ['client_secret' => 'shh']], self::OWNER, self::ORG);
+
+		$first = $this->executor->migrateAll();
+		$second = $this->executor->migrateAll();
+
+		$this->assertSame(self::GOLDEN_FIRST_RUN, json_encode($first));
+		$this->assertSame(self::GOLDEN_SECOND_RUN, json_encode($second));
+		$this->assertCount(1, $this->broker->mintCalls, 'Only the migratable source is ever minted.');
+		$this->assertSame('other-secret', $this->rawField('src-b', 'apikey'), 'The blocked source keeps its secret.');
+	}//end testGoldenRunPinsEveryFieldOutcomeAndCount()
+
+
+	/**
+	 * GOLDEN: every per-field decision the fresh re-plan can lead to, in one
+	 * source, plus a source whose raw read fails. The planner is stubbed so the
+	 * states the real planner only yields under a concurrent change are reached:
+	 * already-migrated, a would-migrate field without provider, a field emptied
+	 * since the plan, and an unknown state.
+	 *
+	 * @return void
+	 */
+	public function testGoldenFieldDecisionsCoverEverySkipAndBlockReason(): void {
+		$this->objectService->seed('src-x', ['name' => 'X', 'apikey' => self::SECRET, 'password' => ''], self::OWNER, self::ORG);
+
+		$planner = $this->createMock(InlineSecretMigrationPlannerInterface::class);
+		$planner->method('planSchema')->willReturn(
+			[
+				'objects' => [['uuid' => 'src-x', 'name' => 'X'], ['uuid' => 'src-gone', 'name' => 'Gone'], ['uuid' => '']],
+				'totalObjects' => 3,
+				'clean' => false,
+				'wouldMigrate' => 2,
+				'needsReview' => 0,
+			]
+		);
+		$planner->method('planSource')->willReturn(
+			[
+				'fields' => [
+					['field' => 'token', 'state' => 'already-migrated', 'provider' => null],
+					['field' => 'secret', 'state' => 'needs-manual-review', 'provider' => null],
+					['field' => 'clientSecret', 'state' => 'would-migrate', 'provider' => null],
+					['field' => 'other', 'state' => 'empty', 'provider' => 'generic-apikey'],
+					['field' => 'password', 'state' => 'would-migrate', 'provider' => 'generic-password'],
+					['field' => 'apikey', 'state' => 'would-migrate', 'provider' => 'generic-apikey'],
+				],
+			]
+		);
+
+		$executor = new TestableInlineSecretMigrationExecutor(
+			$this->objectService,
+			$planner,
+			$this->logger,
+			$this->createMock(ContainerInterface::class)
+		);
+		$executor->brokerInstance = $this->broker;
+		$executor->brokerClassAvailable = true;
+
+		$this->assertSame(self::GOLDEN_DECISIONS, json_encode($executor->migrateSchema(schema: InlineSecretMigrationPlanner::SCHEMA)));
+		$this->assertCount(1, $this->broker->mintCalls, 'Only the field with a provider, an organisation and a live secret is minted.');
+	}//end testGoldenFieldDecisionsCoverEverySkipAndBlockReason()
+
 }//end class

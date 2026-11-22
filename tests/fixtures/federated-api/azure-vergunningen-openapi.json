@@ -1,0 +1,40 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Vergunningen",
+    "version": "v2"
+  },
+  "servers": [
+    {
+      "url": "https://apim-gemeente.azure-api.net/vergunningen"
+    }
+  ],
+  "paths": {
+    "/aanvragen": {
+      "get": {
+        "operationId": "listAanvragen",
+        "summary": "Aanvragen opvragen",
+        "responses": {
+          "200": {
+            "description": "De aanvragen"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyHeader": {
+        "type": "apiKey",
+        "name": "Ocp-Apim-Subscription-Key",
+        "in": "header",
+        "x-example": "4f6c0a7b2d9e4c1a8b3f5e6d7c8b9a0f"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyHeader": []
+    }
+  ]
+}

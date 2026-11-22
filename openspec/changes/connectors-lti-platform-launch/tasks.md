@@ -23,9 +23,10 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
   - GIVEN another user's hint, a bad redirect URI or a missing nonce WHEN the endpoint runs THEN an error page names the check and nothing is posted
 - [x] Implement
   - Built by #2243: `LtiPlatformController::authorize()` on GET and POST `/api/lti/platform/authorize`, `LtiPlatformLoginService` (user, hint, client id, redirect URI, nonce and state checks), `templates/lti-autopost.php` and `templates/lti-error.php`, the optional nonce on `initiatePlatformLaunch()`.
-  - Still owed from this task: the error page strings are not in `l10n/en.json` / `l10n/nl.json` yet.
+  - The launch page and error page strings are in `l10n/en.json` / `l10n/nl.json`, and `l10n/en.js` / `l10n/nl.js` are rebuilt from them.
 - [ ] Test (PHPUnit per check; `tests/e2e/lti-platform-launch.spec.ts` against a reference tool fixture)
   - PHPUnit half done: `testAuthorizePostsIdTokenWithToolNonceAndState`, `testAuthorizeRefusesAnotherUsersHint`, `testAuthorizeRefusesUnregisteredRedirectUri`, `testAuthorizeRefusesMissingNonce`, `testAuthorizeRefusesAnotherClientId` in `LtiPlatformLaunchTest`. Open: the e2e spec and the reference tool fixture do not exist yet.
+  - 2026-11-21, written, not run (no live instance): `tests/e2e/lti-platform-launch.spec.ts`. A request without a login hint gets the error page naming the `hint` check and posts nothing. The two hint scenarios (the id_token reaching the tool, another user's hint) are `test.fixme`, because a hint is only issued when learniq raises `LtiLaunchRequestedEvent`, and no route of this app raises it. The reference tool fixture is still open, so the box stays unticked.
 
 ### Task 3: The launch claims and the grade service claim
 - **spec_ref**: openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-launched-tool-can-send-a-grade-back-to-the-placement-req-ltil-003
@@ -50,6 +51,8 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
   - The six values come from `LtiPlatformDetailsService::forTool()` behind `GET /api/lti/tools/{id}/platform-details` (`LtiPlatformDetailsController`, admin only). Every URL is generated from a route name of this app; the issuer is computed as `LtiPlatformLoginService::platformIssuer()` computes it, and a test pins the two equal. The tool is read without the approval gate, because an administrator needs the values to register at the vendor before approving.
   - There was no page for `lti_tool` at all. `src/manifest.d/lti-tools.json` adds a read-only index (Gateway > LTI tools) and a detail page with the `LtiPlatformDetails` panel: six rows, each with a copy action. Read-only on purpose: `signingKeys` holds writeOnly key material OpenRegister strips from reads, so a generic edit form would save the registration back without its keys.
 - [ ] Test (`tests/validate-register.js`; `tests/e2e/lti-platform-launch.spec.ts`)
+  - `tests/validate-register.js` passes with `redirectUris` on `lti_tool`. Open: the e2e spec, which needs a running instance and the reference tool fixture.
+  - 2026-11-21: the page this task built never rendered. `src/manifest.d/adapter-configuration-screens.json` and `src/manifest.d/lti-tools.json` both declared `LtiTools` and `LtiToolDetail`, and `buildManifest()` keeps the last one with that id. So `lti-tools.json` (`/lti/tools`, read-only) replaced the adapter-configuration pages (`/lti-tools`) and their approve, suspend and key actions. The `LtiPlatformDetails` panel is now a body widget of the adapter-configuration `LtiToolDetail`, and `lti-tools.json` is removed. `tests/Unit/Settings/ManifestFragmentPagesTest.php` fails when any page id is declared twice, and checks that the tool page that renders has both the actions and the panel. The e2e spec is written (`tests/e2e/lti-platform-launch.spec.ts`: the six values on `/lti-tools/:id`, each with a copy action) but not run, so the box stays unticked.
 
 ### Task 5: Hand learniq its half
 - **spec_ref**: openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-sibling-app-starts-a-platform-launch-with-a-typed-event-req-ltil-001

@@ -3,6 +3,9 @@
 /**
  * Integriq Source Paginate flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.source-paginate` — the "[Fetch a page]" step of the decomposed
  * synchronization flow. It emits ONE FLOW ITEM PER PAGE, each carrying the
  * page's objects as an array, so every downstream step (`apply-mapping`,
@@ -74,9 +77,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -90,8 +90,9 @@ namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
@@ -107,7 +108,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#1-engine-steps-each-a-thin-adapter-over-a-kept-service
  */
-class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SourcePaginateNodeInterface {
+class SourcePaginateNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, SourcePaginateNodeInterface {
 	use FlowNodePaletteDefaults;
 
 	/**
@@ -291,9 +292,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	/**
 	 * Fetch the source and fan out its pages, in the run owner's context.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata (carries the run owner).
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array One output item per fetched page, per input item.
 	 *
@@ -301,7 +300,11 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+
 		// An empty branch fetches nothing and produces no items — the filter
 		// contract, not a failure, so it short-circuits before the owner is
 		// resolved: there is nothing to attribute.
@@ -315,8 +318,8 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 
 		return $this->flowOwner->runAs(
 			user: $owner,
-			callback: function () use ($items, $config, $context) {
-				return $this->paginateForEachItem(items: $items, config: $config, context: $context);
+			callback: function () use ($call) {
+				return $this->paginateForEachItem(call: $call);
 			}
 		);
 
@@ -332,9 +335,7 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 * would not let us look" — the precise misreading that let nine shards
 	 * starve while the run reported success.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
@@ -342,7 +343,10 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	private function paginateForEachItem(array $items, array $config, array $context): array {
+	private function paginateForEachItem(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$reference = trim((string)$config['synchronization']);
 		$pageSize = (int)($config['pageSize'] ?? self::DEFAULT_PAGE_SIZE);
 		$maxPages = (int)($config['maxPages'] ?? self::DEFAULT_MAX_PAGES);

@@ -104,27 +104,21 @@ class ExchangeAcknowledgementListener implements IEventListener {
 			return;
 		}
 
-		$adapter = self::ADAPTER_OF[$event::class];
-		$parts = explode(':', $event->getKenmerk(), 2);
-		$jobId = $parts[0];
-		$recordId = ($parts[1] ?? '');
-		if ($recordId === '') {
+		$record = AcknowledgedRecord::fromKenmerk(kenmerk: $event->getKenmerk());
+		if ($record->recordId === '') {
 			return;
 		}
 
+		$record->accepted = $event->isAccepted();
+		$record->signaalcode = $event->getSignaalcode();
+		$record->description = (string)$event->getSignaalOmschrijving();
+
 		try {
-			$this->report(
-				adapter: $adapter,
-				jobId: $jobId,
-				recordId: $recordId,
-				accepted: $event->isAccepted(),
-				signaalcode: $event->getSignaalcode(),
-				description: (string)$event->getSignaalOmschrijving()
-			);
+			$this->report(record: $record, adapter: self::ADAPTER_OF[$event::class]);
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				'[integriq] an acknowledgement for exchange job {job} could not be recorded: {error}',
-				['job' => $jobId, 'error' => $exception->getMessage()]
+				['job' => $record->jobId, 'error' => $exception->getMessage()]
 			);
 		}
 
@@ -133,60 +127,65 @@ class ExchangeAcknowledgementListener implements IEventListener {
 	/**
 	 * Report one acknowledgement against its job, when it answers one.
 	 *
-	 * @param string $adapter     The adapter that received it.
-	 * @param string $jobId       The job the kenmerk names.
-	 * @param string $recordId    The record the kenmerk names.
-	 * @param bool   $accepted    Whether the authority accepted the record.
-	 * @param string $signaalcode The authority's code.
-	 * @param string $description The authority's description, empty when none.
+	 * @param AcknowledgedRecord $record  The job and record the kenmerk names, and what the authority answered.
+	 * @param string             $adapter The adapter that received it.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/connectors-data-exchange-dispatch/specs/exchange-jobs/spec.md#requirement-req-013-the-authority-acknowledgement-for-a-record-is-reported-against-its-job
 	 */
-	private function report(
-		string $adapter,
-		string $jobId,
-		string $recordId,
-		bool $accepted,
-		string $signaalcode,
-		string $description
-	): void {
-		$job = $this->jobs->findJob(jobId: $jobId);
-		if ($job === null) {
+	private function report(AcknowledgedRecord $record, string $adapter): void {
+		if ($this->answersOwnedJob(record: $record, adapter: $adapter) === false) {
 			return;
 		}
 
-		$data = $job->getObject();
-		$target = (string)($data['exchangeTarget'] ?? '');
-		$ownerApp = (string)($data['ownerApp'] ?? '');
-		if ($ownerApp === '' || $this->adapterFor(target: $target) !== $adapter) {
-			return;
-		}
-
-		if ($accepted === false) {
+		if ($record->accepted === false) {
 			$this->rejections->record(
-				jobId: $jobId,
-				target: $target,
-				rejection: ['recordId' => $recordId, 'errorCode' => $signaalcode],
-				ownerApp: $ownerApp
+				jobId: $record->jobId,
+				target: $record->target,
+				rejection: ['recordId' => $record->recordId, 'errorCode' => $record->signaalcode],
+				ownerApp: $record->ownerApp
 			);
 		}
 
 		$this->dispatcher->dispatchTyped(
 			new ExchangeJobAcknowledgedEvent(
-				ownerApp: $ownerApp,
-				jobId: $jobId,
-				recordId: $recordId,
-				target: $target,
-				accepted: $accepted,
-				signaalcode: $signaalcode,
-				description: $description,
+				ownerApp: $record->ownerApp,
+				jobId: $record->jobId,
+				recordId: $record->recordId,
+				target: $record->target,
+				accepted: $record->accepted,
+				signaalcode: $record->signaalcode,
+				description: $record->description,
 				receivedAt: date(DATE_ATOM)
 			)
 		);
 
 	}//end report()
+
+	/**
+	 * Whether the kenmerk names a job an app owns whose target the receiving
+	 * adapter carries; fills in the record's target and owning app.
+	 *
+	 * @param AcknowledgedRecord $record  The job and record the kenmerk names.
+	 * @param string             $adapter The adapter that received the acknowledgement.
+	 *
+	 * @return bool True when the acknowledgement answers that job.
+	 *
+	 * @spec openspec/changes/connectors-data-exchange-dispatch/specs/exchange-jobs/spec.md#requirement-req-013-the-authority-acknowledgement-for-a-record-is-reported-against-its-job
+	 */
+	private function answersOwnedJob(AcknowledgedRecord $record, string $adapter): bool {
+		$job = $this->jobs->findJob(jobId: $record->jobId);
+		if ($job === null) {
+			return false;
+		}
+
+		$data = $job->getObject();
+		$record->target = (string)($data['exchangeTarget'] ?? '');
+		$record->ownerApp = (string)($data['ownerApp'] ?? '');
+
+		return $record->ownerApp !== '' && $this->adapterFor(target: $record->target) === $adapter;
+	}//end answersOwnedJob()
 
 	/**
 	 * The adapter that carries a target, empty for an unknown one.

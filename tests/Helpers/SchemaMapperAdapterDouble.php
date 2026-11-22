@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -33,16 +36,24 @@ class SchemaMapperAdapterDouble extends ObjectServiceMapperAdapter {
 	}//end createFromArray()
 
 	/**
-	 * @param int|string $id            The object id.
-	 * @param array      $object        The new body.
-	 * @param bool       $updateVersion Whether to bump the version.
-	 * @param bool       $patch         Whether this is a partial update.
+	 * @param int|string $id     The object id.
+	 * @param array      $object The full new body.
 	 *
 	 * @return mixed
 	 */
-	public function updateFromArray(int|string $id, array $object, bool $updateVersion, bool $patch=false): mixed {
+	public function replaceFromArray(int|string $id, array $object): mixed {
 		return null;
-	}//end updateFromArray()
+	}//end replaceFromArray()
+
+	/**
+	 * @param int|string $id     The object id.
+	 * @param array      $object The partial body.
+	 *
+	 * @return mixed
+	 */
+	public function patchFromArray(int|string $id, array $object): mixed {
+		return null;
+	}//end patchFromArray()
 
 	/**
 	 * @param array $where The delete criteria.

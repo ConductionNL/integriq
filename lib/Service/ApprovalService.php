@@ -40,7 +40,9 @@ use DateTime;
 use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\Task\TaskService as ORTaskService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -195,8 +197,7 @@ class ApprovalService implements ApprovalServiceInterface {
 				'createdAt' => $now->format('c'),
 				'expiresAt' => $expiresAt->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA)
 		);
 
 		if ($trace !== null) {
@@ -292,8 +293,7 @@ class ApprovalService implements ApprovalServiceInterface {
 				'createdAt' => $now->format('c'),
 				'expiresAt' => $expiresAt->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA)
 		);
 
 		$record = $this->announce(approvalRequest: $record);
@@ -307,7 +307,7 @@ class ApprovalService implements ApprovalServiceInterface {
 	 * `approval_request` carrying `engineRunUuid`/`signalNodeId` instead of
 	 * `flowRunId`/`resumeStepOrder`, and notify the configured approver
 	 * group. The engine run resumes through
-	 * `FlowRunSignalService::signalAs()` (delivered by
+	 * `FlowRunSignalService::answerByUuid()` (delivered by
 	 * `ApprovalsController`), never through a FlowToken rehydration — the
 	 * engine holds the run's own state, so `snapshot` stays empty and this
 	 * record remains purely the human-decision system of record
@@ -365,8 +365,7 @@ class ApprovalService implements ApprovalServiceInterface {
 				'createdAt' => $now->format('c'),
 				'expiresAt' => $expiresAt->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA)
 		);
 
 		$record = $this->announce(approvalRequest: $record);
@@ -418,8 +417,7 @@ class ApprovalService implements ApprovalServiceInterface {
 				'createdAt' => $now->format('c'),
 				'expiresAt' => $expiresAt->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA)
 		);
 
 		$record = $this->announce(approvalRequest: $record);
@@ -443,9 +441,7 @@ class ApprovalService implements ApprovalServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $approvalRequest->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $approvalRequest->getUuid())
 		);
 
 	}//end recordResumeResult()
@@ -517,17 +513,30 @@ class ApprovalService implements ApprovalServiceInterface {
 	/**
 	 * Find an approval_request by id.
 	 *
-	 * @param string $id The approval_request uuid.
+	 * Within the caller's organisation by default: a request of another
+	 * organisation answers 404. `$asSystem` reads across organisations, for a
+	 * path that runs without a user or re-reads a request already found in scope.
+	 *
+	 * @param string $id       The approval_request uuid.
+	 * @param bool   $asSystem Whether to read without the organisation filter.
 	 *
 	 * @return ObjectEntity
 	 *
 	 * @throws ApprovalStateException (404) When no such request exists.
 	 *
 	 * @spec openspec/changes/archive/2026-07-15-hitl-approval-rule-action/design.md#api-design
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
-	public function find(string $id): ObjectEntity {
+	public function find(string $id, bool $asSystem = false): ObjectEntity {
 		try {
-			return $this->objectService->find(id: $id, register: self::REGISTER, schema: self::SCHEMA, _rbac: false, _multitenancy: false);
+			// RBAC stays off: the caller's integriq action check is the gate for
+			// these objects. The organisation filter is off only for a system read.
+			return $this->objectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
+				_rbac: false,
+				_multitenancy: $asSystem === false
+			);
 			// Throwable alone: DoesNotExistException is a Throwable, so naming it
 			// separately caught nothing extra.
 		} catch (Throwable $e) {
@@ -624,9 +633,7 @@ class ApprovalService implements ApprovalServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $approvalRequest->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $approvalRequest->getUuid())
 		);
 
 		$this->taskMirror->close(data: $data, outcome: 'transition:approved', actorUid: $approver->getUID());
@@ -670,9 +677,7 @@ class ApprovalService implements ApprovalServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $approvalRequest->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $approvalRequest->getUuid())
 		);
 
 		// The mirror ends the way the record did: dead-lettered when
@@ -793,9 +798,7 @@ class ApprovalService implements ApprovalServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $approvalRequest->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $approvalRequest->getUuid())
 		);
 
 	}//end expireRecord()
@@ -936,9 +939,7 @@ class ApprovalService implements ApprovalServiceInterface {
 		try {
 			return $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $approvalRequest->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $approvalRequest->getUuid())
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

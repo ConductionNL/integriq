@@ -3,10 +3,13 @@
 /**
  * Integriq Egress Guard.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Refuses an outbound URL that points into the instance's own network before an
  * HTTP call is made to it: the app-local form of the egress guard hydra ADR-067
  * decision 3 describes, until OpenRegister ships the shared `EgressGuard`. The
- * rules are the ones `openspec/changes/events-async-api-products/design.md`
+ * rules are the ones `openspec/changes/archive/2026-11-20-events-async-api-products/design.md`
  * gives a caller-chosen sink:
  *
  * - `https` only;
@@ -32,9 +35,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -51,7 +51,7 @@ use OCP\IAppConfig;
 /**
  * Decides whether an outbound URL may be called.
  *
- * @spec openspec/changes/events-async-api-products/design.md
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
  */
 class EgressGuard implements EgressGuardInterface {
 
@@ -132,7 +132,7 @@ class EgressGuard implements EgressGuardInterface {
 	 * @throws EgressRefusedException When the URL is refused; the message names
 	 *                                the rule and the host, never a credential.
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	public function assertAllowed(string $url): void {
 		$parts = parse_url($url);
@@ -172,7 +172,7 @@ class EgressGuard implements EgressGuardInterface {
 	 *
 	 * @throws EgressRefusedException When an address is refused.
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private function assertAddressesAllowed(string $host, bool $allowed): void {
 		foreach ($this->addressesOf(host: $host) as $address) {
@@ -202,7 +202,7 @@ class EgressGuard implements EgressGuardInterface {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	protected function addressesOf(string $host): array {
 		if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
@@ -215,25 +215,53 @@ class EgressGuard implements EgressGuardInterface {
 			$addresses = $ipv4;
 		}
 
-		// The dns_get_record() call warns on a failed lookup; that is not an
-		// error here, so the warning is swallowed for this one call.
-		set_error_handler(static fn (): bool => true);
-		try {
-			$ipv6 = dns_get_record($host, DNS_AAAA);
-		} finally {
-			restore_error_handler();
+		return array_merge($addresses, self::ipv6Of(host: $host));
+	}//end addressesOf()
+
+	/**
+	 * The host's AAAA addresses; none when the lookup fails.
+	 *
+	 * @param string $host The host name.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
+	 */
+	private static function ipv6Of(string $host): array {
+		$records = self::aaaaRecords(host: $host);
+		if (is_array($records) === false) {
+			return [];
 		}
 
-		if (is_array($ipv6) === true) {
-			foreach ($ipv6 as $record) {
-				if (isset($record['ipv6']) === true) {
-					$addresses[] = (string)$record['ipv6'];
-				}
+		$addresses = [];
+		foreach ($records as $record) {
+			if (isset($record['ipv6']) === true) {
+				$addresses[] = (string)$record['ipv6'];
 			}
 		}
 
 		return $addresses;
-	}//end addressesOf()
+	}//end ipv6Of()
+
+	/**
+	 * The host's AAAA records, or false when the lookup fails.
+	 *
+	 * @param string $host The host name.
+	 *
+	 * @return array<int, array<string, mixed>>|false
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
+	 */
+	private static function aaaaRecords(string $host): array|false {
+		// The dns_get_record() call warns on a failed lookup; that is not an
+		// error here, so the warning is swallowed for this one call.
+		set_error_handler(static fn (): bool => true);
+		try {
+			return dns_get_record($host, DNS_AAAA);
+		} finally {
+			restore_error_handler();
+		}
+	}//end aaaaRecords()
 
 	/**
 	 * Whether the administrator listed this host as an allowed internal receiver.
@@ -269,33 +297,78 @@ class EgressGuard implements EgressGuardInterface {
 	 * @return boolean
 	 */
 	private function inAnyRange(string $address, array $ranges): bool {
-		if (filter_var($address, FILTER_VALIDATE_IP) === false) {
+		$packed = self::packed(address: $address);
+		if ($packed === null) {
 			return false;
-		}
-
-		$packed = inet_pton($address);
-		if ($packed === false) {
-			return false;
-		}
-
-		if (strlen($packed) === 16 && str_starts_with($packed, str_repeat("\0", 10) . "\xff\xff") === true) {
-			$packed = substr($packed, 12);
 		}
 
 		foreach ($ranges as $range) {
-			[$subnet, $bits] = explode('/', $range);
-			$subnetPacked = inet_pton($subnet);
-			if ($subnetPacked === false || strlen($subnetPacked) !== strlen($packed)) {
-				continue;
-			}
-
-			if ($this->prefixMatches(left: $packed, right: $subnetPacked, bits: (int)$bits) === true) {
+			if ($this->inRange(packed: $packed, range: $range) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end inAnyRange()
+
+	/**
+	 * The address in binary form, with an IPv4-mapped IPv6 address read as its IPv4 address.
+	 *
+	 * @param string $address The address.
+	 *
+	 * @return string|null Null when it is not an IP address.
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
+	 */
+	private static function packed(string $address): ?string {
+		if (filter_var($address, FILTER_VALIDATE_IP) === false) {
+			return null;
+		}
+
+		$packed = inet_pton($address);
+		if ($packed === false) {
+			return null;
+		}
+
+		return self::unmapped(packed: $packed);
+	}//end packed()
+
+	/**
+	 * An IPv4-mapped IPv6 address (`::ffff:a.b.c.d`) as its four IPv4 bytes; any other as it is.
+	 *
+	 * @param string $packed The binary address.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
+	 */
+	private static function unmapped(string $packed): string {
+		if (strlen($packed) === 16 && str_starts_with($packed, str_repeat("\0", 10) . "\xff\xff") === true) {
+			return substr($packed, 12);
+		}
+
+		return $packed;
+	}//end unmapped()
+
+	/**
+	 * Whether a binary address lies in one CIDR range of the same family.
+	 *
+	 * @param string $packed The binary address.
+	 * @param string $range  The range, `subnet/bits`.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
+	 */
+	private function inRange(string $packed, string $range): bool {
+		[$subnet, $bits] = explode('/', $range);
+		$subnetPacked = inet_pton($subnet);
+		if ($subnetPacked === false || strlen($subnetPacked) !== strlen($packed)) {
+			return false;
+		}
+
+		return $this->prefixMatches(left: $packed, right: $subnetPacked, bits: (int)$bits);
+	}//end inRange()
 
 	/**
 	 * Whether the first `$bits` bits of two packed addresses are equal.

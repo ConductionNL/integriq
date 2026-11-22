@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -28,6 +31,21 @@ use OCA\OpenRegister\Db\ObjectEntity;
  * Public operations of {@see SmsDispatchService} that other components call.
  */
 interface SmsDispatchServiceInterface {
+
+	/**
+	 * `source.type` value identifying an SMS channel source.
+	 *
+	 * @var string
+	 */
+	public const SOURCE_TYPE = 'sms';
+
+	/**
+	 * Error code of a send naming a source that is not an enabled SMS source.
+	 *
+	 * @var string
+	 */
+	public const ERROR_UNKNOWN_SOURCE = 'unknown-source';
+
 	/**
 	 * Validate and send one SMS message: validates the recipient to E.164, dispatches
 	 * through the configured provider, and persists the resulting `sms_message` record.
@@ -80,12 +98,15 @@ interface SmsDispatchServiceInterface {
 	 * @param string $providerMessageId The provider-assigned message id from the callback.
 	 * @param string $status The reported normalised status ({@see DeliveryResult::STATUSES}).
 	 * @param string|null $detail An optional reason/detail message.
+	 * @param array{slug: string, provider: string}|null $source The source the callback came through, when
+	 *                                                            known: only a message that source sent is updated.
 	 *
 	 * @return ObjectEntity|null The updated message, or null when the providerMessageId is unknown.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
-	public function handleStatusCallback(string $providerMessageId, string $status, ?string $detail): ?ObjectEntity;
+	public function handleStatusCallback(string $providerMessageId, string $status, ?string $detail, ?array $source = null): ?ObjectEntity;
 
 	/**
 	 * Select the provider binding named by `configuration.provider` (default `log`).

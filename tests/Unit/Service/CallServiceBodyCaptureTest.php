@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -20,6 +23,8 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use DateTimeImmutable;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
+use OCA\Integriq\Adapters\Support\SupplierSourceCall;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\AuthenticationService;
@@ -35,6 +40,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use RuntimeException;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Body capture on the CallService write path (Woo row 13.23, decision D5).
@@ -73,7 +79,9 @@ class CallServiceBodyCaptureTest extends TestCase {
 	private function service(Response $answer, ?IAppConfig $appConfig = null): CallService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null) {
+			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->saved));
@@ -232,7 +240,9 @@ class CallServiceBodyCaptureTest extends TestCase {
 		$logs = $this->callLogs();
 		$this->assertCount(1, $logs);
 		$this->assertTrue($logs[0]['bodyCaptured']);
-		$this->assertSame('999993653', $logs[0]['request']['json']['bsn']);
+		// The body is captured with its personal data masked (REQ-PDM-001).
+		$this->assertSame('[afgeschermd]', $logs[0]['request']['json']['bsn']);
+		$this->assertStringNotContainsString('999993653', (string)json_encode($logs[0]));
 		$this->assertSame('{"uuid":"z1"}', $logs[0]['response']['body']);
 		$this->assertSame('2026-10-17T12:00:00+00:00', $logs[0]['bodyExpiresAt']);
 	}//end testASuccessInsideAWindowStoresBothBodies()
@@ -368,12 +378,62 @@ class CallServiceBodyCaptureTest extends TestCase {
 	public function testLogBodyKeepsTheBodies(): void {
 		$service = $this->service(new Response(200, [], '{"public":"curriculum"}'));
 
-		$service->call(source: $this->source(null), endpoint: '/zaken', config: ['logBody' => true]);
+		$service->call(source: $this->source(null), endpoint: '/zaken', config: ['logBody' => SloCurriculumClientHttp::class]);
 
 		$log = $this->callLogs()[0];
 		$this->assertTrue($log['bodyCaptured']);
 		$this->assertSame('{"public":"curriculum"}', $log['response']['body']);
 	}//end testLogBodyKeepsTheBodies()
+
+	/**
+	 * A bare true, an unlisted class or any other value keeps no body: only a listed caller does.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-code-may-keep-bodies-only-for-listed-public-data-callers-req-ocd-010
+	 */
+	public function testOnlyAListedCallerKeepsTheBodies(): void {
+		foreach ([true, 1, 'yes', SupplierSourceCall::class, ['x']] as $logBody) {
+			$this->saved = [];
+			$service = $this->service(new Response(200, [], '{"leerling":"999993653"}'));
+
+			$service->call(source: $this->source(null), endpoint: '/zaken', config: ['logBody' => $logBody]);
+
+			$this->assertNoBody($this->callLogs()[0]);
+		}
+	}//end testOnlyAListedCallerKeepsTheBodies()
+
+	/**
+	 * No class under lib/ passes logBody unless it is on the allowlist.
+	 *
+	 * CallService reads the option and is the one file allowed to name it
+	 * without being listed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-code-may-keep-bodies-only-for-listed-public-data-callers-req-ocd-010
+	 */
+	public function testOnlyListedCallersPassLogBody(): void {
+		$lib     = dirname(__DIR__, 3) . '/lib';
+		$readers = [CallService::class];
+		$callers = [];
+		$files   = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($lib, \FilesystemIterator::SKIP_DOTS));
+		foreach ($files as $file) {
+			if ($file->getExtension() !== 'php' || str_contains((string)file_get_contents($file->getPathname()), "'logBody'") === false) {
+				continue;
+			}
+
+			$relative  = substr($file->getPathname(), strlen($lib) + 1, -4);
+			$callers[] = 'OCA\\Integriq\\' . str_replace('/', '\\', $relative);
+		}
+
+		$unlisted = array_values(array_diff($callers, BodyCapturePolicy::LOG_BODY_ALLOWLIST, $readers));
+		sort($unlisted);
+
+		$this->assertSame([], $unlisted, 'These classes pass logBody but are not on BodyCapturePolicy::LOG_BODY_ALLOWLIST: ' . implode(', ', $unlisted));
+		$this->assertContains(SloCurriculumClientHttp::class, $callers);
+		$this->assertSame([SloCurriculumClientHttp::class], BodyCapturePolicy::LOG_BODY_ALLOWLIST);
+	}//end testOnlyListedCallersPassLogBody()
 	/**
 	 * A traced call outside an investigation window leaves no body in the trace step either (iq-f6).
 	 *
@@ -413,14 +473,15 @@ class CallServiceBodyCaptureTest extends TestCase {
 			trace: $windowTrace
 		);
 		$step = $windowTrace->getSteps()[0];
-		$this->assertSame('999993653', $step['input']['json']['bsn']);
+		// The trace snapshot holds the body with its personal data masked (REQ-PDM-001).
+		$this->assertSame('[afgeschermd]', $step['input']['json']['bsn']);
 		$this->assertSame('{"uuid":"z1"}', $step['output']['body']);
 
 		$logBodyTrace = new ExecutionTraceContext('logbody');
 		$this->service(new Response(200, [], '{"public":"curriculum"}'))->call(
 			source: $this->source(null),
 			endpoint: '/zaken',
-			config: ['logBody' => true],
+			config: ['logBody' => SloCurriculumClientHttp::class],
 			trace: $logBodyTrace
 		);
 		$this->assertSame('{"public":"curriculum"}', $logBodyTrace->getSteps()[0]['output']['body']);

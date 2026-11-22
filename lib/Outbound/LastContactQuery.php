@@ -65,38 +65,10 @@ class LastContactQuery implements LastContactQueryInterface {
 		$latestMessage = null;
 
 		foreach ($this->messagesFor(subjectRef: $subjectRef) as $entity) {
-			$record = $entity->getObject();
-			$recipients = ($record['recipients'] ?? []);
-			if (is_array($recipients) === false) {
-				continue;
-			}
-
-			foreach ($recipients as $row) {
-				if (is_array($row) === false) {
-					continue;
-				}
-
-				if ((string)($row['address'] ?? '') !== $recipient) {
-					continue;
-				}
-
-				if ((string)($row['status'] ?? '') !== RecipientState::STATUS_SENT) {
-					continue;
-				}
-
-				$at = (string)($row['handedOverAt'] ?? '');
-				if ($at === '') {
-					$at = (string)($record['createdAt'] ?? '');
-				}
-
-				if ($at === '') {
-					continue;
-				}
-
-				if ($latest === null || strtotime($at) > strtotime($latest)) {
-					$latest = $at;
-					$latestMessage = (string)$entity->getUuid();
-				}
+			$at = $this->latestSentAt(record: $entity->getObject(), recipient: $recipient);
+			if ($at !== null && $this->isLater(at: $at, than: $latest) === true) {
+				$latest = $at;
+				$latestMessage = (string)$entity->getUuid();
 			}
 		}
 
@@ -107,6 +79,67 @@ class LastContactQuery implements LastContactQueryInterface {
 		];
 
 	}//end lastContact()
+
+	/**
+	 * When one message last reached the transport step for the recipient, or null.
+	 *
+	 * @param array<string,mixed> $record    The message record.
+	 * @param string              $recipient The recipient's address.
+	 *
+	 * @return string|null The hand-over time (else the message's creation time), or null.
+	 */
+	private function latestSentAt(array $record, string $recipient): ?string {
+		$latest = null;
+		foreach ($this->sentRows(record: $record, recipient: $recipient) as $row) {
+			$at = (string)($row['handedOverAt'] ?? '');
+			if ($at === '') {
+				$at = (string)($record['createdAt'] ?? '');
+			}
+
+			if ($at !== '' && $this->isLater(at: $at, than: $latest) === true) {
+				$latest = $at;
+			}
+		}
+
+		return $latest;
+
+	}//end latestSentAt()
+
+	/**
+	 * The message's recipient rows for this address that reached the transport step.
+	 *
+	 * @param array<string,mixed> $record    The message record.
+	 * @param string              $recipient The recipient's address.
+	 *
+	 * @return array<int|string,array<string,mixed>> The rows, in order.
+	 */
+	private function sentRows(array $record, string $recipient): array {
+		$recipients = ($record['recipients'] ?? []);
+		if (is_array($recipients) === false) {
+			return [];
+		}
+
+		return array_filter(
+			$recipients,
+			static fn ($row): bool => is_array($row) === true
+				&& (string)($row['address'] ?? '') === $recipient
+				&& (string)($row['status'] ?? '') === RecipientState::STATUS_SENT
+		);
+
+	}//end sentRows()
+
+	/**
+	 * Whether a time is later than the latest one so far (any time is, when there is none).
+	 *
+	 * @param string      $at   The candidate time.
+	 * @param string|null $than The latest time so far, or null.
+	 *
+	 * @return bool
+	 */
+	private function isLater(string $at, ?string $than): bool {
+		return $than === null || strtotime($at) > strtotime($than);
+
+	}//end isLater()
 
 	/**
 	 * Every message recorded for one subject.

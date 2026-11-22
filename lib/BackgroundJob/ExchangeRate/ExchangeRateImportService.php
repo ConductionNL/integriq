@@ -17,7 +17,10 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -25,7 +28,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\BackgroundJob\ExchangeRate;
 
 use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
@@ -40,7 +45,7 @@ use Throwable;
  * daily file at the source's `location`. A failed fetch or parse stores
  * nothing and leaves the stored rates as they are.
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
  */
 class ExchangeRateImportService {
 
@@ -102,7 +107,7 @@ class ExchangeRateImportService {
 	 * @param EventServiceInterface $eventService Emits the published CloudEvent.
 	 * @param LoggerInterface $logger Logger for run outcomes.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -122,7 +127,7 @@ class ExchangeRateImportService {
 	 *
 	 * @throws RuntimeException When the file cannot be fetched or read.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
 	 */
 	public function importFromSource(): array {
 		$source = $this->resolveSource();
@@ -158,7 +163,7 @@ class ExchangeRateImportService {
 	 *
 	 * @return array{stored: int, dates: list<string>} The number of rates stored and the newly stored dates.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
 	 */
 	public function storeRates(array $rates): array {
 		$stored   = 0;
@@ -175,6 +180,7 @@ class ExchangeRateImportService {
 					continue;
 				}
 
+				// System path: the daily cron import keeps one instance-wide rate table.
 				$this->objectService->saveObject(
 					object: [
 						'baseCurrency' => self::BASE_CURRENCY,
@@ -183,8 +189,7 @@ class ExchangeRateImportService {
 						'rate'         => $rate,
 						'source'       => self::RATE_SOURCE,
 					],
-					register: self::REGISTER,
-					schema: self::SCHEMA,
+					options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA),
 					_rbac: false,
 					_multitenancy: false
 				);
@@ -209,10 +214,10 @@ class ExchangeRateImportService {
 	 */
 	private function resolveSource(): ?array {
 		try {
+			// System path: the daily cron import keeps one instance-wide rate table.
 			$entity = $this->objectService->find(
 				id: self::SOURCE_SLUG,
-				register: self::REGISTER,
-				schema: 'source',
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'source'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -240,6 +245,7 @@ class ExchangeRateImportService {
 	 * @return bool
 	 */
 	private function hasStoredRates(): bool {
+		// System path: the daily cron import keeps one instance-wide rate table.
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
@@ -265,6 +271,7 @@ class ExchangeRateImportService {
 	 * @return array<string, true>
 	 */
 	private function storedCurrencies(string $date): array {
+		// System path: the daily cron import keeps one instance-wide rate table.
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [

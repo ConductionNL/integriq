@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -29,6 +32,10 @@ use OCA\Integriq\Auth\Idp\IdpBrokerConfig;
 use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
 use OCA\Integriq\Auth\Idp\IdpLoginService;
 use OCA\Integriq\Auth\Idp\IdpLoginServiceInterface;
+use OCA\Integriq\Auth\Idp\IdpPublication;
+use OCA\Integriq\Auth\Idp\IdpPublicationInterface;
+use OCA\Integriq\Auth\Idp\IdpRegistrationAdmin;
+use OCA\Integriq\Auth\Idp\IdpRegistrationAdminInterface;
 use OCA\Integriq\Auth\Idp\LogGovernmentIdpAdapter;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
@@ -52,6 +59,8 @@ final class AuthBindings {
 		$context->registerServiceAlias(IdpLoginServiceInterface::class, IdpLoginService::class);
 		$context->registerServiceAlias(IdpBrokerConfigInterface::class, IdpBrokerConfig::class);
 		$context->registerServiceAlias(EnvelopeExchangeServiceInterface::class, EnvelopeExchangeService::class);
+		$context->registerServiceAlias(IdpPublicationInterface::class, IdpPublication::class);
+		$context->registerServiceAlias(IdpRegistrationAdminInterface::class, IdpRegistrationAdmin::class);
 		$this->registerGovernmentIdpAdapter(context: $context);
 	}
 	/**

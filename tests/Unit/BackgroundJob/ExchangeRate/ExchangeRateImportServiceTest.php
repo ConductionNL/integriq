@@ -10,7 +10,10 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -29,12 +32,13 @@ use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Runs the import against an in-memory object store and an HTTP client that
  * answers with the stored ECB files under tests/fixtures/ecb/. No network.
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
  */
 class ExchangeRateImportServiceTest extends TestCase {
 
@@ -150,7 +154,10 @@ class ExchangeRateImportServiceTest extends TestCase {
 			}
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null, $_rbac = true) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->rows[]  = $object;
 				$this->saves[] = ['register' => $register, 'schema' => $schema, 'rbac' => $_rbac];
 				$entity = new ObjectEntity();

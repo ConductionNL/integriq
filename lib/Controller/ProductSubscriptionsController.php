@@ -32,11 +32,16 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use DateTime;
+use InvalidArgumentException;
 use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\Integriq\Service\ApprovalServiceInterface;
+use OCA\Integriq\Service\ProductSubscriptionService;
+use OCA\Integriq\Service\ProductUsageFigures;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -84,6 +89,7 @@ class ProductSubscriptionsController extends Controller {
 	 * @param IUserSession $userSession The user session.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 * @param ProductSubscriptionService|null $subscriptionService The shared subscribe path; built from the collaborators above when not given.
 	 */
 	public function __construct(
 		string $appName,
@@ -93,10 +99,30 @@ class ProductSubscriptionsController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
+		private ?ProductSubscriptionService $subscriptionService = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
 	}//end __construct()
+
+	/**
+	 * The shared subscribe path (access-developer-portal-and-subscriptions D3).
+	 *
+	 * @return ProductSubscriptionService The service.
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
+	 */
+	private function subscriptions(): ProductSubscriptionService {
+		if ($this->subscriptionService === null) {
+			$this->subscriptionService = new ProductSubscriptionService(
+				approvalService: $this->approvalService,
+				orObjectService: $this->orObjectService,
+				l: $this->l
+			);
+		}
+
+		return $this->subscriptionService;
+	}//end subscriptions()
 
 	/**
 	 * Subscribe a Consumer to an api_product at a named tier
@@ -124,10 +150,8 @@ class ProductSubscriptionsController extends Controller {
 		try {
 			$product = $this->orObjectService->find(
 				id: $productId,
-				register: self::REGISTER,
-				schema: 'api_product',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'api_product'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('No such API product')], Http::STATUS_NOT_FOUND);
@@ -140,54 +164,21 @@ class ProductSubscriptionsController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('consumerId and tier are required')], Http::STATUS_BAD_REQUEST);
 		}
 
-		$tiers = ($product->getObject()['tiers'] ?? []);
-		if (is_array($tiers) === false || isset($tiers[$tierName]) === false || is_array($tiers[$tierName]) === false) {
-			return new JSONResponse(['error' => $this->l->t('Unknown tier: %s', [$tierName])], Http::STATUS_BAD_REQUEST);
+		try {
+			$result = $this->subscriptions()->subscribe(
+				product: $product,
+				consumerId: $consumerId,
+				tierName: $tierName,
+				requesterUserId: $this->userSession->getUser()?->getUID()
+			);
+		} catch (InvalidArgumentException | ValidationException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
-		$tier = $tiers[$tierName];
-		$requiresApproval = (bool)($tier['requiresApproval'] ?? false);
-		$now = new DateTime();
-
-		$subscription = $this->orObjectService->saveObject(
-			object: [
-				'product' => (string)$product->getUuid(),
-				'consumer' => $consumerId,
-				'tier' => $tierName,
-				'status' => 'pending_approval',
-				'requesterUserId' => $this->userSession->getUser()?->getUID(),
-				'createdAt' => $now->format('c'),
-			],
-			register: self::REGISTER,
-			schema: 'api_product_subscription'
-		);
-
-		if ($requiresApproval === false) {
-			try {
-				$subscription = $this->activateSubscription(subscription: $subscription, activatedAt: $now);
-			} catch (ValidationException $e) {
-				return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-			}
-
+		$subscription = $result['subscription'];
+		if ($result['pending'] === false) {
 			return new JSONResponse($this->summarizeSubscription(subscription: $subscription), Http::STATUS_CREATED);
 		}
-
-		$approverGroup = (string)($tier['approverGroup'] ?? '');
-		$approvalRequest = $this->approvalService->suspendForSubscription(
-			subscriptionId: (string)$subscription->getUuid(),
-			approverGroup: $approverGroup,
-			onReject: 'error',
-			ttlSeconds: ApprovalServiceInterface::DEFAULT_TTL_SECONDS
-		);
-
-		$subscriptionData = $subscription->getObject();
-		$subscriptionData['approvalRequestId'] = $approvalRequest->getUuid();
-		$subscription = $this->orObjectService->saveObject(
-			object: $subscriptionData,
-			register: self::REGISTER,
-			schema: 'api_product_subscription',
-			uuid: $subscription->getUuid()
-		);
 
 		return new JSONResponse($this->summarizeSubscription(subscription: $subscription), Http::STATUS_ACCEPTED);
 	}//end subscribe()
@@ -271,9 +262,7 @@ class ProductSubscriptionsController extends Controller {
 
 		$subscription = $this->orObjectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: 'api_product_subscription',
-			uuid: $subscription->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: 'api_product_subscription', uuid: $subscription->getUuid())
 		);
 
 		return new JSONResponse($this->summarizeSubscription(subscription: $subscription));
@@ -283,7 +272,9 @@ class ProductSubscriptionsController extends Controller {
 	 * Per-product gateway analytics — request count, error rate, and
 	 * p50/p95/p99 response-time latency percentiles computed from the most
 	 * recent inbound `call_log` rows carrying this product's uuid
-	 * (design.md `GET /api/products/{productId}/analytics`).
+	 * (design.md `GET /api/products/{productId}/analytics`), plus the same
+	 * figures per consumer (`byConsumer`) and per endpoint (`byEndpoint`),
+	 * highest request count first (REQ-APGU-001).
 	 *
 	 * The figures are PRODUCT-WIDE: they aggregate the call_log rows of every
 	 * consumer of this product, so one subscriber could read another's traffic
@@ -296,6 +287,7 @@ class ProductSubscriptionsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
 	 *
 	 * ADMIN ONLY, and now declared rather than implied. The previous revision
 	 * argued in prose that "absence of the attribute IS the admin gate" — but a
@@ -311,52 +303,82 @@ class ProductSubscriptionsController extends Controller {
 		try {
 			$this->orObjectService->find(
 				id: $productId,
-				register: self::REGISTER,
-				schema: 'api_product',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'api_product'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('No such API product')], Http::STATUS_NOT_FOUND);
 		}
 
 		$rows = $this->fetchProductCallLogRows(productId: $productId);
-
-		$requestCount = count($rows);
-		$errorCount = 0;
-		$responseTimes = [];
-
-		foreach ($rows as $row) {
-			$statusCode = (int)($row['statusCode'] ?? 0);
-			if ($statusCode >= 400) {
-				$errorCount++;
-			}
-
-			if (isset($row['responseTime']) === true && is_numeric($row['responseTime']) === true) {
-				$responseTimes[] = (float)$row['responseTime'];
-			}
-		}
-
-		sort($responseTimes);
-
-		$errorRate = 0;
-		if ($requestCount > 0) {
-			$errorRate = round(($errorCount / $requestCount), 4);
-		}
+		$figures = new ProductUsageFigures();
 
 		return new JSONResponse(
-			[
-				'requestCount' => $requestCount,
-				'errorRate' => $errorRate,
-				'latency' => [
-					'p50' => $this->percentile(sortedValues: $responseTimes, fraction: 0.5),
-					'p95' => $this->percentile(sortedValues: $responseTimes, fraction: 0.95),
-					'p99' => $this->percentile(sortedValues: $responseTimes, fraction: 0.99),
-				],
+			$figures->figures(rows: $rows) + [
+				'byConsumer' => $this->named(entries: $figures->breakdown(rows: $rows, field: 'consumer'), schema: 'consumer', key: 'consumer'),
+				'byEndpoint' => $this->named(entries: $figures->breakdown(rows: $rows, field: 'endpoint'), schema: 'endpoint', key: 'endpoint'),
 			]
 		);
 
 	}//end analytics()
+
+	/**
+	 * Breakdown entries keyed by `$key` and carrying the object's name.
+	 *
+	 * The name is looked up best-effort with RBAC off, like the rows themselves:
+	 * a consumer or endpoint that can no longer be read keeps its id and has no
+	 * name. An entry for rows without an id (an anonymous caller) has neither.
+	 *
+	 * @param list<array<string, mixed>> $entries The entries from ProductUsageFigures::breakdown().
+	 * @param string                     $schema  The schema the ids point at.
+	 * @param string                     $key     The key the id is returned under.
+	 *
+	 * @return list<array<string, mixed>>
+	 *
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 */
+	private function named(array $entries, string $schema, string $key): array {
+		$named = [];
+		foreach ($entries as $entry) {
+			$id = $entry['id'];
+			unset($entry['id']);
+			$named[] = [$key => $id, 'name' => $this->nameOf(id: $id, schema: $schema)] + $entry;
+		}
+
+		return $named;
+	}//end named()
+
+	/**
+	 * The `name` of one object, or null when it has none or cannot be read.
+	 *
+	 * @param string|null $id     The object id.
+	 * @param string      $schema The object's schema.
+	 *
+	 * @return string|null
+	 */
+	private function nameOf(?string $id, string $schema): ?string {
+		if ($id === null) {
+			return null;
+		}
+
+		try {
+			$object = $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: self::REGISTER, schema: $schema), _rbac: false);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		$data = [];
+		if ($object instanceof ObjectEntity) {
+			$data = $object->getObject();
+		}
+
+		$name = ($data['name'] ?? null);
+		if (is_string($name) === false || $name === '') {
+			return null;
+		}
+
+		return $name;
+	}//end nameOf()
 
 	/**
 	 * Fetch the bounded most-recent inbound `call_log` rows for a product
@@ -394,8 +416,7 @@ class ProductSubscriptionsController extends Controller {
 					'sort' => ['created' => 'desc'],
 					'limit' => self::ANALYTICS_ROW_LIMIT,
 				],
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: failed to fetch product call_log rows for analytics: ' . $e->getMessage());
@@ -418,26 +439,6 @@ class ProductSubscriptionsController extends Controller {
 	}//end fetchProductCallLogRows()
 
 	/**
-	 * Nearest-rank percentile of a pre-sorted (ascending) value list.
-	 *
-	 * @param array<int, float> $sortedValues Ascending-sorted values.
-	 * @param float $fraction The percentile as a fraction (e.g. 0.95 for p95).
-	 *
-	 * @return float The percentile value, or 0 when the list is empty (REQ-APG-007 "zero, not an error").
-	 */
-	private function percentile(array $sortedValues, float $fraction): float {
-		$count = count($sortedValues);
-		if ($count === 0) {
-			return 0.0;
-		}
-
-		$index = ((int)ceil($fraction * $count) - 1);
-		$index = max(0, min(($count - 1), $index));
-
-		return (float)$sortedValues[$index];
-	}//end percentile()
-
-	/**
 	 * Resolve a subscription's linked, actionable `approval_request` and
 	 * verify the caller is authorized to act on it — shared preamble for
 	 * {@see approve()} and {@see reject()}.
@@ -451,10 +452,8 @@ class ProductSubscriptionsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: self::REGISTER,
-				schema: 'api_product_subscription',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'api_product_subscription'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return [null, null, new JSONResponse(['error' => $this->l->t('No such subscription')], Http::STATUS_NOT_FOUND)];
@@ -508,16 +507,7 @@ class ProductSubscriptionsController extends Controller {
 	 *                             rather than emit a raw TypeError 500.
 	 */
 	private function activateSubscription(ObjectEntity $subscription, DateTime $activatedAt): ObjectEntity {
-		$data = $subscription->getObject();
-		$data['status'] = 'active';
-		$data['activatedAt'] = $activatedAt->format('c');
-
-		return $this->orObjectService->saveObject(
-			object: $data,
-			register: self::REGISTER,
-			schema: 'api_product_subscription',
-			uuid: $subscription->getUuid()
-		);
+		return $this->subscriptions()->activate(subscription: $subscription, activatedAt: $activatedAt);
 
 	}//end activateSubscription()
 

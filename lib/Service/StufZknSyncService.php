@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZKN Sync Service.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Core of the stuf-zkn-bridge: resolves the configured `type=stuf-zkn`
  * source + provider binding, drives the INBOUND path (parse+translate a
  * `zakLk01`/`edcLk01` kennisgeving, upsert the OR/ZGW zaak/document object,
@@ -41,9 +44,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
@@ -56,6 +56,8 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\StufZknProviderException;
 use OCA\Integriq\Exception\StufZknTranslationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\StufZkn\InboundMessageTranslator;
 use OCA\Integriq\Service\StufZkn\LogStufZknProvider;
@@ -344,6 +346,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: background retry of failed StUF messages, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -385,27 +388,16 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new StufZknProviderException(
 				message: 'No active StUF-ZKN source is configured (register "openconnector", schema "source", '
 					. 'type "stuf-zkn", isEnabled=true). Configure one before using the StUF-ZKN bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**
@@ -433,6 +425,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: resolves the active StUF source for a background sync, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -520,7 +513,10 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 
 			$data = $existing->getObject();
 			$data['status'] = 'vervallen';
-			$this->objectService->saveObject(object: $data, register: $register, schema: $schema, uuid: $existing->getUuid());
+			$this->objectService->saveObject(
+				object: $data,
+				options: RegisterSave::options(register: $register, schema: $schema, uuid: $existing->getUuid())
+			);
 			return;
 		}
 
@@ -530,7 +526,10 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 			$uuid = $existing->getUuid();
 		}
 
-		$this->objectService->saveObject(object: $data, register: $register, schema: $schema, uuid: $uuid);
+		$this->objectService->saveObject(
+			object: $data,
+			options: RegisterSave::options(register: $register, schema: $schema, uuid: $uuid)
+		);
 
 	}//end upsertOrObject()
 
@@ -584,6 +583,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 				'limit' => 1,
 			],
 			_rbac: false,
+			// Unscoped: matches an inbound StUF message from a remote system, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -640,9 +640,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $record,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $uuid,
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -681,9 +679,7 @@ class StufZknSyncService implements StufZknSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid(),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid()),
 			_rbac: false,
 			_multitenancy: false
 		);

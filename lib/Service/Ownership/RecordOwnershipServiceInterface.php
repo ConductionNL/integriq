@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -33,6 +36,19 @@ interface RecordOwnershipServiceInterface {
 	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public function forObject(string $targetId): OwnershipState;
+
+	/**
+	 * Who owns the object, throwing when the contracts cannot be read.
+	 *
+	 * @param string $targetId The object's OpenRegister uuid.
+	 *
+	 * @return OwnershipState The ownership answer.
+	 *
+	 * @throws OwnershipReadFailed When a contract or synchronisation read fails.
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 */
+	public function forObjectOrFail(string $targetId): OwnershipState;
 
 	/**
 	 * The answer for a record nobody outside maintains.

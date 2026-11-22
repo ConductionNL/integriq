@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,6 +26,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -155,6 +160,30 @@ class LogsController extends Controller {
 	}//end buildFilters()
 
 	/**
+	 * The 401 for nobody logged in, the 403 for a refused action, or null when the caller may proceed.
+	 *
+	 * @param string $action The ADR-023 action the route demands.
+	 *
+	 * @return JSONResponse|null The refusal, or null.
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function refusal(string $action): ?JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		try {
+			$this->actionAuth->requireAction(user: $user, action: $action);
+		} catch (OCSForbiddenException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		}
+
+		return null;
+	}//end refusal()
+
+	/**
 	 * Get all synchronization logs.
 	 *
 	 * This method returns a list of all synchronization logs with optional filtering and pagination.
@@ -185,15 +214,9 @@ class LogsController extends Controller {
 		?string $dateFrom = null,
 		?string $dateTo = null,
 	): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'log.index');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		$refusal = $this->refusal(action: 'log.index');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		$filters = $this->buildFilters(
@@ -277,8 +300,7 @@ class LogsController extends Controller {
 		try {
 			$log = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'synchronization_log'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization_log')
 			);
 		} catch (DoesNotExistException $e) {
 			$log = null;
@@ -330,14 +352,13 @@ class LogsController extends Controller {
 		try {
 			$log = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'synchronization_log'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization_log')
 			);
 			if ($log === null) {
 				return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
 			}
 
-			$this->orObjectService->deleteObject(uuid: $log->getUuid());
+			$this->orObjectService->deleteObject(new ObjectDeletion(uuid: $log->getUuid()));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
 		}
@@ -360,19 +381,13 @@ class LogsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function statistics(): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
 		// Outside the try/catch below on purpose: that block catches
 		// \Exception and answers 500, and OCSForbiddenException is an
 		// \Exception — a refusal placed inside it would be reported as a
 		// server error and would look like an outage rather than a denial.
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'log.statistics');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		$refusal = $this->refusal(action: 'log.statistics');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -441,16 +456,10 @@ class LogsController extends Controller {
 		?string $dateFrom = null,
 		?string $dateTo = null,
 	): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
 		// Outside the try/catch below on purpose — see statistics().
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'log.export');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		$refusal = $this->refusal(action: 'log.export');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {

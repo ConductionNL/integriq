@@ -24,45 +24,61 @@
 		</p>
 
 		<div v-else class="integriq-admin__matrix-wrapper">
-			<table class="integriq-admin__matrix">
-				<thead>
-					<tr>
-						<th scope="col">
-							{{ t('integriq', 'Action') }}
-						</th>
-						<th
-							v-for="group in displayGroups"
-							:key="group"
-							scope="col"
-							class="integriq-admin__matrix-group">
-							{{ group }}
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="action in actions" :key="action">
-						<th scope="row" class="integriq-admin__matrix-action">
-							{{ action }}
-						</th>
-						<td
-							v-for="group in displayGroups"
-							:key="`${action}-${group}`"
-							class="integriq-admin__matrix-cell">
-							<NcCheckboxRadioSwitch
-								:modelValue="isChecked(action, group)"
-								:disabled="group === 'admin'"
-								:aria-label="
-									t(
-										'integriq',
-										'Allow group {group} to perform {action}',
-										{ group, action },
-									)
-								"
-								@update:modelValue="toggle(action, group, $event)" />
-						</td>
-					</tr>
-				</tbody>
-			</table>
+			<section
+				v-for="section in sections"
+				:key="section.area"
+				class="integriq-admin__matrix-section"
+				:data-testid="`admin-action-area-${section.area}`">
+				<h4 v-if="section.area" class="integriq-admin__matrix-area">
+					{{ t('integriq', section.area) }}
+				</h4>
+				<table class="integriq-admin__matrix">
+					<thead>
+						<tr>
+							<th scope="col">
+								{{ t('integriq', 'Action') }}
+							</th>
+							<th
+								v-for="group in columnsOf(section)"
+								:key="group"
+								scope="col"
+								class="integriq-admin__matrix-group">
+								{{ columnTitle(group) }}
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="action in section.actions" :key="action.name">
+							<th scope="row" class="integriq-admin__matrix-action">
+								<span class="integriq-admin__matrix-label">{{ t('integriq', action.label) }}</span>
+								<code class="integriq-admin__matrix-name">{{ action.name }}</code>
+								<span
+									v-if="warnsOnGrant(action.name)"
+									class="integriq-admin__matrix-warning"
+									:data-testid="`admin-action-warning-${action.name}`">
+									{{ t('integriq', 'Granting this shows the configuration of these records; their secret fields stay write-only.') }}
+								</span>
+							</th>
+							<td
+								v-for="group in columnsOf(section)"
+								:key="`${action.name}-${group}`"
+								class="integriq-admin__matrix-cell">
+								<NcCheckboxRadioSwitch
+									:modelValue="isChecked(action.name, group)"
+									:disabled="group === 'admin'"
+									:aria-label="
+										t(
+											'integriq',
+											'Allow group {group} to perform {action}',
+											{ group: columnTitle(group), action: action.name },
+										)
+									"
+									@update:modelValue="toggle(action.name, group, $event)" />
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
 		</div>
 
 		<div class="integriq-admin__matrix-actions">
@@ -86,11 +102,13 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { actionSections, editableMatrix, EVERY_SIGNED_IN_USER, savePayload, sectionColumns, warnsOnGrant } from './actionMatrix.js'
 
 /**
  * Admin editor for the ADR-023 action-authorization matrix.
  *
- * Renders one row per declared action and one column per Nextcloud group.
+ * Renders one section per area, one row per declared action (its label, with
+ * the action name beneath) and one column per Nextcloud group.
  * Each cell is a checkbox: ticking it adds the group to the action's allowed
  * list. The synthetic `admin` column is always-on and disabled because
  * Nextcloud admins always pass ActionAuthService::requireAction().
@@ -112,17 +130,18 @@ export default {
 			error: '',
 			actions: [],
 			groups: [],
+			// labels / areas: { '<action>': 'text', ... } from the seed.
+			labels: {},
+			areas: {},
 			// matrix: { '<action>': ['group', ...], ... }
 			matrix: {},
 		}
 	},
 
 	computed: {
-		// `admin` is always shown first as a disabled, always-on column.
-		/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
-		displayGroups() {
-			const rest = this.groups.filter((g) => g !== 'admin')
-			return ['admin', ...rest]
+		/** @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002 */
+		sections() {
+			return actionSections(this.actions, { areas: this.areas, labels: this.labels })
 		},
 	},
 
@@ -132,6 +151,32 @@ export default {
 	},
 
 	methods: {
+		warnsOnGrant,
+
+		/**
+		 * The group columns of one section; `admin` is always shown first as a
+		 * disabled, always-on column, and a section of object rights adds every
+		 * signed-in user.
+		 *
+		 * @param {{actions: Array<{name: string}>}} section The section.
+		 *
+		 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+		 */
+		columnsOf(section) {
+			return sectionColumns(section, this.groups)
+		},
+
+		/**
+		 * The heading of a group column.
+		 *
+		 * @param {string} group The group id.
+		 *
+		 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+		 */
+		columnTitle(group) {
+			return group === EVERY_SIGNED_IN_USER ? this.t('integriq', 'Every signed-in user') : group
+		},
+
 		/** @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one */
 		async load() {
 			this.loading = true
@@ -142,17 +187,10 @@ export default {
 				)
 				this.actions = Array.isArray(data.actions) ? data.actions : []
 				this.groups = Array.isArray(data.groups) ? data.groups : []
+				this.labels = data.labels && typeof data.labels === 'object' ? data.labels : {}
+				this.areas = data.areas && typeof data.areas === 'object' ? data.areas : {}
 				// Clone the matrix into a plain editable map keyed by action.
-				const next = {}
-				const source =
-					data.matrix && typeof data.matrix === 'object' ? data.matrix : {}
-				for (const action of this.actions) {
-					const allowed = Array.isArray(source[action])
-						? source[action]
-						: []
-					next[action] = [...allowed]
-				}
-				this.matrix = next
+				this.matrix = editableMatrix(this.actions, data.matrix)
 			} catch (e) {
 				console.error('Failed to load action matrix', e)
 				this.error = this.t('integriq', 'Failed to load the action matrix.')
@@ -212,30 +250,16 @@ export default {
 		async save() {
 			this.saving = true
 			try {
-				// Persist `admin` plus any explicitly ticked groups so the
-				// stored posture stays admin-inclusive and human-readable.
-				const payload = {}
-				for (const action of this.actions) {
-					const extra = (this.matrix[action] || []).filter(
-						(g) => g !== 'admin',
-					)
-					payload[action] = ['admin', ...extra]
-				}
 				const { data } = await axios.put(
 					generateUrl('/apps/integriq/api/admin/action-matrix'),
-					{ matrix: payload },
+					{ matrix: savePayload(this.actions, this.matrix) },
 				)
-				const saved =
-					data && data.matrix && typeof data.matrix === 'object'
-						? data.matrix
-						: {}
-				const next = {}
-				for (const action of this.actions) {
-					const allowed = Array.isArray(saved[action]) ? saved[action] : []
-					next[action] = [...allowed]
-				}
-				this.matrix = next
+				this.matrix = editableMatrix(this.actions, data && data.matrix)
 				showSuccess(this.t('integriq', 'Action matrix saved.'))
+				const notApplied = data && Array.isArray(data.notApplied) ? data.notApplied : []
+				if (notApplied.length > 0) {
+					showError(this.t('integriq', 'The object rights of these schemas were not applied: {schemas}', { schemas: notApplied.join(', ') }))
+				}
 			} catch (e) {
 				console.error('Failed to save action matrix', e)
 				showError(this.t('integriq', 'Failed to save the action matrix.'))
@@ -283,10 +307,34 @@ export default {
 	white-space: nowrap;
 }
 
+.integriq-admin__matrix-section {
+	margin-bottom: 16px;
+}
+
+.integriq-admin__matrix-area {
+	margin: 12px 0 8px;
+}
+
 .integriq-admin__matrix-action {
+	white-space: nowrap;
+}
+
+.integriq-admin__matrix-label {
+	display: block;
+}
+
+.integriq-admin__matrix-name {
+	display: block;
 	font-family: var(--font-face-monospace, monospace);
 	font-size: 0.85em;
-	white-space: nowrap;
+	color: var(--color-text-maxcontrast);
+}
+
+.integriq-admin__matrix-warning {
+	display: block;
+	font-size: 0.85em;
+	color: var(--color-warning-text, var(--color-text-maxcontrast));
+	white-space: normal;
 }
 
 .integriq-admin__matrix-cell {

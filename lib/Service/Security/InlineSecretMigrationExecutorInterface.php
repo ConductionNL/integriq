@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -71,7 +74,7 @@ interface InlineSecretMigrationExecutorInterface {
 	 *         manual-review field counts as `skipped` — and nothing read it
 	 *         (integriq#2104 review 5266971176).
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function migrateEverything(int $limit = 1000): array;
 
@@ -94,7 +97,7 @@ interface InlineSecretMigrationExecutorInterface {
 	 * @return array{schema: string, objects: array<int, array<string, mixed>>, totalObjects: int,
 	 *     migrated: int, failed: int, blocked: int, skipped: int, postRun: array<string, mixed>}
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function migrateSchema(string $schema, int $limit = 1000): array;
 }

@@ -3,6 +3,9 @@
 /**
  * An OpenRegister ObjectService test double that reproduces the RENDER BOUNDARY.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * This is the honest fake at the heart of the inline-secret-migration tests
  * (ocon#151 phase C / ocon#215). The whole defect class it guards is that a
  * `source`'s credential fields are `writeOnly: true`, and OpenRegister strips
@@ -38,6 +41,8 @@ namespace OCA\Integriq\Tests\Helpers;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectFindOptions as PublishedObjectFindOptions;
 
 /**
  * Reproduces OpenRegister's render boundary for source-secret tests.
@@ -112,14 +117,15 @@ class RenderBoundarySimulatingObjectService extends OrObjectService {
 	 */
 	public function find(
 		$id,
-		?string $register = null,
-		?string $schema = null,
+		ObjectFindOptions|PublishedObjectFindOptions|null $options = null,
 		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $_render = true,
-		bool $_audit = true,
-		?array $_extend = [],
+		bool $_multitenancy = true
 	): ?ObjectEntity {
+		$register = $options?->register;
+		$schema = $options?->schema;
+		$_render = $options?->render ?? true;
+		$_audit = $options?->audit ?? true;
+		$_extend = $options?->extend ?? [];
 		$this->reads[] = ['uuid' => (string)$id, '_render' => $_render, '_rbac' => $_rbac];
 
 		$data = ($this->stored[(string)$id] ?? null);

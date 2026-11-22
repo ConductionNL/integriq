@@ -23,11 +23,21 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\Uid\Uuid;
@@ -88,9 +98,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 		// and every one of those inserts maintained nine indexes.
 		return $this->orObjectService->find(
 			id: (string)$id,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			_audit: false
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA, audit: false)
 		);
 
 	}//end findObject()
@@ -215,18 +223,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 	/**
 	 * The OpenRegister identifier to upsert a contract on.
 	 *
-	 * WHY THIS EXISTS. `persist()` used to read `$object['uuid']` alone and then
-	 * drop `$object['id']`, on the reasoning that `id` was a legacy *integer* and
-	 * not an OpenRegister identifier. A contract payload carries no `uuid`
-	 * property at all — its identity comes back from OpenRegister AS `id`, and
-	 * that `id` is a uuid string. So the upsert key was always null and every
-	 * save CREATED: four distinct contract objects for one
-	 * (synchronizationId, originId), one per run, each carrying an identical
-	 * `originHash`. `synchronization_contract` grew without bound — 528,656 rows
-	 * on the dev instance.
-	 *
-	 * A numeric `id` is still refused, which is what the original comment was
-	 * actually protecting against.
+	 * The `uuid`, else a non-numeric `id`; see {@see ContractIdentity} for why.
 	 *
 	 * @param array $object The contract payload.
 	 *
@@ -235,22 +232,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	public function contractIdentity(array $object): ?string {
-		$uuid = ($object['uuid'] ?? null);
-		if ($uuid !== null && (string)$uuid !== '') {
-			return (string)$uuid;
-		}
-
-		$id = ($object['id'] ?? null);
-		if ($id === null || is_numeric($id) === true) {
-			return null;
-		}
-
-		$id = (string)$id;
-		if ($id === '') {
-			return null;
-		}
-
-		return $id;
+		return ContractIdentity::forUpsert(object: $object);
 	}//end contractIdentity()
 
 	/**
@@ -303,25 +285,11 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			what: 'a synchronization contract',
 			operation: fn (): mixed => $this->orObjectService->saveObject(
 				object: $object,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $uuidParam,
-				// A contract is the engine's own bookkeeping: its shape is generated
-				// here, not authored, and nothing subscribes to its lifecycle. So it
-				// pays for neither.
-				//
-				// `silent` drops the audit row and the lifecycle event. Auditing
-				// contract WRITES is the same argument already applied to contract
-				// READS, which were 91% of this instance's audit table — a mapping
-				// row the engine wrote for itself is not the thing an audit trail
-				// exists to record.
-				//
-				// `_validation: false` skips re-validating that shape against the
-				// contract schema on every record. Unlike a target object, whose
-				// content comes from an external source and is exactly what
-				// validation is for, this payload never leaves the engine's hands.
-				silent: true,
-				_validation: false
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+					uuid: $uuidParam,
+					policy: new SavePolicy(silent: true, validation: false)
+				)
 			)
 		);
 
@@ -384,11 +352,10 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			what: 'a batch of synchronization contracts',
 			operation: fn (): array => $this->orObjectService->saveObjects(
 				objects: $rows,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				validation: false,
-				events: false,
-				_audit: false
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: self::REGISTER, schema: self::SCHEMA),
+					audit: false
+				)
 			)
 		);
 	}//end persistBulk()
@@ -416,9 +383,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 		$uuid = $object['uuid'];
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuid
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuid)
 		);
 
 		return $saved->jsonSerialize();
@@ -460,9 +425,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 
 		$saved = $this->orObjectService->saveObject(
 			object: $merged,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuidParam
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuidParam)
 		);
 
 		return $saved->jsonSerialize();

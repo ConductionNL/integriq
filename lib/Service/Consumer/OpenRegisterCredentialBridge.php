@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Consumer;
 
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\Auth\ClientCertificate;
+use OCA\Integriq\Service\OAuth\IssuerKeyService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\AuthenticationException as OpenRegisterAuthenticationException;
 use OCA\OpenRegister\Service\AuthorizationService;
@@ -51,6 +53,10 @@ use OCP\IUserSession;
  * or looser check.
  *
  * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ *
+ * It bridges to each of OpenRegister's credential checks, so it depends on each of them.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterface {
 
@@ -98,11 +104,17 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 * @param AuthorizationService $authorization OpenRegister's credential checks.
 	 * @param ObjectService        $objectService OpenRegister's object service, read by the consumer source.
 	 * @param IUserSession         $userSession   Nextcloud user session, cleared when the lifetime cap refuses.
+	 * @param ConsumerCredentials|null       $credentials The consumers' credentials list rules.
+	 * @param ConsumerKeySourceResolver|null $keySources  Resolves the key of a consumer with key source `jwks` or `oidc`.
+	 * @param IssuerKeyService|null          $ownIssuer   Integriq's own issuer, so a token it issued is accepted (REQ-TOKV-003).
 	 */
 	public function __construct(
 		private readonly AuthorizationService $authorization,
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
+		private readonly ?ConsumerCredentials $credentials = null,
+		private readonly ?ConsumerKeySourceResolver $keySources = null,
+		private readonly ?IssuerKeyService $ownIssuer = null,
 	) {
 	}//end __construct()
 
@@ -120,6 +132,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	public function authorizeJwt(string $authorization): void {
 		$this->resolvedConsumer = null;
 		$source = $this->source();
+		$this->presentToken(authorization: $authorization, source: $source);
 		$this->refuseWeakHmacSecret(authorization: $authorization, source: $source);
 		try {
 			$this->authorization->authorizeJwt($authorization, $source);
@@ -163,6 +176,58 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 
 		$this->resolvedConsumer = $this->record();
 	}//end authorizeApiKey()
+
+	/**
+	 * Check a web-server-verified client certificate against the consumers' pinned certificates.
+	 *
+	 * OpenRegister has no certificate check, so integriq matches the
+	 * certificate against its consumers' `clientCertificate` credentials and
+	 * records the consumer it belongs to as the resolved one, for rate limits,
+	 * quotas and scopes.
+	 *
+	 * @param ClientCertificate|null $certificate The verified certificate, or null when the request carried none.
+	 * @param array                  $consumers   Consumers allowed on the endpoint, by name or uuid; empty allows any.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When there is no certificate, it is pinned to no consumer, or that consumer is not allowed.
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	public function authorizeClientCertificate(?ClientCertificate $certificate, array $consumers = []): void {
+		$this->resolvedConsumer = null;
+		if ($certificate === null) {
+			throw new AuthenticationException(message: 'No verified client certificate', details: []);
+		}
+
+		$consumer = $this->pinnedConsumer(certificate: $certificate);
+		if ($consumer === null) {
+			throw new AuthenticationException(
+				message: 'The client certificate is not pinned to a consumer',
+				details: ['fingerprint' => $certificate->fingerprint]
+			);
+		}
+
+		(new ConsumerAllowList())->assertAllowed(consumer: $consumer, consumers: $consumers);
+
+		$this->resolvedConsumer = $consumer;
+	}//end authorizeClientCertificate()
+
+	/**
+	 * The consumer a credential of which pins the certificate, or null.
+	 *
+	 * @param ClientCertificate $certificate The verified certificate.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function pinnedConsumer(ClientCertificate $certificate): ?ObjectEntity {
+		$source = $this->source();
+		if (($source instanceof IntegriqConsumerSource) === false) {
+			return null;
+		}
+
+		return $source->findByClientCertificate(certificate: $certificate);
+	}//end pinnedConsumer()
 
 	/**
 	 * Check HTTP Basic credentials against Nextcloud's users.
@@ -314,6 +379,31 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	}//end capLifetime()
 
 	/**
+	 * Hand the token's header and claims to the consumer source before any lookup, so a consumer whose key
+	 * comes from a published key set gets the key the token names.
+	 *
+	 * @param string         $authorization The `Bearer <jwt>` header.
+	 * @param ConsumerSource $source        The consumer source.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/tasks.md#task-2
+	 */
+	private function presentToken(string $authorization, ConsumerSource $source): void {
+		if ($source instanceof IntegriqConsumerSource === false) {
+			return;
+		}
+
+		$token = substr(string: $authorization, offset: strlen('Bearer '));
+		$header = json_decode((string)base64_decode(strtr(explode('.', $token)[0], '-_', '+/')), true);
+		if (is_array($header) === false) {
+			$header = [];
+		}
+
+		$source->presentToken(header: $header, payload: $this->payloadOf(token: $token));
+	}//end presentToken()
+
+	/**
 	 * The claims of a compact JWS that OpenRegister already verified.
 	 *
 	 * @param string $token The compact JWS.
@@ -360,7 +450,12 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	private function source(): ConsumerSource {
 		$this->assertEntryPoints();
 		if ($this->consumerSource === null) {
-			$this->consumerSource = new IntegriqConsumerSource(objectService: $this->objectService);
+			$this->consumerSource = new IntegriqConsumerSource(
+				objectService: $this->objectService,
+				credentials: $this->credentials,
+				keySources: $this->keySources,
+				ownIssuer: $this->ownIssuer
+			);
 		}
 
 		return $this->consumerSource;
@@ -425,16 +520,40 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 * @throws AuthenticationException When the issuer claim is not a string or a number, or the issuer's HMAC secret is too short.
 	 */
 	private function refuseWeakHmacSecret(string $authorization, ConsumerSource $source): void {
+		$issuer = $this->issuerOf(authorization: $authorization);
+		if ($issuer === null) {
+			return;
+		}
+
+		$consumer = $source->findByIssuer(issuer: $issuer);
+		if ($consumer === null) {
+			return;
+		}
+
+		$this->assertHmacSecretLength(configuration: $consumer->configuration);
+	}//end refuseWeakHmacSecret()
+
+	/**
+	 * The token's issuer as OpenRegister reads it, or null when it is empty.
+	 *
+	 * Read `iss` exactly as OpenRegister does — with a string cast — so a
+	 * numeric issuer (`"iss": 12345`) reaches this guard too; it resolves to
+	 * the consumer named "12345" there. An empty `iss` is skipped: OpenRegister
+	 * refuses it itself ("No issuer mentioned"). Any other non-scalar is
+	 * refused here: OpenRegister only checks `empty()` and would cast `["x"]`
+	 * to the consumer named "Array".
+	 *
+	 * @param string $authorization The Authorization header value.
+	 *
+	 * @return string|null The issuer.
+	 *
+	 * @throws AuthenticationException When the issuer claim is not a string or a number.
+	 */
+	private function issuerOf(string $authorization): ?string {
 		$payload = $this->payloadOf(token: substr(string: $authorization, offset: strlen('Bearer ')));
-		// Read `iss` exactly as OpenRegister does — with a string cast — so a
-		// numeric issuer (`"iss": 12345`) reaches this guard too; it resolves
-		// to the consumer named "12345" there. An empty `iss` is skipped:
-		// OpenRegister refuses it itself ("No issuer mentioned"). Any other
-		// non-scalar is refused here: OpenRegister only checks `empty()` and
-		// would cast `["x"]` to the consumer named "Array".
 		$raw = ($payload['iss'] ?? null);
 		if (empty($raw) === true) {
-			return;
+			return null;
 		}
 
 		if (is_scalar($raw) === false) {
@@ -444,30 +563,34 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 			);
 		}
 
-		$issuer = (string)$raw;
+		return (string)$raw;
+	}//end issuerOf()
 
-		$consumer = $source->findByIssuer(issuer: $issuer);
-		if ($consumer === null) {
+	/**
+	 * Refuse an HMAC secret below the algorithm's hash output; other algorithms pass.
+	 *
+	 * @param array<string, mixed> $configuration The consumer's authorization configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the HMAC secret is too short.
+	 */
+	private function assertHmacSecretLength(array $configuration): void {
+		$algorithm = (string)($configuration['algorithm'] ?? '');
+		$minimum = (self::HMAC_MIN_SECRET_BYTES[$algorithm] ?? 0);
+		if (strlen((string)($configuration['publicKey'] ?? '')) >= $minimum) {
 			return;
 		}
 
-		$algorithm = (string)($consumer->configuration['algorithm'] ?? '');
-		if (isset(self::HMAC_MIN_SECRET_BYTES[$algorithm]) === false) {
-			return;
-		}
-
-		$secret = (string)($consumer->configuration['publicKey'] ?? '');
-		if (strlen($secret) < self::HMAC_MIN_SECRET_BYTES[$algorithm]) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: [
-					'reason' => 'The issuer\'s HMAC secret is shorter than the algorithm\'s hash output',
-					'algorithm' => $algorithm,
-					'minimum_bytes' => self::HMAC_MIN_SECRET_BYTES[$algorithm],
-				]
-			);
-		}
-	}//end refuseWeakHmacSecret()
+		throw new AuthenticationException(
+			message: 'The token could not be validated',
+			details: [
+				'reason' => 'The issuer\'s HMAC secret is shorter than the algorithm\'s hash output',
+				'algorithm' => $algorithm,
+				'minimum_bytes' => $minimum,
+			]
+		);
+	}//end assertHmacSecretLength()
 
 	/**
 	 * Carry OpenRegister's refusal over as integriq's, which every caller catches.

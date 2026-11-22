@@ -3,6 +3,9 @@
 /**
  * Integriq Flow Graph Migration Service.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Applies (and rolls back) the steps-to-graph migration over the LIVE `flow`
  * objects in the register (retire-integriq-flow-schema Task 2). The
  * translation itself is `FlowStepsToGraphTranslator` and stays pure; this
@@ -29,9 +32,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -44,6 +44,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\EntityNotMigratableException;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
@@ -137,12 +138,7 @@ class FlowGraphMigrationService implements FlowGraphMigrationServiceInterface {
 			if ($apply === true) {
 				$data['nodes'] = $graph['nodes'];
 				$data['edges'] = $graph['edges'];
-				$this->orObjectService->saveObject(
-					object: $data,
-					register: FlowRunnerService::REGISTER,
-					schema: FlowRunnerService::SCHEMA_FLOW,
-					uuid: (string)$flow->getUuid()
-				);
+				$this->saveFlow(data: $data, uuid: (string)$flow->getUuid());
 			}
 
 			$report[] = $row;
@@ -194,12 +190,7 @@ class FlowGraphMigrationService implements FlowGraphMigrationServiceInterface {
 
 			if ($apply === true) {
 				unset($data['nodes'], $data['edges']);
-				$this->orObjectService->saveObject(
-					object: $data,
-					register: FlowRunnerService::REGISTER,
-					schema: FlowRunnerService::SCHEMA_FLOW,
-					uuid: (string)$flow->getUuid()
-				);
+				$this->saveFlow(data: $data, uuid: (string)$flow->getUuid());
 			}
 
 			$report[] = $row;
@@ -208,6 +199,22 @@ class FlowGraphMigrationService implements FlowGraphMigrationServiceInterface {
 		return $report;
 
 	}//end rollback()
+
+	/**
+	 * Write a flow object back to its register and schema.
+	 *
+	 * @param array<string, mixed> $data The flow object's data.
+	 * @param string               $uuid The flow's uuid.
+	 *
+	 * @return void
+	 */
+	private function saveFlow(array $data, string $uuid): void {
+		$this->orObjectService->saveObject(
+			object: $data,
+			options: RegisterSave::options(register: FlowRunnerService::REGISTER, schema: FlowRunnerService::SCHEMA_FLOW, uuid: $uuid)
+		);
+
+	}//end saveFlow()
 
 	/**
 	 * Every live `flow` object, unfiltered by tenancy — a migration walks
@@ -219,6 +226,7 @@ class FlowGraphMigrationService implements FlowGraphMigrationServiceInterface {
 	 */
 	private function liveFlows(): array {
 		try {
+			// Unscoped: a migration reads every live flow, as the system.
 			$matches = $this->orObjectService->findAll(
 				config: [
 					'filters' => [

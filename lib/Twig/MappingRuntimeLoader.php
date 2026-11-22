@@ -3,6 +3,9 @@
 /**
  * Integriq Mapping Twig Runtime Loader.
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Loads the MappingRuntime for Twig when one of the mapping helper filters
  * or functions is invoked from a template.
  *
@@ -36,6 +39,7 @@
 namespace OCA\Integriq\Twig;
 
 use OCA\Integriq\Service\CallServiceInterface;
+use OCA\Integriq\Service\MappingLookupInterface;
 use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
@@ -54,6 +58,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface {
 	 * @param FileService $fileService Service that resolves file metadata.
 	 * @param SourceMappingServiceInterface $objectService Service that resolves OR objects.
 	 * @param SynchronizationContractServiceInterface $synchronizationContractService Service for contract lookups.
+	 * @param MappingLookupInterface|null $lookup The allowlisted register lookup.
 	 */
 	public function __construct(
 		private readonly MappingServiceInterface $mappingService,
@@ -61,6 +66,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface {
 		private readonly FileService $fileService,
 		private readonly SourceMappingServiceInterface $objectService,
 		private readonly SynchronizationContractServiceInterface $synchronizationContractService,
+		private readonly ?MappingLookupInterface $lookup = null,
 	) {
 
 	}//end __construct()
@@ -80,6 +86,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface {
 				fileService:                    $this->fileService,
 				objectService:                  $this->objectService,
 				synchronizationContractService: $this->synchronizationContractService,
+				lookup:                         $this->lookup,
 			);
 		}
 

@@ -3,6 +3,9 @@
 /**
  * Integriq DSO Verzoek Translator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Translates one already-parsed DSO Verzoek (the array
  * {@see \OCA\Integriq\Service\DSOParserService::parseRequest()} produces
  * — `verzoekId`, `type`, `aanvrager`, `locatie`, `activiteiten`, ...) into
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

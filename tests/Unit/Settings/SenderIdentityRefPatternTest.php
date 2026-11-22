@@ -107,7 +107,7 @@ class SenderIdentityRefPatternTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs
 	 */
 	public function testTheReferenceFieldDeclaresAPattern(): void {
 		$properties = $this->properties();
@@ -126,7 +126,7 @@ class SenderIdentityRefPatternTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs
 	 */
 	public function testPastingAKeyWhereAReferenceBelongsIsRefused(): void {
 		$pattern = $this->properties()['smimePrivateKeyRef']['pattern'];
@@ -163,7 +163,7 @@ class SenderIdentityRefPatternTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-012-an-inline-secret-is-refused-where-a-reference-belongs
 	 */
 	public function testALegitimateReferenceIsNeverRefused(): void {
 		$pattern = $this->properties()['smimePrivateKeyRef']['pattern'];

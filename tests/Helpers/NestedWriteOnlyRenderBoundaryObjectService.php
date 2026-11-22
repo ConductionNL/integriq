@@ -4,6 +4,9 @@
  * An OpenRegister ObjectService test double reproducing the NESTED write-only
  * render boundary (`x-openregister-writeonly-paths`, openregister#459).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Sibling of {@see RenderBoundarySimulatingObjectService}, which models the
  * TOP-LEVEL `writeOnly` strip. This one models the schema-level DOT-PATH strip:
  * a declared path and its whole sub-tree vanish on EVERY rendered read —
@@ -29,9 +32,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.Integriq.nl
  */
 
@@ -41,6 +41,8 @@ namespace OCA\Integriq\Tests\Helpers;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectFindOptions as PublishedObjectFindOptions;
 
 /**
  * Reproduces OpenRegister's nested dot-path write-only render boundary.
@@ -92,14 +94,15 @@ class NestedWriteOnlyRenderBoundaryObjectService extends OrObjectService {
 	 */
 	public function find(
 		$id,
-		?string $register = null,
-		?string $schema = null,
+		ObjectFindOptions|PublishedObjectFindOptions|null $options = null,
 		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $_render = true,
-		bool $_audit = true,
-		?array $_extend = [],
+		bool $_multitenancy = true
 	): ?ObjectEntity {
+		$register = $options?->register;
+		$schema = $options?->schema;
+		$_render = $options?->render ?? true;
+		$_audit = $options?->audit ?? true;
+		$_extend = $options?->extend ?? [];
 		$this->reads[] = [
 			'uuid' => (string)$id,
 			'register' => $register,

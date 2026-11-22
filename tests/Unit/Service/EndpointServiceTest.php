@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -37,6 +40,7 @@ use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the endpoint request handling service (OR cutover — no deleted Db types).
@@ -97,6 +101,13 @@ class EndpointServiceTest extends TestCase {
 	private $schemaMapper;
 
 	/**
+	 * The call engine double.
+	 *
+	 * @var CallService&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $callService;
+
+	/**
 	 * Set up test fixtures.
 	 *
 	 * @return void
@@ -108,6 +119,7 @@ class EndpointServiceTest extends TestCase {
 
 		$this->objectService = $this->createMock(ObjectService::class);
 		$callService = $this->createMock(CallService::class);
+		$this->callService = $callService;
 		$logger = $this->createMock(LoggerInterface::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 		$this->urlGenerator->method('getBaseUrl')->willReturn('https://example.org');
@@ -272,6 +284,45 @@ class EndpointServiceTest extends TestCase {
 		// Assert
 		$this->assertInstanceOf(\OCP\AppFramework\Http\Response::class, $response);
 	}//end testHandleRequestWithProxyTargetTypeReturnsResponse()
+
+	/**
+	 * An endpoint with targets is routed: when its only target's breaker is open
+	 * it answers 503 naming the group, and the call engine is never called.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
+	 */
+	public function testAnEndpointWithTargetsIsRoutedAndAnswers503WhenNoneIsHealthy(): void {
+		$down = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['location' => 'https://example.com', 'circuitBreakerState' => 'open', 'circuitBreakerOpenedAt' => time()],
+			'source-down'
+		);
+		$this->orObjectService->method('find')->willReturn($down);
+		$this->callService->expects($this->never())->method('call');
+
+		$endpointEntity = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'method' => 'GET',
+				'path' => '/api/routed',
+				'targetType' => 'api',
+				'targets' => [['source' => 'source-down', 'weight' => 1]],
+			],
+			'endpoint-routed'
+		);
+
+		$request = $this->createMock(\OCP\IRequest::class);
+		$request->method('getMethod')->willReturn('GET');
+		$request->method('getParams')->willReturn([]);
+		$request->method('getHeader')->willReturn('');
+
+		$response = $this->service->handleRequest($endpointEntity, $request, '/api/routed');
+
+		$this->assertSame(503, $response->getStatus());
+		$this->assertSame('', $response->getData()['group']);
+	}//end testAnEndpointWithTargetsIsRoutedAndAnswers503WhenNoneIsHealthy()
 
 	/**
 	 * Test that generateEndpointUrl returns a string (does not throw) for a valid schema mapper mock.
@@ -791,6 +842,7 @@ class EndpointServiceTest extends TestCase {
 
 		$this->orObjectService->method('find')->willReturnCallback(
 			static function (string $id, ...$rest) use ($skippedRule, $customRule) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'find', args: [$id, ...$rest]), 1);
 				unset($rest);
 				return match ($id) {
 					'rule-skip' => $skippedRule,

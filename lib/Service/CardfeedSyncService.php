@@ -38,6 +38,8 @@ use OCA\Integriq\Exception\CardfeedProviderException;
 use OCA\Integriq\Service\Cardfeed\CardfeedProviderInterface;
 use OCA\Integriq\Service\Cardfeed\LogCardfeedProvider;
 use OCA\Integriq\Service\Cardfeed\RestCardfeedProvider;
+use OCA\Integriq\Service\Helper\RandomUuid;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -168,9 +170,7 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_ACCOUNT,
-				uuid: $existing->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT, uuid: $existing->getUuid())
 			);
 
 			return [
@@ -191,8 +191,7 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 				'seenTransactionIds' => [],
 				'lifecycleState' => 'active',
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_ACCOUNT
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT)
 		);
 
 		return [
@@ -310,9 +309,7 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_ACCOUNT,
-			uuid: $account->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT, uuid: $account->getUuid())
 		);
 
 		// Keep the in-memory entity in step for callers holding the reference.
@@ -413,8 +410,7 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 					'transactionCount' => count($pull['transactions']),
 					'transactions' => $pull['transactions'],
 				],
-				register: self::REGISTER,
-				schema: self::SCHEMA_BATCH
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_BATCH)
 			);
 
 			$this->eventService->emitCloudEvent(
@@ -583,10 +579,6 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 	 * @return string The generated UUID.
 	 */
 	private function generateUuid(): string {
-		$bytes = random_bytes(16);
-		$bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
-		$bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+		return RandomUuid::version4();
 	}//end generateUuid()
 }//end class

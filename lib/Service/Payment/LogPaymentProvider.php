@@ -32,12 +32,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Payment;
 
+use OCA\Integriq\Exception\PaymentMethodUnsupportedException;
+
 /**
  * Sandbox payment provider: canned checkout URL, synthetic payment ids, seeded status.
  *
  * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
  */
-class LogPaymentProvider implements PaymentProviderInterface {
+class LogPaymentProvider implements PaymentProviderInterface, PaymentProviderProbeInterface {
 
 	/**
 	 * Per-process counter for synthetic provider payment ids (`MOCK-PAY-<n>`).
@@ -51,6 +53,17 @@ class LogPaymentProvider implements PaymentProviderInterface {
 	private static int $counter = 0;
 
 	/**
+	 * The id a payment source names this provider by.
+	 *
+	 * @return string `log`.
+	 *
+	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 */
+	public function getProviderId(): string {
+		return 'log';
+	}//end getProviderId()
+
+	/**
 	 * {@inheritDoc}
 	 *
 	 * @param array $sourceConfiguration The payment source's `configuration` object (unused — no secret needed).
@@ -61,6 +74,11 @@ class LogPaymentProvider implements PaymentProviderInterface {
 	 * @spec openspec/specs/live-payment-providers/spec.md#scenario-the-log-provider-creates-a-payment-without-a-network-call-or-secret
 	 */
 	public function createPayment(array $sourceConfiguration, array $payload): array {
+		if (($payload['method'] ?? null) === 'pointofsale') {
+			// The sandbox has no terminals: the caller falls back to the checkout.
+			throw new PaymentMethodUnsupportedException(message: 'The log payment provider has no point-of-sale method.');
+		}
+
 		self::$counter++;
 		$providerPaymentId = 'MOCK-PAY-' . self::$counter;
 
@@ -102,4 +120,58 @@ class LogPaymentProvider implements PaymentProviderInterface {
 		];
 
 	}//end fetchPaymentStatus()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * The sandbox pays nothing out, so it reports no settlements.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object (unused).
+	 * @param string $since ISO 8601 lower bound (unused).
+	 *
+	 * @return list<array<string, mixed>> Always empty.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-every-provider-settlement-is-reported-once-with-its-transactions-req-lpp-008
+	 */
+	public function fetchSettlements(array $sourceConfiguration, string $since): array {
+		return [];
+
+	}//end fetchSettlements()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * The sandbox binding needs no key and makes no call, so it always answers `ok`, mode `log`.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object (unused).
+	 *
+	 * @return array{ok: bool, mode: ?string, profile: ?string, message: ?string}
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	public function probe(array $sourceConfiguration): array {
+		return [
+			'ok' => true,
+			'mode' => 'log',
+			'profile' => null,
+			'message' => null,
+		];
+
+	}//end probe()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * The sandbox has no point-of-sale terminals.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object (unused).
+	 *
+	 * @return list<array<string, string>> Always empty.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function listTerminals(array $sourceConfiguration): array {
+		return [];
+
+	}//end listTerminals()
 }//end class

@@ -16,16 +16,22 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use DateTimeImmutable;
 use Exception;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJob;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -82,6 +88,20 @@ class JobService implements JobServiceInterface {
 	private int $successRetention;
 
 	/**
+	 * The calendar calculator for jobs whose `schedule.type` is `calendar`.
+	 *
+	 * @var JobCalendarSchedule
+	 */
+	private JobCalendarSchedule $calendar;
+
+	/**
+	 * The clock a calendar job's next slot is measured from; the system clock when null.
+	 *
+	 * @var ITimeFactory|null
+	 */
+	private ?ITimeFactory $timeFactory;
+
+	/**
 	 * JobService constructor.
 	 *
 	 * Initializes the job service with required dependencies for job execution
@@ -94,6 +114,8 @@ class JobService implements JobServiceInterface {
 	 * @param IUserSession $userSession User session manager.
 	 * @param IUserManager $userManager User manager for user operations.
 	 * @param IAppConfig $appConfig App config used to read global retention overrides.
+	 * @param JobCalendarSchedule|null $calendar The calendar calculator for calendar-scheduled jobs.
+	 * @param ITimeFactory|null $timeFactory The clock a calendar job's next slot is measured from.
 	 *
 	 * @psalm-param IJobList $jobList
 	 * @psalm-param ORObjectService $objectService
@@ -110,17 +132,14 @@ class JobService implements JobServiceInterface {
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
 		IAppConfig $appConfig,
+		?JobCalendarSchedule $calendar = null,
+		?ITimeFactory $timeFactory = null,
 	) {
-		$this->errorRetention = 2592000000;
-		$this->successRetention = 3600000;
-		if ($appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
-			$retentionPayload = json_decode(
-				$appConfig->getValueString(app: 'integriq', key: 'retention'),
-				true
-			);
-			$this->errorRetention = ($retentionPayload['jobLogRetention'] ?? 2592000000);
-			$this->successRetention = ($retentionPayload['successLogRetention'] ?? 3600000);
-		}
+		$this->calendar = ($calendar ?? new JobCalendarSchedule());
+		$this->timeFactory = $timeFactory;
+		// One resolver for every log writer: the configured value, else the
+		// default the job_log schema declares (platform-admin-defaults).
+		[$this->errorRetention, $this->successRetention] = (new RetentionSettings(appConfig: $appConfig))->errorAndSuccess(kind: 'jobLog');
 
 	}//end __construct()
 
@@ -233,9 +252,7 @@ class JobService implements JobServiceInterface {
 			$jobData['jobListId'] = null;
 			return $this->objectService->saveObject(
 				object: $jobData,
-				register: 'integriq',
-				schema: 'job',
-				uuid: $job->getUuid()
+				options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid())
 			);
 		}
 
@@ -259,9 +276,7 @@ class JobService implements JobServiceInterface {
 		// Save the job to the database.
 		return $this->objectService->saveObject(
 			object: $jobData,
-			register: 'integriq',
-			schema: 'job',
-			uuid: $job->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid())
 		);
 
 	}//end scheduleJob()
@@ -344,9 +359,8 @@ class JobService implements JobServiceInterface {
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
 	 */
 	public function executeJob(ObjectEntity $job, bool $forceRun = false, ?ExecutionTraceContext $trace = null): ?ObjectEntity {
-		$jobData = $job->getObject();
-
-		$gate = $this->checkJobMayRun(job: $job, jobData: $jobData, forceRun: $forceRun);
+		$run  = new JobRun(job: $job, forceRun: $forceRun);
+		$gate = $this->checkJobMayRun(run: $run);
 		if ($gate['run'] === false) {
 			return $gate['log'];
 		}
@@ -356,13 +370,13 @@ class JobService implements JobServiceInterface {
 		// supplied by `ExecutionTraceService::replay()` is reused instead and
 		// persisted by its owner.
 		$ownsJobTrace = ($trace === null);
-		$trace = ($trace ?? $this->mintJobTrace(job: $job, forceRun: $forceRun));
+		$run->trace   = ($trace ?? $this->mintJobTrace(job: $job, forceRun: $forceRun));
 
-		$outcome = $this->runJobAction(job: $job, jobData: $jobData, trace: $trace, user: $gate['user']);
-		$logEntry = $this->recordJobRun(job: $job, jobData: $jobData, forceRun: $forceRun, outcome: $outcome);
+		$outcome  = $this->runJobAction(run: $run);
+		$logEntry = $this->recordJobRun(job: $job, jobData: $run->jobData, forceRun: $forceRun, outcome: $outcome);
 
 		if ($ownsJobTrace === true) {
-			$this->persistJobTrace(trace: $trace, exception: $outcome['exception']);
+			$this->persistJobTrace(trace: $run->trace, exception: $outcome['exception']);
 		}
 
 		return $logEntry;
@@ -375,29 +389,36 @@ class JobService implements JobServiceInterface {
 	 * WARNING log; a job that is not yet due is skipped silently. A force run
 	 * ignores the enabled flag and the schedule.
 	 *
-	 * @param ObjectEntity $job The job.
-	 * @param array $jobData The job's data as loaded.
-	 * @param bool $forceRun Whether this is a force run.
+	 * @param JobRun $run The run.
 	 *
 	 * @return array{run: bool, log: ObjectEntity|null, user: IUser|null}
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 */
-	private function checkJobMayRun(ObjectEntity $job, array $jobData, bool $forceRun): array {
-		if ($forceRun === false && ($jobData['isEnabled'] ?? true) === false) {
-			$log = $this->saveJobLog(
-				job: $job,
-				jobData: $jobData,
-				logData: ['level' => 'WARNING', 'message' => 'This job is disabled']
-			);
-			return ['run' => false, 'log' => $log, 'user' => null];
+	private function checkJobMayRun(JobRun $run): array {
+		if ($run->forceRun === false && ($run->jobData['isEnabled'] ?? true) === false) {
+			return $this->skipJob(run: $run, message: 'This job is disabled');
 		}
 
-		if ($this->isJobDue(jobData: $jobData, forceRun: $forceRun) === false) {
+		if ($this->isJobDue(jobData: $run->jobData, forceRun: $run->forceRun) === false) {
 			return ['run' => false, 'log' => null, 'user' => null];
 		}
 
-		$userId = ($jobData['userId'] ?? null);
+		return $this->resolveJobUser(run: $run);
+	}//end checkJobMayRun()
+
+	/**
+	 * Resolves the user a due job runs as and keeps it on the run; a
+	 * configured user that no longer exists skips the job.
+	 *
+	 * @param JobRun $run The run.
+	 *
+	 * @return array{run: bool, log: ObjectEntity|null, user: IUser|null}
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function resolveJobUser(JobRun $run): array {
+		$userId = ($run->jobData['userId'] ?? null);
 		if (empty($userId) === true) {
 			return ['run' => true, 'log' => null, 'user' => null];
 		}
@@ -405,13 +426,27 @@ class JobService implements JobServiceInterface {
 		$user = $this->userManager->get($userId);
 		if ($user === null) {
 			// A deleted user is skipped rather than crashing the identity swap.
-			$message = sprintf('Configured userId "%s" does not exist; skipping job.', $userId);
-			$log = $this->saveJobLog(job: $job, jobData: $jobData, logData: ['level' => 'WARNING', 'message' => $message]);
-			return ['run' => false, 'log' => $log, 'user' => null];
+			return $this->skipJob(run: $run, message: sprintf('Configured userId "%s" does not exist; skipping job.', $userId));
 		}
 
+		$run->user = $user;
 		return ['run' => true, 'log' => null, 'user' => $user];
-	}//end checkJobMayRun()
+	}//end resolveJobUser()
+
+	/**
+	 * Skips a job with a WARNING log.
+	 *
+	 * @param JobRun $run     The run.
+	 * @param string $message Why the job is skipped.
+	 *
+	 * @return array{run: bool, log: ObjectEntity|null, user: IUser|null}
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function skipJob(JobRun $run, string $message): array {
+		$log = $this->saveJobLog(job: $run->job, jobData: $run->jobData, logData: ['level' => 'WARNING', 'message' => $message]);
+		return ['run' => false, 'log' => $log, 'user' => null];
+	}//end skipJob()
 
 	/**
 	 * Checks whether a job's next run has arrived.
@@ -462,26 +497,43 @@ class JobService implements JobServiceInterface {
 	 * jobs in the same cron pass (#1006). A thrown exception is captured, not
 	 * rethrown, so the caller can log it.
 	 *
-	 * @param ObjectEntity $job The job.
-	 * @param array $jobData The job's data.
-	 * @param ExecutionTraceContext $trace The active trace context.
-	 * @param IUser|null $user The user to run as, or null for the current session.
+	 * @param JobRun $run The run, with its trace and user.
 	 *
 	 * @return array{result: mixed, exception: \Throwable|null, executionTime: int}
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 */
-	private function runJobAction(ObjectEntity $job, array $jobData, ExecutionTraceContext $trace, ?IUser $user): array {
-		$priorSessionUser = $this->userSession->getUser();
-		if ($user !== null) {
+	private function runJobAction(JobRun $run): array {
+		$run->priorSessionUser = $this->userSession->getUser();
+		if ($run->user !== null) {
 			// Volatile: setUser() would also write the session, and a fatal skips
 			// the restore below. See ADR-099.
-			$this->userSession->setVolatileActiveUser($user);
+			$this->userSession->setVolatileActiveUser($run->user);
 		}
 
 		$timeStart = microtime(true);
-		$action = $this->containerInterface->get($jobData['jobClass']);
-		$arguments = $this->buildJobArguments(job: $job, jobData: $jobData, trace: $trace);
+		$action    = $this->containerInterface->get($run->jobData['jobClass']);
+		$outcome   = $this->invokeJobAction(run: $run, action: $action);
+
+		// The job_log schema requires an integer number of milliseconds.
+		$outcome['executionTime'] = (int)round((microtime(true) - $timeStart) * 1000);
+
+		return $outcome;
+	}//end runJobAction()
+
+	/**
+	 * Calls the job's action, capturing what it throws, and restores the prior
+	 * session user afterwards.
+	 *
+	 * @param JobRun $run    The run.
+	 * @param mixed  $action The job's action, from the container.
+	 *
+	 * @return array{result: mixed, exception: \Throwable|null} The action's result or exception.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function invokeJobAction(JobRun $run, mixed $action): array {
+		$arguments = $this->buildJobArguments(run: $run);
 
 		$result = null;
 		$exception = null;
@@ -490,16 +542,13 @@ class JobService implements JobServiceInterface {
 		} catch (\Throwable $e) {
 			$exception = $e;
 		} finally {
-			if ($user !== null) {
-				$this->userSession->setVolatileActiveUser($priorSessionUser);
+			if ($run->user !== null) {
+				$this->userSession->setVolatileActiveUser($run->priorSessionUser);
 			}
 		}
 
-		// The job_log schema requires an integer number of milliseconds.
-		$executionTime = (int)round((microtime(true) - $timeStart) * 1000);
-
-		return ['result' => $result, 'exception' => $exception, 'executionTime' => $executionTime];
-	}//end runJobAction()
+		return ['result' => $result, 'exception' => $exception];
+	}//end invokeJobAction()
 
 	/**
 	 * Builds the arguments passed to a job's action.
@@ -507,22 +556,20 @@ class JobService implements JobServiceInterface {
 	 * Adds the active trace context and the job's own uuid; neither is persisted
 	 * as part of the job's `arguments` field.
 	 *
-	 * @param ObjectEntity $job The job.
-	 * @param array $jobData The job's data.
-	 * @param ExecutionTraceContext $trace The active trace context.
+	 * @param JobRun $run The run.
 	 *
 	 * @return array The action arguments.
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 */
-	private function buildJobArguments(ObjectEntity $job, array $jobData, ExecutionTraceContext $trace): array {
-		$arguments = ($jobData['arguments'] ?? []);
+	private function buildJobArguments(JobRun $run): array {
+		$arguments = ($run->jobData['arguments'] ?? []);
 		if (is_array($arguments) === false) {
 			$arguments = [];
 		}
 
-		$arguments['_executionTrace'] = $trace;
-		$arguments['_jobId'] = $job->getUuid();
+		$arguments['_executionTrace'] = $run->trace;
+		$arguments['_jobId'] = $run->job->getUuid();
 
 		return $arguments;
 	}//end buildJobArguments()
@@ -545,7 +592,12 @@ class JobService implements JobServiceInterface {
 	private function recordJobRun(ObjectEntity $job, array $jobData, bool $forceRun, array $outcome): ObjectEntity {
 		$jobConfig = $jobData;
 		$jobData['lastRun'] = (new DateTime())->format('c');
-		if ($forceRun === false) {
+		if ($forceRun === false && $this->calendar->isCalendar(jobData: $jobConfig) === true) {
+			$jobData = $this->withCalendarNextRun(jobData: $jobData);
+			if ($this->isSingleRunJob(jobConfig: $jobConfig) === true && $outcome['exception'] === null) {
+				$jobData['isEnabled'] = false;
+			}
+		} else if ($forceRun === false) {
 			$jobData['nextRun'] = $this->calculateNextRun(jobConfig: $jobConfig, outcome: $outcome)->format('c');
 			if ($this->isSingleRunJob(jobConfig: $jobConfig) === true && $outcome['exception'] === null) {
 				$jobData['isEnabled'] = false;
@@ -560,15 +612,98 @@ class JobService implements JobServiceInterface {
 		$logData = $this->buildJobLogData(jobConfig: $jobConfig, outcome: $outcome, stackTrace: $stackTrace);
 		$logEntry = $this->saveJobLog(job: $job, jobData: $jobData, logData: $logData);
 
+		// System write, unscoped: a cron run has no user, and the run itself was already allowed.
 		$this->objectService->saveObject(
 			object: $jobData,
-			register: 'integriq',
-			schema: 'job',
-			uuid: $job->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid()),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		return $logEntry;
 	}//end recordJobRun()
+
+	/**
+	 * A calendar job's data with its next slot and the fingerprint of the
+	 * schedule that slot was computed from.
+	 *
+	 * After a success and after a failure alike the next run is the first
+	 * calendar slot after now (D4): retrying on the next tick would turn a job
+	 * meant for seven o'clock into one that runs every five minutes. A calendar
+	 * with no slot at all leaves `nextRun` absent: the schema types it as a date-time.
+	 *
+	 * @param array $jobData The job's data.
+	 *
+	 * @return array The job's data with `nextRun` and `scheduleFingerprint` set.
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 */
+	private function withCalendarNextRun(array $jobData): array {
+		$schedule = $jobData['schedule'];
+		$next = $this->calendar->nextRunAfter(after: $this->now(), calendar: $schedule);
+
+		unset($jobData['nextRun']);
+		if ($next !== null) {
+			$jobData['nextRun'] = $next->format('c');
+		}
+
+		$jobData['scheduleFingerprint'] = $this->calendar->fingerprint(schedule: $schedule);
+
+		return $jobData;
+	}//end withCalendarNextRun()
+
+	/**
+	 * Whether a calendar job's stored next run has to be computed first.
+	 *
+	 * True when the next run was never computed from this schedule: the job
+	 * has no fingerprint yet (created through OpenRegister's objects endpoint
+	 * or imported) or its schedule changed since (D3). A job whose fingerprint
+	 * matches and whose `nextRun` is empty has a calendar with no slot.
+	 *
+	 * @param array $jobData The job's data.
+	 *
+	 * @return boolean True when the next run must be computed before the job may run.
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 */
+	private function calendarNeedsNextRun(array $jobData): bool {
+		return ($jobData['scheduleFingerprint'] ?? null) !== $this->calendar->fingerprint(schedule: $jobData['schedule']);
+	}//end calendarNeedsNextRun()
+
+	/**
+	 * Computes and saves a calendar job's next run without running it.
+	 *
+	 * @param ObjectEntity $job The job.
+	 * @param array $jobData The job's data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 */
+	private function scheduleCalendarJob(ObjectEntity $job, array $jobData): void {
+		// System write, unscoped: the cron pass that schedules it has no user.
+		$this->objectService->saveObject(
+			object: $this->withCalendarNextRun(jobData: $jobData),
+			options: RegisterSave::options(register: 'integriq', schema: 'job', uuid: $job->getUuid()),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end scheduleCalendarJob()
+
+	/**
+	 * The current moment.
+	 *
+	 * @return DateTimeImmutable Now, from the injected clock when there is one.
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 */
+	private function now(): DateTimeImmutable {
+		if ($this->timeFactory !== null) {
+			return $this->timeFactory->now();
+		}
+
+		return new DateTimeImmutable();
+	}//end now()
 
 	/**
 	 * Checks whether a job runs only once.
@@ -871,10 +1006,12 @@ class JobService implements JobServiceInterface {
 			}
 		}
 
+		// System write, unscoped: a cron run has no user, and the run itself was already allowed.
 		return $this->objectService->saveObject(
 			object: $logObject,
-			register: 'integriq',
-			schema: 'job_log'
+			options: RegisterSave::options(register: 'integriq', schema: 'job_log'),
+			_rbac: false,
+			_multitenancy: false
 		);
 	}//end saveJobLog()
 
@@ -905,6 +1042,27 @@ class JobService implements JobServiceInterface {
 		foreach ($jobs as $job) {
 			$jobData = $job->getObject();
 			$nextRun = ($jobData['nextRun'] ?? null);
+
+			// A calendar job without a next run, or whose calendar was edited,
+			// gets its next slot computed and saved; it does not run on this tick.
+			if ($this->calendar->isCalendar(jobData: $jobData) === true
+				&& $this->calendarNeedsNextRun(jobData: $jobData) === true
+			) {
+				try {
+					$this->scheduleCalendarJob(job: $job, jobData: $jobData);
+				} catch (\Throwable $e) {
+					// A malformed calendar or a failed save must not stop the
+					// remaining jobs of this pass.
+					unset($e);
+				}
+
+				continue;
+			}
+
+			// A calendar job whose calendar has no slot never runs on its own.
+			if ($this->calendar->isCalendar(jobData: $jobData) === true && empty($nextRun) === true) {
+				continue;
+			}
 
 			// Skip jobs that are not yet due.
 			if ($nextRun !== null && (new DateTime($nextRun)) > new DateTime()) {

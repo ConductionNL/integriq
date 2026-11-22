@@ -17,6 +17,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -25,6 +28,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -132,10 +136,8 @@ class SynchronizationContractsController extends Controller {
 		try {
 			$contract = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'synchronization_contract',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization_contract'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Contract not found or could not be activated')], 404);
@@ -170,10 +172,8 @@ class SynchronizationContractsController extends Controller {
 		try {
 			$contract = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'synchronization_contract',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization_contract'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Contract not found or could not be deactivated')], 404);
@@ -208,10 +208,8 @@ class SynchronizationContractsController extends Controller {
 		try {
 			$contract = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'synchronization_contract',
-				_rbac: false,
-				_multitenancy: false
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization_contract'),
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Contract not found or could not be executed')], 404);

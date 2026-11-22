@@ -31,6 +31,7 @@ namespace OCA\Integriq\Outbound\Identity;
 
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -147,8 +148,7 @@ class SenderIdentityService implements SenderIdentityServiceInterface {
 			try {
 				$entity = $this->objectService->find(
 					id: trim($identityId),
-					register: MessageRecorder::REGISTER,
-					schema: self::SCHEMA,
+					options: new ObjectFindOptions(register: MessageRecorder::REGISTER, schema: self::SCHEMA)
 				);
 			} catch (DoesNotExistException) {
 				throw new RuntimeException('No sender identity "' . $identityId . '".');
@@ -204,7 +204,7 @@ class SenderIdentityService implements SenderIdentityServiceInterface {
 	 * @return array{key: string|null, state: string} The material, and the state
 	 *         explaining its absence. Never carries a secret in the state.
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	public function signingMaterial(array $identity, string $identityId): array {
 		$reference = trim((string)($identity['smimePrivateKeyRef'] ?? ''));
@@ -224,7 +224,7 @@ class SenderIdentityService implements SenderIdentityServiceInterface {
 	 *
 	 * @return array{key: string|null, state: string} The material or why not.
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	private function materialFromBroker(string $reference, string $identityId): array {
 		if ($this->isBrokerClassAvailable() === false) {
@@ -302,7 +302,7 @@ class SenderIdentityService implements SenderIdentityServiceInterface {
 	 *
 	 * @return array{key: string|null, state: string} The material or why not.
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	private function materialFromInlineValue(string $identityId): array {
 		$entity = $this->systemContextEntity(identityId: $identityId);
@@ -326,17 +326,20 @@ class SenderIdentityService implements SenderIdentityServiceInterface {
 	 *
 	 * @return ObjectEntity|null The entity, or null when it cannot be read.
 	 *
-	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
+	 * @spec openspec/changes/archive/2026-11-20-enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-011-signing-keeps-working-once-the-key-is-brokered
 	 */
 	private function systemContextEntity(string $identityId): ?ObjectEntity {
 		try {
+			// Unscoped: the named system-context read of a sender identity (see the method docblock).
 			$entity = $this->objectService->find(
 				id: $identityId,
-				register: MessageRecorder::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(
+					register: MessageRecorder::REGISTER,
+					schema: self::SCHEMA,
+					render: false
+				),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable) {
 			return null;

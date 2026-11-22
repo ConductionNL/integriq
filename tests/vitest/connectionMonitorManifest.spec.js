@@ -6,7 +6,7 @@
  * every widget reading the monitor endpoint for the source in the route, and
  * the BRP monitor a menu entry that names its source as configuration.
  *
- * Spec coverage: openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md
  */
 
 import { buildManifest } from '@conduction/nextcloud-vue/src/utils/buildManifest.js'

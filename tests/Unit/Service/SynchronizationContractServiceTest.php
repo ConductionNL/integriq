@@ -10,6 +10,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -21,6 +24,8 @@ use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the OpenRegister-backed contract lifecycle service.
@@ -60,11 +65,11 @@ class SynchronizationContractServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(
-				$this->equalTo('c-1'),
-				$this->equalTo('integriq'),
-				$this->equalTo('synchronization_contract')
-			)
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+					'id' => $this->equalTo('c-1'),
+					'register' => $this->equalTo('integriq'),
+					'schema' => $this->equalTo('synchronization_contract'),
+				]))
 			->willReturn($entity);
 
 		$result = $this->service->findObject('c-1');
@@ -285,12 +290,10 @@ class SynchronizationContractServiceTest extends TestCase {
 		$observedUuid = null;
 
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				?string $register = null,
-				?string $schema = null,
-				?string $uuid = null,
-			) use (&$observedPayload, &$observedUuid) {
+			->willReturnCallback(function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedPayload, &$observedUuid) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedPayload = $object;
 				$observedUuid = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'new-uuid');
@@ -313,12 +316,10 @@ class SynchronizationContractServiceTest extends TestCase {
 		$observedUuid = null;
 
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				?string $register = null,
-				?string $schema = null,
-				?string $uuid = null,
-			) use (&$observedUuid) {
+			->willReturnCallback(function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedUuid) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedUuid = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'new');
 			});
@@ -339,12 +340,10 @@ class SynchronizationContractServiceTest extends TestCase {
 		$observedUuid = 'sentinel';
 
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				?string $register = null,
-				?string $schema = null,
-				?string $uuid = null,
-			) use (&$observedUuid) {
+			->willReturnCallback(function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedUuid) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedUuid = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'new');
 			});
@@ -365,12 +364,10 @@ class SynchronizationContractServiceTest extends TestCase {
 		$observedUuid = null;
 
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				?string $register = null,
-				?string $schema = null,
-				?string $uuid = null,
-			) use (&$observedPayload, &$observedUuid) {
+			->willReturnCallback(function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedPayload, &$observedUuid) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedPayload = $object;
 				$observedUuid = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'new');
@@ -416,12 +413,10 @@ class SynchronizationContractServiceTest extends TestCase {
 
 		$observedPayload = null;
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				?string $register = null,
-				?string $schema = null,
-				?string $uuid = null,
-			) use (&$observedPayload) {
+			->willReturnCallback(function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedPayload) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedPayload = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'c-1');
 			});
@@ -450,12 +445,10 @@ class SynchronizationContractServiceTest extends TestCase {
 
 		$observedPayload = null;
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				?string $register = null,
-				?string $schema = null,
-				?string $uuid = null,
-			) use (&$observedPayload) {
+			->willReturnCallback(function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedPayload) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedPayload = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'c-1');
 			});
@@ -480,12 +473,10 @@ class SynchronizationContractServiceTest extends TestCase {
 
 		$observedPayload = null;
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				?string $register = null,
-				?string $schema = null,
-				?string $uuid = null,
-			) use (&$observedPayload) {
+			->willReturnCallback(function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedPayload) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedPayload = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'c-1');
 			});

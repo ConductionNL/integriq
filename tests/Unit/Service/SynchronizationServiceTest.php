@@ -9,12 +9,16 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
@@ -30,6 +34,9 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the synchronization orchestration service (OR cutover — no deleted Db types).
@@ -248,12 +255,10 @@ class SynchronizationServiceTest extends TestCase {
 
 		$orObjectService = $this->createMock(ORObjectService::class);
 		$orObjectService->method('saveObject')->willReturnCallback(
-			static function (
-				$object,
-				$register = null,
-				$schema = null,
-				?string $uuid = null,
-			) use (&$observedUuid, &$observedBody, $defaultEntity) {
+			static function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedUuid, &$observedBody, $defaultEntity) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedUuid = $uuid;
 				$observedBody = $object;
 				return $defaultEntity;
@@ -307,12 +312,10 @@ class SynchronizationServiceTest extends TestCase {
 
 		$orObjectService = $this->createMock(ORObjectService::class);
 		$orObjectService->method('saveObject')->willReturnCallback(
-			static function (
-				$object,
-				$register = null,
-				$schema = null,
-				?string $uuid = null,
-			) use (&$observedBody, $defaultEntity) {
+			static function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedBody, $defaultEntity) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedBody = $object;
 				return $defaultEntity;
 			}
@@ -356,12 +359,10 @@ class SynchronizationServiceTest extends TestCase {
 
 		$orObjectService = $this->createMock(ORObjectService::class);
 		$orObjectService->method('saveObject')->willReturnCallback(
-			static function (
-				$object,
-				$register = null,
-				$schema = null,
-				?string $uuid = null,
-			) use (&$observedBody, $defaultEntity) {
+			static function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$observedBody, $defaultEntity) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$observedBody = $object;
 				return $defaultEntity;
 			}
@@ -1634,7 +1635,9 @@ HTML;
 		$sourceEntity = ObjectServiceMockBuilder::objectEntity($this, $sourceBody, ($sourceBody['uuid'] ?? 'source-uuid'));
 
 		$this->orObjectService->method('find')->willReturnCallback(
-			function ($id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true) use ($syncEntity, $sourceEntity) {
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) use ($syncEntity, $sourceEntity) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'synchronization') {
 					return $syncEntity;
 				}
@@ -1712,20 +1715,22 @@ HTML;
 
 		$ownership = $this->getMockBuilder(\OCA\Integriq\Service\Ownership\RecordOwnershipService::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['forObject'])
+			->onlyMethods(['forObjectOrFail'])
 			->getMock();
-		$ownership->method('forObject')->willReturn(
+		$ownership->method('forObjectOrFail')->willReturn(
 			new \OCA\Integriq\Service\Ownership\OwnershipState('source', 'source-uuid-brp', '999993653', null, true, false, null, 'sync-uuid-brp', 'BRP personen')
 		);
 		$listener = new \OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener(
 			$ownership,
 			new \OCA\Integriq\Service\Ownership\LocalDeleteGuard(),
-			new \Psr\Log\NullLogger()
+			new \Psr\Log\NullLogger(),
+			$this->createMock(\OCA\Integriq\Service\ListenerSchemaResolver::class)
 		);
 
 		$stopped = [];
 		$this->orObjectService->method('deleteObject')->willReturnCallback(
-			function (string $uuid) use ($listener, &$stopped): bool {
+			function (ObjectDeletion $deletion) use ($listener, &$stopped): bool {
+				$uuid = $deletion->uuid;
 				$entity = new \OCA\OpenRegister\Db\ObjectEntity();
 				$entity->setUuid($uuid);
 				$entity->setObject(['naam' => 'Jansen']);
@@ -1743,7 +1748,7 @@ HTML;
 			targetObject: $targetObject,
 			action: 'delete'
 		);
-		$this->orObjectService->deleteObject('person-uuid-1');
+		$this->orObjectService->deleteObject(new ObjectDeletion(uuid: 'person-uuid-1'));
 
 		$this->assertSame([false, true], $stopped, 'the engine delete passes; the same delete from elsewhere is stopped');
 
@@ -1927,7 +1932,7 @@ HTML;
 
 		$this->orObjectService->method('findAll')->willReturn(['results' => [$keptContract, $orphanContract]]);
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			fn (array $object, string $register, string $schema, ?string $uuid = null) => ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'saved-contract')
+			fn (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) => ObjectServiceMockBuilder::objectEntity($this, $object, ($options->uuid) ?? 'saved-contract')
 		);
 
 		$this->tablesSyncAdapter->method('assertEnabled');
@@ -2122,14 +2127,8 @@ HTML;
 		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
 		$fileService->method('getFiles')->willReturn([]);
 		$fileService->method('saveFile')->willReturnCallback(
-			function (...$args) use ($onSave) {
-				$fileName = null;
-				foreach ($args as $arg) {
-					if (is_string($arg) === true && $arg !== '') {
-						$fileName = $arg;
-						break;
-					}
-				}
+			function ($objectEntity, FileUpload $upload) use ($onSave) {
+				$fileName = $upload->fileName;
 
 				$this->fetchRun['saved'][] = $fileName;
 				$this->fetchRun['timeline'][] = 'save:' . $fileName;

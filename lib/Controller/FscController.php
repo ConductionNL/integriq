@@ -90,12 +90,10 @@ class FscController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function listServices(): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		$refused = $this->refusedCaller(action: 'fsc.list');
+		if ($refused !== null) {
+			return $refused;
 		}
-
-		$this->actionAuth->requireAction(user: $user, action: 'fsc.list');
 
 		return new JSONResponse(['services' => $this->callService->listResolvableServices()]);
 	}//end listServices()
@@ -112,46 +110,98 @@ class FscController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function call(): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		$refused = $this->refusedCaller(action: 'fsc.call');
+		if ($refused !== null) {
+			return $refused;
 		}
-
-		$this->actionAuth->requireAction(user: $user, action: 'fsc.call');
 
 		$params = $this->request->getParams();
 		$organisation = (string)($params['organisation'] ?? '');
 		$service = (string)($params['service'] ?? '');
 		if ($organisation === '' || $service === '') {
-			return new JSONResponse(
-				[
-					'error' => 'missing_fields',
-					'message' => $this->l->t('The "organisation" and "service" fields are required'),
-				],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->missingFields();
 		}
 
+		return $this->invoke(params: $params);
+
+	}//end call()
+
+	/**
+	 * Answer a call request without an organisation or a service.
+	 *
+	 * @return JSONResponse The 400 error envelope.
+	 */
+	private function missingFields(): JSONResponse {
+		return new JSONResponse(
+			[
+				'error' => 'missing_fields',
+				'message' => $this->l->t('The "organisation" and "service" fields are required'),
+			],
+			Http::STATUS_BAD_REQUEST
+		);
+
+	}//end missingFields()
+
+	/**
+	 * Invoke a checked call request and answer its outcome.
+	 *
+	 * @param array<string,mixed> $params The request parameters, organisation and service set.
+	 *
+	 * @return JSONResponse `{ref, statusCode, body}`, or the 404/502/503 error envelope.
+	 */
+	private function invoke(array $params): JSONResponse {
 		try {
-			$result = $this->callService->callService(input: $params);
-			return new JSONResponse($result);
+			return new JSONResponse($this->callService->callService(input: $params));
 		} catch (FscDirectoryException $exception) {
 			return new JSONResponse(
 				['error' => 'unknown_service', 'message' => $exception->getMessage()],
 				Http::STATUS_NOT_FOUND
 			);
 		} catch (FscConnectivityException $exception) {
-			$this->logger->warning('[FscController] call failed: ' . $exception->getMessage());
+			return $this->callFailure(exception: $exception);
+		}
 
-			$status = Http::STATUS_BAD_GATEWAY;
-			$code = 'fsc_call_failed';
-			if (str_contains($exception->getMessage(), 'No active FSC source') === true) {
-				$status = Http::STATUS_SERVICE_UNAVAILABLE;
-				$code = 'not_configured';
-			}
+	}//end invoke()
 
-			return new JSONResponse(['error' => $code, 'message' => $exception->getMessage()], $status);
-		}//end try
+	/**
+	 * Log a failed call and answer it: 503 when no FSC source is configured, else 502.
+	 *
+	 * @param FscConnectivityException $exception The connectivity failure.
+	 *
+	 * @return JSONResponse The error envelope.
+	 */
+	private function callFailure(FscConnectivityException $exception): JSONResponse {
+		$this->logger->warning('[FscController] call failed: ' . $exception->getMessage());
 
-	}//end call()
+		$status = Http::STATUS_BAD_GATEWAY;
+		$code = 'fsc_call_failed';
+		if (str_contains($exception->getMessage(), 'No active FSC source') === true) {
+			$status = Http::STATUS_SERVICE_UNAVAILABLE;
+			$code = 'not_configured';
+		}
+
+		return new JSONResponse(['error' => $code, 'message' => $exception->getMessage()], $status);
+
+	}//end callFailure()
+
+	/**
+	 * The answer for a caller who may not use an FSC endpoint.
+	 *
+	 * Throws the action service's refusal when the signed-in user may not run
+	 * the action.
+	 *
+	 * @param string $action The action the endpoint needs.
+	 *
+	 * @return JSONResponse|null 401 without a session, or null when the caller may go on.
+	 */
+	private function refusedCaller(string $action): JSONResponse|null {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: $action);
+		return null;
+
+	}//end refusedCaller()
 }//end class

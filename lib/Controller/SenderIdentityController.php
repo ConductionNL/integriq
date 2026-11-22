@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Outbound\Identity\DomainAlignmentCheckerInterface;
+use OCA\Integriq\Outbound\Identity\HeldMessageReleaseInterface;
 use OCA\Integriq\Outbound\Identity\HoldQueueInterface;
 use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\Identity\OptOutRegistryInterface;
@@ -34,6 +35,7 @@ use OCA\Integriq\Outbound\Identity\SenderIdentityServiceInterface;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenServiceInterface;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -48,7 +50,7 @@ use OCP\IUserSession;
 use RuntimeException;
 
 /**
- * Identity, alignment, unsubscribe and withdraw endpoints.
+ * Identity, alignment, unsubscribe, withdraw and release endpoints.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
@@ -71,6 +73,13 @@ class SenderIdentityController extends Controller {
 	public const ACTION_WITHDRAW = 'outbound.withdraw';
 
 	/**
+	 * The ADR-023 action releasing a message held for review is gated by: the send right.
+	 *
+	 * @var string
+	 */
+	public const ACTION_RELEASE = 'outbound.release';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
@@ -84,6 +93,8 @@ class SenderIdentityController extends Controller {
 	 * @param HoldQueueInterface $holdQueue Holds and withdraws a message inside its window.
 	 * @param IL10N $l Translations.
 	 * @param IURLGenerator $urls Builds the confirmation form's target.
+	 * @param HeldMessageReleaseInterface|null $heldRelease Releases a message held for review and sends it;
+	 *                                                      without it a release is refused.
 	 */
 	public function __construct(
 		$appName,
@@ -97,6 +108,7 @@ class SenderIdentityController extends Controller {
 		private readonly HoldQueueInterface $holdQueue,
 		private readonly IL10N $l,
 		private readonly IURLGenerator $urls,
+		private readonly ?HeldMessageReleaseInterface $heldRelease = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -208,6 +220,42 @@ class SenderIdentityController extends Controller {
 	}//end withdraw()
 
 	/**
+	 * Release a message a send check held for review, and send it.
+	 *
+	 * @param string $id The outbound message uuid.
+	 *
+	 * @return JSONResponse The release and the send's outcome; 409 when the message is not held for review.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+	 */
+	#[NoAdminRequired]
+	public function release(string $id): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: self::ACTION_RELEASE);
+
+		if ($this->heldRelease === null) {
+			return new JSONResponse(['error' => $this->l->t('Releasing a held message is not available.')], Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		try {
+			$result = $this->heldRelease->release($id, $user->getUID());
+		} catch (DoesNotExistException) {
+			return new JSONResponse(['error' => $this->l->t('No such message.')], Http::STATUS_NOT_FOUND);
+		} catch (RuntimeException $exception) {
+			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_CONFLICT);
+		}
+
+		return new JSONResponse($result);
+
+	}//end release()
+
+	/**
 	 * Show what the link in a message stops, and ask to confirm.
 	 *
 	 * GET changes nothing (RFC 8058): mail scanners fetch links before a
@@ -298,52 +346,12 @@ class SenderIdentityController extends Controller {
 			return $refusal;
 		}
 
-		$source = 'unsubscribe-link';
-		if ($claim['format'] === 'v1') {
-			$source = 'unsubscribe-link-v1';
-		}
-
-		if ((string)$this->request->getParam('List-Unsubscribe', '') === 'One-Click') {
-			$source = 'one-click';
-		}
-
+		$source = $this->unsubscribeSource(claim: $claim);
 		if ($choice === 'all') {
-			$this->optOuts->record(
-				[
-					'address' => $claim['address'],
-					'state' => 'opted-out',
-					'scope' => OptOutRegistryInterface::SCOPE_INSTANCE,
-					'purpose' => OptOutCategoriesInterface::PURPOSE_ALL,
-					'source' => $source,
-					'sourceApp' => 'integriq',
-				]
-			);
-
-			return $this->unsubscribePage(
-				state: 'stopped',
-				message: $this->l->t('Done. You will no longer receive messages from us, except statutory notices such as a besluit.'),
-				status: Http::STATUS_OK
-			);
+			return $this->stopEverything(claim: $claim, source: $source);
 		}
 
-		if ($claim['format'] !== UnsubscribeTokenServiceInterface::PREFIX_V3) {
-			$this->optOuts->add($claim['address'], OptOutRegistryInterface::SCOPE_CASE, $claim['caseRef'], $source);
-		}
-
-		if ($claim['format'] === UnsubscribeTokenServiceInterface::PREFIX_V3) {
-			$this->optOuts->record(
-				[
-					'address' => $claim['address'],
-					'state' => 'opted-out',
-					'scope' => $claim['scope'],
-					'channel' => $claim['channel'],
-					'ref' => $claim['ref'],
-					'purpose' => $claim['purpose'],
-					'source' => $source,
-					'sourceApp' => 'integriq',
-				]
-			);
-		}
+		$this->stopWhatTheLinkNames(claim: $claim, source: $source);
 
 		return $this->unsubscribePage(
 			state: 'stopped',
@@ -352,6 +360,90 @@ class SenderIdentityController extends Controller {
 		);
 
 	}//end unsubscribeConfirm()
+
+	/**
+	 * Where an unsubscribe came from: a one-click POST, an old-format link, or a link.
+	 *
+	 * @param array<string,mixed> $claim The verified token claim.
+	 *
+	 * @return string The opt-out's source.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	private function unsubscribeSource(array $claim): string {
+		if ((string)$this->request->getParam('List-Unsubscribe', '') === 'One-Click') {
+			return 'one-click';
+		}
+
+		if ($claim['format'] === 'v1') {
+			return 'unsubscribe-link-v1';
+		}
+
+		return 'unsubscribe-link';
+
+	}//end unsubscribeSource()
+
+	/**
+	 * Stop everything that is not statutory for the link's address.
+	 *
+	 * @param array<string,mixed> $claim  The verified token claim.
+	 * @param string              $source Where the unsubscribe came from.
+	 *
+	 * @return TemplateResponse The confirmation page.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	private function stopEverything(array $claim, string $source): TemplateResponse {
+		$this->optOuts->record(
+			[
+				'address' => $claim['address'],
+				'state' => 'opted-out',
+				'scope' => OptOutRegistryInterface::SCOPE_INSTANCE,
+				'purpose' => OptOutCategoriesInterface::PURPOSE_ALL,
+				'source' => $source,
+				'sourceApp' => 'integriq',
+			]
+		);
+
+		return $this->unsubscribePage(
+			state: 'stopped',
+			message: $this->l->t('Done. You will no longer receive messages from us, except statutory notices such as a besluit.'),
+			status: Http::STATUS_OK
+		);
+
+	}//end stopEverything()
+
+	/**
+	 * Stop what the link names: its case for an older link, its scope, channel,
+	 * reference and purpose for a v3 link.
+	 *
+	 * @param array<string,mixed> $claim  The verified token claim.
+	 * @param string              $source Where the unsubscribe came from.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	private function stopWhatTheLinkNames(array $claim, string $source): void {
+		if ($claim['format'] !== UnsubscribeTokenServiceInterface::PREFIX_V3) {
+			$this->optOuts->add($claim['address'], OptOutRegistryInterface::SCOPE_CASE, $claim['caseRef'], $source);
+			return;
+		}
+
+		$this->optOuts->record(
+			[
+				'address' => $claim['address'],
+				'state' => 'opted-out',
+				'scope' => $claim['scope'],
+				'channel' => $claim['channel'],
+				'ref' => $claim['ref'],
+				'purpose' => $claim['purpose'],
+				'source' => $source,
+				'sourceApp' => 'integriq',
+			]
+		);
+
+	}//end stopWhatTheLinkNames()
 
 	/**
 	 * The decision log: suppressions, overrides, changes and allowed counts.

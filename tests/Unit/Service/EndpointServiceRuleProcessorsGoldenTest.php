@@ -44,6 +44,8 @@ use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -61,6 +63,9 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
 use RuntimeException;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 
 /**
  * Every branch of the override, locking, avg_bsn_policy, selfurl_hal,
@@ -116,6 +121,14 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 			return ['flowToken' => $value->getRequestOriginal()];
 		}
 
+		if ($value instanceof FileTarget) {
+			return ['target' => $this->d($value->object), 'registerId' => $value->registerId];
+		}
+
+		if ($value instanceof FileUpload) {
+			return ['fileName' => $value->fileName, 'content' => $value->content, 'share' => $value->share, 'tags' => $value->tags];
+		}
+
 		if ($value instanceof ExecutionTraceContext) {
 			return ($value === $this->trace ? 'case-trace' : 'other-trace');
 		}
@@ -163,8 +176,17 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 
 		foreach ($answers as $name => $answer) {
 			$mock->method($name)->willReturnCallback(
-				function (...$args) use ($name, $answer, $label, &$mock) {
-					$this->log[] = [$label . '.' . $name, $this->d($args)];
+				function (...$args) use ($class, $name, $answer, $label, &$mock) {
+					// The object service's calls are logged in the argument order the golden file was recorded in.
+					$logged = $args;
+					if ($class === ORObjectService::class && in_array($name, ['find', 'findSilent', 'saveObject', 'deleteObject'], true) === true) {
+						$logged = LegacyObjectArgs::positional(method: $name, args: $args);
+					} else if ($class === ORObjectService::class && ($args[0] ?? null) instanceof LockRequest) {
+						$logged = [$args[0]->identifier, $args[0]->process, $args[0]->duration];
+					} else if ($class === ORObjectService::class && ($args[0] ?? null) instanceof UnlockRequest) {
+						$logged = [$args[0]->identifier];
+					}
+					$this->log[] = [$label . '.' . $name, $this->d($logged)];
 					$result = $answer(...$args);
 					return ($result === self::class ? $mock : $result);
 				}
@@ -277,7 +299,7 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 					$entity->setSchema(9);
 					return $entity;
 				},
-				'lockObject' => fn (string $identifier, ?string $process = null, ?int $duration = null) => ['locked' => $identifier, 'processIsUuid' => (strlen((string)$process) === 36), 'duration' => $duration],
+				'lockObject' => fn (LockRequest $request) => ['locked' => $request->identifier, 'processIsUuid' => (strlen((string)$request->process) === 36), 'duration' => $request->duration],
 				'unlockObject' => fn () => true,
 				'getLogs' => fn (string $uuid, array $filters = []) => ($this->case['logs'] ?? [['log' => $uuid, 'filters' => $filters]]),
 				'setRegister' => fn () => self::class,
@@ -333,12 +355,12 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 		$fileService = $this->recorder(
 			FileService::class,
 			[
-				'addFile' => function ($objectEntity, string $fileName = '', $content = null) {
-					if ($content === 'fail') {
+				'addFile' => function (FileTarget $target, FileUpload $upload) {
+					if ($upload->content === 'fail') {
 						throw new RuntimeException('write failed');
 					}
 
-					return $this->file((string)$fileName);
+					return $this->file($upload->fileName);
 				},
 				'getObjectFolder' => fn () => $folder,
 				'getFiles' => fn () => array_map(fn ($name) => $this->file($name), ($this->case['orFiles'] ?? [])),

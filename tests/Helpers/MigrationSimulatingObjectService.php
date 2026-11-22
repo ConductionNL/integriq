@@ -3,6 +3,9 @@
 /**
  * An OpenRegister ObjectService double for the inline-secret EXECUTOR tests.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * It extends {@see RenderBoundarySimulatingObjectService}'s intent but carries
  * the two things the executor needs beyond a rendered read:
  *
@@ -38,6 +41,12 @@ namespace OCA\Integriq\Tests\Helpers;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Contract\ObjectDeletion as PublishedObjectDeletion;
+use OCA\OpenRegister\Contract\ObjectFindOptions as PublishedObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectSaveOptions as PublishedObjectSaveOptions;
 
 /**
  * Reproduces the render boundary AND entity columns AND persisting saves.
@@ -71,6 +80,20 @@ class MigrationSimulatingObjectService extends OrObjectService {
 	 * @var string|null
 	 */
 	public ?string $failSaveForUuid = null;
+
+	/**
+	 * When true, an unrendered (raw) read fails.
+	 *
+	 * @var bool
+	 */
+	public bool $failRawRead = false;
+
+	/**
+	 * Every deleteObject call: uuid, register and schema.
+	 *
+	 * @var array<int, array{uuid: string, register: mixed, schema: mixed}>
+	 */
+	public array $deletions = [];
 
 	/**
 	 * Constructor — deliberately does not call the stub's constructor.
@@ -111,15 +134,19 @@ class MigrationSimulatingObjectService extends OrObjectService {
 	 */
 	public function find(
 		$id,
-		?string $register = null,
-		?string $schema = null,
+		ObjectFindOptions|PublishedObjectFindOptions|null $options = null,
 		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $_render = true,
-		bool $_audit = true,
-		?array $_extend = [],
+		bool $_multitenancy = true
 	): ?ObjectEntity {
+		$register = $options?->register;
+		$schema = $options?->schema;
+		$_render = $options?->render ?? true;
+		$_audit = $options?->audit ?? true;
+		$_extend = $options?->extend ?? [];
 		$this->reads[] = ['uuid' => (string)$id, '_render' => $_render, '_rbac' => $_rbac];
+		if ($_render === false && $this->failRawRead === true) {
+			throw new \RuntimeException('raw read failed (simulated)');
+		}
 
 		$entry = ($this->stored[(string)$id] ?? null);
 		if ($entry === null) {
@@ -173,14 +200,15 @@ class MigrationSimulatingObjectService extends OrObjectService {
 	 */
 	public function saveObject(
 		$object,
-		?string $register = null,
-		?string $schema = null,
-		?string $uuid = null,
+		ObjectSaveOptions|PublishedObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
+		bool $_multitenancy = true
 	): ObjectEntity {
+		$register = $options->target->register;
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+		$silent = $options->policy->silent ?? false;
+		$_validation = $options->policy->validation ?? true;
 		$data = $object;
 		if ($object instanceof ObjectEntity === true) {
 			$data = $object->getObject();
@@ -210,6 +238,27 @@ class MigrationSimulatingObjectService extends OrObjectService {
 		$entry = ($this->stored[$target] ?? ['object' => $data, 'owner' => null, 'organisation' => null]);
 		return $this->makeEntity(uuid: $target, data: $data, entry: $entry);
 	}//end saveObject()
+
+	/**
+	 * Record a deletion.
+	 *
+	 * @param ObjectDeletion|PublishedObjectDeletion $deletion        The deletion.
+	 * @param bool                                   $_rbac           Unused.
+	 * @param bool                                   $_multitenancy   Unused.
+	 * @param bool                                   $_retentionSweep Unused.
+	 *
+	 * @return bool
+	 */
+	public function deleteObject(
+		ObjectDeletion|PublishedObjectDeletion $deletion,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		bool $_retentionSweep = false
+	): bool {
+		$this->deletions[] = ['uuid' => $deletion->uuid, 'register' => $deletion->target->register, 'schema' => $deletion->target->schema];
+
+		return true;
+	}//end deleteObject()
 
 	/**
 	 * Build an ObjectEntity carrying uuid + object + owner + organisation columns.

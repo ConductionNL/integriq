@@ -25,6 +25,9 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -34,6 +37,7 @@ namespace OCA\Integriq\Service\Datasource;
 use DateTime;
 use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -148,8 +152,7 @@ class DashboardDatasourceService implements DashboardDatasourceServiceInterface 
 		// exist — the controller maps both to a clean HTTP status.
 		$source = $this->orObjectService->find(
 			id: $sourceId,
-			register: 'integriq',
-			schema: 'source',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
 			_rbac: true,
 			_multitenancy: true
 		);

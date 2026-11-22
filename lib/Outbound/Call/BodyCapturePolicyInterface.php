@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -21,11 +24,30 @@ namespace OCA\Integriq\Outbound\Call;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 
 /**
  * Public operations of {@see BodyCapturePolicy} that other components call.
  */
 interface BodyCapturePolicyInterface {
+	/**
+	 * The callers whose code may keep call bodies outside a window: those whose data is public.
+	 *
+	 * A caller passes its own class name as `logBody`; CallService honours
+	 * nothing else, so a bare `true`, a source setting or a class missing here
+	 * stores no body. CallServiceBodyCaptureTest scans lib/ and fails on any
+	 * other class that passes `logBody`. Add a class only when every answer it
+	 * receives is public data.
+	 *
+	 * @var array<int, class-string>
+	 *
+	 * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-code-may-keep-bodies-only-for-listed-public-data-callers-req-ocd-010
+	 */
+	public const LOG_BODY_ALLOWLIST = [
+		// SLO's curriculum (doelen, leerlijnen) is published openly.
+		SloCurriculumClientHttp::class,
+	];
+
 	/**
 	 * The current time.
 	 *

@@ -4,6 +4,9 @@
  * Live smoke test for the endoflife-date-source preset against the REAL,
  * public, unauthenticated https://endoflife.date/api.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Follows the established `tests/Integration` self-skipping convention
  * (tests/Integration/Tables/TablesBridgeIntegrationTest.php) — the whole
  * class skips, not fails, on a network-isolated CI run.
@@ -26,9 +29,6 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/endoflife-date-source/spec.md#requirement-a-live-smoke-test-proves-the-preset-against-the-real-public-api
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -51,6 +51,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @spec openspec/specs/endoflife-date-source/spec.md#requirement-a-live-smoke-test-proves-the-preset-against-the-real-public-api
@@ -211,7 +214,10 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 		];
 
 		$orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, ...$rest) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($schema === 'synchronization_contract') {
 					$key = ($uuid ?? ($object['uuid'] ?? 'contract-' . (count($this->contractStore) + 1)));
 					$this->contractStore[$key] = $object;
@@ -231,6 +237,23 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 					is_array($object) ? $object : [],
 					(string)($uuid ?? ($object['uuid'] ?? 'saved-uuid'))
 				);
+			}
+		);
+
+		// A non-test run buffers its target writes and flushes them through
+		// saveObjects(), so the eol_cycle rows land here.
+		$orObjectService->method('saveObjects')->willReturnCallback(
+			function (array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest): array {
+				$register = $options->defaults->register;
+				$schema = $options->defaults->schema;
+				if ($schema === 'eol_cycle') {
+					foreach ($objects as $object) {
+						$key = ($object['uuid'] ?? ($object['@self']['id'] ?? ('eolcycle-' . (count($this->targetStore) + 1))));
+						$this->targetStore[(string)$key] = $object;
+					}
+				}
+
+				return ['statistics' => ['saved' => count($objects), 'updated' => 0, 'invalid' => 0, 'errors' => 0]];
 			}
 		);
 
@@ -268,6 +291,7 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 
 		$orObjectService->method('find')->willReturnCallback(
 			function (...$args) use ($findPos, $syncPayload, $mappingPayload) {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$id = ($args[$findPos['id']] ?? null);
 				$schema = ($args[$findPos['schema']] ?? null);
 

@@ -17,7 +17,10 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -35,7 +38,7 @@ use SimpleXMLElement;
  * one `Cube currency="XXX" rate="1.2345"` per currency, all in the eurofxref
  * default namespace. A rate is the number of units of the currency per euro.
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
  */
 class EcbReferenceRateParser {
 
@@ -50,7 +53,7 @@ class EcbReferenceRateParser {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) SafeXmlParser is the repo's stateless XXE-hardened parse helper.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
 	 */
 	public function parse(string $xml): array {
 		$previous = libxml_use_internal_errors(true);
@@ -79,7 +82,7 @@ class EcbReferenceRateParser {
 	 *
 	 * @return array<string, array<string, float>> Rates keyed by date, then by currency code, newest date first.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001
 	 */
 	public function fromElement(SimpleXMLElement $envelope): array {
 		$rates = [];

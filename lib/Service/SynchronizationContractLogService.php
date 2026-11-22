@@ -3,6 +3,9 @@
 /**
  * Integriq Synchronization Contract Log Service.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Write path for synchronization contract logs, backed by OpenRegister.
  *
  * Post OpenRegister-cutover the `openconnector_synchronization_contract_logs`
@@ -41,6 +44,7 @@
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ISession;
 use OCP\IUserSession;
@@ -166,8 +170,7 @@ class SynchronizationContractLogService {
 		// which the append-only schema permits.
 		$saved = $this->orObjectService->saveObject(
 			object: $this->normalize(object: $log),
-			register: self::REGISTER,
-			schema: self::SCHEMA
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA)
 		);
 
 		if ($uuid !== '') {

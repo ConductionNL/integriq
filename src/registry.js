@@ -33,18 +33,28 @@
 //   3. customComponents (this file) — escape hatch for handlers + future widgets
 
 import AutomationDeprecationNotice from './components/AutomationDeprecationNotice.vue'
+import BodyCaptureWindow from './components/BodyCaptureWindow.vue'
 import CallLogActions from './components/callLog/CallLogActions.vue'
+import CallLogDetail from './components/callLog/CallLogDetail.vue'
 import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import CloudEventReceiverUrl from './components/CloudEventReceiverUrl.vue'
+import ConsumerCredentialsPanel from './components/ConsumerCredentialsPanel.vue'
+import DatabaseSourcePanel from './components/DatabaseSourcePanel.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
+import IntakeMessageActions from './components/intake/IntakeMessageActions.vue'
+import IntakeMessageRowActions from './components/intake/IntakeMessageRowActions.vue'
+import MailImportAction from './components/intake/MailImportAction.vue'
 import LtiPlatformDetails from './components/LtiPlatformDetails.vue'
 import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
+import SourceHostKeyPanel from './components/SourceHostKeyPanel.vue'
 import SourceRunSummaryWidget from './components/SourceRunSummaryWidget.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
 import ColumnMappingEditorModal from './modals/Migration/ColumnMappingEditorModal.vue'
 import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'
 import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
+import IntakeRuleEditorModal from './modals/v2/IntakeRuleEditorModal.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
 import MappingEditorModal from './modals/v2/MappingEditorModal.vue'
 import RuleEditorModal from './modals/v2/RuleEditorModal.vue'
@@ -53,6 +63,8 @@ import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.v
 import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
 import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
 import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
+import DeveloperPortalPage from './views/DeveloperPortal/DeveloperPortalPage.vue'
+import EgressDestinationsPage from './views/EgressDestinations/EgressDestinationsPage.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 import FlowDetailSidebar from './views/Flow/FlowDetailSidebar.vue'
@@ -65,24 +77,37 @@ import SynchronizationDetailPage from './views/Synchronization/SynchronizationDe
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import {
 	addEndpointRuleHandler,
+	bringApiBehindIntegriqHandler,
 	manageSigningHandler,
 	openConfigurationExportHandler,
 	openConfigurationImportHandler,
 	openGatewayCatalogueHandler,
 	openLinkSourceHandler,
+	openOpenApiImportHandler,
 	openPromotionHandler,
 	openRegistryLookupHandler,
 	previewDirectorySyncHandler,
+	refreshPaymentHandler,
+	releaseHeldMessageHandler,
 	rerunFailedRunHandler,
 	runDirectorySyncHandler,
 	runJobHandler,
 	runSynchronizationHandler,
+	setSourceResidencyHandler,
 	testJobHandler,
 	testMappingModalHandler,
+	testRegistrationTargetHandler,
+	testServiceFetchHandler,
 	testSourceHandler,
 	testSynchronizationHandler,
 	viewLogsHandler,
+	withdrawHeldMessageHandler,
 } from './handlers/actionHandlers.js'
+import {
+	moveIntakeRuleDownHandler,
+	moveIntakeRuleUpHandler,
+	toggleIntakeRuleHandler,
+} from './handlers/intakeRuleHandlers.js'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
@@ -99,7 +124,16 @@ export default {
 	// Run again on a failed run: one POST, no dialog (connection-run-monitoring
 	// REQ-CRUN-003). Shown only on failed rows through the action's visibleWhen.
 	rerunFailedRunHandler,
+	// Refresh a payment's status from its provider (messaging-payments-review
+	// D2): one POST, no dialog, the webhook's own re-derive on the server.
+	refreshPaymentHandler,
+	// Release or withdraw a message a send check held for review: one POST each,
+	// gated on the send right server-side (REQ-OSI-010).
+	releaseHeldMessageHandler,
+	withdrawHeldMessageHandler,
 	testMappingModalHandler,
+	// Beheer > Service fetches: "Testen" opens TestServiceFetchModal (REQ-SF-001).
+	testServiceFetchHandler,
 	addEndpointRuleHandler,
 	// Directory connections are Sources, so their run and preview actions sit on
 	// the Sources index. Both open DirectoryRunModal, which owns the POST so a
@@ -109,6 +143,9 @@ export default {
 	// Webhook signing-secret manager (opens SubscriptionSigningModal via
 	// the modal bus). See openconnector-webhook-signing.
 	manageSigningHandler,
+	// Registration target dry run (form-submission-registration-targets D6):
+	// opens RegistrationTargetTestModal, which owns the POST.
+	testRegistrationTargetHandler,
 	// Query-aware navigation handler for "View logs" row actions on
 	// parent index pages (#837). Pushes `?<queryParam>=<rowId>` onto the
 	// destination *Logs route. Will be retired once nc-vue#330 lands a
@@ -125,9 +162,24 @@ export default {
 	// Sources page header action (statutory-gateways-and-frameworks): the
 	// gateway catalogue and where data goes.
 	openGatewayCatalogueHandler,
+	// Sources page header action (gateway-openapi-import-and-publish): import
+	// a vendor's OpenAPI document as a source and endpoints.
+	openOpenApiImportHandler,
+	// API inventory row action (gateway-federated-api-discovery REQ-FEDG-003):
+	// open that import with the description a discovered API's gateway exported.
+	bringApiBehindIntegriqHandler,
+	// Intake routing page row actions (messaging-intake-routing-rules REQ-IRE-001):
+	// reorder and enable/disable a rule, each written through saveRule() so
+	// its validation runs on every write.
+	moveIntakeRuleUpHandler,
+	moveIntakeRuleDownHandler,
+	toggleIntakeRuleHandler,
 	// App connections page header action (connection-registry D9): open the
 	// link-a-source dialog via the modal bus.
 	openLinkSourceHandler,
+	// Sources page row action (connections-declare-data-residency): set where a
+	// source processes the data, through the modal bus.
+	setSourceResidencyHandler,
 
 	// Card component for the Catalog index page (connector-catalog-ui):
 	// referenced by `pages[].config.cardComponent: "CatalogItemCard"`.
@@ -149,6 +201,22 @@ export default {
 	// document-generation-vendor-adapter REQ-DGV-004.
 	DocumentGenerationSourcePanel,
 
+	// SourceDetail body widget: the host key an SFTP source's server presents,
+	// and pinning it once the administrator checked it with the partner
+	// (GET/POST /api/sources/{id}/host-key). Renders nothing for any other
+	// kind of source. sources-sftp-adapter REQ-SFTP-001.
+	SourceHostKeyPanel,
+	// ConsumerDetail body widget: the consumer's API keys (generated, shown
+	// once with a copy button, last used, revoked) and its pinned client
+	// certificates, over /api/consumers/{id}/credentials (administrator only).
+	// access-consumer-credentials REQ-CRED-002 to REQ-CRED-004.
+	ConsumerCredentialsPanel,
+	// SourceDetail body widget for a database source: its declared statements,
+	// a test run of a read statement (first page and duration) and the tables
+	// and columns (databaseSource#testStatement and #schema). Renders nothing
+	// for any other kind of source. sources-database-adapter REQ-DBSF-001.
+	DatabaseSourcePanel,
+
 	// SourceDetail body widget: the source's pulls per day and its latest
 	// runs, with Run again on a failed one. Reads runSummary#show.
 	// connection-run-monitoring REQ-CRUN-002 and REQ-CRUN-003.
@@ -159,12 +227,37 @@ export default {
 	// connectors-lti-platform-launch REQ-LTIL-004.
 	LtiPlatformDetails,
 
+	// SourceDetail and EndpointDetail body widget: the CloudEvents receiver URL
+	// of the source (or its pattern on an endpoint), with a copy action.
+	// cloudevents-receiver task 1.4, REQ-017.
+	CloudEventReceiverUrl,
+
 	// The outbound call log (SourceLogs) acts on its calls: a per-row replay
 	// through `slots["row-actions"]`, and bulk replay plus firing by hand
 	// through `actionsComponent`. The API behind them is CallLogController.
 	// outbound-call-delivery-and-replay REQ-OCD-002 and REQ-OCD-003.
 	CallLogRowActions,
+	// Source logs row detail: says when a record has no body because no
+	// investigation window was open (outbound-call-log-investigation-window-page-and-allowlist).
+	CallLogDetail,
 	CallLogActions,
+
+	// The intake inbox (IntakeMessages) routes a held or failed message again:
+	// per row through `slots["row-actions"]`, a selection through
+	// `actionsComponent`. messaging-intake-routing-rules REQ-IRE-003.
+	IntakeMessageRowActions,
+	IntakeMessageActions,
+	// The mail inbox (MailMessages) imports a saved .eml or .msg file, offered
+	// only to a holder of the mail import right. The intake inbox shows the
+	// same action inside IntakeMessageActions. mail-intake REQ-MAIL-002.
+	MailImportAction,
+
+	// The Intake routing page wires `form-dialog` to IntakeRuleEditorModal,
+	// which owns its submit: it saves through saveRule() so validateRule()
+	// refuses a channel without an adapter and a mapping onto a field the case
+	// type lacks, and reads the list again through the slot's `refresh`.
+	// messaging-intake-routing-rules REQ-IRE-001 and REQ-IRE-002.
+	IntakeRuleEditorModal,
 
 	// Slot-override components — referenced by manifest `pages[].slots`
 	// keys. The Jobs page wires `form-fields` to JobFormFields so the
@@ -180,8 +273,8 @@ export default {
 	// hide the embedded-secret fields while brokered (integriq#102).
 	SourceFormFields,
 
-	// The Endpoints page wires `form-fields` to EndpointFormFields to restore
-	// the field set the pre-manifest EditEndpoint modal had: Register + Schema
+	// The Endpoints page wires `form-fields` to EndpointFormFields for the
+	// fields the schema-driven form cannot express: Register + Schema
 	// pickers composing the polymorphic `targetId`, `endpointArray` as a
 	// comma-separated list, method/targetType selects (the schema declares both
 	// as plain strings, no enum), and a configurations multiselect.
@@ -225,9 +318,9 @@ export default {
 	// The Rules page wires `form-dialog` to RuleEditorModal for the same reason:
 	// it hosts RuleConditionGroup, whose leaf rows lay out field + operator +
 	// value and whose operator select alone carries `min-width: 220px`, so the
-	// dialog has to be wider than NcDialog's `normal`. It restores the field set
-	// the pre-manifest EditRule modal had — conditions, order and the error
-	// response were all unreachable through the schema-driven form (enum-less
+	// dialog has to be wider than NcDialog's `normal`. It carries
+	// conditions, order and the error response, which are all unreachable
+	// through the schema-driven form (enum-less
 	// `action`/`timing`/`type` strings, a `type: object` conditions property
 	// that fieldsFromSchema drops, and a nested `configuration.error.*` path).
 	// Per-type parameters beyond `error` stay on RuleDetailPage, which already
@@ -257,6 +350,12 @@ export default {
 	ApprovalsIndex,
 	ApprovalDetail,
 
+	// Developer portal (custom page): public API products and the developer's
+	// own applications, read from the developer-group-checked /api/portal
+	// routes because a developer holds no register rights. See
+	// access-developer-portal-and-subscriptions.
+	DeveloperPortalPage,
+
 	// API Products gateway detail (custom page): endpoint picker, tier
 	// editor, gateway analytics panel, and pending-subscription approve/
 	// reject actions for one api_product. Not expressible as a generic
@@ -275,6 +374,10 @@ export default {
 	// different schemas behind different admin-only endpoints.
 	DeadLettersPage,
 
+	// Outbound destinations (connections-declare-data-residency, custom page):
+	// every place integriq sends data, the verdict and the EU-only switch.
+	EgressDestinationsPage,
+
 	// Migrations index over column_mapping: the form-dialog slot checks a
 	// mapping before every save, and the below-header slot picks a migration
 	// source and runs the read-only test.
@@ -286,6 +389,9 @@ export default {
 	// count + cooldown countdown with a Reset action. See
 	// retry-and-circuit-breaker-policies (REQ-009).
 	CircuitBreakerBadge,
+	// Source detail investigation window (body section): open a window,
+	// see until when bodies are stored, stop early (REQ-OCD-011).
+	BodyCaptureWindow,
 
 	// ZGW Notificaties API Abonnementen (custom page): abonnement CRUD
 	// backed by the dedicated NotificatiesSubscriberController endpoints
@@ -341,8 +447,10 @@ export const registry = {
 	},
 	EventDeliveriesPage: { kind: 'page', component: EventDeliveriesPage },
 	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
+	DeveloperPortalPage: { kind: 'page', component: DeveloperPortalPage },
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
 	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
+	EgressDestinationsPage: { kind: 'page', component: EgressDestinationsPage },
 	FlowDetailSidebar: { kind: 'page', component: FlowDetailSidebar },
 	ApprovalDetail: { kind: 'page', component: ApprovalDetail },
 	TraceDetailPage: { kind: 'page', component: TraceDetailPage },

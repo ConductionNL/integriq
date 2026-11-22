@@ -1,0 +1,341 @@
+{
+  "info": {
+    "name": "Integriq — authentication rule with anyOf (access-consumer-credentials)",
+    "description": "Newman test of task 5 of openspec/changes/access-consumer-credentials (REQ-CRED-005): an endpoint whose authentication rule holds `anyOf` [an API key, basic auth for the admin user] lets a caller through with either method, and answers a caller with neither with 401 and the reason of each method (`details.anyOf`, keyed `<position>:<type>`).\n\nIt creates the rule and the endpoint through OpenRegister and deletes them again in teardown. Run it with tests/postman/integriq.postman_environment.json.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{admin_user}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{admin_password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "ocBase",
+      "value": "{{base_url}}/index.php/apps/integriq/api"
+    },
+    {
+      "key": "orBase",
+      "value": "{{base_url}}/index.php/apps/openregister/api/objects/integriq"
+    },
+    {
+      "key": "anyOfKey",
+      "value": ""
+    },
+    {
+      "key": "anyOfRuleUuid",
+      "value": ""
+    },
+    {
+      "key": "anyOfEndpointUuid",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup (via OpenRegister)",
+      "item": [
+        {
+          "name": "AO.1 create the rule that accepts an API key or basic auth",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/rule",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "rule"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-any-of-auth\", \"action\": \"get\", \"timing\": \"before\", \"type\": \"authentication\", \"conditions\": {}, \"order\": 1, \"isEnabled\": true, \"configuration\": {\"authentication\": {\"anyOf\": [{\"type\": \"apikey\", \"header\": \"X-Api-Key\", \"keys\": [\"{{anyOfKey}}\"]}, {\"type\": \"basic\", \"users\": [\"{{admin_user}}\"], \"groups\": []}]}}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// A fresh key per run, so a key left by an earlier run never passes.",
+                  "pm.collectionVariables.set('anyOfKey', 'any-of-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('anyOfRuleUuid', b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AO.2 create the endpoint behind the rule",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/endpoint",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-any-of-endpoint\", \"endpoint\": \"any-of-newman\", \"method\": \"GET\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"rules\": [\"{{anyOfRuleUuid}}\"]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('anyOfEndpointUuid', b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id)));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Each method passes on its own",
+      "item": [
+        {
+          "name": "AO.3 the API key alone passes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/any-of-newman",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "any-of-newman"
+              ]
+            },
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "{{anyOfKey}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// REQ-CRED-005: the first method, an API key, lets the call through.",
+                  "pm.test('not refused by authentication', () => pm.expect(pm.response.code).to.not.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AO.4 basic auth alone passes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/any-of-newman",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "any-of-newman"
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// REQ-CRED-005: the second method, basic auth for an allowed user, lets the call through without an API key.",
+                  "pm.test('not refused by authentication', () => pm.expect(pm.response.code).to.not.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Neither method",
+      "item": [
+        {
+          "name": "AO.5 a call with neither is refused with both reasons",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/any-of-newman",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "any-of-newman"
+              ]
+            },
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "not-the-key"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// REQ-CRED-005: with neither method the 401 lists the reason of each, keyed by position and type.",
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "const b = pm.response.json();",
+                  "pm.test('unauthorized', () => pm.expect(b.error).to.eql('unauthorized'));",
+                  "const reasons = (b.details && b.details.anyOf) || [];",
+                  "pm.test('one reason per method', () => pm.expect(reasons.map((r) => r.method)).to.eql(['0:apikey', '1:basic']));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Teardown (via OpenRegister)",
+      "item": [
+        {
+          "name": "AO.6 cleanup — DELETE endpoint",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/endpoint/{{anyOfEndpointUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "{{anyOfEndpointUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AO.7 cleanup — DELETE rule",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/rule/{{anyOfRuleUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "rule",
+                "{{anyOfRuleUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

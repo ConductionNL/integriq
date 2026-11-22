@@ -31,8 +31,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Event;
 
-use OCP\EventDispatcher\Event;
-
 /**
  * Typed cross-app question: "search this connection for these terms".
  *
@@ -41,21 +39,22 @@ use OCP\EventDispatcher\Event;
  *
  * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
  */
-class DocumentSearchRequestedEvent extends Event {
+class DocumentSearchRequestedEvent extends DocumentConnectionRequestEvent {
 
 	/**
-	 * Whether integriq answered.
-	 *
-	 * @var bool
+	 * The Microsoft 365 source: files, mail and Teams.
 	 */
-	private bool $handled = false;
+	public const PLATFORM_MICROSOFT_365 = 'microsoft-365';
 
 	/**
-	 * The answer: `{hits, moreCount, notices}`.
-	 *
-	 * @var array<string,mixed>|null
+	 * Accepted as a name for the Microsoft 365 source.
 	 */
-	private ?array $result = null;
+	public const PLATFORM_MICROSOFT_TEAMS = 'microsoft-teams';
+
+	/**
+	 * Nextcloud Talk, searched as the requesting person.
+	 */
+	public const PLATFORM_NEXTCLOUD_TALK = 'nextcloud-talk';
 
 	/**
 	 * Constructor.
@@ -68,54 +67,24 @@ class DocumentSearchRequestedEvent extends Event {
 	 * @param string|null       $to            End of the period, Y-m-d, or null.
 	 * @param array<int,string> $entityTypes   `driveItem`, `message`, `chatMessage`; empty for all.
 	 * @param int               $limit         At most this many hits.
+	 * @param array<int,string> $platforms     `microsoft-365` (or `microsoft-teams`), `nextcloud-talk`; empty for both.
 	 *
 	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
+	 * @spec openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-nextcloud-talk-is-a-searchable-source-as-the-requesting-person-req-dcc-011
 	 */
 	public function __construct(
-		private readonly string $sourceApp,
-		private readonly string $connectionKey,
-		private readonly string $userId,
+		string $sourceApp,
+		string $connectionKey,
+		string $userId,
 		private readonly string $terms,
 		private readonly ?string $from = null,
 		private readonly ?string $to = null,
 		private readonly array $entityTypes = [],
 		private readonly int $limit = 50,
+		private readonly array $platforms = [],
 	) {
-		parent::__construct();
+		parent::__construct(sourceApp: $sourceApp, connectionKey: $connectionKey, userId: $userId);
 	}//end __construct()
-
-	/**
-	 * The asking app id.
-	 *
-	 * @return string The app id.
-	 *
-	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
-	 */
-	public function getSourceApp(): string {
-		return $this->sourceApp;
-	}//end getSourceApp()
-
-	/**
-	 * The linked connection.
-	 *
-	 * @return string The connection key.
-	 *
-	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
-	 */
-	public function getConnectionKey(): string {
-		return $this->connectionKey;
-	}//end getConnectionKey()
-
-	/**
-	 * The person the search runs for.
-	 *
-	 * @return string The user id.
-	 *
-	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
-	 */
-	public function getUserId(): string {
-		return $this->userId;
-	}//end getUserId()
 
 	/**
 	 * The search terms.
@@ -173,38 +142,35 @@ class DocumentSearchRequestedEvent extends Event {
 	}//end getLimit()
 
 	/**
-	 * Record the answer and mark the event handled.
+	 * The platforms asked for.
 	 *
-	 * @param array<string,mixed> $result `{hits, moreCount, notices}`.
+	 * @return array<int,string> The platforms; empty for both.
 	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
+	 * @spec openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-nextcloud-talk-is-a-searchable-source-as-the-requesting-person-req-dcc-011
 	 */
-	public function setResult(array $result): void {
-		$this->result = $result;
-		$this->handled = true;
-	}//end setResult()
+	public function getPlatforms(): array {
+		return $this->platforms;
+	}//end getPlatforms()
 
 	/**
-	 * Whether integriq answered.
+	 * Whether a platform is to be searched: every platform when none is named.
 	 *
-	 * @return bool True when handled.
+	 * @param string $platform PLATFORM_MICROSOFT_365 or PLATFORM_NEXTCLOUD_TALK.
 	 *
-	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
+	 * @return bool True when it is searched.
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-nextcloud-talk-is-a-searchable-source-as-the-requesting-person-req-dcc-011
 	 */
-	public function isHandled(): bool {
-		return $this->handled;
-	}//end isHandled()
+	public function wantsPlatform(string $platform): bool {
+		if ($this->platforms === []) {
+			return true;
+		}
 
-	/**
-	 * The answer, once handled.
-	 *
-	 * @return array<string,mixed>|null The answer.
-	 *
-	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009
-	 */
-	public function getResult(): ?array {
-		return $this->result;
-	}//end getResult()
+		$asked = $this->platforms;
+		if (in_array(self::PLATFORM_MICROSOFT_TEAMS, $asked, true) === true) {
+			$asked[] = self::PLATFORM_MICROSOFT_365;
+		}
+
+		return in_array($platform, $asked, true);
+	}//end wantsPlatform()
 }//end class

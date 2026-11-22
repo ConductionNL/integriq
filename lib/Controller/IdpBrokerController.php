@@ -29,7 +29,10 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Auth\Idp\EnvelopeExchangeServiceInterface;
 use OCA\Integriq\Auth\Idp\IdpLoginServiceInterface;
+use OCA\Integriq\Auth\Idp\TrustLevelMapper;
 use OCA\Integriq\Exception\IdpAssertionException;
+use OCA\Integriq\Exception\IdpAssuranceBelowFloorException;
+use OCA\Integriq\Exception\IdpDisclosureIncompleteException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -50,6 +53,13 @@ use Psr\Log\LoggerInterface;
 class IdpBrokerController extends Controller {
 
 	/**
+	 * Names the level used and the floor on the refusal page.
+	 *
+	 * @var TrustLevelMapper
+	 */
+	private readonly TrustLevelMapper $trustMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
@@ -58,6 +68,7 @@ class IdpBrokerController extends Controller {
 	 * @param IdpLoginServiceInterface $loginService Starts and finishes the browser login.
 	 * @param IL10N $l10n Translates the error page.
 	 * @param LoggerInterface $logger Records why a start or a callback was refused.
+	 * @param TrustLevelMapper|null $trustMapper Names the level used and the floor on the refusal page.
 	 */
 	public function __construct(
 		string $appName,
@@ -66,8 +77,10 @@ class IdpBrokerController extends Controller {
 		private readonly IdpLoginServiceInterface $loginService,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
+		?TrustLevelMapper $trustMapper = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->trustMapper = ($trustMapper ?? new TrustLevelMapper());
 
 	}//end __construct()
 
@@ -135,11 +148,16 @@ class IdpBrokerController extends Controller {
 	 * accepted call stores a state for five minutes, so the limit bounds how
 	 * much cache one address can fill.
 	 *
-	 * @param string $provider `digid`, `eherkenning` or `eidas`.
+	 * A Yivi login also names the attributes to disclose (`attributes`,
+	 * comma-separated ids); a list that is empty or names one the
+	 * organisation does not allow is refused the same way.
+	 *
+	 * @param string $provider `digid`, `eherkenning`, `eidas` or `yivi`.
 	 *
 	 * @return RedirectResponse|TemplateResponse The redirect to the identity provider, or the error page.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -154,6 +172,7 @@ class IdpBrokerController extends Controller {
 					'trust' => (string)($this->request->getParam('trust') ?? ''),
 					'returnUrl' => (string)($this->request->getParam('returnUrl') ?? ''),
 					'relayState' => (string)($this->request->getParam('relayState') ?? ''),
+					'attributes' => (string)($this->request->getParam('attributes') ?? ''),
 				]
 			);
 		} catch (IdpAssertionException $exception) {
@@ -180,11 +199,13 @@ class IdpBrokerController extends Controller {
 	 * target of every provider response, so the limit is generous but bounds
 	 * a replay loop.
 	 *
-	 * @param string $provider `digid`, `eherkenning` or `eidas`.
+	 * @param string $provider `digid`, `eherkenning`, `eidas` or `yivi`.
 	 *
-	 * @return RedirectResponse|TemplateResponse The redirect to the consumer, or the error page.
+	 * @return RedirectResponse|TemplateResponse The redirect to the consumer, the floor refusal page, or the error page.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -192,6 +213,12 @@ class IdpBrokerController extends Controller {
 	public function callback(string $provider): RedirectResponse|TemplateResponse {
 		try {
 			$redirectUrl = $this->loginService->callback(provider: $provider, callback: $this->request->getParams());
+		} catch (IdpAssuranceBelowFloorException $exception) {
+			// The one refusal that is explained: the service already logged it.
+			return $this->belowFloorPage(refusal: $exception);
+		} catch (IdpDisclosureIncompleteException $exception) {
+			// Explained too: the person can go back and share what was asked.
+			return $this->disclosureIncompletePage(refusal: $exception);
 		} catch (IdpAssertionException $exception) {
 			$this->logger->warning(
 				'Integriq idp-broker: a login response was refused: ' . $exception->getMessage(),
@@ -204,6 +231,109 @@ class IdpBrokerController extends Controller {
 		return new RedirectResponse($redirectUrl);
 
 	}//end callback()
+
+	/**
+	 * Integriq's own page for a login below the assurance floor.
+	 *
+	 * It names the level the person used, the level this service needs and
+	 * how to get it for that provider, and has one action: back to the
+	 * consumer with `error=assurance_below_floor` and the relay state.
+	 *
+	 * @param IdpAssuranceBelowFloorException $refusal The refusal, with the address to go back to.
+	 *
+	 * @return TemplateResponse The page, with status 403.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	private function belowFloorPage(IdpAssuranceBelowFloorException $refusal): TemplateResponse {
+		$provider = $refusal->getProvider();
+
+		return $this->refusalPage(
+			text: [
+				'title' => $this->l10n->t('This service needs a stronger login'),
+				'message' => $this->l10n->t(
+					'You logged in with %1$s. This service needs at least %2$s.',
+					[
+						$this->trustMapper->levelLabel(provider: $provider, level: $refusal->getLevelUsed()),
+						$this->trustMapper->floorLabel(provider: $provider),
+					]
+				),
+				'hint' => $this->howToGetTheFloor(provider: $provider),
+			],
+			actionUrl: $refusal->getReturnUrl()
+		);
+
+	}//end belowFloorPage()
+
+	/**
+	 * Integriq's own page for a refusal it explains, with one action back to the consumer.
+	 *
+	 * @param array{title: string, message: string, hint: string} $text      What the page says.
+	 * @param string                                              $actionUrl Where its one action leads.
+	 *
+	 * @return TemplateResponse The page, with status 403.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	private function refusalPage(array $text, string $actionUrl): TemplateResponse {
+		$response = new TemplateResponse(
+			appName: $this->appName,
+			templateName: 'idp/refused',
+			params: array_merge($text, ['action' => $this->l10n->t('Go back'), 'actionUrl' => $actionUrl]),
+			renderAs: TemplateResponse::RENDER_AS_GUEST
+		);
+		$response->setStatus(status: Http::STATUS_FORBIDDEN);
+
+		return $response;
+
+	}//end refusalPage()
+
+	/**
+	 * Integriq's own page for an attribute login that shared less than it asked.
+	 *
+	 * Its one action goes back to the consumer with
+	 * `error=attributes_not_disclosed` and the relay state.
+	 *
+	 * @param IdpDisclosureIncompleteException $refusal The refusal, with the address to go back to.
+	 *
+	 * @return TemplateResponse The page, with status 403.
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	private function disclosureIncompletePage(IdpDisclosureIncompleteException $refusal): TemplateResponse {
+		return $this->refusalPage(
+			text: [
+				'title' => $this->l10n->t('You did not share all the requested details'),
+				'message' => $this->l10n->t('This service asked for details that were not shared in the Yivi app.'),
+				'hint' => $this->l10n->t('Go back and share every detail the service asks for to continue.'),
+			],
+			actionUrl: $refusal->getReturnUrl()
+		);
+
+	}//end disclosureIncompletePage()
+
+	/**
+	 * How a person gets a means at the floor, for one provider.
+	 *
+	 * @param string $provider The provider id.
+	 *
+	 * @return string The advice.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	private function howToGetTheFloor(string $provider): string {
+		return match ($provider) {
+			TrustLevelMapper::PROVIDER_DIGID => $this->l10n->t(
+				'Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.'
+			),
+			TrustLevelMapper::PROVIDER_EHERKENNING => $this->l10n->t(
+				'Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.'
+			),
+			default => $this->l10n->t('Log in with a means at eIDAS level substantial or high.'),
+		};
+
+	}//end howToGetTheFloor()
 
 	/**
 	 * Integriq's own error page for a login that cannot go anywhere safe.

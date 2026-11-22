@@ -17,12 +17,19 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\BackgroundJob;
 
 use DateTime;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -90,6 +97,7 @@ class LogCleanUpTask extends TimedJob {
 	 */
 	private function cleanupSchema(string $schema, array $only = []): void {
 		$now = (new DateTime())->format('Y-m-d H:i:s');
+		// System path: the cron clean-up expires the logs of every organisation.
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
@@ -113,7 +121,8 @@ class LogCleanUpTask extends TimedJob {
 			}
 
 			try {
-				$this->orObjectService->deleteObject(uuid: $object->getUuid(), _rbac: false, _multitenancy: false);
+				// System path: the cron clean-up expires the logs of every organisation.
+				$this->orObjectService->deleteObject(new ObjectDeletion(uuid: $object->getUuid()), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Continue with remaining objects even if one deletion fails.
 				$this->logger->warning(
@@ -139,6 +148,7 @@ class LogCleanUpTask extends TimedJob {
 	 */
 	public function stripExpiredBodies(): int {
 		$now = new DateTime();
+		// System path: the cron clean-up expires the logs of every organisation.
 		$matches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
@@ -165,14 +175,16 @@ class LogCleanUpTask extends TimedJob {
 			$record['bodyExpiredAt'] = $now->format('c');
 
 			try {
+				// System path: the cron clean-up expires the logs of every organisation.
 				$this->orObjectService->saveObject(
 					object: $record,
-					register: 'integriq',
-					schema: 'call_log',
-					uuid: $object->getUuid(),
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+						uuid: $object->getUuid(),
+						policy: new SavePolicy(silent: true)
+					),
 					_rbac: false,
-					_multitenancy: false,
-					silent: true
+					_multitenancy: false
 				);
 				$stripped++;
 			} catch (\Exception $e) {

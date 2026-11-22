@@ -326,6 +326,15 @@
                 }
             ],
             [
+                "or.mapper.findAll",
+                {
+                    "limit": 1,
+                    "filter": {
+                        "pdokId": "adr-1"
+                    }
+                }
+            ],
+            [
                 "log.debug",
                 "PdokConnector upstream call",
                 {
@@ -390,6 +399,15 @@
                 {
                     "register": "integriq",
                     "schema": "addresses"
+                }
+            ],
+            [
+                "or.mapper.findAll",
+                {
+                    "limit": 1,
+                    "filter": {
+                        "pdokId": "adr-1"
+                    }
                 }
             ],
             [
@@ -639,6 +657,19 @@
                 }
             ],
             [
+                "or.mapper.findAll",
+                {
+                    "limit": 1,
+                    "geo": {
+                        "near": [
+                            52.37,
+                            4.88
+                        ],
+                        "radius": 10
+                    }
+                }
+            ],
+            [
                 "http.get",
                 "https://api.pdok.nl/bzk/locatieserver/search/v3_1/reverse",
                 {
@@ -792,6 +823,19 @@
                 }
             ],
             [
+                "or.mapper.findAll",
+                {
+                    "limit": 1,
+                    "geo": {
+                        "near": [
+                            52.37,
+                            4.88
+                        ],
+                        "radius": 10
+                    }
+                }
+            ],
+            [
                 "http.get",
                 "https://api.pdok.nl/bzk/locatieserver/search/v3_1/reverse",
                 {
@@ -904,6 +948,392 @@
                 "PdokConnector upstream call",
                 {
                     "endpoint": "reverse",
+                    "cache_hit": false,
+                    "or_hit": false,
+                    "upstream_latency_ms": "(ms)",
+                    "http_status": 200,
+                    "circuit_state": "closed",
+                    "write_through": true
+                }
+            ]
+        ]
+    },
+    "reverse-stored-fresh": {
+        "result": {
+            "docs": [
+                {
+                    "pdokId": "adr-2",
+                    "fetchedAt": "(fresh)"
+                }
+            ],
+            "numFound": 1
+        },
+        "calls": [
+            [
+                "or.getMapper",
+                {
+                    "register": "integriq",
+                    "schema": "addresses"
+                }
+            ],
+            [
+                "or.mapper.findAll",
+                {
+                    "limit": 1,
+                    "geo": {
+                        "near": [
+                            52.37,
+                            4.88
+                        ],
+                        "radius": 10
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "PdokConnector upstream call",
+                {
+                    "endpoint": "reverse",
+                    "cache_hit": true,
+                    "or_hit": true,
+                    "upstream_latency_ms": null,
+                    "http_status": null,
+                    "circuit_state": "closed",
+                    "write_through": false
+                }
+            ],
+            [
+                "cache.set",
+                "answer",
+                3600,
+                {
+                    "docs": [
+                        {
+                            "pdokId": "adr-2",
+                            "fetchedAt": "(fresh)"
+                        }
+                    ],
+                    "numFound": 1
+                }
+            ]
+        ]
+    },
+    "lookup-stored-throws": {
+        "result": {
+            "docs": [
+                {
+                    "pdokId": "adr-0363200000218908",
+                    "displayName": "Lauriergracht 14H, 1016RD Amsterdam",
+                    "streetAddress": "Lauriergracht",
+                    "houseNumber": "14h",
+                    "houseNumberAddition": null,
+                    "postalCode": "1016RD",
+                    "addressLocality": "Amsterdam",
+                    "addressRegion": "Noord-Holland",
+                    "addressCountry": "NL",
+                    "bagAddressId": "0363200000218908",
+                    "bagBuildingId": [
+                        "0363100012170432"
+                    ],
+                    "location": {
+                        "type": "Point",
+                        "coordinates": [
+                            4.8825,
+                            52.371
+                        ]
+                    },
+                    "source": "pdok",
+                    "fetchedAt": "(clock)"
+                }
+            ],
+            "numFound": 1
+        },
+        "calls": [
+            [
+                "or.getMapper",
+                {
+                    "register": "integriq",
+                    "schema": "addresses"
+                }
+            ],
+            [
+                "or.mapper.findAll",
+                {
+                    "limit": 1,
+                    "filter": {
+                        "pdokId": "adr-1"
+                    }
+                }
+            ],
+            [
+                "log.warning",
+                "PdokConnector: OR lookup failed",
+                {
+                    "endpoint": "lookup",
+                    "exception": "register query failed"
+                }
+            ],
+            [
+                "http.get",
+                "https://api.pdok.nl/bzk/locatieserver/search/v3_1/lookup",
+                {
+                    "query": {
+                        "id": "adr-1"
+                    },
+                    "timeout": 10
+                }
+            ],
+            [
+                "cache.set",
+                "circuit",
+                0,
+                "closed"
+            ],
+            [
+                "cache.set",
+                "answer",
+                3600,
+                {
+                    "docs": [
+                        {
+                            "pdokId": "adr-0363200000218908",
+                            "displayName": "Lauriergracht 14H, 1016RD Amsterdam",
+                            "streetAddress": "Lauriergracht",
+                            "houseNumber": "14h",
+                            "houseNumberAddition": null,
+                            "postalCode": "1016RD",
+                            "addressLocality": "Amsterdam",
+                            "addressRegion": "Noord-Holland",
+                            "addressCountry": "NL",
+                            "bagAddressId": "0363200000218908",
+                            "bagBuildingId": [
+                                "0363100012170432"
+                            ],
+                            "location": {
+                                "type": "Point",
+                                "coordinates": [
+                                    4.8825,
+                                    52.371
+                                ]
+                            },
+                            "source": "pdok",
+                            "fetchedAt": "(clock)"
+                        }
+                    ],
+                    "numFound": 1
+                }
+            ],
+            [
+                "or.findAll",
+                {
+                    "limit": 1,
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "addresses",
+                        "pdokId": "adr-0363200000218908"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "or.saveObject",
+                {
+                    "register": "integriq",
+                    "schema": "addresses",
+                    "object": {
+                        "pdokId": "adr-0363200000218908",
+                        "displayName": "Lauriergracht 14H, 1016RD Amsterdam",
+                        "streetAddress": "Lauriergracht",
+                        "houseNumber": "14h",
+                        "houseNumberAddition": null,
+                        "postalCode": "1016RD",
+                        "addressLocality": "Amsterdam",
+                        "addressRegion": "Noord-Holland",
+                        "addressCountry": "NL",
+                        "bagAddressId": "0363200000218908",
+                        "bagBuildingId": [
+                            "0363100012170432"
+                        ],
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [
+                                4.8825,
+                                52.371
+                            ]
+                        },
+                        "source": "pdok",
+                        "fetchedAt": "(clock)"
+                    },
+                    "uuid": null,
+                    "_rbac": false,
+                    "_multitenancy": true
+                }
+            ],
+            [
+                "log.debug",
+                "PdokConnector upstream call",
+                {
+                    "endpoint": "lookup",
+                    "cache_hit": false,
+                    "or_hit": false,
+                    "upstream_latency_ms": "(ms)",
+                    "http_status": 200,
+                    "circuit_state": "closed",
+                    "write_through": true
+                }
+            ]
+        ]
+    },
+    "lookup-stored-without-fetchedAt": {
+        "result": {
+            "docs": [
+                {
+                    "pdokId": "adr-0363200000218908",
+                    "displayName": "Lauriergracht 14H, 1016RD Amsterdam",
+                    "streetAddress": "Lauriergracht",
+                    "houseNumber": "14h",
+                    "houseNumberAddition": null,
+                    "postalCode": "1016RD",
+                    "addressLocality": "Amsterdam",
+                    "addressRegion": "Noord-Holland",
+                    "addressCountry": "NL",
+                    "bagAddressId": "0363200000218908",
+                    "bagBuildingId": [
+                        "0363100012170432"
+                    ],
+                    "location": {
+                        "type": "Point",
+                        "coordinates": [
+                            4.8825,
+                            52.371
+                        ]
+                    },
+                    "source": "pdok",
+                    "fetchedAt": "(clock)"
+                }
+            ],
+            "numFound": 1
+        },
+        "calls": [
+            [
+                "or.getMapper",
+                {
+                    "register": "integriq",
+                    "schema": "addresses"
+                }
+            ],
+            [
+                "or.mapper.findAll",
+                {
+                    "limit": 1,
+                    "filter": {
+                        "pdokId": "adr-1"
+                    }
+                }
+            ],
+            [
+                "http.get",
+                "https://api.pdok.nl/bzk/locatieserver/search/v3_1/lookup",
+                {
+                    "query": {
+                        "id": "adr-1"
+                    },
+                    "timeout": 10
+                }
+            ],
+            [
+                "cache.set",
+                "circuit",
+                0,
+                "closed"
+            ],
+            [
+                "cache.set",
+                "answer",
+                3600,
+                {
+                    "docs": [
+                        {
+                            "pdokId": "adr-0363200000218908",
+                            "displayName": "Lauriergracht 14H, 1016RD Amsterdam",
+                            "streetAddress": "Lauriergracht",
+                            "houseNumber": "14h",
+                            "houseNumberAddition": null,
+                            "postalCode": "1016RD",
+                            "addressLocality": "Amsterdam",
+                            "addressRegion": "Noord-Holland",
+                            "addressCountry": "NL",
+                            "bagAddressId": "0363200000218908",
+                            "bagBuildingId": [
+                                "0363100012170432"
+                            ],
+                            "location": {
+                                "type": "Point",
+                                "coordinates": [
+                                    4.8825,
+                                    52.371
+                                ]
+                            },
+                            "source": "pdok",
+                            "fetchedAt": "(clock)"
+                        }
+                    ],
+                    "numFound": 1
+                }
+            ],
+            [
+                "or.findAll",
+                {
+                    "limit": 1,
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "addresses",
+                        "pdokId": "adr-0363200000218908"
+                    }
+                },
+                true,
+                true
+            ],
+            [
+                "or.saveObject",
+                {
+                    "register": "integriq",
+                    "schema": "addresses",
+                    "object": {
+                        "pdokId": "adr-0363200000218908",
+                        "displayName": "Lauriergracht 14H, 1016RD Amsterdam",
+                        "streetAddress": "Lauriergracht",
+                        "houseNumber": "14h",
+                        "houseNumberAddition": null,
+                        "postalCode": "1016RD",
+                        "addressLocality": "Amsterdam",
+                        "addressRegion": "Noord-Holland",
+                        "addressCountry": "NL",
+                        "bagAddressId": "0363200000218908",
+                        "bagBuildingId": [
+                            "0363100012170432"
+                        ],
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [
+                                4.8825,
+                                52.371
+                            ]
+                        },
+                        "source": "pdok",
+                        "fetchedAt": "(clock)"
+                    },
+                    "uuid": null,
+                    "_rbac": false,
+                    "_multitenancy": true
+                }
+            ],
+            [
+                "log.debug",
+                "PdokConnector upstream call",
+                {
+                    "endpoint": "lookup",
                     "cache_hit": false,
                     "or_hit": false,
                     "upstream_latency_ms": "(ms)",

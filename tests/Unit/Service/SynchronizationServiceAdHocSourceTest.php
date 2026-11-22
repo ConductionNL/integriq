@@ -16,6 +16,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -35,6 +38,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests REQ-012: ad-hoc Source resolution never persists a new Source.
@@ -98,7 +102,9 @@ class SynchronizationServiceAdHocSourceTest extends TestCase {
 		// write ever happens (other schemas — e.g. `synchronization` for the
 		// non-test run's targetLastSynced — are legitimate).
 		$this->orObjectService->method('saveObject')->willReturnCallback(
-			function ($object, ?string $register = null, ?string $schema = null, ...$rest) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true, ...$rest) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->savedSchemas[] = (string)$schema;
 
 				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) ? $object : [], 'saved-uuid');

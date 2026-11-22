@@ -17,6 +17,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -24,9 +27,12 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
-use Jose\Component\KeyManagement\JWKFactory;
 use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\Integriq\Service\PemKeyFile;
+use OCA\Integriq\Service\PemKeyFileRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Security\ICrypto;
@@ -154,14 +160,9 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		try {
 			return $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'integriq',
-				schema: $registrationType,
+				options: new ObjectFindOptions(register: 'integriq', schema: $registrationType, render: false),
 				_rbac: false,
-				_multitenancy: false,
-				// `signingKeys` is writeOnly (register.d/99-lti-*-secrets-writeonly.json)
-				// and the rendered read strips writeOnly unconditionally, also under
-				// `_rbac: false` (openregister#460). Unrendered, the keys are there.
-				_render: false
+				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
 			throw new LtiValidationException(
@@ -241,25 +242,9 @@ class LtiKeyService implements LtiKeyServiceInterface {
 	 * @throws RuntimeException When a secure temp file cannot be allocated.
 	 */
 	private function derivePublicJwk(string $pem, string $kid, string $algorithm): array {
-		$filename = tempnam(sys_get_temp_dir(), 'oc-lti-key-');
-		if ($filename === false) {
+		$jwk = PemKeyFile::jwk(request: new PemKeyFileRequest(prefix: 'oc-lti-key-', pem: $pem, kid: $kid, algorithm: $algorithm));
+		if ($jwk === null) {
 			throw new RuntimeException('Could not allocate temp file for LTI key generation');
-		}
-
-		@chmod($filename, 0600);
-		file_put_contents($filename, $pem);
-		@chmod($filename, 0600);
-
-		try {
-			$jwk = JWKFactory::createFromKeyFile(
-				$filename,
-				null,
-				['kid' => $kid, 'alg' => $algorithm, 'use' => 'sig']
-			);
-		} finally {
-			if (file_exists($filename) === true) {
-				@unlink($filename);
-			}
 		}
 
 		return $jwk->toPublic()->jsonSerialize();
@@ -382,9 +367,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: $registrationType,
-			uuid: $registration->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 		);
 
 		$this->logger->info(
@@ -443,9 +426,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: $registrationType,
-			uuid: $registration->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 		);
 
 		$this->logger->info(
@@ -495,9 +476,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: $registrationType,
-			uuid: $registration->getUuid()
+			options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 		);
 
 		$this->logger->info(
@@ -645,6 +624,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 					],
 				],
 				_rbac: false,
+				// Unscoped: background key rotation, no user session.
 				_multitenancy: false
 			);
 			$registrations = ($matches['results'] ?? $matches);
@@ -677,9 +657,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 					$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 					$this->orObjectService->saveObject(
 						object: $data,
-						register: 'integriq',
-						schema: $registrationType,
-						uuid: $registration->getUuid()
+						options: RegisterSave::options(register: 'integriq', schema: $registrationType, uuid: $registration->getUuid())
 					);
 				}
 			}//end foreach

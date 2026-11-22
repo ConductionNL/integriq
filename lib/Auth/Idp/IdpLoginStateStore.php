@@ -58,11 +58,14 @@ class IdpLoginStateStore {
 	public const TTL_SECONDS = 300;
 
 	/**
-	 * The fields a state carries.
+	 * The fields a state carries. `attributes` is the comma-separated list of
+	 * attribute ids an attribute login asked for, empty for any other login.
 	 *
 	 * @var array<int,string>
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
 	 */
-	public const FIELDS = ['nonce', 'organisation', 'consumer', 'provider', 'trust', 'returnUrl', 'relayState', 'expiresAt'];
+	public const FIELDS = ['nonce', 'organisation', 'consumer', 'provider', 'trust', 'returnUrl', 'relayState', 'attributes', 'expiresAt'];
 
 	/**
 	 * The shared cache, or null when this instance has none that qualifies.
@@ -77,14 +80,7 @@ class IdpLoginStateStore {
 	 * @param ICacheFactory $cacheFactory The Nextcloud cache factory.
 	 */
 	public function __construct(ICacheFactory $cacheFactory) {
-		if ($cacheFactory->isAvailable() === false) {
-			return;
-		}
-
-		$cache = $cacheFactory->createDistributed(self::CACHE_PREFIX . '.');
-		if ($cache instanceof IMemcache) {
-			$this->cache = $cache;
-		}
+		$this->cache = AtomicCache::distributed(cacheFactory: $cacheFactory, prefix: self::CACHE_PREFIX);
 
 	}//end __construct()
 

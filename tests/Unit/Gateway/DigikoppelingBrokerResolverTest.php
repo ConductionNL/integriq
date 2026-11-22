@@ -219,4 +219,153 @@ class DigikoppelingBrokerResolverTest extends TestCase {
 
 		$this->assertFalse($binding->test(['kind' => 'external', 'baseUrl' => ''])['ok']);
 	}//end testAnExternalBindingWithNoBaseUrlFails()
+
+	/**
+	 * Every binding test, recorded: the binding (or the stored one), what was
+	 * fetched, the verdict, the usable flag and the log line.
+	 *
+	 * Regenerate with ZGW_BINDING_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryBindingTestMatchesTheGoldenFile(): void {
+		$external = ['kind' => 'external', 'name' => 'Zaken', 'baseUrl' => 'https://zaken.example.nl/api/v1/'];
+		$cases = [
+			'stored nothing' => [null, null, 200],
+			'stored external' => [null, (string)json_encode($external), 200],
+			'stored kindless' => [null, '{"baseUrl":"https://x.example"}', 200],
+			'openregister' => [['kind' => 'openregister'], null, 200],
+			'no kind given' => [['baseUrl' => 'https://x.example'], null, 200],
+			'external without url' => [['kind' => 'external'], null, 200],
+			'external 200' => [$external, null, 200],
+			'external 401' => [$external, null, 401],
+			'external 403' => [$external, null, 403],
+			'external 404' => [$external, null, 404],
+			'external 499' => [$external, null, 499],
+			'external 500' => [$external, null, 500],
+			'external 503' => [$external, null, 503],
+			'external unreachable' => [$external, null, 0],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => [$given, $stored, $status]) {
+			$this->config = [];
+			if ($stored !== null) {
+				$this->config[ZgwRegistryBinding::BINDING_KEY] = $stored;
+			}
+
+			$calls = [];
+			$response = $this->createMock(IResponse::class);
+			$response->method('getStatusCode')->willReturn($status);
+			$client = $this->createMock(IClient::class);
+			$client->method('get')->willReturnCallback(function (string $url, array $options) use (&$calls, $response, $status) {
+				$calls[] = ['get', $url, $options];
+				if ($status === 0) {
+					throw new RuntimeException('Could not resolve host');
+				}
+
+				return $response;
+			});
+			$clientService = $this->createMock(IClientService::class);
+			$clientService->method('newClient')->willReturn($client);
+			$logger = $this->createMock(LoggerInterface::class);
+			$logger->method('warning')->willReturnCallback(function (string $message, array $context) use (&$calls): void {
+				$calls[] = ['warning', $message, $context];
+			});
+
+			$verdict = (new ZgwRegistryBinding($this->appConfig(), $clientService, $logger))->test($given);
+			$actual[$name] = ['verdict' => $verdict, 'calls' => $calls, 'stored' => $this->config];
+		}
+
+		$golden = __DIR__ . '/../../fixtures/golden/zgw-registry-binding-test.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (getenv('ZGW_BINDING_GOLDEN') === '1') {
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryBindingTestMatchesTheGoldenFile()
+
+	/**
+	 * Every resolve and select, recorded: the stored config before, the
+	 * answer or refusal, what is stored after and the log line.
+	 *
+	 * Regenerate with DIGIKOPPELING_BROKER_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryResolveAndSelectMatchesTheGoldenFile(): void {
+		$two = (string)json_encode(['logius' => ['endpoint' => 'https://a.test/wus', 'label' => 'A'], 'gemma' => ['endpoint' => 'https://b.test/wus']]);
+		$noEndpoint = (string)json_encode(['logius' => ['label' => 'A'], 'gemma' => ['endpoint' => '']]);
+		$cases = [
+			'resolve, nothing configured' => [[], ['resolve']],
+			'resolve, none selected' => [[DigikoppelingBrokerResolver::BROKERS_KEY => $two], ['resolve']],
+			'resolve, brokers not json' => [[DigikoppelingBrokerResolver::BROKERS_KEY => 'x', DigikoppelingBrokerResolver::SELECTED_KEY => 'logius'], ['resolve']],
+			'resolve, unknown, none configured' => [[DigikoppelingBrokerResolver::SELECTED_KEY => 'logius'], ['resolve']],
+			'resolve, unknown' => [[DigikoppelingBrokerResolver::BROKERS_KEY => $two, DigikoppelingBrokerResolver::SELECTED_KEY => 'x'], ['resolve']],
+			'resolve, no endpoint' => [[DigikoppelingBrokerResolver::BROKERS_KEY => $noEndpoint, DigikoppelingBrokerResolver::SELECTED_KEY => 'logius'], ['resolve']],
+			'resolve, empty endpoint' => [[DigikoppelingBrokerResolver::BROKERS_KEY => $noEndpoint, DigikoppelingBrokerResolver::SELECTED_KEY => 'gemma'], ['resolve']],
+			'resolve, selected' => [[DigikoppelingBrokerResolver::BROKERS_KEY => $two, DigikoppelingBrokerResolver::SELECTED_KEY => 'logius'], ['resolve']],
+			'select, none configured' => [[], ['select', 'logius', 'u']],
+			'select, unknown' => [[DigikoppelingBrokerResolver::BROKERS_KEY => $two], ['select', 'x', 'u']],
+			'select, first time' => [[DigikoppelingBrokerResolver::BROKERS_KEY => $two], ['select', 'gemma', 'u']],
+			'select, a change with history' => [[DigikoppelingBrokerResolver::BROKERS_KEY => $two, DigikoppelingBrokerResolver::SELECTED_KEY => 'logius', DigikoppelingBrokerResolver::AUDIT_KEY => '[{"from":null,"to":"logius","by":"a","at":"t"}]'], ['select', 'gemma', '']],
+			'select, audit not json' => [[DigikoppelingBrokerResolver::BROKERS_KEY => $two, DigikoppelingBrokerResolver::AUDIT_KEY => 'x'], ['select', 'logius', 'u']],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => [$config, $call]) {
+			$this->config = $config;
+			$logged = [];
+			$logger = $this->createMock(LoggerInterface::class);
+			$logger->method('info')->willReturnCallback(function (string $message, array $context) use (&$logged): void {
+				$logged[] = [$message, $context];
+			});
+			$resolver = new DigikoppelingBrokerResolver($this->appConfig(), $logger);
+			try {
+				$answer = match ($call[0]) {
+					'resolve' => $resolver->resolve(),
+					'select' => $resolver->select($call[1], $call[2]),
+				};
+			} catch (BrokerConfigurationException $e) {
+				$answer = 'refused: ' . $e->getMessage();
+			}
+
+			$actual[$name] = ['answer' => $answer, 'stored' => $this->config, 'logged' => $logged];
+		}
+
+		$encoded = json_encode($this->withoutClock(value: $actual), (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		$golden = __DIR__ . '/../../fixtures/golden/digikoppeling-broker-resolver.json';
+		if (getenv('DIGIKOPPELING_BROKER_GOLDEN') === '1') {
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryResolveAndSelectMatchesTheGoldenFile()
+
+	/**
+	 * The recording with every audit time written now replaced, in arrays and in stored JSON.
+	 *
+	 * @param mixed $value The recording, or part of it.
+	 *
+	 * @return mixed The recording without the clock.
+	 */
+	private function withoutClock(mixed $value): mixed {
+		if (is_string($value) === true && str_starts_with($value, '[{') === true) {
+			return ['json' => $this->withoutClock(value: json_decode($value, true))];
+		}
+
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		foreach ($value as $key => $item) {
+			$value[$key] = $this->withoutClock(value: $item);
+			if ($key === 'at' && is_string($item) === true && preg_match('/^\d{4}-/', $item) === 1) {
+				$value[$key] = '(now)';
+			}
+		}
+
+		return $value;
+	}//end withoutClock()
 }//end class

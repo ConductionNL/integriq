@@ -9,6 +9,9 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-an-administrator-can-give-a-tool-the-platform-details-it-needs-req-ltil-004
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -33,6 +36,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * The detail view of a tool registration shows the six values the tool's
@@ -213,7 +217,9 @@ class LtiPlatformDetailsServiceTest extends TestCase {
 	private function makeService(): LtiPlatformDetailsService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null): ObjectEntity {
+			function ($id, ?ObjectFindOptions $options = null): ObjectEntity {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$this->assertSame('lti_tool', $schema, 'only a tool registration is read');
 				if (isset($this->tools[(string)$id]) === false) {
 					throw new DoesNotExistException('no such tool');
@@ -255,7 +261,7 @@ class LtiPlatformDetailsServiceTest extends TestCase {
 			static function (string $routeName, array $arguments = []): string {
 				$routes = require __DIR__ . '/../../../../appinfo/routes.php';
 				foreach ($routes['routes'] as $route) {
-					if ('integriq.' . str_replace('#', '.', $route['name']) === $routeName) {
+					if ('integriq.' . str_replace('#', '.', $route['name']) . ($route['postfix'] ?? '') === $routeName) {
 						$url = $route['url'];
 						foreach ($arguments as $key => $value) {
 							$url = str_replace('{' . $key . '}', (string)$value, $url);

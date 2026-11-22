@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -65,4 +68,23 @@ class WebhookProfilesTest extends TestCase {
 		$this->assertNull($profiles->forChannel(channel: 'no-such-channel'));
 
 	}//end testLookupsMatchTheStaticLookups()
+
+	/**
+	 * Each CloudEvents source has its own profile, found by its authorization type in any case.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-20-cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 */
+	public function testEachCloudEventsSourceHasItsOwnProfile(): void {
+		$profile = WebhookProfiles::byAuthorizationType(authorizationType: 'CloudEvents-Source-WebShop');
+
+		$this->assertNotNull($profile);
+		$this->assertSame('cloudevents-source-webshop', $profile->authorizationType);
+		$this->assertSame('event', $profile->schema);
+		$this->assertSame(['create'], $profile->requiredActions);
+		$this->assertNotEquals($profile, WebhookProfiles::byAuthorizationType(authorizationType: 'cloudevents-source-crm'));
+		$this->assertNull(WebhookProfiles::byAuthorizationType(authorizationType: WebhookProfiles::CLOUDEVENTS_SOURCE_PREFIX));
+
+	}//end testEachCloudEventsSourceHasItsOwnProfile()
 }//end class

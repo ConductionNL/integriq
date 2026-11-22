@@ -16,6 +16,9 @@
  *
  * @spec exclude Class-move plumbing; the step rewrites stored class-name
  *       strings and adds no domain behaviour.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -41,6 +44,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests the moved-class rewrite on job objects and on queued background jobs.
@@ -88,7 +92,10 @@ class MigrateMovedJobClassesTest extends TestCase {
 			}
 		);
 		$store->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null) use (&$rows) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$rows) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->assertSame('integriq', $register);
 				$this->assertSame('job', $schema);
 				$this->assertArrayHasKey((string)$uuid, $rows, 'must update in place, never create a job');

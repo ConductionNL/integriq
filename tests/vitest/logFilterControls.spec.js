@@ -111,6 +111,20 @@ describe('the log pages declare their filter controls', () => {
 		}
 	})
 
+	// @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
+	it('lets the source logs pick an MCP tool from the tools the tool calls named', () => {
+		const tool = control('SourceLogs', 'mcpTool')
+		expect(tool?.type).toBe('reference')
+		expect(tool.optionsFrom).toEqual({
+			register: 'integriq',
+			schema: 'call_log',
+			labelKey: 'mcpTool',
+			valueKey: 'mcpTool',
+			filter: { direction: 'outbound', mcpMethod: 'tools/call' },
+		})
+		expect(Object.keys(propertiesOf('call_log'))).toEqual(expect.arrayContaining(['mcpMethod', 'mcpTool']))
+	})
+
 	it('offers the job log levels JobService writes', () => {
 		expect(
 			control('JobLogs', 'level').options.map((option) => option.filter.level),
@@ -133,8 +147,12 @@ describe('a row action and a picker agree', () => {
 	})
 })
 
-describe('endpoint logs show only their own direction', () => {
+describe('source and endpoint logs show only their own direction', () => {
 	it('scopes the endpoint logs to inbound calls through the page filter', () => {
 		expect(page('EndpointLogs').config.filter).toEqual({ direction: 'inbound' })
+	})
+
+	it('scopes the source logs to outbound calls through the page filter', () => {
+		expect(page('SourceLogs').config.filter).toEqual({ direction: 'outbound' })
 	})
 })

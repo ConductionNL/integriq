@@ -1,11 +1,17 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
 // Resource block intentionally omitted: chain-C deleted every
 // index/show/create/update/destroy from the per-schema controllers. CRUD now
 // lives at OR's `/api/objects/integriq/{schema}/*`. Re-adding a
 // `resources` entry here without restoring the controller methods produces
 // auto-routes that 500 on hit — `composer check:routes` enforces this.
-return [
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 	'routes' => [
 		// SPA shell entry (root) — UiController serves the Vue app for all section paths.
 		// The Dashboard data routes (/api/dashboard/{callstats,jobstats,syncstats}) were
@@ -15,11 +21,20 @@ return [
 
 		// Metrics and health
 		// First-time setup wizard (ADR-042) - the standard CnSetupWizard contract.
+		// access-oauth-and-token-validation (REQ-TOKV-003): the client credentials token endpoint, the key set, and the admin acts behind them.
+		['name' => 'oAuthToken#token',           'url' => '/api/oauth/token',                'verb' => 'POST'],
+		['name' => 'oAuthToken#jwks',            'url' => '/.well-known/jwks.json',          'verb' => 'GET'],
+		// access-oauth-and-token-validation (REQ-TOKV-004): RFC 9728 metadata of a token-protected endpoint.
+		['name' => 'wellKnown#protectedResource', 'url' => '/.well-known/oauth-protected-resource/{_path}', 'verb' => 'GET', 'requirements' => ['_path' => '.+']],
+		['name' => 'oAuthToken#createIssuerKey', 'url' => '/api/oauth/issuer-key',           'verb' => 'POST'],
+		['name' => 'oAuthToken#clientSecret',    'url' => '/api/consumers/{id}/client-secret', 'verb' => 'POST'],
 		['name' => 'setup#status',    'url' => '/api/setup/status',            'verb' => 'GET'],
 		['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST', 'requirements' => ['actionId' => '[a-z0-9\\-]+']],
 		['name' => 'setup#saveConfig', 'url' => '/api/setup/config',           'verb' => 'POST'],
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+		// The OpenAPI document, public (spec api-contract).
+		['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
 
 		// DSO / Omgevingsloket STAM koppelvlak.
 		//
@@ -68,17 +83,23 @@ return [
 		// saved message and polling a mailbox both write `message` objects that
 		// other apps act on, so both sit behind the ADR-023 action matrix
 		// (`mail.import`, `mail.poll`), admin-only until an operator broadens it.
+		['name' => 'mailIntake#importOptions', 'url' => '/api/mail-intake/import/options', 'verb' => 'GET'],
 		['name' => 'mailIntake#import', 'url' => '/api/mail-intake/import', 'verb' => 'POST'],
 		['name' => 'mailIntake#poll', 'url' => '/api/mail-intake/sources/{id}/poll', 'verb' => 'POST'],
 
 		// Intake channels beyond mail (openspec/changes/intake-channels-beyond-mail).
 		// The inbound leg is public and gated by a webhook signature verified over
 		// the raw bytes before the body is read, like peppol#inbound and
-		// notifyNl#inbound. The rule save and the reply are session calls behind
-		// the ADR-023 action matrix (`intake.rules`, `intake.reply`), because a
-		// rule decides what opens a case and a reply leaves the building.
+		// notifyNl#inbound. The rule save, the reply and the assign are session calls behind
+		// the ADR-023 action matrix (`intake.rules`, `intake.reply`, `intake.assign`), because a
+		// rule decides what opens a case, a reply leaves the building and an assign
+		// puts a citizen's message on a case.
 		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
 		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
+		// CloudEvents from outside systems (openspec/changes/archive/2026-11-20-cloudevents-receiver).
+		// One receiver URL per source, public and gated by that source's webhook
+		// signature or credential over the raw bytes before the body is read.
+		['name' => 'cloudEventReceiver#receive', 'url' => '/api/cloudevents/sources/{source}', 'verb' => 'POST', 'requirements' => ['source' => '[A-Za-z0-9\\-]+']],
 		// Inbound call events from a phone system. #[PublicPage]: a PBX posts
 		// here with no Nextcloud session, authenticated by the source's own
 		// binding, and every refusal is the same undifferentiated 401.
@@ -87,9 +108,22 @@ return [
 		// provider picker is built from the registry rather than from a list
 		// written beside it and left to go stale.
 		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
+		// The SMS bindings this instance has, for the provider picker of a source
+		// of type sms (messaging-sms-providers-and-notifynl-mail, REQ-SMSP-003).
+		['name' => 'smsProviders#providers', 'url' => '/api/sms/providers', 'verb' => 'GET'],
+		// A CM.com, MessageBird or Twilio delivery callback (REQ-SMSP-004). Public:
+		// the per-source token in the URL and, where the vendor signs, its
+		// signature are the check; see SmsStatusController::status().
+		['name' => 'smsStatus#status', 'url' => '/api/sms/{provider}/status/{token}', 'verb' => 'POST', 'requirements' => ['provider' => '[a-z]+', 'token' => '[A-Za-z0-9]+']],
+		// Test a draft rule against a sample and route held messages again
+		// (openspec/changes/messaging-intake-routing-rules D2, D3), behind `intake.rules`.
+		['name' => 'intakeChannels#testRule', 'url' => '/api/intake/routing-rules/test', 'verb' => 'POST'],
+		['name' => 'intakeChannels#routeAgainMany', 'url' => '/api/intake/messages/route', 'verb' => 'POST'],
+		['name' => 'intakeChannels#routeAgain', 'url' => '/api/intake/messages/{id}/route', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
+		['name' => 'intakeChannels#assign', 'url' => '/api/intake/messages/{id}/assign', 'verb' => 'POST'],
 
 		// The outbound communication log (openspec/changes/outbound-communication-log).
 		// Listing the log is the declarative page over `outbound_message`; these are
@@ -101,6 +135,8 @@ return [
 		['name' => 'outboundLog#retry', 'url' => '/api/outbound/messages/retry', 'verb' => 'POST', 'postfix' => 'bulk'],
 		['name' => 'outboundLog#forward', 'url' => '/api/outbound/messages/{id}/forward', 'verb' => 'POST'],
 		['name' => 'outboundLog#lastContact', 'url' => '/api/outbound/last-contact', 'verb' => 'GET'],
+		// One-off and suppressed recipients: the send screen's preview of who receives a message.
+		['name' => 'outboundRecipients#preview', 'url' => '/api/outbound/recipients/preview', 'verb' => 'POST'],
 
 		// Sender identity and deliverability
 		// (openspec/changes/outbound-sender-identity-and-deliverability). An
@@ -113,6 +149,7 @@ return [
 		['name' => 'senderIdentity#index', 'url' => '/api/outbound/identities', 'verb' => 'GET'],
 		['name' => 'senderIdentity#checkAlignment', 'url' => '/api/outbound/identities/{id}/alignment', 'verb' => 'POST'],
 		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
+		['name' => 'senderIdentity#release', 'url' => '/api/outbound/messages/{id}/release', 'verb' => 'POST'],
 		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
 		// opt-out-before-send: GET only shows the page, POST writes (also the
 		// RFC 8058 one-click), and an SMS carries a short id resolved here.
@@ -140,6 +177,10 @@ return [
 
 		// A source's 24-hour performance and certificate expiry. Administrators only.
 		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
+		// The registration targets an app may use, by slug, title and kind only (form-submission-registration-targets).
+		['name' => 'registrationTarget#index', 'url' => '/api/registration-targets', 'verb' => 'GET'],
+		// The administrator's dry run of one target: maps a sample hand-over and stops before the first write.
+		['name' => 'registrationTarget#test', 'url' => '/api/registration-targets/{slug}/test', 'verb' => 'POST'],
 		// Where a record was synchronized from, answered after a read check under OpenRegister's rights.
 		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 
@@ -165,6 +206,13 @@ return [
 		// authoritative status from the provider.
 		['name' => 'payments#create', 'url' => '/api/payments', 'verb' => 'POST'],
 		['name' => 'payments#webhook', 'url' => '/api/payments/webhook', 'verb' => 'POST'],
+		// Payments review (openspec/changes/messaging-payments-review).
+		['name' => 'payments#providers', 'url' => '/api/payments/providers', 'verb' => 'GET'],
+		['name' => 'payments#check', 'url' => '/api/payments/providers/check', 'verb' => 'POST'],
+		['name' => 'payments#refresh', 'url' => '/api/payments/{id}/refresh', 'verb' => 'POST'],
+		// The point-of-sale terminals of a payment source (REQ-LPP-009), for an
+		// administrator registering a device; gated by the payments.create action.
+		['name' => 'payments#terminals', 'url' => '/api/payments/sources/{slug}/terminals', 'verb' => 'GET'],
 
 		// NotifyNL SMS channel connector (openspec/changes/notifynl-sms-channel).
 		// send/status are authenticated NC-session calls (production binding for
@@ -174,6 +222,8 @@ return [
 		['name' => 'notifyNl#send', 'url' => '/api/notifynl/messages', 'verb' => 'POST'],
 		['name' => 'notifyNl#status', 'url' => '/api/notifynl/messages/{id}', 'verb' => 'GET'],
 		['name' => 'notifyNl#inbound', 'url' => '/api/notifynl/inbound', 'verb' => 'POST'],
+		// A NotifyNL e-mail (REQ-SMSP-005), behind the notifynl.email action.
+		['name' => 'notifyNl#sendEmail', 'url' => '/api/notifynl/emails', 'verb' => 'POST'],
 
 		// KISS (Klantinteractie Servicesysteem) KCC bridge (openspec/changes/kiss-kcc-bridge).
 		// Push is an authenticated NC-session call (production binding for sibling
@@ -404,18 +454,36 @@ return [
 		// Every refusal is one undifferentiated 401
 		// (openspec/specs/digid-eherkenning-auth-adapter/spec.md).
 		['name' => 'idpBroker#exchange', 'url' => '/api/idp/envelope/exchange', 'verb' => 'POST'],
+		// Each organisation's SP / RP, published for its identity provider (portal-idp-broker-config D3).
+		['name' => 'idpMetadata#metadata', 'url' => '/api/idp/metadata/{organisation}/{provider}', 'verb' => 'GET'],
+		['name' => 'idpMetadata#jwks', 'url' => '/api/idp/jwks/{organisation}/{provider}', 'verb' => 'GET'],
+		// Beheer > Authenticatie: the registrations with their readiness, and the Test action (admin only).
+		['name' => 'idpRegistration#index', 'url' => '/api/idp/registrations', 'verb' => 'GET'],
+		['name' => 'idpRegistration#test', 'url' => '/api/idp/registrations/{id}/test', 'verb' => 'POST'],
 		// The browser half of the same login. The start checks the consumer and
 		// its registered return address before anything leaves integriq; the
 		// callback sends the browser back only to the address kept in the
 		// signed state (openspec/changes/archive/2026-09-29-identity-broker-browser-login).
-		['name' => 'idpBroker#start', 'url' => '/api/idp/{provider}/start', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
-		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
-		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'POST', 'requirements' => ['provider' => 'digid|eherkenning|eidas'], 'postfix' => 'post'],
+		[
+			'name' => 'idpBroker#start', 'url' => '/api/idp/{provider}/start', 'verb' => 'GET',
+			'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi'],
+		],
+		[
+			'name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'GET',
+			'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi'],
+		],
+		[
+			'name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'POST',
+			'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi'], 'postfix' => 'post',
+		],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
 		['name' => 'runSummary#show', 'url' => '/api/sources/{id}/run-summary', 'verb' => 'GET'],
+		// connectors-endpoint-workspace-adapters: the sessions or devices the workspace
+		// manager behind a source reports, each with the Nextcloud user it maps to. Admin only.
+		['name' => 'endpointWorkspace#index', 'url' => '/api/sources/{id}/workspace-entries', 'verb' => 'GET'],
 		// sources#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
@@ -423,9 +491,25 @@ return [
 		// Circuit breaker manual trip/reset (admin-only, CSRF intact — REQ-009).
 		['name' => 'sources#tripCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/trip', 'verb' => 'POST'],
 		['name' => 'sources#resetCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/reset', 'verb' => 'POST'],
+		// sources-sftp-adapter: show the host key an SFTP source's server presents, and pin it once confirmed.
+		['name' => 'sourceHostKey#show', 'url' => '/api/sources/{id}/host-key', 'verb' => 'GET'],
+		['name' => 'sourceHostKey#pin', 'url' => '/api/sources/{id}/host-key', 'verb' => 'POST'],
 		// Investigation window: store call bodies for a bounded time (outbound-call-log-investigation-window).
 		['name' => 'bodyCapture#open', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'POST'],
 		['name' => 'bodyCapture#close', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'DELETE'],
+		// access-consumer-credentials: list (no hashes), generate (the key is in this one
+		// response only) and revoke one credential. Admin only; there is no read route for a key.
+		['name' => 'consumerCredentials#index', 'url' => '/api/consumers/{id}/credentials', 'verb' => 'GET'],
+		['name' => 'consumerCredentials#create', 'url' => '/api/consumers/{id}/credentials', 'verb' => 'POST'],
+		['name' => 'consumerCredentials#destroy', 'url' => '/api/consumers/{id}/credentials/{credentialId}', 'verb' => 'DELETE'],
+		// Database sources (sources-database-adapter): schema discovery and a test run of a declared read statement, admin only.
+		['name' => 'databaseSource#schema', 'url' => '/api/sources/{id}/database/schema', 'verb' => 'GET'],
+		[
+			'name' => 'databaseSource#testStatement',
+			'url' => '/api/sources/{id}/database/statements/{name}/test',
+			'verb' => 'POST',
+			'requirements' => ['name' => '[A-Za-z0-9][A-Za-z0-9_.-]{0,99}'],
+		],
 
 		// dashboard-http-datasource: governed, read-only "resolve one value
 		// from a configured source" façade for dashboard/widget hosts
@@ -435,6 +519,9 @@ return [
 		['name' => 'datasource#resolve', 'url' => '/api/datasource/{sourceId}/resolve', 'verb' => 'POST'],
 
 		// Job endpoints
+		['name' => 'jobs#schedulePreview', 'url' => '/api/jobs/schedule-preview', 'verb' => 'POST'],
+		// Declared data feeds (gateway-declared-data-feeds): re-read every enabled app's feeds.json on request. Admin only.
+		['name' => 'feeds#sync', 'url' => '/api/feeds/sync', 'verb' => 'POST'],
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#logs', 'url' => '/api/jobs/logs', 'verb' => 'GET'],
@@ -444,6 +531,8 @@ return [
 		// Endpoint endpoints
 		// endpoints#test route removed — controller method was deleted by agent.
 		['name' => 'endpoints#logs', 'url' => '/api/endpoints/logs', 'verb' => 'GET'],
+		// gateway-response-cache-and-problem-errors D3: clear one endpoint's response cache (action endpoint.cache.clear).
+		['name' => 'endpointResponseCache#clear', 'url' => '/api/endpoints/{id}/cache/clear', 'verb' => 'POST'],
 		// endpoints#statistics route removed — controller method was deleted by agent.
 
 		// Synchronization endpoints
@@ -467,6 +556,9 @@ return [
 
 		// Mapping endpoints
 		['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
+		// Regression suites (automation-integration-regression-tests): run every
+		// test case of a mapping or synchronization and record one run.
+		['name' => 'regressionSuite#run', 'url' => '/api/regression-suites/{subjectType}/{subjectId}/run', 'verb' => 'POST'],
 		['name' => 'mappings#saveObject', 'url' => '/api/mappings/objects', 'verb' => 'POST'],
 		['name' => 'mappings#getObjects', 'url' => '/api/mappings/objects', 'verb' => 'GET'],
 
@@ -545,6 +637,8 @@ return [
 		['name' => 'executionTraces#index', 'url' => '/api/execution-traces', 'verb' => 'GET'],
 		['name' => 'executionTraces#show', 'url' => '/api/execution-traces/{id}', 'verb' => 'GET'],
 		['name' => 'executionTraces#replay', 'url' => '/api/execution-traces/{id}/replay', 'verb' => 'POST'],
+		// Save one step of a trace as a regression test case (automation-integration-regression-tests).
+		['name' => 'regressionSuite#record', 'url' => '/api/execution-traces/{id}/test-case', 'verb' => 'POST'],
 
 		// Logs sub-endpoints on SynchronizationsController
 		['name' => 'synchronizations#logsStatistics', 'url' => '/api/synchronizations/logs/statistics', 'verb' => 'GET'],
@@ -588,8 +682,41 @@ return [
 		// the HITL approvals routes above.
 		['name' => 'productSubscriptions#subscribe', 'url' => '/api/products/{productId}/subscriptions', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#analytics', 'url' => '/api/products/{productId}/analytics', 'verb' => 'GET'],
+		// forms-service-fetch-for-apps (REQ-SF-003): the service fetches an app may call, for a form designer.
+		['name' => 'serviceFetch#index', 'url' => '/api/service-fetches', 'verb' => 'GET'],
+		// An administrator's test run of one fetch (forms-service-fetch-for-apps, REQ-SF-001).
+		['name' => 'serviceFetch#test', 'url' => '/api/service-fetches/{slug}/test', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+		// API design rules (gateway-api-design-rules-check): check a product, waive a finding. Admin only.
+		['name' => 'apiDesignCheck#check', 'url' => '/api/products/{productId}/design-check', 'verb' => 'POST'],
+		['name' => 'apiDesignCheck#waive', 'url' => '/api/products/design-findings/{findingId}/waive', 'verb' => 'POST'],
+		// Developer portal (access-developer-portal-and-subscriptions D1-D3): members of
+		// the developer group browse public products, create applications they own and
+		// request access through the product's approval. The group check and the
+		// ownership check run in PortalController; the settings pair is admin only.
+		['name' => 'portal#products', 'url' => '/api/portal/products', 'verb' => 'GET'],
+		['name' => 'portal#applications', 'url' => '/api/portal/applications', 'verb' => 'GET'],
+		['name' => 'portal#createApplication', 'url' => '/api/portal/applications', 'verb' => 'POST'],
+		['name' => 'portal#requestAccess', 'url' => '/api/portal/applications/{consumerId}/subscriptions', 'verb' => 'POST'],
+		// A developer's own application keys (access-developer-portal-and-subscriptions D4): the developer group and the ownership are checked in the body.
+		['name' => 'portalKeys#index', 'url' => '/api/portal/applications/{consumerId}/keys', 'verb' => 'GET'],
+		['name' => 'portalKeys#create', 'url' => '/api/portal/applications/{consumerId}/keys', 'verb' => 'POST'],
+		['name' => 'portalKeys#destroy', 'url' => '/api/portal/applications/{consumerId}/keys/{credentialId}', 'verb' => 'DELETE'],
+		['name' => 'portal#getSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'GET'],
+		['name' => 'portal#setSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'PUT'],
+		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
+		// OpenAPI import and publish (openspec/changes/gateway-openapi-import-and-publish).
+		// /api/openapi.json stays the app's own API contract; the gateway's published
+		// document has its own path. Import is admin-only (#[AuthorizedAdminSetting]);
+		// both documents are public routes, a private product's checked in the controller.
+		['name' => 'openApiImport#preview', 'url' => '/api/openapi/import/preview', 'verb' => 'POST'],
+		['name' => 'openApiImport#import', 'url' => '/api/openapi/import', 'verb' => 'POST'],
+		['name' => 'gatewayOpenApi#gateway', 'url' => '/api/gateway/openapi.json', 'verb' => 'GET'],
+		['name' => 'gatewayOpenApi#product', 'url' => '/api/products/{id}/openapi.json', 'verb' => 'GET'],
+		['name' => 'productChannels#pull', 'url' => '/api/products/{productSlug}/channels/{channel}/events', 'verb' => 'GET'],
+		['name' => 'productChannels#subscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions', 'verb' => 'POST'],
+		['name' => 'productChannels#unsubscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions/{id}', 'verb' => 'DELETE'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/integriq/catalog_item (ADR-022);
@@ -597,6 +724,12 @@ return [
 		// See openspec/changes/archive/2026-07-14-connector-catalog-ui/contract.md
 		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
 		['name' => 'catalog#instantiate', 'url' => '/api/catalog/items/{id}/instantiate', 'verb' => 'POST'],
+
+		// connectors-sharepoint-publication-intake REQ-SPPI-001: the Graph lookups behind
+		// the SharePoint to publication setup dialog (sites, libraries, folders).
+		['name' => 'sharePointSetup#lookup', 'url' => '/api/sharepoint/lookup', 'verb' => 'GET'],
+		// The setup's save: one source, mapping, rule and synchronization from the sharepoint-publications set.
+		['name' => 'sharePointSetup#intake', 'url' => '/api/sharepoint/publication-intake', 'verb' => 'POST'],
 
 		// registry-backed-field-source: openregister resolves a property that
 		// declares `x-openregister-property-source` through these routes, and the
@@ -630,6 +763,11 @@ return [
 		// statutory-gateways-and-frameworks: which laws this instance reaches,
 		// how far it claims to meet each one, where every endpoint sits, and
 		// which bridge a call behind a firewall travels over.
+		// gateway-graphql-and-streaming-protocols REQ-GQLP-002: a web server or broker asks
+		// whether a WebSocket, gRPC or MQTT client may connect. GET for nginx auth_request,
+		// which repeats the client's method without a body; POST for a broker plugin.
+		['name' => 'gatewayAuthorize#authorize', 'url' => '/api/gateway/authorize', 'verb' => 'GET', 'postfix' => 'get'],
+		['name' => 'gatewayAuthorize#authorize', 'url' => '/api/gateway/authorize', 'verb' => 'POST'],
 		['name' => 'gateways#index', 'url' => '/api/gateways', 'verb' => 'GET'],
 		['name' => 'gateways#overview', 'url' => '/api/gateways/overview', 'verb' => 'GET'],
 		['name' => 'gateways#exportOverview', 'url' => '/api/gateways/overview/export', 'verb' => 'GET'],
@@ -641,6 +779,13 @@ return [
 		// declared connection and probe it at once. Listing goes through OR's
 		// generic /api/objects/integriq/app_connection (ADR-022).
 		['name' => 'connections#link', 'url' => '/api/connections/{id}/link', 'verb' => 'POST'],
+
+		// Data residency (connections-declare-data-residency): every outbound
+		// destination with where it sits, EU-only mode, and an administrator's
+		// residency on a source. Admin only, checked in each method.
+		['name' => 'egressDestination#index', 'url' => '/api/egress/destinations', 'verb' => 'GET'],
+		['name' => 'egressDestination#setEuOnly', 'url' => '/api/egress/eu-only', 'verb' => 'PUT'],
+		['name' => 'egressDestination#setSourceResidency', 'url' => '/api/sources/{id}/residency', 'verb' => 'PUT'],
 
 		// Configuration import/export UI endpoints (connector-catalog-ui) — a
 		// thin, routed wrapper over the existing, already-tested
@@ -674,11 +819,14 @@ return [
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
 
 		// Settings endpoints
-		// Settings routes shrunk in chain-C OR-cutover:
 		// - GET /api/settings/stats — replaced by manifest dashboard widgets resolving against OR's aggregate endpoint
-		// - GET /api/settings + PUT /api/settings — replaced by OR's /api/settings/* surface
-		// Only the connector-specific rebase action remains. Postgres portability tracked at #822.
-		// rebase is admin-only (AuthorizedAdminSetting).
+		// - GET /api/settings + PUT /api/settings — integriq's log retention (platform-admin-defaults).
+		//   OpenRegister's /api/settings/retention reads and writes OpenRegister's own retention,
+		//   not the `integriq` / `retention` key, so it cannot stand in for these.
+		// - POST /api/settings/rebase — queues RetentionRebaseJob over the log objects.
+		// All three are admin-only (AuthorizedAdminSetting).
+		['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
+		['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
 
 		// ADR-023 action-authorization matrix (admin-only via #[AuthorizedAdminSetting])
@@ -703,9 +851,27 @@ return [
 		['name' => 'objectenApi#replaceObject',     'url' => '/api/v2/objects/{uuid}', 'verb' => 'PUT', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'objectenApi#updateObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'objectenApi#deleteObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
+		// zgw-catalogi-served: the VNG Catalogi API 1.3 read half (catalogussen,
+		// informatieobjecttypen). #[PublicPage] and CSRF-free like the Objecten
+		// routes: CatalogiGate checks the binding, the ZGW JWT and the
+		// catalogi.lezen scope before any document type is read. Writes answer 405.
+		['name' => 'catalogiApi#catalogussen',          'url' => '/catalogi/api/v1/catalogussen', 'verb' => 'GET'],
+		['name' => 'catalogiApi#catalogus',             'url' => '/catalogi/api/v1/catalogussen/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'catalogiApi#informatieobjecttypen', 'url' => '/catalogi/api/v1/informatieobjecttypen', 'verb' => 'GET'],
+		['name' => 'catalogiApi#informatieobjecttype',  'url' => '/catalogi/api/v1/informatieobjecttypen/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}', 'verb' => 'POST', 'postfix' => 'create', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'PUT', 'postfix' => 'replace', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'PATCH', 'postfix' => 'update', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'DELETE', 'postfix' => 'delete', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		// The Woo starter set, administrator only (AuthorizedAdminSetting and a check in the method).
+		['name' => 'catalogiAdmin#wooStarterSet', 'url' => '/api/catalogi/woo-starter-set', 'verb' => 'POST'],
 		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
 		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
 		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],
+		// The lookup allowlist (mapping-formats-and-lookups): admin only.
+		['name' => 'mappingLookup#index',  'url' => '/api/admin/mapping-lookups', 'verb' => 'GET'],
+		['name' => 'mappingLookup#add',    'url' => '/api/admin/mapping-lookups', 'verb' => 'POST'],
+		['name' => 'mappingLookup#remove', 'url' => '/api/admin/mapping-lookups/{register}/{schema}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 
@@ -725,9 +891,15 @@ return [
 		['name' => 'berichtenboxSettings#setConfig', 'url' => '/api/admin/berichtenbox/{slug}', 'verb' => 'PUT'],
 		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
 		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
+		// Field names an administrator adds to the personal data masked in logged bodies (call-log-personal-data-masking REQ-PDM-001). Admin-only via #[AuthorizedAdminSetting].
+		['name' => 'personalDataSettings#getConfig', 'url' => '/api/admin/personal-data-fields', 'verb' => 'GET'],
+		['name' => 'personalDataSettings#setConfig', 'url' => '/api/admin/personal-data-fields', 'verb' => 'PUT'],
 		// OpenTelemetry trace export settings (observability-opentelemetry-export REQ-OTEL-005).
 		['name' => 'otelSettings#getConfig', 'url' => '/api/admin/otel', 'verb' => 'GET'],
 		['name' => 'otelSettings#setConfig', 'url' => '/api/admin/otel', 'verb' => 'PUT'],
+		// Error sink settings (observability-opentelemetry-export-errors-and-app-spans REQ-OTEL-008).
+		['name' => 'errorSinkSettings#getConfig', 'url' => '/api/admin/errorsink', 'verb' => 'GET'],
+		['name' => 'errorSinkSettings#setConfig', 'url' => '/api/admin/errorsink', 'verb' => 'PUT'],
 		// DSO activities that no dso_activity_mapping row maps (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'dsoActivityMapping#unmapped', 'url' => '/api/admin/dso-activities/unmapped', 'verb' => 'GET'],
 		// Every DSO activity row with its last arrival, then the unmapped ones (admin only)
@@ -795,4 +967,4 @@ return [
 		// catch-all is the one that actually serves `/` at runtime.
 		['name' => 'ui#dashboard', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '(?!api(/|$)).*'], 'defaults' => ['path' => '']],
 	],
-];
+]);

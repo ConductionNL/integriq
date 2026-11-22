@@ -34,13 +34,17 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
+use OCA\Integriq\Service\Helper\RegisterSave;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Sms\DeliveryResult;
 use OCA\Integriq\Service\Sms\LogSmsProvider;
 use OCA\Integriq\Service\Sms\PhoneNumberValidator;
 use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
 use OCA\Integriq\Service\Sms\SmsProviderInterface;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -79,12 +83,6 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 */
 	public const SCHEMA_MESSAGE = 'sms_message';
 
-	/**
-	 * `source.type` value identifying an SMS channel source.
-	 *
-	 * @var string
-	 */
-	public const SOURCE_TYPE = 'sms';
 
 	/**
 	 * CloudEvent type emitted on every message status change.
@@ -92,6 +90,21 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @var string
 	 */
 	public const EVENT_TYPE_DELIVERY_STATUS = 'nl.conduction.sms.delivery.status';
+
+	/**
+	 * How many messages with one provider message id a status callback looks through for its source's.
+	 *
+	 * @var int
+	 */
+	private const CALLBACK_MATCH_LIMIT = 20;
+
+
+	/**
+	 * Every SMS binding by provider id.
+	 *
+	 * @var SmsProviderRegistry
+	 */
+	private readonly SmsProviderRegistry $providers;
 
 	/**
 	 * Constructor.
@@ -104,6 +117,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
 	 * @param OutboundSendGateInterface $gate Asks the opt-out list, adds the unsubscribe text, keeps the log row.
+	 * @param SmsProviderRegistry|null $providers Every SMS binding by provider id; log and NotifyNL only when not given.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -114,7 +128,9 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
 		private readonly OutboundSendGateInterface $gate,
+		?SmsProviderRegistry $providers = null,
 	) {
+		$this->providers = ($providers ?? new SmsProviderRegistry(logProvider: $logProvider, notifyNl: $notifyNlProvider));
 
 	}//end __construct()
 
@@ -126,19 +142,22 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @param string $body Free-text body (audit context — template providers ignore it for the wire
 	 *                     call).
 	 * @param array $options Provider-specific send options (e.g. `templateId`, `personalisation`), plus
-	 *                       `category` (default `service`) and `caseRef` for the opt-out decision.
+	 *                       `category` (default `service`) and `caseRef` for the opt-out decision, and
+	 *                       `sourceSlug` to name the SMS source that sends (default: the first enabled one).
 	 * @param string|null $sourceApp Slug of the producing app (e.g. `procest`), stored for audit.
 	 * @param string|null $objectUri Optional reference to the producing app's own object.
 	 *
 	 * @return ObjectEntity The created `sms_message` record.
 	 *
 	 * @throws SmsProviderException When the recipient is not a valid phone number, no active SMS source is
-	 *                              configured, the opt-out list refuses the send (error code `opted-out`,
+	 *                              configured, the named source is not an enabled SMS source (error code
+	 *                              `unknown-source`), the opt-out list refuses the send (error code `opted-out`,
 	 *                              `no-consent` or `authority-unavailable`), or the provider rejects/cannot
 	 *                              reach the request.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 */
 	public function sendMessage(
 		string $to,
@@ -147,9 +166,105 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 		?string $sourceApp = null,
 		?string $objectUri = null,
 	): ObjectEntity {
-		$source = $this->resolveActiveSource();
-		$configuration = ($source->getObject()['configuration'] ?? []);
+		$sourceSlug = self::requestedSource(options: $options);
+		unset($options['sourceSlug']);
 
+		$source = $this->resolveSource(sourceSlug: $sourceSlug);
+		$sourceData = $source->getObject();
+		$configuration = self::configurationOf(source: $source);
+
+		$e164 = $this->normaliseRecipient(to: $to, configuration: $configuration);
+
+		$caseRef = (string)($options['caseRef'] ?? '');
+		$gateOptions = ['caseRef' => $caseRef, 'sourceApp' => ($sourceApp ?? 'integriq'), 'correlationId' => ($objectUri ?? '')];
+		$decision = $this->askOptOutList(
+			address: $e164,
+			category: (string)($options['category'] ?? 'service'),
+			gateOptions: $gateOptions
+		);
+
+		$composed = $this->gate->compose(body: $body, decision: $decision, channel: 'sms', caseRef: $caseRef);
+		$body = $composed['body'];
+		$options = self::withUnsubscribeText(options: $options, decision: $decision);
+
+		unset($options['category'], $options['caseRef']);
+
+		$provider = $this->resolveProvider(configuration: $configuration);
+
+		$logRow = $this->gate->open(
+			channel: 'sms',
+			subjectRef: $gateOptions['correlationId'],
+			subject: '',
+			body: $body,
+			address: $e164,
+			options: $gateOptions,
+			decision: $decision
+		);
+
+		$message = $this->queueMessage(
+			record: [
+				'sourceApp' => ($sourceApp ?? ''),
+				'objectUri' => $gateOptions['correlationId'],
+				'recipientMsisdn' => $e164,
+				'templateId' => (string)($options['templateId'] ?? ''),
+				'provider' => $provider->getProviderId(),
+				'sourceSlug' => (string)($sourceData['slug'] ?? ($sourceSlug ?? '')),
+			]
+		);
+
+		$sent = $this->attemptSend(
+			message: $message,
+			provider: $provider,
+			configuration: $configuration,
+			send: ['to' => $e164, 'body' => $body, 'options' => $options]
+		);
+		$this->settleLogRow(sent: $sent, logRow: $logRow, address: $e164);
+
+		return $sent;
+	}//end sendMessage()
+
+	/**
+	 * Ask the opt-out list whether the send may go out, recording and refusing it when not.
+	 *
+	 * @param string $address The E.164 recipient.
+	 * @param string $category The message category (`service` by default).
+	 * @param array $gateOptions The caseRef, sourceApp and correlationId the gate records.
+	 *
+	 * @return array The gate's decision to send.
+	 *
+	 * @throws SmsProviderException With the gate's code (`opted-out`, `no-consent` or
+	 *                              `authority-unavailable`) when the send is refused.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 */
+	private function askOptOutList(string $address, string $category, array $gateOptions): array {
+		$decision = $this->gate->check(
+			channel: 'sms',
+			category: $category,
+			address: $address,
+			options: $gateOptions
+		);
+		if ($decision['send'] !== true) {
+			$this->gate->recordRefusal(channel: 'sms', subjectRef: (string)$gateOptions['correlationId'], decision: $decision, options: $gateOptions);
+			throw new SmsProviderException(message: (string)$decision['reason'], errorCode: (string)$decision['code']);
+		}
+
+		return $decision;
+	}//end askOptOutList()
+
+	/**
+	 * The recipient in E.164 form, using the source's default calling code.
+	 *
+	 * @param string $to The recipient as the caller gave it.
+	 * @param array $configuration The sending source's `configuration` object.
+	 *
+	 * @return string The E.164 recipient.
+	 *
+	 * @throws SmsProviderException When the number cannot be normalised to E.164.
+	 *
+	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 */
+	private function normaliseRecipient(string $to, array $configuration): string {
 		$callingCode = (string)($configuration['defaultCallingCode'] ?? PhoneNumberValidator::DEFAULT_CALLING_CODE);
 		$e164 = PhoneNumberValidator::toE164(rawNumber: $to, callingCode: $callingCode);
 		if ($e164 === null) {
@@ -158,102 +273,113 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 			);
 		}
 
-		$caseRef = (string)($options['caseRef'] ?? '');
-		$gateOptions = ['caseRef' => $caseRef, 'sourceApp' => ($sourceApp ?? 'integriq'), 'correlationId' => ($objectUri ?? '')];
-		$decision = $this->gate->check(
-			channel: 'sms',
-			category: (string)($options['category'] ?? 'service'),
-			address: $e164,
-			options: $gateOptions
-		);
-		if ($decision['send'] !== true) {
-			$this->gate->recordRefusal(channel: 'sms', subjectRef: ($objectUri ?? ''), decision: $decision, options: $gateOptions);
-			throw new SmsProviderException(message: (string)$decision['reason'], errorCode: (string)$decision['code']);
-		}
+		return $e164;
+	}//end normaliseRecipient()
 
-		$composed = $this->gate->compose(body: $body, decision: $decision, channel: 'sms', caseRef: $caseRef);
-		$body = $composed['body'];
+	/**
+	 * The send options with the opt-out decision's unsubscribe text in `personalisation`.
+	 *
+	 * A NotifyNL template renders it as ((unsubscribe)); the composed body carries
+	 * it for a provider that sends the body as is. Without an unsubscribe text the
+	 * options come back unchanged.
+	 *
+	 * @param array $options The provider-specific send options.
+	 * @param array $decision The opt-out gate's decision.
+	 *
+	 * @return array The options.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 */
+	private static function withUnsubscribeText(array $options, array $decision): array {
 		$smsText = (string)($decision['unsubscribe']['smsText'] ?? '');
-		if ($smsText !== '') {
-			$personalisation = ($options['personalisation'] ?? []);
-			if (is_array($personalisation) === false) {
-				$personalisation = [];
-			}
-
-			// A NotifyNL template renders this as ((unsubscribe)); the body above
-			// carries it for a provider that sends the body as is.
-			$personalisation['unsubscribe'] = $smsText;
-			$options['personalisation'] = $personalisation;
+		if ($smsText === '') {
+			return $options;
 		}
 
-		unset($options['category'], $options['caseRef']);
+		$personalisation = ($options['personalisation'] ?? []);
+		if (is_array($personalisation) === false) {
+			$personalisation = [];
+		}
 
-		$provider = $this->resolveProvider(configuration: $configuration);
+		$personalisation['unsubscribe'] = $smsText;
+		$options['personalisation'] = $personalisation;
 
-		$logRow = $this->gate->open(
-			channel: 'sms',
-			subjectRef: ($objectUri ?? ''),
-			subject: '',
-			body: $body,
-			address: $e164,
-			options: $gateOptions,
-			decision: $decision
+		return $options;
+	}//end withUnsubscribeText()
+
+	/**
+	 * Save a new `sms_message` record in the queued state.
+	 *
+	 * @param array $record The message's sourceApp, objectUri, recipientMsisdn, templateId, provider
+	 *                      and sourceSlug.
+	 *
+	 * @return ObjectEntity The saved message.
+	 *
+	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 */
+	private function queueMessage(array $record): ObjectEntity {
+		return $this->objectService->saveObject(
+			object: array_merge(
+				$record,
+				[
+					'providerMessageId' => null,
+					'status' => 'queued',
+					'detail' => $this->l->t('Message queued'),
+					'attempts' => [],
+				]
+			),
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
 		);
+	}//end queueMessage()
 
-		$message = $this->objectService->saveObject(
-			object: [
-				'sourceApp' => ($sourceApp ?? ''),
-				'objectUri' => ($objectUri ?? ''),
-				'recipientMsisdn' => $e164,
-				'templateId' => (string)($options['templateId'] ?? ''),
-				'provider' => $provider->getProviderId(),
-				'providerMessageId' => null,
-				'status' => 'queued',
-				'detail' => $this->l->t('Message queued'),
-				'attempts' => [],
-			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
-		);
-
-		$sent = $this->attemptSend(message: $message, provider: $provider, to: $e164, body: $body, options: $options);
+	/**
+	 * Record on the outbound log row whether the provider took the message or the send failed.
+	 *
+	 * @param ObjectEntity $sent The message after the send attempt.
+	 * @param string|null $logRow The outbound log row's uuid.
+	 * @param string $address The E.164 recipient.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 */
+	private function settleLogRow(ObjectEntity $sent, ?string $logRow, string $address): void {
 		$sentData = $sent->getObject();
 		if ((string)($sentData['status'] ?? '') === 'failed') {
-			$this->gate->failed(uuid: $logRow, address: $e164, step: OutboundSendGateInterface::STEP_SEND, reason: (string)($sentData['detail'] ?? ''));
-			return $sent;
+			$this->gate->failed(uuid: $logRow, address: $address, step: OutboundSendGateInterface::STEP_SEND, reason: (string)($sentData['detail'] ?? ''));
+			return;
 		}
 
-		$this->gate->handedOver(uuid: $logRow, address: $e164, reference: (string)($sentData['providerMessageId'] ?? ''));
-
-		return $sent;
-	}//end sendMessage()
+		$this->gate->handedOver(uuid: $logRow, address: $address, reference: (string)($sentData['providerMessageId'] ?? ''));
+	}//end settleLogRow()
 
 	/**
 	 * Attempt one provider send for a `queued` `sms_message` and persist the outcome.
 	 *
 	 * @param ObjectEntity $message The message to send.
 	 * @param SmsProviderInterface $provider The resolved provider binding.
-	 * @param string $to The E.164-normalised recipient.
-	 * @param string $body Free-text body (audit context).
-	 * @param array $options Provider-specific send options.
+	 * @param array $configuration The sending source's `configuration` object.
+	 * @param array{to: string, body: string, options: array} $send The E.164 recipient, the body and the
+	 *                                                              provider-specific send options.
 	 *
 	 * @return ObjectEntity The updated message.
 	 */
 	private function attemptSend(
 		ObjectEntity $message,
 		SmsProviderInterface $provider,
-		string $to,
-		string $body,
-		array $options,
+		array $configuration,
+		array $send,
 	): ObjectEntity {
 		$data = $message->getObject();
 		$attempts = (array)($data['attempts'] ?? []);
 
 		try {
-			$source = $this->resolveActiveSource();
-			$configuration = ($source->getObject()['configuration'] ?? []);
-
-			$result = $provider->send(sourceConfiguration: $configuration, to: $to, body: $body, options: $options);
+			$result = $provider->send(
+				sourceConfiguration: $configuration,
+				to: $send['to'],
+				body: $send['body'],
+				options: $send['options']
+			);
 
 			// An empty string, not null: the sms_message schema types `error` as a
 			// string and OpenRegister refuses null, which made every send 500.
@@ -265,9 +391,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
-				uuid: $message->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 			);
 
 			$this->emitDeliveryStatus(message: $saved);
@@ -280,9 +404,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
-				uuid: $message->getUuid()
+				options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 			);
 
 			$this->logger->warning(
@@ -308,7 +430,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
 	 */
 	public function pollStatus(string $uuid): ObjectEntity {
-		$message = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
+		$message = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_MESSAGE));
 		if ($message instanceof ObjectEntity === false) {
 			throw new SmsProviderException(message: 'No sms_message found for uuid "' . $uuid . '".');
 		}
@@ -321,8 +443,13 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 			);
 		}
 
-		$source = $this->resolveActiveSource();
-		$configuration = ($source->getObject()['configuration'] ?? []);
+		$messageSource = (string)($data['sourceSlug'] ?? '');
+		if ($messageSource === '') {
+			$messageSource = null;
+		}
+
+		$configuration = self::configurationOf(source: $this->resolveSource(sourceSlug: $messageSource));
+
 		$provider = $this->resolveProvider(configuration: $configuration);
 
 		$result = $provider->fetchStatus(sourceConfiguration: $configuration, providerMessageId: $providerMessageId);
@@ -343,12 +470,15 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @param string $providerMessageId The provider-assigned message id from the callback.
 	 * @param string $status The reported normalised status ({@see DeliveryResult::STATUSES}).
 	 * @param string|null $detail An optional reason/detail message.
+	 * @param array{slug: string, provider: string}|null $source The source the callback came through, when
+	 *                                                            known: only a message that source sent is updated.
 	 *
 	 * @return ObjectEntity|null The updated message, or null when the providerMessageId is unknown.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
-	public function handleStatusCallback(string $providerMessageId, string $status, ?string $detail): ?ObjectEntity {
+	public function handleStatusCallback(string $providerMessageId, string $status, ?string $detail, ?array $source = null): ?ObjectEntity {
 		if (in_array($status, DeliveryResult::STATUSES, true) === false) {
 			$this->logger->warning(
 				'[SmsDispatchService] inbound status callback carried an unsupported status; ignored',
@@ -357,7 +487,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 			return null;
 		}
 
-		$message = $this->findMessageByProviderMessageId(providerMessageId: $providerMessageId);
+		$message = $this->findMessageByProviderMessageId(providerMessageId: $providerMessageId, source: $source);
 		if ($message === null) {
 			$this->logger->warning(
 				'[SmsDispatchService] inbound status callback for unknown providerMessageId; recorded, no state change',
@@ -386,9 +516,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: RegisterSave::options(register: self::REGISTER, schema: self::SCHEMA_MESSAGE, uuid: $message->getUuid())
 		);
 
 		$this->emitDeliveryStatus(message: $saved);
@@ -398,19 +526,28 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	/**
 	 * Select the provider binding named by `configuration.provider` (default `log`).
 	 *
+	 * A value no binding answers to resolves to a binding that refuses every
+	 * call naming that value, so the message is stored `failed` instead of
+	 * reported sent through the log binding.
+	 *
 	 * @param array $configuration The SMS source's `configuration` object.
 	 *
 	 * @return SmsProviderInterface The resolved provider binding.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
 	 */
 	public function resolveProvider(array $configuration): SmsProviderInterface {
-		$provider = ($configuration['provider'] ?? $this->logProvider->getProviderId());
-		if ($provider === $this->notifyNlProvider->getProviderId()) {
-			return $this->notifyNlProvider;
+		$provider = ($configuration['provider'] ?? null);
+		if (is_scalar($provider) === true) {
+			$provider = (string)$provider;
 		}
 
-		return $this->logProvider;
+		if (is_string($provider) === false) {
+			$provider = null;
+		}
+
+		return $this->providers->resolve(providerId: $provider);
 	}//end resolveProvider()
 
 	/**
@@ -423,28 +560,117 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-send-endpoint-consumable-by-sibling-apps-req-006
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new SmsProviderException(
 				message: 'No active SMS source is configured (register "openconnector", schema "source", '
 					. 'type "sms", isEnabled=true). Configure one before using the SMS channel.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
+
+	/**
+	 * The SMS source a send or a status read goes through.
+	 *
+	 * With a slug, that source, refused unless it is an enabled source of type
+	 * `sms`; without one, the first enabled SMS source.
+	 *
+	 * @param string|null $sourceSlug The source the caller named, or null.
+	 *
+	 * @return ObjectEntity The source, raw.
+	 *
+	 * @throws SmsProviderException With code `unknown-source` when the slug names no enabled SMS source,
+	 *                              or when no SMS source is configured at all.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 */
+	public function resolveSource(?string $sourceSlug): ObjectEntity {
+		if ($sourceSlug === null) {
+			return $this->resolveActiveSource();
+		}
+
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => RawSourceResolver::REGISTER,
+					'schema' => RawSourceResolver::SCHEMA,
+					'slug' => $sourceSlug,
+				],
+				'limit' => 1,
+			]
+		);
+		$results = ($matches['results'] ?? $matches);
+		$source = null;
+		if (is_array($results) === true && ($results[0] ?? null) instanceof ObjectEntity) {
+			$source = $results[0];
+		}
+
+		if (self::isEnabledSmsSource(source: $source, sourceSlug: $sourceSlug) === false) {
+			throw new SmsProviderException(
+				message: $this->l->t('"%s" is not an enabled SMS source.', [$sourceSlug]),
+				errorCode: self::ERROR_UNKNOWN_SOURCE
+			);
+		}
+
+		return $this->rawSourceResolver->resolveRaw(source: $source);
+	}//end resolveSource()
+
+	/**
+	 * Whether a located source is the named, enabled SMS source.
+	 *
+	 * @param ObjectEntity|null $source     The located source.
+	 * @param string            $sourceSlug The slug the caller named.
+	 *
+	 * @return bool
+	 */
+	private static function isEnabledSmsSource(?ObjectEntity $source, string $sourceSlug): bool {
+		if ($source === null) {
+			return false;
+		}
+
+		$data = $source->getObject();
+		return ($data['slug'] ?? null) === $sourceSlug
+			&& ($data['type'] ?? null) === self::SOURCE_TYPE
+			&& ($data['isEnabled'] ?? false) === true;
+
+	}//end isEnabledSmsSource()
+
+	/**
+	 * The source a send names in its options, or null.
+	 *
+	 * @param array $options The send options.
+	 *
+	 * @return string|null The trimmed slug, or null when none or a blank one is given.
+	 */
+	private static function requestedSource(array $options): ?string {
+		$sourceSlug = ($options['sourceSlug'] ?? null);
+		if (is_string($sourceSlug) === false || trim($sourceSlug) === '') {
+			return null;
+		}
+
+		return trim($sourceSlug);
+
+	}//end requestedSource()
+
+	/**
+	 * A source's configuration object, or an empty one.
+	 *
+	 * @param ObjectEntity $source The source.
+	 *
+	 * @return array The configuration.
+	 */
+	private static function configurationOf(ObjectEntity $source): array {
+		$configuration = ($source->getObject()['configuration'] ?? []);
+		if (is_array($configuration) === false) {
+			return [];
+		}
+
+		return $configuration;
+
+	}//end configurationOf()
 
 	/**
 	 * Find an `sms_message` by its provider-assigned message id.
@@ -453,7 +679,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 *
 	 * @return ObjectEntity|null The matching message, or null when none exists.
 	 */
-	private function findMessageByProviderMessageId(string $providerMessageId): ?ObjectEntity {
+	private function findMessageByProviderMessageId(string $providerMessageId, ?array $source = null): ?ObjectEntity {
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
@@ -461,17 +687,49 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 					'schema' => self::SCHEMA_MESSAGE,
 					'providerMessageId' => $providerMessageId,
 				],
-				'limit' => 1,
+				'limit' => self::CALLBACK_MATCH_LIMIT,
 			]
 		);
 		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		if (is_array($results) === false || empty($results) === true) {
 			return null;
 		}
 
-		return $results[0];
+		if ($source === null) {
+			return $results[0];
+		}
+
+		foreach ($results as $message) {
+			if ($message instanceof ObjectEntity && self::sentThrough(message: $message, source: $source) === true) {
+				return $message;
+			}
+		}
+
+		return null;
 	}//end findMessageByProviderMessageId()
+
+	/**
+	 * Whether a message was sent through a source.
+	 *
+	 * A message stores the slug of the source that sent it. One stored without
+	 * a slug matches a source of the same provider.
+	 *
+	 * @param ObjectEntity                          $message The message.
+	 * @param array{slug: string, provider: string} $source  The source's slug and provider.
+	 *
+	 * @return bool True when that source sent the message.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	private static function sentThrough(ObjectEntity $message, array $source): bool {
+		$data = $message->getObject();
+		$slug = (string)($data['sourceSlug'] ?? '');
+		if ($slug !== '') {
+			return $source['slug'] !== '' && hash_equals($slug, $source['slug']) === true;
+		}
+
+		return $source['provider'] !== '' && (string)($data['provider'] ?? '') === $source['provider'];
+	}//end sentThrough()
 
 	/**
 	 * Emit `nl.conduction.sms.delivery.status` for a message's current state.

@@ -16,6 +16,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/specs/or-integration-provider/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -36,11 +39,20 @@ use OCP\IServerContainer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * REQ-OCIP-001..005 on the shipped provider.
  */
 class SynchronizationContractProviderContractTest extends TestCase {
+
+	/**
+	 * The golden rows and queries, taken before list() and row() were split.
+	 *
+	 * @var string
+	 */
+	private const GOLDEN_ROWS = '{"lists":[[{"id":"contract-1","title":"Zaken uit Mozard","subtitle":"Last synced 2026-09-27 \\u00b7 update","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/aaaaaaaa-1","synchronizationId":"aaaaaaaa-1","synchronizationName":"Zaken uit Mozard","originId":"o-1","originHash":"h-1","targetLastAction":"update","targetLastSynced":"2026-09-27T10:00:00+00:00","sourceLastChecked":"2026-09-27T09:00:00+00:00","writeBackConflict":false},{"id":"contract-2","title":"Zaken uit Mozard","subtitle":"create","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/aaaaaaaa-1","synchronizationId":"aaaaaaaa-1","synchronizationName":"Zaken uit Mozard","originId":null,"originHash":null,"targetLastAction":"create","targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"contract-3","title":"Synchronization bbbbbbbb","subtitle":"","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/bbbbbbbb-2","synchronizationId":"bbbbbbbb-2","synchronizationName":"Synchronization bbbbbbbb","originId":null,"originHash":null,"targetLastAction":null,"targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"contract-4","title":"Synchronization cccccccc","subtitle":"","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/cccccccc-3","synchronizationId":"cccccccc-3","synchronizationName":"Synchronization cccccccc","originId":null,"originHash":null,"targetLastAction":"","targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"","title":"Unknown synchronization","subtitle":"","url":null,"synchronizationId":null,"synchronizationName":"Unknown synchronization","originId":null,"originHash":null,"targetLastAction":null,"targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false}],[{"id":"contract-1","title":"Zaken uit Mozard","subtitle":"Last synced 2026-09-27 \\u00b7 update","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/aaaaaaaa-1","synchronizationId":"aaaaaaaa-1","synchronizationName":"Zaken uit Mozard","originId":"o-1","originHash":"h-1","targetLastAction":"update","targetLastSynced":"2026-09-27T10:00:00+00:00","sourceLastChecked":"2026-09-27T09:00:00+00:00","writeBackConflict":false},{"id":"contract-2","title":"Zaken uit Mozard","subtitle":"create","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/aaaaaaaa-1","synchronizationId":"aaaaaaaa-1","synchronizationName":"Zaken uit Mozard","originId":null,"originHash":null,"targetLastAction":"create","targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"contract-3","title":"Synchronization bbbbbbbb","subtitle":"","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/bbbbbbbb-2","synchronizationId":"bbbbbbbb-2","synchronizationName":"Synchronization bbbbbbbb","originId":null,"originHash":null,"targetLastAction":null,"targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"contract-4","title":"Synchronization cccccccc","subtitle":"","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/cccccccc-3","synchronizationId":"cccccccc-3","synchronizationName":"Synchronization cccccccc","originId":null,"originHash":null,"targetLastAction":"","targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"","title":"Unknown synchronization","subtitle":"","url":null,"synchronizationId":null,"synchronizationName":"Unknown synchronization","originId":null,"originHash":null,"targetLastAction":null,"targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false}],[{"id":"contract-1","title":"Zaken uit Mozard","subtitle":"Last synced 2026-09-27 \\u00b7 update","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/aaaaaaaa-1","synchronizationId":"aaaaaaaa-1","synchronizationName":"Zaken uit Mozard","originId":"o-1","originHash":"h-1","targetLastAction":"update","targetLastSynced":"2026-09-27T10:00:00+00:00","sourceLastChecked":"2026-09-27T09:00:00+00:00","writeBackConflict":false},{"id":"contract-2","title":"Zaken uit Mozard","subtitle":"create","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/aaaaaaaa-1","synchronizationId":"aaaaaaaa-1","synchronizationName":"Zaken uit Mozard","originId":null,"originHash":null,"targetLastAction":"create","targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"contract-3","title":"Synchronization bbbbbbbb","subtitle":"","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/bbbbbbbb-2","synchronizationId":"bbbbbbbb-2","synchronizationName":"Synchronization bbbbbbbb","originId":null,"originHash":null,"targetLastAction":null,"targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"contract-4","title":"Synchronization cccccccc","subtitle":"","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/cccccccc-3","synchronizationId":"cccccccc-3","synchronizationName":"Synchronization cccccccc","originId":null,"originHash":null,"targetLastAction":"","targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"","title":"Unknown synchronization","subtitle":"","url":null,"synchronizationId":null,"synchronizationName":"Unknown synchronization","originId":null,"originHash":null,"targetLastAction":null,"targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false}],[{"id":"contract-1","title":"Zaken uit Mozard","subtitle":"Last synced 2026-09-27 \\u00b7 update","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/aaaaaaaa-1","synchronizationId":"aaaaaaaa-1","synchronizationName":"Zaken uit Mozard","originId":"o-1","originHash":"h-1","targetLastAction":"update","targetLastSynced":"2026-09-27T10:00:00+00:00","sourceLastChecked":"2026-09-27T09:00:00+00:00","writeBackConflict":false},{"id":"contract-2","title":"Zaken uit Mozard","subtitle":"create","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/aaaaaaaa-1","synchronizationId":"aaaaaaaa-1","synchronizationName":"Zaken uit Mozard","originId":null,"originHash":null,"targetLastAction":"create","targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"contract-3","title":"Synchronization bbbbbbbb","subtitle":"","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/bbbbbbbb-2","synchronizationId":"bbbbbbbb-2","synchronizationName":"Synchronization bbbbbbbb","originId":null,"originHash":null,"targetLastAction":null,"targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"contract-4","title":"Synchronization cccccccc","subtitle":"","url":"\\/index.php\\/apps\\/integriq\\/synchronizations\\/cccccccc-3","synchronizationId":"cccccccc-3","synchronizationName":"Synchronization cccccccc","originId":null,"originHash":null,"targetLastAction":"","targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false},{"id":"","title":"Unknown synchronization","subtitle":"","url":null,"synchronizationId":null,"synchronizationName":"Unknown synchronization","originId":null,"originHash":null,"targetLastAction":null,"targetLastSynced":null,"sourceLastChecked":null,"writeBackConflict":false}]],"queries":[["register","integriq"],["schema","synchronization_contract"],["findAll",{"filters":{"targetId":"object-7"},"limit":50,"offset":0}],["register","integriq"],["schema","synchronization"],["findAll",{"filters":{"sourceType":"register\\/schema"}}],["find",["aaaaaaaa-1","integriq","synchronization",true,true,true,true,[]]],["find",["bbbbbbbb-2","integriq","synchronization",true,true,true,true,[]]],["find",["cccccccc-3","integriq","synchronization",true,true,true,true,[]]],["register","integriq"],["schema","synchronization_contract"],["findAll",{"filters":{"targetId":"object-7"},"limit":5,"offset":10}],["register","integriq"],["schema","synchronization"],["findAll",{"filters":{"sourceType":"register\\/schema"}}],["find",["aaaaaaaa-1","integriq","synchronization",true,true,true,true,[]]],["find",["bbbbbbbb-2","integriq","synchronization",true,true,true,true,[]]],["find",["cccccccc-3","integriq","synchronization",true,true,true,true,[]]],["register","integriq"],["schema","synchronization_contract"],["findAll",{"filters":{"targetId":"object-7"},"limit":50,"offset":0}],["register","integriq"],["schema","synchronization"],["findAll",{"filters":{"sourceType":"register\\/schema"}}],["find",["aaaaaaaa-1","integriq","synchronization",true,true,true,true,[]]],["find",["bbbbbbbb-2","integriq","synchronization",true,true,true,true,[]]],["find",["cccccccc-3","integriq","synchronization",true,true,true,true,[]]],["register","integriq"],["schema","synchronization_contract"],["findAll",{"filters":{"targetId":"object-7"},"limit":0,"offset":0}],["register","integriq"],["schema","synchronization"],["findAll",{"filters":{"sourceType":"register\\/schema"}}],["find",["aaaaaaaa-1","integriq","synchronization",true,true,true,true,[]]],["find",["bbbbbbbb-2","integriq","synchronization",true,true,true,true,[]]],["find",["cccccccc-3","integriq","synchronization",true,true,true,true,[]]]]}';
 
 	/**
 	 * Build the provider with the storage flag set as given.
@@ -186,7 +198,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		);
 		$provider = $this->provider('true', $this->recordingObjectService([$contract], $seen));
 
-		$rows = $provider->list('some-register', 'some-schema', 'object-7');
+		$rows = $provider->list(new ObjectRef(register: 'some-register', schema: 'some-schema', id: 'object-7'));
 
 		$this->assertSame('integriq', $seen['register']);
 		$this->assertSame('synchronization_contract', $seen['schema']);
@@ -241,7 +253,9 @@ class SynchronizationContractProviderContractTest extends TestCase {
 			}
 		);
 		$objectService->method('find')->willReturnCallback(
-			function ($id, $register = null, $schema = null) use ($syncStatus, &$finds) {
+			function ($id, ?ObjectFindOptions $options = null) use ($syncStatus, &$finds) {
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$finds[] = $schema;
 				if ($schema === 'synchronization') {
 					return ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Zaken API: read'], (string)$id);
@@ -264,7 +278,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$contract = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'zgw-zaken', 'targetId' => 'object-7'], 'contract-1');
 		$provider = $this->provider('true', $this->writeBackObjectService([$contract], 'conflict'));
 
-		$rows = $provider->list('cases', 'case', 'object-7');
+		$rows = $provider->list(new ObjectRef(register: 'cases', schema: 'case', id: 'object-7'));
 
 		$this->assertCount(1, $rows);
 		$this->assertTrue($rows[0]['writeBackConflict']);
@@ -280,7 +294,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$contract = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'zgw-zaken', 'targetId' => 'object-7'], 'contract-1');
 		$provider = $this->provider('true', $this->writeBackObjectService([$contract], 'synced'));
 
-		$this->assertFalse($provider->list('cases', 'case', 'object-7')[0]['writeBackConflict']);
+		$this->assertFalse($provider->list(new ObjectRef(register: 'cases', schema: 'case', id: 'object-7'))[0]['writeBackConflict']);
 
 	}//end testAnAcceptedWriteBackShowsNoConflict()
 
@@ -293,7 +307,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$finds = [];
 		$provider = $this->provider('true', $this->writeBackObjectService([], 'conflict', $finds));
 
-		$this->assertSame([], $provider->list('cases', 'case', 'object-8'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'cases', schema: 'case', id: 'object-8')));
 		$this->assertSame([], $finds);
 
 	}//end testAnUnsyncedObjectIsNotReadForAConflict()
@@ -309,7 +323,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$seen = [];
 		$provider = $this->provider('true', $this->recordingObjectService([$contract], $seen));
 
-		$rows = $provider->list('some-register', 'some-schema', 'object-7');
+		$rows = $provider->list(new ObjectRef(register: 'some-register', schema: 'some-schema', id: 'object-7'));
 
 		$this->assertFalse($rows[0]['writeBackConflict']);
 
@@ -325,7 +339,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$seen = [];
 		$provider = $this->provider('true', $this->recordingObjectService([], $seen));
 
-		$provider->list('r', 's', 'object-7', ['_limit' => 10, '_page' => 3]);
+		$provider->list(new ObjectRef(register: 'r', schema: 's', id: 'object-7'), ['_limit' => 10, '_page' => 3]);
 
 		$this->assertSame(10, $seen['config']['limit']);
 		$this->assertSame(20, $seen['config']['offset']);
@@ -341,7 +355,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$seen = [];
 		$provider = $this->provider('true', $this->recordingObjectService([], $seen));
 
-		$this->assertSame([], $provider->list('r', 's', 'object-8'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'object-8')));
 
 	}//end testAnObjectNoSynchronizationWroteGetsAnEmptyList()
 
@@ -356,7 +370,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$provider = $this->provider('false', $objectService);
 
 		$this->assertFalse($provider->isEnabled());
-		$this->assertSame([], $provider->list('r', 's', 'object-7'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'object-7')));
 		$health = $provider->health();
 		$this->assertSame('unavailable', $health['status']);
 		$this->assertNotEmpty($health['message']);
@@ -410,5 +424,66 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		(new ServiceRegistrar())->boot(context: $context);
 
 	}//end testBootCarriesOnWhenTheRegistryCannotBeResolved()
+
+
+	/**
+	 * GOLDEN: the rows of a list over object and array contracts, a repeated
+	 * synchronization (its name is looked up once), unnamed and missing
+	 * synchronizations and every paging filter, with every query made.
+	 * Pinned before list() and row() were split.
+	 *
+	 * @return void
+	 */
+	public function testGoldenRowsAndQueries(): void {
+		$contracts = [
+			ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'aaaaaaaa-1', 'targetLastSynced' => '2026-09-27T10:00:00+00:00', 'targetLastAction' => 'update', 'originId' => 'o-1', 'originHash' => 'h-1', 'sourceLastChecked' => '2026-09-27T09:00:00+00:00'], 'contract-1'),
+			ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'aaaaaaaa-1', 'targetLastAction' => 'create'], 'contract-2'),
+			['uuid' => 'contract-3', 'object' => ['synchronizationId' => 'bbbbbbbb-2']],
+			['uuid' => 'contract-4', 'synchronizationId' => 'cccccccc-3', 'targetLastAction' => ''],
+			['object' => []],
+		];
+		$queries = [];
+		$objectService = ObjectServiceMockBuilder::make($this);
+		$objectService->method('setRegister')->willReturnCallback(
+			function ($register) use ($objectService, &$queries) {
+				$queries[] = ['register', $register];
+				return $objectService;
+			}
+		);
+		$objectService->method('setSchema')->willReturnCallback(
+			function ($schema) use ($objectService, &$queries) {
+				$queries[] = ['schema', $schema];
+				return $objectService;
+			}
+		);
+		$objectService->method('findAll')->willReturnCallback(
+			function (array $config) use ($contracts, &$queries) {
+				$queries[] = ['findAll', $config];
+				return ['results' => $contracts, 'total' => count($contracts)];
+			}
+		);
+		$objectService->method('find')->willReturnCallback(
+			function ($id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true) use (&$queries) {
+				$options ??= new ObjectFindOptions();
+				// Recorded in the golden file's layout: id, register, schema, rbac, multitenancy, render, audit, extend.
+				$queries[] = ['find', [$id, $options->register, $options->schema, $_rbac, $_multitenancy, $options->render, $options->audit, $options->extend]];
+				$id = (string)$id;
+				if (str_starts_with($id, 'cccc') === true) {
+					throw new \RuntimeException('gone');
+				}
+
+				return ObjectServiceMockBuilder::objectEntity($this, (str_starts_with($id, 'aaaa') === true) ? ['name' => 'Zaken uit Mozard'] : [], $id);
+			}
+		);
+		$provider = $this->provider('true', $objectService);
+
+		$lists = [];
+		foreach ([[], ['_limit' => '5', '_page' => '3'], ['_page' => 0], ['_limit' => 0]] as $filters) {
+			$lists[] = $provider->list(new ObjectRef(register: 'some-register', schema: 'some-schema', id: 'object-7'), $filters);
+		}
+
+		$this->assertSame(self::GOLDEN_ROWS, json_encode(['lists' => $lists, 'queries' => $queries]));
+
+	}//end testGoldenRowsAndQueries()
 
 }//end class

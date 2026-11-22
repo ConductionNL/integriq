@@ -3,6 +3,9 @@
 /**
  * Integriq Listener Schema Resolver.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Tells an OpenRegister event listener whether an object belongs to one of
  * integriq's own schemas, given the object as OpenRegister really emits it.
  *
@@ -46,9 +49,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
@@ -70,7 +70,7 @@ use Throwable;
  *
  * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-the-outbound-consumer-reacts-only-to-integriqs-own-event-schema-req-007
  */
-class ListenerSchemaResolver {
+class ListenerSchemaResolver implements ListenerSchemaResolverInterface {
 
 	/**
 	 * Integriq's OpenRegister register slug.
@@ -216,6 +216,7 @@ class ListenerSchemaResolver {
 			$mapper = $this->container->get($service);
 			// Both mappers take `_rbac` and `_multitenancy` by name; see the class
 			// docblock for why a slug lookup skips them.
+			// Unscoped: an event listener resolves a schema slug as the system.
 			$entity = $mapper->find($id, _rbac: false, _multitenancy: false);
 			if (is_object($entity) === true) {
 				// The slug accessor is magic on OpenRegister's Register and

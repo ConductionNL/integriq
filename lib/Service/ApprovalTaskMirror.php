@@ -28,7 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 use OCA\OpenRegister\Service\Task\TaskService as ORTaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -173,7 +176,10 @@ class ApprovalTaskMirror {
 		}
 
 		try {
-			$this->taskService->offer(uuid: $taskUuid, pool: ['candidateGroups' => [$group]], actor: $requester);
+			$this->taskService->offer(
+				ref: new TaskActorRef(uuid: $taskUuid, actor: $requester),
+				pool: ['candidateGroups' => [$group]]
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'ApprovalTaskMirror: the shared task service refused to offer the mirror; notifying the group directly: ' . $e->getMessage(),
@@ -211,9 +217,13 @@ class ApprovalTaskMirror {
 		try {
 			$this->taskService->applyTimerOutcome(
 				uuid: $taskUuid,
-				outcome: $outcome,
-				source: 'integriq:' . $actorUid,
-				reason: sprintf("Approval request resolved as '%s'.", (string)($data['status'] ?? ''))
+				outcome: new TimerOutcome(
+					outcome: $outcome,
+					trigger: new TaskTrigger(
+						source: 'integriq:' . $actorUid,
+						reason: sprintf("Approval request resolved as '%s'.", (string)($data['status'] ?? ''))
+					)
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

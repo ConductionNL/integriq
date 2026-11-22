@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -35,7 +38,7 @@ interface EgressGuardInterface {
 	 * @throws EgressRefusedException When the URL is refused; the message names
 	 *                                the rule and the host, never a credential.
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	public function assertAllowed(string $url): void;
 }

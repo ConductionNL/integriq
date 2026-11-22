@@ -220,6 +220,16 @@
           "order": 10
         },
         {
+          "id": "Feeds",
+          "label": "Data feeds",
+          "icon": "DatabaseExportOutline",
+          "route": "Endpoints",
+          "query": {
+            "targetType": "feed"
+          },
+          "order": 15
+        },
+        {
           "id": "ApiProducts",
           "label": "API products",
           "icon": "PackageVariantClosed",
@@ -239,6 +249,13 @@
           "icon": "CheckDecagramOutline",
           "route": "Approvals",
           "order": 40
+        },
+        {
+          "id": "DeveloperPortal",
+          "label": "Developer portal",
+          "icon": "AccountKeyOutline",
+          "route": "DeveloperPortal",
+          "order": 50
         }
       ]
     },
@@ -284,6 +301,21 @@
           "icon": "BellRingOutline",
           "route": "NotificatiesAbonnementen",
           "order": 30
+        },
+        {
+          "id": "ServiceFetches",
+          "label": "Service fetches",
+          "icon": "CloudSearchOutline",
+          "route": "ServiceFetches",
+          "order": 35
+        },
+        {
+          "id": "EgressDestinations",
+          "label": "Outbound destinations",
+          "icon": "EarthArrowRight",
+          "route": "EgressDestinations",
+          "order": 40,
+          "permission": "admin"
         }
       ]
     },
@@ -965,6 +997,13 @@
             "label": "Statutory gateways",
             "icon": "ScaleBalance",
             "handler": "openGatewayCatalogueHandler"
+          },
+          {
+            "id": "openapi-import",
+            "label": "Import an OpenAPI description",
+            "icon": "Api",
+            "handler": "openOpenApiImportHandler",
+            "adminOnly": true
           }
         ],
         "showViewAction": false,
@@ -981,6 +1020,12 @@
             "label": "Test connection",
             "icon": "CheckCircleOutline",
             "handler": "testSourceHandler"
+          },
+          {
+            "id": "set-residency",
+            "label": "Set residency",
+            "icon": "MapMarkerRadiusOutline",
+            "handler": "setSourceResidencyHandler"
           },
           {
             "id": "preview-directory-run",
@@ -1124,6 +1169,48 @@
             }
           },
           {
+            "id": "src-kpis-pacing",
+            "type": "stats-block",
+            "icon": "Gauge",
+            "title": "Pacing",
+            "_note": "sources-outbound-rate-limit-pacing REQ-RLPC-001: the budget the source announced (rateLimitRemaining, reset by the engine when the window passes) and the time calls waited for their paced turn over the last day (sum of call_log.pacedMs, the pacedMsPerSource aggregation). The configured pace itself is a source field and shows in the Connection widget.",
+            "content": {
+              "entries": [
+                {
+                  "title": "Budget left",
+                  "countLabel": "calls in this window",
+                  "register": "integriq",
+                  "schema": "source",
+                  "metric": "sum",
+                  "field": "rateLimitRemaining",
+                  "filter": {
+                    "id": "@objectId"
+                  }
+                },
+                {
+                  "title": "Waited",
+                  "countLabel": "ms for a paced turn, last day",
+                  "register": "integriq",
+                  "schema": "call_log",
+                  "metric": "sum",
+                  "field": "pacedMs",
+                  "filter": {
+                    "source": "@objectId",
+                    "created": {
+                      "gte": "@today-1d"
+                    }
+                  },
+                  "route": {
+                    "name": "SourceLogs",
+                    "query": {
+                      "source": "@objectId"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
             "id": "src-calls",
             "type": "object-list",
             "icon": "Timeline",
@@ -1237,6 +1324,88 @@
             "icon": "ForumOutline",
             "title": "Incident war-room",
             "_note": "Deck and Talk are runtime-optional: OpenRegister's providers report isEnabled() false when the Nextcloud app is absent and the widget does not render. That is why the e2e spec tolerates their absence rather than asserting three widgets unconditionally."
+          },
+          {
+            "id": "src-workspace-devices",
+            "type": "record-list",
+            "icon": "Laptop",
+            "title": "Devices",
+            "_note": "connectors-endpoint-workspace-adapters (REQ-EWC-008): what the connected workspace manager reports, read through GET /api/sources/{id}/workspace-entries, which calls the vendor through the credential broker. Shown only on a source whose configuration.workspaceAdapter names one of these adapters. Each row names the Nextcloud user it maps to, or says that no user matched.",
+            "visibleWhen": {
+              "field": "configuration.workspaceAdapter",
+              "op": "in",
+              "value": [
+                "intune",
+                "jamf-pro"
+              ]
+            },
+            "content": {
+              "endpointSource": {
+                "url": "/apps/integriq/api/sources/@objectId/workspace-entries",
+                "responsePath": "entries"
+              },
+              "presentation": "rows",
+              "title": "{name}",
+              "meta": "{remoteUser} · {lastSeen|datetime}",
+              "pill": {
+                "label": "{user.displayName}",
+                "variant": "success",
+                "cases": [
+                  {
+                    "when": {
+                      "field": "userFound",
+                      "op": "eq",
+                      "value": false
+                    },
+                    "label": "No user found",
+                    "variant": "warning"
+                  }
+                ]
+              },
+              "emptyText": "No devices listed. A source without a credential calls nothing: add a credential to see what it reports.",
+              "errorText": "The workspace manager could not be read."
+            }
+          },
+          {
+            "id": "src-workspace-sessions",
+            "type": "record-list",
+            "icon": "MonitorAccount",
+            "title": "Sessions",
+            "_note": "connectors-endpoint-workspace-adapters (REQ-EWC-008): what the connected workspace manager reports, read through GET /api/sources/{id}/workspace-entries, which calls the vendor through the credential broker. Shown only on a source whose configuration.workspaceAdapter names one of these adapters. Each row names the Nextcloud user it maps to, or says that no user matched.",
+            "visibleWhen": {
+              "field": "configuration.workspaceAdapter",
+              "op": "in",
+              "value": [
+                "azure-virtual-desktop",
+                "citrix-daas"
+              ]
+            },
+            "content": {
+              "endpointSource": {
+                "url": "/apps/integriq/api/sources/@objectId/workspace-entries",
+                "responsePath": "entries"
+              },
+              "presentation": "rows",
+              "title": "{name}",
+              "meta": "{remoteUser} · {lastSeen|datetime}",
+              "pill": {
+                "label": "{user.displayName}",
+                "variant": "success",
+                "cases": [
+                  {
+                    "when": {
+                      "field": "userFound",
+                      "op": "eq",
+                      "value": false
+                    },
+                    "label": "No user found",
+                    "variant": "warning"
+                  }
+                ]
+              },
+              "emptyText": "No sessions listed. A source without a credential calls nothing: add a credential to see what it reports.",
+              "errorText": "The workspace manager could not be read."
+            }
           }
         ],
         "layout": [
@@ -1289,12 +1458,20 @@
             "gridHeight": 6
           },
           {
-            "id": "4",
-            "widgetId": "src-related",
+            "id": "2e",
+            "widgetId": "src-kpis-pacing",
             "gridX": 8,
             "gridY": 8,
             "gridWidth": 4,
-            "gridHeight": 6
+            "gridHeight": 3
+          },
+          {
+            "id": "4",
+            "widgetId": "src-related",
+            "gridX": 8,
+            "gridY": 11,
+            "gridWidth": 4,
+            "gridHeight": 3
           },
           {
             "id": "5",
@@ -1327,6 +1504,22 @@
             "gridY": 25,
             "gridWidth": 6,
             "gridHeight": 6
+          },
+          {
+            "id": "9",
+            "widgetId": "src-workspace-devices",
+            "gridX": 0,
+            "gridY": 31,
+            "gridWidth": 12,
+            "gridHeight": 6
+          },
+          {
+            "id": "10",
+            "widgetId": "src-workspace-sessions",
+            "gridX": 0,
+            "gridY": 37,
+            "gridWidth": 12,
+            "gridHeight": 6
           }
         ],
         "bodyWidgets": [
@@ -1335,6 +1528,25 @@
             "component": "CircuitBreakerBadge",
             "title": "Circuit breaker",
             "placement": "before-body",
+            "colSpan": 12
+          },
+          {
+            "id": "src-body-capture",
+            "component": "BodyCaptureWindow",
+            "title": "Investigation window",
+            "placement": "before-body",
+            "colSpan": 12
+          },
+          {
+            "id": "src-host-key",
+            "component": "SourceHostKeyPanel",
+            "placement": "after-data",
+            "colSpan": 12
+          },
+          {
+            "id": "src-database",
+            "component": "DatabaseSourcePanel",
+            "placement": "after-data",
             "colSpan": 12
           },
           {
@@ -1348,6 +1560,15 @@
             "component": "SourceRunSummaryWidget",
             "placement": "after-data",
             "colSpan": 12
+          },
+          {
+            "id": "src-cloudevent-receiver",
+            "component": "CloudEventReceiverUrl",
+            "placement": "after-data",
+            "colSpan": 12,
+            "props": {
+              "sourceId": "@objectId"
+            }
           }
         ],
         "sidebar": {
@@ -1376,9 +1597,13 @@
       "title": "Source logs",
       "actionsComponent": "CallLogActions",
       "slots": {
-        "row-actions": "CallLogRowActions"
+        "row-actions": "CallLogRowActions",
+        "row-detail": "CallLogDetail"
       },
       "config": {
+        "filter": {
+          "direction": "outbound"
+        },
         "filterControls": [
           {
             "key": "statusCode",
@@ -1422,6 +1647,33 @@
               "schema": "source",
               "labelKey": "name",
               "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "mcpMethod",
+            "label": "MCP method",
+            "type": "select",
+            "options": [
+              { "label": "Session start", "filter": { "mcpMethod": "initialize" } },
+              { "label": "Tool list", "filter": { "mcpMethod": "tools/list" } },
+              { "label": "Tool call", "filter": { "mcpMethod": "tools/call" } },
+              { "label": "Resource request", "filter": { "mcpMethod": "resources/read" } },
+              { "label": "Prompt request", "filter": { "mcpMethod": "prompts/get" } }
+            ]
+          },
+          {
+            "key": "mcpTool",
+            "label": "MCP tool",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "call_log",
+              "labelKey": "mcpTool",
+              "valueKey": "mcpTool",
+              "filter": {
+                "direction": "outbound",
+                "mcpMethod": "tools/call"
+              }
             }
           },
           {
@@ -1516,8 +1768,14 @@
             "key": "request.url",
             "label": "URL",
             "sortable": false,
-            "width": "40%",
+            "width": "28%",
             "cellClass": "cn-cell--truncate"
+          },
+          {
+            "key": "mcpTool",
+            "label": "MCP tool",
+            "sortable": true,
+            "width": "12%"
           },
           {
             "key": "response.responseTime",
@@ -1537,7 +1795,27 @@
       "route": "/endpoints",
       "type": "index",
       "title": "Endpoints",
+      "_note": "gateway-declared-data-feeds task 4: the Data feeds menu entry opens Endpoints with ?targetType=feed, so the list holds only the read-only endpoints FeedDeclarationService keeps in step with each app's lib/Settings/feeds.json: the declaring app, the address, the declared fields and the page size. Nothing is created here: a feed exists because an app declares it. The consumers subscribed to an app's feeds are on its API product (<app> data feeds).",
       "config": {
+        "queryPresets": [
+          {
+            "match": {
+              "targetType": "feed"
+            },
+            "title": "Data feeds",
+            "columns": [
+              "name",
+              "feed.app",
+              "endpoint",
+              "feed.fields",
+              "feed.pageSize",
+              "updated"
+            ],
+            "showAdd": false,
+            "searchPlaceholder": "Search data feeds",
+            "footerNote": "A feed is declared by its app in lib/Settings/feeds.json. The consumers that may read it are those subscribed to the app's API product, each within the scope values bound to it."
+          }
+        ],
         "register": "integriq",
         "schema": "endpoint",
         "columns": [
@@ -1557,7 +1835,17 @@
           "method",
           "targetType",
           "targetId",
-          "configurations"
+          "configurations",
+          "allowedOperations",
+          "maxDepth",
+          "introspection",
+          "operationLimits",
+          "streamProtocol",
+          "streamRoute",
+          "streamUpstream",
+          "allowedConsumers",
+          "requiredScopes",
+          "connectionRateLimit"
         ],
         "fieldOverrides": {
           "name": {
@@ -1591,6 +1879,76 @@
           },
           "configurations": {
             "order": 10
+          },
+          "allowedOperations": {
+            "order": 11,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "graphql"
+            }
+          },
+          "maxDepth": {
+            "order": 12,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "graphql"
+            }
+          },
+          "introspection": {
+            "order": 13,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "graphql"
+            }
+          },
+          "operationLimits": {
+            "order": 14,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "graphql"
+            }
+          },
+          "streamProtocol": {
+            "order": 15,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
+          },
+          "streamRoute": {
+            "order": 16,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
+          },
+          "streamUpstream": {
+            "order": 17,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
+          },
+          "allowedConsumers": {
+            "order": 18,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
+          },
+          "requiredScopes": {
+            "order": 19,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
+          },
+          "connectionRateLimit": {
+            "order": 20,
+            "visibleWhen": {
+              "field": "targetType",
+              "equals": "stream"
+            }
           }
         },
         "sidebar": {
@@ -1658,6 +2016,38 @@
             "type": "related",
             "icon": "LinkVariant",
             "title": "Wired to"
+          },
+          {
+            "id": "ep-target-split",
+            "type": "chart",
+            "icon": "ChartBoxOutline",
+            "title": "Calls per target",
+            "_note": "gateway-upstream-routing REQ-UPRT-003: how many calls each target of an endpoint with several targets served, from call_log.routedTarget (the callsPerTarget grouping), labelled with the source's name. Shown only when the endpoint has targets; an endpoint with one source has no split to show.",
+            "visibleWhen": {
+              "field": "targets",
+              "op": "notEmpty"
+            },
+            "props": {
+              "chartKind": "donut",
+              "legendPosition": "bottom",
+              "emptyLabel": "No call has been routed to a target yet."
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "call_log",
+              "filter": {
+                "endpoint": "@objectId"
+              },
+              "aggregate": {
+                "groupBy": "routedTarget",
+                "metric": "count",
+                "labelResolve": {
+                  "register": "integriq",
+                  "schema": "source",
+                  "labelField": "name"
+                }
+              }
+            }
           }
         ],
         "layout": [
@@ -1676,6 +2066,22 @@
             "gridY": 0,
             "gridWidth": 4,
             "gridHeight": 7
+          },
+          {
+            "id": "3",
+            "widgetId": "ep-target-split",
+            "gridX": 0,
+            "gridY": 7,
+            "gridWidth": 6,
+            "gridHeight": 5
+          }
+        ],
+        "bodyWidgets": [
+          {
+            "id": "ep-cloudevent-receiver",
+            "component": "CloudEventReceiverUrl",
+            "placement": "after-data",
+            "colSpan": 12
           }
         ],
         "sidebar": {
@@ -1749,6 +2155,20 @@
               "schema": "endpoint",
               "labelKey": "name",
               "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "graphqlOperationName",
+            "label": "GraphQL operation",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "call_log",
+              "labelKey": "graphqlOperationName",
+              "valueKey": "graphqlOperationName",
+              "filter": {
+                "direction": "inbound"
+              }
             }
           },
           {
@@ -1831,11 +2251,17 @@
             "key": "statusMessage",
             "label": "Result",
             "sortable": true,
-            "width": "25%"
+            "width": "19%"
           },
           {
             "key": "direction",
             "label": "Direction",
+            "sortable": true,
+            "width": "12%"
+          },
+          {
+            "key": "graphqlOperationName",
+            "label": "Operation",
             "sortable": true,
             "width": "12%"
           },
@@ -1853,7 +2279,7 @@
             "key": "product",
             "label": "API product",
             "sortable": true,
-            "width": "24%",
+            "width": "18%",
             "widget": "fkResolve",
             "widgetProps": {
               "register": "integriq",
@@ -2057,6 +2483,15 @@
             }
           }
         ],
+        "bodyWidgets": [
+          {
+            "id": "con-credentials",
+            "component": "ConsumerCredentialsPanel",
+            "title": "Credentials",
+            "placement": "after-data",
+            "colSpan": 12
+          }
+        ],
         "layout": [
           {
             "id": "1",
@@ -2246,6 +2681,7 @@
           "interval",
           "isEnabled",
           "lastRun",
+          "nextRun",
           "status"
         ],
         "includeFields": [
@@ -2254,6 +2690,7 @@
           "jobClass",
           "arguments",
           "interval",
+          "schedule",
           "timeSensitive",
           "allowParallelRuns",
           "isEnabled",
@@ -2473,6 +2910,39 @@
             }
           }
         ]
+      }
+    },
+    {
+      "id": "ServiceFetches",
+      "route": "/service-fetches",
+      "type": "index",
+      "title": "Service fetches",
+      "_note": "Beheer > Service fetches (forms-service-fetch-for-apps Task 5, REQ-SF-001, design D5). The serviceFetch schema is readable by administrators only, so the list is empty for everyone else. Create, edit, enable and disable are the index page's built-in form over the schema; Testen is a row action opening TestServiceFetchModal, which posts sample inputs to the admin-only POST /api/service-fetches/{slug}/test and shows the raw answer next to the mapped outputs.",
+      "config": {
+        "register": "integriq",
+        "schema": "serviceFetch",
+        "columns": [
+          "slug",
+          "title",
+          "source",
+          "allowedApps",
+          "enabled"
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "actions": [
+          {
+            "id": "test",
+            "label": "Test",
+            "icon": "PlayOutline",
+            "handler": "testServiceFetchHandler"
+          }
+        ],
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {
@@ -3141,6 +3611,19 @@
       }
     },
     {
+      "id": "DeveloperPortal",
+      "route": "/developer-portal",
+      "type": "custom",
+      "component": "DeveloperPortalPage",
+      "_note": "Custom page: the developer portal (access-developer-portal-and-subscriptions). A developer holds no rights on the integriq register, so the page cannot be a CnIndexPage over OpenRegister's object API; it reads the developer-group-checked /api/portal routes, which return only public products and the developer's own applications, and requests access through the product's approval.",
+      "title": "Developer portal",
+      "config": {
+        "register": "integriq",
+        "schema": "api_product",
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
       "id": "Approvals",
       "route": "/approvals",
       "type": "custom",
@@ -3267,6 +3750,14 @@
             "icon": "FileSendOutline",
             "category": "protocols",
             "route": "PeppolTransmissions"
+          },
+          {
+            "id": "DigipoortFilings",
+            "label": "Digipoort filings",
+            "description": "Filings sent to the Belastingdienst and the KvK, and what each recipient answered.",
+            "icon": "FileSendOutline",
+            "category": "protocols",
+            "route": "DigipoortFilings"
           },
           {
             "id": "IwmoMessages",
@@ -3919,6 +4410,68 @@
       }
     },
     {
+      "id": "DigipoortFilings",
+      "route": "/messages/digipoort",
+      "type": "logs",
+      "title": "Digipoort filings",
+      "_note": "connectors-digipoort-sbr-filing REQ-DPS-004: every SBR filing integriq delivered through Digipoort. The row detail shows the status history with its times and the recipient's errors. Columns are declared schema properties; the status colours map the schema's own enum members.",
+      "config": {
+        "register": "integriq",
+        "schema": "sbr_filing",
+        "sortKey": "created",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "created",
+            "label": "Time",
+            "sortable": true,
+            "width": "15%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "recipient",
+            "label": "Recipient",
+            "sortable": true,
+            "width": "14%"
+          },
+          {
+            "key": "filingType",
+            "label": "Filing type",
+            "sortable": true,
+            "width": "16%"
+          },
+          {
+            "key": "deliveryReference",
+            "label": "Delivery reference",
+            "sortable": true,
+            "width": "25%"
+          },
+          {
+            "key": "status",
+            "label": "Status",
+            "sortable": true,
+            "width": "12%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "queued": "info",
+                "delivered": "info",
+                "accepted": "success",
+                "rejected": "error",
+                "failed": "error"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "IwmoMessages",
       "route": "/messages/iwmo",
       "type": "logs",
@@ -4022,7 +4575,7 @@
             "key": "recipientMsisdn",
             "label": "Recipient",
             "sortable": true,
-            "width": "18%"
+            "width": "14%"
           },
           {
             "key": "provider",
@@ -4031,10 +4584,16 @@
             "width": "13%"
           },
           {
+            "key": "sourceSlug",
+            "label": "Source",
+            "sortable": true,
+            "width": "12%"
+          },
+          {
             "key": "templateId",
             "label": "Template",
             "sortable": true,
-            "width": "18%"
+            "width": "10%"
           },
           {
             "key": "status",
@@ -4573,6 +5132,18 @@
       "component": "DeadLettersPage",
       "title": "Dead letters",
       "_note": "Merges the former EventDeliveries (event_message, /api/events/dead-letter) and SyncDeadLetters (sync_item_dead_letter, /api/sync-dead-letter) pages into ONE navigation entry under Operations. They were the same operations view with identical Replay/Discard verbs over two tables — SyncDeadLetters' own note said 'Mirrors EventDeliveries' — and both rendered EmailAlertOutline, so the menu showed one glyph twice. This is a navigation merge, NOT a rewrite: the queues stay separate underneath (different schemas, different admin-only endpoints, different replay semantics) and DeadLettersPage delegates to the two existing components. ?queue=sync deep-links the sync queue, which is where the old /synchronizations/dead-letters route redirects.",
+      "config": {
+        "register": "integriq",
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
+      "id": "EgressDestinations",
+      "route": "/egress-destinations",
+      "type": "custom",
+      "component": "EgressDestinationsPage",
+      "title": "Outbound destinations",
+      "_note": "Custom page (connections-declare-data-residency REQ-RES-002/003): lists GET /api/egress/destinations (every enabled source plus call log hosts of the last 30 days that no source covers) with its verdict, the count per zone and the EU-only switch (PUT /api/egress/eu-only). Admin only, as the endpoints are. Not an index page: the rows are not OpenRegister objects but a computed list, and the switch is refused while a destination is not shown to be in the EU.",
       "config": {
         "register": "integriq",
         "documentationUrl": "https://integriq.conduction.nl"

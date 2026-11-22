@@ -34,6 +34,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Contract\ObjectSaveOptions as PublishedObjectSaveOptions;
 
 /**
  * Unit tests for PdokConnector — normalisation, cache behaviour, breaker logic.
@@ -272,6 +274,9 @@ class PdokConnectorTest extends TestCase {
 			'lookup-no-register' => ['lookup', ['noRegister' => true, 'status' => 200]],
 			'reverse-stored-empty-upstream-200' => ['reverse', ['stored' => [], 'status' => 200]],
 			'reverse-write-fails' => ['reverse', ['stored' => [], 'status' => 200, 'saveFails' => true]],
+			'reverse-stored-fresh' => ['reverse', ['stored' => [['pdokId' => 'adr-2', 'fetchedAt' => $fresh], ['pdokId' => 'adr-3', 'fetchedAt' => $fresh]]]],
+			'lookup-stored-throws' => ['lookup', ['stored' => [], 'storedThrows' => true, 'status' => 200]],
+			'lookup-stored-without-fetchedAt' => ['lookup', ['stored' => [['pdokId' => 'adr-1']], 'status' => 200]],
 		];
 
 		$actual = [];
@@ -345,11 +350,13 @@ class PdokConnectorTest extends TestCase {
 					public function getMapper(...$args): object {
 						$this->calls[] = ['or.getMapper', $args];
 						$stored = ($this->case['stored'] ?? []);
-						return new class($stored) {
+						return new class($stored, $this->calls, ($this->case['storedThrows'] ?? false)) {
 							/**
 							 * @param array $stored The stored rows.
+							 * @param array $calls  The call log, by reference.
+							 * @param bool  $throws Whether the query fails.
 							 */
-							public function __construct(private array $stored) {
+							public function __construct(private array $stored, private array &$calls, private bool $throws) {
 							}
 
 							/**
@@ -358,6 +365,11 @@ class PdokConnectorTest extends TestCase {
 							 * @return array
 							 */
 							public function findAll(array $config): array {
+								$this->calls[] = ['or.mapper.findAll', $config];
+								if ($this->throws === true) {
+									throw new \RuntimeException('register query failed');
+								}
+
 								return $this->stored;
 							}
 						};
@@ -389,14 +401,15 @@ class PdokConnectorTest extends TestCase {
 					 */
 					public function saveObject(
 						$object,
-						?string $register = null,
-						?string $schema = null,
-						?string $uuid = null,
+						ObjectSaveOptions|PublishedObjectSaveOptions $options = new ObjectSaveOptions(),
 						bool $_rbac = true,
-						bool $_multitenancy = true,
-						bool $silent = false,
-						bool $_validation = true,
+						bool $_multitenancy = true
 					): ObjectEntity {
+						$register = $options->target->register;
+						$schema = $options->target->schema;
+						$uuid = $options->uuid;
+						$silent = $options->policy->silent ?? false;
+						$_validation = $options->policy->validation ?? true;
 						$this->calls[] = ['or.saveObject', ['register' => $register, 'schema' => $schema, 'object' => $object, 'uuid' => $uuid, '_rbac' => $_rbac, '_multitenancy' => $_multitenancy]];
 						if (($this->case['saveFails'] ?? false) === true) {
 							throw new \RuntimeException('register refused');

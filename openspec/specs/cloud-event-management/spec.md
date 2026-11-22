@@ -16,7 +16,7 @@ PHPUnit/Newman). It is a retrofit spec.
 
 ## Requirements
 
-### REQ-CE-UI-001: Cloud Event Management UI
+### Requirement: Cloud Event Management UI (REQ-CE-UI-001)
 
 Integriq MUST provide a Cloud Events section in its SPA where administrators
 can browse, inspect, and manage incoming cloud events and their logs.
@@ -39,12 +39,18 @@ can browse, inspect, and manage incoming cloud events and their logs.
 - WHEN they navigate to the Cloud Event logs page at `/apps/integriq/cloud-events/logs`
 - THEN the page mounts and renders the main content area
 
-### REQ-CE-001: CloudEvents inbound routing
+### Requirement: CloudEvents inbound routing (REQ-CE-001)
 
 The system SHALL receive inbound CloudEvents at the configured receiver
 endpoint, validate the CloudEvents envelope (specversion, source, type, id),
 persist the event as an `event` object in OpenRegister, and route it to any
 matching synchronization or rule pipelines based on `type` and `source` filters.
+
+The receiver that implements this requirement is specified in
+`openspec/specs/events-cloudevents/spec.md` REQ-017 ("Outside systems SHALL
+send CloudEvents to a receiver that checks and routes them"), built by the
+archived change `cloudevents-receiver`. Before that change this requirement
+was marked implemented while no receiver route existed.
 
 @e2e exclude backend CloudEvents inbound routing — covered by PHPUnit/Newman, not browser UI
 

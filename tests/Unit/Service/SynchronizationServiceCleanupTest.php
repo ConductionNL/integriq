@@ -14,6 +14,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -36,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests the scope-checked cleanup behaviour in deleteInvalidObjects.
@@ -159,9 +163,8 @@ class SynchronizationServiceCleanupTest extends TestCase {
 	 * @return array<string, int>
 	 */
 	private function findParamPositions(): array {
-		$rm = new ReflectionMethod(ORObjectService::class, 'find');
 		$positions = [];
-		foreach ($rm->getParameters() as $i => $p) {
+		foreach (LegacyObjectArgs::parameters(class: ORObjectService::class, method: 'find') as $i => $p) {
 			$positions[$p->getName()] = $i;
 		}
 
@@ -188,6 +191,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 			->method('find')
 			->willReturnCallback(
 				function (...$args) use ($pos, $targetEntity) {
+					$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 					$this->assertSame(self::TARGET_IN_SCOPE, $args[$pos['id']]);
 					$this->assertSame(self::REGISTER_ID, $args[$pos['register']]);
 					$this->assertSame(self::SCHEMA_ID, $args[$pos['schema']]);
@@ -340,6 +344,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 		$this->orObjectService->method('find')
 			->willReturnCallback(
 				function (...$args) use ($pos, $targetEntity) {
+					$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 					return $args[$pos['id']] === self::TARGET_IN_SCOPE ? $targetEntity : null;
 				}
 			);

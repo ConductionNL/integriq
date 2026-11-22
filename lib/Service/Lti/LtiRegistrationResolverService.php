@@ -20,6 +20,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/lti-platform/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -28,6 +31,7 @@ namespace OCA\Integriq\Service\Lti;
 
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -118,6 +122,7 @@ class LtiRegistrationResolverService {
 		$matches = $this->orObjectService->findAll(
 			config: ['filters' => $filters],
 			_rbac: false,
+			// Unscoped: the LTI trust anchor, resolved for a caller authenticated by its signed token; only an approved registration is returned.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -147,6 +152,7 @@ class LtiRegistrationResolverService {
 				],
 			],
 			_rbac: false,
+			// Unscoped: the LTI trust anchor, resolved for a caller authenticated by its signed token; only an approved registration is returned.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -185,6 +191,7 @@ class LtiRegistrationResolverService {
 				],
 			],
 			_rbac: false,
+			// Unscoped: the LTI trust anchor, resolved for a caller authenticated by its signed token; only an approved registration is returned.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -219,6 +226,7 @@ class LtiRegistrationResolverService {
 				],
 			],
 			_rbac: false,
+			// Unscoped: the deployments of a tool already resolved through the approval gate.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -244,8 +252,7 @@ class LtiRegistrationResolverService {
 		try {
 			$deployment = $this->orObjectService->find(
 				id: $deploymentUuid,
-				register: 'integriq',
-				schema: 'lti_deployment',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'lti_deployment'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -280,8 +287,7 @@ class LtiRegistrationResolverService {
 		try {
 			$registration = $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'integriq',
-				schema: $registrationType,
+				options: new ObjectFindOptions(register: 'integriq', schema: $registrationType),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -317,8 +323,7 @@ class LtiRegistrationResolverService {
 		try {
 			$registration = $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'integriq',
-				schema: $registrationType,
+				options: new ObjectFindOptions(register: 'integriq', schema: $registrationType),
 				_rbac: false,
 				_multitenancy: false
 			);

@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-captured-bodies-age-out-and-the-record-stays-req-ocd-009
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -26,6 +29,8 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Captured bodies age out and the record stays.
@@ -150,7 +155,10 @@ class LogCleanUpTaskTest extends TestCase {
 			}
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object, $register = null, $schema = null, $uuid = null) {
+			function ($object, ObjectSaveOptions $options = new ObjectSaveOptions()) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if (in_array((string)$uuid, $this->failingSaves, true) === true) {
 					throw new \RuntimeException('refused');
 				}
@@ -160,7 +168,10 @@ class LogCleanUpTaskTest extends TestCase {
 			}
 		);
 		$objectService->method('deleteObject')->willReturnCallback(
-			function ($uuid, $register = null, $schema = null, bool $_rbac = true) {
+			function (ObjectDeletion $deletion, bool $_rbac = true) {
+				$uuid = $deletion->uuid;
+				$register = $deletion->target->register;
+				$schema = $deletion->target->schema;
 				$this->rbacFlags[] = ['deleteObject', (string)$uuid, $_rbac];
 				if (in_array((string)$uuid, $this->failingDeletes, true) === true) {
 					throw new \RuntimeException('refused');
