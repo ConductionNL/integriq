@@ -1,0 +1,15 @@
+{
+  "id": "4f1a2b3c-5d6e-4f70-8a9b-0c1d2e3f4a5b",
+  "employeeId": "6b0c9a52-3f0e-4d43-9a1e-2f8f3c1d7a10",
+  "leaveType": "zwangerschapsverlof",
+  "reason": "Bevalling, zie bijgevoegde verklaring",
+  "documentId": "doc-778",
+  "startDate": "2027-03-03",
+  "endDate": "2027-03-07",
+  "hours": 40,
+  "status": "approved",
+  "approvedBy": "m.manager",
+  "approvedAt": "2027-02-20T09:12:00+01:00",
+  "userId": "a.vandenberg",
+  "managerUserId": "m.manager"
+}
