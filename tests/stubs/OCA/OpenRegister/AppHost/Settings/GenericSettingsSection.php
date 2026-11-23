@@ -33,23 +33,58 @@ use OCP\Settings\IIconSection;
  */
 class GenericSettingsSection implements IIconSection {
 	/**
-	 * Constructor.
+	 * The sectionId.
 	 *
-	 * @param string $sectionId The section identifier.
-	 * @param string $name Display name.
-	 * @param string $appId Owning app id (for the icon path).
-	 * @param string $iconFile Icon file name.
-	 * @param int $priority Section ordering priority.
-	 * @param IURLGenerator $urlGenerator URL generator.
+	 * @var string
+	 */
+	protected readonly string $sectionId;
+
+	/**
+	 * The name.
+	 *
+	 * @var string
+	 */
+	protected readonly string $name;
+
+	/**
+	 * The appId.
+	 *
+	 * @var string
+	 */
+	protected readonly string $appId;
+
+	/**
+	 * The iconFile.
+	 *
+	 * @var string
+	 */
+	protected readonly string $iconFile;
+
+	/**
+	 * The priority.
+	 *
+	 * @var int
+	 */
+	protected readonly int $priority;
+
+
+	/**
+	 * Construct the settings section.
+	 *
+	 * @param SettingsPlacement $placement    App id, section id and priority.
+	 * @param SectionAppearance $appearance   Display name and icon file.
+	 * @param IURLGenerator     $urlGenerator The URL generator.
 	 */
 	public function __construct(
-		protected readonly string $sectionId,
-		protected readonly string $name,
-		protected readonly string $appId,
-		protected readonly string $iconFile,
-		protected readonly int $priority,
+		SettingsPlacement $placement,
+		SectionAppearance $appearance,
 		protected readonly IURLGenerator $urlGenerator,
 	) {
+		$this->sectionId = $placement->sectionId;
+		$this->appId     = $placement->appId;
+		$this->priority  = $placement->priority;
+		$this->name      = $appearance->name;
+		$this->iconFile  = $appearance->iconFile;
 	}//end __construct()
 
 	/**
