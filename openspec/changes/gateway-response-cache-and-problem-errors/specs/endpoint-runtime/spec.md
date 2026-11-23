@@ -1,14 +1,5 @@
 # endpoint-runtime Specification
 
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- gateway-response-cache-and-problem-errors
-
-## Purpose
-
-Repeated calls are answered from a cache, and every error from the gateway is a standard problem document. Rows `integriq:gw-cache` and `integriq:gw-problem-json`.
-
 ## ADDED Requirements
 
 ### Requirement: An endpoint can cache its answers (REQ-RCPE-001)

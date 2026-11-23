@@ -41,5 +41,6 @@ Kind: code. Size M. Rows `integriq:gw-loadbalance`, `integriq:gw-canary`, `integ
   - Written, not run here: `tests/e2e/endpoint-targets.spec.ts` (the dialog shows two targets at 95% and 5% and adds a third; the endpoint page shows the calls per target).
 
 ## Verification
-- [ ] `openspec validate gateway-upstream-routing --type change --strict` passes
+- [x] `openspec validate gateway-upstream-routing --type change --strict` passes
+  - OpenSpec 2.1.1, 2026-11-23: valid under `--strict`.
 - [ ] PHPUnit and Playwright run, exit codes read

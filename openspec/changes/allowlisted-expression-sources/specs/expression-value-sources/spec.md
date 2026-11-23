@@ -1,17 +1,5 @@
 # expression-value-sources Specification
 
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- allowlisted-expression-sources
-
-## Purpose
-
-Integriq resolves the prefixed sources an expression reaches outside the
-instance, starting with `env:`, and refuses everything an administrator has
-not named. Round 4 discovery depth study D-casetype-20, candidate
-C-access-and-privacy-40, passer Valtimo `V-vr`.
-
 ## ADDED Requirements
 
 ### Requirement: A prefixed value source is resolved through one contract (REQ-EVS-001)
