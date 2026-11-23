@@ -25,7 +25,8 @@
 
 - [x] 4.1 Let `DsoPkiSettingsController` read and write the `dso-stam` consumer instead of app config, including `userId`. Verify GET never returns a secret or a private key
 - [x] 4.2 Validate `userId` on save: unknown user, disabled user and a user without `create`/`update` on `dso_verzoek` are refused with a field error; an `admin` group member saves with a warning. Verify each in PHPUnit
-- [ ] 4.3 Add an account picker (`NcSelectUsers` with `inputLabel`) and the one-line state to `src/views/admin/DsoPkiSettings.vue`, with en and nl strings through `l10n/*.json` and `npm run l10n:build`. Verify with the e2e test `tests/e2e/dso-connection-settings.spec.ts` (written; it runs in the nightly Playwright job, not locally)
+- [x] 4.3 Add an account picker (`NcSelectUsers` with `inputLabel`) and the one-line state to `src/views/admin/DsoPkiSettings.vue`, with en and nl strings through `l10n/*.json` and `npm run l10n:build`. Verify with the e2e test `tests/e2e/dso-connection-settings.spec.ts` (written; it runs in the nightly Playwright job, not locally)
+  - Built in development: `DsoPkiSettings.vue` has the `NcSelectUsers` picker (`data-testid="admin-dso-account"`) and the one-line state (`admin-dso-account-state`) through the shared `accountPicker` and `intakeConnectionEditor` mixins, with en and nl strings. Unit coverage: `tests/vitest/accountPickerGolden.spec.js` and `tests/vitest/connectionSettingsGolden.spec.js`. The e2e spec `tests/e2e/dso-connection-settings.spec.ts` is written and runs in the nightly Playwright job.
 
 ## 5. Migration
 
