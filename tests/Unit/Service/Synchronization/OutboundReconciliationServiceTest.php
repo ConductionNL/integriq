@@ -225,7 +225,7 @@ class OutboundReconciliationServiceTest extends TestCase {
 			contracts: [['id' => 'c-ann', 'originId' => 'e-ann', 'targetId' => 't-1']]
 		);
 		$this->contracts->expects($this->once())->method('persist')
-			->with($this->callback(fn (array $contract): bool => $contract['originId'] === 'e-new' && $contract['targetId'] === 'new-e-new'), true);
+			->with($this->callback(callback: fn (array $contract): bool => $contract['originId'] === 'e-new' && $contract['targetId'] === 'new-e-new'), true);
 
 		$report = $this->reconcile();
 
