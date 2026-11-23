@@ -45,8 +45,10 @@ Kind: code. Size M. Row `planninq:tt-hr-sync`.
   - GIVEN an employee missing in Untis WHEN the job runs THEN the teacher is created
   - GIVEN an incomplete Untis read WHEN the job runs THEN no teacher is made inactive
   - GIVEN an Untis teacher with no humaniq match WHEN the job runs THEN it is listed in the log and not duplicated
-- [ ] Implement
-- [ ] Test (PHPUnit on the job with a paged mock that fails halfway)
+- [x] Implement
+  > 2026-11-23: built generic. `lib/Service/Synchronization/OutboundReconciliationService.php` reconciles any register-to-api synchronization that declares `targetConfig.reconcile` (`endpoint`, the engine's paging keys, `idPosition`, `match` pairs); `lib/BackgroundJob/OutboundReconciliationJob.php` runs it daily (registered in `appinfo/info.xml`). It reads the target list with the engine's own paged fetch, pushes each object the target lacks through `synchronizeContract` (force, on its own contract), adopts an unclaimed target item that matches on a `match` pair instead of creating a duplicate, skips objects that fail the synchronization's conditions, lists unclaimed target items in the run log, and never deletes or deactivates. An incomplete read writes nothing and says so in the run log. `staff-to-untis-teachers` opts in (match on `externKey` from the Nextcloud user id or uuid, then `shortName` from the employee number). The list's answer shape (`teachers`, `id`) is confirmed in the live pass with the e2e of task 1. Absences stay event-driven (README).
+- [x] Test (PHPUnit on the job with a paged mock that fails halfway)
+  > `OutboundReconciliationServiceTest` (missing teacher created, a read that stopped after page one writes nothing, a failed read, adoption and the unmatched list, adoption only once, a gone target pushed again, nothing pushed for in-sync objects, conditions honoured, failed pushes reported); `OutboundReconciliationJobTest`; `StaffToUntisSetTest::testTheTeachersAreReconciledNightlyOnTheMappedKeys`.
 
 ### Task 5: The per-system README
 - **spec_ref**: openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001

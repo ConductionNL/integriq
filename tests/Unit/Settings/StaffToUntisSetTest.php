@@ -314,6 +314,31 @@ final class StaffToUntisSetTest extends TestCase {
 	}//end testTheSynchronizationsWriteToTheDocumentedUntisPaths()
 
 	/**
+	 * The teachers synchronization opts in to the nightly reconciliation, and its match
+	 * pairs read the same employee fields the teacher mapping sends as externKey and shortName.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 */
+	public function testTheTeachersAreReconciledNightlyOnTheMappedKeys(): void {
+		$set = $this->set();
+		$syncs = $set['components']['synchronizations'];
+		$reconcile = $syncs['staff-to-untis-teachers']['targetConfig']['reconcile'];
+
+		$this->assertSame(expected: '/api/rest/extern/v2/teachers', actual: $reconcile['endpoint']);
+		$this->assertSame(expected: 'id', actual: $reconcile['idPosition']);
+
+		$teacher = $set['components']['mappings']['staff-to-untis-teacher']['mapping'];
+		foreach ($reconcile['match'] as $pair) {
+			$this->assertArrayHasKey(key: 'teachers.0.' . $pair['target'], array: $teacher, message: $pair['target']);
+			$this->assertStringContainsString(needle: $pair['source'], haystack: $teacher['teachers.0.' . $pair['target']], message: $pair['source']);
+		}
+
+		$this->assertArrayNotHasKey(key: 'reconcile', array: $syncs['staff-to-untis-absences']['targetConfig']);
+	}//end testTheTeachersAreReconciledNightlyOnTheMappedKeys()
+
+	/**
 	 * The Untis source is dormant, reaches the central gateway and keeps its password in the broker.
 	 *
 	 * @return void
