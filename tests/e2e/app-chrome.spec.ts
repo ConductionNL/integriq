@@ -370,4 +370,46 @@ test.describe('app chrome (ADR-114)', () => {
 			{ timeout: 15_000 },
 		)
 	})
+
+	// @e2e adapter-configuration::no-administrator-authored-schema-is-invisible-to-the-product
+	test('the adapter configuration pages sit in the group of their data direction', async ({
+		page,
+	}) => {
+		// openspec/changes/adapter-configuration-screens, open question 3: ADR-097
+		// keeps the top-level entries, so no group is added for these six pages.
+		// Systems this instance CALLS go under Connections (outbound); systems
+		// that call or post INTO this instance go under Gateway (inbound). A later
+		// tidy-up that moves one into a new group, the settings foldout or the
+		// main list fails here rather than passing review.
+		const nav = page.locator('[data-testid="cn-nav"]')
+		const placement: Record<string, string[]> = {
+			ConnectionsGroup: [
+				'FscServices',
+				'BankfeedConnections',
+				'CardfeedAccounts',
+			],
+			GatewayGroup: ['OpenFormulierenForms', 'LtiPlatforms', 'LtiTools'],
+		}
+
+		for (const [group, leaves] of Object.entries(placement)) {
+			for (const leaf of leaves) {
+				await expect(
+					nav.locator(
+						`[data-testid="cn-nav-entry-${group}"] [data-testid="cn-nav-entry-${leaf}"]`,
+					),
+					`${leaf} must sit inside ${group}`,
+				).toBeAttached({ timeout: 15_000 })
+			}
+		}
+
+		// None of them is lifted into the settings foldout (ADR-079 keeps that
+		// per-user only).
+		for (const leaf of Object.values(placement).flat()) {
+			await expect(
+				nav.locator(
+					`.cn-app-nav__footer-list [data-testid="cn-nav-entry-${leaf}"]`,
+				),
+			).toHaveCount(0)
+		}
+	})
 })
