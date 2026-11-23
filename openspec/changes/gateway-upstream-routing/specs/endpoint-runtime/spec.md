@@ -1,14 +1,5 @@
 # endpoint-runtime Specification
 
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- gateway-upstream-routing
-
-## Purpose
-
-An endpoint spreads calls over several targets, tries a new release on a share of the traffic, and routes by what is in the request. Rows `integriq:gw-loadbalance`, `integriq:gw-canary` and `integriq:gw-content-route`.
-
 ## ADDED Requirements
 
 ### Requirement: An endpoint routes to one of several targets (REQ-UPRT-001)

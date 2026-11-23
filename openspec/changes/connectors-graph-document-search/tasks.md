@@ -41,5 +41,6 @@ Kind: code. Size M. Half for dossiq `woo-requests-gather-documents-from-sources`
   - `npm ci --legacy-peer-deps && npm run build` in `docs/` on 2026-11-21: the build succeeds, all 10 AI-baseline checks pass, and the build reports no warning for `docs/features/document-search.md`.
 
 ## Verification
-- [ ] `openspec validate connectors-graph-document-search --strict` passes
+- [x] `openspec validate connectors-graph-document-search --strict` passes
+  - OpenSpec 2.1.1, 2026-11-23: valid under `--strict`.
 - [ ] `composer check:strict` once before push; PHPUnit exit code read

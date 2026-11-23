@@ -36,11 +36,13 @@ Kind: code. Size S to M. Halves for shillinq `sales-einvoice-exchange` (rows shi
 - **files**: `docs/features/`, `lib/Settings/integriq_seed_data.json`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN the docs page for Peppol WHEN a developer reads it THEN it names the accepted `payloadFileUri` forms and the inbound event fields
-- [ ] Implement
+- [x] Implement
+  - `docs/features/peppol.md` names both accepted `payloadFileUri` forms and the inbound event fields (`payloadReference`, `payloadFileId`, `payloadFileName`); the schema strings are in `l10n/en.json` and `l10n/nl.json`. No seeded inbound document: a seed cannot carry its file, so the seed import stays with the test box.
 - [ ] Test (docs build; seed import on a dev instance)
 
 ## Verification
-- [ ] `openspec validate peppol-readable-payloads-and-scoped-consumer --strict` passes
+- [x] `openspec validate peppol-readable-payloads-and-scoped-consumer --strict` passes
+  - OpenSpec 2.1.1, 2026-11-23: valid under `--strict`.
 - [ ] `composer check:strict` once before push; PHPUnit and Newman exit codes read
 - [ ] shillinq `sales-einvoice-exchange` task 1.3 run against this branch on a dev instance
 
