@@ -11,9 +11,11 @@ file records, for each other timetabling system integriq reads lessons from
 `roster-xedule`, `roster-timeedit`), what its own documentation says it
 imports, from where, and what a school whose HR system is humaniq still lacks.
 
-Status: this record ships ahead of the set itself. The Untis synchronizations
-and their mappings are added once their endpoints, identifiers and auth are
-pinned against developer.untis.com (tasks 1 to 3 of the change).
+Status: the set ships as `staff-to-untis.json` beside this file, with its
+endpoints, identifiers and auth pinned against developer.untis.com's OpenAPI
+documents (Teacher Management v2, Teacher Absence Management v1). Still open:
+an ended school assignment (`OrgAssignment`) does not yet make the teacher
+inactive on its own; the employment end date does (task 1 of the change).
 
 No other system gets a push. Each documents an HR import it runs itself from
 named HR systems, and none documents a write API for staff that integriq
