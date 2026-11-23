@@ -41,10 +41,12 @@ class RegisterDeclaresNoUnionTypesTest extends TestCase {
 	 * @return array<string,array{0:string}>
 	 */
 	public static function registerFiles(): array {
-		$files = array_merge(
-			[self::SETTINGS . '/integriq_register.json'],
-			(glob(self::SETTINGS . '/register.d/*.json') ?: [])
-		);
+		$fragments = glob(self::SETTINGS . '/register.d/*.json');
+		if ($fragments === false) {
+			$fragments = [];
+		}
+
+		$files = array_merge([self::SETTINGS . '/integriq_register.json'], $fragments);
 
 		$cases = [];
 		foreach ($files as $file) {
@@ -69,13 +71,13 @@ class RegisterDeclaresNoUnionTypesTest extends TestCase {
 		}
 
 		if (isset($node['items']) === true && is_array($node['items']) === true) {
-			$found = array_merge($found, self::unionTypes($node['items'], $path . '/items'));
+			$found = array_merge($found, self::unionTypes(node: $node['items'], path: $path . '/items'));
 		}
 
 		if (isset($node['properties']) === true && is_array($node['properties']) === true) {
 			foreach ($node['properties'] as $name => $property) {
 				if (is_array($property) === true) {
-					$found = array_merge($found, self::unionTypes($property, $path . '/' . $name));
+					$found = array_merge($found, self::unionTypes(node: $property, path: $path . '/' . $name));
 				}
 			}
 		}
@@ -95,15 +97,15 @@ class RegisterDeclaresNoUnionTypesTest extends TestCase {
 	#[DataProvider('registerFiles')]
 	public function testNoPropertyDeclaresAUnionType(string $file): void {
 		$decoded = json_decode((string) file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
-		self::assertIsArray($decoded);
+		self::assertIsArray(actual: $decoded);
 
 		$found = [];
 		foreach (($decoded['components']['schemas'] ?? []) as $slug => $schema) {
 			if (is_array($schema) === true) {
-				$found = array_merge($found, self::unionTypes($schema, (string) $slug));
+				$found = array_merge($found, self::unionTypes(node: $schema, path: (string) $slug));
 			}
 		}
 
-		self::assertSame([], $found, 'OpenRegister rejects these schemas on import');
+		self::assertSame(expected: [], actual: $found, message: 'OpenRegister rejects these schemas on import');
 	}//end testNoPropertyDeclaresAUnionType()
 }//end class
