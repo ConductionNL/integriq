@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Integriq",
-        "version": "0.4.30-unstable.20261123122528",
+        "version": "0.4.31-unstable.20261123142351",
         "description": "The JSON API of Integriq, the integration hub for Nextcloud: sources, endpoints, mappings, synchronisations, jobs and their logs, and the connectors to government and education standards (DSO, StUF, ZGW Notificaties, SCIM, LTI, OpenID4VCI, Peppol and others). The sources, mappings and other objects themselves are stored in OpenRegister and read and written through its API; this document covers the endpoints Integriq adds on top. Endpoints that implement an external protocol keep that protocol's error format.\n\nEvery path is served under `/api/v1/`, the version this document describes. The unversioned `/api/` paths keep working, are deprecated, and name their `/api/v1/` successor in a `Link` header next to a `Deprecation` header. Errors are RFC 9457 problem details (`application/problem+json`), and every response carries an `API-Version` header. Paths that implement an external standard keep the formats of that standard and are not described here; where this app documents them, openapi.standards.json does.",
         "contact": {
             "name": "Conduction B.V.",
