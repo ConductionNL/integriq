@@ -4,7 +4,7 @@
  * Integriq — nightly repair run of outbound synchronizations.
  *
  * @category Cron
- * @package  OCA\Integriq\BackgroundJob
+ * @package  OCA\Integriq\Service\Synchronization
  *
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,9 +18,8 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\BackgroundJob;
+namespace OCA\Integriq\Service\Synchronization;
 
-use OCA\Integriq\Service\Synchronization\OutboundReconciliationService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -29,12 +28,20 @@ use Throwable;
 /**
  * Once a day, reconciles every synchronization that declares `targetConfig.reconcile`.
  *
- * One synchronization failing does not stop the others; its failure is logged
+ * It lives beside the service it drives, as FetchFilesJob does. One
+ * synchronization failing does not stop the others; its failure is logged
  * and the next one runs.
  *
  * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
  */
 class OutboundReconciliationJob extends TimedJob {
+
+	/**
+	 * Seconds between runs: once a day.
+	 *
+	 * @var int
+	 */
+	public const RUN_EVERY_SECONDS = 86400;
 
 	/**
 	 * Constructor.
@@ -49,8 +56,7 @@ class OutboundReconciliationJob extends TimedJob {
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
-		$this->setInterval(seconds: 86400);
-		$this->setTimeSensitivity(sensitivity: self::TIME_INSENSITIVE);
+		$this->setInterval(seconds: self::RUN_EVERY_SECONDS);
 	}//end __construct()
 
 	/**
@@ -69,20 +75,17 @@ class OutboundReconciliationJob extends TimedJob {
 		try {
 			$synchronizations = $this->reconciliation->findReconcilable();
 		} catch (Throwable $exception) {
-			$this->logger->warning('[OutboundReconciliationJob] could not read synchronizations: ' . $exception->getMessage());
+			$this->logger->warning(message: '[OutboundReconciliationJob] could not read synchronizations: ' . $exception->getMessage());
 			return;
 		}
 
 		foreach ($synchronizations as $synchronization) {
+			$name = (string)($synchronization['slug'] ?? $synchronization['id'] ?? '?');
 			try {
 				$report = $this->reconciliation->reconcile(synchronization: $synchronization);
-				$this->logger->info(
-					'[OutboundReconciliationJob] ' . ($synchronization['slug'] ?? $synchronization['id'] ?? '?') . ': ' . $report['message']
-				);
+				$this->logger->info(message: '[OutboundReconciliationJob] ' . $name . ': ' . $report['message']);
 			} catch (Throwable $exception) {
-				$this->logger->warning(
-					'[OutboundReconciliationJob] ' . ($synchronization['slug'] ?? $synchronization['id'] ?? '?') . ' failed: ' . $exception->getMessage()
-				);
+				$this->logger->warning(message: '[OutboundReconciliationJob] ' . $name . ' failed: ' . $exception->getMessage());
 			}
 		}
 	}//end run()

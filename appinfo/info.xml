@@ -177,7 +177,7 @@
 		<!-- connectors-hr-staff-sync: once a day, compares each outbound
 		     synchronization that declares targetConfig.reconcile with the
 		     target's own list and pushes what is missing; never deactivates. -->
-		<job>OCA\Integriq\BackgroundJob\OutboundReconciliationJob</job>
+		<job>OCA\Integriq\Service\Synchronization\OutboundReconciliationJob</job>
 	</background-jobs>
 
 	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order

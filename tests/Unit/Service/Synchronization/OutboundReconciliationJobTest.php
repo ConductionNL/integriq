@@ -4,7 +4,7 @@
  * Unit tests for OutboundReconciliationJob.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\BackgroundJob
+ * @package  OCA\Integriq\Tests\Unit\Service\Synchronization
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\BackgroundJob;
+namespace OCA\Integriq\Tests\Unit\Service\Synchronization;
 
-use OCA\Integriq\BackgroundJob\OutboundReconciliationJob;
+use OCA\Integriq\Service\Synchronization\OutboundReconciliationJob;
 use OCA\Integriq\Service\Synchronization\OutboundReconciliationService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -43,26 +43,26 @@ class OutboundReconciliationJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testEachSynchronizationIsReconciledAndAFailureDoesNotStopTheNext(): void {
-		$service = $this->createMock(OutboundReconciliationService::class);
+		$service = $this->createMock(originalClassName: OutboundReconciliationService::class);
 		$service->method('findReconcilable')->willReturn([['slug' => 'a'], ['slug' => 'b']]);
 		$seen = [];
-		$service->expects($this->exactly(2))->method('reconcile')->willReturnCallback(
+		$service->expects($this->exactly(count: 2))->method('reconcile')->willReturnCallback(
 			function (array $synchronization) use (&$seen): array {
 				$seen[] = $synchronization['slug'];
 				if ($synchronization['slug'] === 'a') {
-					throw new RuntimeException('target down');
+					throw new RuntimeException(message: 'target down');
 				}
 
 				return ['message' => 'Reconciled: 1 created'];
 			}
 		);
-		$logger = $this->createMock(LoggerInterface::class);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
 		$logger->expects($this->once())->method('warning')->with('[OutboundReconciliationJob] a failed: target down');
 		$logger->expects($this->once())->method('info')->with('[OutboundReconciliationJob] b: Reconciled: 1 created');
 
-		$this->runJob(job: new OutboundReconciliationJob($this->createMock(ITimeFactory::class), $service, $logger));
+		$this->runJob(job: $this->job(service: $service, logger: $logger));
 
-		$this->assertSame(['a', 'b'], $seen);
+		$this->assertSame(expected: ['a', 'b'], actual: $seen);
 	}//end testEachSynchronizationIsReconciledAndAFailureDoesNotStopTheNext()
 
 	/**
@@ -71,13 +71,13 @@ class OutboundReconciliationJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableStoreIsLogged(): void {
-		$service = $this->createMock(OutboundReconciliationService::class);
-		$service->method('findReconcilable')->willThrowException(new RuntimeException('no register'));
+		$service = $this->createMock(originalClassName: OutboundReconciliationService::class);
+		$service->method('findReconcilable')->willThrowException(new RuntimeException(message: 'no register'));
 		$service->expects($this->never())->method('reconcile');
-		$logger = $this->createMock(LoggerInterface::class);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
 		$logger->expects($this->once())->method('warning')->with('[OutboundReconciliationJob] could not read synchronizations: no register');
 
-		$this->runJob(job: new OutboundReconciliationJob($this->createMock(ITimeFactory::class), $service, $logger));
+		$this->runJob(job: $this->job(service: $service, logger: $logger));
 	}//end testAnUnreadableStoreIsLogged()
 
 	/**
@@ -86,14 +86,29 @@ class OutboundReconciliationJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheJobRunsDaily(): void {
-		$job = new OutboundReconciliationJob(
-			$this->createMock(ITimeFactory::class),
-			$this->createMock(OutboundReconciliationService::class),
-			$this->createMock(LoggerInterface::class)
+		$job = $this->job(
+			service: $this->createMock(originalClassName: OutboundReconciliationService::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
-		$this->assertSame(86400, $job->getInterval());
+		$this->assertSame(expected: 86400, actual: $job->getInterval());
 	}//end testTheJobRunsDaily()
+
+	/**
+	 * The job over a service and a logger.
+	 *
+	 * @param OutboundReconciliationService $service The service.
+	 * @param LoggerInterface               $logger  The logger.
+	 *
+	 * @return OutboundReconciliationJob The job.
+	 */
+	private function job(OutboundReconciliationService $service, LoggerInterface $logger): OutboundReconciliationJob {
+		return new OutboundReconciliationJob(
+			time: $this->createMock(originalClassName: ITimeFactory::class),
+			reconciliation: $service,
+			logger: $logger
+		);
+	}//end job()
 
 	/**
 	 * Call the protected run().
@@ -103,6 +118,6 @@ class OutboundReconciliationJobTest extends TestCase {
 	 * @return void
 	 */
 	private function runJob(OutboundReconciliationJob $job): void {
-		(new ReflectionMethod($job, 'run'))->invoke($job, null);
+		(new ReflectionMethod(objectOrMethod: $job, method: 'run'))->invoke($job, null);
 	}//end runJob()
 }//end class

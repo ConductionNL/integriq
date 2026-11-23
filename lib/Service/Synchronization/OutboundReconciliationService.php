@@ -20,15 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Synchronization;
 
-use Adbar\Dot;
-use JWadhams\JsonLogic;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\Integriq\Service\SynchronizationLogServiceInterface;
-use OCA\Integriq\Service\SynchronizationRunLog;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -42,35 +38,42 @@ use Throwable;
  *   (`resultsPosition`, `paginationType` and the other source-fetch keys apply).
  * - `idPosition`: where a listed item carries its id, `id` by default.
  * - `match`: pairs `{target, source}` of dot paths, tried in order, that adopt
- *   an unclaimed target item for an object without a contract, so a first run
+ *   an unclaimed target item for an object without one, so a first run
  *   against a populated target does not create duplicates.
  *
  * The run never deletes or deactivates anything at the target. When the read
  * of the target list is incomplete (a failed page, a rate limit) it writes
  * nothing at all, because a missing item may simply be on a page that was not
- * read, and says so in the run log. Target items no contract claims are listed
- * in the run log, not created, adopted or changed.
+ * read, and says so in the run log. Target items nothing claims are listed in
+ * the run log and left alone. Objects that fail the synchronization's
+ * conditions are not pushed.
  *
  * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
  */
 class OutboundReconciliationService {
 
 	/**
+	 * The index, match and conditions helpers.
+	 *
+	 * @var ReconciliationMatcher
+	 */
+	private readonly ReconciliationMatcher $matcher;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationServiceInterface         $synchronizationService The engine: target reads and contract pushes.
-	 * @param SynchronizationContractServiceInterface $contractService        The contract store.
-	 * @param SynchronizationLogServiceInterface      $logService             The run log store.
-	 * @param ObjectService                           $objectService          The OpenRegister object service.
-	 * @param LoggerInterface                         $logger                 The logger.
+	 * @param SynchronizationServiceInterface         $engine    The engine: target reads and contract pushes.
+	 * @param SynchronizationContractServiceInterface $contracts The contract store.
+	 * @param SynchronizationLogServiceInterface      $logs      The run log store.
+	 * @param ObjectService                           $objects   The OpenRegister object service.
 	 */
 	public function __construct(
-		private readonly SynchronizationServiceInterface $synchronizationService,
-		private readonly SynchronizationContractServiceInterface $contractService,
-		private readonly SynchronizationLogServiceInterface $logService,
-		private readonly ObjectService $objectService,
-		private readonly LoggerInterface $logger,
+		private readonly SynchronizationServiceInterface $engine,
+		private readonly SynchronizationContractServiceInterface $contracts,
+		private readonly SynchronizationLogServiceInterface $logs,
+		private readonly ObjectService $objects,
 	) {
+		$this->matcher = new ReconciliationMatcher();
 	}//end __construct()
 
 	/**
@@ -100,21 +103,16 @@ class OutboundReconciliationService {
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function findReconcilable(): array {
-		$result = $this->objectService->findAll(
-			config: ['filters' => ['register' => 'integriq', 'schema' => 'synchronization', 'targetType' => 'api']],
-			_rbac: false,
-			_multitenancy: false,
-		);
-
-		$synchronizations = [];
-		foreach (($result['results'] ?? $result) as $entity) {
+		$found = [];
+		$filters = ['register' => 'integriq', 'schema' => 'synchronization', 'targetType' => 'api'];
+		foreach ($this->findAll(filters: $filters) as $entity) {
 			$synchronization = $this->toArray(entity: $entity);
 			if ($this->isReconcilable(synchronization: $synchronization) === true) {
-				$synchronizations[] = $synchronization;
+				$found[] = $synchronization;
 			}
 		}
 
-		return $synchronizations;
+		return $found;
 	}//end findReconcilable()
 
 	/**
@@ -122,115 +120,166 @@ class OutboundReconciliationService {
 	 *
 	 * @param array $synchronization The synchronization; see the class doc for `targetConfig.reconcile`.
 	 *
-	 * @return array{complete: bool, created: string[], adopted: array<string, string>, unmatched: string[], failed: string[], message: string}
-	 *               What the run did: origin ids pushed as new, origin id to adopted target id, unclaimed target ids,
-	 *               origin ids whose push failed.
+	 * @return array The report: `complete`, `created` (origin ids), `adopted` (origin id to target id),
+	 *               `unmatched` (target ids), `failed` (origin id to reason) and `message`.
 	 *
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function reconcile(array $synchronization): array {
-		$report = ['complete' => false, 'created' => [], 'adopted' => [], 'unmatched' => [], 'failed' => [], 'message' => ''];
-		$log = $this->logService->createFromArray(
-			object: ['synchronizationId' => ($synchronization['id'] ?? null), 'message' => 'Reconciliation']
+		$run = new ReconciliationRun(
+			synchronization: $synchronization,
+			log: $this->logs->createFromArray(object: ['synchronizationId' => ($synchronization['id'] ?? null), 'message' => 'Reconciliation'])
 		);
 
-		$targetItems = $this->readTarget(synchronization: $synchronization, complete: $report['complete']);
-		if ($report['complete'] === false) {
-			$report['message'] = 'The read of the target was incomplete; nothing was written.';
-			return $this->finish(log: $log, report: $report);
+		$this->readTarget(run: $run);
+		if ($run->report['complete'] === false) {
+			return $this->finish(run: $run);
 		}
 
 		$contracts = $this->contractsByOrigin(synchronization: $synchronization);
-		$claimed = [];
 		foreach ($contracts as $contract) {
-			$targetId = (string)($contract['targetId'] ?? '');
-			if ($targetId !== '' && isset($targetItems[$targetId]) === true) {
-				$claimed[$targetId] = true;
+			if ($run->isListed(targetId: (string)($contract['targetId'] ?? '')) === true) {
+				$run->claimed[(string)$contract['targetId']] = true;
 			}
 		}
 
 		foreach ($this->sourceObjects(synchronization: $synchronization) as $uuid => $object) {
-			$contract = ($contracts[$uuid] ?? null);
-			$targetId = (string)($contract['targetId'] ?? '');
-			if (($targetId !== '' && isset($targetItems[$targetId]) === true)
-				|| $this->conditionsHold(conditions: ($synchronization['conditions'] ?? []), data: $object) === false
-			) {
-				continue;
-			}
+			$this->repair(run: $run, uuid: (string)$uuid, object: $object, contract: ($contracts[$uuid] ?? null));
+		}
 
-			$adopt = $this->findMatch(synchronization: $synchronization, object: $object, targetItems: $targetItems, claimed: $claimed);
-			if ($adopt !== null) {
-				$claimed[$adopt] = true;
-			}
-
-			$pushed = $this->push(synchronization: $synchronization, uuid: $uuid, object: $object, contract: $contract, targetId: $adopt, log: $log);
-			if ($pushed === false) {
-				$report['failed'][] = $uuid;
-				continue;
-			}
-
-			if ($adopt !== null) {
-				$report['adopted'][$uuid] = $adopt;
-				continue;
-			}
-
-			$report['created'][] = $uuid;
-		}//end foreach
-
-		$report['unmatched'] = array_values(
-			array_map('strval', array_keys(array_diff_key($targetItems, $claimed)))
-		);
-		$report['message'] = sprintf(
+		$run->report['unmatched'] = $run->unclaimed();
+		$run->report['message'] = sprintf(
 			'Reconciled: %d created, %d adopted, %d failed, %d target item(s) without a match.',
-			count($report['created']),
-			count($report['adopted']),
-			count($report['failed']),
-			count($report['unmatched'])
+			count($run->report['created']),
+			count($run->report['adopted']),
+			count($run->report['failed']),
+			count($run->report['unmatched'])
 		);
 
-		return $this->finish(log: $log, report: $report);
+		return $this->finish(run: $run);
 	}//end reconcile()
 
 	/**
-	 * Read the target's list, keyed by item id.
+	 * Push one object the target lacks: adopt a matching item, or create it.
 	 *
-	 * @param array $synchronization The synchronization.
-	 * @param bool  $complete        Set to whether every page was read.
+	 * @param ReconciliationRun $run      The run.
+	 * @param string            $uuid     The object's uuid.
+	 * @param array             $object   The serialized object.
+	 * @param array|null        $contract Its contract, when it has one.
 	 *
-	 * @return array<string, array> The listed items by id.
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 */
+	private function repair(ReconciliationRun $run, string $uuid, array $object, ?array $contract): void {
+		$conditions = ($run->synchronization['conditions'] ?? []);
+		if ($run->isListed(targetId: (string)($contract['targetId'] ?? '')) === true
+			|| $this->matcher->conditionsHold(conditions: $conditions, data: $object) === false
+		) {
+			return;
+		}
+
+		$adopt = $this->matcher->findMatch(
+			pairs: (array)($run->synchronization['targetConfig']['reconcile']['match'] ?? []),
+			object: $object,
+			items: $run->targetItems,
+			claimed: $run->claimed
+		);
+		if ($adopt !== null) {
+			$run->claimed[$adopt] = true;
+		}
+
+		$contract = ($contract ?? ['synchronizationId' => ($run->synchronization['id'] ?? null), 'originId' => $uuid]);
+		$contract['targetId'] = $adopt;
+		$failure = $this->push(run: $run, contract: $contract, object: $object);
+		if ($failure !== null) {
+			$run->report['failed'][$uuid] = $failure;
+			return;
+		}
+
+		if ($adopt !== null) {
+			$run->report['adopted'][$uuid] = $adopt;
+			return;
+		}
+
+		$run->report['created'][] = $uuid;
+	}//end repair()
+
+	/**
+	 * Read the target's list into the run, and whether every page was read.
+	 *
+	 * @param ReconciliationRun $run The run.
+	 *
+	 * @return void
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
 	 */
-	private function readTarget(array $synchronization, bool &$complete): array {
-		$reconcile = $synchronization['targetConfig']['reconcile'];
+	private function readTarget(ReconciliationRun $run): void {
+		$reconcile = $run->synchronization['targetConfig']['reconcile'];
 		$read = [
-			'id' => ($synchronization['id'] ?? null),
-			'sourceId' => ($synchronization['targetId'] ?? null),
+			'id' => ($run->synchronization['id'] ?? null),
+			'sourceId' => ($run->synchronization['targetId'] ?? null),
 			'sourceType' => 'api',
 			'sourceConfig' => array_diff_key($reconcile, ['match' => true, 'idPosition' => true]),
 		];
 
 		$fetchInfo = null;
 		try {
-			$items = $this->synchronizationService->getAllObjectsFromApi(synchronization: $read, fetchInfo: $fetchInfo);
+			$items = $this->engine->getAllObjectsFromApi(synchronization: $read, fetchInfo: $fetchInfo);
 		} catch (Throwable $exception) {
-			$this->logger->warning('[OutboundReconciliation] target read failed: ' . $exception->getMessage());
-			$complete = false;
-			return [];
+			$run->report['message'] = 'The read of the target was incomplete (' . $exception->getMessage() . '); nothing was written.';
+			return;
 		}
 
-		$complete = (($fetchInfo['complete'] ?? false) === true);
-		$idPosition = (string)($reconcile['idPosition'] ?? 'id');
-		$byId = [];
-		foreach ($items as $item) {
-			$id = (new Dot((array)$item))->get($idPosition);
-			if (is_scalar($id) === true && (string)$id !== '') {
-				$byId[(string)$id] = (array)$item;
-			}
+		$run->report['complete'] = (($fetchInfo['complete'] ?? false) === true);
+		if ($run->report['complete'] === false) {
+			$run->report['message'] = 'The read of the target was incomplete ('
+				. (string)($fetchInfo['failureReason'] ?? 'unknown') . '); nothing was written.';
+			return;
 		}
 
-		return $byId;
+		$run->targetItems = $this->matcher->indexById(items: $items, idPosition: (string)($reconcile['idPosition'] ?? 'id'));
 	}//end readTarget()
+
+	/**
+	 * Push one contract through the engine, forced, and store the contract it answers.
+	 *
+	 * @param ReconciliationRun $run      The run.
+	 * @param array             $contract The contract, with the target id to update or null to create.
+	 * @param array             $object   The serialized object.
+	 *
+	 * @return string|null Null on success, otherwise why it failed.
+	 *
+	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 */
+	private function push(ReconciliationRun $run, array $contract, array $object): ?string {
+		try {
+			if (isset($contract['id']) === false) {
+				$targetId = $contract['targetId'];
+				$contract = $this->contracts->createFromArray(object: $contract);
+				$contract['targetId'] = $targetId;
+			}
+
+			$flowToken = new FlowToken(syncInputOriginal: $object);
+			$outcome = $this->engine->synchronizeContract(
+				synchronizationContract: $contract,
+				flowToken: $flowToken,
+				synchronization: $run->synchronization,
+				object: $object,
+				force: true,
+				log: $run->log
+			);
+			if (is_array($outcome) === false || is_array($outcome['contract'] ?? null) === false) {
+				return 'the engine answered no contract';
+			}
+
+			$this->contracts->persist(contract: $outcome['contract'], ensureUuid: true);
+		} catch (Throwable $exception) {
+			return $exception->getMessage();
+		}
+
+		return null;
+	}//end push()
 
 	/**
 	 * The synchronization's contracts, keyed by origin id.
@@ -243,7 +292,7 @@ class OutboundReconciliationService {
 	 */
 	private function contractsByOrigin(array $synchronization): array {
 		$byOrigin = [];
-		foreach ($this->contractService->findAllObjects(filters: ['synchronizationId' => ($synchronization['id'] ?? null)]) as $entity) {
+		foreach ($this->contracts->findAllObjects(filters: ['synchronizationId' => ($synchronization['id'] ?? null)]) as $entity) {
 			$contract = $this->toArray(entity: $entity);
 			$origin = (string)($contract['originId'] ?? '');
 			if ($origin !== '') {
@@ -259,23 +308,19 @@ class OutboundReconciliationService {
 	 *
 	 * @param array $synchronization The synchronization.
 	 *
-	 * @return array<string, array> The serialized objects.
+	 * @return array<string, array> The serialized objects, each with its `id`.
 	 *
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	private function sourceObjects(array $synchronization): array {
 		[$register, $schema] = explode(separator: '/', string: (string)$synchronization['sourceId']);
-		$result = $this->objectService->findAll(
-			config: ['filters' => ['register' => $register, 'schema' => $schema]],
-			_rbac: false,
-			_multitenancy: false,
-		);
 
 		$objects = [];
-		foreach (($result['results'] ?? $result) as $entity) {
-			$uuid = (string)(is_object($entity) === true ? $entity->getUuid() : ($entity['id'] ?? ''));
+		foreach ($this->findAll(filters: ['register' => $register, 'schema' => $schema]) as $entity) {
+			$object = $this->toArray(entity: $entity);
+			$uuid = (string)($object['id'] ?? '');
 			if ($uuid !== '') {
-				$objects[$uuid] = $this->toArray(entity: $entity);
+				$objects[$uuid] = $object;
 			}
 		}
 
@@ -283,138 +328,42 @@ class OutboundReconciliationService {
 	}//end sourceObjects()
 
 	/**
-	 * An unclaimed target item that matches the object on one of the `match` pairs.
+	 * Every object matching the filters, across organisations: a system run.
 	 *
-	 * @param array                $synchronization The synchronization.
-	 * @param array                $object          The serialized source object.
-	 * @param array<string, array> $targetItems     The target items by id.
-	 * @param array<string, bool>  $claimed         The target ids already claimed.
+	 * @param array $filters The filters, with register and schema.
 	 *
-	 * @return string|null The target id to adopt, or null.
+	 * @return iterable The objects.
 	 *
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
-	private function findMatch(array $synchronization, array $object, array $targetItems, array $claimed): ?string {
-		$source = new Dot($object);
-		foreach ((array)($synchronization['targetConfig']['reconcile']['match'] ?? []) as $pair) {
-			$value = $source->get((string)($pair['source'] ?? ''));
-			if (is_scalar($value) === false || (string)$value === '') {
-				continue;
-			}
+	private function findAll(array $filters): iterable {
+		$result = $this->objects->findAll(config: ['filters' => $filters], _rbac: false, _multitenancy: false);
 
-			foreach ($targetItems as $targetId => $item) {
-				if (isset($claimed[$targetId]) === true) {
-					continue;
-				}
-
-				$candidate = (new Dot($item))->get((string)($pair['target'] ?? ''));
-				if (is_scalar($candidate) === true && (string)$candidate === (string)$value) {
-					return (string)$targetId;
-				}
-			}
-		}
-
-		return null;
-	}//end findMatch()
+		return ($result['results'] ?? $result);
+	}//end findAll()
 
 	/**
-	 * Push one object through the engine, creating it or updating the adopted item.
+	 * Write the report onto the run log, store it, and answer the report.
 	 *
-	 * @param array                 $synchronization The synchronization.
-	 * @param string                $uuid            The object's uuid.
-	 * @param array                 $object          The serialized object.
-	 * @param array|null            $contract        Its contract, when it has one.
-	 * @param string|null           $targetId        The adopted target id; null pushes it as new.
-	 * @param SynchronizationRunLog $log             The run log.
+	 * A run log that cannot be stored does not undo what the run did; the report says so.
 	 *
-	 * @return bool True when the engine answered with a contract.
-	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
-	 */
-	private function push(array $synchronization, string $uuid, array $object, ?array $contract, ?string $targetId, SynchronizationRunLog $log): bool {
-		try {
-			if ($contract === null) {
-				$contract = $this->contractService->createFromArray(
-					object: ['synchronizationId' => ($synchronization['id'] ?? null), 'originId' => $uuid]
-				);
-			}
-
-			$contract['targetId'] = $targetId;
-			$flowToken = new FlowToken(syncInputOriginal: $object);
-			$outcome = $this->synchronizationService->synchronizeContract(
-				synchronizationContract: $contract,
-				flowToken: $flowToken,
-				synchronization: $synchronization,
-				object: $object,
-				force: true,
-				log: $log
-			);
-		} catch (Throwable $exception) {
-			$this->logger->warning('[OutboundReconciliation] push of ' . $uuid . ' failed: ' . $exception->getMessage());
-			return false;
-		}
-
-		if (is_array($outcome) === false || is_array($outcome['contract'] ?? null) === false) {
-			return false;
-		}
-
-		$this->contractService->persist(contract: $outcome['contract'], ensureUuid: true);
-
-		return true;
-	}//end push()
-
-	/**
-	 * Write the report onto the run log and store it.
-	 *
-	 * @param SynchronizationRunLog $log    The run log.
-	 * @param array                 $report The report.
+	 * @param ReconciliationRun $run The run.
 	 *
 	 * @return array The report.
 	 *
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
-	private function finish(SynchronizationRunLog $log, array $report): array {
-		$log->setMessage($report['message']);
-		$log->setResult(['reconciliation' => $report]);
+	private function finish(ReconciliationRun $run): array {
+		$run->log->setMessage(message: $run->report['message']);
+		$run->log->setResult(result: ['reconciliation' => $run->report]);
 		try {
-			$this->logService->persist(log: $log);
+			$this->logs->persist(log: $run->log);
 		} catch (Throwable $exception) {
-			$this->logger->warning('[OutboundReconciliation] run log not stored: ' . $exception->getMessage());
+			$run->report['message'] .= ' The run log was not stored: ' . $exception->getMessage();
 		}
 
-		return $report;
+		return $run->report;
 	}//end finish()
-
-	/**
-	 * Whether an object meets the synchronization's conditions, as the event push reads them.
-	 *
-	 * A list holds when every JsonLogic group in it holds; only a literal false fails a group.
-	 * An object that does not meet them is not the synchronization's to push, so it is skipped.
-	 *
-	 * @param mixed $conditions The conditions: [] (none), a JsonLogic object, or a list of them.
-	 * @param array $data       The serialized object.
-	 *
-	 * @return bool True when there are no conditions or every one holds.
-	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
-	 */
-	private function conditionsHold(mixed $conditions, array $data): bool {
-		if ($conditions === [] || $conditions === null) {
-			return true;
-		}
-
-		if (is_array($conditions) === true && array_is_list($conditions) === true) {
-			foreach ($conditions as $group) {
-				if ($this->conditionsHold(conditions: $group, data: $data) === false) {
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		return JsonLogic::apply($conditions, $data) !== false;
-	}//end conditionsHold()
 
 	/**
 	 * An OpenRegister object or a plain array as an array with its id.

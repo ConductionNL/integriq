@@ -22,8 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Synchronization;
 
+use Exception;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\Synchronization\OutboundReconciliationService;
+use OCA\Integriq\Service\Synchronization\ReconciliationMatcher;
+use OCA\Integriq\Service\Synchronization\ReconciliationRun;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\Integriq\Service\SynchronizationLogServiceInterface;
 use OCA\Integriq\Service\SynchronizationRunLog;
@@ -32,13 +35,14 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
  * Drives OutboundReconciliationService over a mocked engine, contract store and register.
  */
 #[CoversClass(OutboundReconciliationService::class)]
+#[CoversClass(ReconciliationMatcher::class)]
+#[CoversClass(ReconciliationRun::class)]
 class OutboundReconciliationServiceTest extends TestCase {
 
 	/**
@@ -89,10 +93,10 @@ class OutboundReconciliationServiceTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->engine = $this->createMock(SynchronizationServiceInterface::class);
-		$this->contracts = $this->createMock(SynchronizationContractServiceInterface::class);
-		$this->logs = $this->createMock(SynchronizationLogServiceInterface::class);
-		$this->objects = $this->createMock(ObjectService::class);
+		$this->engine = $this->createMock(originalClassName: SynchronizationServiceInterface::class);
+		$this->contracts = $this->createMock(originalClassName: SynchronizationContractServiceInterface::class);
+		$this->logs = $this->createMock(originalClassName: SynchronizationLogServiceInterface::class);
+		$this->objects = $this->createMock(originalClassName: ObjectService::class);
 
 		$this->logs->method('createFromArray')->willReturnCallback(
 			fn (array $object): SynchronizationRunLog => (new SynchronizationRunLog())->hydrate(object: $object + ['id' => 'log-1'])
@@ -148,11 +152,10 @@ class OutboundReconciliationServiceTest extends TestCase {
 	 */
 	private function service(): OutboundReconciliationService {
 		return new OutboundReconciliationService(
-			synchronizationService: $this->engine,
-			contractService: $this->contracts,
-			logService: $this->logs,
-			objectService: $this->objects,
-			logger: $this->createMock(LoggerInterface::class),
+			engine: $this->engine,
+			contracts: $this->contracts,
+			logs: $this->logs,
+			objects: $this->objects,
 		);
 	}//end service()
 
@@ -167,11 +170,15 @@ class OutboundReconciliationServiceTest extends TestCase {
 	private function targetLists(array $items, bool $complete = true): void {
 		$this->engine->method('getAllObjectsFromApi')->willReturnCallback(
 			function (array $synchronization, ?bool $isTest = false, ?array $data = null, ?array &$fetchInfo = null) use ($items, $complete): array {
-				$this->assertSame('target-source', $synchronization['sourceId']);
-				$this->assertSame('api', $synchronization['sourceType']);
-				$this->assertSame('/teachers', $synchronization['sourceConfig']['endpoint']);
-				$this->assertArrayNotHasKey('match', $synchronization['sourceConfig']);
-				$fetchInfo = ['complete' => $complete, 'pagesFetched' => 1, 'failureReason' => ($complete === true ? null : 'http_error')];
+				$this->assertSame(expected: 'target-source', actual: $synchronization['sourceId']);
+				$this->assertSame(expected: 'api', actual: $synchronization['sourceType']);
+				$this->assertSame(expected: '/teachers', actual: $synchronization['sourceConfig']['endpoint']);
+				$this->assertArrayNotHasKey(key: 'match', array: $synchronization['sourceConfig']);
+				$fetchInfo = ['complete' => $complete, 'pagesFetched' => 1, 'failureReason' => null];
+				if ($complete === false) {
+					$fetchInfo['failureReason'] = 'http_error';
+				}
+
 				return $items;
 			}
 		);
@@ -188,12 +195,23 @@ class OutboundReconciliationServiceTest extends TestCase {
 	private function registerHolds(array $employees, array $contracts = []): void {
 		$this->objects->method('findAll')->willReturnCallback(
 			function (array $config) use ($employees): array {
-				$this->assertSame(['register' => 'humaniq', 'schema' => 'Employee'], $config['filters']);
+				$this->assertSame(expected: ['register' => 'humaniq', 'schema' => 'Employee'], actual: $config['filters']);
 				return ['results' => $employees];
 			}
 		);
 		$this->contracts->method('findAllObjects')->with(['synchronizationId' => 'sync-1'])->willReturn($contracts);
 	}//end registerHolds()
+
+	/**
+	 * Run the service over the synchronization.
+	 *
+	 * @param array|null $synchronization The synchronization; the default one when null.
+	 *
+	 * @return array The report.
+	 */
+	private function reconcile(?array $synchronization = null): array {
+		return $this->service()->reconcile(synchronization: ($synchronization ?? $this->synchronization()));
+	}//end reconcile()
 
 	/**
 	 * An employee added while the target was unreachable is created by the nightly run.
@@ -209,18 +227,19 @@ class OutboundReconciliationServiceTest extends TestCase {
 		$this->contracts->expects($this->once())->method('persist')
 			->with($this->callback(fn (array $contract): bool => $contract['originId'] === 'e-new' && $contract['targetId'] === 'new-e-new'), true);
 
-		$report = $this->service()->reconcile(synchronization: $this->synchronization());
+		$report = $this->reconcile();
 
-		$this->assertTrue($report['complete']);
-		$this->assertSame(['e-new'], $report['created']);
-		$this->assertSame([], $report['adopted']);
-		$this->assertSame([], $report['unmatched']);
-		$this->assertCount(1, $this->pushes);
-		$this->assertNull($this->pushes[0][0]['targetId']);
-		$this->assertSame('new', $this->pushes[0][1]['nextcloudUserId']);
-		$this->assertCount(1, $this->persistedLogs);
-		$this->assertStringContainsString('1 created', (string)$this->persistedLogs[0]->getMessage());
-		$this->assertSame(['e-new'], $this->persistedLogs[0]->getResult()['reconciliation']['created']);
+		$this->assertTrue(condition: $report['complete']);
+		$this->assertSame(expected: ['e-new'], actual: $report['created']);
+		$this->assertSame(expected: [], actual: $report['adopted']);
+		$this->assertSame(expected: [], actual: $report['unmatched']);
+		$this->assertCount(expectedCount: 1, haystack: $this->pushes);
+		$this->assertNull(actual: $this->pushes[0][0]['targetId']);
+		$this->assertSame(expected: 'contract-e-new', actual: $this->pushes[0][0]['id']);
+		$this->assertSame(expected: 'new', actual: $this->pushes[0][1]['nextcloudUserId']);
+		$this->assertCount(expectedCount: 1, haystack: $this->persistedLogs);
+		$this->assertStringContainsString(needle: '1 created', haystack: (string)$this->persistedLogs[0]->getMessage());
+		$this->assertSame(expected: ['e-new'], actual: $this->persistedLogs[0]->getResult()['reconciliation']['created']);
 	}//end testAnEmployeeMissingAtTheTargetIsCreated()
 
 	/**
@@ -238,13 +257,13 @@ class OutboundReconciliationServiceTest extends TestCase {
 		$this->contracts->expects($this->never())->method('createFromArray');
 		$this->contracts->expects($this->never())->method('persist');
 
-		$report = $this->service()->reconcile(synchronization: $this->synchronization());
+		$report = $this->reconcile();
 
-		$this->assertFalse($report['complete']);
-		$this->assertSame([], $report['created']);
-		$this->assertSame([], $report['unmatched']);
-		$this->assertCount(1, $this->persistedLogs);
-		$this->assertStringContainsString('incomplete', (string)$this->persistedLogs[0]->getMessage());
+		$this->assertFalse(condition: $report['complete']);
+		$this->assertSame(expected: [], actual: $report['created']);
+		$this->assertSame(expected: [], actual: $report['unmatched']);
+		$this->assertCount(expectedCount: 1, haystack: $this->persistedLogs);
+		$this->assertStringContainsString(needle: 'incomplete (http_error)', haystack: (string)$this->persistedLogs[0]->getMessage());
 	}//end testAnIncompleteReadChangesNothing()
 
 	/**
@@ -253,13 +272,13 @@ class OutboundReconciliationServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailedReadIsIncomplete(): void {
-		$this->engine->method('getAllObjectsFromApi')->willThrowException(new RuntimeException('gateway down'));
+		$this->engine->method('getAllObjectsFromApi')->willThrowException(new RuntimeException(message: 'gateway down'));
 		$this->engine->expects($this->never())->method('synchronizeContract');
 
-		$report = $this->service()->reconcile(synchronization: $this->synchronization());
+		$report = $this->reconcile();
 
-		$this->assertFalse($report['complete']);
-		$this->assertStringContainsString('incomplete', $report['message']);
+		$this->assertFalse(condition: $report['complete']);
+		$this->assertStringContainsString(needle: 'incomplete (gateway down)', haystack: $report['message']);
 	}//end testAFailedReadIsIncomplete()
 
 	/**
@@ -269,17 +288,17 @@ class OutboundReconciliationServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMatchingTargetItemIsAdoptedAndTheRestListed(): void {
-		$this->targetLists(items: [['id' => 't-bob', 'externKey' => 'bob'], ['id' => 't-zed', 'externKey' => 'zed']]);
+		$this->targetLists(items: [['id' => 't-bob', 'externKey' => 'bob'], ['id' => 't-zed', 'externKey' => 'zed'], ['name' => 'no id']]);
 		$this->registerHolds(employees: [['id' => 'e-bob', 'nextcloudUserId' => 'bob']]);
 
-		$report = $this->service()->reconcile(synchronization: $this->synchronization());
+		$report = $this->reconcile();
 
-		$this->assertSame([], $report['created']);
-		$this->assertSame(['e-bob' => 't-bob'], $report['adopted']);
-		$this->assertSame(['t-zed'], $report['unmatched']);
-		$this->assertCount(1, $this->pushes);
-		$this->assertSame('t-bob', $this->pushes[0][0]['targetId']);
-		$this->assertSame(['t-zed'], $this->persistedLogs[0]->getResult()['reconciliation']['unmatched']);
+		$this->assertSame(expected: [], actual: $report['created']);
+		$this->assertSame(expected: ['e-bob' => 't-bob'], actual: $report['adopted']);
+		$this->assertSame(expected: ['t-zed'], actual: $report['unmatched']);
+		$this->assertCount(expectedCount: 1, haystack: $this->pushes);
+		$this->assertSame(expected: 't-bob', actual: $this->pushes[0][0]['targetId']);
+		$this->assertSame(expected: ['t-zed'], actual: $this->persistedLogs[0]->getResult()['reconciliation']['unmatched']);
 	}//end testAMatchingTargetItemIsAdoptedAndTheRestListed()
 
 	/**
@@ -289,12 +308,12 @@ class OutboundReconciliationServiceTest extends TestCase {
 	 */
 	public function testATargetItemIsAdoptedOnlyOnce(): void {
 		$this->targetLists(items: [['id' => 't-bob', 'externKey' => 'bob']]);
-		$this->registerHolds(employees: [['id' => 'e-1', 'nextcloudUserId' => 'bob'], ['id' => 'e-2', 'nextcloudUserId' => 'bob']]);
+		$this->registerHolds(employees: [['id' => 'e-1', 'nextcloudUserId' => 'bob'], ['id' => 'e-2', 'nextcloudUserId' => 'bob'], ['id' => 'e-3']]);
 
-		$report = $this->service()->reconcile(synchronization: $this->synchronization());
+		$report = $this->reconcile();
 
-		$this->assertSame(['e-1' => 't-bob'], $report['adopted']);
-		$this->assertSame(['e-2'], $report['created']);
+		$this->assertSame(expected: ['e-1' => 't-bob'], actual: $report['adopted']);
+		$this->assertSame(expected: ['e-2', 'e-3'], actual: $report['created']);
 	}//end testATargetItemIsAdoptedOnlyOnce()
 
 	/**
@@ -310,27 +329,27 @@ class OutboundReconciliationServiceTest extends TestCase {
 		);
 		$this->contracts->expects($this->never())->method('createFromArray');
 
-		$report = $this->service()->reconcile(synchronization: $this->synchronization());
+		$report = $this->reconcile();
 
-		$this->assertSame(['e-ann'], $report['created']);
-		$this->assertSame('c-ann', $this->pushes[0][0]['id']);
-		$this->assertNull($this->pushes[0][0]['targetId']);
+		$this->assertSame(expected: ['e-ann'], actual: $report['created']);
+		$this->assertSame(expected: 'c-ann', actual: $this->pushes[0][0]['id']);
+		$this->assertNull(actual: $this->pushes[0][0]['targetId']);
 	}//end testAContractWhoseTargetIsGoneIsPushedAgain()
 
 	/**
-	 * A target item nobody claims is never deleted or deactivated: no push names it.
+	 * In-sync objects are not pushed, and a target item nobody claims is only listed.
 	 *
 	 * @return void
 	 */
 	public function testNothingIsPushedForInSyncObjects(): void {
 		$this->targetLists(items: [['id' => 't-1'], ['id' => 't-2']]);
-		$this->registerHolds(employees: [['id' => 'e-1']], contracts: [['id' => 'c-1', 'originId' => 'e-1', 'targetId' => 't-1']]);
+		$this->registerHolds(employees: [['id' => 'e-1']], contracts: [['id' => 'c-1', 'originId' => 'e-1', 'targetId' => 't-1'], ['id' => 'c-x']]);
 		$this->engine->expects($this->never())->method('synchronizeContract');
 
-		$report = $this->service()->reconcile(synchronization: $this->synchronization());
+		$report = $this->reconcile();
 
-		$this->assertSame(['t-2'], $report['unmatched']);
-		$this->assertStringContainsString('1 target item(s) without a match', $report['message']);
+		$this->assertSame(expected: ['t-2'], actual: $report['unmatched']);
+		$this->assertStringContainsString(needle: '1 target item(s) without a match', haystack: $report['message']);
 	}//end testNothingIsPushedForInSyncObjects()
 
 	/**
@@ -344,35 +363,33 @@ class OutboundReconciliationServiceTest extends TestCase {
 		$synchronization = $this->synchronization();
 		$synchronization['conditions'] = [['==' => [['var' => 'status'], 'approved']]];
 
-		$report = $this->service()->reconcile(synchronization: $synchronization);
+		$report = $this->reconcile(synchronization: $synchronization);
 
-		$this->assertSame(['l-1'], $report['created']);
-		$this->assertCount(1, $this->pushes);
+		$this->assertSame(expected: ['l-1'], actual: $report['created']);
+		$this->assertCount(expectedCount: 1, haystack: $this->pushes);
 	}//end testAnObjectFailingTheConditionsIsNotPushed()
 
 	/**
-	 * A push that throws or answers an exception is reported as failed and the run goes on.
+	 * A push that throws or answers no contract is reported as failed and the run goes on.
 	 *
 	 * @return void
 	 */
 	public function testAFailedPushIsReportedAndTheRunGoesOn(): void {
-		$engine = $this->createMock(SynchronizationServiceInterface::class);
+		$engine = $this->createMock(originalClassName: SynchronizationServiceInterface::class);
 		$engine->method('getAllObjectsFromApi')->willReturnCallback(
 			function (array $synchronization, ?bool $isTest = false, ?array $data = null, ?array &$fetchInfo = null): array {
 				$fetchInfo = ['complete' => true];
 				return [];
 			}
 		);
-		$calls = 0;
 		$engine->method('synchronizeContract')->willReturnCallback(
-			function (array $synchronizationContract) use (&$calls): array|\Exception {
-				$calls++;
+			function (array $synchronizationContract): array|Exception {
 				if ($synchronizationContract['originId'] === 'e-1') {
-					throw new RuntimeException('refused');
+					throw new RuntimeException(message: 'refused');
 				}
 
 				if ($synchronizationContract['originId'] === 'e-2') {
-					return new \Exception('mapping missing');
+					return new Exception(message: 'mapping missing');
 				}
 
 				return ['contract' => $synchronizationContract + ['targetId' => 'x']];
@@ -381,12 +398,30 @@ class OutboundReconciliationServiceTest extends TestCase {
 		$this->engine = $engine;
 		$this->registerHolds(employees: [['id' => 'e-1'], ['id' => 'e-2'], ['id' => 'e-3']]);
 
-		$report = $this->service()->reconcile(synchronization: $this->synchronization());
+		$report = $this->reconcile();
 
-		$this->assertSame(3, $calls);
-		$this->assertSame(['e-1', 'e-2'], $report['failed']);
-		$this->assertSame(['e-3'], $report['created']);
+		$this->assertSame(expected: ['e-1' => 'refused', 'e-2' => 'the engine answered no contract'], actual: $report['failed']);
+		$this->assertSame(expected: ['e-3'], actual: $report['created']);
 	}//end testAFailedPushIsReportedAndTheRunGoesOn()
+
+	/**
+	 * A run log that cannot be stored is named in the report; the run's work stands.
+	 *
+	 * @return void
+	 */
+	public function testARunLogThatCannotBeStoredIsReported(): void {
+		$logs = $this->createMock(originalClassName: SynchronizationLogServiceInterface::class);
+		$logs->method('createFromArray')->willReturn(new SynchronizationRunLog());
+		$logs->method('persist')->willThrowException(new RuntimeException(message: 'append-only'));
+		$this->logs = $logs;
+		$this->targetLists(items: []);
+		$this->registerHolds(employees: [['id' => 'e-1']]);
+
+		$report = $this->reconcile();
+
+		$this->assertSame(expected: ['e-1'], actual: $report['created']);
+		$this->assertStringContainsString(needle: 'The run log was not stored: append-only', haystack: $report['message']);
+	}//end testARunLogThatCannotBeStoredIsReported()
 
 	/**
 	 * Register objects as OpenRegister entities are read by their uuid and serialized body.
@@ -395,31 +430,12 @@ class OutboundReconciliationServiceTest extends TestCase {
 	 */
 	public function testEntitiesAreReadByUuid(): void {
 		$this->targetLists(items: [['id' => 't-bob', 'externKey' => 'bob']]);
-		$entity = new class {
-			/**
-			 * The uuid.
-			 *
-			 * @return string The uuid.
-			 */
-			public function getUuid(): string {
-				return 'e-bob';
-			}
+		$this->registerHolds(employees: [$this->entity(uuid: 'e-bob', body: ['nextcloudUserId' => 'bob'])]);
 
-			/**
-			 * The body.
-			 *
-			 * @return array The body.
-			 */
-			public function jsonSerialize(): array {
-				return ['nextcloudUserId' => 'bob'];
-			}
-		};
-		$this->registerHolds(employees: [$entity]);
+		$report = $this->reconcile();
 
-		$report = $this->service()->reconcile(synchronization: $this->synchronization());
-
-		$this->assertSame(['e-bob' => 't-bob'], $report['adopted']);
-		$this->assertSame('e-bob', $this->pushes[0][1]['id']);
+		$this->assertSame(expected: ['e-bob' => 't-bob'], actual: $report['adopted']);
+		$this->assertSame(expected: 'e-bob', actual: $this->pushes[0][1]['id']);
 	}//end testEntitiesAreReadByUuid()
 
 	/**
@@ -431,20 +447,15 @@ class OutboundReconciliationServiceTest extends TestCase {
 		$service = $this->service();
 		$synchronization = $this->synchronization();
 
-		$this->assertTrue($service->isReconcilable(synchronization: $synchronization));
+		$this->assertTrue(condition: $service->isReconcilable(synchronization: $synchronization));
 
 		$noReconcile = $synchronization;
 		unset($noReconcile['targetConfig']['reconcile']);
-		$this->assertFalse($service->isReconcilable(synchronization: $noReconcile));
+		$this->assertFalse(condition: $service->isReconcilable(synchronization: $noReconcile));
 
-		$inbound = array_merge($synchronization, ['sourceType' => 'api']);
-		$this->assertFalse($service->isReconcilable(synchronization: $inbound));
-
-		$toRegister = array_merge($synchronization, ['targetType' => 'register/schema']);
-		$this->assertFalse($service->isReconcilable(synchronization: $toRegister));
-
-		$badSource = array_merge($synchronization, ['sourceId' => 'Employee']);
-		$this->assertFalse($service->isReconcilable(synchronization: $badSource));
+		$this->assertFalse(condition: $service->isReconcilable(synchronization: array_merge($synchronization, ['sourceType' => 'api'])));
+		$this->assertFalse(condition: $service->isReconcilable(synchronization: array_merge($synchronization, ['targetType' => 'register/schema'])));
+		$this->assertFalse(condition: $service->isReconcilable(synchronization: array_merge($synchronization, ['sourceId' => 'Employee'])));
 	}//end testOnlyOptedInOutboundSynchronizationsAreReconcilable()
 
 	/**
@@ -453,30 +464,15 @@ class OutboundReconciliationServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testFindReconcilableFiltersTheStore(): void {
-		$entity = new class {
-			/**
-			 * The uuid.
-			 *
-			 * @return string The uuid.
-			 */
-			public function getUuid(): string {
-				return 'sync-2';
-			}
-
-			/**
-			 * The body.
-			 *
-			 * @return array The body.
-			 */
-			public function jsonSerialize(): array {
-				return [
-					'sourceType' => 'register/schema',
-					'sourceId' => 'humaniq/Employee',
-					'targetType' => 'api',
-					'targetConfig' => ['reconcile' => ['endpoint' => '/x']],
-				];
-			}
-		};
+		$entity = $this->entity(
+			uuid: 'sync-2',
+			body: [
+				'sourceType' => 'register/schema',
+				'sourceId' => 'humaniq/Employee',
+				'targetType' => 'api',
+				'targetConfig' => ['reconcile' => ['endpoint' => '/x']],
+			]
+		);
 		$plain = $this->synchronization();
 		unset($plain['targetConfig']['reconcile']);
 		$this->objects->expects($this->once())->method('findAll')
@@ -485,7 +481,46 @@ class OutboundReconciliationServiceTest extends TestCase {
 
 		$found = $this->service()->findReconcilable();
 
-		$this->assertCount(1, $found);
-		$this->assertSame('sync-2', $found[0]['id']);
+		$this->assertCount(expectedCount: 1, haystack: $found);
+		$this->assertSame(expected: 'sync-2', actual: $found[0]['id']);
 	}//end testFindReconcilableFiltersTheStore()
+
+	/**
+	 * An object shaped like an OpenRegister entity.
+	 *
+	 * @param string $uuid The uuid.
+	 * @param array  $body The serialized body.
+	 *
+	 * @return object The entity.
+	 */
+	private function entity(string $uuid, array $body): object {
+		return new class ($uuid, $body) {
+			/**
+			 * Constructor.
+			 *
+			 * @param string $uuid The uuid.
+			 * @param array  $body The body.
+			 */
+			public function __construct(private readonly string $uuid, private readonly array $body) {
+			}//end __construct()
+
+			/**
+			 * The uuid.
+			 *
+			 * @return string The uuid.
+			 */
+			public function getUuid(): string {
+				return $this->uuid;
+			}//end getUuid()
+
+			/**
+			 * The body.
+			 *
+			 * @return array The body.
+			 */
+			public function jsonSerialize(): array {
+				return $this->body;
+			}//end jsonSerialize()
+		};
+	}//end entity()
 }//end class
