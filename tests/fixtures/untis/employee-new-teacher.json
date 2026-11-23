@@ -1,0 +1,26 @@
+{
+  "id": "6b0c9a52-3f0e-4d43-9a1e-2f8f3c1d7a10",
+  "@self": {
+    "id": "6b0c9a52-3f0e-4d43-9a1e-2f8f3c1d7a10",
+    "register": "humaniq",
+    "schema": "Employee"
+  },
+  "employeeNumber": "VDB",
+  "nextcloudUserId": "a.vandenberg",
+  "firstName": "Anna",
+  "lastName": "van den Berg",
+  "bsn": "999993653",
+  "iban": "NL91ABNA0417164300",
+  "tenaamstelling": "A. van den Berg",
+  "grossMonthlySalary": 4321.5,
+  "dateOfBirth": "1988-04-12",
+  "identityDocumentVerified": true,
+  "privateEmail": "anna@example.org",
+  "phone": "+31612345678",
+  "straat": "Schoolstraat",
+  "huisnummer": "12",
+  "postcode": "1234AB",
+  "woonplaats": "Utrecht",
+  "startDate": "2026-08-01",
+  "endDate": null
+}

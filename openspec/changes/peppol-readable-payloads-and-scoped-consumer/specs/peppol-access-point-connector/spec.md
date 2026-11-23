@@ -36,7 +36,7 @@ Before submitting, the connector MUST read the UBL named by `payloadFileUri` whe
 
 ### Requirement: An inbound document is stored where the receiving app can read it (REQ-009)
 
-For a verified inbound-document notification, the connector MUST fetch the document from the access point with the brokered credential, MUST store it as a file on a `peppol_inbound_document` object in integriq's register, and MUST then emit `nl.conduction.peppol.inbound.received` with the sender, the document type, `payloadReference` set to that object's OpenRegister path, `payloadFileId` and `payloadFileName`. A fetch that fails MUST leave the object in status `fetch-failed` for a retry, MUST emit no event, and MUST NOT change the webhook's answer.
+For a verified inbound-document notification, the connector MUST fetch the document from the access point with the brokered credential, store it as a file on a `peppol_inbound_document` object, and emit `nl.conduction.peppol.inbound.received` with the sender, the document type, `payloadReference` (that object's OpenRegister path), `payloadFileId` and `payloadFileName`. A failed fetch MUST leave the object `fetch-failed` for a retry, emit no event, and leave the webhook's answer unchanged.
 
 #### Scenario: a supplier invoice arrives over Peppol
 - GIVEN a signed notification that supplier `0106:12345678` sent an invoice

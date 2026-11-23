@@ -87,7 +87,7 @@ class DSOController extends Controller {
 	 * @param IL10N $l The localization service.
 	 *
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function __construct(
 		string $appName,
@@ -246,7 +246,7 @@ class DSOController extends Controller {
 	 *
 	 * @return DsoIdentity|JSONResponse The identity the writes run as, or the refusal.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	private function identify(string $rawBody): DsoIdentity|JSONResponse {
 		$signatureHeader = $this->request->getHeader('X-DSO-Signature');
@@ -311,7 +311,7 @@ class DSOController extends Controller {
 	 *
 	 * @return JSONResponse HTTP 503 with the error code of the reason.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
 	 */
 	private function connectionUnavailable(DsoConnectionUnavailableException $exception): JSONResponse {
 		$this->logger->error(

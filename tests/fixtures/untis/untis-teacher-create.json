@@ -1,0 +1,12 @@
+{
+  "teachers": [
+    {
+      "externKey": "a.vandenberg",
+      "shortName": "VDB",
+      "lastName": "van den Berg",
+      "forename": "Anna",
+      "entryDate": "2026-08-01",
+      "active": true
+    }
+  ]
+}

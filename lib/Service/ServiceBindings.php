@@ -50,6 +50,7 @@ use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
+use OCA\Integriq\Service\Credential\PersonalCredentialLookup;
 use OCA\Integriq\Service\AgentTools\AgentActionStore;
 use OCA\Integriq\Service\AgentTools\AgentActionStoreInterface;
 use OCA\Integriq\Service\AgentTools\AgentBatchGate;
@@ -400,7 +401,6 @@ final class ServiceBindings {
 		SourceDestructionServiceInterface::class => SourceDestructionService::class,
 		UnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
-		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
 		TalkMessageSourceInterface::class => TalkMessageSource::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
 		CallerSearchInterface::class => ConfiguredCallerSearch::class,
@@ -501,6 +501,7 @@ final class ServiceBindings {
 		$this->registerAgentToolClient(context: $context);
 		$this->registerObjectenApis(context: $context);
 		$this->registerTablesAndFormsClients(context: $context);
+		$this->registerMicrosoft365Adapter(context: $context);
 	}
 	/**
 	 * Register integriq-side IntegrationProviders with OR's IntegrationRegistry.
@@ -570,6 +571,27 @@ final class ServiceBindings {
 			}
 		}//end try
 	}//end boot()
+
+	/**
+	 * Binds the Microsoft 365 adapter the document search reads through to the lookup of each person's delegated grant.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-microsoft-365-source-answers-a-document-search-across-files-mail-and-chat-req-dcc-008
+	 */
+	private function registerMicrosoft365Adapter(IRegistrationContext $context): void {
+		$context->registerService(
+			Microsoft365AdapterInterface::class,
+			static function ($c): Microsoft365AdapterInterface {
+				$adapter = $c->get(Microsoft365Adapter::class);
+				$adapter->useDelegatedGrants(personalCredentials: $c->get(PersonalCredentialLookup::class));
+
+				return $adapter;
+			}
+		);
+	}//end registerMicrosoft365Adapter()
 
 	/**
 	 * Registers the settings service factory.

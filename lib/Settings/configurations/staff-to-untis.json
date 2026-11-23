@@ -1,0 +1,163 @@
+{
+  "slug": "staff-to-untis",
+  "title": "humaniq staff to Untis",
+  "version": "1.0.0",
+  "description": "Pushes humaniq employees to Untis as teachers and humaniq's approved leave as Untis teacher absences, over the Untis Platform APIs (https://developer.untis.com/api-reference/webuntis-apis/): Teacher Management v2 (POST and PUT /WebUntis/api/rest/extern/v2/teachers, a batch body under \"teachers\") and Teacher Absence Management v1 (POST, PUT and DELETE /WebUntis/api/rest/extern/v1/teacher-absence). Every call goes through the Untis central gateway, https://api.webuntis.com (https://api.integration.webuntis.dev for testing), with a tenant-scoped access token from the OAuth 2 client credentials grant of an approved Untis platform application (Basic auth to /WebUntis/api/sso/v3/{tenant}/token); its password stays in the credential broker. Only the fields a timetable needs leave humaniq: every mapping is an allow-list, and the set is marked as carrying personal data, so an import with a pass-through mapping is refused. A leaver is made inactive, never deleted, because past lessons still name the teacher.",
+  "component": "Untis",
+  "auth": "broker",
+  "personalData": true,
+  "synchronizations": [
+    "staff-to-untis-teachers",
+    "staff-to-untis-absences"
+  ],
+  "mappings": [
+    "staff-to-untis-teacher",
+    "staff-to-untis-absence"
+  ],
+  "storageStrategy": "external",
+  "writesBack": false,
+  "components": {
+    "sources": {
+      "staff-to-untis-source": {
+        "slug": "staff-to-untis-source",
+        "name": "Untis Platform APIs",
+        "description": "The Untis central API gateway for the teacher and teacher absence APIs. Dormant: register an Untis platform application, store its platform-generated password (not the OIDC client secret) in the credential broker under the name staff-to-untis-client-secret, put the client id in client_id and the school's tenant id in the token URL in place of TENANT_ID, and enable the source. The token is tenant-scoped and lives three minutes. Untis allows 40 requests a second and asks that large synchronisation jobs run off-peak (Monday to Friday 19:00 to 05:00, or at weekends).",
+        "type": "api",
+        "location": "https://api.webuntis.com/WebUntis",
+        "documentation": "https://developer.untis.com/api-reference/webuntis-apis/",
+        "isEnabled": false,
+        "auth": "oauth",
+        "pace": {
+          "maxCalls": 40,
+          "perSeconds": 1
+        },
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{ oauthToken(source) }}"
+          },
+          "authentication": {
+            "grant_type": "client_credentials",
+            "authentication": "basic_auth",
+            "tokenUrl": "https://api.webuntis.com/WebUntis/api/sso/v3/TENANT_ID/token",
+            "scope": "",
+            "client_id": "",
+            "client_secret": {
+              "credentialRef": {
+                "credentialName": "staff-to-untis-client-secret"
+              }
+            }
+          }
+        }
+      }
+    },
+    "mappings": {
+      "staff-to-untis-teacher": {
+        "slug": "staff-to-untis-teacher",
+        "name": "humaniq employee to Untis teacher",
+        "description": "One humaniq Employee as one teacher in an Untis Teacher Management v2 batch body. Allow-list: the Nextcloud user id as external key (the employee's uuid when it has none), the employee number as short name, last name, first name, start date as entry date, end date as exit date, and active while the end date is not past. Nothing else is read: no BSN, salary, bank account, contract, identity document, address, birth date or private e-mail. Untis keeps e-mail on a user account, not on the teacher, so no e-mail is sent.",
+        "version": "1.0.0",
+        "passThrough": false,
+        "mapping": {
+          "teachers.0.externKey": "{{ nextcloudUserId|default(id|default(''))|raw }}",
+          "teachers.0.shortName": "{{ employeeNumber|default(nextcloudUserId|default(''))|slice(0, 20)|raw }}",
+          "teachers.0.lastName": "{{ lastName|default('')|raw }}",
+          "teachers.0.forename": "{{ firstName|default('')|raw }}",
+          "teachers.0.entryDate": "{% if startDate is not empty %}{{ startDate|date('Y-m-d') }}{% endif %}",
+          "teachers.0.exitDate": "{% if endDate is not empty %}{{ endDate|date('Y-m-d') }}{% endif %}",
+          "teachers.0.active": "{% if endDate is empty or endDate|date('Y-m-d') >= 'now'|date('Y-m-d') %}true{% else %}false{% endif %}"
+        },
+        "unset": [],
+        "cast": {
+          "teachers.0.forename": "unsetIfValue==",
+          "teachers.0.entryDate": "unsetIfValue==",
+          "teachers.0.exitDate": "unsetIfValue==",
+          "teachers.0.active": "bool"
+        }
+      },
+      "staff-to-untis-absence": {
+        "slug": "staff-to-untis-absence",
+        "name": "humaniq approved leave to Untis teacher absence",
+        "description": "One approved humaniq LeaveRequest as one Untis teacher absence: the teacher's Untis id (the target id of the contract the staff-to-untis-teachers synchronization made for the employee; without one, teacherId is left out and Untis refuses the absence in the call log rather than booking it on no teacher), the first day from 00:00 and the last day until 23:59, and a neutral absence reason. Put the id of your school's neutral Untis absence reason in reasonId; empty sends none. The leave type, the reason the employee gave, the hours and every note stay in humaniq.",
+        "version": "1.0.0",
+        "passThrough": false,
+        "mapping": {
+          "teacherId": "{{ getTargetIdByOriginId(employeeId|default(''))|default('') }}",
+          "start": "{{ startDate|date('Y-m-d') }}T00:00:00",
+          "end": "{{ endDate|date('Y-m-d') }}T23:59:00",
+          "reasonId": ""
+        },
+        "unset": [],
+        "cast": {
+          "teacherId": [
+            "unsetIfValue==",
+            "int"
+          ],
+          "reasonId": "unsetIfValue=="
+        }
+      }
+    },
+    "synchronizations": {
+      "staff-to-untis-teachers": {
+        "slug": "staff-to-untis-teachers",
+        "name": "humaniq employees to Untis teachers",
+        "description": "Creates or updates the Untis teacher for a humaniq Employee when it is created or changed. A leaver is sent with active false and the exit date; deleting an employee in humaniq sends nothing, because the Untis teacher API has no delete and past lessons keep their teacher.",
+        "version": "1.0.0",
+        "sourceId": "humaniq/Employee",
+        "sourceType": "register/schema",
+        "sourceConfig": {
+          "triggerOnlyOnEvents": [
+            "CREATE",
+            "UPDATE"
+          ]
+        },
+        "sourceTargetMapping": "staff-to-untis-teacher",
+        "targetId": "staff-to-untis-source",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/api/rest/extern/v2/teachers",
+          "idPosition": "teachers.0.id",
+          "updateEndpoint": "/api/rest/extern/v2/teachers",
+          "updateMethod": "PUT"
+        },
+        "conditions": [
+          {
+            "!!": [
+              {
+                "var": "lastName"
+              }
+            ]
+          }
+        ]
+      },
+      "staff-to-untis-absences": {
+        "slug": "staff-to-untis-absences",
+        "name": "humaniq approved leave to Untis teacher absences",
+        "description": "Creates an Untis teacher absence for a humaniq LeaveRequest once its status is approved, and updates it when the dates change. When an approved request is rejected again or deleted, the absence is deleted in Untis. A draft, submitted or manager-approved request sends nothing.",
+        "version": "1.0.0",
+        "sourceId": "humaniq/LeaveRequest",
+        "sourceType": "register/schema",
+        "sourceTargetMapping": "staff-to-untis-absence",
+        "targetId": "staff-to-untis-source",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/api/rest/extern/v1/teacher-absence",
+          "idPosition": "id",
+          "updateMethod": "PUT",
+          "deleteWhenConditionsFail": true
+        },
+        "conditions": [
+          {
+            "==": [
+              {
+                "var": "status"
+              },
+              "approved"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Service\Credential\PersonalCredentialLookup;
 use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\DatabaseAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
@@ -37,6 +38,7 @@ use OCA\Integriq\Service\Adapter\EndpointWorkspace\CitrixDaasAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\IntuneAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\JamfProAdapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
+use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\LogDigitalPostProvider;
@@ -134,6 +136,22 @@ class ServiceBindingsFactoriesTest extends TestCase {
 			$this->assertArrayHasKey($id, $this->resolved);
 		}
 	}//end testTheSettingsServiceIsBuiltFromTheConfigRebaseSchedulerAndLogger()
+
+	/**
+	 * The Microsoft 365 adapter the document search reads through is handed the lookup of each person's delegated grant.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-microsoft-365-source-answers-a-document-search-across-files-mail-and-chat-req-dcc-008
+	 */
+	public function testTheMicrosoft365AdapterReadsEachPersonsDelegatedGrant(): void {
+		$container = $this->container();
+		$grants    = $container->get(PersonalCredentialLookup::class);
+		$adapter   = $container->get(Microsoft365Adapter::class);
+		$adapter->expects(self::once())->method('useDelegatedGrants')->with(personalCredentials: $grants);
+
+		$this->assertSame(expected: $adapter, actual: $this->factories()[Microsoft365AdapterInterface::class]($container));
+	}//end testTheMicrosoft365AdapterReadsEachPersonsDelegatedGrant()
 
 	/**
 	 * Boot hands OpenRegister's registry the twelve integration providers, in order.

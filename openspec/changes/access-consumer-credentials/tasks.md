@@ -20,6 +20,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - [x] Implement
   > 2026-11-21, the screen: `src/components/ConsumerCredentialsPanel.vue`, a ConsumerDetail body widget over `CredentialKeysPanel` (shared with the developer portal), reads and writes `/api/consumers/{id}/credentials`. Generating shows the key once, with a copy button. Reloading shows only its label and prefix, because no route answers a key again. Revoking removes one credential and leaves the others. Vitest: `tests/vitest/credentialKeysPanel.spec.js`.
 - [ ] Test (Playwright for generate, copy and revoke; PHPUnit that no route returns a key)
+  > 2026-11-23, written, not run (no live instance): `tests/e2e/consumer-credentials.spec.ts` generates a key on a seeded consumer, copies it, checks the credentials list never carries it and a reload shows only label and prefix, then puts a second key next to the first and revokes the old one. PHPUnit that no route returns a key is `ConsumerCredentialsControllerTest::testAGeneratedKeyIsInTheCreateResponseAndNeverInTheList`.
 
 ### Task 3: Two keys at once and last used
 - **spec_ref**: `openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-key-can-be-replaced-without-downtime-req-cred-003`

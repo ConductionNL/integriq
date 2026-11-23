@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
 /**
  * Throttled admin notifications for the DSO connection.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
  */
 class DsoConnectionAlerts implements PortalConnectionAlertsInterface {
 
@@ -74,7 +74,7 @@ class DsoConnectionAlerts implements PortalConnectionAlertsInterface {
 	 * @param ITimeFactory         $timeFactory         The clock.
 	 * @param LoggerInterface      $logger              Diagnostics.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function __construct(
 		private readonly INotificationManager $notificationManager,
@@ -97,7 +97,7 @@ class DsoConnectionAlerts implements PortalConnectionAlertsInterface {
 	 *
 	 * @return bool True when a notification went out.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
 	public function notify(string $reason, string $channel = DsoConnectionUnavailableException::CHANNEL_DSO): bool {
@@ -131,7 +131,7 @@ class DsoConnectionAlerts implements PortalConnectionAlertsInterface {
 	 *
 	 * @return bool False when the alert is throttled.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	private function claimSlot(DsoAlertNotice $notice): bool {
 		$key = $notice->channel . self::LAST_SENT_INFIX . preg_replace('/[^a-z_]/', '', $notice->reason);
@@ -153,7 +153,7 @@ class DsoConnectionAlerts implements PortalConnectionAlertsInterface {
 	 *
 	 * @return bool True when the notification went out.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	private function notifyAdmin(IUser $admin, DsoAlertNotice $notice): bool {
 		try {
@@ -177,7 +177,7 @@ class DsoConnectionAlerts implements PortalConnectionAlertsInterface {
 	 *
 	 * @return INotification
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	private function notificationFor(IUser $admin, DsoAlertNotice $notice): INotification {
 		$notification = $this->notificationManager->createNotification();

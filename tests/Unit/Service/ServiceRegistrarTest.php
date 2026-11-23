@@ -496,7 +496,6 @@ class ServiceRegistrarTest extends TestCase {
 		SourceDestructionServiceInterface::class => SourceDestructionService::class,
 		UnmappedActivitiesInterface::class => DsoUnmappedActivities::class,
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
-		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
 		TalkMessageSourceInterface::class => TalkMessageSource::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
 		CallerSearchInterface::class => ConfiguredCallerSearch::class,
@@ -593,6 +592,7 @@ class ServiceRegistrarTest extends TestCase {
 		'OCA\\Integriq\\Service\\Catalogi\\WooStarterSet',
 		'OCA\\Integriq\\Service\\Tables\\TablesClientInterface',
 		'OCA\\Integriq\\Service\\Forms\\FormsClientInterface',
+		'OCA\\Integriq\\Service\\Adapter\\Saas\\Microsoft365AdapterInterface',
 	];
 
 	/**

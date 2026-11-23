@@ -4,7 +4,7 @@
 
 ### Requirement: An app calls a connection it declared through a typed command (REQ-CC-001)
 
-Integriq MUST offer `OCA\Integriq\Event\ConnectionCallRequestedEvent` carrying the calling app, one of its declared connection keys, a method (GET or POST), a path, a query and an optional body. The listener MUST call the source an administrator linked to that connection, with the source's credential, and MUST write the status, the body and the source slug into the result slot. It MUST refuse `not-declared` for an unknown key, `not-linked` for a connection without a source, and `invalid` for a path that leaves the source's location, and it MUST NOT throw to the caller. The calling app MUST never receive the credential.
+Integriq MUST offer `OCA\Integriq\Event\ConnectionCallRequestedEvent` with the calling app, a declared connection key, a method (GET or POST), a path, a query and an optional body. The listener MUST call the linked source with its credential and write the status, body and source slug into the result slot. It MUST refuse `not-declared` for an unknown key, `not-linked` without a source and `invalid` for a path outside the source, MUST NOT throw, and MUST never hand the app the credential.
 
 #### Scenario: an HR officer fills in a company car from its plate
 - GIVEN humaniq declares `rdw-voertuigen` and an administrator linked it to the `rdw-open-data` template
@@ -20,7 +20,7 @@ Integriq MUST offer `OCA\Integriq\Event\ConnectionCallRequestedEvent` carrying t
 
 ### Requirement: Integriq answers the road distance between two postcodes (REQ-CC-002)
 
-Integriq MUST offer `OCA\Integriq\Event\RouteDistanceRequestedEvent` with two Dutch postcodes and a transport mode. It MUST place both postcodes through PDOK, MUST ask the route planner linked to the app's route planner connection for a road route, and MUST answer the one-way distance in kilometres with one decimal and the provider's name. It MUST refuse `unknown-postcode` naming a postcode it cannot place and `unsupported-mode` for a mode the planner has no profile for. Integriq MUST ship dormant route planner templates for OpenRouteService and TomTom and a credential-free RDW open data template.
+Integriq MUST offer `OCA\Integriq\Event\RouteDistanceRequestedEvent` (two Dutch postcodes, a transport mode). It MUST place both through PDOK, ask the app's linked route planner for a road route, and answer the one-way distance in km to one decimal with the provider's name, refusing `unknown-postcode` naming the postcode and `unsupported-mode` for a mode the planner lacks. It MUST ship dormant OpenRouteService and TomTom planner templates and a credential-free RDW open data template.
 
 #### Scenario: a commuting allowance needs a distance
 - GIVEN humaniq's route planner connection linked to OpenRouteService

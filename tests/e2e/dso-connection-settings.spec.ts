@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md
  * (REQ-DSO-071, the DSO connection's account is chosen and checked by an administrator).
  *
  * What an administrator does here: open the DSO connection section, see

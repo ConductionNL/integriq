@@ -42,7 +42,8 @@ Kind: code. Size M. Rows `integriq:gw-cache`, `integriq:gw-problem-json`.
 - [x] Test (PHPUnit covering authentication, rate limit, validation and upstream errors; Newman checks the content type)
 
 ## Verification
-- [ ] `openspec validate gateway-response-cache-and-problem-errors --type change --strict` passes
+- [x] `openspec validate gateway-response-cache-and-problem-errors --type change --strict` passes
+  - OpenSpec 2.1.1, 2026-11-23: valid under `--strict`.
 - [x] `grep -c "new JSONResponse" lib/Service/EndpointService.php` shows no error return left outside ProblemResponse
   - The grep still counts `new JSONResponse`: those error returns sit behind the `asProblem()` choke point of `handleRequest()`, which turns each into a problem document. The entry points outside it now answer problem documents as well: `resumeFromApproval()` and `replay()` pass their answer through `asProblem()`, and they and `triggerFromFlow()` answer a failure with `internalProblem()`. Test: `EndpointServiceEntryPointProblemTest` (4).
 - [ ] PHPUnit and Newman run, exit codes read

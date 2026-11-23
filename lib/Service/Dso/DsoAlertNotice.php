@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ namespace OCA\Integriq\Service\Dso;
 /**
  * Value object for one connection alert (ADR-011).
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
  */
 final class DsoAlertNotice {
 
@@ -39,7 +39,7 @@ final class DsoAlertNotice {
 	 * @param string $channel The channel, lowercase letters only.
 	 * @param int    $now     The send time.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function __construct(
 		public readonly string $reason,
