@@ -96,7 +96,7 @@ interface SignedPayloadVerifierInterface {
 	 * @return boolean True only when the signature cryptographically verifies.
 	 *
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function verify(?string $signatureHeader, string $rawBody, array $trust): bool;
 
@@ -108,7 +108,7 @@ interface SignedPayloadVerifierInterface {
 	 * @return string {@see self::MODE_HMAC} or {@see self::MODE_PKIOVERHEID}. Anything
 	 *                else reads as HMAC (pre-production) until an admin switches.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function normalizeMode(mixed $mode): string;
 

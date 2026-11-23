@@ -23,7 +23,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -53,7 +53,7 @@ use Throwable;
 /**
  * Admin-only controller for the DSO connection (`dso-stam` consumer).
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) the connection, its signature or group helpers, the
  * admin check, l10n, logger and the HTTP and OpenRegister types it answers with; splitting would
@@ -71,7 +71,7 @@ class DsoPkiSettingsController extends Controller {
 	 * @param IL10N                       $l                 Field errors and warnings.
 	 * @param LoggerInterface             $logger            Diagnostics.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 	 */
 	public function __construct(
 		IRequest $request,
@@ -91,7 +91,7 @@ class DsoPkiSettingsController extends Controller {
 	 *
 	 * @return JSONResponse The mode, which trust is set, the PEM chain, and the account.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getConfig(): JSONResponse {
@@ -114,7 +114,7 @@ class DsoPkiSettingsController extends Controller {
 	 *
 	 * @return JSONResponse The saved mode and account, with warnings; 400 with errors.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(): JSONResponse {
@@ -348,7 +348,7 @@ class DsoPkiSettingsController extends Controller {
 	 *
 	 * @return string|null The field error.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-is-refused
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-is-refused
 	 */
 	private function accountError(string $userId, array &$warnings): ?string {
 		$unresolvable = $this->accountState()->unresolvable(userId: $userId);

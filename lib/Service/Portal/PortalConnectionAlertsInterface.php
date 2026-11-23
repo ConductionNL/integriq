@@ -81,7 +81,7 @@ interface PortalConnectionAlertsInterface {
 	 *
 	 * @return bool True when a notification went out.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
 	public function notify(string $reason, string $channel = DsoConnectionUnavailableException::CHANNEL_DSO): bool;

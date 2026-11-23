@@ -101,7 +101,7 @@ class DsoConnectionNotifierTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function testAnAlertWithoutAChannelIsADsoAlert(): void {
 		$this->assertSame(

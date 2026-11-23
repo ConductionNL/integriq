@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -142,7 +142,7 @@ class DsoConnectionAlertsTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function testTheFirstAlertReachesEveryAdministrator(): void {
 		$this->assertTrue($this->alerts->notify(reason: 'no_account'));
@@ -159,7 +159,7 @@ class DsoConnectionAlertsTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function testTheSameReasonIsThrottledForAnHour(): void {
 		$this->alerts->notify(reason: 'no_account');
@@ -178,7 +178,7 @@ class DsoConnectionAlertsTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function testAnotherReasonIsNotThrottled(): void {
 		$this->alerts->notify(reason: 'no_account');

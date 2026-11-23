@@ -8,7 +8,7 @@
  *
  * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
  * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
  */
 import axios from '@nextcloud/axios'
 import { generateOcsUrl } from '@nextcloud/router'
@@ -29,7 +29,7 @@ export default {
 		 * @param {string} search The typed text.
 		 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
 		 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4
-		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 		 */
 		async searchAccounts(search) {
 			if (!search || search.length < 2) {

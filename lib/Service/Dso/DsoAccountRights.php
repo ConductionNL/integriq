@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * The rights check of the DSO connection's account.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
  */
 class DsoAccountRights {
 
@@ -54,7 +54,7 @@ class DsoAccountRights {
 	 * @param ContainerInterface $container    Resolves OpenRegister's PermissionHandler lazily.
 	 * @param LoggerInterface    $logger       Diagnostics.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -77,7 +77,7 @@ class DsoAccountRights {
 	 * @return list<string>|null The missing actions (empty when all are held), or null
 	 *                           when OpenRegister cannot answer the question.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
 	public function missing(string $userId, array $actions, string $schema = DsoConnection::SCHEMA_VERZOEK): ?array {
@@ -103,7 +103,7 @@ class DsoAccountRights {
 	 *
 	 * @return object|null The schema entity.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	private function resolveSchema(string $schema): ?object {
 		try {
@@ -126,7 +126,7 @@ class DsoAccountRights {
 	 *
 	 * @return list<string>|null
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	private function missingActions(AccountRightsCheck $check, array $actions): ?array {
 		$missing = [];
@@ -153,7 +153,7 @@ class DsoAccountRights {
 	 *
 	 * @return bool|null
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	private function granted(AccountRightsCheck $check, string $action): ?bool {
 		try {
