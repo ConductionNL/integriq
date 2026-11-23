@@ -599,17 +599,13 @@
                   "format": "date-time"
                 },
                 "expiresAt": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
+                  "nullable": true,
                   "format": "date-time"
                 },
                 "lastUsedAt": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
+                  "nullable": true,
                   "format": "date-time"
                 },
                 "keyPrefix": {
@@ -627,10 +623,8 @@
                   "description": "The pinned certificate's subject, one line."
                 },
                 "oin": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": "string",
+                  "nullable": true,
                   "description": "The OIN from a PKIoverheid certificate's subject serialNumber."
                 },
                 "issuerCertificate": {
