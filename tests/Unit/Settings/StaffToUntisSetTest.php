@@ -45,6 +45,11 @@ final class StaffToUntisSetTest extends TestCase {
 	private const UNTIS_TEACHER_ID = '4711';
 
 	/**
+	 * The humaniq id of the employee fixture.
+	 */
+	private const EMPLOYEE_ID = '6b0c9a52-3f0e-4d43-9a1e-2f8f3c1d7a10';
+
+	/**
 	 * Fields of a humaniq Employee or LeaveRequest that must never reach Untis.
 	 *
 	 * @var string[]
@@ -95,18 +100,24 @@ final class StaffToUntisSetTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	private function map(string $slug, string $input, ?string $teacherId = self::UNTIS_TEACHER_ID): array {
-		$contracts = $this->createMock(SynchronizationContractService::class);
+		$contracts = $this->createMock(originalClassName: SynchronizationContractService::class);
 		$contracts->method('findTargetIdByOriginId')->willReturnCallback(
-			fn (string $originId): ?string => $originId === '6b0c9a52-3f0e-4d43-9a1e-2f8f3c1d7a10' ? $teacherId : null
+			function (string $originId) use ($teacherId): ?string {
+				if ($originId === self::EMPLOYEE_ID) {
+					return $teacherId;
+				}
+
+				return null;
+			}
 		);
 
 		$service = new MappingService(
-			new ArrayLoader([]),
-			$this->createMock(CallService::class),
-			$this->createMock(FileService::class),
-			$this->createMock(ObjectService::class),
-			$this->createMock(ORObjectService::class),
-			$contracts,
+			loader: new ArrayLoader(templates: []),
+			callService: $this->createMock(originalClassName: CallService::class),
+			fileService: $this->createMock(originalClassName: FileService::class),
+			objectService: $this->createMock(originalClassName: ObjectService::class),
+			orObjectService: $this->createMock(originalClassName: ORObjectService::class),
+			synchronizationContractService: $contracts,
 		);
 
 		return $service->executeMapping(mapping: $this->set()['components']['mappings'][$slug], input: $this->fixture(file: $input));
@@ -138,7 +149,9 @@ final class StaffToUntisSetTest extends TestCase {
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testANewEmployeeBecomesTheRecordedTeacherCreate(): void {
-		$this->assertSame($this->fixture(file: 'untis-teacher-create.json'), $this->map(slug: 'staff-to-untis-teacher', input: 'employee-new-teacher.json'));
+		$sent = $this->map(slug: 'staff-to-untis-teacher', input: 'employee-new-teacher.json');
+
+		$this->assertSame(expected: $this->fixture(file: 'untis-teacher-create.json'), actual: $sent);
 	}//end testANewEmployeeBecomesTheRecordedTeacherCreate()
 
 	/**
@@ -149,11 +162,12 @@ final class StaffToUntisSetTest extends TestCase {
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testALeaverIsMadeInactiveNotDeleted(): void {
-		$this->assertSame($this->fixture(file: 'untis-teacher-leaver.json'), $this->map(slug: 'staff-to-untis-teacher', input: 'employee-leaver.json'));
+		$sent = $this->map(slug: 'staff-to-untis-teacher', input: 'employee-leaver.json');
+		$this->assertSame(expected: $this->fixture(file: 'untis-teacher-leaver.json'), actual: $sent);
 
 		$teachers = $this->set()['components']['synchronizations']['staff-to-untis-teachers'];
-		$this->assertSame(['CREATE', 'UPDATE'], $teachers['sourceConfig']['triggerOnlyOnEvents']);
-		$this->assertArrayNotHasKey('deleteWhenConditionsFail', $teachers['targetConfig']);
+		$this->assertSame(expected: ['CREATE', 'UPDATE'], actual: $teachers['sourceConfig']['triggerOnlyOnEvents']);
+		$this->assertArrayNotHasKey(key: 'deleteWhenConditionsFail', array: $teachers['targetConfig']);
 	}//end testALeaverIsMadeInactiveNotDeleted()
 
 	/**
@@ -170,7 +184,7 @@ final class StaffToUntisSetTest extends TestCase {
 		], JSON_THROW_ON_ERROR);
 
 		foreach (self::NEVER_SENT as $value) {
-			$this->assertStringNotContainsString($value, $sent);
+			$this->assertStringNotContainsString(needle: $value, haystack: $sent);
 		}
 	}//end testABsnAndAnIbanNeverLeaveHumaniq()
 
@@ -184,13 +198,13 @@ final class StaffToUntisSetTest extends TestCase {
 	public function testTheSetIsPersonalDataWithAllowListMappingsOnly(): void {
 		$set = $this->set();
 
-		$this->assertTrue(PersonalDataSetGuard::carriesPersonalData(document: $set));
-		$this->assertCount(2, $set['components']['mappings']);
+		$this->assertTrue(condition: PersonalDataSetGuard::carriesPersonalData(document: $set));
+		$this->assertCount(expectedCount: 2, haystack: $set['components']['mappings']);
 		foreach ($set['components']['mappings'] as $mapping) {
-			$this->assertFalse($mapping['passThrough']);
+			$this->assertFalse(condition: $mapping['passThrough']);
 		}
 
-		$this->assertSame([], PersonalDataSetGuard::refusals(document: $set));
+		$this->assertSame(expected: [], actual: PersonalDataSetGuard::refusals(document: $set));
 	}//end testTheSetIsPersonalDataWithAllowListMappingsOnly()
 
 	/**
@@ -206,8 +220,8 @@ final class StaffToUntisSetTest extends TestCase {
 
 		$refusals = PersonalDataSetGuard::refusals(document: $set);
 
-		$this->assertCount(1, $refusals);
-		$this->assertStringContainsString('"staff-to-untis-teacher"', $refusals[0]);
+		$this->assertCount(expectedCount: 1, haystack: $refusals);
+		$this->assertStringContainsString(needle: '"staff-to-untis-teacher"', haystack: $refusals[0]);
 	}//end testAPassThroughMappingInTheSetRefusesTheInstall()
 
 	/**
@@ -220,8 +234,9 @@ final class StaffToUntisSetTest extends TestCase {
 	public function testApprovedLeaveBecomesTheRecordedAbsence(): void {
 		$leave = $this->fixture(file: 'leave-request-approved.json');
 
-		$this->assertTrue($this->conditionsHold(slug: 'staff-to-untis-absences', object: $leave));
-		$this->assertSame($this->fixture(file: 'untis-teacher-absence-create.json'), $this->map(slug: 'staff-to-untis-absence', input: 'leave-request-approved.json'));
+		$this->assertTrue(condition: $this->conditionsHold(slug: 'staff-to-untis-absences', object: $leave));
+		$sent = $this->map(slug: 'staff-to-untis-absence', input: 'leave-request-approved.json');
+		$this->assertSame(expected: $this->fixture(file: 'untis-teacher-absence-create.json'), actual: $sent);
 	}//end testApprovedLeaveBecomesTheRecordedAbsence()
 
 	/**
@@ -233,8 +248,8 @@ final class StaffToUntisSetTest extends TestCase {
 	 */
 	public function testTheNeutralReasonIsTheAdministratorsChoice(): void {
 		$set = $this->set();
-		$this->assertSame('', $set['components']['mappings']['staff-to-untis-absence']['mapping']['reasonId']);
-		$this->assertArrayNotHasKey('reasonId', $this->map(slug: 'staff-to-untis-absence', input: 'leave-request-approved.json'));
+		$this->assertSame(expected: '', actual: $set['components']['mappings']['staff-to-untis-absence']['mapping']['reasonId']);
+		$this->assertArrayNotHasKey(key: 'reasonId', array: $this->map(slug: 'staff-to-untis-absence', input: 'leave-request-approved.json'));
 	}//end testTheNeutralReasonIsTheAdministratorsChoice()
 
 	/**
@@ -245,7 +260,9 @@ final class StaffToUntisSetTest extends TestCase {
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
 	 */
 	public function testLeaveOfAnUnknownTeacherSendsNoTeacherId(): void {
-		$this->assertArrayNotHasKey('teacherId', $this->map(slug: 'staff-to-untis-absence', input: 'leave-request-approved.json', teacherId: null));
+		$sent = $this->map(slug: 'staff-to-untis-absence', input: 'leave-request-approved.json', teacherId: null);
+
+		$this->assertArrayNotHasKey(key: 'teacherId', array: $sent);
 	}//end testLeaveOfAnUnknownTeacherSendsNoTeacherId()
 
 	/**
@@ -258,12 +275,12 @@ final class StaffToUntisSetTest extends TestCase {
 	public function testOnlyApprovedLeaveIsSentAndAWithdrawalDeletes(): void {
 		$leave = $this->fixture(file: 'leave-request-approved.json');
 		foreach (['draft', 'submitted', 'manager-approved', 'rejected'] as $status) {
-			$this->assertFalse($this->conditionsHold(slug: 'staff-to-untis-absences', object: ['status' => $status] + $leave), $status);
+			$this->assertFalse(condition: $this->conditionsHold(slug: 'staff-to-untis-absences', object: ['status' => $status] + $leave), message: $status);
 		}
 
 		$absences = $this->set()['components']['synchronizations']['staff-to-untis-absences'];
-		$this->assertTrue($absences['targetConfig']['deleteWhenConditionsFail']);
-		$this->assertArrayNotHasKey('triggerOnlyOnEvents', ($absences['sourceConfig'] ?? []));
+		$this->assertTrue(condition: $absences['targetConfig']['deleteWhenConditionsFail']);
+		$this->assertArrayNotHasKey(key: 'triggerOnlyOnEvents', array: ($absences['sourceConfig'] ?? []));
 	}//end testOnlyApprovedLeaveIsSentAndAWithdrawalDeletes()
 
 	/**
@@ -277,22 +294,22 @@ final class StaffToUntisSetTest extends TestCase {
 		$set = $this->set();
 		$syncs = $set['components']['synchronizations'];
 
-		$this->assertSame($set['synchronizations'], array_keys($syncs));
-		$this->assertSame($set['mappings'], array_keys($set['components']['mappings']));
+		$this->assertSame(expected: $set['synchronizations'], actual: array_keys($syncs));
+		$this->assertSame(expected: $set['mappings'], actual: array_keys($set['components']['mappings']));
 
-		$this->assertSame('humaniq/Employee', $syncs['staff-to-untis-teachers']['sourceId']);
-		$this->assertSame('/api/rest/extern/v2/teachers', $syncs['staff-to-untis-teachers']['targetConfig']['endpoint']);
-		$this->assertSame('/api/rest/extern/v2/teachers', $syncs['staff-to-untis-teachers']['targetConfig']['updateEndpoint']);
-		$this->assertSame('teachers.0.id', $syncs['staff-to-untis-teachers']['targetConfig']['idPosition']);
+		$this->assertSame(expected: 'humaniq/Employee', actual: $syncs['staff-to-untis-teachers']['sourceId']);
+		$this->assertSame(expected: '/api/rest/extern/v2/teachers', actual: $syncs['staff-to-untis-teachers']['targetConfig']['endpoint']);
+		$this->assertSame(expected: '/api/rest/extern/v2/teachers', actual: $syncs['staff-to-untis-teachers']['targetConfig']['updateEndpoint']);
+		$this->assertSame(expected: 'teachers.0.id', actual: $syncs['staff-to-untis-teachers']['targetConfig']['idPosition']);
 
-		$this->assertSame('humaniq/LeaveRequest', $syncs['staff-to-untis-absences']['sourceId']);
-		$this->assertSame('/api/rest/extern/v1/teacher-absence', $syncs['staff-to-untis-absences']['targetConfig']['endpoint']);
+		$this->assertSame(expected: 'humaniq/LeaveRequest', actual: $syncs['staff-to-untis-absences']['sourceId']);
+		$this->assertSame(expected: '/api/rest/extern/v1/teacher-absence', actual: $syncs['staff-to-untis-absences']['targetConfig']['endpoint']);
 
 		foreach ($syncs as $slug => $sync) {
-			$this->assertSame('register/schema', $sync['sourceType'], $slug);
-			$this->assertSame('api', $sync['targetType'], $slug);
-			$this->assertArrayHasKey($sync['targetId'], $set['components']['sources'], $slug);
-			$this->assertArrayHasKey($sync['sourceTargetMapping'], $set['components']['mappings'], $slug);
+			$this->assertSame(expected: 'register/schema', actual: $sync['sourceType'], message: $slug);
+			$this->assertSame(expected: 'api', actual: $sync['targetType'], message: $slug);
+			$this->assertArrayHasKey(key: $sync['targetId'], array: $set['components']['sources'], message: $slug);
+			$this->assertArrayHasKey(key: $sync['sourceTargetMapping'], array: $set['components']['mappings'], message: $slug);
 		}
 	}//end testTheSynchronizationsWriteToTheDocumentedUntisPaths()
 
@@ -307,11 +324,12 @@ final class StaffToUntisSetTest extends TestCase {
 		$set = $this->set();
 		$source = $set['components']['sources']['staff-to-untis-source'];
 
-		$this->assertFalse($source['isEnabled']);
-		$this->assertSame('https://api.webuntis.com/WebUntis', $source['location']);
-		$this->assertSame(['credentialRef' => ['credentialName' => 'staff-to-untis-client-secret']], $source['configuration']['authentication']['client_secret']);
-		$this->assertSame('basic_auth', $source['configuration']['authentication']['authentication']);
-		$this->assertStringContainsString('/WebUntis/api/sso/v3/', $source['configuration']['authentication']['tokenUrl']);
-		$this->assertStringContainsString('developer.untis.com', $set['description']);
+		$this->assertFalse(condition: $source['isEnabled']);
+		$this->assertSame(expected: 'https://api.webuntis.com/WebUntis', actual: $source['location']);
+		$secret = ['credentialRef' => ['credentialName' => 'staff-to-untis-client-secret']];
+		$this->assertSame(expected: $secret, actual: $source['configuration']['authentication']['client_secret']);
+		$this->assertSame(expected: 'basic_auth', actual: $source['configuration']['authentication']['authentication']);
+		$this->assertStringContainsString(needle: '/WebUntis/api/sso/v3/', haystack: $source['configuration']['authentication']['tokenUrl']);
+		$this->assertStringContainsString(needle: 'developer.untis.com', haystack: $set['description']);
 	}//end testTheUntisSourceIsDormantAndBrokered()
 }//end class

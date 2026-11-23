@@ -30,9 +30,9 @@
 
 import type { APIRequestContext } from '@playwright/test'
 
+import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { expect, test } from '@playwright/test'
 import { withRequestToken } from './support/requestToken.ts'
 
 /** OpenRegister's objects API. */
