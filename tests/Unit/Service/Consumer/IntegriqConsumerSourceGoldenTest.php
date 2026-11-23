@@ -48,6 +48,9 @@ class IntegriqConsumerSourceGoldenTest extends TestCase {
 		}
 
 		$fields = get_object_vars($consumer);
+		// The flat fields are copied from the identity and authorization value
+		// objects, so the record keeps the flat view only and stays unchanged.
+		unset($fields['identity'], $fields['authorization']);
 		foreach ($fields as $key => $value) {
 			if ($value instanceof ObjectEntity) {
 				$fields[$key] = 'entity:' . $value->getUuid();

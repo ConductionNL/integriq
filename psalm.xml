@@ -25,6 +25,8 @@
         <file name="tests/stubs/OCA/OpenRegister/Exception/AuthenticationException.php" />
         <file name="tests/stubs/OCA/OpenRegister/Service/AuthorizationService.php" />
         <file name="tests/stubs/OCA/OpenRegister/Service/Consumer/ConsumerSource.php" />
+        <file name="tests/stubs/OCA/OpenRegister/Service/Consumer/ConsumerIdentity.php" />
+        <file name="tests/stubs/OCA/OpenRegister/Service/Consumer/ConsumerAuthorization.php" />
         <file name="tests/stubs/OCA/OpenRegister/Service/Consumer/ResolvedConsumer.php" />
     </stubs>
     <issueHandlers>
