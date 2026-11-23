@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -103,7 +103,7 @@ class DsoPkiSettingsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-the-trust-configuration-is-never-returned
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-the-trust-configuration-is-never-returned
 	 */
 	public function testGetNeverReturnsTheSecret(): void {
 		$this->addDsoConsumer(userId: 'dso-intake');
@@ -122,7 +122,7 @@ class DsoPkiSettingsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
 	 */
 	public function testNoConsumerReadsAsNoAccount(): void {
 		$data = $this->controller()->getConfig()->getData();
@@ -137,7 +137,7 @@ class DsoPkiSettingsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-choosing-a-valid-account
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-choosing-a-valid-account
 	 */
 	public function testSavingAValidAccountCreatesTheConnection(): void {
 		$this->params = ['mode' => 'hmac', 'hmacSecret' => 'new-secret', 'userId' => 'dso-intake'];
@@ -161,7 +161,7 @@ class DsoPkiSettingsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 	 */
 	public function testAnEmptySecretKeepsTheStoredOne(): void {
 		$this->addDsoConsumer(userId: '');
@@ -181,7 +181,7 @@ class DsoPkiSettingsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-is-refused
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-is-refused
 	 */
 	public function testUnusableAccountsAreRefused(): void {
 		$this->addDsoConsumer(userId: 'dso-intake');
@@ -206,7 +206,7 @@ class DsoPkiSettingsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 	 */
 	public function testAnAdministratorAccountSavesWithAWarning(): void {
 		$this->params = ['mode' => 'hmac', 'hmacSecret' => 's', 'userId' => 'admin'];

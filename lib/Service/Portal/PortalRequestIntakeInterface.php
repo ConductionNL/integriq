@@ -51,7 +51,7 @@ interface PortalRequestIntakeInterface {
 	 * @return ObjectEntity The persisted `dso_verzoek` record (any status).
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso_verzoek-lifecycle-with-per-verzoek-isolation-req-003
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function ingest(array $parsedRequest, ?DsoIdentity $identity = null): ObjectEntity;
 
@@ -126,7 +126,7 @@ interface PortalRequestIntakeInterface {
 	 *
 	 * @throws DsoProviderException When no active source is configured.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function resolveActiveSourceAsEngine(): ObjectEntity;
 

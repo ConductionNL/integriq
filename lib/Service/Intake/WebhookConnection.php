@@ -154,7 +154,7 @@ class WebhookConnection implements WebhookConnectionInterface {
 	 *
 	 * @return list<ObjectEntity> The consumers, normally zero or one.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function findConsumers(WebhookProfile $profile): array {
 		return $this->consumers->findConsumers(authorizationType: $profile->authorizationType);
@@ -237,7 +237,7 @@ class WebhookConnection implements WebhookConnectionInterface {
 	 * @return list<string>|null The missing actions (empty when all are held), or null
 	 *                           when OpenRegister cannot answer the question.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function missingRights(WebhookProfile $profile, string $userId): ?array {
 		return $this->rights->missing(userId: $userId, actions: $profile->requiredActions, schema: $profile->schema);

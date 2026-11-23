@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use OCP\IUser;
 /**
  * The account and connection a verified STAM push acts as.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md
  */
 final class DsoIdentity {
 	/**
@@ -40,7 +40,7 @@ final class DsoIdentity {
 	 * @param IUser  $account      The Nextcloud account every write runs as.
 	 * @param string $consumerUuid The uuid of the `dso-stam` consumer.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md
 	 */
 	public function __construct(
 		public readonly IUser $account,

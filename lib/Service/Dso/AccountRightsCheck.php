@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ namespace OCA\Integriq\Service\Dso;
 /**
  * Value object for one account rights check (ADR-011).
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
  */
 final class AccountRightsCheck {
 
@@ -39,7 +39,7 @@ final class AccountRightsCheck {
 	 * @param object $schema  The resolved schema entity.
 	 * @param string $userId  The uid to check.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function __construct(
 		public readonly object $handler,

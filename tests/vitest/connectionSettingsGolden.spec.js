@@ -9,7 +9,7 @@ import { translate } from '@nextcloud/l10n'
  * and Open Formulieren): the markup, what load() reads, what save() sends,
  * the toasts and the error state of every failure.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

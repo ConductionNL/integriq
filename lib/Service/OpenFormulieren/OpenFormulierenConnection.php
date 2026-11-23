@@ -152,7 +152,7 @@ class OpenFormulierenConnection {
 	 *
 	 * @return list<ObjectEntity> The consumers, normally zero or one.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function findConsumers(): array {
 		return $this->webhooks->findConsumers(profile: self::profile());
@@ -197,7 +197,7 @@ class OpenFormulierenConnection {
 	 * @return list<string>|null The missing actions (empty when all are held), or null
 	 *                           when OpenRegister cannot answer the question.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function missingRights(string $userId): ?array {
 		return $this->webhooks->missingRights(profile: self::profile(), userId: $userId);

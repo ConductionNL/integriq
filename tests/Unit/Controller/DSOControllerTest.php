@@ -702,7 +702,7 @@ class DSOControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-the-verzoek-is-stored-as-the-configured-account
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-the-verzoek-is-stored-as-the-configured-account
 	 */
 	public function testAnAnonymousSignedPushIsStoredAsTheConnectionAccount(): void {
 		$this->acceptSignedPayload(
@@ -740,7 +740,7 @@ class DSOControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function testARefusedWriteRestoresTheCallerAndAnswers503(): void {
 		$this->acceptSignedPayload(['verzoekId' => 'dso-refused-2', 'type' => 'aanvraag']);
@@ -833,8 +833,8 @@ class DSOControllerTest extends TestCase {
 	 *
 	 * @dataProvider unavailableConnections
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-missing-account-fails-loud
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-writes-nothing-half
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-missing-account-fails-loud
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-writes-nothing-half
 	 */
 	#[\PHPUnit\Framework\Attributes\DataProvider('unavailableConnections')]
 	public function testAnUnusableConnectionAnswers503AndWritesNothing(callable $breakIt, string $errorCode, string $reason): void {
@@ -865,7 +865,7 @@ class DSOControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-stam-koppelvlak-endpoint-registration-req-dso-001
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-stam-koppelvlak-endpoint-registration-req-dso-001
 	 */
 	public function testAForgedSignatureAnswers401WithoutAnAlert(): void {
 		$this->request->method('getParams')->willReturn(['verzoekId' => 'dso-forged']);
@@ -886,7 +886,7 @@ class DSOControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-repeated-delivery-creates-no-second-record
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-repeated-delivery-creates-no-second-record
 	 */
 	public function testARepeatedDeliveryAnswers202AndCreatesNothing(): void {
 		$this->acceptSignedPayload(['verzoekId' => 'dso-123', 'type' => 'aanvraag']);

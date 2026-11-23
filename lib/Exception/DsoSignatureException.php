@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#requirement-a-consumer-can-authenticate-by-dso-stam-signature-req-con-dso-001
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#requirement-a-consumer-can-authenticate-by-dso-stam-signature-req-con-dso-001
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use Exception;
 /**
  * Thrown when a STAM push signature does not verify.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#requirement-a-consumer-can-authenticate-by-dso-stam-signature-req-con-dso-001
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#requirement-a-consumer-can-authenticate-by-dso-stam-signature-req-con-dso-001
  */
 class DsoSignatureException extends Exception {
 }//end class

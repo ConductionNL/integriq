@@ -49,7 +49,7 @@ use Throwable;
  * user, never under runAsSystem(). Without a usable account it writes nothing.
  *
  * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
  */
 class FetchDsoAttachmentsJob extends QueuedJob {
 
@@ -80,7 +80,7 @@ class FetchDsoAttachmentsJob extends QueuedJob {
 	 * @return void
 	 *
 	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-3
 	 */
 	protected function run($argument): void {
 		$requestUuid = '';
@@ -125,7 +125,7 @@ class FetchDsoAttachmentsJob extends QueuedJob {
 	 *
 	 * @return IUser|null The account.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-the-attachment-job-refuses-a-vanished-account
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-the-attachment-job-refuses-a-vanished-account
 	 */
 	private function resolveAccount(string $requestUuid, string $actingUserId): ?IUser {
 		try {
