@@ -43,6 +43,7 @@
     "OCA\\Integriq\\Service\\SynchronizationActionRules::$synchronizations": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\Service\\SynchronizationFlowGenerator::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\Service\\Synchronization\\FetchFilesJob::$syncService": "OCA\\Integriq\\Service\\SynchronizationService",
+    "OCA\\Integriq\\Service\\Synchronization\\OutboundReconciliationService::$engine": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\Service\\Zgw\\ZgwNotificationPullListener::$syncService": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\WorkflowEngine\\FireCloudEventOperation::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\WorkflowEngine\\RunSynchronizationOperation::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService"
