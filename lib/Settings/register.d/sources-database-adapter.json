@@ -144,10 +144,6 @@
                   "description": "The column a read pages on, in the order of the statement. Leave empty for a read that returns one page"
                 },
                 "pageStart": {
-                  "type": [
-                    "integer",
-                    "string"
-                  ],
                   "default": 0,
                   "title": "First page after",
                   "description": "The key value the first page reads after"
