@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -34,7 +34,7 @@ use OCP\IL10N;
 /**
  * The state of an intake connection's account.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
  */
 final class IntakeAccountState {
 
@@ -58,7 +58,7 @@ final class IntakeAccountState {
 	 *
 	 * @return array{state: string, displayName: string} `ok`, `none`, `unknown` or `disabled`.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-dso-connections-account-is-chosen-and-checked-by-an-administrator-req-dso-071
 	 */
 	public function describe(string $userId): array {
 		if ($userId === '') {
@@ -87,7 +87,7 @@ final class IntakeAccountState {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-is-refused
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-is-refused
 	 */
 	public function unresolvable(string $userId): ?string {
 		try {

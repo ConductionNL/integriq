@@ -37,7 +37,7 @@ function accountOption(userId, displayName) {
  * `refusalText(name)` and the four status texts `loadFailedText()`,
  * `saveFailedText()`, `savedText()` and `noAccountText()`.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
  * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4
  */
 export default {
@@ -57,7 +57,7 @@ export default {
 		 * The one-line state of the connection's account.
 		 *
 		 * @return {{refused: boolean, text: string}} whether intake is refused, and why
-		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
+		 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
 		 */
 		accountState() {
 			const name = this.accountInfo.displayName
@@ -75,7 +75,7 @@ export default {
 		},
 	},
 
-	/** @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4 */
+	/** @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4 */
 	async mounted() {
 		await this.load()
 	},
@@ -85,7 +85,7 @@ export default {
 		 * Read the stored connection.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 		 */
 		async load() {
 			this.loading = true
@@ -106,7 +106,7 @@ export default {
 		 *
 		 * @param {object} data the stored connection
 		 * @return {void}
-		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 		 */
 		applyAccount(data) {
 			this.handlerGroup = data.handlerGroup || { id: '', empty: false }
@@ -118,7 +118,7 @@ export default {
 		 * Store the connection, then reload it and show the server's warnings.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 		 */
 		async save() {
 			this.saving = true
@@ -137,7 +137,7 @@ export default {
 		 * PUT the account and the component's settings.
 		 *
 		 * @return {Promise<object>} the save response
-		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 		 */
 		async store() {
 			const { data } = await axios.put(generateUrl(this.settingsPath), {
@@ -152,7 +152,7 @@ export default {
 		 *
 		 * @param {object} data the save response
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 		 */
 		async saved(data) {
 			this.clearSecret()
@@ -168,7 +168,7 @@ export default {
 		 *
 		 * @param {Error} e the failed request
 		 * @return {void}
-		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 		 */
 		saveFailed(e) {
 			const fieldErrors =

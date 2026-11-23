@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-existing-configuration-migrates-without-an-account
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-existing-configuration-migrates-without-an-account
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
 /**
  * Creates the dso-stam consumer from the legacy app config, once.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-5
  */
 class MigrateDsoStamConnection implements IRepairStep {
 
@@ -61,7 +61,7 @@ class MigrateDsoStamConnection implements IRepairStep {
 	 * @param SignedPayloadVerifierInterface $signatureVerifier Normalises the legacy mode name.
 	 * @param ContainerInterface          $container         Resolves the OpenRegister-backed services lazily.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-5
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
@@ -76,7 +76,7 @@ class MigrateDsoStamConnection implements IRepairStep {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-5
 	 */
 	public function getName(): string {
 		return 'Move the DSO STAM signature configuration into a dso-stam consumer';
@@ -90,7 +90,7 @@ class MigrateDsoStamConnection implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-5
 	 */
 	public function run(IOutput $output): void {
 		$trust = $this->legacyTrust();

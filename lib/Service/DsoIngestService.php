@@ -154,7 +154,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 * @return ObjectEntity The persisted `dso_verzoek` record (any status).
 	 *
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso_verzoek-lifecycle-with-per-verzoek-isolation-req-003
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function ingest(array $parsedRequest, ?DsoIdentity $identity = null): ObjectEntity {
 		$actingUserId = '';
@@ -222,7 +222,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 *
 	 * @return ObjectEntity|null The stored record, or null when this is a first delivery.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	private function findDelivered(array $parsedRequest): ?ObjectEntity {
 		$verzoekId = (string)($parsedRequest['verzoekId'] ?? '');
@@ -265,7 +265,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 *
 	 * @return ObjectEntity The stored record.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	private function createReceived(array $parsedRequest, ?DsoIdentity $identity): ObjectEntity {
 		$object = [
@@ -317,7 +317,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 * @return ObjectEntity The same request.
 	 *
 	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-3
 	 */
 	private function enqueueAttachmentFetch(ObjectEntity $request, string $actingUserId): ObjectEntity {
 		if (empty($request->getObject()['attachments'] ?? []) === true) {
@@ -558,7 +558,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 *
 	 * @throws DsoProviderException When no active source is configured.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function resolveActiveSourceAsEngine(): ObjectEntity {
 		// Unscoped: the DSO ingest engine resolves its active source as the system.

@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Exception;
 /**
  * Thrown when the DSO connection cannot give a push a usable identity.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
  */
 class DsoConnectionUnavailableException extends Exception {
 
@@ -119,7 +119,7 @@ class DsoConnectionUnavailableException extends Exception {
 	 *
 	 * @return string The reason.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md
 	 */
 	public function getReason(): string {
 		return $this->reason;

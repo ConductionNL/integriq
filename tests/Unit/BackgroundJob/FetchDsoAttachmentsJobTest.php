@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-3
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -168,7 +168,7 @@ class FetchDsoAttachmentsJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-the-attachment-job-runs-as-the-account-that-stored-the-verzoek
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-the-attachment-job-runs-as-the-account-that-stored-the-verzoek
 	 */
 	public function testRunFetchesAsTheQueuedAccount(): void {
 		$job = $this->job(fetcher: $this->fetcher());
@@ -186,7 +186,7 @@ class FetchDsoAttachmentsJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md
 	 */
 	public function testTheQueuedAccountWinsOverTheConsumersCurrentOne(): void {
 		$this->addAccount(uid: 'newer-account');
@@ -203,7 +203,7 @@ class FetchDsoAttachmentsJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md
 	 */
 	public function testALegacyJobActsAsTheConsumersAccount(): void {
 		$this->addDsoConsumer(userId: 'dso-intake');
@@ -220,7 +220,7 @@ class FetchDsoAttachmentsJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-the-attachment-job-refuses-a-vanished-account
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-the-attachment-job-refuses-a-vanished-account
 	 */
 	public function testAVanishedOrDisabledAccountFetchesNothing(): void {
 		$this->addAccount(uid: 'disabled', enabled: false);
@@ -245,7 +245,7 @@ class FetchDsoAttachmentsJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md
 	 */
 	public function testALegacyJobWithoutAConsumerFetchesNothing(): void {
 		$this->runJob($this->job(fetcher: $this->fetcher()), ['requestUuid' => 'verzoek-1']);
@@ -279,7 +279,7 @@ class FetchDsoAttachmentsJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-3
 	 */
 	public function testFailureIsLoggedNotThrownAndTheIdentityRestored(): void {
 		$logger = $this->levelLogger();

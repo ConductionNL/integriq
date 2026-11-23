@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -75,7 +75,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-valid-signature-resolves-to-the-consumers-account
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-valid-signature-resolves-to-the-consumers-account
 	 */
 	public function testValidSignatureResolvesToTheConsumersAccount(): void {
 		$this->addAccount(uid: 'dso-intake');
@@ -94,7 +94,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function testTheConsumerIsAnEngineRead(): void {
 		$this->addAccount(uid: 'dso-intake');
@@ -115,7 +115,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function testBadSignatureThrowsSignatureException(): void {
 		$this->addDsoConsumer(userId: '');
@@ -130,7 +130,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function testMissingHeaderThrowsSignatureException(): void {
 		$this->addAccount(uid: 'dso-intake');
@@ -146,7 +146,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function testNoConsumerIsNoConnection(): void {
 		$this->addAccount(uid: 'dso-intake');
@@ -161,7 +161,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function testTwoConsumersAreAmbiguous(): void {
 		$this->addAccount(uid: 'dso-intake');
@@ -177,7 +177,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-missing-account-fails-loud
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-missing-account-fails-loud
 	 */
 	public function testEmptyUserIdIsNoAccount(): void {
 		$this->addDsoConsumer(userId: '');
@@ -191,7 +191,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-missing-account-fails-loud
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-missing-account-fails-loud
 	 */
 	public function testUnknownUserIsAccountUnknown(): void {
 		$this->addDsoConsumer(userId: 'ghost');
@@ -205,7 +205,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-missing-account-fails-loud
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-missing-account-fails-loud
 	 */
 	public function testDisabledUserIsAccountDisabled(): void {
 		$this->addAccount(uid: 'dso-intake', enabled: false);
@@ -220,7 +220,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-writes-nothing-half
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-writes-nothing-half
 	 */
 	public function testCreateWithoutUpdateLacksRights(): void {
 		$this->addAccount(uid: 'dso-intake', grants: ['create', 'read']);
@@ -236,7 +236,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function testAbsentPermissionHandlerFailsClosed(): void {
 		$this->addAccount(uid: 'dso-intake');
@@ -253,7 +253,7 @@ class DsoConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function testRunAsActivatesTheAccountAndRestoresTheCaller(): void {
 		$this->addAccount(uid: 'dso-intake');

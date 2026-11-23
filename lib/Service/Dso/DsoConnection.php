@@ -30,7 +30,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use Throwable;
 /**
  * Resolves, verifies and checks the identity of a STAM push.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#requirement-the-stam-intake-acts-as-the-dso-connections-account-req-dso-070
  */
 class DsoConnection implements PortalConnectionInterface {
 
@@ -80,7 +80,7 @@ class DsoConnection implements PortalConnectionInterface {
 	 * @param DsoAccountRights            $rights            Checks the account's rights on `dso_verzoek`.
 	 * @param LoggerInterface             $logger            Secret-free diagnostics.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -103,7 +103,7 @@ class DsoConnection implements PortalConnectionInterface {
 	 * @throws DsoConnectionUnavailableException When the connection, the account or its rights are missing.
 	 * @throws DsoSignatureException When the signature does not verify.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function authenticate(string $rawBody, ?string $signatureHeader): DsoIdentity {
 		$consumer = $this->requireConsumer();
@@ -137,7 +137,7 @@ class DsoConnection implements PortalConnectionInterface {
 	 *
 	 * @return list<ObjectEntity> The consumers, normally zero or one.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
 	public function findConsumers(string $authorizationType = self::AUTHORIZATION_TYPE): array {
@@ -178,7 +178,7 @@ class DsoConnection implements PortalConnectionInterface {
 	 *
 	 * @throws DsoConnectionUnavailableException When two or more exist.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md
 	 */
 	public function findConsumer(): ?ObjectEntity {
 		$consumers = $this->findConsumers();
@@ -202,7 +202,7 @@ class DsoConnection implements PortalConnectionInterface {
 	 *
 	 * @throws DsoConnectionUnavailableException With reason no_account, account_unknown or account_disabled.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function resolveAccount(string $userId): IUser {
 		if ($userId === '') {
@@ -239,7 +239,7 @@ class DsoConnection implements PortalConnectionInterface {
 	 * @return list<string>|null The missing actions (empty when all are held), or null
 	 *                           when OpenRegister cannot answer the question.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function missingRights(string $userId): ?array {
 		return $this->rights->missing(userId: $userId, actions: self::REQUIRED_ACTIONS);
@@ -257,7 +257,7 @@ class DsoConnection implements PortalConnectionInterface {
 	 *
 	 * @return ObjectEntity The saved consumer.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 	 */
 	public function saveConsumer(array $data, ?string $uuid): ObjectEntity {
 		return $this->objectService->saveObject(
@@ -278,7 +278,7 @@ class DsoConnection implements PortalConnectionInterface {
 	 *
 	 * @return mixed Whatever the operation returns.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function runAs(IUser $account, callable $operation): mixed {
 		return $this->objectService->runAs($account, $operation);

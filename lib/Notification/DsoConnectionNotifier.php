@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCP\Notification\INotifier;
 /**
  * Notifier for the DSO connection alerts.
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
  *
  * @SuppressWarnings(PHPMD.StaticAccess) WebhookProfiles is a final catalogue of pure lookups; there is nothing to inject.
  */
@@ -54,7 +54,7 @@ class DsoConnectionNotifier implements INotifier {
 	 * @param IURLGenerator $urlGenerator Icon and settings link.
 	 * @param WebhookProfilesInterface $webhookProfiles The fixed webhook profiles.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function __construct(
 		private readonly IFactory $l10nFactory,
@@ -68,7 +68,7 @@ class DsoConnectionNotifier implements INotifier {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function getID(): string {
 		return AppIdentity::APP_ID . '_dso_connection';
@@ -79,7 +79,7 @@ class DsoConnectionNotifier implements INotifier {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function getName(): string {
 		return $this->l10nFactory->get(AppIdentity::APP_ID)->t('DSO connection');
@@ -95,7 +95,7 @@ class DsoConnectionNotifier implements INotifier {
 	 *
 	 * @throws InvalidArgumentException When the notification is not a DSO connection alert.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
 		if ($notification->getApp() !== AppIdentity::APP_ID || $notification->getSubject() !== PortalConnectionAlertsInterface::SUBJECT) {

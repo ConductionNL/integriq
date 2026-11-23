@@ -172,7 +172,7 @@ function modeOptionList(t) {
  * and the account every DSO-LV push is stored as.
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
  */
 export default {
 	name: 'DsoPkiSettings',
@@ -282,7 +282,7 @@ export default {
 		 * The account state when none is set.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
+		 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
 		 */
 		noAccountText() {
 			return this.t(
@@ -296,7 +296,7 @@ export default {
 		 *
 		 * @param {string} name the account's display name
 		 * @return {string}
-		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
+		 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
 		 */
 		refusalText(name) {
 			return this.t(

@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -127,7 +127,7 @@ class DsoStamConsumerListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-second-dso-stam-consumer-is-refused
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-second-dso-stam-consumer-is-refused
 	 */
 	public function testASecondDsoStamConsumerIsRefused(): void {
 		$this->addDsoConsumer(userId: 'dso-intake', uuid: 'consumer-first');
@@ -146,7 +146,7 @@ class DsoStamConsumerListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function testTheFirstDsoStamConsumerPasses(): void {
 		$event = new ObjectCreatingEvent($this->consumer('consumer-first'));
@@ -162,7 +162,7 @@ class DsoStamConsumerListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function testEditingTheExistingConsumerPasses(): void {
 		$this->addDsoConsumer(userId: 'dso-intake', uuid: 'consumer-first');
@@ -179,7 +179,7 @@ class DsoStamConsumerListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function testOtherTypesAndSchemasPass(): void {
 		$this->addDsoConsumer(userId: 'dso-intake', uuid: 'consumer-first');

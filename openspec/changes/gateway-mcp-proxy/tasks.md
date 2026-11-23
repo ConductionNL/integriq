@@ -50,6 +50,7 @@ Kind: code. Size M. Row `integriq:acc-mcp-gateway`.
   - Built: the disabled source `example-mcp-server` and endpoint `mcp-example` (path `mcp/example`, `search` limited to 10 a minute) are seeded by the register fragment `register.d/gateway-mcp-proxy.json`, the way this repo seeds connector examples, rather than `integriq_seed_data.json`; `docs/features/mcp-gateway.md`, linked from the endpoints page and the feature index.
 
 ## Verification
-- [ ] `openspec validate gateway-mcp-proxy --type change --strict` passes
+- [x] `openspec validate gateway-mcp-proxy --type change --strict` passes
+  - OpenSpec 2.1.1, 2026-11-23: valid under `--strict` once the delta spec starts at `## ADDED Requirements`; its status and purpose lines already sit in `proposal.md`.
 - [ ] PHPUnit and Newman run, exit codes read
 - [x] An api endpoint's behaviour is unchanged, asserted by the existing endpoint tests (the unit suite fails the same 7 cases as development, none of them endpoint tests; `EndpointServiceMcpTargetTest::testAnApiEndpointIsUnchanged`)
