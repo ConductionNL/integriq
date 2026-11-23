@@ -26,9 +26,11 @@
 // bundle hasn't installed the real registry yet, the call is queued on a stub
 // and replayed on install. This bundle MUST NOT call installIntegrationRegistry.
 
-import { registerIntegration } from '@conduction/nextcloud-vue'
-import { createApp } from 'vue'
-import SyncedFromTab from './integration/SyncedFromTab.vue'
+// This bundle loads on every Nextcloud page, so it stays small: a deep import of
+// the registry (the library barrel keeps every component), and Vue plus the
+// Synced-from app are fetched only when a host mounts the leaf.
+import './publicpath.js'
+import { registerIntegration } from '@conduction/nextcloud-vue/dist/esm/integrations/registry.js'
 
 /**
  * Per-element registry of the Vue 3 app instances this leaf has mounted, so
@@ -37,7 +39,7 @@ import SyncedFromTab from './integration/SyncedFromTab.vue'
  * elements on one page at once (a sidebar tab AND a detail-page widget), each
  * its own instance.
  *
- * @type {Map<Element, import('vue').App>}
+ * @type {Map<Element, import('vue').App|{pending: true}>}
  */
 const mountedApps = new Map()
 
@@ -49,10 +51,21 @@ const mountedApps = new Map()
  *
  * @param {Element} el    Host-owned container element to root the app at.
  * @param {object}  props Forwarded context: { objectId, register, schema, apiBase, surface, … }.
- * @return {void}
+ * @return {Promise<void>} Settles once the app is mounted, or the mount was cancelled.
  */
-function mount(el, props) {
+async function mount(el, props) {
 	if (el === undefined || el === null || mountedApps.has(el) === true) {
+		return
+	}
+	// Reserve the element with this mount's own token while the app loads, so a
+	// second mount is a no-op and an unmount before the load finishes cancels it.
+	const pending = { pending: true }
+	mountedApps.set(el, pending)
+	const [{ createApp }, { default: SyncedFromTab }] = await Promise.all([
+		import(/* webpackChunkName: "integration-app" */ 'vue'),
+		import(/* webpackChunkName: "integration-app" */ './integration/SyncedFromTab.vue'),
+	])
+	if (mountedApps.get(el) !== pending) {
 		return
 	}
 	const app = createApp(SyncedFromTab, { ...(props || {}) })
@@ -63,18 +76,21 @@ function mount(el, props) {
 /**
  * Teardown hand-off. Destroy the Vue 3 app instance rooted at `el` and release
  * the map entry so a mount/unmount cycle leaks no instance. Guarded against a
- * double-unmount and an unknown element.
+ * double-unmount and an unknown element; an unmount while the app is still
+ * loading cancels the mount.
  *
  * @param {Element} el The container element previously passed to `mount`.
  * @return {void}
  */
 function unmount(el) {
-	const app = mountedApps.get(el)
-	if (app === undefined) {
+	if (mountedApps.has(el) === false) {
 		return
 	}
+	const app = mountedApps.get(el)
 	mountedApps.delete(el)
-	app.unmount()
+	if (app.pending !== true) {
+		app.unmount()
+	}
 }
 
 registerIntegration({

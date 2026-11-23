@@ -15,7 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { registered, apps } = vi.hoisted(() => ({ registered: [], apps: [] }))
 
-vi.mock('@conduction/nextcloud-vue', () => ({
+vi.mock('@conduction/nextcloud-vue/dist/esm/integrations/registry.js', () => ({
 	registerIntegration: (definition) => registered.push(definition),
 }))
 vi.mock('vue', async (importOriginal) => {
@@ -75,13 +75,12 @@ describe('integration', () => {
 		})
 	})
 
-	it('mounts one app per element with a copy of the props, and unmounts it', () => {
+	it('mounts one app per element with a copy of the props, and unmounts it', async () => {
 		const { mount, unmount } = registered[0]
 		const el = document.createElement('div')
 		const props = { objectId: 'o1' }
 
-		mount(el, props)
-		mount(el, { objectId: 'other' })
+		await Promise.all([mount(el, props), mount(el, { objectId: 'other' })])
 		expect(apps).toHaveLength(1)
 		expect(apps[0].component).toEqual({ name: 'SyncedFromTab' })
 		expect(apps[0].props).toEqual({ objectId: 'o1' })
@@ -93,15 +92,33 @@ describe('integration', () => {
 		unmount(el)
 		expect(apps[0].unmount).toHaveBeenCalledTimes(1)
 
-		mount(el)
+		await mount(el)
 		expect(apps).toHaveLength(2)
 		expect(apps[1].props).toEqual({})
 	})
 
-	it('ignores a missing element and an element it never mounted', () => {
+	it('loads nothing of the app before a mount, and an unmount during the load cancels it', async () => {
 		const { mount, unmount } = registered[0]
-		mount(null, {})
-		mount(undefined, {})
+		const el = document.createElement('div')
+		expect(apps).toHaveLength(0)
+
+		const loading = mount(el, { objectId: 'o1' })
+		unmount(el)
+		await loading
+		expect(apps).toHaveLength(0)
+
+		const first = mount(el, { objectId: 'a' })
+		unmount(el)
+		const second = mount(el, { objectId: 'b' })
+		await Promise.all([first, second])
+		expect(apps).toHaveLength(1)
+		expect(apps[0].props).toEqual({ objectId: 'b' })
+	})
+
+	it('ignores a missing element and an element it never mounted', async () => {
+		const { mount, unmount } = registered[0]
+		await mount(null, {})
+		await mount(undefined, {})
 		unmount(document.createElement('div'))
 		expect(apps).toHaveLength(0)
 	})
