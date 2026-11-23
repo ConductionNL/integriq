@@ -36,6 +36,10 @@ vi.mock('vue', async (importOriginal) => {
 	}
 })
 vi.mock('@/integration/SyncedFromTab.vue', () => ({ default: { name: 'SyncedFromTab' } }))
+vi.mock('@/integration/loadApp.js', async () => {
+	const { createApp } = await import('vue')
+	return { loadSyncedFromApp: vi.fn(async () => ({ createApp, SyncedFromTab: { name: 'SyncedFromTab' } })) }
+})
 vi.mock('@/views/admin/AdminSettings.vue', () => ({ default: { name: 'AdminSettings' } }))
 
 beforeEach(() => {
@@ -125,6 +129,10 @@ describe('integration', () => {
 })
 
 describe('publicpath', () => {
+	beforeEach(() => {
+		vi.resetModules()
+	})
+
 	afterEach(() => {
 		delete globalThis.OC
 		delete globalThis.__webpack_public_path__

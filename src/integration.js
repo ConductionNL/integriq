@@ -26,11 +26,13 @@
 // bundle hasn't installed the real registry yet, the call is queued on a stub
 // and replayed on install. This bundle MUST NOT call installIntegrationRegistry.
 
+import { registerIntegration } from '@conduction/nextcloud-vue/dist/esm/integrations/registry.js'
+import { loadSyncedFromApp } from './integration/loadApp.js'
+
 // This bundle loads on every Nextcloud page, so it stays small: a deep import of
 // the registry (the library barrel keeps every component), and Vue plus the
 // Synced-from app are fetched only when a host mounts the leaf.
 import './publicpath.js'
-import { registerIntegration } from '@conduction/nextcloud-vue/dist/esm/integrations/registry.js'
 
 /**
  * Per-element registry of the Vue 3 app instances this leaf has mounted, so
@@ -61,10 +63,7 @@ async function mount(el, props) {
 	// second mount is a no-op and an unmount before the load finishes cancels it.
 	const pending = { pending: true }
 	mountedApps.set(el, pending)
-	const [{ createApp }, { default: SyncedFromTab }] = await Promise.all([
-		import(/* webpackChunkName: "integration-app" */ 'vue'),
-		import(/* webpackChunkName: "integration-app" */ './integration/SyncedFromTab.vue'),
-	])
+	const { createApp, SyncedFromTab } = await loadSyncedFromApp()
 	if (mountedApps.get(el) !== pending) {
 		return
 	}
