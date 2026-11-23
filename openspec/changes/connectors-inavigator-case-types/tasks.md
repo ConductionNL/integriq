@@ -49,6 +49,7 @@ Catalogi set's synchronization and mapping.
   - GIVEN demo data WHEN the approvals page opens THEN one synchronization request shows a change set
 - [x] Implement
 - [ ] Test (`tests/e2e/inavigator-case-types.spec.ts`; the screen is covered by `tests/vitest/approvalChangeSet.spec.js`, the e2e waits on the Task 2 import)
+  > 2026-11-23, written, not run (no live instance): `tests/e2e/inavigator-case-types.spec.ts` opens the pending demo approval request that carries a change set and checks the counts, the three tabs, the changed-field table and the removed list, and that opening the preview leaves the request pending. The superseded scenario is declared and skipped until a gated case type synchronization exists (Task 2).
 
 ## Verification
 
