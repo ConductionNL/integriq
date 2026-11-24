@@ -24,8 +24,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Auth\Idp\Adapter;
 
 use DOMDocument;
+use OCA\Integriq\Auth\Idp\Adapter\SamlCurrentAddress;
 use OCA\Integriq\Auth\Idp\Adapter\SamlServiceProviderAdapter;
 use OCA\Integriq\Auth\Idp\Adapter\SamlServiceProviderAdapterFactory;
+use OCA\Integriq\Auth\Idp\Adapter\SamlVerifiedAssertion;
 use OCA\Integriq\Auth\Idp\AssertionGuard;
 use OCA\Integriq\Auth\Idp\AtomicCache;
 use OCA\Integriq\Auth\Idp\EnvelopeReplayGuard;
@@ -53,6 +55,8 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(SamlServiceProviderAdapter::class)]
 #[CoversClass(SamlServiceProviderAdapterFactory::class)]
+#[CoversClass(SamlCurrentAddress::class)]
+#[CoversClass(SamlVerifiedAssertion::class)]
 #[UsesClass(IdpRegistration::class)]
 #[UsesClass(TrustLevelMapper::class)]
 #[UsesClass(AssertionGuard::class)]

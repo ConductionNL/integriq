@@ -34,12 +34,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Auth\Idp\Adapter;
 
-use DOMDocument;
-use DOMElement;
 use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
 use OCA\Integriq\Auth\Idp\IdpRegistration;
 use OCA\Integriq\Auth\Idp\IdpSecretSeam;
-use OCA\Integriq\Auth\Idp\SubjectPseudonymService;
 use OCA\Integriq\Auth\Idp\TrustLevelMapper;
 use OCA\Integriq\Exception\IdpAssertionException;
 use OCA\Integriq\Exception\IdpSecretRefusedException;
@@ -47,32 +44,17 @@ use OCP\Http\Client\IClientService;
 use OneLogin\Saml2\Auth;
 use OneLogin\Saml2\Constants;
 use OneLogin\Saml2\IdPMetadataParser;
-use OneLogin\Saml2\Response;
 use OneLogin\Saml2\Settings;
-use OneLogin\Saml2\Utils;
 use Throwable;
 
 /**
  * The SAML Service Provider adapter of one registration.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The SAML toolkit is split over several small classes.
+ * @SuppressWarnings(PHPMD.StaticAccess) IdPMetadataParser::parseXML() is the toolkit's metadata reader.
  *
  * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
  */
 class SamlServiceProviderAdapter implements GovernmentIdpAdapterInterface {
-
-	/**
-	 * The subject fields in the order they are looked for, with the subject type each yields.
-	 *
-	 * @var array<string, string>
-	 */
-	public const SUBJECT_FIELDS = [
-		'bsn' => 'bsn',
-		'pseudonym' => SubjectPseudonymService::SUBTYPE_BSN_PSEUDONYM,
-		'kvk' => 'kvk',
-		'rsin' => 'rsin',
-		'eidasPersonIdentifier' => 'eidas-person-identifier',
-	];
 
 	/**
 	 * The HTTP timeout toward the metadata address, in seconds.
@@ -205,276 +187,11 @@ class SamlServiceProviderAdapter implements GovernmentIdpAdapterInterface {
 			throw new IdpAssertionException(message: 'The SAML settings of the registration are refused ('.$exception::class.').');
 		}
 
-		$response = $this->verifiedResponse(settings: $settings, encoded: trim($encoded));
+		$assertion = new SamlVerifiedAssertion(registration: $this->registration, entityId: $this->entityId);
 
-		return $this->normalised(response: $response);
+		return $assertion->normalised(response: $assertion->verify(settings: $settings, encoded: trim($encoded), acsUrl: $this->acsUrl));
 
 	}//end readAssertion()
-
-	/**
-	 * The Response, once the toolkit answers it valid for the request it names.
-	 *
-	 * `InResponseTo` is read first and required: the toolkit then checks the
-	 * Response and the assertion's subject confirmation both answer it, and
-	 * the login service refuses it when no state of ours was stored for it.
-	 * The toolkit's destination and recipient checks compare with the address
-	 * the request arrived on, so for the length of the check that address is
-	 * pinned to our own assertion consumer service.
-	 *
-	 * @param Settings $settings The toolkit settings with the decryption key.
-	 * @param string   $encoded  The base64 SAMLResponse.
-	 *
-	 * @return Response
-	 *
-	 * @throws IdpAssertionException When the Response does not parse or does not verify.
-	 */
-	private function verifiedResponse(Settings $settings, string $encoded): Response {
-		$restore = $this->pinCurrentUrl();
-		try {
-			$response = new Response($settings, $encoded);
-			$inResponseTo = $response->document->documentElement?->getAttribute('InResponseTo') ?? '';
-			if (trim($inResponseTo) === '') {
-				throw new IdpAssertionException(message: 'The Response answers no request (InResponseTo), so it is refused.');
-			}
-
-			$valid = $response->isValid(trim($inResponseTo));
-		} catch (IdpAssertionException $refused) {
-			throw $refused;
-		} catch (Throwable $exception) {
-			throw new IdpAssertionException(message: 'The Response cannot be read ('.$exception::class.'), so it is refused.');
-		} finally {
-			$restore();
-		}
-
-		if ($valid !== true) {
-			// The toolkit's reason names checks, never attribute values.
-			throw new IdpAssertionException(message: 'The Response does not verify ('.$response->getError().'), so it is refused.');
-		}
-
-		return $response;
-
-	}//end verifiedResponse()
-
-	/**
-	 * Point the toolkit's idea of the current address at our assertion consumer service.
-	 *
-	 * @return callable(): void Puts back what was there before.
-	 */
-	private function pinCurrentUrl(): callable {
-		$parts = parse_url($this->acsUrl);
-		$scheme = strtolower((string)($parts['scheme'] ?? 'https'));
-		$port = ($parts['port'] ?? null);
-		if ($port === null) {
-			$port = 443;
-			if ($scheme === 'http') {
-				$port = 80;
-			}
-		}
-
-		$server = [];
-		foreach (['REQUEST_URI', 'QUERY_STRING'] as $key) {
-			$server[$key] = ($_SERVER[$key] ?? null);
-		}
-
-		$basePath = Utils::getBaseURLPath();
-
-		Utils::setSelfProtocol($scheme);
-		Utils::setSelfHost((string)($parts['host'] ?? ''));
-		Utils::setSelfPort((int)$port);
-		Utils::setBaseURLPath(null);
-		$_SERVER['REQUEST_URI'] = (string)($parts['path'] ?? '/');
-		unset($_SERVER['QUERY_STRING']);
-
-		return static function () use ($server, $basePath): void {
-			Utils::setSelfProtocol(null);
-			Utils::setSelfHost(null);
-			Utils::setSelfPort(null);
-			Utils::setBaseURLPath($basePath);
-			foreach ($server as $key => $value) {
-				if ($value === null) {
-					unset($_SERVER[$key]);
-					continue;
-				}
-
-				$_SERVER[$key] = $value;
-			}
-		};
-
-	}//end pinCurrentUrl()
-
-	/**
-	 * The normalised assertion of a verified Response, read through the registration's subject mapping only.
-	 *
-	 * @param Response $response The verified Response.
-	 *
-	 * @return array<string, mixed>
-	 *
-	 * @throws IdpAssertionException When the verified assertion cannot be found again.
-	 */
-	private function normalised(Response $response): array {
-		$assertionId = (string)$response->getAssertionId();
-		$assertion = self::assertionElement(document: $response->getXMLDocument(), assertionId: $assertionId);
-		$conditions = self::firstChild(parent: $assertion, name: 'Conditions');
-
-		$attributes = $response->getAttributes();
-		$mapping = $this->registration->stringMap(key: 'subjectMapping');
-		[$subject, $subType] = self::subject(attributes: $attributes, mapping: $mapping);
-
-		$normalised = [
-			'id' => $assertionId,
-			'inResponseTo' => trim($response->document->documentElement?->getAttribute('InResponseTo') ?? ''),
-			'audience' => $this->audience(audiences: $response->getAudiences()),
-			'notBefore' => ($conditions?->getAttribute('NotBefore') ?? ''),
-			'notOnOrAfter' => ($conditions?->getAttribute('NotOnOrAfter') ?? ''),
-			'subject' => $subject,
-			'subType' => $subType,
-			'assuranceLevel' => self::authnContext(assertion: $assertion),
-			'organisation' => $this->registration->organisation(),
-		];
-
-		$branchAttribute = ($mapping['branch'] ?? '');
-		if ($branchAttribute !== '' && self::attributeText(attributes: $attributes, name: $branchAttribute) !== '') {
-			$normalised['branch'] = self::attributeText(attributes: $attributes, name: $branchAttribute);
-		}
-
-		return $normalised;
-
-	}//end normalised()
-
-	/**
-	 * The one assertion element the toolkit verified, found by its ID.
-	 *
-	 * @param DOMDocument $document    The (decrypted) Response document.
-	 * @param string      $assertionId The verified assertion's ID.
-	 *
-	 * @return DOMElement
-	 *
-	 * @throws IdpAssertionException When not exactly one assertion directly under the Response carries that ID.
-	 */
-	private static function assertionElement(DOMDocument $document, string $assertionId): DOMElement {
-		$found = [];
-		$root = $document->documentElement;
-		foreach (($root?->childNodes ?? []) as $child) {
-			if ($child instanceof DOMElement && $child->namespaceURI === Constants::NS_SAML
-				&& $child->localName === 'Assertion' && $child->getAttribute('ID') === $assertionId
-			) {
-				$found[] = $child;
-			}
-		}
-
-		if ($assertionId === '' || count($found) !== 1) {
-			throw new IdpAssertionException(message: 'The verified assertion cannot be found once, so the Response is refused.');
-		}
-
-		return $found[0];
-
-	}//end assertionElement()
-
-	/**
-	 * The first SAML assertion child element of a name, or null.
-	 *
-	 * @param DOMElement $parent The parent.
-	 * @param string     $name   The local name.
-	 *
-	 * @return DOMElement|null
-	 */
-	private static function firstChild(DOMElement $parent, string $name): ?DOMElement {
-		foreach ($parent->childNodes as $child) {
-			if ($child instanceof DOMElement && $child->namespaceURI === Constants::NS_SAML && $child->localName === $name) {
-				return $child;
-			}
-		}
-
-		return null;
-
-	}//end firstChild()
-
-	/**
-	 * The AuthnContextClassRef of the assertion's one AuthnStatement: the assurance level as the provider spells it.
-	 *
-	 * @param DOMElement $assertion The verified assertion.
-	 *
-	 * @return string
-	 */
-	private static function authnContext(DOMElement $assertion): string {
-		$statement = self::firstChild(parent: $assertion, name: 'AuthnStatement');
-		$context = null;
-		if ($statement !== null) {
-			$context = self::firstChild(parent: $statement, name: 'AuthnContext');
-		}
-
-		$classRef = null;
-		if ($context !== null) {
-			$classRef = self::firstChild(parent: $context, name: 'AuthnContextClassRef');
-		}
-
-		return trim((string)$classRef?->textContent);
-
-	}//end authnContext()
-
-	/**
-	 * The audience the guard checks: our EntityID when the assertion names it, else the first it names.
-	 *
-	 * @param array<int, string> $audiences The assertion's audiences.
-	 *
-	 * @return string
-	 */
-	private function audience(array $audiences): string {
-		if (in_array($this->entityId, $audiences, true) === true) {
-			return $this->entityId;
-		}
-
-		return trim((string)($audiences[0] ?? ''));
-
-	}//end audience()
-
-	/**
-	 * The first mapped subject field the attributes carry, with its subject type.
-	 *
-	 * @param array<string, mixed>  $attributes The verified attributes, by name.
-	 * @param array<string, string> $mapping    The registration's subject mapping.
-	 *
-	 * @return array{0: string, 1: string} The subject and its type; both empty when none is carried.
-	 */
-	private static function subject(array $attributes, array $mapping): array {
-		foreach (self::SUBJECT_FIELDS as $field => $subType) {
-			$name = ($mapping[$field] ?? '');
-			if ($name === '') {
-				continue;
-			}
-
-			$value = self::attributeText(attributes: $attributes, name: $name);
-			if ($value !== '') {
-				return [$value, $subType];
-			}
-		}
-
-		return ['', ''];
-
-	}//end subject()
-
-	/**
-	 * The first value of an attribute as trimmed text, or ''.
-	 *
-	 * @param array<string, mixed> $attributes The attributes, by name, each a list of values.
-	 * @param string               $name       The attribute name.
-	 *
-	 * @return string
-	 */
-	private static function attributeText(array $attributes, string $name): string {
-		$values = ($attributes[$name] ?? []);
-		if (is_array($values) === false) {
-			$values = [$values];
-		}
-
-		$value = ($values[0] ?? '');
-		if (is_scalar($value) === false) {
-			return '';
-		}
-
-		return trim((string)$value);
-
-	}//end attributeText()
 
 	/**
 	 * The toolkit settings: strict, signed requests, signed assertions, SHA-256, and our key pair.
@@ -491,6 +208,10 @@ class SamlServiceProviderAdapter implements GovernmentIdpAdapterInterface {
 		$comparison = 'exact';
 		if (count($requestedContext) === 1) {
 			$comparison = 'minimum';
+		}
+
+		if ($requestedContext === []) {
+			$requestedContext = false;
 		}
 
 		return [
@@ -511,7 +232,7 @@ class SamlServiceProviderAdapter implements GovernmentIdpAdapterInterface {
 				'wantAssertionsEncrypted' => $this->registration->credential(role: 'decryption') !== '',
 				'wantNameId' => false,
 				'wantXMLValidation' => true,
-				'requestedAuthnContext' => ($requestedContext === [] ? false : $requestedContext),
+				'requestedAuthnContext' => $requestedContext,
 				'requestedAuthnContextComparison' => $comparison,
 				'rejectUnsolicitedResponsesWithInResponseTo' => true,
 				'relaxDestinationValidation' => false,
