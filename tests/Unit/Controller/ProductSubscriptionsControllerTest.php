@@ -358,7 +358,7 @@ class ProductSubscriptionsControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 * @spec openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
 	 */
 	public function testAnalyticsAreSplitPerConsumerAndPerEndpoint(): void {
 		$names = ['partner' => 'Partner B.V.', 'ep-orders' => 'Orders', 'ep-items' => 'Items', 'ep-slow' => 'Reports'];

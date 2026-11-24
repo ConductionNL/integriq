@@ -287,7 +287,7 @@ class ProductSubscriptionsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007
-	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 * @spec openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
 	 *
 	 * ADMIN ONLY, and now declared rather than implied. The previous revision
 	 * argued in prose that "absence of the attribute IS the admin gate" — but a
@@ -335,7 +335,7 @@ class ProductSubscriptionsController extends Controller {
 	 *
 	 * @return list<array<string, mixed>>
 	 *
-	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 * @spec openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
 	 */
 	private function named(array $entries, string $schema, string $key): array {
 		$named = [];

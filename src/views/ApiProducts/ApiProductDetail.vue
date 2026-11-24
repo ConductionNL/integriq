@@ -308,7 +308,7 @@
 						{{ formatMs(analytics.latency && analytics.latency.p99) }}
 					</dd>
 				</dl>
-				<!-- @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001 -->
+				<!-- @spec openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001 -->
 				<template v-if="analytics && !loadingAnalytics">
 					<div
 						v-for="split in analyticsSplits"
@@ -501,7 +501,7 @@ export default {
 				}))
 		},
 
-		/** @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001 */
+		/** @spec openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001 */
 		analyticsSplits() {
 			return usageSplits(this.analytics, t)
 		},
@@ -559,7 +559,7 @@ export default {
 		 * @param {string} key `consumer` or `endpoint`.
 		 * @return {string} The entry's name, id, or "Anonymous".
 		 *
-		 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+		 * @spec openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
 		 */
 		entryLabel(entry, key) {
 			return usageLabel(entry, key, t)

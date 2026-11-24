@@ -3163,11 +3163,11 @@
 				"evidence": "Not built: the \"by whom\" part: lib/Controller/ProductSubscriptionsController.php analytics() returns one product-wide figure with no split per consumer. Planned in gateway-usage-per-consumer-and-endpoint (decision 389, verify round 2026-11-12). Code that exists: appinfo/routes.php:504 productSubscriptions#analytics; lib/Controller/ProductSubscriptionsController.php:310 analytics() reads bounded call_log rows for request count/error rate; called from src/views/ApiProducts/ApiProductDetail.vue:455 (frontend-api-paths.txt).",
 				"spec": "openspec/specs/api-product-gateway",
 				"requirement": [
-					"openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
+					"openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
 					"openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
 				],
 				"change": "gateway-usage-per-consumer-and-endpoint",
-				"plan": "openspec/changes/gateway-usage-per-consumer-and-endpoint"
+				"plan": "openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint"
 			},
 			"reachedOn": "/products/:id detail page, analytics panel (ApiProductDetail.vue)",
 			"provider": "integriq",
@@ -6630,11 +6630,11 @@
 				"evidence": "Not built: lib/Controller/ProductSubscriptionsController.php analytics() returns one product-wide figure over every consumer and endpoint, with no breakdown per consumer or per endpoint; planned in gateway-usage-per-consumer-and-endpoint (decision 389, verify round 2026-11-12). Code that exists: appinfo/routes.php:504 productSubscriptions#analytics (/api/products/{productId}/analytics, GET, admin-only per spec_ref); src/views/ApiProducts/ApiProductDetail.vue:448-459 loadAnalytics() calls it, tagged openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007.",
 				"spec": "openspec/specs/api-product-gateway",
 				"requirement": [
-					"openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
+					"openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
 					"openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
 				],
 				"change": "gateway-usage-per-consumer-and-endpoint",
-				"plan": "openspec/changes/gateway-usage-per-consumer-and-endpoint"
+				"plan": "openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint"
 			},
 			"reachedOn": "/products/:id (ApiProductDetail), analytics tab",
 			"note": "Per-product analytics exist (request count, error rate, percentiles), but only as one product-wide figure. The split per consumer and per endpoint the row asks for is planned in gateway-usage-per-consumer-and-endpoint.",
