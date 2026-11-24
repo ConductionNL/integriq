@@ -119,7 +119,17 @@
           "endpoint": "/api/rest/extern/v2/teachers",
           "idPosition": "teachers.0.id",
           "updateEndpoint": "/api/rest/extern/v2/teachers",
-          "updateMethod": "PUT"
+          "updateMethod": "PUT",
+          "reconcile": {
+            "endpoint": "/api/rest/extern/v2/teachers",
+            "resultsPosition": "teachers",
+            "idPosition": "id",
+            "match": [
+              {"target": "externKey", "source": "nextcloudUserId"},
+              {"target": "externKey", "source": "id"},
+              {"target": "shortName", "source": "employeeNumber"}
+            ]
+          }
         },
         "conditions": [
           {

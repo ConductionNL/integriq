@@ -17,6 +17,17 @@ documents (Teacher Management v2, Teacher Absence Management v1). Still open:
 an ended school assignment (`OrgAssignment`) does not yet make the teacher
 inactive on its own; the employment end date does (task 1 of the change).
 
+Nightly repair (design D4): `staff-to-untis-teachers` declares
+`targetConfig.reconcile`, so `OutboundReconciliationJob` reads the Untis
+teacher list once a day and pushes every employee Untis lacks. An Untis
+teacher whose `externKey` or `shortName` matches an employee without a
+contract is adopted instead of duplicated; any other Untis teacher is listed
+in the run log and left alone. A read that stops halfway writes nothing, and
+the run never makes a teacher inactive. The list read reuses the collection
+path of Teacher Management v2; its answer shape (`teachers`, `id`) is
+confirmed in the live pass. Absences stay event-driven: an absence has no key
+to adopt it by, so a repair run could only duplicate one entered by hand.
+
 No other system gets a push. Each documents an HR import it runs itself from
 named HR systems, and none documents a write API for staff that integriq
 could call. A facade that imitates one of those HR systems was rejected
