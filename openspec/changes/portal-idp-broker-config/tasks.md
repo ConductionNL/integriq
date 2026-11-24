@@ -13,8 +13,10 @@ the flag is `1`.
 - **acceptance_criteria**:
   - GIVEN the candidate libraries WHEN one is chosen THEN it is maintained, defends against XML signature wrapping, disables external entities, and `composer audit` reports no advisory for it
   - GIVEN the choice WHEN it is made THEN `design.md` D1 records the library, the version and why, in one paragraph
-- [ ] Implement
-- [ ] Test
+- [x] Implement. `onelogin/php-saml` ^4.6 (4.6.0, with `robrichards/xmlseclibs` 4.0.2 and
+      `phpseclib/phpseclib` 3.0.59); `design.md` D1 records the choice and why.
+- [x] Test. `composer audit` reports no advisory for the four new packages; the wrapping and
+      entity defences are exercised in `SamlServiceProviderAdapterTest` (task 5).
 
 ### Task 2: The `idpRegistration` schema
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-each-organisation-has-its-own-registration-per-provider-req-idpc-002`
@@ -56,8 +58,20 @@ the flag is `1`.
   - GIVEN the stub identity provider (keys generated in the test, never committed) WHEN a login runs THEN the request is signed, the response verifies, an encrypted assertion decrypts, and the normalised assertion matches what `AssertionGuard` reads
   - GIVEN a response with a bad signature, a wrapped assertion, or an external entity WHEN it is read THEN it is refused and no attribute is read
   - GIVEN the registration's `subjectMapping` WHEN attributes arrive THEN `bsn`, `pseudonym`, `kvk`, `rsin`, `branch` and `eidasPersonIdentifier` are read from the mapped names only
-- [ ] Implement
-- [ ] Test
+- [x] Implement. `SamlServiceProviderAdapter` (signed AuthnRequest over HTTP Redirect from the
+      metadata, RequestedAuthnContext from the mapping spellings at or above the floor; Response
+      verified strictly, assertion signature required, decrypted with the `decryption` credential
+      when one is named, InResponseTo required); `SamlServiceProviderAdapterFactory` and the
+      registry's built-in `saml-sp` builder. Note: `IdpLoginService` still calls `forProvider()`,
+      so a registration's adapter is reached only once the login service moves to
+      `forRegistration()`; that is the same for the OIDC adapter and outside this task.
+- [x] Test. `tests/Unit/Auth/Idp/Adapter/SamlServiceProviderAdapterTest.php` (28) with
+      `tests/Fixtures/Idp/SamlStubIdentityProvider.php` (keys generated in the test): the redirect
+      signature verifies with the SP certificate, an encrypted signed assertion decrypts and passes
+      the real `AssertionGuard`; a value changed after signing, a wrapped assertion, a DOCTYPE, an
+      unsigned assertion, another audience and another destination are refused with no attribute
+      value in the message; every subject field read from its mapped name only. Registry:
+      `IdpRegistrationServiceTest::testAReadySamlRegistrationGetsTheBuiltInSamlAdapter`.
 
 ### Task 6: The OIDC Relying Party adapter
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001`
