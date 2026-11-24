@@ -9,6 +9,8 @@
  * action editor writes type and configuration, save stores the draft and is
  * refused for a flow rule without a flow, undo restores the stored rule, and
  * a live update replaces the draft only while nothing is being edited.
+ * Adding a required scope first lists the consumers it locks out
+ * (access-oauth-and-token-validation, REQ-TOKV-005).
  */
 import { translate } from '@nextcloud/l10n'
 import { flushPromises, mount } from '@vue/test-utils'
@@ -21,6 +23,12 @@ const store = vi.hoisted(() => ({
 	errors: {},
 }))
 
+const http = vi.hoisted(() => ({ get: vi.fn() }))
+vi.mock('@nextcloud/axios', () => ({ default: http }))
+vi.mock('@nextcloud/router', () => ({ generateUrl: (url) => url }))
+vi.mock('../../src/modals/Rule/ScopeLockoutDialog.vue', () => ({
+	default: { name: 'ScopeLockoutDialog', props: ['consumers', 'fromCallLog'], emits: ['cancel', 'confirm'], template: '<div class="lockout" />' },
+}))
 vi.mock('../../src/store/objectStore.js', () => ({ useObjectStore: () => store }))
 vi.mock('../../src/mixins/liveObjectSubscription.js', () => ({
 	default: { methods: { syncLiveSubscription: vi.fn() } },
@@ -261,5 +269,101 @@ describe('RuleDetailPage editing', () => {
 		wrapper.vm.updateField('name', 'Mine')
 		wrapper.vm.applyLiveObject({ ...RULE, name: 'Later' })
 		expect(wrapper.vm.draft.name).toBe('Mine')
+	})
+})
+
+describe('RuleDetailPage scope lockout', () => {
+	const AUTH_RULE = { id: 'r9', uuid: 'r9', name: 'Auth', type: 'authentication', configuration: { type: 'authentication', authentication: { type: 'jwt' } } }
+	const WRITE = { POST: ['zaken:write'], PUT: ['zaken:write'], PATCH: ['zaken:write'], DELETE: ['zaken:write'] }
+
+	/**
+	 * Answer the object API: endpoints, consumers and call log rows.
+	 *
+	 * @param {object} answers Results per schema.
+	 * @return {void}
+	 */
+	function answer(answers) {
+		http.get.mockReset()
+		http.get.mockImplementation(async (url) => ({ data: { results: answers[url.split('/').pop()] ?? [] } }))
+	}
+
+	/**
+	 * Mount the page on the authentication rule and add a write scope.
+	 *
+	 * @return {Promise<object>} The wrapper.
+	 */
+	async function addWriteScope() {
+		store.fetchObject.mockResolvedValue(JSON.parse(JSON.stringify(AUTH_RULE)))
+		store.saveObject.mockImplementation(async (_type, draft) => draft)
+		const wrapper = await mountPage({ id: 'r9' })
+		wrapper.vm.onConfigurationUpdate({ type: 'authentication', authentication: { type: 'jwt', requiredScopes: WRITE } })
+		await flushPromises()
+		return wrapper
+	}
+
+	it('lists the calling consumers that lack the added scope instead of saving', async () => {
+		answer({
+			endpoint: [{ uuid: 'e1', rules: ['r9'] }],
+			consumer: [{ uuid: 'c1', name: 'Zaaksysteem', scopes: ['zaken:read'] }, { uuid: 'c2', name: 'Portaal', scopes: [] }],
+			call_log: [{ endpoint: 'e1', consumer: 'c1' }],
+		})
+		const wrapper = await addWriteScope()
+		await button(wrapper, 'Save').trigger('click')
+		await flushPromises()
+
+		expect(store.saveObject).not.toHaveBeenCalled()
+		const dialog = wrapper.findComponent({ name: 'ScopeLockoutDialog' })
+		expect(dialog.props('fromCallLog')).toBe(true)
+		expect(dialog.props('consumers')).toEqual([{ id: 'c1', name: 'Zaaksysteem', missing: ['zaken:write'] }])
+		expect(http.get).toHaveBeenCalledWith('/apps/openregister/api/objects/integriq/call_log', { params: { endpoint: 'e1', _limit: 500 } })
+
+		dialog.vm.$emit('cancel')
+		await flushPromises()
+		expect(wrapper.findComponent({ name: 'ScopeLockoutDialog' }).exists()).toBe(false)
+		expect(store.saveObject).not.toHaveBeenCalled()
+	})
+
+	it('saves anyway once confirmed', async () => {
+		answer({ endpoint: [], consumer: [{ uuid: 'c2', name: 'Portaal', scopes: [] }] })
+		const wrapper = await addWriteScope()
+		await button(wrapper, 'Save').trigger('click')
+		await flushPromises()
+		expect(wrapper.findComponent({ name: 'ScopeLockoutDialog' }).props('fromCallLog')).toBe(false)
+
+		wrapper.findComponent({ name: 'ScopeLockoutDialog' }).vm.$emit('confirm')
+		await flushPromises()
+		expect(store.saveObject).toHaveBeenCalledWith('rule', expect.objectContaining({
+			configuration: expect.objectContaining({ authentication: expect.objectContaining({ requiredScopes: WRITE }) }),
+		}))
+		expect(wrapper.findComponent({ name: 'ScopeLockoutDialog' }).exists()).toBe(false)
+	})
+
+	it('saves at once when nobody is locked out or the check cannot read', async () => {
+		answer({ consumer: [{ uuid: 'c3', name: 'Archief', scopes: ['zaken:write'] }] })
+		let wrapper = await addWriteScope()
+		await button(wrapper, 'Save').trigger('click')
+		await flushPromises()
+		expect(store.saveObject).toHaveBeenCalledTimes(1)
+
+		store.saveObject.mockClear()
+		http.get.mockReset()
+		http.get.mockRejectedValue(new Error('offline'))
+		wrapper = await addWriteScope()
+		await button(wrapper, 'Save').trigger('click')
+		await flushPromises()
+		expect(store.saveObject).toHaveBeenCalledTimes(1)
+	})
+
+	it('does not check when the edit adds no scope', async () => {
+		http.get.mockReset()
+		store.fetchObject.mockResolvedValue(JSON.parse(JSON.stringify(RULE)))
+		store.saveObject.mockResolvedValue({ ...RULE, name: 'Other' })
+		const wrapper = await mountPage()
+		wrapper.vm.updateField('name', 'Other')
+		await flushPromises()
+		await button(wrapper, 'Save').trigger('click')
+		await flushPromises()
+		expect(http.get).not.toHaveBeenCalled()
+		expect(store.saveObject).toHaveBeenCalledTimes(1)
 	})
 })
