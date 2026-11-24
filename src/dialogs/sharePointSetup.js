@@ -6,7 +6,7 @@
  * (connectors-sharepoint-publication-intake REQ-SPPI-001), kept out of the
  * component so they are testable without mounting it.
  *
- * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+ * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
  */
 
 import { translate as t } from '@nextcloud/l10n'
@@ -26,7 +26,7 @@ export const SHAREPOINT_CATALOG_SLUG = 'adapter:sharepoint-online'
  *
  * @param {object|null} item The catalog item row.
  * @return {boolean}
- * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+ * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
  */
 export function offersPublicationRoute(item) {
 	return String(item?.slug ?? '') === SHAREPOINT_CATALOG_SLUG
@@ -39,7 +39,7 @@ export function offersPublicationRoute(item) {
  * @param {string} kind sites, drives or children.
  * @param {object} params search, siteId, driveId or itemId.
  * @return {object} The query parameters, without empty values.
- * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+ * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
  */
 export function lookupParams(credentialId, kind, params = {}) {
 	const query = { credential: credentialId, kind }
@@ -58,7 +58,7 @@ export function lookupParams(credentialId, kind, params = {}) {
  * @param {object} data The lookup answer `{ items }`.
  * @param {boolean} foldersOnly Keep only folders.
  * @return {object[]} `{ id, label, webUrl }` options.
- * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+ * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
  */
 export function lookupOptions(data, foldersOnly = false) {
 	const items = Array.isArray(data?.items) ? data.items : []
@@ -76,7 +76,7 @@ export function lookupOptions(data, foldersOnly = false) {
  *
  * @param {object} error The failed request.
  * @return {string} The translated text.
- * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#scenario-graph-refuses-the-site-search
+ * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#scenario-graph-refuses-the-site-search
  */
 export function lookupFailureText(error) {
 	const data = error?.response?.data || {}
@@ -95,7 +95,7 @@ export function lookupFailureText(error) {
  *
  * @param {object} state The dialog's choices.
  * @return {object} The intake request body.
- * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+ * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
  */
 export function intakeBody(state) {
 	return {
@@ -116,7 +116,7 @@ export function intakeBody(state) {
  *
  * @param {object} state The dialog's choices.
  * @return {boolean}
- * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+ * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
  */
 export function canSave(state) {
 	const body = intakeBody(state)
@@ -128,7 +128,7 @@ export function canSave(state) {
  *
  * @param {object} data The intake answer `{ created }`.
  * @return {string|null} Its id.
- * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+ * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
  */
 export function createdSynchronizationId(data) {
 	const created = data?.created?.synchronizations

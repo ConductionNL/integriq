@@ -31,7 +31,7 @@ interface SettingsServiceInterface {
 	 *
 	 * @return array{retention: array<string,int>, defaults: array<string,int>, rebase: array<string,mixed>}
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function getSettings(): array;
 
@@ -44,7 +44,7 @@ interface SettingsServiceInterface {
 	 *
 	 * @throws \InvalidArgumentException When a field is unknown or its value is not a whole non-negative number.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function updateSettings(array $payload): array;
 
@@ -57,7 +57,7 @@ interface SettingsServiceInterface {
 	 *
 	 * @throws \InvalidArgumentException When a kind has no logs to rebase.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	public function rebase(array $kinds=[]): array;
 

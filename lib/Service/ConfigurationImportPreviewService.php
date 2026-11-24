@@ -204,7 +204,7 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-the-legacy-sharepoint-woo-template-is-marked-deprecated-req-sppi-003
+	 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-the-legacy-sharepoint-woo-template-is-marked-deprecated-req-sppi-003
 	 */
 	private function recordDeprecation(ConfigurationImportPreviewRun $run, array $entity): void {
 		$deprecation = $this->deprecationOf(entity: $entity);
@@ -224,7 +224,7 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 	 *
 	 * @return array{type: string, slug: string, replacedBy: string, reason: string}|null
 	 *
-	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-the-legacy-sharepoint-woo-template-is-marked-deprecated-req-sppi-003
+	 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-the-legacy-sharepoint-woo-template-is-marked-deprecated-req-sppi-003
 	 */
 	private function deprecationOf(array $entity): ?array {
 		$deprecated = ($entity['payload']['deprecated'] ?? null);

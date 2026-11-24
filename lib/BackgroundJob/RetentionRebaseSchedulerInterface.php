@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+ * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ interface RetentionRebaseSchedulerInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	public function scheduleRebase(array $kinds): void;
 }//end interface

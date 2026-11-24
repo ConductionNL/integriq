@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * contribution with its app, seam, id and whether it was refused. The first
  * thing to run when an extension's channel does not appear.
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
  */
 class ExtensionsList extends Command {
 
@@ -47,7 +47,7 @@ class ExtensionsList extends Command {
 	 * @param IntakeChannelRegistryInterface $intake    The intake channel registry.
 	 * @param ExtensionInventory             $inventory The other registries and the record of every contribution.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
 	public function __construct(
 		private readonly IntakeChannelRegistryInterface $intake,
@@ -61,7 +61,7 @@ class ExtensionsList extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'integriq:extensions')
@@ -77,7 +77,7 @@ class ExtensionsList extends Command {
 	 *
 	 * @return int 0, or 1 when a contribution was refused.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		// Using each registry once makes it ask the extension apps.

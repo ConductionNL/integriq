@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Spec coverage:
- * openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md
+ * openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md
  * (REQ-SPPI-001, REQ-SPPI-002, REQ-SPPI-003)
  *
  * The mock Graph is the browser boundary: the setup dialog reads sites,

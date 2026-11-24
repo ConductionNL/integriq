@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md
  * (REQ-ADEF-002 an administrator sets retention on the admin page, REQ-ADEF-003
  * changed retention can be applied to existing logs).
  *

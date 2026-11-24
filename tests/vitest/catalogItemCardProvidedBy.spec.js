@@ -7,7 +7,7 @@
  * A Store card names the extension app that contributed its template
  * (platform-connector-extension-kit task 4); integriq's own cards name none.
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
  */
 import { translate } from '@nextcloud/l10n'
 import { mount } from '@vue/test-utils'

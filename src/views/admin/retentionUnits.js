@@ -8,7 +8,7 @@
  * meaning what it meant; the admin page shows days, and hours for successful
  * logs, which are kept for an hour by default.
  *
- * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+ * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
  */
 
 const HOUR = 3600000
@@ -35,7 +35,7 @@ export const RETENTION_FIELDS = [
  * @param {number} ms The stored milliseconds.
  * @param {string} unit 'days' or 'hours'.
  * @return {number} The value in the unit.
- * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+ * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
  */
 export function toUnit(ms, unit) {
 	const size = unit === 'hours' ? HOUR : DAY
@@ -49,7 +49,7 @@ export function toUnit(ms, unit) {
  * @param {string|number} value The typed value.
  * @param {string} unit 'days' or 'hours'.
  * @return {number|null} Milliseconds.
- * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+ * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
  */
 export function toMilliseconds(value, unit) {
 	if (value === '' || value === null || value === undefined) {

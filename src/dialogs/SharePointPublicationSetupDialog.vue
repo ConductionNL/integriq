@@ -235,7 +235,7 @@ export default {
 		 * Whether every choice the save needs is made.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		saveable() {
 			return canSave(this.$data)
@@ -247,7 +247,7 @@ export default {
 		 * Every opening starts from scratch and reloads the credentials and catalogues.
 		 *
 		 * @param {boolean} isOpen Whether the dialog is open.
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		open(isOpen) {
 			if (!isOpen) {
@@ -263,7 +263,7 @@ export default {
 		/**
 		 * The brokered credentials the signed-in administrator can pick.
 		 *
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		async loadCredentials() {
 			this.credentialsLoading = true
@@ -281,7 +281,7 @@ export default {
 		/**
 		 * The catalogues of the target register, when OpenRegister lists them; else the id is typed.
 		 *
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		async loadCatalogs() {
 			const register = String(this.register || '').trim()
@@ -326,7 +326,7 @@ export default {
 		/**
 		 * A new credential clears everything read through the previous one.
 		 *
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		onCredentialPicked() {
 			this.site = null
@@ -340,7 +340,7 @@ export default {
 		/**
 		 * Sites whose name matches the search.
 		 *
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#scenario-graph-refuses-the-site-search
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#scenario-graph-refuses-the-site-search
 		 */
 		async searchSites() {
 			if (!this.credential || this.siteSearch.trim() === '') {
@@ -358,7 +358,7 @@ export default {
 		/**
 		 * The libraries of the picked site.
 		 *
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		async onSitePicked() {
 			this.drive = null
@@ -375,7 +375,7 @@ export default {
 		/**
 		 * The folders at the root of the picked library.
 		 *
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		async onDrivePicked() {
 			this.folder = null
@@ -390,7 +390,7 @@ export default {
 		/**
 		 * The subfolders of the picked folder, to pick a deeper one.
 		 *
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		async openFolder() {
 			if (!this.drive || !this.folder) {
@@ -406,7 +406,7 @@ export default {
 		/**
 		 * Save the setup: one source, mapping, rule and synchronization.
 		 *
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#scenario-a-woo-coordinators-library-is-connected
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#scenario-a-woo-coordinators-library-is-connected
 		 */
 		async save() {
 			this.busy = true
@@ -426,7 +426,7 @@ export default {
 		/**
 		 * Run the new synchronization once now.
 		 *
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		async runNow() {
 			this.busy = true

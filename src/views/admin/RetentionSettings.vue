@@ -10,8 +10,8 @@
   logs written afterwards; "Apply to existing logs" queues a background job
   that brings the logs already there in line, and its progress shows here.
 
-  @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
-  @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+  @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+  @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 -->
 <template>
 	<section class="integriq-admin__section" data-testid="admin-retention-section">
@@ -100,7 +100,7 @@ export default {
 	computed: {
 		/**
 		 * @return {string} The setting endpoint.
-		 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+		 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 		 */
 		settingUrl() {
 			return URL
@@ -108,7 +108,7 @@ export default {
 
 		/**
 		 * @return {boolean} Whether a rebase is queued or running.
-		 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+		 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 		 */
 		rebaseRunning() {
 			return ['queued', 'running'].includes(this.progress.status)
@@ -116,7 +116,7 @@ export default {
 
 		/**
 		 * @return {string} The rebase's progress in words, empty when none ran.
-		 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+		 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 		 */
 		rebaseStatus() {
 			const counts = { processed: this.progress.processed || 0, updated: this.progress.updated || 0 }
@@ -141,7 +141,7 @@ export default {
 		 *
 		 * @param {{key: string, unit: string}} field The field.
 		 * @return {string} The label.
-		 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+		 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 		 */
 		labelOf(field) {
 			const labels = {
@@ -161,7 +161,7 @@ export default {
 		 *
 		 * @param {{key: string, unit: string}} field The field.
 		 * @return {string} The default in words.
-		 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+		 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 		 */
 		defaultOf(field) {
 			return t('integriq', 'Default: {value}', { value: toUnit(this.defaults[field.key], field.unit) })
@@ -172,7 +172,7 @@ export default {
 		 *
 		 * @param {object|null} data The settings.
 		 * @return {void}
-		 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+		 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 		 */
 		applyStored(data) {
 			const retention = data?.retention || {}
@@ -190,7 +190,7 @@ export default {
 		 * number of 0 or more is sent as typed, so the server refuses it by name.
 		 *
 		 * @return {object} The request body.
-		 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+		 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 		 */
 		settingBody() {
 			const retention = {}
@@ -205,7 +205,7 @@ export default {
 		 * Queue the job that applies the saved retention to existing logs.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+		 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 		 */
 		async rebase() {
 			this.busy = true

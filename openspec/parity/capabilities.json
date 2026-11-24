@@ -6161,9 +6161,9 @@
 			"built": {
 				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/changes/archive/2026-09-29-job-logs-filtering-and-columns/proposal.md documents a fixed defect: CnLogsPage now reads $route.query deep-link filters (shared nextcloud-vue fix, not integriq-owned per app-shell-and-logs-ui REQ-SHELLUI-003). src/handlers/logTargets.js:52-59 VIEW_LOGS_TARGETS wires 'View source logs'/'View endpoint logs'/'View job logs'/'View synchronization logs' row actions to pre-filtered navigation (?source=, ?endpoint=, ?jobId=, ?synchronizationId=), verified against a populated instance in the file's own comment ('?source= filters correctly, 11 of 15 rows'). CnLogsPage.vue and CnDataTable.vue (nextcloud-vue) were checked for an on-page filter/search widget: none exists. Specified in openspec/changes/observability-log-filters/ (OpenSpec pass 2026-09-27).",
+				"evidence": "openspec/changes/archive/2026-09-29-job-logs-filtering-and-columns/proposal.md documents a fixed defect: CnLogsPage now reads $route.query deep-link filters (shared nextcloud-vue fix, not integriq-owned per app-shell-and-logs-ui REQ-SHELLUI-003). src/handlers/logTargets.js:52-59 VIEW_LOGS_TARGETS wires 'View source logs'/'View endpoint logs'/'View job logs'/'View synchronization logs' row actions to pre-filtered navigation (?source=, ?endpoint=, ?jobId=, ?synchronizationId=), verified against a populated instance in the file's own comment ('?source= filters correctly, 11 of 15 rows'). CnLogsPage.vue and CnDataTable.vue (nextcloud-vue) were checked for an on-page filter/search widget: none exists. Specified in openspec/changes/archive/2026-11-24-observability-log-filters/ (OpenSpec pass 2026-09-27).",
 				"change": "observability-log-filters",
-				"requirement": "openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui :: Every log page declares its filter controls (REQ-LOGF-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-observability-log-filters/specs/app-shell-and-logs-ui :: Every log page declares its filter controls (REQ-LOGF-001)"
 			},
 			"reachedOn": "cross-page: a 'View logs' row action from Sources/Endpoints/Jobs/Synchronizations lands on the matching logs page pre-filtered; sortable 'created'/'startedAt' columns cover time; status is shown as a coloured badge but has no filter control",
 			"note": "Filtering works as deep-link query params (any non-underscore-prefixed key is forwarded as an OpenRegister property filter) and via row-action links from other pages, but none of the logs pages (SourceLogs, EndpointLogs, Traces, JobLogs) has an on-page filter bar or date-range picker a staff member can use directly.",
@@ -10186,9 +10186,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/info.xml:505-507 <admin>OCA\\Integriq\\Settings\\IntegriqAdmin; lib/Settings/IntegriqAdmin.php:52 extends OR GenericAdminSettings (renders templates/settings/admin.php, which loads src/settings.js); src/views/admin/AdminSettings.vue:7-16 renders ActionAuthMatrix and DsoPkiSettings only; retention defaults read in lib/Service/SettingsService.php:135-159 from app config key 'retention' with no setter route (routes.php:586-592 comment: GET/PUT /api/settings removed); grep -rni retention src: only per-job logRetention fields. Specified in openspec/changes/platform-admin-defaults/ (OpenSpec pass 2026-09-27).",
+				"evidence": "appinfo/info.xml:505-507 <admin>OCA\\Integriq\\Settings\\IntegriqAdmin; lib/Settings/IntegriqAdmin.php:52 extends OR GenericAdminSettings (renders templates/settings/admin.php, which loads src/settings.js); src/views/admin/AdminSettings.vue:7-16 renders ActionAuthMatrix and DsoPkiSettings only; retention defaults read in lib/Service/SettingsService.php:135-159 from app config key 'retention' with no setter route (routes.php:586-592 comment: GET/PUT /api/settings removed); grep -rni retention src: only per-job logRetention fields. Specified in openspec/changes/archive/2026-11-24-platform-admin-defaults/ (OpenSpec pass 2026-09-27).",
 				"change": "platform-admin-defaults",
-				"requirement": "openspec/changes/platform-admin-defaults/specs/logs-and-statistics :: An administrator sets retention on the admin page (REQ-ADEF-002)"
+				"requirement": "openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics :: An administrator sets retention on the admin page (REQ-ADEF-002)"
 			},
 			"reachedOn": "Nextcloud admin settings, Integriq section",
 			"note": "The admin page is real and wired into Nextcloud's settings framework, but it sets the action matrix and the DSO PKI signature config, not app defaults. Log retention can only be changed via occ config:app:set, and POST /api/settings/rebase (SettingsController.php:82) has no caller and still targets legacy openconnector_* tables.",
@@ -10300,11 +10300,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Adapter/AbstractCategoryAdapterProvider.php:56 abstract base (getCapabilities abstract :87, brokeredRequest credential scaffolding) with four reference adapters under lib/Service/Adapter/{Saas,DocumentCms,EndpointWorkspace,DataInfra}; registration is hard-coded in lib/AppInfo/Application.php:1471-1475; docs/developers contains only README.md, developers.md, dashboard-http-datasource.md, styleguide.md (grep -rli 'adapter|provider' docs/developers: 0 hits). Specified in openspec/changes/platform-connector-extension-kit/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/Adapter/AbstractCategoryAdapterProvider.php:56 abstract base (getCapabilities abstract :87, brokeredRequest credential scaffolding) with four reference adapters under lib/Service/Adapter/{Saas,DocumentCms,EndpointWorkspace,DataInfra}; registration is hard-coded in lib/AppInfo/Application.php:1471-1475; docs/developers contains only README.md, developers.md, dashboard-http-datasource.md, styleguide.md (grep -rli 'adapter|provider' docs/developers: 0 hits). Specified in openspec/changes/archive/2026-11-24-platform-connector-extension-kit/ (OpenSpec pass 2026-09-27).",
 				"change": "platform-connector-extension-kit",
 				"requirement": [
-					"openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit :: An extension app contributes adapters through a collect event (REQ-CXK-001)",
-					"openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit :: A developer builds an extension from a guide, a skeleton and contract tests (REQ-CXK-004)"
+					"openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit :: An extension app contributes adapters through a collect event (REQ-CXK-001)",
+					"openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit :: A developer builds an extension from a guide, a skeleton and contract tests (REQ-CXK-004)"
 				]
 			},
 			"reachedOn": "nothing reaches it",
@@ -10737,11 +10737,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Adapter/DocumentCms/SharePointOnlineAdapter.php:153-197 (listDocuments/fetchDocument via Microsoft Graph drive API through the credential broker), :252 (IntegrationProvider list() needs a siteId filter); registered at lib/AppInfo/Application.php:1473; Store card via lib/Service/CatalogRegistryService.php:112. Importable template configurations/sharepoint-woo/sources/sharepoint.json and configurations/sharepoint-woo/synchronizations/sharepoint-publications.json. grep listDocuments/fetchDocument outside the adapter = 0 callers. Specified in openspec/changes/connectors-sharepoint-publication-intake/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/Adapter/DocumentCms/SharePointOnlineAdapter.php:153-197 (listDocuments/fetchDocument via Microsoft Graph drive API through the credential broker), :252 (IntegrationProvider list() needs a siteId filter); registered at lib/AppInfo/Application.php:1473; Store card via lib/Service/CatalogRegistryService.php:112. Importable template configurations/sharepoint-woo/sources/sharepoint.json and configurations/sharepoint-woo/synchronizations/sharepoint-publications.json. grep listDocuments/fetchDocument outside the adapter = 0 callers. Specified in openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/ (OpenSpec pass 2026-09-27).",
 				"change": "connectors-sharepoint-publication-intake",
 				"requirement": [
-					"openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors :: An administrator sets up SharePoint to publication intake from the Store (REQ-SPPI-001)",
-					"openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors :: Each dossier folder becomes a draft publication with its documents (REQ-SPPI-002)"
+					"openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors :: An administrator sets up SharePoint to publication intake from the Store (REQ-SPPI-001)",
+					"openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors :: Each dossier folder becomes a draft publication with its documents (REQ-SPPI-002)"
 				]
 			},
 			"reachedOn": "/store (adapter:sharepoint-online card, always-available) and the configuration import UI for the sharepoint-woo template; nothing in integriq's own UI calls listDocuments with a siteId",

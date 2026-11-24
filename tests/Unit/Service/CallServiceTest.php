@@ -550,7 +550,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
+	 * @spec openspec/changes/archive/2026-11-24-observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
 	 */
 	public function testACallToASourceIsLoggedAsOutbound(): void {
 		$this->callWithSourceFields([]);
@@ -565,7 +565,7 @@ class CallServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
+	 * @spec openspec/changes/archive/2026-11-24-observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
 	 */
 	public function testARefusedCallIsLoggedAsOutbound(): void {
 		$brokered = $this->createMock(BrokeredCallService::class);

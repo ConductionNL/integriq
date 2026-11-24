@@ -73,7 +73,7 @@ final class ProviderIndex {
 	 *
 	 * @return bool True when it was taken, false when the id was already registered.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
 	 */
 	public function add(object $provider): bool {
 		if (isset($this->providers[$provider->getProviderId()]) === true) {
