@@ -1,0 +1,46 @@
+{
+  "data": [
+    {
+      "id": 88123,
+      "status": "completed",
+      "user": {
+        "id": 5521,
+        "uid": "6f1c2b9e-3d4a-4e5f-9a8b-7c6d5e4f3a21",
+        "email": "s.devries@kade.example"
+      },
+      "course": {
+        "id": 301,
+        "title": "BHV herhaling",
+        "provider": "NIBHV",
+        "competence_code": "BHV"
+      },
+      "completed_at": "2026-10-02T14:31:00+02:00",
+      "certificate": {
+        "expires_at": "2027-10-02"
+      },
+      "updated_at": "2026-10-02T14:31:05+02:00"
+    },
+    {
+      "id": 88140,
+      "status": "completed",
+      "user": {
+        "id": 5530,
+        "uid": "0b9a8c7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d",
+        "email": "m.jansen@kade.example"
+      },
+      "course": {
+        "id": 412,
+        "title": "Privacy in de praktijk"
+      },
+      "completed_at": "2026-10-03T09:10:00+02:00",
+      "certificate": null,
+      "updated_at": "2026-10-03T09:10:02+02:00"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 100,
+    "total": 2
+  }
+}
