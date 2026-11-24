@@ -23,7 +23,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Brokered dispatch shared by the static-credential SMS bindings.
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
  */
 abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCallbackInterface {
 
@@ -49,7 +49,7 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCal
 	 * @param BrokeredCallService $brokeredCallService The OpenRegister credential broker seam.
 	 * @param LoggerInterface     $logger              Logs unexpected transport failures, never a credential.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function __construct(
 		protected readonly BrokeredCallService $brokeredCallService,
@@ -66,7 +66,7 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCal
 	 *
 	 * @return string The base URL.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	protected static function baseUrl(array $sourceConfiguration, string $default): string {
 		$baseUrl = trim((string)($sourceConfiguration['baseUrl'] ?? ''));
@@ -86,7 +86,7 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCal
 	 *
 	 * @throws SmsProviderException When the source names no sender.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	protected function sender(array $sourceConfiguration): string {
 		$sender = trim((string)($sourceConfiguration['senderId'] ?? ''));
@@ -108,7 +108,7 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCal
 	 *
 	 * @return array<string, mixed> The schema.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	protected static function brokeredConfigSchema(string $defaultBaseUrl, string $credentialHelp): array {
 		return [
@@ -141,7 +141,7 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCal
 	 *
 	 * @throws SmsProviderException When no credential is configured, the broker refuses, or the vendor answers non-2xx.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	protected function dispatch(array $sourceConfiguration, string $method, string $url, array $request): string {
 		$config = ['authentication' => ($sourceConfiguration['authentication'] ?? [])] + $request;
@@ -189,7 +189,7 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCal
 	 *
 	 * @throws SmsProviderException When the body is not a JSON object.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	protected function decode(string $body): array {
 		$decoded = json_decode($body, true);
@@ -210,7 +210,7 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCal
 	 *
 	 * @throws SmsProviderException When the field is missing or empty.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	protected function requiredField(array $decoded, string $field): string {
 		$value = $decoded[$field] ?? null;
@@ -244,7 +244,7 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCal
 	 *
 	 * @return SmsProviderException The refusal; never says which part of the check failed.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	protected function badSignature(): SmsProviderException {
 		return new SmsProviderException(
@@ -262,7 +262,7 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCal
 	 *
 	 * @return string The value, or an empty string.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	protected static function callbackField(array $params, array $names): string {
 		$lower = array_change_key_case($params, CASE_LOWER);
@@ -282,7 +282,7 @@ abstract class BrokeredSmsProvider implements SmsProviderInterface, SmsStatusCal
 	 *
 	 * @return SmsProviderException The refusal.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	protected function unreadableCallback(): SmsProviderException {
 		return new SmsProviderException(

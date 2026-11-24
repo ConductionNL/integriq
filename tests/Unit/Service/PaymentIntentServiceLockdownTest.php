@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/messaging-payments-review/design.md
+ * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/design.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -138,7 +138,7 @@ class LockdownSimulatingObjectService extends OrObjectService {
  * service reads and writes both schemas in system context; the ADR-023 action
  * check and the webhook signature are what gate them.
  *
- * @spec openspec/changes/messaging-payments-review/design.md
+ * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/design.md
  */
 class PaymentIntentServiceLockdownTest extends TestCase {
 

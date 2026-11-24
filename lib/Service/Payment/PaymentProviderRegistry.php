@@ -111,7 +111,7 @@ class PaymentProviderRegistry {
 	 *
 	 * @return string The value as text, or `(not text)` when it is not a scalar.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
 	 */
 	public function nameOf(mixed $value): string {
 		if (is_scalar($value) === true) {

@@ -160,7 +160,7 @@ class SmsDispatchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
 	 */
 	public function testResolveProviderRefusesAnUnknownValue(): void {
 		$provider = $this->service->resolveProvider(['provider' => 'twillio']);
@@ -175,7 +175,7 @@ class SmsDispatchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function testResolveProviderAsksTheRegistry(): void {
 		$twilio = $this->createMock(TwilioSmsProvider::class);
@@ -202,7 +202,7 @@ class SmsDispatchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
 	 */
 	public function testSendThroughAnUnknownProviderIsStoredFailedNamingIt(): void {
 		$source = $this->entity(['type' => 'sms', 'configuration' => ['provider' => 'twillio']]);
@@ -538,7 +538,7 @@ class SmsDispatchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function testACallbackThroughOneSourceLeavesAnotherSourcesMessageAlone(): void {
 		$other = $this->entity(['status' => 'sent', 'providerMessageId' => 'SM1', 'provider' => 'twilio', 'sourceSlug' => 'sms-twee'], 'sms-uuid-2');
@@ -563,7 +563,7 @@ class SmsDispatchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function testACallbackUpdatesTheMessageItsSourceSent(): void {
 		$other = $this->entity(['status' => 'sent', 'providerMessageId' => 'SM1', 'provider' => 'twilio', 'sourceSlug' => 'sms-twee'], 'sms-uuid-2');
@@ -598,7 +598,7 @@ class SmsDispatchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 */
 	public function testSendThroughANamedSourceUsesThatSourceAndStoresItsSlug(): void {
 		$source = $this->entity(
@@ -652,7 +652,7 @@ class SmsDispatchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 */
 	public function testSendWithoutASlugUsesTheFirstEnabledSmsSource(): void {
 		$source = $this->entity(['slug' => 'sms-een', 'type' => 'sms', 'isEnabled' => true, 'configuration' => ['provider' => 'log']]);
@@ -711,7 +711,7 @@ class SmsDispatchServiceTest extends TestCase {
 	 *
 	 * @dataProvider notAnSmsSource
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 */
 	public function testANamedSourceThatIsNotAnEnabledSmsSourceIsRefused(array $found): void {
 		$this->objectService->method('findAll')->willReturn(['results' => $found, 'total' => count($found)]);
@@ -733,7 +733,7 @@ class SmsDispatchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 */
 	public function testPollStatusReadsThroughTheSourceTheMessageNames(): void {
 		$message = $this->entity(['status' => 'sent', 'providerMessageId' => 'MOCK-SMS-1', 'sourceSlug' => 'sms-twee'], 'sms-uuid-1');

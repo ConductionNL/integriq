@@ -157,7 +157,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 */
 	public function sendMessage(
 		string $to,
@@ -476,7 +476,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @return ObjectEntity|null The updated message, or null when the providerMessageId is unknown.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function handleStatusCallback(string $providerMessageId, string $status, ?string $detail, ?array $source = null): ?ObjectEntity {
 		if (in_array($status, DeliveryResult::STATUSES, true) === false) {
@@ -535,7 +535,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @return SmsProviderInterface The resolved provider binding.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
 	 */
 	public function resolveProvider(array $configuration): SmsProviderInterface {
 		$provider = ($configuration['provider'] ?? null);
@@ -585,7 +585,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @throws SmsProviderException With code `unknown-source` when the slug names no enabled SMS source,
 	 *                              or when no SMS source is configured at all.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 */
 	public function resolveSource(?string $sourceSlug): ObjectEntity {
 		if ($sourceSlug === null) {
@@ -719,7 +719,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 *
 	 * @return bool True when that source sent the message.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	private static function sentThrough(ObjectEntity $message, array $source): bool {
 		$data = $message->getObject();

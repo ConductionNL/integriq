@@ -151,7 +151,7 @@ class PaymentIntentServiceProviderRegistryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
 	 */
 	public function testAnUnknownProviderIsRefused(): void {
 		$this->expectException(exception: PaymentProviderException::class);

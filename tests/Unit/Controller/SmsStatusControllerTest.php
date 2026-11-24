@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/tasks.md
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -37,7 +37,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\Integriq\Service\Sms\SmsStatusCallback
  * @uses   \OCA\Integriq\Exception\SmsProviderException
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
  */
 class SmsStatusControllerTest extends TestCase {
 

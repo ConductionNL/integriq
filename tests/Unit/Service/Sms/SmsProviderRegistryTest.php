@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/tasks.md
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\Integriq\Service\Sms\LogSmsProvider
  * @uses   \OCA\Integriq\Exception\SmsProviderException
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
  */
 class SmsProviderRegistryTest extends TestCase {
 
@@ -96,7 +96,7 @@ class SmsProviderRegistryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#scenario-a-mistyped-provider-shows-as-a-failure-not-a-success
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#scenario-a-mistyped-provider-shows-as-a-failure-not-a-success
 	 */
 	public function testAMistypedValueRefusesToSendNamingIt(): void {
 		$provider = $this->registry()->resolve(providerId: 'twillio');

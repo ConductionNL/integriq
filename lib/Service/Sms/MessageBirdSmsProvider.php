@@ -20,7 +20,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCA\Integriq\Exception\SmsProviderException;
 /**
  * MessageBird SMS binding, provider id `messagebird`.
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
  */
 class MessageBirdSmsProvider extends BrokeredSmsProvider {
 
@@ -66,7 +66,7 @@ class MessageBirdSmsProvider extends BrokeredSmsProvider {
 	 *
 	 * @return string The provider identifier.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function getProviderId(): string {
 		return self::PROVIDER_ID;
@@ -77,7 +77,7 @@ class MessageBirdSmsProvider extends BrokeredSmsProvider {
 	 *
 	 * @return string The provider display name.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function getProviderName(): string {
 		return 'MessageBird';
@@ -88,7 +88,7 @@ class MessageBirdSmsProvider extends BrokeredSmsProvider {
 	 *
 	 * @return array<string, mixed> The configuration schema.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function getConfigSchema(): array {
 		return self::brokeredConfigSchema(
@@ -109,7 +109,7 @@ class MessageBirdSmsProvider extends BrokeredSmsProvider {
 	 *
 	 * @throws SmsProviderException When the source is incomplete or MessageBird refuses the message.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function send(array $sourceConfiguration, string $to, string $body, array $options = []): DeliveryResult {
 		$json = [
@@ -143,7 +143,7 @@ class MessageBirdSmsProvider extends BrokeredSmsProvider {
 	 *
 	 * @throws SmsProviderException When the read fails.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function fetchStatus(array $sourceConfiguration, string $providerMessageId): DeliveryResult {
 		$response = $this->decode(
@@ -182,7 +182,7 @@ class MessageBirdSmsProvider extends BrokeredSmsProvider {
 	 *
 	 * @return bool True.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function signsStatusCallbacks(): bool {
 		return true;
@@ -202,7 +202,7 @@ class MessageBirdSmsProvider extends BrokeredSmsProvider {
 	 *
 	 * @throws SmsProviderException When the signature does not verify or the report names no message.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function readStatusCallback(array $sourceConfiguration, SmsStatusCallback $callback): DeliveryResult {
 		$this->verifySignature(callback: $callback);

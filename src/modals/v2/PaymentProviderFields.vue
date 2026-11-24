@@ -100,7 +100,7 @@ export default {
 		 * The provider the configuration names; absent means the log binding.
 		 *
 		 * @return {string} The provider id.
-		 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
+		 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
 		 */
 		providerId() {
 			const provider = this.configuration?.provider
@@ -111,7 +111,7 @@ export default {
 		 * The bindings as picker options.
 		 *
 		 * @return {object[]} The options.
-		 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 		 */
 		providerOptions() {
 			return this.providers.map((provider) => ({
@@ -125,7 +125,7 @@ export default {
 		 * Whether the configured provider is one this instance does not carry.
 		 *
 		 * @return {boolean} True once the list loaded and the value is not on it.
-		 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
+		 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
 		 */
 		unknownProvider() {
 			return (
@@ -174,7 +174,7 @@ export default {
 		 * The last check answer, as one sentence.
 		 *
 		 * @return {string} The text, empty before a check.
-		 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 		 */
 		resultText() {
 			if (this.checking) {
@@ -215,7 +215,7 @@ export default {
 	 * Load the bindings so the picker resolves the current value.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	created() {
 		this.fetchProviders()
@@ -229,7 +229,7 @@ export default {
 		 *
 		 * @param {object|null} option The picked option.
 		 * @return {void}
-		 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 		 */
 		onProviderPick(option) {
 			if (!option?.id) return
@@ -244,7 +244,7 @@ export default {
 		 * Ask the instance which payment bindings it carries. Soft-fails to an empty list.
 		 *
 		 * @return {Promise<void>} Resolves once loaded.
-		 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 		 */
 		async fetchProviders() {
 			this.providersLoading = true
@@ -267,7 +267,7 @@ export default {
 		 * Check the draft configuration with the binding's read-only probe.
 		 *
 		 * @return {Promise<void>} Resolves once the answer is shown.
-		 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 		 */
 		async checkProvider() {
 			this.checking = true

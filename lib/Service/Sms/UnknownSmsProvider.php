@@ -19,7 +19,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use OCA\Integriq\Exception\SmsProviderException;
 /**
  * The refusing binding for an unknown provider value.
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
  */
 final class UnknownSmsProvider implements SmsProviderInterface {
 
@@ -41,7 +41,7 @@ final class UnknownSmsProvider implements SmsProviderInterface {
 	 * @param string       $value The provider value the source named.
 	 * @param list<string> $known The provider ids the registry holds.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function __construct(
 		private readonly string $value,
@@ -55,7 +55,7 @@ final class UnknownSmsProvider implements SmsProviderInterface {
 	 *
 	 * @return string The value.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function getProviderId(): string {
 		return $this->value;
@@ -66,7 +66,7 @@ final class UnknownSmsProvider implements SmsProviderInterface {
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function getProviderName(): string {
 		return 'Unknown provider "' . $this->value . '"';
@@ -77,7 +77,7 @@ final class UnknownSmsProvider implements SmsProviderInterface {
 	 *
 	 * @return array<string, mixed> An empty object schema.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function getConfigSchema(): array {
 		return ['type' => 'object'];
@@ -95,7 +95,7 @@ final class UnknownSmsProvider implements SmsProviderInterface {
 	 *
 	 * @throws SmsProviderException Always.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
 	 */
 	public function send(array $sourceConfiguration, string $to, string $body, array $options = []): DeliveryResult {
 		throw $this->refusal();
@@ -111,7 +111,7 @@ final class UnknownSmsProvider implements SmsProviderInterface {
 	 *
 	 * @throws SmsProviderException Always.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function fetchStatus(array $sourceConfiguration, string $providerMessageId): DeliveryResult {
 		throw $this->refusal();

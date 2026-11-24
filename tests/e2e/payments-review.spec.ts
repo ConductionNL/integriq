@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Spec coverage:
- * openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md
+ * openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md
  * (REQ-PRV-001, REQ-PRV-002, REQ-PRV-003)
  *
  * Every scenario runs on the log provider, the binding that charges nobody:

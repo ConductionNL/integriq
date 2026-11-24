@@ -110,7 +110,7 @@ class NotifyNlController extends Controller {
 	 *                      decision code when the opt-out list refused the send.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -144,7 +144,7 @@ class NotifyNlController extends Controller {
 	 *                      template or a source that is no enabled NotifyNL source, 409 with the decision
 	 *                      code when the opt-out list refused, 502 when NotifyNL failed.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
