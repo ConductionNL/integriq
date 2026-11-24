@@ -1,0 +1,11 @@
+{
+	"app": "integriq",
+	"pages": [
+		{ "name": "Dashboard", "path": "/index.php/apps/integriq/" },
+		{ "name": "Endpoints", "path": "/index.php/apps/integriq/endpoints" },
+		{ "name": "Sources", "path": "/index.php/apps/integriq/sources" },
+		{ "name": "Synchronizations", "path": "/index.php/apps/integriq/synchronizations" },
+		{ "name": "Flows", "path": "/index.php/apps/integriq/flows" },
+		{ "name": "Mappings", "path": "/index.php/apps/integriq/mappings" }
+	]
+}
