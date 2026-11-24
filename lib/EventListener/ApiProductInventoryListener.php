@@ -27,7 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\ExternalApi\ApiProductInventory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;

@@ -2,11 +2,10 @@
 
 /**
  * The API inventory's row per integriq API product: written on save, no
- * longer seen once retired or deleted, written over rather than added twice,
- * and backfilled for every product by the repair step.
+ * longer seen once retired or deleted, and written over rather than added twice.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Service\ExternalApi
+ * @package  OCA\Integriq\Tests\Unit\EventListener
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,10 +19,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Service\ExternalApi;
+namespace OCA\Integriq\Tests\Unit\EventListener;
 
 use OCA\Integriq\EventListener\ApiProductInventoryListener;
-use OCA\Integriq\Service\ExternalApi\ApiProductInventory;
+use OCA\Integriq\EventListener\ApiProductInventory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;

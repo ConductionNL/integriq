@@ -14,14 +14,14 @@ Kind: code. Size M. Row `integriq:gw-federated`.
       Decision: one schema stays behind the page, so its gateway and vendor facets, columns and row action keep working:
       each API product is kept as an `external_api` row on the gateway and vendor `integriq` (schema 1.2.0 adds the
       vendor), `gatewayApiId` the product uuid, `baseUrl` the gateway's endpoint base and `gatewayUrl` the product's
-      published OpenAPI description. `Service/ExternalApi/ApiProductInventory` writes it; `ApiProductInventoryListener`
+      published OpenAPI description. `EventListener/ApiProductInventory` writes it; `ApiProductInventoryListener`
       runs it on a created or updated product and marks the row no longer seen on a retired or deleted one. A product
       saved before this change is listed from its next save: a backfill repair step would need an info.xml version
       bump in the same change (gate-110), which the release workflow owns. A product row has no stored document, so
       "Bring behind integriq" is not offered on it.
 - [x] Test (Playwright): written, runs in nightly. `tests/e2e/api-inventory.spec.ts` seeds an API product next to the
       two external APIs and expects its row with gateway `integriq` and its version, gone under the Azure filter.
-      PHPUnit: `tests/Unit/Service/ExternalApi/ApiProductInventoryTest.php` (row shape, written over, retired and
+      PHPUnit: `tests/Unit/EventListener/ApiProductInventoryTest.php` (row shape, written over, retired and
       deleted, listener scope and failure).
 
 ### Task 2: The Amazon connector waits for the broker's aws-sigv4 scheme
