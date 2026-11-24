@@ -2221,10 +2221,10 @@
       ]
     },
     {
-      "bom-ref": "revolt/event-loop-1.0.9.0",
+      "bom-ref": "revolt/event-loop-1.1.0.0",
       "type": "library",
       "name": "event-loop",
-      "version": "v1.0.9",
+      "version": "v1.1.0",
       "group": "revolt",
       "description": "Rock-solid event loop for concurrent PHP applications.",
       "author": "Aaron Piotrowski, Cees-Jan Kiewiet, Christian Lück, Niklas Keller",
@@ -2235,17 +2235,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/revolt/event-loop@v1.0.9",
+      "purl": "pkg:composer/revolt/event-loop@v1.1.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/revoltphp/event-loop/zipball/44061cf513e53c6200372fc935ac42271566295d",
-          "comment": "dist reference: 44061cf513e53c6200372fc935ac42271566295d"
+          "url": "https://api.github.com/repos/revoltphp/event-loop/zipball/93999a4ffca70aaa3890c553001e9f8313a1895c",
+          "comment": "dist reference: 93999a4ffca70aaa3890c553001e9f8313a1895c"
         },
         {
           "type": "vcs",
           "url": "https://github.com/revoltphp/event-loop.git",
-          "comment": "source reference: 44061cf513e53c6200372fc935ac42271566295d"
+          "comment": "source reference: 93999a4ffca70aaa3890c553001e9f8313a1895c"
         },
         {
           "type": "issue-tracker",
@@ -2254,18 +2254,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/revoltphp/event-loop/tree/v1.0.9",
+          "url": "https://github.com/revoltphp/event-loop/tree/v1.1.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "44061cf513e53c6200372fc935ac42271566295d"
+          "value": "93999a4ffca70aaa3890c553001e9f8313a1895c"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "44061cf513e53c6200372fc935ac42271566295d"
+          "value": "93999a4ffca70aaa3890c553001e9f8313a1895c"
         },
         {
           "name": "cdx:composer:package:type",
@@ -6947,8 +6947,8 @@
       "type": "library",
       "name": "router",
       "group": "@nextcloud",
-      "version": "3.1.0",
-      "bom-ref": "integriq@1.0.0|@nextcloud/router@3.1.0",
+      "version": "3.2.0",
+      "bom-ref": "integriq@1.0.0|@nextcloud/router@3.2.0",
       "licenses": [
         {
           "license": {
@@ -6956,15 +6956,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40nextcloud/router@3.1.0",
+      "purl": "pkg:npm/%40nextcloud/router@3.2.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@nextcloud/router/-/router-3.1.0.tgz",
+          "url": "https://registry.npmjs.org/@nextcloud/router/-/router-3.2.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "7b876421ac514b0759265645a67f71d37420067fd26b684dd61a7f040efe01bcf292648094ab967dd997f23ffc7b0acba50c18999476dc864ef57c29257ab653"
+              "content": "6a7e2027b9a50d91ad62af334f1a784a0fa22e528a1af43d647dc3a7a81afc89433403fb55e3151a986c63bf7c3918e7700a7dfac11fdfbd0be73a6c9eec609e"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -7121,8 +7121,8 @@
       "type": "library",
       "name": "vue",
       "group": "@nextcloud",
-      "version": "9.13.1",
-      "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.13.1",
+      "version": "9.14.1",
+      "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.14.1",
       "licenses": [
         {
           "license": {
@@ -7130,15 +7130,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40nextcloud/vue@9.13.1",
+      "purl": "pkg:npm/%40nextcloud/vue@9.14.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@nextcloud/vue/-/vue-9.13.1.tgz",
+          "url": "https://registry.npmjs.org/@nextcloud/vue/-/vue-9.14.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "e997879be7281c9eb0b1abee965978095977b64e5e86387ba7aa56f465350607c390eb1bc793efe14f3fb9593bc8e4e7e28028ebde574c7845375ee9c88d6979"
+              "content": "a8b098371d1f172d9923ed9eea798db7335f1ec53fbadc0233ebbaee4a8b522fd4935d51ac5c445dbd83c4e270a1d6c5d8afc402bb66ba4de5f4526a609eaffe"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -7153,44 +7153,9 @@
       "components": [
         {
           "type": "library",
-          "name": "router",
-          "group": "@nextcloud",
-          "version": "3.2.0",
-          "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.13.1|@nextcloud/router@3.2.0",
-          "licenses": [
-            {
-              "license": {
-                "id": "GPL-3.0-or-later"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40nextcloud/router@3.2.0",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@nextcloud/router/-/router-3.2.0.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "6a7e2027b9a50d91ad62af334f1a784a0fa22e528a1af43d647dc3a7a81afc89433403fb55e3151a986c63bf7c3918e7700a7dfac11fdfbd0be73a6c9eec609e"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@nextcloud/vue/node_modules/@nextcloud/router"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "core",
-          "group": "@vueuse",
-          "version": "14.4.0",
-          "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.13.1|@vueuse/core@14.4.0",
+          "name": "p-queue",
+          "version": "10.0.0",
+          "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.14.1|p-queue@10.0.0",
           "licenses": [
             {
               "license": {
@@ -7198,15 +7163,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40vueuse/core@14.4.0",
+          "purl": "pkg:npm/p-queue@10.0.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@vueuse/core/-/core-14.4.0.tgz",
+              "url": "https://registry.npmjs.org/p-queue/-/p-queue-10.0.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "5f8587cf51e50b3081a185deb149227f3cd60407198171bc162e6234f420fdea5dcce07782ef056b08f786fbb0611d6719c5c69efc706187140bfef5fbeb2fb5"
+                  "content": "3f6c2b0ab8b76e118b3e8de45fba985576e8ff91af6950135340e93b6e026de4f9dd8e33df9b7c2545a4bb4e044695c7518079acf322dd39161377e6260c79ac"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -7215,15 +7180,15 @@
           "properties": [
             {
               "name": "cdx:npm:package:path",
-              "value": "node_modules/@nextcloud/vue/node_modules/@vueuse/core"
+              "value": "node_modules/@nextcloud/vue/node_modules/p-queue"
             }
           ]
         },
         {
           "type": "library",
           "name": "vue-router",
-          "version": "5.3.1",
-          "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.13.1|vue-router@5.3.1",
+          "version": "5.5.1",
+          "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.14.1|vue-router@5.5.1",
           "licenses": [
             {
               "license": {
@@ -7231,15 +7196,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/vue-router@5.3.1",
+          "purl": "pkg:npm/vue-router@5.5.1",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/vue-router/-/vue-router-5.3.1.tgz",
+              "url": "https://registry.npmjs.org/vue-router/-/vue-router-5.5.1.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "183059ce09882f103f9059e415b263419759d9041b9e09c830cba851c8e16487c7d5118c68f8cfc17e404a7577f2a6a6b80f6e84ed110e34811d30cd1b6b97c9"
+                  "content": "95410d77f40884a7761d60029d7203deeb34196067b8e8b707091353371edbee277ccfdbdec795e6c68d51133dfb0b78f3fa94c6f8a8b69726ef21710b4538a8"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -7254,10 +7219,9 @@
         },
         {
           "type": "library",
-          "name": "metadata",
-          "group": "@vueuse",
-          "version": "14.4.0",
-          "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.13.1|@vueuse/metadata@14.4.0",
+          "name": "chokidar",
+          "version": "6.0.0",
+          "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.14.1|chokidar@6.0.0",
           "licenses": [
             {
               "license": {
@@ -7265,15 +7229,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40vueuse/metadata@14.4.0",
+          "purl": "pkg:npm/chokidar@6.0.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@vueuse/metadata/-/metadata-14.4.0.tgz",
+              "url": "https://registry.npmjs.org/chokidar/-/chokidar-6.0.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "b30c7fdb9e51e89c87645261c7ce398b3e424560d97427ef9193a900259ce7e739587706db89aff20513d5621d150687b7a76aefdaef20b77d4270968b2566f6"
+                  "content": "11cd99ef0a5c28188ca51ec3c6d7a8a92fecab91b97760387e9c733efebe7c3ef134d76b4e0867ecbd7563057910dd41de2ef612b7375d54f91645880f1f74f8"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -7282,7 +7246,40 @@
           "properties": [
             {
               "name": "cdx:npm:package:path",
-              "value": "node_modules/@nextcloud/vue/node_modules/@vueuse/metadata"
+              "value": "node_modules/@nextcloud/vue/node_modules/chokidar"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "magic-string",
+          "version": "1.4.5",
+          "bom-ref": "integriq@1.0.0|@nextcloud/vue@9.14.1|magic-string@1.4.5",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/magic-string@1.4.5",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/magic-string/-/magic-string-1.4.5.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "a0b2c2dbe62f4147c06bebf1a2e7c4ff273589c6fceccf625c846a02847fd84844ffc71bdd217ff868b4736072d41fb9573d9edaf42d52f1e2bb5fbadd99e1fb"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@nextcloud/vue/node_modules/magic-string"
             }
           ]
         }
@@ -8594,10 +8591,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rolldown/pluginutils"
         }
@@ -9551,8 +9544,8 @@
       "type": "library",
       "name": "parser",
       "group": "@typescript-eslint",
-      "version": "8.72.2",
-      "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2",
+      "version": "8.73.0",
+      "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.73.0",
       "licenses": [
         {
           "license": {
@@ -9560,15 +9553,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40typescript-eslint/parser@8.72.2",
+      "purl": "pkg:npm/%40typescript-eslint/parser@8.73.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-8.72.2.tgz",
+          "url": "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-8.73.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "9653fe4f562e24e2e5c447223fa3b2406b73e52331ca7fbd2c0d81bd9c394664e81956b5cb86de1035502fa1a37bb4f9585621d7d5911230c237d12fe209b900"
+              "content": "02e2f8e5b55c9acb077d9dc38b772cf50d25e20066e19155ac9390104ed5a6a5be3d5810684c12c1acf3e1354888569b5e493a539d44a6b603c2ac3e1d1f1e3f"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9589,8 +9582,8 @@
           "type": "library",
           "name": "scope-manager",
           "group": "@typescript-eslint",
-          "version": "8.72.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/scope-manager@8.72.2",
+          "version": "8.73.0",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/scope-manager@8.73.0",
           "licenses": [
             {
               "license": {
@@ -9598,15 +9591,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/scope-manager@8.72.2",
+          "purl": "pkg:npm/%40typescript-eslint/scope-manager@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/scope-manager/-/scope-manager-8.72.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/scope-manager/-/scope-manager-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "888a0c27affc735fd0a453721635347756333dca3832c663430d24dd5faf7f33560059949af865c8ca181286180d065773e27a1a2d57e577319735b6b5a20819"
+                  "content": "fd38c3ef7f08ab6af38f9cf48b154e8be4ecbe08c0cd93cb3da1f5c96743072b51fc74d1e60329c985997827b95934192f0937868f0057b5379aea10091b5705"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9627,8 +9620,8 @@
           "type": "library",
           "name": "types",
           "group": "@typescript-eslint",
-          "version": "8.72.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/types@8.72.2",
+          "version": "8.73.0",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/types@8.73.0",
           "licenses": [
             {
               "license": {
@@ -9636,15 +9629,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/types@8.72.2",
+          "purl": "pkg:npm/%40typescript-eslint/types@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/types/-/types-8.72.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/types/-/types-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "5df9f7ece2d9c74dfe3c253ba96c7d0d3bf6142461d44e9f936fb038d78d635e475c8c2d730baf79a4b0569180529b643663d07a04715b927245e97d4fbc2ba2"
+                  "content": "3bfd72b58cdf945d7a403297c78fea39783522e669fa7ee1afdb7e4b49efecdff64e5f2b262342b21ced57581c494bc76cfb685f7fb398d6ed480c956f3c557f"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9665,8 +9658,8 @@
           "type": "library",
           "name": "typescript-estree",
           "group": "@typescript-eslint",
-          "version": "8.72.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/typescript-estree@8.72.2",
+          "version": "8.73.0",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/typescript-estree@8.73.0",
           "licenses": [
             {
               "license": {
@@ -9674,15 +9667,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/typescript-estree@8.72.2",
+          "purl": "pkg:npm/%40typescript-eslint/typescript-estree@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-8.72.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "a50106a882bf72a12f2a2bd559a14b6297bb5d87a31717ee00e8b89aed6801616f228dfa6911c8f5eb11153531708cbfcfc378f36449c87f8ba5907464853b3b"
+                  "content": "2278e506449d59c788c080564b04b710d529fa2d0ed363c65f766fdb09e2856242d560d51af1bb9931ee7fc6f9eee01a2138fde1dead44f0c7fac504b5775141"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9703,8 +9696,8 @@
           "type": "library",
           "name": "visitor-keys",
           "group": "@typescript-eslint",
-          "version": "8.72.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/visitor-keys@8.72.2",
+          "version": "8.73.0",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/visitor-keys@8.73.0",
           "licenses": [
             {
               "license": {
@@ -9712,15 +9705,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/visitor-keys@8.72.2",
+          "purl": "pkg:npm/%40typescript-eslint/visitor-keys@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/visitor-keys/-/visitor-keys-8.72.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/visitor-keys/-/visitor-keys-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "3401ab8e7d0f8ad8eaceafc6920302e240589b6df73d0f067dfc90f7e913037025350604cce7f6e4420cd360401d9bf9151252a47a4993e386531564381f7719"
+                  "content": "93896c155a5164809b96d9081041f8859464c1792a0c5d461c1a4294a40e1d063e464a19000bb2735722dc8ea9f8207abf75388da1c852c85ce11cf34176562e"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9741,8 +9734,8 @@
           "type": "library",
           "name": "project-service",
           "group": "@typescript-eslint",
-          "version": "8.72.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/project-service@8.72.2",
+          "version": "8.73.0",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/project-service@8.73.0",
           "licenses": [
             {
               "license": {
@@ -9750,15 +9743,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/project-service@8.72.2",
+          "purl": "pkg:npm/%40typescript-eslint/project-service@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/project-service/-/project-service-8.72.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/project-service/-/project-service-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "eb2e5d2d365d1e123c121df2210fdb7d08512b09f97be4e9263eb8a35f029e0734896fc10ab56faebeb3198a973e7607df5bba617018885874faac57e66c9b27"
+                  "content": "fe911ff1173832393ea899d8d2e3b5f8669d79a97cbafe74c69ba273eb2b1b6bc855ab40d17c6f58c51e32d16fb3a3821ea7ed890efffaa1f869e846e6cb7320"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9779,8 +9772,8 @@
           "type": "library",
           "name": "tsconfig-utils",
           "group": "@typescript-eslint",
-          "version": "8.72.2",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|@typescript-eslint/tsconfig-utils@8.72.2",
+          "version": "8.73.0",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/tsconfig-utils@8.73.0",
           "licenses": [
             {
               "license": {
@@ -9788,15 +9781,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/tsconfig-utils@8.72.2",
+          "purl": "pkg:npm/%40typescript-eslint/tsconfig-utils@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/tsconfig-utils/-/tsconfig-utils-8.72.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/tsconfig-utils/-/tsconfig-utils-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "fa1de20a0657b9336da0b5dc9e78cfd766541cb32aa147081cf7d0ac51174d4aaf6fd745f102bd6f99efe55b52a397cb91d1ee92cf1e85b4f3663deb226026f7"
+                  "content": "966b4214e7d86897e9a99cb01ae5e2e05a4db44f8d43e60b7b74f42bdaed103716f19b865af7c8fbea63f2bd39b18308f2f593d8260ae2b5b279d983e91a78a2"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9815,9 +9808,46 @@
         },
         {
           "type": "library",
+          "name": "minimatch",
+          "version": "11.0.9",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.73.0|minimatch@11.0.9",
+          "licenses": [
+            {
+              "license": {
+                "id": "BlueOak-1.0.0"
+              }
+            }
+          ],
+          "purl": "pkg:npm/minimatch@11.0.9",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/minimatch/-/minimatch-11.0.9.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "2821647f28ea7ab3654acb6396120635720a64603fe8ee15e1196167e0ecafadb548f3f0d26ce5ca913d0fd64ea0f89579f1c80fe8fbfd7b8c325a9f0ff17ad1"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:development",
+              "value": "true"
+            },
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@typescript-eslint/parser/node_modules/minimatch"
+            }
+          ]
+        },
+        {
+          "type": "library",
           "name": "semver",
           "version": "7.8.6",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|semver@7.8.6",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.73.0|semver@7.8.6",
           "licenses": [
             {
               "license": {
@@ -9854,7 +9884,7 @@
           "type": "library",
           "name": "eslint-visitor-keys",
           "version": "5.0.1",
-          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.72.2|eslint-visitor-keys@5.0.1",
+          "bom-ref": "integriq@1.0.0|@typescript-eslint/parser@8.73.0|eslint-visitor-keys@5.0.1",
           "licenses": [
             {
               "license": {
@@ -10335,6 +10365,74 @@
           "name": "cdx:npm:package:path",
           "value": "node_modules/@vue-macros/common"
         }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "local-pkg",
+          "version": "1.2.1",
+          "bom-ref": "integriq@1.0.0|@vue-macros/common@3.1.4|local-pkg@1.2.1",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/local-pkg@1.2.1",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/local-pkg/-/local-pkg-1.2.1.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "fbe814a910c4bdc9cde9986aaebfb2fc2915107865ad1f7abd99f79d964f63331c054c81b532b307d35a74294522c2154acbbede2f6d7e4fdeaeacbd9009aded"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@vue-macros/common/node_modules/local-pkg"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "quansync",
+          "version": "0.2.11",
+          "bom-ref": "integriq@1.0.0|@vue-macros/common@3.1.4|quansync@0.2.11",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/quansync@0.2.11",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/quansync/-/quansync-0.2.11.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "0227d3ed011b5bd36b8b8b40c11e4cfeece906ea9f65ffb3c1a10cfd09331238fb341b850f6ac1bb2d0addd13ef3096d6decc357b24c03459f9c23d845261b5c"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@vue-macros/common/node_modules/quansync"
+            }
+          ]
+        }
       ]
     },
     {
@@ -10783,8 +10881,8 @@
       "type": "library",
       "name": "components",
       "group": "@vueuse",
-      "version": "14.4.0",
-      "bom-ref": "integriq@1.0.0|@vueuse/components@14.4.0",
+      "version": "15.0.0",
+      "bom-ref": "integriq@1.0.0|@vueuse/components@15.0.0",
       "licenses": [
         {
           "license": {
@@ -10792,15 +10890,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vueuse/components@14.4.0",
+      "purl": "pkg:npm/%40vueuse/components@15.0.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vueuse/components/-/components-14.4.0.tgz",
+          "url": "https://registry.npmjs.org/@vueuse/components/-/components-15.0.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "5128319639ab1944e3b4c25c3826e353b4a544fe8ad62e629cce8980c0fc6ce067fe82f874ad17613b4d7d6caea34160521b427ed20a5e2fb8bc9f2697eb66ab"
+              "content": "817e8513da1579ff8750a85f531f4e4f127e5c61630c4322e69f98ecfaf6818831ba64a77ec7c0fc9d018282341932bac7fc7422ef0061b97528cdb0e20fd3da"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10815,10 +10913,10 @@
       "components": [
         {
           "type": "library",
-          "name": "core",
+          "name": "shared",
           "group": "@vueuse",
-          "version": "14.4.0",
-          "bom-ref": "integriq@1.0.0|@vueuse/components@14.4.0|@vueuse/core@14.4.0",
+          "version": "15.0.0",
+          "bom-ref": "integriq@1.0.0|@vueuse/components@15.0.0|@vueuse/shared@15.0.0",
           "licenses": [
             {
               "license": {
@@ -10826,15 +10924,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40vueuse/core@14.4.0",
+          "purl": "pkg:npm/%40vueuse/shared@15.0.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@vueuse/core/-/core-14.4.0.tgz",
+              "url": "https://registry.npmjs.org/@vueuse/shared/-/shared-15.0.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "5f8587cf51e50b3081a185deb149227f3cd60407198171bc162e6234f420fdea5dcce07782ef056b08f786fbb0611d6719c5c69efc706187140bfef5fbeb2fb5"
+                  "content": "bdb357846adb579df13ce312c8eccc1d046f84c8197fba0d0f0d910a151eb55c704c81242274358e867d25b4f41b7cf69f6009363be609678cf72498ae7be880"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10843,41 +10941,7 @@
           "properties": [
             {
               "name": "cdx:npm:package:path",
-              "value": "node_modules/@vueuse/components/node_modules/@vueuse/core"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "metadata",
-          "group": "@vueuse",
-          "version": "14.4.0",
-          "bom-ref": "integriq@1.0.0|@vueuse/components@14.4.0|@vueuse/metadata@14.4.0",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vueuse/metadata@14.4.0",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vueuse/metadata/-/metadata-14.4.0.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "b30c7fdb9e51e89c87645261c7ce398b3e424560d97427ef9193a900259ce7e739587706db89aff20513d5621d150687b7a76aefdaef20b77d4270968b2566f6"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@vueuse/components/node_modules/@vueuse/metadata"
+              "value": "node_modules/@vueuse/components/node_modules/@vueuse/shared"
             }
           ]
         }
@@ -12083,8 +12147,8 @@
     {
       "type": "library",
       "name": "ast-walker-scope",
-      "version": "0.9.0",
-      "bom-ref": "integriq@1.0.0|ast-walker-scope@0.9.0",
+      "version": "0.10.0",
+      "bom-ref": "integriq@1.0.0|ast-walker-scope@0.10.0",
       "licenses": [
         {
           "license": {
@@ -12092,15 +12156,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/ast-walker-scope@0.9.0",
+      "purl": "pkg:npm/ast-walker-scope@0.10.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/ast-walker-scope/-/ast-walker-scope-0.9.0.tgz",
+          "url": "https://registry.npmjs.org/ast-walker-scope/-/ast-walker-scope-0.10.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "209773a36bcb884941c4acf04b7e95b02b9effad9de887568e73c1dafde7b8f29e586ca7a7a145fc26282dae62ff78d71ffcfded90ddb17cfa69ba6033ac34ec"
+              "content": "2b3be8c437d7373d869bc2982e1e3b2b7a9c6376736b758a3ae876c68a9aecb06ee8c0ca58064ba2f26d53d0ee01dfc4afeae14070919fad7d9474b953eaa687"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12110,6 +12174,210 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/ast-walker-scope"
+        }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "parser",
+          "group": "@babel",
+          "version": "8.1.3",
+          "bom-ref": "integriq@1.0.0|ast-walker-scope@0.10.0|@babel/parser@8.1.3",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40babel/parser@8.1.3",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@babel/parser/-/parser-8.1.3.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "bf7724d9637b8e7f201099447c80c4c1333c74206339a7350998e896f07afebd0ed6899ee84ef14b6703404390a84491419596acbae19e3c43d2a8e667c40182"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/ast-walker-scope/node_modules/@babel/parser"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "types",
+          "group": "@babel",
+          "version": "8.1.3",
+          "bom-ref": "integriq@1.0.0|ast-walker-scope@0.10.0|@babel/types@8.1.3",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40babel/types@8.1.3",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@babel/types/-/types-8.1.3.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "7814441b00c744f1ed76c838e2dd3bd461362910c4b89adfd09dae4f9feabc93c1dbea5f3d938a971f7774c64e16413b416e46d095a8733c920fb6b4d497f48b"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/ast-walker-scope/node_modules/@babel/types"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "ast-kit",
+          "version": "3.0.1",
+          "bom-ref": "integriq@1.0.0|ast-walker-scope@0.10.0|ast-kit@3.0.1",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/ast-kit@3.0.1",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/ast-kit/-/ast-kit-3.0.1.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "7c21a242f98782185ff39f1efd2546876694a3f16c6ed079a81f1b89fa3aca01cae4e31c1a76b9e8552f4b422b62fa3eba7630222d670a494487f29468e2959a"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/ast-walker-scope/node_modules/ast-kit"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "helper-string-parser",
+          "group": "@babel",
+          "version": "8.1.3",
+          "bom-ref": "integriq@1.0.0|ast-walker-scope@0.10.0|@babel/helper-string-parser@8.1.3",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40babel/helper-string-parser@8.1.3",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-8.1.3.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "e474ee444b608f4c48737e39cd4e20b43dbedef20f919a49c3bc14632b6dfe6cc14d0376996a46af59f1622a1c61ad84f2c5a081192b4a0fe4ec12b9d6903122"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/ast-walker-scope/node_modules/@babel/helper-string-parser"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "helper-validator-identifier",
+          "group": "@babel",
+          "version": "8.0.6",
+          "bom-ref": "integriq@1.0.0|ast-walker-scope@0.10.0|@babel/helper-validator-identifier@8.0.6",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40babel/helper-validator-identifier@8.0.6",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@babel/helper-validator-identifier/-/helper-validator-identifier-8.0.6.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "1d8c74626b9c851c514a99e3bdc35f7e73d2f0309ab8a3669ee988b871b78e740055ec1103b91f246c05d776b2129499b3bb3847fa011f87a9a6e5dc01077925"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/ast-walker-scope/node_modules/@babel/helper-validator-identifier"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "estree-walker",
+          "version": "3.0.3",
+          "bom-ref": "integriq@1.0.0|ast-walker-scope@0.10.0|estree-walker@3.0.3",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/estree-walker@3.0.3",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/estree-walker/-/estree-walker-3.0.3.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "ed150a7d781230c933b7a66e5e6a9aa4ebab2c63cf7e08fa97db9167b9511a896f934cb6ca871cdf92dd731282e4f419767d8332a8a8010d8da1672b4ca9a6ea"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/ast-walker-scope/node_modules/estree-walker"
+            }
+          ]
         }
       ]
     },
@@ -12186,8 +12454,8 @@
     {
       "type": "library",
       "name": "axe-core",
-      "version": "4.14.0",
-      "bom-ref": "integriq@1.0.0|axe-core@4.14.0",
+      "version": "4.14.1",
+      "bom-ref": "integriq@1.0.0|axe-core@4.14.1",
       "licenses": [
         {
           "license": {
@@ -12195,15 +12463,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/axe-core@4.14.0",
+      "purl": "pkg:npm/axe-core@4.14.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/axe-core/-/axe-core-4.14.0.tgz",
+          "url": "https://registry.npmjs.org/axe-core/-/axe-core-4.14.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "f564d9c448ec67b6f5dd31fc24f99b576cfc0876e5f34ff6866dd73c41b826035d40b2bcd480515e64b11df3003a44aa41e4714ffd1dc0d0f3d863a6df3ce971"
+              "content": "1477dafa598d8d065f273d6af302aa203c02e83131707b7fa648cd41bd3d6b734f8c22a0dab86ee6a6f64b8afbe804b214d36db85a2826965edfb3a0b9d546b5"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -13072,6 +13340,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/chokidar"
         }
@@ -13393,8 +13665,8 @@
     {
       "type": "library",
       "name": "confbox",
-      "version": "0.2.4",
-      "bom-ref": "integriq@1.0.0|confbox@0.2.4",
+      "version": "0.3.2",
+      "bom-ref": "integriq@1.0.0|confbox@0.3.2",
       "licenses": [
         {
           "license": {
@@ -13402,15 +13674,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/confbox@0.2.4",
+      "purl": "pkg:npm/confbox@0.3.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/confbox/-/confbox-0.2.4.tgz",
+          "url": "https://registry.npmjs.org/confbox/-/confbox-0.3.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "cac3869604c56cddbf63a0a0dc8c9ef182ae947c3e4767cd5c7ae04a65c849074c9e8998e9e343a6b55d5bd479c4182e12a23de78f92ebbd3d53288eec1fba39"
+              "content": "65400a84a96408eac818a73c723ef37a4f6cf73d66bde1e27ffdb99d4b21236073091cc5eca1fb2876be2e7876b9babe7b5b4895a16e3fbeb79b35b8a95a1e86"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -15925,8 +16197,8 @@
     {
       "type": "library",
       "name": "exsolve",
-      "version": "1.1.1",
-      "bom-ref": "integriq@1.0.0|exsolve@1.1.1",
+      "version": "1.2.0",
+      "bom-ref": "integriq@1.0.0|exsolve@1.2.0",
       "licenses": [
         {
           "license": {
@@ -15934,15 +16206,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/exsolve@1.1.1",
+      "purl": "pkg:npm/exsolve@1.2.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/exsolve/-/exsolve-1.1.1.tgz",
+          "url": "https://registry.npmjs.org/exsolve/-/exsolve-1.2.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "f54fe36548239d21b29ed46beb2e4cbaed4c25cc0597a90fbbb93ca8b17420c35f2eabf0d0d6789e7543ab4455a19d11bc2cae9a26f8133dca62b55f8a5af0fa"
+              "content": "875a503d1f57a1e48c767b513428f24f39daba67b85297d7ad42c19e5919d8250cfc6e5e49afa9041c8695d3b9b91f1dc5b3c2f8eb895ec3cf35ff8967cd400e"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -16667,8 +16939,8 @@
     {
       "type": "library",
       "name": "focus-trap",
-      "version": "8.2.2",
-      "bom-ref": "integriq@1.0.0|focus-trap@8.2.2",
+      "version": "8.2.6",
+      "bom-ref": "integriq@1.0.0|focus-trap@8.2.6",
       "licenses": [
         {
           "license": {
@@ -16676,15 +16948,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/focus-trap@8.2.2",
+      "purl": "pkg:npm/focus-trap@8.2.6",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/focus-trap/-/focus-trap-8.2.2.tgz",
+          "url": "https://registry.npmjs.org/focus-trap/-/focus-trap-8.2.6.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "a95d20f2145806a80009c14e1f77fdc17738ccf2a1affd33f512366ba6628d9ef611e062e20f28072f33016b944754ec3293b3c2950c16f8dd6acac2e35268ba"
+              "content": "e15eee4dfffb031df29df6decba2b7a3c34e7c8cfe828f5ab4a36d154f8a08fe4d5a1caf9f633f424e0763ef643a2f0d5ae8e98254467b4cba1b7aff2f933f3f"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -19766,8 +20038,8 @@
     {
       "type": "library",
       "name": "linkifyjs",
-      "version": "4.3.3",
-      "bom-ref": "integriq@1.0.0|linkifyjs@4.3.3",
+      "version": "4.4.0",
+      "bom-ref": "integriq@1.0.0|linkifyjs@4.4.0",
       "licenses": [
         {
           "license": {
@@ -19775,15 +20047,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/linkifyjs@4.3.3",
+      "purl": "pkg:npm/linkifyjs@4.4.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/linkifyjs/-/linkifyjs-4.3.3.tgz",
+          "url": "https://registry.npmjs.org/linkifyjs/-/linkifyjs-4.4.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "3fc6843f953f0f5fc895363639e62c12b77087d6c6b8b137d0d717b4a12381d1dc6a1bde428430336c9936c8a8407b16173d0feca2ae762b1baf30a0474b031e"
+              "content": "2274dec6fb5b6a2fb673e74454671ce8ee8fd83315222c03f5afe2e3316ba1acce2182ce4ba152566009ee415eba69c2331ebf810a8d0246d4be032e6d5e3e30"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -19799,8 +20071,8 @@
     {
       "type": "library",
       "name": "local-pkg",
-      "version": "1.2.1",
-      "bom-ref": "integriq@1.0.0|local-pkg@1.2.1",
+      "version": "2.0.0",
+      "bom-ref": "integriq@1.0.0|local-pkg@2.0.0",
       "licenses": [
         {
           "license": {
@@ -19808,15 +20080,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/local-pkg@1.2.1",
+      "purl": "pkg:npm/local-pkg@2.0.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/local-pkg/-/local-pkg-1.2.1.tgz",
+          "url": "https://registry.npmjs.org/local-pkg/-/local-pkg-2.0.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "fbe814a910c4bdc9cde9986aaebfb2fc2915107865ad1f7abd99f79d964f63331c054c81b532b307d35a74294522c2154acbbede2f6d7e4fdeaeacbd9009aded"
+              "content": "c6f4cdc0cdbb12953e7e42d2a68df73eafe79bc9b9ccd7f4694fe11785b864cf511d08d565ae4a4e699723313356c748d3d34e52a8f47631e14eff7ab14a3049"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -22251,8 +22523,8 @@
     {
       "type": "library",
       "name": "nostics",
-      "version": "1.2.0",
-      "bom-ref": "integriq@1.0.0|nostics@1.2.0",
+      "version": "1.4.0",
+      "bom-ref": "integriq@1.0.0|nostics@1.4.0",
       "licenses": [
         {
           "license": {
@@ -22260,15 +22532,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/nostics@1.2.0",
+      "purl": "pkg:npm/nostics@1.4.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/nostics/-/nostics-1.2.0.tgz",
+          "url": "https://registry.npmjs.org/nostics/-/nostics-1.4.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "146a847e1423aefa3594bf0a1627dd4d088dc304072710b58ed604d51739e2a17f8f138d50d2fe902f604b592b5fc43ae4f82b4397c2a87fc8e0d85606f752aa"
+              "content": "5a35c73ae36ecd8dcc3ca3a8093db32f549addc4b698e51ee28f05f7826f04e1f67067f2348b5b42609bda9347231a2875de4efafb66987abb3e84995468021c"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -22979,8 +23251,8 @@
     {
       "type": "library",
       "name": "pkg-types",
-      "version": "2.3.3",
-      "bom-ref": "integriq@1.0.0|pkg-types@2.3.3",
+      "version": "2.4.0",
+      "bom-ref": "integriq@1.0.0|pkg-types@2.4.0",
       "licenses": [
         {
           "license": {
@@ -22988,15 +23260,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/pkg-types@2.3.3",
+      "purl": "pkg:npm/pkg-types@2.4.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/pkg-types/-/pkg-types-2.3.3.tgz",
+          "url": "https://registry.npmjs.org/pkg-types/-/pkg-types-2.4.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "8ff94215d729a55d09c56a421084dd6c396d0713cfe9c1d3fb2349e86a363a0a1203de75f17f38ed7f73d29e8bb40e0d735ebe790cc266346b59a9d31af1c9e7"
+              "content": "d3b172b3b895c745fa4dcbe230e82880cd4b937dd9caa39eccc9d4efd4be91f7d6ab0a251bfe56f55f0481049e60221f15361582cb116e71fadf439adbeb2804"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -23006,41 +23278,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/pkg-types"
-        }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "confbox",
-          "version": "0.3.1",
-          "bom-ref": "integriq@1.0.0|pkg-types@2.3.3|confbox@0.3.1",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/confbox@0.3.1",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/confbox/-/confbox-0.3.1.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "70a512a0a6bc6311596529ab6958bba2738dc776a6bbbee780ade41a9b181c31fb76b3f009191013545830f94b46b32d9dc8918f6ef85cd471707c672a60d29c"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/pkg-types/node_modules/confbox"
-            }
-          ]
         }
       ]
     },
@@ -23858,8 +24095,8 @@
     {
       "type": "library",
       "name": "quansync",
-      "version": "0.2.11",
-      "bom-ref": "integriq@1.0.0|quansync@0.2.11",
+      "version": "1.0.0",
+      "bom-ref": "integriq@1.0.0|quansync@1.0.0",
       "licenses": [
         {
           "license": {
@@ -23867,15 +24104,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/quansync@0.2.11",
+      "purl": "pkg:npm/quansync@1.0.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/quansync/-/quansync-0.2.11.tgz",
+          "url": "https://registry.npmjs.org/quansync/-/quansync-1.0.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "0227d3ed011b5bd36b8b8b40c11e4cfeece906ea9f65ffb3c1a10cfd09331238fb341b850f6ac1bb2d0addd13ef3096d6decc357b24c03459f9c23d845261b5c"
+              "content": "e7165a70412e7efdc74933d0b9c86bbd5eaca1a88008c167ab51fcc24562a1cb681f74d185af52cfaea53b14703cafea663ec73e24af7a287dc80ca1f7c82fa8"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -25827,8 +26064,8 @@
     {
       "type": "library",
       "name": "tabbable",
-      "version": "6.5.0",
-      "bom-ref": "integriq@1.0.0|tabbable@6.5.0",
+      "version": "6.5.2",
+      "bom-ref": "integriq@1.0.0|tabbable@6.5.2",
       "licenses": [
         {
           "license": {
@@ -25836,15 +26073,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/tabbable@6.5.0",
+      "purl": "pkg:npm/tabbable@6.5.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/tabbable/-/tabbable-6.5.0.tgz",
+          "url": "https://registry.npmjs.org/tabbable/-/tabbable-6.5.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "c227811d7ca0226ecec903aee61425924eb6fd6c821581a55a0ecbebf642519c31d28dfdf19927e295663327d885f306f241ab8ff2abb7c78893a50a0ba573c0"
+              "content": "5e07670759c653a294e1580c9d93da642c7b335841acbc8489961abb61b682af544f477b778154065357eefbcf966fc1d6f9353e3af3241c7d2dbbf87eca92f6"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -26737,8 +26974,8 @@
     {
       "type": "library",
       "name": "unist-util-visit-parents",
-      "version": "6.0.2",
-      "bom-ref": "integriq@1.0.0|unist-util-visit-parents@6.0.2",
+      "version": "6.1.0",
+      "bom-ref": "integriq@1.0.0|unist-util-visit-parents@6.1.0",
       "licenses": [
         {
           "license": {
@@ -26746,15 +26983,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/unist-util-visit-parents@6.0.2",
+      "purl": "pkg:npm/unist-util-visit-parents@6.1.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/unist-util-visit-parents/-/unist-util-visit-parents-6.0.2.tgz",
+          "url": "https://registry.npmjs.org/unist-util-visit-parents/-/unist-util-visit-parents-6.1.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "828875b354c1aea4aaba449cf30ae3c1684bd21889c6003c9b8905c46950fbc1584370bf9b5d45713b386187a6ed5ebae0084756f82840b93cf744ac76caf621"
+              "content": "bca5f1cfa3b7f2c2838f59adc7f936716be490506e606c7ab86ae5cc191579609117f17cb1d2348f759b933ff9ad535146e55cf14ae045d6c2c4d86661780fdf"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -26836,8 +27073,8 @@
     {
       "type": "library",
       "name": "unplugin",
-      "version": "3.4.0",
-      "bom-ref": "integriq@1.0.0|unplugin@3.4.0",
+      "version": "3.7.0",
+      "bom-ref": "integriq@1.0.0|unplugin@3.7.0",
       "licenses": [
         {
           "license": {
@@ -26845,15 +27082,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/unplugin@3.4.0",
+      "purl": "pkg:npm/unplugin@3.7.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/unplugin/-/unplugin-3.4.0.tgz",
+          "url": "https://registry.npmjs.org/unplugin/-/unplugin-3.7.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "f6c91d205942b0f74557bc147d9c4db05227956fbb9c9986bb68244eed0e521179e9a5c6b0769bf71e76fd085d278942ed90cf593c5b882e0036a565b2e696df"
+              "content": "1ab336baadc3428de1bcb536163798868a09f0163d37a8f515bce0c7b3ed6b755525ebec0f754fe1d3e366464e4b498bbcdf30f73cebf4e94ffb7d5b48ccae2f"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27149,8 +27386,8 @@
     {
       "type": "library",
       "name": "vue-codemirror6",
-      "version": "1.7.0",
-      "bom-ref": "integriq@1.0.0|vue-codemirror6@1.7.0",
+      "version": "1.8.0",
+      "bom-ref": "integriq@1.0.0|vue-codemirror6@1.8.0",
       "licenses": [
         {
           "license": {
@@ -27158,15 +27395,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/vue-codemirror6@1.7.0",
+      "purl": "pkg:npm/vue-codemirror6@1.8.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/vue-codemirror6/-/vue-codemirror6-1.7.0.tgz",
+          "url": "https://registry.npmjs.org/vue-codemirror6/-/vue-codemirror6-1.8.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "38f5e824ddd2f0d0aaeb195de2bea8e48bb3570819278e9bee453a6c4abbbb04d090b5beb610bca17a766725b2f097d2551a14444c69691cea2b8715e7e201ea"
+              "content": "763a8c534cdeb957f0946e95683880ae02813a0863dcea6b0d7a6033befea348a0bdc6750c2106ddc1f3dd3a8014584f5bd630eedfae2e177a43859b783f7d55"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27390,8 +27627,8 @@
     {
       "type": "library",
       "name": "vue-router",
-      "version": "4.6.4",
-      "bom-ref": "integriq@1.0.0|vue-router@4.6.4",
+      "version": "4.6.5",
+      "bom-ref": "integriq@1.0.0|vue-router@4.6.5",
       "licenses": [
         {
           "license": {
@@ -27399,15 +27636,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/vue-router@4.6.4",
+      "purl": "pkg:npm/vue-router@4.6.5",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/vue-router/-/vue-router-4.6.4.tgz",
+          "url": "https://registry.npmjs.org/vue-router/-/vue-router-4.6.5.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "1f3f6ae6c6b7dd885dba0970cfa83db244fc3813e28bee1b167f3cc3a27e27831f128e0a451a6688d1bf8471e475b44594b04eab137ccbc81fd856f431352056"
+              "content": "1c1a06aa2c690767a3d64235ecda2d74e6ad51d288b22df27ce439be1c0085ca0793dd3e26dc2d232ecc11e3aa74f8b5fa7a66415304bb917e1efc3edd3538f3"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27425,7 +27662,7 @@
           "name": "devtools-api",
           "group": "@vue",
           "version": "6.6.4",
-          "bom-ref": "integriq@1.0.0|vue-router@4.6.4|@vue/devtools-api@6.6.4",
+          "bom-ref": "integriq@1.0.0|vue-router@4.6.5|@vue/devtools-api@6.6.4",
           "licenses": [
             {
               "license": {
@@ -28160,7 +28397,7 @@
     {
       "ref": "azjezz/psl-4.3.0.0",
       "dependsOn": [
-        "revolt/event-loop-1.0.9.0"
+        "revolt/event-loop-1.1.0.0"
       ]
     },
     {
@@ -28383,7 +28620,7 @@
       "ref": "react/promise-3.3.0.0"
     },
     {
-      "ref": "revolt/event-loop-1.0.9.0"
+      "ref": "revolt/event-loop-1.1.0.0"
     },
     {
       "ref": "spomky-labs/pki-framework-1.6.3.0",
