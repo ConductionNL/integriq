@@ -34,16 +34,16 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Auth\Idp\Adapter;
 
-use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
-use OCA\Integriq\Auth\Idp\IdpRegistration;
-use OCA\Integriq\Auth\Idp\IdpSecretSeam;
-use OCA\Integriq\Auth\Idp\TrustLevelMapper;
-use OCA\Integriq\Exception\IdpAssertionException;
-use OCP\Http\Client\IClientService;
 use OneLogin\Saml2\Auth;
 use OneLogin\Saml2\Constants;
 use OneLogin\Saml2\IdPMetadataParser;
 use OneLogin\Saml2\Settings;
+use OCP\Http\Client\IClientService;
+use OCA\Integriq\Exception\IdpAssertionException;
+use OCA\Integriq\Auth\Idp\TrustLevelMapper;
+use OCA\Integriq\Auth\Idp\IdpSecretSeam;
+use OCA\Integriq\Auth\Idp\IdpRegistration;
+use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
 use Throwable;
 
 /**

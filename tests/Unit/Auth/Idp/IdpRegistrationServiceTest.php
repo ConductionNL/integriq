@@ -419,7 +419,7 @@ class IdpRegistrationServiceTest extends TestCase {
 		$this->flag = true;
 		$this->stored = [$this->object('reg-1', self::oidc(['kind' => 'saml-sp', 'idpMetadataUrl' => 'https://idp.example/md']))];
 		$this->assertInstanceOf(LogGovernmentIdpAdapter::class, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
-		$this->assertSame(['reg-1'], $built, 'the saml-sp kind has no builder given here, so none is called');
+		$this->assertSame(expected: ['reg-1'], actual: $built, message: 'the saml-sp kind has no builder given here, so none is called');
 	}//end testTheRegistryBindsLiveOnlyWhenReady()
 
 
@@ -460,10 +460,10 @@ class IdpRegistrationServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAReadySamlRegistrationGetsTheBuiltInSamlAdapter(): void {
-		$this->stored = [$this->object('reg-1', self::oidc(['kind' => 'saml-sp', 'idpMetadataUrl' => 'https://idp.example/md']))];
+		$this->stored = [$this->object(uuid: 'reg-1', data: self::oidc(overrides: ['kind' => 'saml-sp', 'idpMetadataUrl' => 'https://idp.example/md']))];
 		$built = [];
-		$factory = $this->createMock(SamlServiceProviderAdapterFactory::class);
-		$adapter = $this->createMock(SamlServiceProviderAdapter::class);
+		$factory = $this->createMock(originalClassName: SamlServiceProviderAdapterFactory::class);
+		$adapter = $this->createMock(originalClassName: SamlServiceProviderAdapter::class);
 		$factory->expects($this->once())->method('build')->willReturnCallback(
 			function (IdpRegistration $registration) use (&$built, $adapter): SamlServiceProviderAdapter {
 				$built[] = $registration->id;
@@ -477,8 +477,8 @@ class IdpRegistrationServiceTest extends TestCase {
 			builtInAdapters: new IdpKindAdapterFactories(saml: $factory)
 		);
 
-		$this->assertSame($adapter, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
-		$this->assertSame(['reg-1'], $built);
+		$this->assertSame(expected: $adapter, actual: $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
+		$this->assertSame(expected: ['reg-1'], actual: $built);
 	}//end testAReadySamlRegistrationGetsTheBuiltInSamlAdapter()
 
 	/**
