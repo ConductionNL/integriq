@@ -22,7 +22,7 @@
 const fs = require('fs')
 const path = require('path')
 const {
-	loadJsTranslations,
+	loadSourceCatalogue,
 	walk,
 	extractTranslationCalls,
 	makeLineResolver,
@@ -188,7 +188,7 @@ function printSection(title, color, body) {
  *
  */
 function main() {
-	const { app, translations } = loadJsTranslations(L10N_FILE)
+	const { app, translations } = loadSourceCatalogue(L10N_FILE)
 	const keys = new Set(Object.keys(translations))
 	const files = walk(SRC_DIR, ['.vue', '.js', '.ts'])
 	const vueFiles = files.filter(f => f.endsWith('.vue'))

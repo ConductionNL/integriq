@@ -68,7 +68,7 @@
 const fs = require('fs')
 const path = require('path')
 const {
-	loadJsTranslations,
+	loadSourceCatalogue,
 	serializeJs,
 	walk,
 	extractTranslationCalls,
@@ -91,7 +91,11 @@ if (!fs.existsSync(enFile)) {
 	process.exit(1)
 }
 
-const { app: registeredApp, translations, pluralForm } = loadJsTranslations(enFile)
+// en.js is generated from en.json without the entries equal to their key (a
+// t() call falls back to its key anyway), so the key set is en.js completed
+// from en.json. See loadSourceCatalogue in scripts/lib/l10n.js.
+const { app: registeredApp, translations, pluralForm } = loadSourceCatalogue(enFile)
+const enJsonFile = enFile.replace(/\.js$/, '.json')
 // The id en.js registers is the source of truth: it is what OC.L10N keys the
 // catalogue under at runtime, so a mismatch with package.json "name" would make
 // every t() call in src/ invisible to this scan.
@@ -155,12 +159,24 @@ if (WRITE) {
 	// because en IS the source language (for any OTHER locale a value equal to
 	// its key is the one thing never to write — it is indistinguishable from a
 	// finished translation and so never gets revisited).
-	const merged = { ...translations }
+	const extracted = {}
 	for (const { key } of missing) {
 		// A plural key's value must be an array of this locale's nplurals forms;
 		// a bare string there renders blank at runtime.
-		merged[key] = pluralOf.has(key) ? [key, pluralOf.get(key)] : key
+		extracted[key] = pluralOf.has(key) ? [key, pluralOf.get(key)] : key
 	}
+	if (enJsonFile !== enFile && fs.existsSync(enJsonFile)) {
+		// en.json is the source and en.js is generated from it, so the keys go
+		// into en.json; `npm run l10n:build` then regenerates en.js.
+		const doc = JSON.parse(fs.readFileSync(enJsonFile, 'utf8'))
+		doc.translations = { ...(doc.translations || {}), ...extracted }
+		fs.writeFileSync(enJsonFile, JSON.stringify(doc, null, 4) + '\n')
+		console.log(`l10n-check: WROTE ${missing.length} missing key(s) into `
+			+ `${path.relative(ROOT, enJsonFile)} (value === English source). `
+			+ 'Run `npm run l10n:build`, review the diff, then translate the other locales.')
+		process.exit(0)
+	}
+	const merged = { ...translations, ...extracted }
 	fs.writeFileSync(enFile, serializeJs({ app: appId, translations: merged, pluralForm }))
 	console.log(`l10n-check: WROTE ${missing.length} missing key(s) into `
 		+ `${path.relative(ROOT, enFile)} (value === English source). `
