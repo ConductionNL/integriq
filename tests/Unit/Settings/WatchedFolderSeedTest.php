@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Settings;
 
+use OCA\Integriq\Service\Job\WatchedFolderSweepAction;
 use OCA\Integriq\Service\WatchedFolder\WatchedFolder;
+use OCP\BackgroundJob\TimedJob;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -69,6 +71,23 @@ final class WatchedFolderSeedTest extends TestCase {
 			]
 		);
 	}//end testTheExampleReadsAsADraftPublicationPickup()
+
+	/**
+	 * A fresh install schedules the sweep as a `job` row JobTask runs, not as a TimedJob class.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/tasks.md#task-6-the-listener-the-job-and-the-sweep
+	 */
+	public function testTheSeededJobNamesTheSweep(): void {
+		$job = self::seeded(schema: 'job', slug: 'watched-folder-sweep');
+
+		$this->assertSame(expected: WatchedFolderSweepAction::class, actual: $job['jobClass']);
+		$this->assertTrue(condition: class_exists($job['jobClass']), message: 'the seeded job class exists');
+		$this->assertTrue(condition: method_exists($job['jobClass'], 'run'), message: 'JobService calls run()');
+		$this->assertSame(expected: [300, true], actual: [$job['interval'], $job['isEnabled']]);
+		$this->assertFalse(condition: is_subclass_of($job['jobClass'], TimedJob::class), message: 'REQ-DIC-005: no TimedJob');
+	}//end testTheSeededJobNamesTheSweep()
 
 	/**
 	 * One seeded object by schema and slug.

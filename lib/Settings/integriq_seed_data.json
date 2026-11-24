@@ -401,6 +401,15 @@
         "timeZone": "Europe/Amsterdam",
         "skipDates": []
       }
+    },
+    {
+      "@self": { "register": "integriq", "schema": "job", "slug": "watched-folder-sweep" },
+      "name": "Watched folder sweep",
+      "description": "Lists every watched Nextcloud folder and queues each file that has no contract yet, so a file no event announced is still picked up. Does nothing while no synchronization watches a folder.",
+      "jobClass": "OCA\\Integriq\\Service\\Job\\WatchedFolderSweepAction",
+      "arguments": {},
+      "interval": 300,
+      "isEnabled": true
     }
   ],
   "mapping": [
