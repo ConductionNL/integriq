@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md
  * (REQ-JCAL-001, a pull runs at seven on working days; REQ-JCAL-003, the
  * preview answers "which days").
  *

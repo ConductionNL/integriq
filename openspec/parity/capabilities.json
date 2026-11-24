@@ -11737,11 +11737,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/JobIntervalCron.php:40-91 only translates an interval in seconds to a cron line, and lib/Service/JobService.php:511 computes nextRunDt from jobConfig['interval']; there is no calendar, weekday or month-day schedule. Specified in openspec/changes/automation-job-calendar-schedules/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/JobIntervalCron.php:40-91 only translates an interval in seconds to a cron line, and lib/Service/JobService.php:511 computes nextRunDt from jobConfig['interval']; there is no calendar, weekday or month-day schedule. Specified in openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/ (OpenSpec pass 2026-09-27).",
 				"change": "automation-job-calendar-schedules",
 				"requirement": [
-					"openspec/changes/automation-job-calendar-schedules/specs/job-scheduling :: A job can carry a calendar schedule instead of an interval (REQ-JCAL-001)",
-					"openspec/changes/automation-job-calendar-schedules/specs/job-scheduling :: The next run follows the calendar after success and after failure (REQ-JCAL-002)"
+					"openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling :: A job can carry a calendar schedule instead of an interval (REQ-JCAL-001)",
+					"openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling :: The next run follows the calendar after success and after failure (REQ-JCAL-002)"
 				]
 			},
 			"reachedOn": "nothing reaches it",

@@ -15,7 +15,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
+ * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
  */
 
 declare(strict_types=1);

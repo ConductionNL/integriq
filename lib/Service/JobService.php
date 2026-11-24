@@ -636,7 +636,7 @@ class JobService implements JobServiceInterface {
 	 *
 	 * @return array The job's data with `nextRun` and `scheduleFingerprint` set.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
 	 */
 	private function withCalendarNextRun(array $jobData): array {
 		$schedule = $jobData['schedule'];
@@ -664,7 +664,7 @@ class JobService implements JobServiceInterface {
 	 *
 	 * @return boolean True when the next run must be computed before the job may run.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
 	 */
 	private function calendarNeedsNextRun(array $jobData): bool {
 		return ($jobData['scheduleFingerprint'] ?? null) !== $this->calendar->fingerprint(schedule: $jobData['schedule']);
@@ -678,7 +678,7 @@ class JobService implements JobServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
 	 */
 	private function scheduleCalendarJob(ObjectEntity $job, array $jobData): void {
 		// System write, unscoped: the cron pass that schedules it has no user.
@@ -695,7 +695,7 @@ class JobService implements JobServiceInterface {
 	 *
 	 * @return DateTimeImmutable Now, from the injected clock when there is one.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
 	 */
 	private function now(): DateTimeImmutable {
 		if ($this->timeFactory !== null) {

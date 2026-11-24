@@ -15,7 +15,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+ * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
  */
 
 declare(strict_types=1);
