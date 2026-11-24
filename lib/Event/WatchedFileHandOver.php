@@ -15,7 +15,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+ * @spec openspec/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCP\Files\File;
  * own; integriq keeps the reference it answered. It sits beside the event,
  * and takes the synchronization and its source as they are stored.
  *
- * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+ * @spec openspec/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
  */
 class WatchedFileHandOver {
 
@@ -55,7 +55,7 @@ class WatchedFileHandOver {
 	 *
 	 * @return string|null The accepting app's reference, or null when nobody accepted.
 	 *
-	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+	 * @spec openspec/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
 	 */
 	public function handOver(array $synchronization, array $source, File $file): ?string {
 		$intakeApp = trim((string)(($synchronization['sourceConfig'] ?? [])['intakeApp'] ?? ''));

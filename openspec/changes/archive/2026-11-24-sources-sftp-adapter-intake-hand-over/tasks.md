@@ -9,7 +9,7 @@ Every test named here fails on `development` today: no
 `WatchedFileArrivedEvent` exists.
 
 ### Task 8: Target intake through `WatchedFileArrivedEvent`
-- **spec_ref**: `openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005`
+- **spec_ref**: `openspec/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005`
 - **files**: `lib/Event/WatchedFileArrivedEvent.php`, `lib/BackgroundJob/WatchedFileIngestJob.php`, `docs/features/watched-folder.md` (the contract for filinq and any other intake: the constructor, the six getters with their return types, `accept(string $appId, string $reference): bool`, every result key, and the `class_exists()` guard a consumer needs when integriq is absent)
 - **acceptance_criteria**:
   - The class has exactly the public surface of REQ-SFTP-005: the constructor `(string $synchronizationId, string $sourceId, string $intakeApp, int $fileId, string $path, string $ownerUid)`, `getSynchronizationId(): string`, `getSourceId(): string`, `getIntakeApp(): string`, `getFileId(): int`, `getPath(): string`, `getOwnerUid(): string`, `accept(string $appId, string $reference): bool` and `getResult(): array`. filinq's `scan-intake-from-a-watched-folder` copies these literals into its contract test, so a rename on either side fails a test.

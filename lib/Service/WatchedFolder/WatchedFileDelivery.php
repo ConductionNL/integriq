@@ -15,7 +15,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+ * @spec openspec/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use RuntimeException;
  * the file became, which the contract records; null means no intake app
  * accepted it, and the file is left as it is.
  *
- * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+ * @spec openspec/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
  */
 class WatchedFileDelivery {
 
@@ -58,7 +58,7 @@ class WatchedFileDelivery {
 	 *
 	 * @throws RuntimeException When a mapping target names no register and schema.
 	 *
-	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+	 * @spec openspec/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
 	 */
 	public function deliver(WatchedFolder $watched, File $file): ?string {
 		if ($watched->intakeApp() !== null) {
