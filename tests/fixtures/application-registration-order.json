@@ -267,6 +267,7 @@
 	"context.registerService(OCA\\Integriq\\Adapters\\Berichtenbox\\BerichtenboxClient, closure, bool)",
 	"context.registerServiceAlias(OCA\\Integriq\\Adapters\\LearningMaterial\\SruTransport, OCA\\Integriq\\Adapters\\LearningMaterial\\EdurepHttpTransport)",
 	"context.registerService(OCA\\Integriq\\Adapters\\LearningMaterial\\LearningMaterialSource, closure, bool)",
+	"context.registerService(OCA\\Integriq\\Adapters\\LearningMaterial\\MaterialFileFetcher, closure, bool)",
 	"context.registerEventListener(OCA\\Integriq\\Event\\ConnectionStatusReportedEvent, OCA\\Integriq\\EventListener\\ConnectionStatusReportedListener, int)",
 	"context.registerEventListener(OCA\\Integriq\\Event\\ConnectionRefreshRequestedEvent, OCA\\Integriq\\EventListener\\ConnectionRefreshRequestedListener, int)",
 	"context.registerEventListener(OCP\\App\\Events\\AppEnableEvent, OCA\\Integriq\\EventListener\\ConnectionAppLifecycleListener, int)",

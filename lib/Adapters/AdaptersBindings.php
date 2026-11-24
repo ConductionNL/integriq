@@ -41,6 +41,9 @@ use OCA\Integriq\Adapters\LearningMaterial\EdurepSourceMock;
 use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialService;
 use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialServiceInterface;
 use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialSource;
+use OCA\Integriq\Adapters\LearningMaterial\MaterialFileFetcher;
+use OCA\Integriq\Adapters\LearningMaterial\MaterialFileFetcherHttp;
+use OCA\Integriq\Adapters\LearningMaterial\MaterialFileFetcherMock;
 use OCA\Integriq\Adapters\LearningMaterial\SruTransport;
 use OCA\Integriq\Adapters\Lvs\UwlrResultImportClient;
 use OCA\Integriq\Adapters\Lvs\UwlrResultImportClientHttp;
@@ -302,7 +305,7 @@ final class AdaptersBindings {
 	}//end registerBerichtenboxClient()
 
 	/**
-	 * Binds the learning material source to Edurep, live unless `edurep.feature_flag` is `0` or `false`.
+	 * Binds the learning material source to Edurep and its file fetcher, live unless `edurep.feature_flag` is `0` or `false`.
 	 *
 	 * Edurep is a free, keyless public search, so live is the default; the
 	 * flag switches an instance to the recorded responses.
@@ -322,6 +325,15 @@ final class AdaptersBindings {
 				$mock = ['0' => EdurepSourceMock::class, 'false' => EdurepSourceMock::class];
 
 				return $c->get($mock[$raw] ?? EdurepSourceHttp::class);
+			}
+		);
+		$context->registerService(
+			MaterialFileFetcher::class,
+			static function ($c) {
+				$raw = strtolower($c->get('OCP\IAppConfig')->getValueString('integriq', 'edurep.feature_flag', '1'));
+				$mock = ['0' => MaterialFileFetcherMock::class, 'false' => MaterialFileFetcherMock::class];
+
+				return $c->get($mock[$raw] ?? MaterialFileFetcherHttp::class);
 			}
 		);
 	}//end registerLearningMaterialSource()
