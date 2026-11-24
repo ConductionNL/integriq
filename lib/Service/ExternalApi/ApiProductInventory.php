@@ -69,7 +69,7 @@ class ApiProductInventory {
 	/**
 	 * Constructor.
 	 *
-	 * @param OrObjectService  Reads and writes the inventory rows.
+	 * @param OrObjectService $objectService Reads and writes the inventory rows.
 	 * @param IURLGenerator   $urlGenerator  Builds the gateway and description addresses.
 	 *
 	 * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-apis-on-other-gateways-are-listed-with-integriqs-own-req-fedg-001
@@ -100,32 +100,6 @@ class ApiProductInventory {
 		$this->write(product: $product, ended: $ended);
 
 	}//end mirror()
-
-	/**
-	 * Write the inventory row of every API product, for products saved before the inventory listed them.
-	 *
-	 * @return integer How many products were written.
-	 *
-	 * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-apis-on-other-gateways-are-listed-with-integriqs-own-req-fedg-001
-	 */
-	public function mirrorAll(): int {
-		$found = $this->objectService->findAll(
-			config: ['filters' => ['register' => self::REGISTER, 'schema' => 'api_product'], 'limit' => 1000]
-		);
-
-		$written = 0;
-		foreach ((array)($found['results'] ?? $found) as $product) {
-			if ($product instanceof ObjectEntity === false) {
-				continue;
-			}
-
-			$this->mirror(product: $product);
-			$written++;
-		}
-
-		return $written;
-
-	}//end mirrorAll()
 
 	/**
 	 * Mark a deleted product's inventory row as no longer seen; the row itself stays, as history.

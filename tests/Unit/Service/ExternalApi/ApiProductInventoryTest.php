@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\ExternalApi;
 
 use OCA\Integriq\EventListener\ApiProductInventoryListener;
-use OCA\Integriq\Repair\MirrorApiProductsIntoInventory;
 use OCA\Integriq\Service\ExternalApi\ApiProductInventory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -35,10 +34,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\Event;
 use OCP\IURLGenerator;
-use OCP\Migration\IOutput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -47,7 +44,6 @@ use RuntimeException;
  */
 #[CoversClass(ApiProductInventory::class)]
 #[CoversClass(ApiProductInventoryListener::class)]
-#[CoversClass(MirrorApiProductsIntoInventory::class)]
 class ApiProductInventoryTest extends TestCase {
 
 	/**
@@ -56,13 +52,6 @@ class ApiProductInventoryTest extends TestCase {
 	 * @var array<string, array<string, mixed>>
 	 */
 	private array $rows = [];
-
-	/**
-	 * The API products the fake object service holds.
-	 *
-	 * @var list<ObjectEntity>
-	 */
-	private array $products = [];
 
 	/**
 	 * Every save, as [object, uuid option].
@@ -99,10 +88,6 @@ class ApiProductInventoryTest extends TestCase {
 		$objects->method('findAll')->willReturnCallback(
 			function (array $config): array {
 				$filters = $config['filters'];
-				if ($filters['schema'] === 'api_product') {
-					return ['results' => $this->products];
-				}
-
 				$found = [];
 				foreach ($this->rows as $uuid => $row) {
 					if (($row['gatewayApiId'] ?? null) === ($filters['gatewayApiId'] ?? null)) {
@@ -200,18 +185,6 @@ class ApiProductInventoryTest extends TestCase {
 		$inventory->mirror(product: self::product(uuid: 'p-1', data: []));
 		$inventory->retire(product: self::product(uuid: 'p-1', data: []));
 		$this->assertNotNull(actual: $this->rows['row-0']['sourceEndedAt']);
-	}
-
-	/**
-	 * Every product gets its row, and the count is answered.
-	 *
-	 * @return void
-	 */
-	public function testMirrorAllListsEveryProduct(): void {
-		$this->products = [self::product(uuid: 'p-1', data: []), self::product(uuid: 'p-2', data: ['name' => 'Invoices'])];
-
-		$this->assertSame(expected: 2, actual: $this->inventory()->mirrorAll());
-		$this->assertSame(expected: ['Orders', 'Invoices'], actual: array_column(array_values($this->rows), 'name'));
 	}
 
 	/**
@@ -316,27 +289,4 @@ class ApiProductInventoryTest extends TestCase {
 		$listener->handle(event: new ObjectCreatedEvent(self::product(uuid: 'p-1', data: [])));
 	}
 
-	/**
-	 * The repair step backfills every product as the system, and reports a failure instead of throwing.
-	 *
-	 * @return void
-	 */
-	public function testTheRepairStepBackfillsAndNeverThrows(): void {
-		$this->products = [self::product(uuid: 'p-1', data: [])];
-		$container = $this->createMock(originalClassName: ContainerInterface::class);
-		$container->method('get')->willReturn($this->inventory());
-		$output = $this->createMock(originalClassName: IOutput::class);
-		$output->expects($this->once())->method('info')->with('Integriq: 1 API product(s) listed in the API inventory');
-		$step = new MirrorApiProductsIntoInventory(container: $container);
-
-		$this->assertStringContainsString(needle: 'API inventory', haystack: $step->getName());
-		$step->run(output: $output);
-		$this->assertCount(expectedCount: 1, haystack: $this->rows);
-
-		$broken = $this->createMock(originalClassName: ContainerInterface::class);
-		$broken->method('get')->willThrowException(new RuntimeException('no OpenRegister'));
-		$warned = $this->createMock(originalClassName: IOutput::class);
-		$warned->expects($this->once())->method('warning');
-		(new MirrorApiProductsIntoInventory(container: $broken))->run(output: $warned);
-	}
 }

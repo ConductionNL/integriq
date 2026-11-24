@@ -15,13 +15,14 @@ Kind: code. Size M. Row `integriq:gw-federated`.
       each API product is kept as an `external_api` row on the gateway and vendor `integriq` (schema 1.2.0 adds the
       vendor), `gatewayApiId` the product uuid, `baseUrl` the gateway's endpoint base and `gatewayUrl` the product's
       published OpenAPI description. `Service/ExternalApi/ApiProductInventory` writes it; `ApiProductInventoryListener`
-      runs it on a created or updated product and marks the row no longer seen on a retired or deleted one;
-      `Repair/MirrorApiProductsIntoInventory` backfills every product (post-migration and install). A product row has
-      no stored document, so "Bring behind integriq" is not offered on it.
+      runs it on a created or updated product and marks the row no longer seen on a retired or deleted one. A product
+      saved before this change is listed from its next save: a backfill repair step would need an info.xml version
+      bump in the same change (gate-110), which the release workflow owns. A product row has no stored document, so
+      "Bring behind integriq" is not offered on it.
 - [x] Test (Playwright): written, runs in nightly. `tests/e2e/api-inventory.spec.ts` seeds an API product next to the
       two external APIs and expects its row with gateway `integriq` and its version, gone under the Azure filter.
       PHPUnit: `tests/Unit/Service/ExternalApi/ApiProductInventoryTest.php` (row shape, written over, retired and
-      deleted, backfill, listener scope and failure, repair step).
+      deleted, listener scope and failure).
 
 ### Task 2: The Amazon connector waits for the broker's aws-sigv4 scheme
 - **spec_ref**: `openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-each-vendor-is-read-on-a-schedule-req-fedg-002`

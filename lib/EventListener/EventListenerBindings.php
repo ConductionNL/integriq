@@ -325,8 +325,8 @@ final class EventListenerBindings {
 		// retired or newly versioned API product tells its subscribers.
 		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ProductChangeNoticeListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ProductChangeNoticeListener::class);
-		// gateway-federated-api-discovery REQ-FEDG-001: each API product is listed in the API
-		// inventory next to the APIs found on other gateways.
+		// REQ-FEDG-001 (gateway-federated-api-discovery): each API product is listed in the
+		// API inventory next to the APIs found on other gateways.
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ApiProductInventoryListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ApiProductInventoryListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ApiProductInventoryListener::class);
