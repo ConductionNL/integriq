@@ -82,6 +82,26 @@ choice, made in task 1: a maintained library with XML signature wrapping
 defences and no open advisories in `composer audit`. Hand-rolled XML signature
 verification is not an option.
 
+**SAML library, chosen (task 1, 24 November 2026).** `onelogin/php-saml` 4.6.0
+(MIT, the SAML-Toolkits project, releases through 2026), on
+`robrichards/xmlseclibs` 4.0.2 (BSD-3-Clause) and `phpseclib/phpseclib` 3
+(MIT). It refuses a second assertion, a duplicated ID or reference and a
+signature over another element than the Response or its one assertion (the
+wrapping defences), loads every document with `LIBXML_NONET` and refuses any
+DOCTYPE (no external entities), validates against the SAML 2.0 schemas, and
+rejects SHA-1 when `rejectDeprecatedAlgorithm` is on, which the adapter sets.
+`composer audit` reports no advisory for any of the four packages (the one
+open audit finding is twig, unrelated). Nextcloud's own `user_saml` app is
+built on the same toolkit, so administrators and reviewers meet one known
+code base. `simplesamlphp/saml2` was the alternative: equally maintained,
+but it pulls in a PSR-7/HTTP stack and a container for a job this app does
+with one SP and one callback. The toolkit compares the Destination and
+Recipient with the address the request arrived on, which behind a reverse
+proxy is not the published one, so the adapter pins that address to its own
+assertion consumer service for the length of the check; it supports the
+HTTP Redirect binding for the AuthnRequest, because the adapter interface
+answers a redirect, not a form.
+
 ### D2. Per-organisation registration as an OpenRegister object
 
 Schema `idpRegistration` in a `lib/Settings/register.d/` fragment of the

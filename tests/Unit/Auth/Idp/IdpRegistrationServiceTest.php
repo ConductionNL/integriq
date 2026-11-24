@@ -24,6 +24,8 @@ namespace OCA\Integriq\Tests\Unit\Auth\Idp;
 use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
 use OCA\Integriq\Auth\Idp\Adapter\OidcRelyingPartyAdapter;
 use OCA\Integriq\Auth\Idp\Adapter\OidcRelyingPartyAdapterFactory;
+use OCA\Integriq\Auth\Idp\Adapter\SamlServiceProviderAdapter;
+use OCA\Integriq\Auth\Idp\Adapter\SamlServiceProviderAdapterFactory;
 use OCA\Integriq\Auth\Idp\IdpAdapterRegistry;
 use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
 use OCA\Integriq\Auth\Idp\IdpReadiness;
@@ -416,7 +418,7 @@ class IdpRegistrationServiceTest extends TestCase {
 		$this->flag = true;
 		$this->stored = [$this->object('reg-1', self::oidc(['kind' => 'saml-sp', 'idpMetadataUrl' => 'https://idp.example/md']))];
 		$this->assertInstanceOf(LogGovernmentIdpAdapter::class, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
-		$this->assertSame(['reg-1'], $built, 'no builder for saml-sp yet, so none is called');
+		$this->assertSame(['reg-1'], $built, 'the saml-sp kind has no builder given here, so none is called');
 	}//end testTheRegistryBindsLiveOnlyWhenReady()
 
 
@@ -450,6 +452,33 @@ class IdpRegistrationServiceTest extends TestCase {
 		$this->stored = [$this->object('reg-1', self::oidc(['clientId' => '']))];
 		$this->assertInstanceOf(LogGovernmentIdpAdapter::class, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
 	}//end testAReadyOidcRegistrationGetsTheBuiltInOidcAdapter()
+
+	/**
+	 * A ready `saml-sp` registration gets the SAML Service Provider adapter this app ships.
+	 *
+	 * @return void
+	 */
+	public function testAReadySamlRegistrationGetsTheBuiltInSamlAdapter(): void {
+		$this->stored = [$this->object('reg-1', self::oidc(['kind' => 'saml-sp', 'idpMetadataUrl' => 'https://idp.example/md']))];
+		$built = [];
+		$factory = $this->createMock(SamlServiceProviderAdapterFactory::class);
+		$adapter = $this->createMock(SamlServiceProviderAdapter::class);
+		$factory->expects($this->once())->method('build')->willReturnCallback(
+			function (IdpRegistration $registration) use (&$built, $adapter): SamlServiceProviderAdapter {
+				$built[] = $registration->id;
+				return $adapter;
+			}
+		);
+		$registry = new IdpAdapterRegistry(
+			boundAdapter: new LogGovernmentIdpAdapter(logger: new NullLogger()),
+			logger: new NullLogger(),
+			registrations: $this->service(),
+			samlAdapters: $factory
+		);
+
+		$this->assertSame($adapter, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
+		$this->assertSame(['reg-1'], $built);
+	}//end testAReadySamlRegistrationGetsTheBuiltInSamlAdapter()
 
 	/**
 	 * Without registrations the registry refuses, and an unknown provider throws.

@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Auth\Idp;
 
 use OCA\Integriq\Auth\Idp\Adapter\OidcRelyingPartyAdapterFactory;
+use OCA\Integriq\Auth\Idp\Adapter\SamlServiceProviderAdapterFactory;
 use OCA\Integriq\Exception\IdpAssertionException;
 use Psr\Log\LoggerInterface;
 
@@ -62,6 +63,10 @@ class IdpAdapterRegistry {
 	 *                                              taking the IdpRegistration; a kind without one is never live.
 	 * @param OidcRelyingPartyAdapterFactory|null $oidcAdapters Builds an `oidc-rp` registration's adapter when
 	 *                                                         $kindAdapters names no builder for that kind.
+	 * @param SamlServiceProviderAdapterFactory|null $samlAdapters Builds a `saml-sp` registration's adapter when
+	 *                                                            $kindAdapters names no builder for that kind.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
 	 */
 	public function __construct(
 		private readonly GovernmentIdpAdapterInterface $boundAdapter,
@@ -69,6 +74,7 @@ class IdpAdapterRegistry {
 		private readonly ?IdpRegistrationService $registrations = null,
 		private readonly array $kindAdapters = [],
 		private readonly ?OidcRelyingPartyAdapterFactory $oidcAdapters = null,
+		private readonly ?SamlServiceProviderAdapterFactory $samlAdapters = null,
 	) {
 
 	}//end __construct()
@@ -143,10 +149,16 @@ class IdpAdapterRegistry {
 	 * @param string $kind The registration kind.
 	 *
 	 * @return callable|null
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
 	 */
 	private function builtInBuilder(string $kind): ?callable {
 		if ($kind === IdpRegistration::KIND_OIDC && $this->oidcAdapters !== null) {
 			return $this->oidcAdapters->build(...);
+		}
+
+		if ($kind === IdpRegistration::KIND_SAML && $this->samlAdapters !== null) {
+			return $this->samlAdapters->build(...);
 		}
 
 		return null;
