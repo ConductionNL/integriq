@@ -122,15 +122,27 @@ export function lockedOutConsumers({ added, consumers, callers }) {
 	const scopes = [...new Set([...added.read, ...added.write])]
 	if (scopes.length === 0 || !Array.isArray(consumers)) return []
 	const onlyCallers = callers instanceof Set && callers.size > 0
-	const lockedOut = []
-	for (const consumer of consumers) {
-		const ids = identifiersOf(consumer)
-		if (ids.length === 0) continue
-		if (onlyCallers && !ids.some((id) => callers.has(id))) continue
-		const held = new Set(Array.isArray(consumer.scopes) ? consumer.scopes : [])
-		const missing = scopes.filter((scope) => !held.has(scope))
-		if (missing.length === 0) continue
-		lockedOut.push({ id: ids[0], name: String(consumer.name || ids[0]), missing })
-	}
-	return lockedOut.sort((a, b) => a.name.localeCompare(b.name))
+	return consumers
+		.map((consumer) => lockoutOf(consumer, scopes, onlyCallers ? callers : null))
+		.filter(Boolean)
+		.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+/**
+ * One consumer's lockout: the scopes it lacks, or null when it lacks none,
+ * has no identifier, or is not among the callers.
+ *
+ * @param {object} consumer The consumer object.
+ * @param {Array<string>} scopes The added scopes.
+ * @param {Set<string>|null} callers The calling consumers' identifiers, or null for every consumer.
+ * @return {{id: string, name: string, missing: Array<string>}|null} The lockout.
+ */
+function lockoutOf(consumer, scopes, callers) {
+	const ids = identifiersOf(consumer)
+	if (ids.length === 0) return null
+	if (callers && !ids.some((id) => callers.has(id))) return null
+	const held = new Set(Array.isArray(consumer.scopes) ? consumer.scopes : [])
+	const missing = scopes.filter((scope) => !held.has(scope))
+	if (missing.length === 0) return null
+	return { id: ids[0], name: String(consumer.name || ids[0]), missing }
 }

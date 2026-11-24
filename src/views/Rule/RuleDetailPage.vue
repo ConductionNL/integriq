@@ -842,6 +842,7 @@ export default {
 	margin: 8px 0 0 20px;
 	list-style: disc;
 }
+
 .rule-detail-page__helper--error {
 	color: var(--color-error);
 }
