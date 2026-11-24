@@ -35,7 +35,7 @@ use OCP\IRequest;
  * (`intune`, `jamf-pro`, `citrix-daas` or `azure-virtual-desktop`); the rest
  * of `configuration` holds the vendor settings and an optional `userMapping`.
  *
- * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+ * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
  */
 class EndpointWorkspaceController extends Controller {
 
@@ -61,7 +61,7 @@ class EndpointWorkspaceController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+	 * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function index(string $id): JSONResponse {

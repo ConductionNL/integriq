@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connectors-endpoint-workspace-adapters/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/tasks.md#task-2
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -32,7 +32,7 @@ use OCP\IUserSession;
  * reports: the caller is checked first, then the source, its adapter and its
  * credential, and only then is the vendor called.
  *
- * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+ * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
  */
 class EndpointWorkspaceListing implements EndpointWorkspaceListingInterface {
 
@@ -59,7 +59,7 @@ class EndpointWorkspaceListing implements EndpointWorkspaceListingInterface {
 	 *
 	 * @return array{0: int, 1: array<string, mixed>}
 	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+	 * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
 	 */
 	public function forSource(string $id): array {
 		$user = $this->userSession->getUser();

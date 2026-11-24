@@ -11210,11 +11210,11 @@
 				"evidence": "Not built: only the Azure Virtual Desktop reference adapter exists, registered but called by no route or page; no Intune, Jamf or Citrix adapter (decision 389). Code that exists: openspec/specs/endpoint-workspace-connectors/spec.md is the main spec; reference adapter lib/Service/Adapter/EndpointWorkspace/AzureVirtualDesktopAdapter.php, registered in lib/Service/ServiceBindings.php:445.",
 				"spec": "openspec/specs/endpoint-workspace-connectors",
 				"requirement": [
-					"openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors :: An administrator sees the sessions or devices of a connected workspace manager (REQ-EWC-008)",
+					"openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors :: An administrator sees the sessions or devices of a connected workspace manager (REQ-EWC-008)",
 					"openspec/specs/endpoint-workspace-connectors :: Endpoint and virtual-desktop / workspace connectors SHALL register through the integration registry per ADR-019 (REQ-EWC-001)",
 					"openspec/specs/endpoint-workspace-connectors :: Each EWC adapter manifest entry SHALL declare a fixed capability vocabulary scoped to session-enumeration, user-mapping, and audit-event ingestion (REQ-EWC-002)"
 				],
-				"plan": "openspec/changes/connectors-endpoint-workspace-adapters"
+				"plan": "openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters"
 			},
 			"n8n": "unknown",
 			"tyk": "unknown",
