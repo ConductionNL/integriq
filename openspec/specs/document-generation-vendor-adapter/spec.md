@@ -38,12 +38,15 @@ Integriq MUST handle `DocumentRenderRequestedEvent` by creating a
 calling the source's provider, and answering the result slot with the job
 id or a structured refusal. The job MUST NOT store the data. Every
 terminal state MUST dispatch `DocumentRenderedEvent` with the job id,
-`requestedBy` and the result file reference or the error.
+`requestedBy` and the result file reference or the error. A `rendered`
+outcome MUST carry the fetched document on the event (`getDocument()`), so
+the requesting app can file it; the job keeps only its length
+(`documentBytes`).
 
 #### Scenario: filinq renders a beschikking through SmartDocuments
 - GIVEN filinq dispatches `DocumentRenderRequestedEvent` for a template on a mock-mode SmartDocuments source
 - WHEN integriq handles it
-- THEN a job in `queued` exists with the data hash and no data, the result slot carries its id, and a later status poll moves it to `rendered` and dispatches `DocumentRenderedEvent` with the file reference
+- THEN a job in `queued` exists with the data hash and no data, the result slot carries its id, and a later status poll moves it to `rendered` and dispatches `DocumentRenderedEvent` with the file reference and the fetched document
 - @e2e exclude cross-app typed events; covered by PHPUnit with a stub requester and a mock-mode source
 
 #### Scenario: A vendor error keeps the job and names the cause
