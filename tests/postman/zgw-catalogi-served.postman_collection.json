@@ -1,0 +1,1241 @@
+{
+  "info": {
+    "name": "Integriq — Catalogi API facade (zgw-catalogi-served)",
+    "description": "zgw-catalogi-served task 5, the Newman half. A Documenten API client with an HS256 ZGW JWT and the scope `catalogi.lezen` lists informatieobjecttypen in the paged envelope, follows a type's own `url` and its `catalogus` URL and gets the same resources back, filters on `catalogus`; a concept type stays hidden from a client without concept reads; a client whose binding entry lacks `catalogi.lezen` gets 403, no token gets 401; POST, PUT, PATCH and DELETE answer 405 and write nothing. A register and schema of document types, two JWT consumers and a `catalogi_binding` are staged through OpenRegister's APIs under this run's marker and deleted again. Precondition: no other `catalogi_binding` resolves on the instance (the first request checks it and stops the run otherwise). The unconfigured 404, the refused write path and the Woo starter set are also covered by PHPUnit and by `tests/e2e/zgw-catalogi-served.spec.ts`. Run with `tests/postman/integriq.postman_environment.json`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{admin_user}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{admin_password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// A fresh HS256 ZGW JWT per request for both clients; the credential bridge caps the lifetime and refuses a replayed jti.",
+          "const stamp = pm.collectionVariables.get('ctStamp');",
+          "if (stamp) {",
+          "    const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+          "    const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+          "    const sign = (client, secret) => {",
+          "        const now = Math.floor(Date.now() / 1000);",
+          "        const head = enc({ alg: 'HS256', typ: 'JWT' });",
+          "        const body = enc({ iss: client, client_id: client, sub: client, iat: now, nbf: now - 5, exp: now + 300, jti: client + '-' + now + '-' + Math.floor(Math.random() * 1e9) });",
+          "        return head + '.' + body + '.' + b64url(CryptoJS.HmacSHA256(head + '.' + body, secret));",
+          "    };",
+          "    pm.collectionVariables.set('ctReaderJwt', sign(pm.collectionVariables.get('ctReader'), pm.collectionVariables.get('ctReaderSecret')));",
+          "    pm.collectionVariables.set('ctOtherJwt', sign(pm.collectionVariables.get('ctOther'), pm.collectionVariables.get('ctOtherSecret')));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [],
+  "item": [
+    {
+      "name": "Precondition: no catalogue resolves yet (the gate answers 404 catalogue-not-configured before it asks for a token)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const stamp = Date.now().toString(36);",
+              "pm.collectionVariables.set('ctStamp', stamp);",
+              "pm.collectionVariables.set('ctRegister', 'newman-zcs-' + stamp + '-documenten');",
+              "pm.collectionVariables.set('ctSchemaSlug', 'newman-zcs-' + stamp + '-documenttype');",
+              "pm.collectionVariables.set('ctReader', 'newman-zcs-' + stamp + '-reader');",
+              "pm.collectionVariables.set('ctOther', 'newman-zcs-' + stamp + '-other');",
+              "// HS256 secrets of at least 32 bytes: the credential bridge refuses a shorter one.",
+              "pm.collectionVariables.set('ctReaderSecret', 'newman-zcs-' + stamp + '-' + pm.variables.replaceIn('{{$guid}}') + pm.variables.replaceIn('{{$guid}}'));",
+              "pm.collectionVariables.set('ctOtherSecret', 'newman-zcs-' + stamp + '-' + pm.variables.replaceIn('{{$guid}}') + pm.variables.replaceIn('{{$guid}}'));",
+              "pm.collectionVariables.set('ctCatalogusUuid', pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const configured = pm.response.code !== 404;",
+              "pm.test('no other catalogi_binding resolves on this instance', () => {",
+              "    pm.expect(pm.response.code, 'a binding already resolves; this collection would read another catalogue').to.eql(404);",
+              "    pm.expect(pm.response.json().code).to.eql('catalogue-not-configured');",
+              "});",
+              "if (configured) { postman.setNextRequest(null); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: schema of document types (OR)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"Newman document type {{ctStamp}}\", \"slug\": \"{{ctSchemaSlug}}\", \"properties\": {\"name\": {\"type\": \"string\"}, \"confidentiality\": {\"type\": \"string\"}, \"category\": {\"type\": \"string\"}, \"categoryUri\": {\"type\": \"string\"}, \"active\": {\"type\": \"boolean\"}, \"validFrom\": {\"type\": \"string\"}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "const b = pm.response.json();",
+              "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id));",
+              "pm.expect(id, 'the created id').to.be.a('string').and.not.empty;",
+              "pm.collectionVariables.set('ctSchema', String(id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: register holding the schema (OR)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"Newman documenten {{ctStamp}}\", \"slug\": \"{{ctRegister}}\", \"schemas\": [\"{{ctSchema}}\"]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "const b = pm.response.json();",
+              "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id));",
+              "pm.expect(id, 'the created id').to.be.a('string').and.not.empty;",
+              "pm.collectionVariables.set('ctRegisterId', String(id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: a definitive type \"Besluit\" (openbaar, besluiten)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Besluit\", \"confidentiality\": \"openbaar\", \"category\": \"besluiten\", \"active\": true, \"validFrom\": \"2026-01-01\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "const b = pm.response.json();",
+              "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id));",
+              "pm.expect(id, 'the created id').to.be.a('string').and.not.empty;",
+              "pm.collectionVariables.set('ctType', String(id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: a concept type (active false)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Concept notitie\", \"confidentiality\": \"intern\", \"category\": \"overig\", \"active\": false}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "const b = pm.response.json();",
+              "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id));",
+              "pm.expect(id, 'the created id').to.be.a('string').and.not.empty;",
+              "pm.collectionVariables.set('ctConcept', String(id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: JWT consumer of the reading client",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"{{ctReader}}\", \"description\": \"newman zgw-catalogi-served reader\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{ctReaderSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "const b = pm.response.json();",
+              "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id));",
+              "pm.expect(id, 'the created id').to.be.a('string').and.not.empty;",
+              "pm.collectionVariables.set('ctReaderConsumer', String(id));",
+              "pm.test('the secret is not returned', () => pm.expect(JSON.stringify(b)).to.not.include(pm.collectionVariables.get('ctReaderSecret')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: JWT consumer of a client without catalogi.lezen",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"{{ctOther}}\", \"description\": \"newman zgw-catalogi-served client without the scope\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{ctOtherSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "const b = pm.response.json();",
+              "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id));",
+              "pm.expect(id, 'the created id').to.be.a('string').and.not.empty;",
+              "pm.collectionVariables.set('ctOtherConsumer', String(id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup: catalogi_binding onto the schema, the reader with catalogi.lezen, the other client without it",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/catalogi_binding"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"domein\": \"NEWMN\", \"rsin\": \"123456782\", \"naam\": \"Newman catalogus {{ctStamp}}\", \"publishedUuid\": \"{{ctCatalogusUuid}}\", \"register\": \"{{ctRegister}}\", \"schema\": \"{{ctSchemaSlug}}\", \"clients\": [{\"clientId\": \"{{ctReader}}\", \"scopes\": [\"catalogi.lezen\"], \"concepts\": false}, {\"clientId\": \"{{ctOther}}\", \"scopes\": [\"documenten.lezen\"], \"concepts\": false}]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+              "const b = pm.response.json();",
+              "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id));",
+              "pm.expect(id, 'the created id').to.be.a('string').and.not.empty;",
+              "pm.collectionVariables.set('ctBinding', String(id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "No token: 401 not-authenticated",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('401', () => pm.response.to.have.status(401));",
+              "pm.test('not-authenticated', () => pm.expect(pm.response.json().code).to.eql('not-authenticated'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "A client without catalogi.lezen: 403 permission-denied",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctOtherJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('403', () => pm.response.to.have.status(403));",
+              "pm.test('permission-denied', () => pm.expect(pm.response.json().code).to.eql('permission-denied'));",
+              "pm.test('no rows', () => pm.expect(pm.response.json().results).to.be.undefined);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List informatieobjecttypen: the paged envelope, the definitive type only",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('the paged envelope', () => {",
+              "    pm.expect(b).to.have.all.keys('count', 'next', 'previous', 'results');",
+              "    pm.expect(b.results).to.be.an('array');",
+              "});",
+              "const ids = b.results.map(r => r.uuid);",
+              "pm.test('the definitive type is listed', () => pm.expect(ids).to.include(pm.collectionVariables.get('ctType')));",
+              "pm.test('the concept type is not', () => pm.expect(ids).to.not.include(pm.collectionVariables.get('ctConcept')));",
+              "pm.test('count matches the rows', () => pm.expect(b.count).to.eql(1));",
+              "const row = b.results.find(r => r.uuid === pm.collectionVariables.get('ctType')) || {};",
+              "pm.test('every url is absolute and served here', () => {",
+              "    pm.expect(row.url).to.match(/^https?:\\/\\//);",
+              "    pm.expect(row.url).to.include('/apps/integriq/catalogi/api/v1/informatieobjecttypen/' + row.uuid);",
+              "    pm.expect(row.catalogus).to.include('/apps/integriq/catalogi/api/v1/catalogussen/' + pm.collectionVariables.get('ctCatalogusUuid'));",
+              "});",
+              "pm.collectionVariables.set('ctTypeUrl', row.url || '');",
+              "pm.collectionVariables.set('ctCatalogusUrl', row.catalogus || '');",
+              "pm.collectionVariables.set('ctCount', String(b.count));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Follow the type's url: the InformatieObjectType",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{ctTypeUrl}}"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('the same resource', () => pm.expect(b.url).to.eql(pm.collectionVariables.get('ctTypeUrl')));",
+              "pm.test('mapped from the bound schema', () => {",
+              "    pm.expect(b.omschrijving).to.eql('Besluit');",
+              "    pm.expect(b.vertrouwelijkheidaanduiding).to.eql('openbaar');",
+              "    pm.expect(b.informatieobjectcategorie).to.eql('besluiten');",
+              "    pm.expect(b.beginGeldigheid).to.eql('2026-01-01');",
+              "    pm.expect(b.concept).to.eql(false);",
+              "    pm.expect(b.besluittypen).to.eql([]);",
+              "});",
+              "pm.test('its catalogus is the catalogue url', () => pm.expect(b.catalogus).to.eql(pm.collectionVariables.get('ctCatalogusUrl')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Follow catalogus: the catalogue resolves and lists the type",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{ctCatalogusUrl}}"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('the same resource', () => pm.expect(b.url).to.eql(pm.collectionVariables.get('ctCatalogusUrl')));",
+              "pm.test('the binding\\'s catalogue', () => {",
+              "    pm.expect(b.domein).to.eql('NEWMN');",
+              "    pm.expect(b.rsin).to.eql('123456782');",
+              "    pm.expect(b.naam).to.include('Newman catalogus');",
+              "});",
+              "pm.test('it lists the type by its url', () => pm.expect(b.informatieobjecttypen).to.include(pm.collectionVariables.get('ctTypeUrl')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List catalogussen: the catalogue in the paged envelope",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/catalogussen"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('paged', () => pm.expect(b.results).to.be.an('array'));",
+              "pm.test('the catalogue is listed', () => pm.expect(b.results.map(r => r.url)).to.include(pm.collectionVariables.get('ctCatalogusUrl')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter on catalogus: the type is in its catalogue",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen?catalogus={{ctCatalogusUrl}}"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "pm.test('the type is listed', () => pm.expect(pm.response.json().results.map(r => r.uuid)).to.include(pm.collectionVariables.get('ctType')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "The concept type by uuid: 404 for a client without concept reads",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctConcept}}"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "status=alles from a client without concept reads: the concept stays hidden",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen?status=alles"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "pm.test('the definitive type is listed', () => pm.expect(pm.response.json().results.map(r => r.uuid)).to.include(pm.collectionVariables.get('ctType')));",
+              "pm.test('the concept type is not', () => pm.expect(pm.response.json().results.map(r => r.uuid)).to.not.include(pm.collectionVariables.get('ctConcept')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter on another catalogus: no types",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen?catalogus=https://example.invalid/catalogi/api/v1/catalogussen/00000000-0000-4000-8000-000000000000"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "pm.test('empty', () => { pm.expect(pm.response.json().count).to.eql(0); pm.expect(pm.response.json().results).to.eql([]); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "An unknown uuid: 404",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/00000000-0000-4000-8000-00000000dead"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /catalogi/api/v1/informatieobjecttypen: 405, the catalogue is read only",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"omschrijving\": \"Newman write\", \"vertrouwelijkheidaanduiding\": \"openbaar\", \"informatieobjectcategorie\": \"besluiten\", \"catalogus\": \"{{ctCatalogusUrl}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('405', () => pm.response.to.have.status(405));",
+              "pm.test('method-not-allowed', () => pm.expect(pm.response.json().code).to.eql('method-not-allowed'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT /catalogi/api/v1/informatieobjecttypen/{{ctType}}: 405, the catalogue is read only",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctType}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"omschrijving\": \"Newman write\", \"vertrouwelijkheidaanduiding\": \"openbaar\", \"informatieobjectcategorie\": \"besluiten\", \"catalogus\": \"{{ctCatalogusUrl}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('405', () => pm.response.to.have.status(405));",
+              "pm.test('method-not-allowed', () => pm.expect(pm.response.json().code).to.eql('method-not-allowed'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PATCH /catalogi/api/v1/informatieobjecttypen/{{ctType}}: 405, the catalogue is read only",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctType}}"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"omschrijving\": \"Newman write\", \"vertrouwelijkheidaanduiding\": \"openbaar\", \"informatieobjectcategorie\": \"besluiten\", \"catalogus\": \"{{ctCatalogusUrl}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('405', () => pm.response.to.have.status(405));",
+              "pm.test('method-not-allowed', () => pm.expect(pm.response.json().code).to.eql('method-not-allowed'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE /catalogi/api/v1/informatieobjecttypen/{{ctType}}: 405, the catalogue is read only",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctType}}"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('405', () => pm.response.to.have.status(405));",
+              "pm.test('method-not-allowed', () => pm.expect(pm.response.json().code).to.eql('method-not-allowed'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /catalogi/api/v1/catalogussen: 405, the catalogue is read only",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/catalogussen"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"omschrijving\": \"Newman write\", \"vertrouwelijkheidaanduiding\": \"openbaar\", \"informatieobjectcategorie\": \"besluiten\", \"catalogus\": \"{{ctCatalogusUrl}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('405', () => pm.response.to.have.status(405));",
+              "pm.test('method-not-allowed', () => pm.expect(pm.response.json().code).to.eql('method-not-allowed'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "After the writes: nothing was written",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{ctReaderJwt}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('the count is unchanged', () => pm.expect(String(b.count)).to.eql(pm.collectionVariables.get('ctCount')));",
+              "pm.test('the type is still there, unchanged', () => {",
+              "    const row = b.results.find(r => r.uuid === pm.collectionVariables.get('ctType')) || {};",
+              "    pm.expect(row.omschrijving).to.eql('Besluit');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teardown: the binding",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/catalogi_binding/{{ctBinding}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teardown: the reader's consumer",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer/{{ctReaderConsumer}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teardown: the other client's consumer",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer/{{ctOtherConsumer}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teardown: the definitive type",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}/{{ctType}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teardown: the concept type",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}/{{ctConcept}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teardown: the register",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{ctRegisterId}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teardown: the schema",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{ctSchema}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "After teardown: no catalogue resolves again",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('404 catalogue-not-configured', () => {",
+              "    pm.response.to.have.status(404);",
+              "    pm.expect(pm.response.json().code).to.eql('catalogue-not-configured');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
