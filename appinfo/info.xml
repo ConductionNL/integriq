@@ -321,6 +321,10 @@
 			     nulled only after that entry is saved. Idempotent, never throws. -->
 			<step>OCA\Integriq\Repair\HashConsumerApiKeys</step>
 			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
+			<!-- gateway-federated-api-discovery REQ-FEDG-001: every API product gets its
+			     row in the API inventory. After InitializeRegister (external_api 1.2.0).
+			     Idempotent and never throws. -->
+			<step>OCA\Integriq\Repair\MirrorApiProductsIntoInventory</step>
 			<!-- connection-registry D5: every enabled app's
 			     lib/Settings/connections.json becomes connection rows. After
 			     InitializeRegister, so the app_connection schema exists. Idempotent
@@ -527,6 +531,10 @@
 			<step>OCA\Integriq\Repair\BroadenExchangeReadDefault</step>
 			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
 			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
+			<!-- gateway-federated-api-discovery REQ-FEDG-001: every API product gets its
+			     row in the API inventory. After InitializeRegister (external_api 1.2.0).
+			     Idempotent and never throws. -->
+			<step>OCA\Integriq\Repair\MirrorApiProductsIntoInventory</step>
 			<!-- connection-registry D5: every enabled app's
 			     lib/Settings/connections.json becomes connection rows. After
 			     InitializeRegister, so the app_connection schema exists. Idempotent

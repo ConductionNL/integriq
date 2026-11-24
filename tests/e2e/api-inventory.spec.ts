@@ -35,6 +35,11 @@ const RUN = `e2e-inv-${Date.now().toString(36)}`
 
 const AZURE_API = `Orders ${RUN}`
 const KONG_API = `Invoices ${RUN}`
+/** One of integriq's own API products, listed on the gateway `integriq` by its save. */
+const OWN_PRODUCT = `Payments ${RUN}`
+
+/** The seeded product's id, whose inventory row is removed with it. */
+let ownProductId = ''
 
 /** The description Azure API Management exported for the Orders API. */
 const ORDERS_DOCUMENT = {
@@ -91,29 +96,47 @@ test.describe('gateway-federated-api-discovery: the API inventory', () => {
 			gatewayApiId: `invoices-${RUN}`,
 			lastSeen: new Date().toISOString(),
 		})
+		ownProductId = await seedObject(request, 'api_product', {
+			name: OWN_PRODUCT,
+			productSlug: `payments-${RUN}`,
+			version: '1.0.0',
+			visibility: 'private',
+			status: 'active',
+		})
 	})
 
 	test.afterAll(async ({ request }) => {
 		for (const { schema, id } of cleanup.splice(0).reverse()) {
 			await request.delete(`${OR_BASE}/${schema}/${id}`, { failOnStatusCode: false, headers: HEADERS })
 		}
+
+		// The product's inventory row outlives it, marked no longer seen; this run removes it.
+		const rows = await request.get(`${OR_BASE}/external_api?gatewayApiId=${encodeURIComponent(ownProductId)}`, { failOnStatusCode: false, headers: HEADERS })
+		for (const row of ((await rows.json().catch(() => ({})))?.results ?? [])) {
+			await request.delete(`${OR_BASE}/external_api/${row.id ?? row['@self']?.id}`, { failOnStatusCode: false, headers: HEADERS })
+		}
 	})
 
 	// @e2e federated-api-inventory::an-architect-finds-every-api-in-one-place
-	test('the inventory lists both APIs with their gateway, and the Azure filter keeps only the Azure one', async ({ page }) => {
+	test('the inventory lists both APIs and integriq\'s own product with their gateway, and the Azure filter keeps only the Azure one', async ({ page }) => {
 		await gotoAppRoute(page, '/inventory')
 		await expectRouteMatched(page, '/inventory')
 		const azureRow = page.getByRole('row').filter({ hasText: AZURE_API })
 		const kongRow = page.getByRole('row').filter({ hasText: KONG_API })
+		const ownRow = page.getByRole('row').filter({ hasText: OWN_PRODUCT })
 		await expect(azureRow).toBeVisible({ timeout: 30_000 })
 		await expect(azureRow).toContainText(`Azure APIM ${RUN}`)
 		await expect(kongRow).toContainText(`Kong ${RUN}`)
+		await expect(ownRow, 'integriq\'s own API product is listed with the discovered APIs').toBeVisible()
+		await expect(ownRow).toContainText('integriq')
+		await expect(ownRow).toContainText('1.0.0')
 
 		// The vendor facet of the index page's filter sidebar (external_api.vendor is facetable).
 		await page.getByRole('checkbox', { name: /azure-apim/i }).first().check({ force: true })
 		await expect(azureRow).toBeVisible({ timeout: 15_000 })
 		await expect(azureRow).toContainText('2')
 		await expect(kongRow).toHaveCount(0)
+		await expect(ownRow).toHaveCount(0)
 	})
 
 	// @e2e federated-api-inventory::an-azure-api-moves-behind-integriq
