@@ -141,6 +141,8 @@ abstract class AbstractWorkspaceAdapter extends AbstractCategoryAdapterProvider 
 	 * @param array<string, mixed> $row The vendor row.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
 	 */
 	abstract protected function entryOf(array $row): array;
 
