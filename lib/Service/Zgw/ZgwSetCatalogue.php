@@ -27,7 +27,7 @@
  *
  * @link https://Integriq.app
  *
- * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
+ * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
  */
 
 declare(strict_types=1);
@@ -176,7 +176,7 @@ final class ZgwSetCatalogue {
 	 *
 	 * @return string The auth scheme.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-six-packaged-slug-referenced-zgw-consumer-sets-req-zgwc-001
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-six-packaged-slug-referenced-zgw-consumer-sets-req-zgwc-001
 	 */
 	public static function authFor(string $slug): string {
 		if (in_array($slug, self::TOKEN_AUTH_SETS, true) === true) {
@@ -193,7 +193,7 @@ final class ZgwSetCatalogue {
 	 *
 	 * @return bool True for a subscription set.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	public static function isSubscriptionSet(string $slug): bool {
 		return in_array($slug, self::SUBSCRIPTION_SETS, true);
@@ -206,7 +206,7 @@ final class ZgwSetCatalogue {
 	 *
 	 * @return bool True when it has a write-back.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
 	 */
 	public static function writesBack(string $slug): bool {
 		return in_array($slug, self::WRITE_BACK_SETS, true);
