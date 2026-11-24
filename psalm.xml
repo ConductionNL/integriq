@@ -7,6 +7,7 @@
     findUnusedBaselineEntry="true"
     findUnusedCode="true"
     findUnusedVariablesAndParams="true"
+    errorBaseline="psalm-baseline.xml"
 >
     <projectFiles>
         <directory name="lib" />
@@ -30,6 +31,11 @@
         <file name="tests/stubs/OCA/OpenRegister/Service/Consumer/ResolvedConsumer.php" />
     </stubs>
     <issueHandlers>
+        <!-- psalm 7: #[\Override] is checked by PHP when a class links. Psalm judges the
+             parent against the one vendor/nextcloud/ocp version installed here, while the app
+             runs on several Nextcloud majors, so adding the attribute from psalm's advice can
+             fatal on a major whose interface lacks the method. -->
+        <MissingOverrideAttribute errorLevel="suppress"/>
         <UndefinedDocblockClass errorLevel="suppress"/>
         <UndefinedClass>
             <errorLevel type="suppress">

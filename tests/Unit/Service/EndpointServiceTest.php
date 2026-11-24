@@ -1328,4 +1328,18 @@ class EndpointServiceTest extends TestCase {
 		$this->assertNotSame('in-secret', $step['input']['body']['password']);
 		$this->assertNotSame('out-secret', $step['output']['body']['password']);
 	}//end testProcessRulesSuccessStepIsRedacted()
+
+	/**
+	 * The raw request body is always a string: an unreadable php://input
+	 * (or an empty one, as under the CLI) yields '' instead of false.
+	 *
+	 * @return void
+	 */
+	public function testRawContentIsAlwaysAString(): void {
+		$service = (new \ReflectionClass(EndpointService::class))->newInstanceWithoutConstructor();
+		$method = new \ReflectionMethod(EndpointService::class, 'getRawContent');
+		$method->setAccessible(true);
+
+		$this->assertSame(expected: '', actual: $method->invoke($service));
+	}//end testRawContentIsAlwaysAString()
 }//end class

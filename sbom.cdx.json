@@ -710,10 +710,10 @@
       ]
     },
     {
-      "bom-ref": "league/uri-interfaces-7.8.0.0",
+      "bom-ref": "league/uri-interfaces-7.10.0.0",
       "type": "library",
       "name": "uri-interfaces",
-      "version": "7.8.0",
+      "version": "7.10.0",
       "group": "league",
       "description": "Common tools for parsing and resolving RFC3987/RFC3986 URI",
       "author": "Ignace Nyamagana Butera",
@@ -724,17 +724,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/league/uri-interfaces@7.8.0",
+      "purl": "pkg:composer/league/uri-interfaces@7.10.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/thephpleague/uri-interfaces/zipball/c5c5cd056110fc8afaba29fa6b72a43ced42acd4",
-          "comment": "dist reference: c5c5cd056110fc8afaba29fa6b72a43ced42acd4"
+          "url": "https://api.github.com/repos/thephpleague/uri-interfaces/zipball/ea66240cff4ae9a56ce85d577a04d038b771e51c",
+          "comment": "dist reference: ea66240cff4ae9a56ce85d577a04d038b771e51c"
         },
         {
           "type": "vcs",
           "url": "https://github.com/thephpleague/uri-interfaces.git",
-          "comment": "source reference: c5c5cd056110fc8afaba29fa6b72a43ced42acd4"
+          "comment": "source reference: ea66240cff4ae9a56ce85d577a04d038b771e51c"
         },
         {
           "type": "website",
@@ -758,18 +758,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/thephpleague/uri-interfaces/tree/7.8.0",
+          "url": "https://github.com/thephpleague/uri-interfaces/tree/7.10.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "c5c5cd056110fc8afaba29fa6b72a43ced42acd4"
+          "value": "ea66240cff4ae9a56ce85d577a04d038b771e51c"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "c5c5cd056110fc8afaba29fa6b72a43ced42acd4"
+          "value": "ea66240cff4ae9a56ce85d577a04d038b771e51c"
         },
         {
           "name": "cdx:composer:package:type",
@@ -778,10 +778,10 @@
       ]
     },
     {
-      "bom-ref": "league/uri-7.8.0.0",
+      "bom-ref": "league/uri-7.10.0.0",
       "type": "library",
       "name": "uri",
-      "version": "7.8.0",
+      "version": "7.10.0",
       "group": "league",
       "description": "URI manipulation library",
       "author": "Ignace Nyamagana Butera",
@@ -792,17 +792,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/league/uri@7.8.0",
+      "purl": "pkg:composer/league/uri@7.10.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/thephpleague/uri/zipball/4436c6ec8d458e4244448b069cc572d088230b76",
-          "comment": "dist reference: 4436c6ec8d458e4244448b069cc572d088230b76"
+          "url": "https://api.github.com/repos/thephpleague/uri/zipball/be89e2382e37acdef232259071ade5180821397b",
+          "comment": "dist reference: be89e2382e37acdef232259071ade5180821397b"
         },
         {
           "type": "vcs",
           "url": "https://github.com/thephpleague/uri.git",
-          "comment": "source reference: 4436c6ec8d458e4244448b069cc572d088230b76"
+          "comment": "source reference: be89e2382e37acdef232259071ade5180821397b"
         },
         {
           "type": "website",
@@ -826,18 +826,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/thephpleague/uri/tree/7.8.0",
+          "url": "https://github.com/thephpleague/uri/tree/7.10.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "4436c6ec8d458e4244448b069cc572d088230b76"
+          "value": "be89e2382e37acdef232259071ade5180821397b"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "4436c6ec8d458e4244448b069cc572d088230b76"
+          "value": "be89e2382e37acdef232259071ade5180821397b"
         },
         {
           "name": "cdx:composer:package:type",
@@ -2221,10 +2221,10 @@
       ]
     },
     {
-      "bom-ref": "revolt/event-loop-1.0.8.0",
+      "bom-ref": "revolt/event-loop-1.0.9.0",
       "type": "library",
       "name": "event-loop",
-      "version": "v1.0.8",
+      "version": "v1.0.9",
       "group": "revolt",
       "description": "Rock-solid event loop for concurrent PHP applications.",
       "author": "Aaron Piotrowski, Cees-Jan Kiewiet, Christian Lück, Niklas Keller",
@@ -2235,17 +2235,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/revolt/event-loop@v1.0.8",
+      "purl": "pkg:composer/revolt/event-loop@v1.0.9",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/revoltphp/event-loop/zipball/b6fc06dce8e9b523c9946138fa5e62181934f91c",
-          "comment": "dist reference: b6fc06dce8e9b523c9946138fa5e62181934f91c"
+          "url": "https://api.github.com/repos/revoltphp/event-loop/zipball/44061cf513e53c6200372fc935ac42271566295d",
+          "comment": "dist reference: 44061cf513e53c6200372fc935ac42271566295d"
         },
         {
           "type": "vcs",
           "url": "https://github.com/revoltphp/event-loop.git",
-          "comment": "source reference: b6fc06dce8e9b523c9946138fa5e62181934f91c"
+          "comment": "source reference: 44061cf513e53c6200372fc935ac42271566295d"
         },
         {
           "type": "issue-tracker",
@@ -2254,18 +2254,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/revoltphp/event-loop/tree/v1.0.8",
+          "url": "https://github.com/revoltphp/event-loop/tree/v1.0.9",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "b6fc06dce8e9b523c9946138fa5e62181934f91c"
+          "value": "44061cf513e53c6200372fc935ac42271566295d"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "b6fc06dce8e9b523c9946138fa5e62181934f91c"
+          "value": "44061cf513e53c6200372fc935ac42271566295d"
         },
         {
           "name": "cdx:composer:package:type",
@@ -28160,7 +28160,7 @@
     {
       "ref": "azjezz/psl-4.3.0.0",
       "dependsOn": [
-        "revolt/event-loop-1.0.8.0"
+        "revolt/event-loop-1.0.9.0"
       ]
     },
     {
@@ -28220,20 +28220,20 @@
       "ref": "jwadhams/json-logic-php-1.5.1.0"
     },
     {
-      "ref": "league/uri-7.8.0.0",
+      "ref": "league/uri-7.10.0.0",
       "dependsOn": [
-        "league/uri-interfaces-7.8.0.0",
+        "league/uri-interfaces-7.10.0.0",
         "psr/http-factory-1.1.0.0"
       ]
     },
     {
       "ref": "league/uri-components-7.8.0.0",
       "dependsOn": [
-        "league/uri-7.8.0.0"
+        "league/uri-7.10.0.0"
       ]
     },
     {
-      "ref": "league/uri-interfaces-7.8.0.0",
+      "ref": "league/uri-interfaces-7.10.0.0",
       "dependsOn": [
         "psr/http-message-2.0.0.0"
       ]
@@ -28323,7 +28323,7 @@
       "ref": "php-soap/wsdl-1.16.0.0",
       "dependsOn": [
         "azjezz/psl-4.3.0.0",
-        "league/uri-7.8.0.0",
+        "league/uri-7.10.0.0",
         "league/uri-components-7.8.0.0",
         "php-soap/xml-1.9.0.0",
         "symfony/console-7.4.23.0",
@@ -28383,7 +28383,7 @@
       "ref": "react/promise-3.3.0.0"
     },
     {
-      "ref": "revolt/event-loop-1.0.8.0"
+      "ref": "revolt/event-loop-1.0.9.0"
     },
     {
       "ref": "spomky-labs/pki-framework-1.6.3.0",

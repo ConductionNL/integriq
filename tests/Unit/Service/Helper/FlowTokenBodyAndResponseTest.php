@@ -264,4 +264,17 @@ class FlowTokenBodyAndResponseTest extends TestCase {
 			$captured
 		);
 	}//end testAResponseWithoutDataIsCapturedWithEmptyData()
+
+	/**
+	 * The raw request body is always a string: an unreadable php://input
+	 * (or an empty one, as under the CLI) yields '' instead of false.
+	 *
+	 * @return void
+	 */
+	public function testRawContentIsAlwaysAString(): void {
+		$method = new \ReflectionMethod(FlowToken::class, 'getRawContent');
+		$method->setAccessible(true);
+
+		$this->assertSame(expected: '', actual: $method->invoke(new FlowToken()));
+	}//end testRawContentIsAlwaysAString()
 }//end class

@@ -180,7 +180,12 @@ class FlowToken {
 	 * @spec openspec/specs/flow-token-helper/spec.md
 	 */
 	private function getRawContent(): string {
-		return file_get_contents(filename: 'php://input');
+		$content = file_get_contents(filename: 'php://input');
+		if ($content === false) {
+			return '';
+		}
+
+		return $content;
 	}//end getRawContent()
 
 	/**

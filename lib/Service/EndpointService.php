@@ -2908,7 +2908,12 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
 	protected function getRawContent(): string {
-		return file_get_contents(filename: 'php://input');
+		$content = file_get_contents(filename: 'php://input');
+		if ($content === false) {
+			return '';
+		}
+
+		return $content;
 	}//end getRawContent()
 
 	/**

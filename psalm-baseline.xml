@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files psalm-version="7.6.0@4303c7dbbc23efaac3d988707b4acf4d5508a9cc">
+  <file src="lib/Adapters/Berichtenbox/EbmsAdapterClient.php">
+    <TaintedSSRF>
+      <code><![CDATA[$url]]></code>
+    </TaintedSSRF>
+  </file>
+  <file src="lib/Service/Adapter/DataInfra/RemoteFiles/FtpsSession.php">
+    <TaintedFile>
+      <code><![CDATA[curl_setopt_array(
+			$handle,
+			[
+				CURLOPT_URL            => $url,
+				CURLOPT_USE_SSL        => CURLUSESSL_ALL,
+				CURLOPT_SSL_VERIFYPEER => true,
+				CURLOPT_SSL_VERIFYHOST => 2,
+				CURLOPT_USERNAME       => $this->server->username,
+				CURLOPT_PASSWORD       => $this->password,
+				CURLOPT_CONNECTTIMEOUT => 15,
+				CURLOPT_FTP_FILEMETHOD => CURLFTPMETHOD_NOCWD,
+				CURLOPT_PROTOCOLS      => CURLPROTO_FTP,
+			] + $options
+		)]]></code>
+    </TaintedFile>
+    <TaintedHeader>
+      <code><![CDATA[curl_setopt_array(
+			$handle,
+			[
+				CURLOPT_URL            => $url,
+				CURLOPT_USE_SSL        => CURLUSESSL_ALL,
+				CURLOPT_SSL_VERIFYPEER => true,
+				CURLOPT_SSL_VERIFYHOST => 2,
+				CURLOPT_USERNAME       => $this->server->username,
+				CURLOPT_PASSWORD       => $this->password,
+				CURLOPT_CONNECTTIMEOUT => 15,
+				CURLOPT_FTP_FILEMETHOD => CURLFTPMETHOD_NOCWD,
+				CURLOPT_PROTOCOLS      => CURLPROTO_FTP,
+			] + $options
+		)]]></code>
+    </TaintedHeader>
+    <TaintedSSRF>
+      <code><![CDATA[curl_setopt_array(
+			$handle,
+			[
+				CURLOPT_URL            => $url,
+				CURLOPT_USE_SSL        => CURLUSESSL_ALL,
+				CURLOPT_SSL_VERIFYPEER => true,
+				CURLOPT_SSL_VERIFYHOST => 2,
+				CURLOPT_USERNAME       => $this->server->username,
+				CURLOPT_PASSWORD       => $this->password,
+				CURLOPT_CONNECTTIMEOUT => 15,
+				CURLOPT_FTP_FILEMETHOD => CURLFTPMETHOD_NOCWD,
+				CURLOPT_PROTOCOLS      => CURLPROTO_FTP,
+			] + $options
+		)]]></code>
+    </TaintedSSRF>
+  </file>
+  <file src="lib/Service/CallService.php">
+    <TaintedFile>
+      <code><![CDATA[unlink($filename)]]></code>
+      <code><![CDATA[unlink($filename)]]></code>
+    </TaintedFile>
+    <TaintedSSRF>
+      <code><![CDATA[$url]]></code>
+      <code><![CDATA[$url]]></code>
+      <code><![CDATA[$url]]></code>
+      <code><![CDATA[$url]]></code>
+    </TaintedSSRF>
+  </file>
+  <file src="lib/Service/Fsc/FscDirectoryClient.php">
+    <TaintedSSRF>
+      <code><![CDATA[$run->url]]></code>
+    </TaintedSSRF>
+  </file>
+  <file src="lib/Service/Mtls/MtlsTransportService.php">
+    <TaintedSSRF>
+      <code><![CDATA[$url]]></code>
+    </TaintedSSRF>
+  </file>
+</files>
