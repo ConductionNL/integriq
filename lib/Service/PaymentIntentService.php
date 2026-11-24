@@ -320,7 +320,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 *
 	 * @throws PaymentProviderException When the source names an unknown provider or the provider errors.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
 	 */
 	public function refreshPayment(string $paymentIntentId): array {
 		$record = $this->findPaymentIntentById(paymentIntentId: $paymentIntentId);
@@ -339,7 +339,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 *
 	 * @return array<int, array{id: string, label: string, needsKey: bool}> The bindings.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	public function listProviders(): array {
 		$providers = [];
@@ -365,7 +365,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 *
 	 * @return array{ok: bool, provider: string, mode: ?string, profile: ?string, message: ?string} The check result.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	public function checkProvider(array $configuration): array {
 		$name = $this->providers->nameOf(value: ($configuration['provider'] ?? 'log'));
@@ -408,7 +408,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 *
 	 * @return array The configuration to probe with.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	private function probeConfiguration(array $configuration): array {
 		$pinned = [];
@@ -558,7 +558,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 * @throws PaymentProviderException When the value names no binding.
 	 *
 	 * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
 	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	private function resolveProvider(array $configuration): PaymentProviderInterface {

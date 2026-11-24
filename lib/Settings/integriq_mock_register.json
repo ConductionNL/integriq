@@ -11104,8 +11104,8 @@
         "redirectUrl": "Voorbeeld Redirecturl 1",
         "checkoutUrl": "Voorbeeld Checkouturl 1",
         "metadata": {},
-        "paymentStatus": "open",
-        "lastOutcome": "authorized",
+        "paymentStatus": "paid",
+        "lastOutcome": "captured",
         "createdAt": "2026-03-01T09:00:00+00:00",
         "updatedAt": "2026-03-01T09:00:00+00:00"
       },
@@ -11125,8 +11125,7 @@
         "redirectUrl": "Voorbeeld Redirecturl 2",
         "checkoutUrl": "Voorbeeld Checkouturl 2",
         "metadata": {},
-        "paymentStatus": "pending",
-        "lastOutcome": "captured",
+        "paymentStatus": "open",
         "createdAt": "2026-03-02T09:00:00+00:00",
         "updatedAt": "2026-03-02T09:00:00+00:00"
       },
@@ -11146,7 +11145,7 @@
         "redirectUrl": "Voorbeeld Redirecturl 3",
         "checkoutUrl": "Voorbeeld Checkouturl 3",
         "metadata": {},
-        "paymentStatus": "authorized",
+        "paymentStatus": "expired",
         "lastOutcome": "failed",
         "createdAt": "2026-03-03T09:00:00+00:00",
         "updatedAt": "2026-03-03T09:00:00+00:00"

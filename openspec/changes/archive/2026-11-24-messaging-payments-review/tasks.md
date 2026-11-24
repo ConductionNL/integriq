@@ -3,25 +3,25 @@
 Kind: code. Size S. Row `integriq:msg-payment`.
 
 ### Task 1: The payments page
-- **spec_ref**: openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-administrator-reviews-payments-on-the-payments-page-req-prv-001
+- **spec_ref**: openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-administrator-reviews-payments-on-the-payments-page-req-prv-001
 - **files**: `src/manifest.d/payments.json`, `l10n/en.json`, `l10n/nl.json`
 - **acceptance_criteria**:
   - GIVEN three demo payments WHEN an administrator opens "Payments" THEN all three are listed with status, outcome and source
   - GIVEN the status filter WHEN `open` is picked THEN only open payments remain
 - [x] Implement
-- [ ] Test (`tests/validate-manifest.js`; `tests/e2e/payments-review.spec.ts`)
+- [x] Test (`tests/validate-manifest.js`; `tests/e2e/payments-review.spec.ts`) — written, runs in nightly (validate-manifest passes; vitest `tests/vitest/paymentsReview.spec.js` 'payments page')
 
 ### Task 2: Refresh status
-- **spec_ref**: openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
+- **spec_ref**: openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
 - **files**: `lib/Controller/PaymentsController.php` (`refresh()`), `appinfo/routes.php`, `src/handlers/actionHandlers.js`, `src/registry.js`, `src/manifest.d/payments.json`
 - **acceptance_criteria**:
   - GIVEN a payment the provider reports paid WHEN "Refresh status" runs THEN `handleWebhook()` is called with its `providerPaymentId` and the row shows `paid`
   - GIVEN a user without `payments.review` WHEN they refresh THEN the request is refused before any provider call
 - [x] Implement
-- [ ] Test (PHPUnit on `refresh()` with a real `PaymentIntentService` and a stubbed binding; `tests/e2e/payments-review.spec.ts`)
+- [x] Test (PHPUnit on `refresh()` with a real `PaymentIntentService` and a stubbed binding; `tests/e2e/payments-review.spec.ts`) — written, runs in nightly (PHPUnit `tests/Unit/Controller/PaymentsReviewControllerTest.php`)
 
 ### Task 3: The provider list and the probe
-- **spec_ref**: openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+- **spec_ref**: openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 - **files**: `lib/Service/Payment/PaymentProviderProbeInterface.php`, `lib/Service/Payment/MolliePaymentProvider.php`, `lib/Service/Payment/LogPaymentProvider.php`, `lib/Service/PaymentIntentService.php`, `lib/Controller/PaymentsController.php` (`providers()`, `check()`), `appinfo/routes.php`
 - **acceptance_criteria**:
   - GIVEN the instance WHEN `GET /api/payments/providers` is called THEN it lists `log` and `mollie` with whether each needs a key
@@ -30,16 +30,16 @@ Kind: code. Size S. Row `integriq:msg-payment`.
 - [x] Test (PHPUnit on `MolliePaymentProvider::probe()` against a stubbed `profiles/me` response)
 
 ### Task 4: The provider step on the source form
-- **spec_ref**: openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+- **spec_ref**: openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 - **files**: `src/modals/v2/SourceFormFields.vue`, `l10n/en.json`, `l10n/nl.json`
 - **acceptance_criteria**:
   - GIVEN a source of type `payment` WHEN the form opens THEN it shows the provider picker, the key picker and "Check provider"
   - GIVEN a check result WHEN it returns THEN the form shows accepted or refused and the mode
 - [x] Implement
-- [ ] Test (Vitest on the section; `tests/e2e/payments-review.spec.ts`)
+- [x] Test (Vitest on the section; `tests/e2e/payments-review.spec.ts`) — written, runs in nightly (vitest `tests/vitest/paymentsReview.spec.js` 'payment provider step')
 
 ### Task 5: Refuse an unknown provider
-- **spec_ref**: openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
+- **spec_ref**: openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-an-unknown-provider-value-is-refused-not-run-as-the-stub-req-prv-004
 - **files**: `lib/Service/PaymentIntentService.php` (`resolveProvider()`)
 - **acceptance_criteria**:
   - GIVEN provider `Mollie` WHEN a payment is created THEN a `PaymentProviderException` names the value and nothing is stored
@@ -48,13 +48,14 @@ Kind: code. Size S. Row `integriq:msg-payment`.
 - [x] Test (PHPUnit on `createPayment()` and `handleWebhook()`)
 
 ### Task 6: Close `payment_intent` and seed three payments
-- **spec_ref**: openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-is-readable-only-by-administrators-and-its-owner-req-prv-005
+- **spec_ref**: openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-is-readable-only-by-administrators-and-its-owner-req-prv-005
 - **files**: `lib/Settings/register.d/99-payment-intent-lockdown.json`, `lib/Settings/integriq_mock_register.json`
 - **acceptance_criteria**:
   - GIVEN the imported register WHEN a non-admin lists `payment_intent` THEN nothing is returned
   - GIVEN demo data WHEN the page opens THEN a paid, an open and an expired payment are listed
 - [x] Implement
-- [ ] Test (`tests/validate-register.js`; integration test on the imported schema)
+- [x] Test (`tests/validate-register.js`; integration test on the imported schema)
+  > 2026-11-24: the demo seed held open, pending and authorized payments, not the paid, open and expired ones the criteria name; it now seeds paid (captured), open and expired (failed). `tests/Unit/Settings/PaymentsReviewDemoTest.php` checks the three statuses, validates each against the imported (merged) schema and asserts the merged `payment_intent` authorization is four empty rule lists. validate-register passes.
 
 ## Verification
 

@@ -19,7 +19,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ namespace OCA\Integriq\Service\Sms;
 /**
  * The SMS bindings by provider id.
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
  */
 class SmsProviderRegistry implements SmsProviderRegistryInterface {
 
@@ -49,7 +49,7 @@ class SmsProviderRegistry implements SmsProviderRegistryInterface {
 	 * @param MessageBirdSmsProvider|null $messageBird MessageBird.
 	 * @param TwilioSmsProvider|null      $twilio      Twilio.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function __construct(
 		private readonly LogSmsProvider $logProvider,
@@ -73,7 +73,7 @@ class SmsProviderRegistry implements SmsProviderRegistryInterface {
 	 *
 	 * @return SmsProviderInterface The binding; the refusing one for an unknown value.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
 	 */
 	public function resolve(?string $providerId): SmsProviderInterface {
 		if ($providerId === null || $providerId === '') {
@@ -88,7 +88,7 @@ class SmsProviderRegistry implements SmsProviderRegistryInterface {
 	 *
 	 * @return list<string> The ids.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function ids(): array {
 		return array_keys($this->providers);
@@ -99,7 +99,7 @@ class SmsProviderRegistry implements SmsProviderRegistryInterface {
 	 *
 	 * @return array<string, SmsProviderInterface> The bindings.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
 	 */
 	public function all(): array {
 		return $this->providers;
@@ -115,8 +115,8 @@ class SmsProviderRegistry implements SmsProviderRegistryInterface {
 	 * @return list<array{providerId: string, name: string, configSchema: array<string, mixed>, statusCallback: array{signed: bool}|null}>
 	 *         The descriptions.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function describeAll(): array {
 		$described = [];

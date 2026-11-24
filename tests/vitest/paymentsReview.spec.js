@@ -9,7 +9,7 @@
  * provider step of a payment source, which picks a provider from the bindings
  * the server lists and checks the key without ever showing it.
  *
- * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md
+ * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md
  */
 import { buildManifest } from '@conduction/nextcloud-vue/src/utils/buildManifest.js'
 import { flushPromises, mount } from '@vue/test-utils'

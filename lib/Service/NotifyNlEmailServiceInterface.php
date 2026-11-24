@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
@@ -60,7 +60,7 @@ interface NotifyNlEmailServiceInterface {
 	 *                              sent or recorded, `unknown-source` when no NotifyNL source answers,
 	 *                              the opt-out decision code when the list refuses, or NotifyNL's failure.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
 	 */
 	public function sendEmail(string $emailAddress, string $templateId, array $personalisation, array $options = []): array;
 
@@ -74,7 +74,7 @@ interface NotifyNlEmailServiceInterface {
 	 *
 	 * @return bool True when a recipient on a log row was updated.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
 	 */
 	public function applyCallback(string $reference, string $providerMessageId, string $status, ?string $detail): bool;
 }//end interface

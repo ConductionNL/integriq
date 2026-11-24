@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/tasks.md
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\Integriq\Service\Sms\DeliveryResult
  * @uses   \OCA\Integriq\Exception\SmsProviderException
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
  */
 class BrokeredSmsProvidersTest extends TestCase {
 
@@ -144,7 +144,7 @@ class BrokeredSmsProvidersTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#scenario-a-twilio-source-without-a-credential-sends-nothing
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#scenario-a-twilio-source-without-a-credential-sends-nothing
 	 */
 	public function testNoCredentialRefSendsNothing(): void {
 		$this->broker->method('hasCredentialRef')->willReturn(false);

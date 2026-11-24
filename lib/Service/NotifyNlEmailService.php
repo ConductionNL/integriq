@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Sends NotifyNL e-mail and applies NotifyNL's mail delivery callbacks.
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
  */
 class NotifyNlEmailService implements NotifyNlEmailServiceInterface {
 
@@ -115,7 +115,7 @@ class NotifyNlEmailService implements NotifyNlEmailServiceInterface {
 	 *                              sent or recorded, `unknown-source` when no NotifyNL source answers,
 	 *                              the opt-out decision code when the list refuses, or NotifyNL's failure.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
 	 */
 	public function sendEmail(string $emailAddress, string $templateId, array $personalisation, array $options = []): array {
 		$address = $this->validatedAddress(emailAddress: $emailAddress, templateId: $templateId);
@@ -179,7 +179,7 @@ class NotifyNlEmailService implements NotifyNlEmailServiceInterface {
 	 *
 	 * @throws SmsProviderException With code `invalid-address` or `missing-template`.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
 	 */
 	private function validatedAddress(string $emailAddress, string $templateId): string {
 		$address = trim($emailAddress);
@@ -208,7 +208,7 @@ class NotifyNlEmailService implements NotifyNlEmailServiceInterface {
 	 *
 	 * @throws SmsProviderException With the opt-out decision code when the list refuses.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
 	 */
 	private function askOptOutList(string $address, string $category, array $gateOptions): array {
 		$decision = $this->gate->check(
@@ -244,7 +244,7 @@ class NotifyNlEmailService implements NotifyNlEmailServiceInterface {
 	 *
 	 * @return bool True when a recipient on a log row was updated.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
 	 */
 	public function applyCallback(string $reference, string $providerMessageId, string $status, ?string $detail): bool {
 		if ($reference === '' || $providerMessageId === '' || in_array($status, ['delivered', 'failed'], true) === false) {

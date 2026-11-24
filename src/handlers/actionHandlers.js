@@ -128,7 +128,7 @@ export function rerunFailedRunHandler({ item }) {
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  * @return {Promise<object|null>} The refresh result.
- * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
+ * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
  */
 export function refreshPaymentHandler({ item }) {
 	return refreshPayment(item)

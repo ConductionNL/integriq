@@ -7815,10 +7815,10 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:165-167 notifyNl#send/status/inbound -> lib/Controller/NotifyNlController.php:97 send(), :165 status(), :208 inbound() -> lib/Service/SmsDispatchService.php (SCHEMA_MESSAGE='sms_message' at line 79) using the real lib/Service/Sms/RestNotifyNlProvider.php binding; manifest page SmsMessages (src/manifest.json:2933-2938, /messages/sms). No code anywhere ties NotifyNL to mail sending; lib/Service/Mail/* only implements inbound mail intake (MailIntakeService), unrelated to outbound notification. Specified in openspec/changes/messaging-sms-providers-and-notifynl-mail/ (OpenSpec pass 2026-09-27).",
+				"evidence": "appinfo/routes.php:165-167 notifyNl#send/status/inbound -> lib/Controller/NotifyNlController.php:97 send(), :165 status(), :208 inbound() -> lib/Service/SmsDispatchService.php (SCHEMA_MESSAGE='sms_message' at line 79) using the real lib/Service/Sms/RestNotifyNlProvider.php binding; manifest page SmsMessages (src/manifest.json:2933-2938, /messages/sms). No code anywhere ties NotifyNL to mail sending; lib/Service/Mail/* only implements inbound mail intake (MailIntakeService), unrelated to outbound notification. Specified in openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/ (OpenSpec pass 2026-09-27).",
 				"change": "messaging-sms-providers-and-notifynl-mail",
 				"requirement": [
-					"openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel :: NotifyNL sends e-mail and the send is logged per recipient (REQ-SMSP-005)",
+					"openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel :: NotifyNL sends e-mail and the send is logged per recipient (REQ-SMSP-005)",
 					"openspec/specs/notifynl-sms-channel :: NotifyNL REST provider with JWT-signed requests (REQ-003)"
 				]
 			},
@@ -9094,9 +9094,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:165 notifyNl#send -> lib/Controller/NotifyNlController.php:97 send() (ActionAuthService 'sms.send') -> lib/Service/SmsDispatchService.php:136 sendMessage() -> lib/Service/Sms/RestNotifyNlProvider.php (Guzzle, https://api.notifynl.nl) or LogSmsProvider; writes sms_message shown on SmsMessages page (src/manifest.json:2933, /messages/sms, logs). Status callback routes.php inbound NotifyNlController.php:208. CM.com/MessageBird/Twilio: lib/Settings/register.d/cmcom-sms-source.json, messagebird-sms-source.json, twilio-sms-source.json are seeded generic source objects with configuration.mock:true, and their $comment says the send leaf is OpenRegister's MessageDispatchProvider and pipelinq's SmsAdapter, not integriq code. NO frontend caller for /api/notifynl/messages (not in frontend-api-paths.txt); sendMessage has no other internal caller (grep 'sendMessage(' lib = only NotifyNlController:135). Specified in openspec/changes/messaging-sms-providers-and-notifynl-mail/ (OpenSpec pass 2026-09-27).",
+				"evidence": "appinfo/routes.php:165 notifyNl#send -> lib/Controller/NotifyNlController.php:97 send() (ActionAuthService 'sms.send') -> lib/Service/SmsDispatchService.php:136 sendMessage() -> lib/Service/Sms/RestNotifyNlProvider.php (Guzzle, https://api.notifynl.nl) or LogSmsProvider; writes sms_message shown on SmsMessages page (src/manifest.json:2933, /messages/sms, logs). Status callback routes.php inbound NotifyNlController.php:208. CM.com/MessageBird/Twilio: lib/Settings/register.d/cmcom-sms-source.json, messagebird-sms-source.json, twilio-sms-source.json are seeded generic source objects with configuration.mock:true, and their $comment says the send leaf is OpenRegister's MessageDispatchProvider and pipelinq's SmsAdapter, not integriq code. NO frontend caller for /api/notifynl/messages (not in frontend-api-paths.txt); sendMessage has no other internal caller (grep 'sendMessage(' lib = only NotifyNlController:135). Specified in openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/ (OpenSpec pass 2026-09-27).",
 				"change": "messaging-sms-providers-and-notifynl-mail",
-				"requirement": "openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel :: CM.com, MessageBird and Twilio send through the SMS provider seam (REQ-SMSP-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel :: CM.com, MessageBird and Twilio send through the SMS provider seam (REQ-SMSP-001)"
 			},
 			"reachedOn": "machine route: POST /api/notifynl/messages (session plus sms.send action, meant for sibling apps); SmsMessages page (/messages/sms) shows results",
 			"note": "Integriq itself sends SMS only through NotifyNL, via a route no integriq page calls. CM.com, MessageBird and Twilio are just seeded source configs in mock mode that another app's dispatcher uses.",
@@ -9479,11 +9479,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:157 payments#create -> lib/Controller/PaymentsController.php:92 create() (session plus ActionAuthService 'payments.create') -> lib/Service/PaymentIntentService.php resolveProvider() :368 picks lib/Service/Payment/MolliePaymentProvider.php:89 createPayment() (https://api.mollie.com/v2) or LogPaymentProvider (the default). Webhook routes.php:158 -> PaymentsController.php:141 webhook() (PublicPage, re-derives status from the provider). No frontend caller (not in frontend-api-paths.txt), no payment page in manifest-pages.txt, and no caller in local learniq/shillinq checkouts (grep 'api/payments' = 0); the routes.php:150-155 comment says the shillinq binding is a follow-up change not built here. Specified in openspec/changes/messaging-payments-review/ (OpenSpec pass 2026-09-27).",
+				"evidence": "appinfo/routes.php:157 payments#create -> lib/Controller/PaymentsController.php:92 create() (session plus ActionAuthService 'payments.create') -> lib/Service/PaymentIntentService.php resolveProvider() :368 picks lib/Service/Payment/MolliePaymentProvider.php:89 createPayment() (https://api.mollie.com/v2) or LogPaymentProvider (the default). Webhook routes.php:158 -> PaymentsController.php:141 webhook() (PublicPage, re-derives status from the provider). No frontend caller (not in frontend-api-paths.txt), no payment page in manifest-pages.txt, and no caller in local learniq/shillinq checkouts (grep 'api/payments' = 0); the routes.php:150-155 comment says the shillinq binding is a follow-up change not built here. Specified in openspec/changes/archive/2026-11-24-messaging-payments-review/ (OpenSpec pass 2026-09-27).",
 				"change": "messaging-payments-review",
 				"requirement": [
 					"openspec/specs/live-payment-providers :: Payment creation endpoint accepting shillinq's payload contract (REQ-LPP-001)",
-					"openspec/changes/messaging-payments-review/specs/live-payment-providers :: An administrator reviews payments on the payments page (REQ-PRV-001)"
+					"openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers :: An administrator reviews payments on the payments page (REQ-PRV-001)"
 				]
 			},
 			"reachedOn": "machine route: POST /api/payments (server-to-server) and POST /api/payments/webhook (provider callback)",
