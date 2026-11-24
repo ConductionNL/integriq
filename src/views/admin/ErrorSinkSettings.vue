@@ -10,7 +10,7 @@
   that takes OTLP logs. The collector login is a credential name from the
   credential store, never a secret typed here.
 
-  @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+  @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 -->
 <template>
 	<section class="integriq-admin__section" data-testid="admin-errorsink-section">
@@ -137,7 +137,7 @@ export default {
 	computed: {
 		/**
 		 * @return {string} The setting endpoint.
-		 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+		 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 		 */
 		settingUrl() {
 			return URL
@@ -145,7 +145,7 @@ export default {
 
 		/**
 		 * @return {Array<object>} The kinds of error service.
-		 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+		 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 		 */
 		kindOptions() {
 			return [
@@ -162,7 +162,7 @@ export default {
 
 		/**
 		 * @return {Array<object>} The Nextcloud log levels, from warning up.
-		 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+		 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 		 */
 		levelOptions() {
 			return [
@@ -174,7 +174,7 @@ export default {
 
 		/**
 		 * @return {string} The label of the address field for the chosen kind.
-		 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+		 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 		 */
 		endpointLabel() {
 			return this.form.kind === 'otlp-logs'
@@ -184,7 +184,7 @@ export default {
 
 		/**
 		 * @return {string} An example address for the chosen kind.
-		 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+		 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 		 */
 		endpointPlaceholder() {
 			return this.form.kind === 'otlp-logs'
@@ -197,7 +197,7 @@ export default {
 			 * The app list shown as text.
 			 *
 			 * @return {string}
-			 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+			 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 			 */
 			get: function () {
 				return (this.form.apps || []).join(', ')
@@ -207,7 +207,7 @@ export default {
 			 * Store typed text as a list of app ids.
 			 *
 			 * @param {string} value The comma separated app ids.
-			 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+			 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 			 */
 			set: function (value) {
 				this.form.apps = String(value)
@@ -226,7 +226,7 @@ export default {
 		 *
 		 * @param {object|null} data The stored setting.
 		 * @return {void}
-		 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+		 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 		 */
 		applyStored(data) {
 			this.form = { ...this.form, ...data }
@@ -236,7 +236,7 @@ export default {
 		 * What to store.
 		 *
 		 * @return {object} The request body.
-		 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+		 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 		 */
 		settingBody() {
 			return { ...this.form }

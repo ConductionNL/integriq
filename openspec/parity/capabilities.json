@@ -12812,10 +12812,10 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"plan": "openspec/changes/observability-opentelemetry-export-errors-and-app-spans",
+				"plan": "openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans",
 				"change": "observability-opentelemetry-export-errors-and-app-spans",
-				"requirement": "openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace :: Errors from the apps an administrator selects go to an error sink (REQ-OTEL-006)",
-				"evidence": "Not built: specified in openspec/changes/observability-opentelemetry-export-errors-and-app-spans (11/11 tasks open). obs-otel (traces) points at part 1 observability-opentelemetry-export; error tracking is a separate capability. No ErrorSink code yet."
+				"requirement": "openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace :: Errors from the apps an administrator selects go to an error sink (REQ-OTEL-006)",
+				"evidence": "Not built: specified in openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans (11/11 tasks open). obs-otel (traces) points at part 1 observability-opentelemetry-export; error tracking is a separate capability. No ErrorSink code yet."
 			},
 			"feature": "execution-trace",
 			"featureConfidence": "medium",
