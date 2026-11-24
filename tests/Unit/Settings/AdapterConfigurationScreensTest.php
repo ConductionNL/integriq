@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001
+ * @spec openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -178,7 +178,7 @@ class AdapterConfigurationScreensTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002
+	 * @spec openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002
 	 */
 	public function testTheLifecycleActionsSitOnTheRecordTheyActOn(): void {
 		$routes = (string)file_get_contents(self::ROOT . '/appinfo/routes.php');
@@ -226,7 +226,7 @@ class AdapterConfigurationScreensTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001
+	 * @spec openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001
 	 */
 	public function testTheFormsLeaveTheSecretsAndTheStatusOut(): void {
 		foreach (['lti_platform', 'lti_tool'] as $schema) {
@@ -246,7 +246,7 @@ class AdapterConfigurationScreensTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-a-declared-screen-is-proven-to-render-req-acs-003
+	 * @spec openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-a-declared-screen-is-proven-to-render-req-acs-003
 	 */
 	public function testEveryWidgetIsLaidOutAndEveryIconRegistered(): void {
 		$icons = (string)file_get_contents(self::ROOT . '/src/icons.js');
@@ -270,7 +270,7 @@ class AdapterConfigurationScreensTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-a-declared-screen-is-proven-to-render-req-acs-003
+	 * @spec openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-a-declared-screen-is-proven-to-render-req-acs-003
 	 */
 	public function testEveryLtiStringIsTranslated(): void {
 		$dutch = json_decode((string)file_get_contents(self::ROOT . '/l10n/nl.json'), true)['translations'];

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002
+ * @spec openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -76,7 +76,7 @@ class ManifestFragmentPagesTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002
+	 * @spec openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002
 	 */
 	public function testEveryPageIdIsDeclaredOnce(): void {
 		$declaredIn = [];
@@ -100,7 +100,7 @@ class ManifestFragmentPagesTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002
+	 * @spec openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002
 	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-an-administrator-can-give-a-tool-the-platform-details-it-needs-req-ltil-004
 	 */
 	public function testTheRenderedLtiToolPageHasItsActionsAndThePlatformDetails(): void {

@@ -8394,7 +8394,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:286-288 eudiIssuerKeyAdmin#status/generateKey/rotateKey -> lib/Controller/EudiIssuerKeyAdminController.php. A case-insensitive grep of src/ for 'eudi' returns zero matches, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue. Covered by openspec/changes/adapter-configuration-screens/ (0 of 12 tasks ticked; OpenSpec pass 2026-09-27): Task 5 specifies the EUDI status list and its issuer key surface, the screen this row lacks.",
+				"evidence": "appinfo/routes.php:286-288 eudiIssuerKeyAdmin#status/generateKey/rotateKey -> lib/Controller/EudiIssuerKeyAdminController.php. A case-insensitive grep of src/ for 'eudi' returns zero matches, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue. Covered by openspec/changes/archive/2026-11-24-adapter-configuration-screens/ (0 of 12 tasks ticked; OpenSpec pass 2026-09-27): Task 5 specifies the EUDI status list and its issuer key surface, the screen this row lacks.",
 				"change": "adapter-configuration-screens",
 				"spec": "openspec/specs/eudi-wallet-credential-issuance",
 				"requirement": "openspec/specs/eudi-wallet-credential-issuance :: Issuer signing-key lifecycle under Beheer > Authenticatie (REQ-EUDI-002)"
