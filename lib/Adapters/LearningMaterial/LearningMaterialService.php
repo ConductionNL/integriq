@@ -37,6 +37,11 @@ class LearningMaterialService implements LearningMaterialServiceInterface {
 	public const UNAVAILABLE_REASON = 'Edurep antwoordt niet';
 
 	/**
+	 * The access rights under which a file may be fetched for a copy.
+	 */
+	public const OPEN_ACCESS = 'OpenAccess';
+
+	/**
 	 * Sources declared but not available yet, with the reason.
 	 *
 	 * @var array<string,string>
@@ -48,10 +53,12 @@ class LearningMaterialService implements LearningMaterialServiceInterface {
 	 *
 	 * @param LearningMaterialSource $edurep The Edurep source.
 	 * @param EdurepConnection $connection The Edurep connection.
+	 * @param MaterialFileFetcher $files Fetches a record's file for a copy.
 	 */
 	public function __construct(
 		private readonly LearningMaterialSource $edurep,
 		private readonly EdurepConnection $connection,
+		private readonly MaterialFileFetcher $files,
 	) {
 	}//end __construct()
 
@@ -112,6 +119,7 @@ class LearningMaterialService implements LearningMaterialServiceInterface {
 		return [
 			'search' => fn (): array => $this->search(request: $request),
 			'find' => fn (): ?array => $this->find(id: (string)($request['id'] ?? '')),
+			'download' => fn (): array => $this->download(id: (string)($request['id'] ?? ''), url: (string)($request['url'] ?? '')),
 			'status' => fn (): array => $this->connection->status(),
 			'saveSettings' => fn (): array => $this->saveSettings(settings: (array)($request['settings'] ?? [])),
 		];
@@ -143,6 +151,86 @@ class LearningMaterialService implements LearningMaterialServiceInterface {
 
 		return $this->edurep->find(id: $id)?->toArray();
 	}//end find()
+
+	/**
+	 * Fetch one open file of a record, for the consuming app to keep a copy.
+	 *
+	 * Only a file the record itself names, on https, with open access (the
+	 * file's own rights, else the record's) is fetched; the licence decision
+	 * stays with the consuming app.
+	 *
+	 * @param string $id  The record identifier.
+	 * @param string $url The file's address, one of the record's files.
+	 *
+	 * @return array<string,mixed> `sourceId`, `url`, `name`, `mimeType`, `size` and `contentBase64`.
+	 *
+	 * @throws LearningMaterialRefusedException When the record or the file may not be fetched.
+	 *
+	 * @spec openspec/specs/edurep-source/spec.md#requirement-an-open-file-of-a-record-is-fetched-for-a-copy
+	 */
+	private function download(string $id, string $url): array {
+		$this->guardEnabled();
+		$record = $this->edurep->find(id: $id);
+		if ($record === null) {
+			throw new LearningMaterialRefusedException(refusalCode: 'not-found', details: ['reason' => 'De bron heeft dit materiaal niet meer.']);
+		}
+
+		$file = self::openFile(record: $record, url: $url);
+		if ($file === null) {
+			throw new LearningMaterialRefusedException(refusalCode: 'file-not-copyable', details: ['reason' => 'Dit bestand is niet vrij beschikbaar en kan alleen als koppeling worden toegevoegd.']);
+		}
+
+		$fetched = $this->files->fetch(url: $url, format: $file['format']);
+
+		return [
+			'sourceId' => $record->sourceId,
+			'url' => $url,
+			'name' => self::fileName(url: $url),
+			'mimeType' => $fetched['mimeType'],
+			'size' => strlen($fetched['content']),
+			'contentBase64' => base64_encode($fetched['content']),
+		];
+	}//end download()
+
+	/**
+	 * The record's file at this address, when it is on https with open access.
+	 *
+	 * @param MaterialRecord $record The record.
+	 * @param string $url The asked address.
+	 *
+	 * @return array{url: string, format: string, accessRights: string|null}|null The file, or null.
+	 *
+	 * @spec openspec/specs/edurep-source/spec.md#requirement-an-open-file-of-a-record-is-fetched-for-a-copy
+	 */
+	public static function openFile(MaterialRecord $record, string $url): ?array {
+		foreach ($record->files as $file) {
+			$access = ($file['accessRights'] ?? $record->accessRights);
+			if ($file['url'] === $url && $access === self::OPEN_ACCESS && str_starts_with($url, 'https://') === true) {
+				return $file;
+			}
+		}
+
+		return null;
+	}//end openFile()
+
+	/**
+	 * The file's name: the last path segment of its address, 'material' when there is none.
+	 *
+	 * @param string $url The file's address.
+	 *
+	 * @return string The name.
+	 *
+	 * @spec openspec/specs/edurep-source/spec.md#requirement-an-open-file-of-a-record-is-fetched-for-a-copy
+	 */
+	public static function fileName(string $url): string {
+		$name = basename(rawurldecode((string)parse_url($url, PHP_URL_PATH)));
+		$name = (string)preg_replace('/[^A-Za-z0-9_.-]+/', '-', $name);
+		if (trim($name, '.-') === '') {
+			return 'material';
+		}
+
+		return $name;
+	}//end fileName()
 
 	/**
 	 * Save the settings and report the status.
