@@ -432,5 +432,33 @@ namespace OCA\Integriq\Tests\Unit\Service {
 			$tempPath = $GLOBALS['__oc_tempnam_spy_calls'][0];
 			$this->assertFileDoesNotExist($tempPath);
 		}//end testGetRSJWKRemovesTempFileWhenKeyParsingFails()
+
+		/**
+		 * The OAuth basic_auth option is the string pair Guzzle's typed `auth`
+		 * option expects, also when the stored client id or username is numeric.
+		 *
+		 * @return void
+		 *
+		 * @spec openspec/specs/authentication-twig/spec.md
+		 */
+		public function testBasicAuthOptionIsAStringPair(): void {
+			$clientCredentials = new \ReflectionMethod(AuthenticationService::class, 'createClientCredentialConfig');
+			$password = new \ReflectionMethod(AuthenticationService::class, 'createPasswordConfig');
+
+			$base = ['scope' => 'read', 'authentication' => 'basic_auth'];
+			$client = $clientCredentials->invoke(
+				$this->service,
+				$base + ['grant_type' => 'client_credentials', 'client_id' => 4021, 'client_secret' => 'secret']
+			);
+			$user = $password->invoke(
+				$this->service,
+				$base + ['grant_type' => 'password', 'username' => 1234, 'password' => 'pw']
+			);
+
+			$this->assertSame(['4021', 'secret'], $client['auth']);
+			$this->assertSame(['1234', 'pw'], $user['auth']);
+			$this->assertSame('client_credentials', $client['form_params']['grant_type']);
+			$this->assertArrayNotHasKey('client_id', $client['form_params']);
+		}//end testBasicAuthOptionIsAStringPair()
 	}//end class
 }//end namespace
