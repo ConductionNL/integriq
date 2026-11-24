@@ -15,7 +15,7 @@ Kind: code. Size M. Row `planninq:tt-hr-sync`.
   > - `OrgAssignment` does not drive the teacher yet. Today the teacher is active while the Employee's own `endDate` is not past, and an ended employment sends `active: false` with the exit date. Making an ended school assignment deactivate the teacher needs a decision: an employee can hold several `OrgAssignment` rows (schools, roles), and which end counts (the last one, any one at the Untis school's org unit) is not in the spec.
   > - Mock mode: integriq's CallService has no generic `configuration.mock` answer (only the directory, case-system, document-generation and mailbox adapters have one), so the source ships dormant (`isEnabled: false`) instead of in mock mode with a canned teacher list.
   > - E-mail: Untis keeps e-mail on a user account (`ExternUser`), not on the teacher, and humaniq's Employee carries only `privateEmail`; no e-mail is sent. Creating Untis user accounts is out of this change.
-- [ ] Test (PHPUnit against the mock target; `tests/e2e/staff-to-untis.spec.ts`)
+- [x] Test (PHPUnit against the mock target; `tests/e2e/staff-to-untis.spec.ts`); written, runs in nightly
   > PHPUnit done: `StaffToUntisSetTest::testANewEmployeeBecomesTheRecordedTeacherCreate`, `::testALeaverIsMadeInactiveNotDeleted`, `::testTheSynchronizationsWriteToTheDocumentedUntisPaths`, `::testTheUntisSourceIsDormantAndBrokered`. Written, not run (it needs a live instance with humaniq and an Untis stub at `UNTIS_STUB_URL`): `tests/e2e/staff-to-untis.spec.ts`.
 
 ### Task 2: Approved leave as teacher absence
