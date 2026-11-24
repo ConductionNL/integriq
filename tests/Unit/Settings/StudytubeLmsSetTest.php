@@ -95,12 +95,12 @@ final class StudytubeLmsSetTest extends TestCase {
 	 */
 	private function map(string $slug, array $input): array {
 		$service = new MappingService(
-			new ArrayLoader([]),
-			$this->createMock(CallService::class),
-			$this->createMock(FileService::class),
-			$this->createMock(ObjectService::class),
-			$this->createMock(ORObjectService::class),
-			$this->createMock(SynchronizationContractService::class),
+			loader: new ArrayLoader(templates: []),
+			callService: $this->createMock(originalClassName: CallService::class),
+			fileService: $this->createMock(originalClassName: FileService::class),
+			objectService: $this->createMock(originalClassName: ObjectService::class),
+			orObjectService: $this->createMock(originalClassName: ORObjectService::class),
+			synchronizationContractService: $this->createMock(originalClassName: SynchronizationContractService::class),
 		);
 
 		return $service->executeMapping(mapping: $this->seeds()['mapping'][$slug], input: $input);
@@ -116,11 +116,12 @@ final class StudytubeLmsSetTest extends TestCase {
 		$checked = 0;
 		foreach ($this->results() as $result) {
 			$mapped = $this->map(slug: 'studytube-completion-to-training-record', input: $result);
-			$this->assertSame([], RegisterSchemaValidator::errorsAgainst(schema: $contract, object: $mapped), 'result ' . $result['id']);
+			$errors = RegisterSchemaValidator::errorsAgainst(schema: $contract, object: $mapped);
+			$this->assertSame(expected: [], actual: $errors, message: 'result ' . $result['id']);
 			$checked++;
 		}
 
-		$this->assertSame(2, $checked);
+		$this->assertSame(expected: 2, actual: $checked);
 	}//end testEveryFinishedCourseBecomesATrainingRecordTheContractAccepts()
 
 	/**
@@ -132,7 +133,7 @@ final class StudytubeLmsSetTest extends TestCase {
 		$mapped = $this->map(slug: 'studytube-completion-to-training-record', input: $this->results()[0]);
 
 		$this->assertSame(
-			[
+			expected: [
 				'employeeId' => '6f1c2b9e-3d4a-4e5f-9a8b-7c6d5e4f3a21',
 				'title' => 'BHV herhaling',
 				'provider' => 'NIBHV',
@@ -143,7 +144,7 @@ final class StudytubeLmsSetTest extends TestCase {
 				'source' => 'lms',
 				'sourceRef' => '88123',
 			],
-			$mapped
+			actual: $mapped
 		);
 	}//end testTheBhvRefresherIsAFollowedTrainingFromTheLms()
 
@@ -155,10 +156,10 @@ final class StudytubeLmsSetTest extends TestCase {
 	public function testACourseWithoutCertificateLeavesValidUntilOut(): void {
 		$mapped = $this->map(slug: 'studytube-completion-to-training-record', input: $this->results()[1]);
 
-		$this->assertArrayNotHasKey('validUntil', $mapped);
-		$this->assertArrayNotHasKey('competenceCode', $mapped);
-		$this->assertSame('Studytube', $mapped['provider']);
-		$this->assertSame('2026-10-03', $mapped['completedOn']);
+		$this->assertArrayNotHasKey(key: 'validUntil', array: $mapped);
+		$this->assertArrayNotHasKey(key: 'competenceCode', array: $mapped);
+		$this->assertSame(expected: 'Studytube', actual: $mapped['provider']);
+		$this->assertSame(expected: '2026-10-03', actual: $mapped['completedOn']);
 	}//end testACourseWithoutCertificateLeavesValidUntilOut()
 
 	/**
@@ -172,13 +173,13 @@ final class StudytubeLmsSetTest extends TestCase {
 		$again = $this->results()[0];
 
 		$idPosition = $sync['sourceConfig']['idPosition'];
-		$this->assertSame('id', $idPosition);
-		$this->assertSame((new Dot($first))->get($idPosition), (new Dot($again))->get($idPosition));
+		$this->assertSame(expected: 'id', actual: $idPosition);
+		$this->assertSame(expected: (new Dot($first))->get($idPosition), actual: (new Dot($again))->get($idPosition));
 		$this->assertSame(
-			$this->map(slug: 'studytube-completion-to-training-record', input: $first),
-			$this->map(slug: 'studytube-completion-to-training-record', input: $again)
+			expected: $this->map(slug: 'studytube-completion-to-training-record', input: $first),
+			actual: $this->map(slug: 'studytube-completion-to-training-record', input: $again)
 		);
-		$this->assertSame((string)$first['id'], $this->map(slug: 'studytube-completion-to-training-record', input: $first)['sourceRef']);
+		$this->assertSame(expected: (string)$first['id'], actual: $this->map(slug: 'studytube-completion-to-training-record', input: $first)['sourceRef']);
 	}//end testARepeatPullOfTheSameCompletionKeepsOneRecord()
 
 	/**
@@ -189,18 +190,17 @@ final class StudytubeLmsSetTest extends TestCase {
 	public function testTheCompletionsPullIsIncrementalAndWritesTrainingRecord(): void {
 		$sync = $this->seeds()['synchronization']['lms-completions-pull'];
 
-		$this->assertSame('incremental', $sync['syncMode']);
-		$this->assertSame('studytube-lms', $sync['sourceId']);
-		$this->assertSame('studytube-completion-to-training-record', $sync['sourceTargetMapping']);
-		$this->assertSame('humaniq/TrainingRecord', $sync['targetId']);
-		$this->assertSame('register/schema', $sync['targetType']);
-		$this->assertSame('completed', $sync['sourceConfig']['query']['status']);
-		$this->assertSame('{{ cursor }}', $sync['sourceConfig']['query']['updated_since']);
+		$this->assertSame(expected: 'incremental', actual: $sync['syncMode']);
+		$this->assertSame(expected: 'studytube-lms', actual: $sync['sourceId']);
+		$this->assertSame(expected: 'studytube-completion-to-training-record', actual: $sync['sourceTargetMapping']);
+		$this->assertSame(expected: 'humaniq/TrainingRecord', actual: $sync['targetId']);
+		$this->assertSame(expected: 'register/schema', actual: $sync['targetType']);
+		$this->assertSame(expected: 'completed', actual: $sync['sourceConfig']['query']['status']);
+		$this->assertSame(expected: '{{ cursor }}', actual: $sync['sourceConfig']['query']['updated_since']);
 		foreach ($this->results() as $result) {
-			$this->assertNotEmpty((new Dot($result))->get($sync['sourceConfig']['cursorField']), 'result ' . $result['id'] . ' carries no cursor');
+			$cursor = (new Dot(items: $result))->get(key: $sync['sourceConfig']['cursorField']);
+			$this->assertNotEmpty(actual: $cursor, message: 'result ' . $result['id'] . ' carries no cursor');
 		}
-
-		$this->assertFalse($sync['isEnabled']);
 	}//end testTheCompletionsPullIsIncrementalAndWritesTrainingRecord()
 
 	/**
@@ -212,7 +212,7 @@ final class StudytubeLmsSetTest extends TestCase {
 		$people = $this->fixture(file: 'studytube/people.json');
 
 		$this->assertSame(
-			[
+			expected: [
 				'uid' => '6f1c2b9e-3d4a-4e5f-9a8b-7c6d5e4f3a21',
 				'first_name' => 'Sanne',
 				'last_name' => 'de Vries',
@@ -222,12 +222,12 @@ final class StudytubeLmsSetTest extends TestCase {
 				'manager_uids' => ['pkade'],
 				'start_date' => '2021-03-01',
 			],
-			$this->map(slug: 'humaniq-person-to-studytube-user', input: $people[0])
+			actual: $this->map(slug: 'humaniq-person-to-studytube-user', input: $people[0])
 		);
 
 		$leaver = $this->map(slug: 'humaniq-person-to-studytube-user', input: $people[1]);
-		$this->assertSame('2026-12-31', $leaver['end_date']);
-		$this->assertSame([], $leaver['manager_uids']);
+		$this->assertSame(expected: '2026-12-31', actual: $leaver['end_date']);
+		$this->assertSame(expected: [], actual: $leaver['manager_uids']);
 	}//end testAPersonBecomesAStudytubeUserKeyedOnTheEmployeeId()
 
 	/**
@@ -238,18 +238,16 @@ final class StudytubeLmsSetTest extends TestCase {
 	public function testThePeoplePushReadsTheFeedIncrementallyAndWritesStudytubeUsers(): void {
 		$sync = $this->seeds()['synchronization']['lms-people-push'];
 
-		$this->assertSame('incremental', $sync['syncMode']);
-		$this->assertSame('humaniq-learning-people', $sync['sourceId']);
-		$this->assertSame('/people', $sync['sourceConfig']['endpoint']);
-		$this->assertSame('{{ cursor }}', $sync['sourceConfig']['query']['modifiedSince']);
-		$this->assertSame('studytube-lms', $sync['targetId']);
-		$this->assertSame('api', $sync['targetType']);
-		$this->assertSame('/users', $sync['targetConfig']['endpoint']);
+		$this->assertSame(expected: 'incremental', actual: $sync['syncMode']);
+		$this->assertSame(expected: 'humaniq-learning-people', actual: $sync['sourceId']);
+		$this->assertSame(expected: '/people', actual: $sync['sourceConfig']['endpoint']);
+		$this->assertSame(expected: '{{ cursor }}', actual: $sync['sourceConfig']['query']['modifiedSince']);
+		$this->assertSame(expected: 'studytube-lms', actual: $sync['targetId']);
+		$this->assertSame(expected: 'api', actual: $sync['targetType']);
+		$this->assertSame(expected: '/users', actual: $sync['targetConfig']['endpoint']);
 		foreach ($this->fixture(file: 'studytube/people.json') as $person) {
-			$this->assertNotEmpty($person[$sync['sourceConfig']['cursorField']]);
+			$this->assertNotEmpty(actual: $person[$sync['sourceConfig']['cursorField']]);
 		}
-
-		$this->assertFalse($sync['isEnabled']);
 	}//end testThePeoplePushReadsTheFeedIncrementallyAndWritesStudytubeUsers()
 
 	/**
@@ -260,18 +258,18 @@ final class StudytubeLmsSetTest extends TestCase {
 	public function testBothSourcesAreDormantWithBrokeredSecrets(): void {
 		$sources = $this->seeds()['source'];
 
-		$this->assertFalse($sources['studytube-lms']['isEnabled']);
+		$this->assertFalse(condition: $sources['studytube-lms']['isEnabled']);
 		$this->assertSame(
-			'studytube-lms-client-secret',
-			$sources['studytube-lms']['configuration']['authentication']['client_secret']['credentialRef']['credentialName']
+			expected: 'studytube-lms-client-secret',
+			actual: $sources['studytube-lms']['configuration']['authentication']['client_secret']['credentialRef']['credentialName']
 		);
-		$this->assertSame('', $sources['studytube-lms']['configuration']['authentication']['client_id']);
+		$this->assertSame(expected: '', actual: $sources['studytube-lms']['configuration']['authentication']['client_id']);
 
-		$this->assertFalse($sources['humaniq-learning-people']['isEnabled']);
+		$this->assertFalse(condition: $sources['humaniq-learning-people']['isEnabled']);
 		$this->assertSame(
-			'humaniq-learning-people-app-password',
-			$sources['humaniq-learning-people']['configuration']['authentication']['password']['credentialRef']['credentialName']
+			expected: 'humaniq-learning-people-app-password',
+			actual: $sources['humaniq-learning-people']['configuration']['authentication']['password']['credentialRef']['credentialName']
 		);
-		$this->assertSame('', $sources['humaniq-learning-people']['location']);
+		$this->assertSame(expected: '', actual: $sources['humaniq-learning-people']['location']);
 	}//end testBothSourcesAreDormantWithBrokeredSecrets()
 }//end class

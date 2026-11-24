@@ -154,7 +154,6 @@
           "endpoint": "/users",
           "targetIdPosition": "id"
         },
-        "isEnabled": false,
         "version": "1.0.0"
       },
       {
@@ -187,7 +186,6 @@
         "conditions": [],
         "targetId": "humaniq/TrainingRecord",
         "targetType": "register/schema",
-        "isEnabled": false,
         "version": "1.0.0"
       }
     ]

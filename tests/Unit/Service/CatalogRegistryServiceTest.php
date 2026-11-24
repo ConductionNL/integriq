@@ -253,8 +253,8 @@ class CatalogRegistryServiceTest extends TestCase {
 		$bySlug = array_column($this->makeService()->collect(), null, 'slug');
 
 		foreach (['studytube-lms', 'humaniq-learning-people'] as $slug) {
-			$this->assertSame('Education data', $bySlug['source-template:' . $slug]['category'], $slug);
-			$this->assertSame($slug, $bySlug['source-template:' . $slug]['sourceTemplateSlug'], $slug);
+			$this->assertSame(expected: 'Education data', actual: $bySlug['source-template:' . $slug]['category'], message: $slug);
+			$this->assertSame(expected: $slug, actual: $bySlug['source-template:' . $slug]['sourceTemplateSlug'], message: $slug);
 		}
 	}//end testTheLearningPlatformTemplatesAreEducationData()
 
