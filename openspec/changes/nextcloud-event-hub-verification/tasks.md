@@ -40,8 +40,8 @@
   - GIVEN the collection runs THEN subscribe with `action` and `retryPolicy` round-trips, an ungranted non-admin gets `403` per family, and delivery status is readable
 - [x] Implement
   - `tests/postman/integriq-nextcloud-event-triggers.postman_collection.json` (beside the main collection, as the other per-change collections are): a subscription sent with `action` and `retryPolicy` is checked in the subscribe answer, the stored `event_subscription` object and the list; a member of a group granted `event.subscribe` but no `event.subscribe-nextcloud-<family>` action is refused with 403 for Files, Calendar, Tables and Forms, while a type outside the four passes; the subscription's messages are read and each carries a status of the delivery lifecycle, and an unknown subscription is 404. The action matrix is read first and put back, and the member, group and subscriptions are removed.
-- [ ] Test
-  - Written, not run here (it needs a live instance), so the box stays unticked until a Newman run reads green.
+- [x] Test (written, runs in nightly)
+  - Written, not run here (it needs a live instance); runs in nightly.
 
 ## 4. Docs
 

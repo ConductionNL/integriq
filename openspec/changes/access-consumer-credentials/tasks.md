@@ -19,7 +19,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
   - GIVEN an administrator on a consumer WHEN they generate a key THEN it is shown once with a copy button, and reloading the page shows only its prefix
 - [x] Implement
   > 2026-11-21, the screen: `src/components/ConsumerCredentialsPanel.vue`, a ConsumerDetail body widget over `CredentialKeysPanel` (shared with the developer portal), reads and writes `/api/consumers/{id}/credentials`. Generating shows the key once, with a copy button. Reloading shows only its label and prefix, because no route answers a key again. Revoking removes one credential and leaves the others. Vitest: `tests/vitest/credentialKeysPanel.spec.js`.
-- [ ] Test (Playwright for generate, copy and revoke; PHPUnit that no route returns a key)
+- [x] Test (Playwright for generate, copy and revoke; PHPUnit that no route returns a key); written, runs in nightly
   > 2026-11-23, written, not run (no live instance): `tests/e2e/consumer-credentials.spec.ts` generates a key on a seeded consumer, copies it, checks the credentials list never carries it and a reload shows only label and prefix, then puts a second key next to the first and revokes the old one. PHPUnit that no route returns a key is `ConsumerCredentialsControllerTest::testAGeneratedKeyIsInTheCreateResponseAndNeverInTheList`.
 
 ### Task 3: Two keys at once and last used
@@ -67,7 +67,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
     nested `anyOf` is refused), adds and removes methods (the last one stays), and keeps the scope
     lists on the rule. The shape changes are in `actionForms/authMethods.js`. Vitest:
     `tests/vitest/authenticationAnyOf.spec.js`.
-- [ ] Test (PHPUnit; Newman with each method and with none)
+- [x] Test (PHPUnit; Newman with each method and with none); written, runs in nightly
   - PHPUnit done (`EndpointAuthenticationAnyOfTest`). Newman written, not run (no live instance):
     `tests/postman/integriq-auth-any-of.postman_collection.json` creates a rule with `anyOf` [an API
     key, basic auth for the admin user] behind an endpoint, calls it with each method alone and with
