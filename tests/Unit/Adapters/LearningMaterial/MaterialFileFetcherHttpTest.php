@@ -48,17 +48,17 @@ class MaterialFileFetcherHttpTest extends TestCase {
 	 * @return MaterialFileFetcherHttp The fetcher.
 	 */
 	private function fetcher(int $status, array $headers, string $body): MaterialFileFetcherHttp {
-		$response = $this->createMock(IResponse::class);
-		$response->method('getStatusCode')->willReturn($status);
-		$response->method('getHeader')->willReturnCallback(fn (string $key): string => ($headers[$key] ?? ''));
-		$response->method('getBody')->willReturn($body);
-		$client = $this->createMock(IClient::class);
-		$client->method('get')->willReturnCallback(function (string $uri, array $options) use ($response): IResponse {
+		$response = $this->createMock(originalClassName: IResponse::class);
+		$response->method('getStatusCode')->willReturn(value: $status);
+		$response->method('getHeader')->willReturnCallback(callback: fn (string $key): string => ($headers[$key] ?? ''));
+		$response->method('getBody')->willReturn(value: $body);
+		$client = $this->createMock(originalClassName: IClient::class);
+		$client->method('get')->willReturnCallback(callback: function (string $uri, array $options) use ($response): IResponse {
 			$this->options = $options;
 			return $response;
 		});
-		$service = $this->createMock(IClientService::class);
-		$service->method('newClient')->willReturn($client);
+		$service = $this->createMock(originalClassName: IClientService::class);
+		$service->method('newClient')->willReturn(value: $client);
 
 		return new MaterialFileFetcherHttp(clientService: $service);
 	}//end fetcher()
@@ -67,12 +67,14 @@ class MaterialFileFetcherHttpTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAnsweredFileComesBackWithItsMediaTypeOverHttpsOnly(): void {
-		$file = $this->fetcher(200, ['Content-Type' => 'application/pdf; charset=binary'], 'bytes')->fetch(url: 'https://x.nl/f.pdf', format: 'application/octet-stream');
+		$fetcher = $this->fetcher(status: 200, headers: ['Content-Type' => 'application/pdf; charset=binary'], body: 'bytes');
+		$file    = $fetcher->fetch(url: 'https://x.nl/f.pdf', format: 'application/octet-stream');
 
-		$this->assertSame(['content' => 'bytes', 'mimeType' => 'application/pdf'], $file);
-		$this->assertSame(['https'], $this->options['allow_redirects']['protocols']);
-		$this->assertSame(MaterialFileFetcherHttp::TIMEOUT_SECONDS, $this->options['timeout']);
-		$this->assertSame('text/plain', $this->fetcher(200, [], 'x')->fetch(url: 'https://x.nl/f', format: 'text/plain')['mimeType']);
+		$this->assertSame(expected: ['content' => 'bytes', 'mimeType' => 'application/pdf'], actual: $file);
+		$this->assertSame(expected: ['https'], actual: $this->options['allow_redirects']['protocols']);
+		$this->assertSame(expected: MaterialFileFetcherHttp::TIMEOUT_SECONDS, actual: $this->options['timeout']);
+		$plain = $this->fetcher(status: 200, headers: [], body: 'x')->fetch(url: 'https://x.nl/f', format: 'text/plain');
+		$this->assertSame(expected: 'text/plain', actual: $plain['mimeType']);
 	}//end testAnAnsweredFileComesBackWithItsMediaTypeOverHttpsOnly()
 
 	/**
@@ -80,10 +82,11 @@ class MaterialFileFetcherHttpTest extends TestCase {
 	 */
 	public function testAFileOverTheLimitIsRefused(): void {
 		try {
-			$this->fetcher(200, ['Content-Length' => (string)(MaterialFileFetcher::MAX_BYTES + 1)], '')->fetch(url: 'https://x.nl/f.pdf', format: '');
-			$this->fail('A file over the limit must be refused.');
+			$fetcher = $this->fetcher(status: 200, headers: ['Content-Length' => (string)(MaterialFileFetcher::MAX_BYTES + 1)], body: '');
+			$fetcher->fetch(url: 'https://x.nl/f.pdf', format: '');
+			$this->fail(message: 'A file over the limit must be refused.');
 		} catch (LearningMaterialRefusedException $refusal) {
-			$this->assertSame('file-too-large', $refusal->refusalCode);
+			$this->assertSame(expected: 'file-too-large', actual: $refusal->refusalCode);
 		}
 	}//end testAFileOverTheLimitIsRefused()
 
@@ -91,20 +94,20 @@ class MaterialFileFetcherHttpTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnansweredFileIsSourceUnavailable(): void {
-		$this->expectException(SourceUnavailableException::class);
-		$this->fetcher(404, [], '')->fetch(url: 'https://x.nl/f.pdf', format: '');
+		$this->expectException(exception: SourceUnavailableException::class);
+		$this->fetcher(status: 404, headers: [], body: '')->fetch(url: 'https://x.nl/f.pdf', format: '');
 	}//end testAnUnansweredFileIsSourceUnavailable()
 
 	/**
 	 * @return void
 	 */
 	public function testATransportErrorIsSourceUnavailable(): void {
-		$client = $this->createMock(IClient::class);
-		$client->method('get')->willThrowException(new RuntimeException('timeout'));
-		$service = $this->createMock(IClientService::class);
-		$service->method('newClient')->willReturn($client);
+		$client = $this->createMock(originalClassName: IClient::class);
+		$client->method('get')->willThrowException(exception: new RuntimeException(message: 'timeout'));
+		$service = $this->createMock(originalClassName: IClientService::class);
+		$service->method('newClient')->willReturn(value: $client);
 
-		$this->expectException(SourceUnavailableException::class);
+		$this->expectException(exception: SourceUnavailableException::class);
 		(new MaterialFileFetcherHttp(clientService: $service))->fetch(url: 'https://x.nl/f.pdf', format: '');
 	}//end testATransportErrorIsSourceUnavailable()
 
@@ -114,8 +117,10 @@ class MaterialFileFetcherHttpTest extends TestCase {
 	public function testTheMockAnswersRecordedBytesTypedAsTheRecordSays(): void {
 		$mock = new MaterialFileFetcherMock();
 
-		$this->assertSame(MaterialFileFetcherMock::CONTENT, $mock->fetch(url: 'https://x.nl/f.docx', format: 'application/msword')['content']);
-		$this->assertSame('application/msword', $mock->fetch(url: 'https://x.nl/f.docx', format: 'application/msword')['mimeType']);
-		$this->assertSame('application/pdf', $mock->fetch(url: 'https://x.nl/f', format: '')['mimeType']);
+		$docx = $mock->fetch(url: 'https://x.nl/f.docx', format: 'application/msword');
+
+		$this->assertSame(expected: MaterialFileFetcherMock::CONTENT, actual: $docx['content']);
+		$this->assertSame(expected: 'application/msword', actual: $docx['mimeType']);
+		$this->assertSame(expected: 'application/pdf', actual: $mock->fetch(url: 'https://x.nl/f', format: '')['mimeType']);
 	}//end testTheMockAnswersRecordedBytesTypedAsTheRecordSays()
 }//end class

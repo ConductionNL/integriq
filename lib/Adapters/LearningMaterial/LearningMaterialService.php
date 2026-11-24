@@ -177,7 +177,8 @@ class LearningMaterialService implements LearningMaterialServiceInterface {
 
 		$file = self::openFile(record: $record, url: $url);
 		if ($file === null) {
-			throw new LearningMaterialRefusedException(refusalCode: 'file-not-copyable', details: ['reason' => 'Dit bestand is niet vrij beschikbaar en kan alleen als koppeling worden toegevoegd.']);
+			$reason = 'Dit bestand is niet vrij beschikbaar en kan alleen als koppeling worden toegevoegd.';
+			throw new LearningMaterialRefusedException(refusalCode: 'file-not-copyable', details: ['reason' => $reason]);
 		}
 
 		$fetched = $this->files->fetch(url: $url, format: $file['format']);

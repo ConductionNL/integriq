@@ -48,6 +48,11 @@ use RuntimeException;
  */
 class LearningMaterialServiceTest extends TestCase {
 	/**
+	 * The open file of the record with files.
+	 */
+	private const OPEN_FILE = 'https://maken.wikiwijs.nl/files/Betoog%20schrijven.pdf';
+
+	/**
 	 * @var array<string,string>
 	 */
 	private array $config = [];
@@ -56,11 +61,16 @@ class LearningMaterialServiceTest extends TestCase {
 	 * @return EdurepConnection
 	 */
 	private function connection(): EdurepConnection {
-		$appConfig = $this->createMock(IAppConfig::class);
-		$appConfig->method('getValueString')->willReturnCallback(fn (string $app, string $key, string $default = ''): string => ($this->config[$key] ?? $default));
-		$cacheFactory = $this->createMock(ICacheFactory::class);
-		$cacheFactory->method('createDistributed')->willReturn(new ArrayCache());
-		$health = new EdurepHealthCheck(transport: $this->createMock(SruTransport::class), status: new EdurepStatusStore(cacheFactory: $cacheFactory));
+		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			callback: fn (string $app, string $key, string $default = ''): string => ($this->config[$key] ?? $default)
+		);
+		$cacheFactory = $this->createMock(originalClassName: ICacheFactory::class);
+		$cacheFactory->method('createDistributed')->willReturn(value: new ArrayCache());
+		$health = new EdurepHealthCheck(
+			transport: $this->createMock(originalClassName: SruTransport::class),
+			status: new EdurepStatusStore(cacheFactory: $cacheFactory)
+		);
 
 		return new EdurepConnection(health: $health, settings: new EdurepSettings(config: $appConfig));
 	}//end connection()
@@ -71,10 +81,10 @@ class LearningMaterialServiceTest extends TestCase {
 	 * @return LearningMaterialRequestedEvent The handled event.
 	 */
 	private function ask(array $request, ?LearningMaterialSource $source = null): LearningMaterialRequestedEvent {
-		$source = ($source ?? new EdurepSourceMock(logger: $this->createMock(LoggerInterface::class)));
+		$source = ($source ?? new EdurepSourceMock(logger: $this->createMock(originalClassName: LoggerInterface::class)));
 		$listener = new LearningMaterialRequestedListener(
 			service: new LearningMaterialService(edurep: $source, connection: $this->connection(), files: new MaterialFileFetcherMock()),
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 		$event = new LearningMaterialRequestedEvent(sourceApp: 'learniq', request: $request);
 		$listener->handle(event: $event);
@@ -88,22 +98,29 @@ class LearningMaterialServiceTest extends TestCase {
 	public function testASearchIsAnsweredWithRecordsAndFacets(): void {
 		$event = $this->ask(request: ['operation' => 'search', 'source' => 'edurep', 'query' => 'betoog', 'filters' => ['excludeCollections' => []], 'page' => 1]);
 
-		$this->assertTrue($event->isHandled());
-		$this->assertNull($event->getRefusal());
-		$this->assertSame(242, $event->getAnswer()['total']);
-		$this->assertSame('krantindeklas', $event->getAnswer()['records'][0]['collection']);
-		$this->assertIsString($event->getAnswer()['records'][0]['license']);
-		$this->assertArrayHasKey('meta.repository.id', $event->getAnswer()['facets']);
+		$this->assertTrue(condition: $event->isHandled());
+		$this->assertNull(actual: $event->getRefusal());
+		$this->assertSame(expected: 242, actual: $event->getAnswer()['total']);
+		$this->assertSame(expected: 'krantindeklas', actual: $event->getAnswer()['records'][0]['collection']);
+		$this->assertIsString(actual: $event->getAnswer()['records'][0]['license']);
+		$this->assertArrayHasKey(key: 'meta.repository.id', array: $event->getAnswer()['facets']);
 	}//end testASearchIsAnsweredWithRecordsAndFacets()
 
 	/**
 	 * @return void
 	 */
 	public function testSwitchedOffCollectionsAreLeftOutUnlessTheRequestNamesCollections(): void {
-		$service = new LearningMaterialService(edurep: $this->createMock(LearningMaterialSource::class), connection: $this->connection(), files: new MaterialFileFetcherMock());
+		$service = new LearningMaterialService(
+			edurep: $this->createMock(originalClassName: LearningMaterialSource::class),
+			connection: $this->connection(),
+			files: new MaterialFileFetcherMock()
+		);
 
-		$this->assertSame(['excludeCollections' => ['KlasCement'], 'language' => 'nl'], $service->withSettings(filters: []));
-		$this->assertSame(['collection' => ['KlasCement'], 'language' => 'en'], $service->withSettings(filters: ['collection' => ['KlasCement'], 'language' => 'en']));
+		$this->assertSame(expected: ['excludeCollections' => ['KlasCement'], 'language' => 'nl'], actual: $service->withSettings(filters: []));
+		$this->assertSame(
+			expected: ['collection' => ['KlasCement'], 'language' => 'en'],
+			actual: $service->withSettings(filters: ['collection' => ['KlasCement'], 'language' => 'en'])
+		);
 	}//end testSwitchedOffCollectionsAreLeftOutUnlessTheRequestNamesCollections()
 
 	/**
@@ -113,31 +130,47 @@ class LearningMaterialServiceTest extends TestCase {
 		$found = $this->ask(request: ['operation' => 'find', 'id' => '/NTR/POMS/WO_NTR_20306689']);
 		$missing = $this->ask(request: ['operation' => 'find', 'id' => 'urn:none:0']);
 
-		$this->assertSame('rights-reserved', $found->getAnswer()['license']);
-		$this->assertTrue($missing->isHandled());
-		$this->assertNull($missing->getAnswer());
-		$this->assertNull($missing->getRefusal());
+		$this->assertSame(expected: 'rights-reserved', actual: $found->getAnswer()['license']);
+		$this->assertTrue(condition: $missing->isHandled());
+		$this->assertNull(actual: $missing->getAnswer());
+		$this->assertNull(actual: $missing->getRefusal());
 	}//end testFindAnswersOneRecordOrNull()
 
 	/**
 	 * @return void
 	 */
 	public function testAnUnansweredSourceIsRefusedAsSourceUnavailable(): void {
-		$source = $this->createMock(LearningMaterialSource::class);
-		$source->method('search')->willThrowException(new SourceUnavailableException(source: 'edurep', lastSuccess: '2026-11-05T10:00:00+00:00'));
+		$source = $this->createMock(originalClassName: LearningMaterialSource::class);
+		$source->method('search')->willThrowException(
+			exception: new SourceUnavailableException(source: 'edurep', lastSuccess: '2026-11-05T10:00:00+00:00')
+		);
 
 		$refusal = $this->ask(request: ['operation' => 'search', 'query' => 'x'], source: $source)->getRefusal();
 
-		$this->assertSame(['code' => 'source-unavailable', 'reason' => 'Edurep antwoordt niet', 'source' => 'edurep', 'lastSuccess' => '2026-11-05T10:00:00+00:00'], $refusal);
+		$this->assertSame(
+			expected: [
+				'code' => 'source-unavailable',
+				'reason' => 'Edurep antwoordt niet',
+				'source' => 'edurep',
+				'lastSuccess' => '2026-11-05T10:00:00+00:00',
+			],
+			actual: $refusal
+		);
 	}//end testAnUnansweredSourceIsRefusedAsSourceUnavailable()
 
 	/**
 	 * @return void
 	 */
 	public function testUnknownAndUnavailableSourcesAndOperationsAreRefused(): void {
-		$this->assertSame('source-not-available', $this->ask(request: ['operation' => 'search', 'source' => 'edusources'])->getRefusal()['code']);
-		$this->assertSame('unknown-source', $this->ask(request: ['operation' => 'search', 'source' => 'other'])->getRefusal()['code']);
-		$this->assertSame('unknown-operation', $this->ask(request: ['operation' => 'delete'])->getRefusal()['code']);
+		$this->assertSame(
+			expected: 'source-not-available',
+			actual: $this->ask(request: ['operation' => 'search', 'source' => 'edusources'])->getRefusal()['code']
+		);
+		$this->assertSame(
+			expected: 'unknown-source',
+			actual: $this->ask(request: ['operation' => 'search', 'source' => 'other'])->getRefusal()['code']
+		);
+		$this->assertSame(expected: 'unknown-operation', actual: $this->ask(request: ['operation' => 'delete'])->getRefusal()['code']);
 	}//end testUnknownAndUnavailableSourcesAndOperationsAreRefused()
 
 	/**
@@ -146,8 +179,14 @@ class LearningMaterialServiceTest extends TestCase {
 	public function testASwitchedOffConnectionRefusesSearchAndFind(): void {
 		$this->config[EdurepSettings::KEY_ENABLED] = '0';
 
-		$this->assertSame('source-disabled', $this->ask(request: ['operation' => 'search', 'query' => 'betoog'])->getRefusal()['code']);
-		$this->assertSame('source-disabled', $this->ask(request: ['operation' => 'find', 'id' => 'urn:wikiwijsmaken:194413'])->getRefusal()['code']);
+		$this->assertSame(
+			expected: 'source-disabled',
+			actual: $this->ask(request: ['operation' => 'search', 'query' => 'betoog'])->getRefusal()['code']
+		);
+		$this->assertSame(
+			expected: 'source-disabled',
+			actual: $this->ask(request: ['operation' => 'find', 'id' => 'urn:wikiwijsmaken:194413'])->getRefusal()['code']
+		);
 	}//end testASwitchedOffConnectionRefusesSearchAndFind()
 
 	/**
@@ -157,19 +196,22 @@ class LearningMaterialServiceTest extends TestCase {
 		$status = $this->ask(request: ['operation' => 'status'])->getAnswer();
 		$saved = $this->ask(request: ['operation' => 'saveSettings', 'settings' => ['language' => 'en']])->getAnswer();
 
-		$this->assertSame('Open lesmateriaal via Edurep', $status['name']);
-		$this->assertSame('Fout', $status['health']['label']);
-		$this->assertSame('edurep', $saved['source']);
+		$this->assertSame(expected: 'Open lesmateriaal via Edurep', actual: $status['name']);
+		$this->assertSame(expected: 'Fout', actual: $status['health']['label']);
+		$this->assertSame(expected: 'edurep', actual: $saved['source']);
 	}//end testStatusAndSaveSettingsAnswerTheConnectionStatus()
 
 	/**
 	 * @return void
 	 */
 	public function testAnUnexpectedFailureIsRefusedNotThrown(): void {
-		$source = $this->createMock(LearningMaterialSource::class);
-		$source->method('find')->willThrowException(new RuntimeException('boom'));
+		$source = $this->createMock(originalClassName: LearningMaterialSource::class);
+		$source->method('find')->willThrowException(exception: new RuntimeException('boom'));
 
-		$this->assertSame('failed', $this->ask(request: ['operation' => 'find', 'id' => 'x'], source: $source)->getRefusal()['code']);
+		$this->assertSame(
+			expected: 'failed',
+			actual: $this->ask(request: ['operation' => 'find', 'id' => 'x'], source: $source)->getRefusal()['code']
+		);
 	}//end testAnUnexpectedFailureIsRefusedNotThrown()
 
 	/**
@@ -177,12 +219,16 @@ class LearningMaterialServiceTest extends TestCase {
 	 */
 	public function testTheListenerIgnoresOtherEvents(): void {
 		$listener = new LearningMaterialRequestedListener(
-			service: new LearningMaterialService(edurep: $this->createMock(LearningMaterialSource::class), connection: $this->connection(), files: new MaterialFileFetcherMock()),
-			logger: $this->createMock(LoggerInterface::class)
+			service: new LearningMaterialService(
+				edurep: $this->createMock(originalClassName: LearningMaterialSource::class),
+				connection: $this->connection(),
+				files: new MaterialFileFetcherMock()
+			),
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 		$listener->handle(event: new Event());
 
-		$this->assertSame('learniq', (new LearningMaterialRequestedEvent(sourceApp: 'learniq', request: []))->getSourceApp());
+		$this->assertSame(expected: 'learniq', actual: (new LearningMaterialRequestedEvent(sourceApp: 'learniq', request: []))->getSourceApp());
 	}//end testTheListenerIgnoresOtherEvents()
 
 	/**
@@ -192,19 +238,19 @@ class LearningMaterialServiceTest extends TestCase {
 	 */
 	private function sourceWithFiles(): LearningMaterialSource {
 		$record = new MaterialRecord(
-			[
+			fields: [
 				'sourceId' => 'urn:wikiwijsmaken:1',
 				'license' => 'cc-by-40',
 				'accessRights' => 'OpenAccess',
 				'files' => [
-					['url' => 'https://maken.wikiwijs.nl/files/Betoog%20schrijven.pdf', 'format' => 'application/pdf', 'accessRights' => null],
+					['url' => self::OPEN_FILE, 'format' => 'application/pdf', 'accessRights' => null],
 					['url' => 'https://maken.wikiwijs.nl/files/docent.pdf', 'format' => 'application/pdf', 'accessRights' => 'RestrictedAccess'],
 					['url' => 'http://maken.wikiwijs.nl/files/plain.pdf', 'format' => 'application/pdf', 'accessRights' => 'OpenAccess'],
 				],
 			]
 		);
-		$source = $this->createMock(LearningMaterialSource::class);
-		$source->method('find')->willReturnCallback(fn (string $id): ?MaterialRecord => ($id === 'urn:wikiwijsmaken:1' ? $record : null));
+		$source = $this->createMock(originalClassName: LearningMaterialSource::class);
+		$source->method('find')->willReturnMap(valueMap: [['urn:wikiwijsmaken:1', $record], ['urn:none:0', null]]);
 
 		return $source;
 	}//end sourceWithFiles()
@@ -215,13 +261,14 @@ class LearningMaterialServiceTest extends TestCase {
 	 * @spec openspec/specs/edurep-source/spec.md#requirement-an-open-file-of-a-record-is-fetched-for-a-copy
 	 */
 	public function testDownloadAnswersTheBytesOfAnOpenFileOfTheRecord(): void {
-		$answer = $this->ask(request: ['operation' => 'download', 'id' => 'urn:wikiwijsmaken:1', 'url' => 'https://maken.wikiwijs.nl/files/Betoog%20schrijven.pdf'], source: $this->sourceWithFiles())->getAnswer();
+		$request = ['operation' => 'download', 'id' => 'urn:wikiwijsmaken:1', 'url' => self::OPEN_FILE];
+		$answer  = $this->ask(request: $request, source: $this->sourceWithFiles())->getAnswer();
 
-		$this->assertSame('urn:wikiwijsmaken:1', $answer['sourceId']);
-		$this->assertSame('Betoog-schrijven.pdf', $answer['name']);
-		$this->assertSame('application/pdf', $answer['mimeType']);
-		$this->assertSame(MaterialFileFetcherMock::CONTENT, base64_decode($answer['contentBase64'], true));
-		$this->assertSame(strlen(MaterialFileFetcherMock::CONTENT), $answer['size']);
+		$this->assertSame(expected: 'urn:wikiwijsmaken:1', actual: $answer['sourceId']);
+		$this->assertSame(expected: 'Betoog-schrijven.pdf', actual: $answer['name']);
+		$this->assertSame(expected: 'application/pdf', actual: $answer['mimeType']);
+		$this->assertSame(expected: MaterialFileFetcherMock::CONTENT, actual: base64_decode($answer['contentBase64'], true));
+		$this->assertSame(expected: strlen(MaterialFileFetcherMock::CONTENT), actual: $answer['size']);
 	}//end testDownloadAnswersTheBytesOfAnOpenFileOfTheRecord()
 
 	/**
@@ -230,12 +277,16 @@ class LearningMaterialServiceTest extends TestCase {
 	 * @spec openspec/specs/edurep-source/spec.md#requirement-an-open-file-of-a-record-is-fetched-for-a-copy
 	 */
 	public function testDownloadRefusesAFileTheRecordDoesNotOpenAndAnUnknownRecord(): void {
-		$ask = fn (string $id, string $url): array => $this->ask(request: ['operation' => 'download', 'id' => $id, 'url' => $url], source: $this->sourceWithFiles())->getRefusal();
+		$source = $this->sourceWithFiles();
+		$ask    = fn (string $id, string $url): array => $this->ask(
+			request: ['operation' => 'download', 'id' => $id, 'url' => $url],
+			source: $source
+		)->getRefusal();
 
-		$this->assertSame('file-not-copyable', $ask('urn:wikiwijsmaken:1', 'https://maken.wikiwijs.nl/files/docent.pdf')['code']);
-		$this->assertSame('file-not-copyable', $ask('urn:wikiwijsmaken:1', 'http://maken.wikiwijs.nl/files/plain.pdf')['code']);
-		$this->assertSame('file-not-copyable', $ask('urn:wikiwijsmaken:1', 'https://elsewhere.example/any.pdf')['code']);
-		$this->assertSame('not-found', $ask('urn:none:0', 'https://maken.wikiwijs.nl/files/Betoog%20schrijven.pdf')['code']);
+		$this->assertSame(expected: 'file-not-copyable', actual: $ask('urn:wikiwijsmaken:1', 'https://maken.wikiwijs.nl/files/docent.pdf')['code']);
+		$this->assertSame(expected: 'file-not-copyable', actual: $ask('urn:wikiwijsmaken:1', 'http://maken.wikiwijs.nl/files/plain.pdf')['code']);
+		$this->assertSame(expected: 'file-not-copyable', actual: $ask('urn:wikiwijsmaken:1', 'https://elsewhere.example/any.pdf')['code']);
+		$this->assertSame(expected: 'not-found', actual: $ask('urn:none:0', self::OPEN_FILE)['code']);
 	}//end testDownloadRefusesAFileTheRecordDoesNotOpenAndAnUnknownRecord()
 
 	/**
@@ -244,18 +295,20 @@ class LearningMaterialServiceTest extends TestCase {
 	 * @spec openspec/specs/edurep-source/spec.md#requirement-an-open-file-of-a-record-is-fetched-for-a-copy
 	 */
 	public function testDownloadPassesOnATooLargeFileAndIsRefusedWhileSwitchedOff(): void {
-		$fetcher = $this->createMock(MaterialFileFetcher::class);
-		$fetcher->method('fetch')->willThrowException(MaterialFileFetcherHttp::tooLarge());
+		$fetcher = $this->createMock(originalClassName: MaterialFileFetcher::class);
+		$fetcher->method('fetch')->willThrowException(exception: MaterialFileFetcherHttp::tooLarge());
 		$listener = new LearningMaterialRequestedListener(
 			service: new LearningMaterialService(edurep: $this->sourceWithFiles(), connection: $this->connection(), files: $fetcher),
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
-		$event = new LearningMaterialRequestedEvent(sourceApp: 'learniq', request: ['operation' => 'download', 'id' => 'urn:wikiwijsmaken:1', 'url' => 'https://maken.wikiwijs.nl/files/Betoog%20schrijven.pdf']);
+		$request = ['operation' => 'download', 'id' => 'urn:wikiwijsmaken:1', 'url' => self::OPEN_FILE];
+		$event   = new LearningMaterialRequestedEvent(sourceApp: 'learniq', request: $request);
 		$listener->handle(event: $event);
-		$this->assertSame('file-too-large', $event->getRefusal()['code']);
+		$this->assertSame(expected: 'file-too-large', actual: $event->getRefusal()['code']);
 
 		$this->config[EdurepSettings::KEY_ENABLED] = '0';
-		$this->assertSame('source-disabled', $this->ask(request: ['operation' => 'download', 'id' => 'urn:wikiwijsmaken:1', 'url' => 'x'], source: $this->sourceWithFiles())->getRefusal()['code']);
+		$switchedOff = $this->ask(request: ['operation' => 'download', 'id' => 'urn:wikiwijsmaken:1', 'url' => 'x'], source: $this->sourceWithFiles());
+		$this->assertSame(expected: 'source-disabled', actual: $switchedOff->getRefusal()['code']);
 	}//end testDownloadPassesOnATooLargeFileAndIsRefusedWhileSwitchedOff()
 
 	/**
@@ -264,7 +317,7 @@ class LearningMaterialServiceTest extends TestCase {
 	 * @spec openspec/specs/edurep-source/spec.md#requirement-an-open-file-of-a-record-is-fetched-for-a-copy
 	 */
 	public function testAFileNameIsTheSafeLastPathSegment(): void {
-		$this->assertSame('les-1.pptx', LearningMaterialService::fileName(url: 'https://x.nl/a/les%201.pptx?download=1'));
-		$this->assertSame('material', LearningMaterialService::fileName(url: 'https://x.nl/'));
+		$this->assertSame(expected: 'les-1.pptx', actual: LearningMaterialService::fileName(url: 'https://x.nl/a/les%201.pptx?download=1'));
+		$this->assertSame(expected: 'material', actual: LearningMaterialService::fileName(url: 'https://x.nl/'));
 	}//end testAFileNameIsTheSafeLastPathSegment()
 }//end class
