@@ -227,36 +227,12 @@
 
 		<!-- access-oauth-and-token-validation REQ-TOKV-005: before a new
 		     scope requirement is saved, name the consumers it locks out. -->
-		<NcDialog
+		<ScopeLockoutDialog
 			v-if="lockout"
-			:name="t('integriq', 'Consumers that lose access')"
-			data-testid="rule-scope-lockout"
-			@closing="cancelLockout">
-			<p>
-				{{
-					lockout.fromCallLog
-						? t('integriq', 'These consumers call an endpoint that uses this rule and do not hold a scope you are adding. After saving, their calls get 403.')
-						: t('integriq', 'No calls to the endpoints of this rule are recorded, so this lists every consumer that does not hold a scope you are adding. After saving, their calls get 403.')
-				}}
-			</p>
-			<ul class="rule-detail-page__lockout">
-				<li
-					v-for="consumer in lockout.consumers"
-					:key="consumer.id"
-					data-testid="rule-scope-lockout-consumer">
-					<strong>{{ consumer.name }}</strong>
-					{{ t('integriq', 'lacks {scopes}', { scopes: consumer.missing.join(', ') }) }}
-				</li>
-			</ul>
-			<template #actions>
-				<NcButton variant="secondary" data-testid="rule-scope-lockout-cancel" @click="cancelLockout">
-					{{ t('integriq', 'Cancel') }}
-				</NcButton>
-				<NcButton variant="primary" data-testid="rule-scope-lockout-confirm" @click="confirmLockout">
-					{{ t('integriq', 'Save anyway') }}
-				</NcButton>
-			</template>
-		</NcDialog>
+			:consumers="lockout.consumers"
+			:fromCallLog="lockout.fromCallLog"
+			@cancel="cancelLockout"
+			@confirm="confirmLockout" />
 	</CnDetailPage>
 </template>
 
@@ -264,11 +240,12 @@
 import { CnDetailCard, CnDetailPage } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcDialog, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import CodeJson from 'vue-material-design-icons/CodeJson.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
 import AutomationDeprecationNotice from '../../components/AutomationDeprecationNotice.vue'
+import ScopeLockoutDialog from '../../modals/Rule/ScopeLockoutDialog.vue'
 import RuleActionConfig from './RuleActionConfig.vue'
 import RuleConditionGroup from './RuleConditionGroup.vue'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
@@ -300,7 +277,6 @@ export default {
 	components: {
 		AutomationDeprecationNotice,
 		NcButton,
-		NcDialog,
 		NcLoadingIcon,
 		NcSelect,
 		NcTextField,
@@ -311,6 +287,7 @@ export default {
 		UndoIcon,
 		RuleConditionGroup,
 		RuleActionConfig,
+		ScopeLockoutDialog,
 	},
 
 	mixins: [liveObjectSubscription],
@@ -836,11 +813,6 @@ export default {
 .rule-detail-page__helper {
 	color: var(--color-text-maxcontrast);
 	font-size: 12px;
-}
-
-.rule-detail-page__lockout {
-	margin: 8px 0 0 20px;
-	list-style: disc;
 }
 
 .rule-detail-page__helper--error {
