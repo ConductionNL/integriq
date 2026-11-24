@@ -531,7 +531,7 @@ export default {
 		 * Whether this is a CTI source, which gets its own telephony fields.
 		 *
 		 * @return {boolean} True for a cti source.
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		isCti() {
 			return String(this.formData?.type ?? '') === 'cti'
@@ -541,7 +541,7 @@ export default {
 		 * The id of the saved source, or empty before the first save.
 		 *
 		 * @return {string} The id.
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		savedSourceId() {
 			const data = this.formData ?? {}
@@ -552,7 +552,7 @@ export default {
 		 * Whether this is a payment source, which gets the provider step.
 		 *
 		 * @return {boolean} True for a payment source.
-		 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 		 */
 		isPayment() {
 			return String(this.formData?.type ?? '') === 'payment'
@@ -669,7 +669,7 @@ export default {
 		 * Whether this source sends text messages, and so needs the SMS picker.
 		 *
 		 * @return {boolean} True for an SMS source.
-		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 		 */
 		showsSmsPicker() {
 			return String(this.formData?.type ?? '') === 'sms'
@@ -679,7 +679,7 @@ export default {
 		 * The SMS bindings this instance carries, as picker options.
 		 *
 		 * @return {object[]} The options, labelled with each binding's name.
-		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 		 */
 		smsProviderOptions() {
 			return this.smsProviders
@@ -695,7 +695,7 @@ export default {
 		 * instance does not carry is shown as itself, never cleared.
 		 *
 		 * @return {object|null} The selected option.
-		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 		 */
 		selectedSmsProvider() {
 			const id = String(this.formData?.configuration?.provider ?? '')
@@ -707,7 +707,7 @@ export default {
 		 * The text settings the picked SMS binding reads, from its config schema.
 		 *
 		 * @return {object[]} Field descriptors for SchemaTextField.
-		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 		 */
 		smsProviderFields() {
 			const id = String(this.formData?.configuration?.provider ?? '')
@@ -731,7 +731,7 @@ export default {
 		 * The picked SMS binding's status callback, or null when it takes none.
 		 *
 		 * @return {{signed: boolean}|null} Whether the vendor signs its callbacks.
-		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+		 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 		 */
 		smsStatusCallback() {
 			const id = String(this.formData?.configuration?.provider ?? '')
@@ -745,7 +745,7 @@ export default {
 		 * The absolute URL the vendor posts delivery status to, once the source has its token.
 		 *
 		 * @return {string} The URL, or an empty string before the first save.
-		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+		 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 		 */
 		smsCallbackUrl() {
 			const provider = String(this.formData?.configuration?.provider ?? '')
@@ -759,7 +759,7 @@ export default {
 		 * The signing key field: typed in clear, stored encrypted.
 		 *
 		 * @return {object} The field descriptor.
-		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+		 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 		 */
 		smsSigningKeyField() {
 			return {
@@ -1017,7 +1017,7 @@ export default {
 		 *
 		 * @param {object|null} option The picked option, or null when cleared.
 		 * @return {void}
-		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 		 */
 		onSmsProviderPick(option) {
 			const configuration = { ...(this.formData?.configuration ?? {}) }
@@ -1031,7 +1031,7 @@ export default {
 		 * @param {string} key The configuration key.
 		 * @param {string} value The typed value.
 		 * @return {void}
-		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 		 */
 		onSmsConfigInput(key, value) {
 			const configuration = { ...(this.formData?.configuration ?? {}) }
@@ -1047,7 +1047,7 @@ export default {
 		 * Ask the instance which SMS bindings it carries. Soft-fails to an empty list.
 		 *
 		 * @return {Promise<void>} Resolves once the bindings are loaded.
-		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 		 */
 		async fetchSmsProviders() {
 			this.smsLoading = true

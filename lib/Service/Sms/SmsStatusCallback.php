@@ -19,7 +19,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ namespace OCA\Integriq\Service\Sms;
 /**
  * A delivery callback a binding reads.
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
  */
 final class SmsStatusCallback {
 
@@ -59,7 +59,7 @@ final class SmsStatusCallback {
 	 *
 	 * @return string The value, or an empty string when absent.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function header(string $name): string {
 		return (string)($this->headers[strtolower($name)] ?? '');

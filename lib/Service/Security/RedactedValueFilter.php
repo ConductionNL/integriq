@@ -66,7 +66,7 @@ final class RedactedValueFilter {
 	 *
 	 * @return boolean True only for the exact placeholder string.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 	 */
 	public static function isPlaceholder(mixed $value): bool {
 		return $value === SensitiveFieldRegistry::PLACEHOLDER;

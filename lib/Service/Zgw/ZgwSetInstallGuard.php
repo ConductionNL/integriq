@@ -33,7 +33,7 @@
  *
  * @link https://Integriq.app
  *
- * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
+ * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ class ZgwSetInstallGuard {
 	 *
 	 * @param IL10N $l10n Translates the refusals an operator meets; the template refusals are build-time and stay English.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
@@ -72,7 +72,7 @@ class ZgwSetInstallGuard {
 	 *
 	 * @return string|null The refusal, or null when the install may proceed.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
 	 */
 	public function refuse(string $slug, array $target, array $bindings): ?string {
 		if (ZgwSetCatalogue::isPackaged($slug) === false) {
@@ -170,7 +170,7 @@ class ZgwSetInstallGuard {
 	 *
 	 * @return string[] The refusals, empty when the template is sound.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
 	 */
 	public function refuseTemplate(string $slug, array $template): array {
 		$refusals = [];
@@ -214,7 +214,7 @@ class ZgwSetInstallGuard {
 	 *
 	 * @return string The key.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md
 	 */
 	public function bindingKey(string $register, string $schema): string {
 		return $register.'/'.$schema;

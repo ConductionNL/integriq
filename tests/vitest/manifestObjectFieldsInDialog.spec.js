@@ -12,7 +12,7 @@
  *
  * Spec coverage:
  * openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md (REQ-SREG-001)
- * openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md (REQ-IRT-001)
+ * openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md (REQ-IRT-001)
  */
 
 import { buildManifest } from '@conduction/nextcloud-vue/src/utils/buildManifest.js'

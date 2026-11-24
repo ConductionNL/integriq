@@ -33,7 +33,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use OCP\ICacheFactory;
  * Remembers which call events have been processed, for long enough that a
  * PBX's retries land on the same answer.
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
  */
 class CallEventDeduplicator {
 
@@ -107,7 +107,7 @@ class CallEventDeduplicator {
 	 *
 	 * @return string The cache key.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function keyFor(string $sourceId, string $callId, string $kind): string {
 		return sha1($sourceId.'|'.$callId.'|'.$kind);
@@ -133,7 +133,7 @@ class CallEventDeduplicator {
 	 *
 	 * @return boolean True when this caller should process the event.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function claim(string $sourceId, string $callId, string $kind): bool {
 		if ($this->cache === null) {
@@ -160,7 +160,7 @@ class CallEventDeduplicator {
 	 *
 	 * @return boolean True when a distributed cache is available.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function isActive(): bool {
 		return ($this->cache !== null);

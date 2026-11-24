@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+ * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use RuntimeException;
 /**
  * Sends a forwarded error as a Sentry envelope.
  *
- * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+ * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
  */
 class SentryEnvelopeExporter extends ErrorSinkHttpExporter {
 
@@ -66,7 +66,7 @@ class SentryEnvelopeExporter extends ErrorSinkHttpExporter {
 	 *
 	 * @throws RuntimeException When the DSN is unusable, or the service refused or could not be reached.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function export(array $event): void {
 		$dsn = $this->parseDsn(dsn: $this->settings->endpoint());
@@ -89,7 +89,7 @@ class SentryEnvelopeExporter extends ErrorSinkHttpExporter {
 	 *
 	 * @return string The envelope body.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function body(array $event): string {
 		$sentry = $this->sentryEvent(event: $event);
@@ -159,7 +159,7 @@ class SentryEnvelopeExporter extends ErrorSinkHttpExporter {
 	 *
 	 * @throws RuntimeException When the DSN has no key, host or project id.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function parseDsn(string $dsn): array {
 		$parts = parse_url($dsn);

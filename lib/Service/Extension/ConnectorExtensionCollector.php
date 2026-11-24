@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
  * Each registry reports back what it took and what it refused. That record is
  * what `occ integriq:extensions` lists.
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
  */
 class ConnectorExtensionCollector implements ConnectorExtensionsInterface {
 
@@ -63,7 +63,7 @@ class ConnectorExtensionCollector implements ConnectorExtensionsInterface {
 	 * @param IEventDispatcher $dispatcher Dispatches the collect event.
 	 * @param LoggerInterface  $logger     Records a refused contribution.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function __construct(
 		private readonly IEventDispatcher $dispatcher,
@@ -76,7 +76,7 @@ class ConnectorExtensionCollector implements ConnectorExtensionsInterface {
 	 *
 	 * @return RegisterConnectorExtensionsEvent
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function collect(): RegisterConnectorExtensionsEvent {
 		if ($this->event === null) {
@@ -97,7 +97,7 @@ class ConnectorExtensionCollector implements ConnectorExtensionsInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
 	public function accepted(string $seam, string $id, string $appId, object $item): void {
 		$this->record[] = [
@@ -121,7 +121,7 @@ class ConnectorExtensionCollector implements ConnectorExtensionsInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
 	 */
 	public function refused(string $seam, string $id, string $appId, object $item, string $keptApp): void {
 		$reason = sprintf('the id "%s" is already registered by %s', $id, $keptApp);
@@ -149,7 +149,7 @@ class ConnectorExtensionCollector implements ConnectorExtensionsInterface {
 	 *
 	 * @return array<int,array{seam: string, id: string, appId: string, class: string, refused: bool, reason: string}>
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
 	public function record(): array {
 		return $this->record;

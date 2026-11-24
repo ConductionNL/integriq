@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+ * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\IL10N;
 /**
  * Reads, validates and stores the error sink settings.
  *
- * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+ * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
  */
 class ErrorSinkSettings {
 
@@ -100,7 +100,7 @@ class ErrorSinkSettings {
 	 *
 	 * @return array<string, mixed> enabled, kind, endpoint, allowLocal, minLevel, apps, headerName, credentialName.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 	 */
 	public function all(): array {
 		return [
@@ -126,7 +126,7 @@ class ErrorSinkSettings {
 	 *
 	 * @throws InvalidArgumentException When a value is refused; the message is the translated reason.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 	 */
 	public function save(array $values): array {
 		$enabled = (bool)($values['enabled'] ?? false);
@@ -170,7 +170,7 @@ class ErrorSinkSettings {
 	 *
 	 * @return bool True when messages should be queued.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function isEnabled(): bool {
 		return $this->appConfig->getValueBool(self::APP_ID, 'errorsink_enabled', false) === true
@@ -187,7 +187,7 @@ class ErrorSinkSettings {
 	 *
 	 * @return bool True when the message is queued for the sink.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function forwards(string $app, int $level): bool {
 		if ($level < $this->minLevel()) {
@@ -203,7 +203,7 @@ class ErrorSinkSettings {
 	 *
 	 * @return string `sentry` or `otlp-logs`.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function kind(): string {
 		$kind = $this->appConfig->getValueString(self::APP_ID, 'errorsink_kind', self::KIND_SENTRY);
@@ -221,7 +221,7 @@ class ErrorSinkSettings {
 	 *
 	 * @return string The address, or an empty string.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function endpoint(): string {
 		return $this->appConfig->getValueString(self::APP_ID, 'errorsink_endpoint', '');
@@ -233,7 +233,7 @@ class ErrorSinkSettings {
 	 *
 	 * @return bool True when the administrator marked the service as internal.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 	 */
 	public function allowLocal(): bool {
 		return $this->appConfig->getValueBool(self::APP_ID, 'errorsink_allow_local', false);
@@ -245,7 +245,7 @@ class ErrorSinkSettings {
 	 *
 	 * @return int 0 (debug) to 4 (fatal).
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function minLevel(): int {
 		return $this->appConfig->getValueInt(self::APP_ID, 'errorsink_min_level', self::DEFAULT_MIN_LEVEL);
@@ -257,7 +257,7 @@ class ErrorSinkSettings {
 	 *
 	 * @return list<string> App ids.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function apps(): array {
 		$stored = $this->appConfig->getValueString(self::APP_ID, 'errorsink_apps', implode(',', self::DEFAULT_APPS));
@@ -271,7 +271,7 @@ class ErrorSinkSettings {
 	 *
 	 * @return string The header name.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 	 */
 	public function headerName(): string {
 		$name = $this->appConfig->getValueString(self::APP_ID, 'errorsink_header_name', '');
@@ -288,7 +288,7 @@ class ErrorSinkSettings {
 	 *
 	 * @return string The credential name, or an empty string for no header.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 	 */
 	public function credentialName(): string {
 		return $this->appConfig->getValueString(self::APP_ID, 'errorsink_credential_name', '');

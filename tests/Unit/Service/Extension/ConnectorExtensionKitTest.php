@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\Integriq\Service\Payment\PaymentProviderRegistry
  * @uses   \OCA\Integriq\Service\Helper\ProviderIndex
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
  */
 class ConnectorExtensionKitTest extends TestCase {
 
@@ -184,7 +184,7 @@ class ConnectorExtensionKitTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
 	 */
 	public function testAChannelClaimingABuiltInIdIsRefusedAndLogged(): void {
 		$builtIn = $this->channel('teams');
@@ -218,7 +218,7 @@ class ConnectorExtensionKitTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
 	 */
 	public function testDigitalPostContributionsAreAddedOrRefused(): void {
 		$builtIn = $this->post('log');
@@ -244,7 +244,7 @@ class ConnectorExtensionKitTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
 	 */
 	public function testPaymentContributionsAreAddedOrRefused(): void {
 		$mollie = $this->payment('mollie');

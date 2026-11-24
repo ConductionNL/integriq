@@ -13,8 +13,8 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/messaging-payments-review/tasks.md#task-2
- * @spec openspec/changes/messaging-payments-review/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/tasks.md#task-3
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Refresh status, the provider list and the provider check, over a real PaymentIntentService.
  *
- * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md
+ * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md
  */
 class PaymentsReviewControllerTest extends TestCase {
 

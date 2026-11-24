@@ -93,7 +93,7 @@ interface PaymentIntentServiceInterface {
 	 *
 	 * @throws PaymentProviderException When the source names an unknown provider or the provider errors.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
 	 */
 	public function refreshPayment(string $paymentIntentId): array;
 
@@ -102,7 +102,7 @@ interface PaymentIntentServiceInterface {
 	 *
 	 * @return array<int, array{id: string, label: string, needsKey: bool}> The bindings.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	public function listProviders(): array;
 
@@ -113,7 +113,7 @@ interface PaymentIntentServiceInterface {
 	 *
 	 * @return array{ok: bool, provider: string, mode: ?string, profile: ?string, message: ?string} The check result.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	public function checkProvider(array $configuration): array;
 

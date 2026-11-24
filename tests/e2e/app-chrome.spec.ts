@@ -375,7 +375,7 @@ test.describe('app chrome (ADR-114)', () => {
 	test('the adapter configuration pages sit in the group of their data direction', async ({
 		page,
 	}) => {
-		// openspec/changes/adapter-configuration-screens, open question 3: ADR-097
+		// openspec/changes/archive/2026-11-24-adapter-configuration-screens, open question 3: ADR-097
 		// keeps the top-level entries, so no group is added for these six pages.
 		// Systems this instance CALLS go under Connections (outbound); systems
 		// that call or post INTO this instance go under Gateway (inbound). A later

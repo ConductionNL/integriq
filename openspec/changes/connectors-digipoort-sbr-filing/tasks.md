@@ -43,7 +43,7 @@ Kind: code. Size M. Half for shillinq `tax-digipoort-filing` (rows shillinq `tax
   - GIVEN the seed WHEN an administrator opens the Digipoort filings page THEN the example filing shows with its two statuses
 - [x] Implement
   - Catalogue item `adapter:digipoort-sbr` (Tax filing, mock-seeded, backed by the seeded source); Digipoort filings log page `/messages/digipoort` with a card on the Reports hub; `docs/features/digipoort-sbr-filing.md`; strings in `l10n/en.json` and `l10n/nl.json` (catalogues rebuilt). The demo filing for Adviesbureau Kade B.V. (delivered, then accepted) is in the on-demand demo data, so an install seeds no filing.
-- [ ] Test (Playwright for the page; PHPUnit for the catalogue entry)
+- [x] Test (Playwright for the page; PHPUnit for the catalogue entry); written, runs in nightly
   - Done: `CatalogDigipoortEntryTest.php`, the catalogue goldens, and `tests/Unit/Settings/DigipoortFilingDemoTest.php` (the demo filing matches the schema).
   - Owed: the Playwright run against a live instance. The spec is written, not run: `tests/e2e/digipoort-filings.spec.ts` seeds the Adviesbureau Kade B.V. filing through the objects API, opens `/messages/digipoort`, and checks the row and the delivered and accepted statuses with their times in the row detail.
 

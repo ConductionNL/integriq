@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ interface SmsStatusCallbackServiceInterface {
 	 *
 	 * @return ObjectEntity|null The source, raw, or null when none matches.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function sourceFor(string $provider, string $token): ?ObjectEntity;
 
@@ -70,7 +70,7 @@ interface SmsStatusCallbackServiceInterface {
 	 * @throws SmsProviderException With code `bad_signature` when the vendor's signature does not verify,
 	 *                              or `unreadable_callback` when the callback names no message.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function receive(ObjectEntity $source, SmsStatusCallback $callback): ?ObjectEntity;
 }//end interface

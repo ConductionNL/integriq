@@ -10,7 +10,7 @@
   paths whose value differs. Used on the mapping and synchronization detail
   pages.
 
-  @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+  @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
 -->
 <template>
 	<section class="regression-suite" data-testid="regression-suite-panel">
@@ -119,7 +119,7 @@ export default {
 		/**
 		 * Run every case of the subject and show the run record.
 		 *
-		 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+		 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
 		 */
 		async run() {
 			this.running = true

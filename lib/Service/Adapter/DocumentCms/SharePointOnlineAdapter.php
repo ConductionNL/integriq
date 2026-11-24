@@ -216,7 +216,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider implements
 	 *
 	 * @return array{status: int, items: list<array<string, mixed>>, error?: string, permission?: string, graphCode?: string, graphMessage?: string}
 	 *
-	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+	 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 	 */
 	public function lookup(string $credentialId, string $kind, array $params): array {
 		$path = $this->lookupPath(kind: $kind, params: $params);

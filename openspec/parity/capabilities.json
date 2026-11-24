@@ -3163,11 +3163,11 @@
 				"evidence": "Not built: the \"by whom\" part: lib/Controller/ProductSubscriptionsController.php analytics() returns one product-wide figure with no split per consumer. Planned in gateway-usage-per-consumer-and-endpoint (decision 389, verify round 2026-11-12). Code that exists: appinfo/routes.php:504 productSubscriptions#analytics; lib/Controller/ProductSubscriptionsController.php:310 analytics() reads bounded call_log rows for request count/error rate; called from src/views/ApiProducts/ApiProductDetail.vue:455 (frontend-api-paths.txt).",
 				"spec": "openspec/specs/api-product-gateway",
 				"requirement": [
-					"openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
+					"openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
 					"openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
 				],
 				"change": "gateway-usage-per-consumer-and-endpoint",
-				"plan": "openspec/changes/gateway-usage-per-consumer-and-endpoint"
+				"plan": "openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint"
 			},
 			"reachedOn": "/products/:id detail page, analytics panel (ApiProductDetail.vue)",
 			"provider": "integriq",
@@ -3687,11 +3687,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/SynchronizationService.php:7075 falls back to SafeXmlParser + xmlToArray() (defined at line 10280) to turn a non-JSON source response into an array before it reaches the mapping pipeline. There is no reverse direction: no cast type or Twig filter turns mapped output back into XML; the only XML writers are StUFXMLBuilder.php's protocol-specific message builders (e.g. buildNpsLa01, buildAdrLa01), not a general mapping capability. Specified in openspec/changes/mapping-formats-and-lookups/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/SynchronizationService.php:7075 falls back to SafeXmlParser + xmlToArray() (defined at line 10280) to turn a non-JSON source response into an array before it reaches the mapping pipeline. There is no reverse direction: no cast type or Twig filter turns mapped output back into XML; the only XML writers are StUFXMLBuilder.php's protocol-specific message builders (e.g. buildNpsLa01, buildAdrLa01), not a general mapping capability. Specified in openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/ (OpenSpec pass 2026-09-27).",
 				"change": "mapping-formats-and-lookups",
 				"requirement": [
-					"openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search :: A mapping declares its output format (REQ-MFL-002)",
-					"openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search :: A synchronization sends the mapping's output format to an API target (REQ-MFL-003)"
+					"openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search :: A mapping declares its output format (REQ-MFL-002)",
+					"openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search :: A synchronization sends the mapping's output format to an API target (REQ-MFL-003)"
 				]
 			},
 			"reachedOn": "synchronization fetch path (any source whose response is not JSON) -> mapping pipeline; the mapping editor itself has no XML control",
@@ -3728,11 +3728,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Migration/Source/FileMigrationSource.php:207-241 reads CSV rows with str_getcsv() as a migration source, feeding the sync/mapping pipeline. The general HTTP-source fetch path (SynchronizationService.php around line 7050-7080) only has JSON and XML fallbacks, no CSV parsing, despite src/views/Synchronization/SyncConfigWidget.vue:194 offering 'json | xml | csv' as placeholder text for a format field. No CSV writing/export exists anywhere in lib/ or src/. Specified in openspec/changes/mapping-formats-and-lookups/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Migration/Source/FileMigrationSource.php:207-241 reads CSV rows with str_getcsv() as a migration source, feeding the sync/mapping pipeline. The general HTTP-source fetch path (SynchronizationService.php around line 7050-7080) only has JSON and XML fallbacks, no CSV parsing, despite src/views/Synchronization/SyncConfigWidget.vue:194 offering 'json | xml | csv' as placeholder text for a format field. No CSV writing/export exists anywhere in lib/ or src/. Specified in openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/ (OpenSpec pass 2026-09-27).",
 				"change": "mapping-formats-and-lookups",
 				"requirement": [
-					"openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search :: A synchronization reads a CSV source response (REQ-MFL-001)",
-					"openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search :: A mapping declares its output format (REQ-MFL-002)"
+					"openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search :: A synchronization reads a CSV source response (REQ-MFL-001)",
+					"openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search :: A mapping declares its output format (REQ-MFL-002)"
 				]
 			},
 			"reachedOn": "migration source setup (sync-migration capability) reads CSV files; a regular HTTP source configured with a csv format hint is not actually parsed as CSV",
@@ -3812,9 +3812,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Twig/MappingExtension.php:79-89 registers only generateUuid/executeMapping/getFileContents/getFiles/getTargetIdByOriginId/getOriginIdByTargetId as Twig functions available inside a mapping expression; callSource is explicitly NOT registered (comment at lines 64-73: removed in a security hardening pass to close an SSRF path). getTargetIdByOriginId/getOriginIdByTargetId only translate a synchronization contract's own origin/target ids, not an arbitrary register lookup. lib/Controller/MappingsController.php:433 getObjects() only lists available registers for the editor's picker UI, it resolves nothing during execution. Specified in openspec/changes/mapping-formats-and-lookups/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Twig/MappingExtension.php:79-89 registers only generateUuid/executeMapping/getFileContents/getFiles/getTargetIdByOriginId/getOriginIdByTargetId as Twig functions available inside a mapping expression; callSource is explicitly NOT registered (comment at lines 64-73: removed in a security hardening pass to close an SSRF path). getTargetIdByOriginId/getOriginIdByTargetId only translate a synchronization contract's own origin/target ids, not an arbitrary register lookup. lib/Controller/MappingsController.php:433 getObjects() only lists available registers for the editor's picker UI, it resolves nothing during execution. Specified in openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/ (OpenSpec pass 2026-09-27).",
 				"change": "mapping-formats-and-lookups",
-				"requirement": "openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search :: A mapping can look up a value in an allowed register schema (REQ-MFL-004)"
+				"requirement": "openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search :: A mapping can look up a value in an allowed register schema (REQ-MFL-004)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "The hint (MappingService lookups, mappings/objects route) points at a register-picker endpoint for the UI, not a runtime lookup/translate-a-code capability, the hint was wrong.",
@@ -6161,9 +6161,9 @@
 			"built": {
 				"state": "building",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/changes/archive/2026-09-29-job-logs-filtering-and-columns/proposal.md documents a fixed defect: CnLogsPage now reads $route.query deep-link filters (shared nextcloud-vue fix, not integriq-owned per app-shell-and-logs-ui REQ-SHELLUI-003). src/handlers/logTargets.js:52-59 VIEW_LOGS_TARGETS wires 'View source logs'/'View endpoint logs'/'View job logs'/'View synchronization logs' row actions to pre-filtered navigation (?source=, ?endpoint=, ?jobId=, ?synchronizationId=), verified against a populated instance in the file's own comment ('?source= filters correctly, 11 of 15 rows'). CnLogsPage.vue and CnDataTable.vue (nextcloud-vue) were checked for an on-page filter/search widget: none exists. Specified in openspec/changes/observability-log-filters/ (OpenSpec pass 2026-09-27).",
+				"evidence": "openspec/changes/archive/2026-09-29-job-logs-filtering-and-columns/proposal.md documents a fixed defect: CnLogsPage now reads $route.query deep-link filters (shared nextcloud-vue fix, not integriq-owned per app-shell-and-logs-ui REQ-SHELLUI-003). src/handlers/logTargets.js:52-59 VIEW_LOGS_TARGETS wires 'View source logs'/'View endpoint logs'/'View job logs'/'View synchronization logs' row actions to pre-filtered navigation (?source=, ?endpoint=, ?jobId=, ?synchronizationId=), verified against a populated instance in the file's own comment ('?source= filters correctly, 11 of 15 rows'). CnLogsPage.vue and CnDataTable.vue (nextcloud-vue) were checked for an on-page filter/search widget: none exists. Specified in openspec/changes/archive/2026-11-24-observability-log-filters/ (OpenSpec pass 2026-09-27).",
 				"change": "observability-log-filters",
-				"requirement": "openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui :: Every log page declares its filter controls (REQ-LOGF-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-observability-log-filters/specs/app-shell-and-logs-ui :: Every log page declares its filter controls (REQ-LOGF-001)"
 			},
 			"reachedOn": "cross-page: a 'View logs' row action from Sources/Endpoints/Jobs/Synchronizations lands on the matching logs page pre-filtered; sortable 'created'/'startedAt' columns cover time; status is shown as a coloured badge but has no filter control",
 			"note": "Filtering works as deep-link query params (any non-underscore-prefixed key is forwarded as an OpenRegister property filter) and via row-action links from other pages, but none of the logs pages (SourceLogs, EndpointLogs, Traces, JobLogs) has an on-page filter bar or date-range picker a staff member can use directly.",
@@ -6630,11 +6630,11 @@
 				"evidence": "Not built: lib/Controller/ProductSubscriptionsController.php analytics() returns one product-wide figure over every consumer and endpoint, with no breakdown per consumer or per endpoint; planned in gateway-usage-per-consumer-and-endpoint (decision 389, verify round 2026-11-12). Code that exists: appinfo/routes.php:504 productSubscriptions#analytics (/api/products/{productId}/analytics, GET, admin-only per spec_ref); src/views/ApiProducts/ApiProductDetail.vue:448-459 loadAnalytics() calls it, tagged openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007.",
 				"spec": "openspec/specs/api-product-gateway",
 				"requirement": [
-					"openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
+					"openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
 					"openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
 				],
 				"change": "gateway-usage-per-consumer-and-endpoint",
-				"plan": "openspec/changes/gateway-usage-per-consumer-and-endpoint"
+				"plan": "openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint"
 			},
 			"reachedOn": "/products/:id (ApiProductDetail), analytics tab",
 			"note": "Per-product analytics exist (request count, error rate, percentiles), but only as one product-wide figure. The split per consumer and per endpoint the row asks for is planned in gateway-usage-per-consumer-and-endpoint.",
@@ -6795,8 +6795,8 @@
 				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-zaken.json (source ships disabled until an administrator installs the set).",
 				"readOn": "2026-10-30",
 				"requirement": [
-					"openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)",
-					"openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: An external change shows within a minute and a local change writes back (REQ-ZGWC-003)"
+					"openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)",
+					"openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: An external change shows within a minute and a local change writes back (REQ-ZGWC-003)"
 				]
 			},
 			"reachedOn": "nothing reaches it",
@@ -6839,7 +6839,7 @@
 				],
 				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-documenten.json (source ships disabled until an administrator installs the set).",
 				"readOn": "2026-10-30",
-				"requirement": "openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Delivered by the ZGW set installer (lib/Service/Zgw/ZgwSetInstaller.php) with the seeded set in lib/Settings/configurations/zgw-documenten.json; only the change's Playwright test is open in zgw-connectors-for-dossiq.",
@@ -6878,7 +6878,7 @@
 				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-catalogi.json (source ships disabled until an administrator installs the set).",
 				"change": "zgw-connectors-for-dossiq",
 				"readOn": "2026-10-30",
-				"requirement": "openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Delivered by the ZGW set installer (lib/Service/Zgw/ZgwSetInstaller.php) with the seeded set in lib/Settings/configurations/zgw-catalogi.json. Sibling row opencatalogi:svc-import covers serving a catalogue; this row is consuming an outside one.",
@@ -6964,7 +6964,7 @@
 				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-besluiten.json (source ships disabled until an administrator installs the set).",
 				"change": "zgw-connectors-for-dossiq",
 				"readOn": "2026-10-30",
-				"requirement": "openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Delivered by the ZGW set installer (lib/Service/Zgw/ZgwSetInstaller.php) with the seeded set in lib/Settings/configurations/zgw-besluiten.json; only the change's Playwright test is open in zgw-connectors-for-dossiq.",
@@ -7776,7 +7776,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:89 cti#events -> lib/Controller/CtiController.php:92 events() -> lib/Service/Kiss/CtiEventIntake.php:161 handle() verifies, deduplicates and dispatches a typed lib/Event/CallEvent.php via IEventDispatcher; lib/Service/Kiss/WebhookCtiProvider.php is a real binding alongside LogCtiProvider.php (mock).",
 				"change": "kcc-cti-adapter",
-				"requirement": "openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge :: A call carries its caller context as a typed event (REQ-006)"
+				"requirement": "openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge :: A call carries its caller context as a typed event (REQ-006)"
 			},
 			"reachedOn": "machine route: POST /api/cti/{sourceId}/events (PBX webhook, #[PublicPage]) -> dispatches CallEvent for a consuming app (e.g. dossiq) to show next to the caller's details",
 			"note": "Integriq delivers the event; the 'next to the caller's details' display itself lives in the consuming case app (matches sibling row dossiq:6.13), not in integriq's own UI.",
@@ -7815,10 +7815,10 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:165-167 notifyNl#send/status/inbound -> lib/Controller/NotifyNlController.php:97 send(), :165 status(), :208 inbound() -> lib/Service/SmsDispatchService.php (SCHEMA_MESSAGE='sms_message' at line 79) using the real lib/Service/Sms/RestNotifyNlProvider.php binding; manifest page SmsMessages (src/manifest.json:2933-2938, /messages/sms). No code anywhere ties NotifyNL to mail sending; lib/Service/Mail/* only implements inbound mail intake (MailIntakeService), unrelated to outbound notification. Specified in openspec/changes/messaging-sms-providers-and-notifynl-mail/ (OpenSpec pass 2026-09-27).",
+				"evidence": "appinfo/routes.php:165-167 notifyNl#send/status/inbound -> lib/Controller/NotifyNlController.php:97 send(), :165 status(), :208 inbound() -> lib/Service/SmsDispatchService.php (SCHEMA_MESSAGE='sms_message' at line 79) using the real lib/Service/Sms/RestNotifyNlProvider.php binding; manifest page SmsMessages (src/manifest.json:2933-2938, /messages/sms). No code anywhere ties NotifyNL to mail sending; lib/Service/Mail/* only implements inbound mail intake (MailIntakeService), unrelated to outbound notification. Specified in openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/ (OpenSpec pass 2026-09-27).",
 				"change": "messaging-sms-providers-and-notifynl-mail",
 				"requirement": [
-					"openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel :: NotifyNL sends e-mail and the send is logged per recipient (REQ-SMSP-005)",
+					"openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel :: NotifyNL sends e-mail and the send is logged per recipient (REQ-SMSP-005)",
 					"openspec/specs/notifynl-sms-channel :: NotifyNL REST provider with JWT-signed requests (REQ-003)"
 				]
 			},
@@ -8394,7 +8394,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:286-288 eudiIssuerKeyAdmin#status/generateKey/rotateKey -> lib/Controller/EudiIssuerKeyAdminController.php. A case-insensitive grep of src/ for 'eudi' returns zero matches, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue. Covered by openspec/changes/adapter-configuration-screens/ (0 of 12 tasks ticked; OpenSpec pass 2026-09-27): Task 5 specifies the EUDI status list and its issuer key surface, the screen this row lacks.",
+				"evidence": "appinfo/routes.php:286-288 eudiIssuerKeyAdmin#status/generateKey/rotateKey -> lib/Controller/EudiIssuerKeyAdminController.php. A case-insensitive grep of src/ for 'eudi' returns zero matches, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue. Covered by openspec/changes/archive/2026-11-24-adapter-configuration-screens/ (0 of 12 tasks ticked; OpenSpec pass 2026-09-27): Task 5 specifies the EUDI status list and its issuer key surface, the screen this row lacks.",
 				"change": "adapter-configuration-screens",
 				"spec": "openspec/specs/eudi-wallet-credential-issuance",
 				"requirement": "openspec/specs/eudi-wallet-credential-issuance :: Issuer signing-key lifecycle under Beheer > Authenticatie (REQ-EUDI-002)"
@@ -9094,9 +9094,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:165 notifyNl#send -> lib/Controller/NotifyNlController.php:97 send() (ActionAuthService 'sms.send') -> lib/Service/SmsDispatchService.php:136 sendMessage() -> lib/Service/Sms/RestNotifyNlProvider.php (Guzzle, https://api.notifynl.nl) or LogSmsProvider; writes sms_message shown on SmsMessages page (src/manifest.json:2933, /messages/sms, logs). Status callback routes.php inbound NotifyNlController.php:208. CM.com/MessageBird/Twilio: lib/Settings/register.d/cmcom-sms-source.json, messagebird-sms-source.json, twilio-sms-source.json are seeded generic source objects with configuration.mock:true, and their $comment says the send leaf is OpenRegister's MessageDispatchProvider and pipelinq's SmsAdapter, not integriq code. NO frontend caller for /api/notifynl/messages (not in frontend-api-paths.txt); sendMessage has no other internal caller (grep 'sendMessage(' lib = only NotifyNlController:135). Specified in openspec/changes/messaging-sms-providers-and-notifynl-mail/ (OpenSpec pass 2026-09-27).",
+				"evidence": "appinfo/routes.php:165 notifyNl#send -> lib/Controller/NotifyNlController.php:97 send() (ActionAuthService 'sms.send') -> lib/Service/SmsDispatchService.php:136 sendMessage() -> lib/Service/Sms/RestNotifyNlProvider.php (Guzzle, https://api.notifynl.nl) or LogSmsProvider; writes sms_message shown on SmsMessages page (src/manifest.json:2933, /messages/sms, logs). Status callback routes.php inbound NotifyNlController.php:208. CM.com/MessageBird/Twilio: lib/Settings/register.d/cmcom-sms-source.json, messagebird-sms-source.json, twilio-sms-source.json are seeded generic source objects with configuration.mock:true, and their $comment says the send leaf is OpenRegister's MessageDispatchProvider and pipelinq's SmsAdapter, not integriq code. NO frontend caller for /api/notifynl/messages (not in frontend-api-paths.txt); sendMessage has no other internal caller (grep 'sendMessage(' lib = only NotifyNlController:135). Specified in openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/ (OpenSpec pass 2026-09-27).",
 				"change": "messaging-sms-providers-and-notifynl-mail",
-				"requirement": "openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel :: CM.com, MessageBird and Twilio send through the SMS provider seam (REQ-SMSP-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel :: CM.com, MessageBird and Twilio send through the SMS provider seam (REQ-SMSP-001)"
 			},
 			"reachedOn": "machine route: POST /api/notifynl/messages (session plus sms.send action, meant for sibling apps); SmsMessages page (/messages/sms) shows results",
 			"note": "Integriq itself sends SMS only through NotifyNL, via a route no integriq page calls. CM.com, MessageBird and Twilio are just seeded source configs in mock mode that another app's dispatcher uses.",
@@ -9479,11 +9479,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:157 payments#create -> lib/Controller/PaymentsController.php:92 create() (session plus ActionAuthService 'payments.create') -> lib/Service/PaymentIntentService.php resolveProvider() :368 picks lib/Service/Payment/MolliePaymentProvider.php:89 createPayment() (https://api.mollie.com/v2) or LogPaymentProvider (the default). Webhook routes.php:158 -> PaymentsController.php:141 webhook() (PublicPage, re-derives status from the provider). No frontend caller (not in frontend-api-paths.txt), no payment page in manifest-pages.txt, and no caller in local learniq/shillinq checkouts (grep 'api/payments' = 0); the routes.php:150-155 comment says the shillinq binding is a follow-up change not built here. Specified in openspec/changes/messaging-payments-review/ (OpenSpec pass 2026-09-27).",
+				"evidence": "appinfo/routes.php:157 payments#create -> lib/Controller/PaymentsController.php:92 create() (session plus ActionAuthService 'payments.create') -> lib/Service/PaymentIntentService.php resolveProvider() :368 picks lib/Service/Payment/MolliePaymentProvider.php:89 createPayment() (https://api.mollie.com/v2) or LogPaymentProvider (the default). Webhook routes.php:158 -> PaymentsController.php:141 webhook() (PublicPage, re-derives status from the provider). No frontend caller (not in frontend-api-paths.txt), no payment page in manifest-pages.txt, and no caller in local learniq/shillinq checkouts (grep 'api/payments' = 0); the routes.php:150-155 comment says the shillinq binding is a follow-up change not built here. Specified in openspec/changes/archive/2026-11-24-messaging-payments-review/ (OpenSpec pass 2026-09-27).",
 				"change": "messaging-payments-review",
 				"requirement": [
 					"openspec/specs/live-payment-providers :: Payment creation endpoint accepting shillinq's payload contract (REQ-LPP-001)",
-					"openspec/changes/messaging-payments-review/specs/live-payment-providers :: An administrator reviews payments on the payments page (REQ-PRV-001)"
+					"openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers :: An administrator reviews payments on the payments page (REQ-PRV-001)"
 				]
 			},
 			"reachedOn": "machine route: POST /api/payments (server-to-server) and POST /api/payments/webhook (provider callback)",
@@ -10186,9 +10186,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/info.xml:505-507 <admin>OCA\\Integriq\\Settings\\IntegriqAdmin; lib/Settings/IntegriqAdmin.php:52 extends OR GenericAdminSettings (renders templates/settings/admin.php, which loads src/settings.js); src/views/admin/AdminSettings.vue:7-16 renders ActionAuthMatrix and DsoPkiSettings only; retention defaults read in lib/Service/SettingsService.php:135-159 from app config key 'retention' with no setter route (routes.php:586-592 comment: GET/PUT /api/settings removed); grep -rni retention src: only per-job logRetention fields. Specified in openspec/changes/platform-admin-defaults/ (OpenSpec pass 2026-09-27).",
+				"evidence": "appinfo/info.xml:505-507 <admin>OCA\\Integriq\\Settings\\IntegriqAdmin; lib/Settings/IntegriqAdmin.php:52 extends OR GenericAdminSettings (renders templates/settings/admin.php, which loads src/settings.js); src/views/admin/AdminSettings.vue:7-16 renders ActionAuthMatrix and DsoPkiSettings only; retention defaults read in lib/Service/SettingsService.php:135-159 from app config key 'retention' with no setter route (routes.php:586-592 comment: GET/PUT /api/settings removed); grep -rni retention src: only per-job logRetention fields. Specified in openspec/changes/archive/2026-11-24-platform-admin-defaults/ (OpenSpec pass 2026-09-27).",
 				"change": "platform-admin-defaults",
-				"requirement": "openspec/changes/platform-admin-defaults/specs/logs-and-statistics :: An administrator sets retention on the admin page (REQ-ADEF-002)"
+				"requirement": "openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics :: An administrator sets retention on the admin page (REQ-ADEF-002)"
 			},
 			"reachedOn": "Nextcloud admin settings, Integriq section",
 			"note": "The admin page is real and wired into Nextcloud's settings framework, but it sets the action matrix and the DSO PKI signature config, not app defaults. Log retention can only be changed via occ config:app:set, and POST /api/settings/rebase (SettingsController.php:82) has no caller and still targets legacy openconnector_* tables.",
@@ -10300,11 +10300,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Adapter/AbstractCategoryAdapterProvider.php:56 abstract base (getCapabilities abstract :87, brokeredRequest credential scaffolding) with four reference adapters under lib/Service/Adapter/{Saas,DocumentCms,EndpointWorkspace,DataInfra}; registration is hard-coded in lib/AppInfo/Application.php:1471-1475; docs/developers contains only README.md, developers.md, dashboard-http-datasource.md, styleguide.md (grep -rli 'adapter|provider' docs/developers: 0 hits). Specified in openspec/changes/platform-connector-extension-kit/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/Adapter/AbstractCategoryAdapterProvider.php:56 abstract base (getCapabilities abstract :87, brokeredRequest credential scaffolding) with four reference adapters under lib/Service/Adapter/{Saas,DocumentCms,EndpointWorkspace,DataInfra}; registration is hard-coded in lib/AppInfo/Application.php:1471-1475; docs/developers contains only README.md, developers.md, dashboard-http-datasource.md, styleguide.md (grep -rli 'adapter|provider' docs/developers: 0 hits). Specified in openspec/changes/archive/2026-11-24-platform-connector-extension-kit/ (OpenSpec pass 2026-09-27).",
 				"change": "platform-connector-extension-kit",
 				"requirement": [
-					"openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit :: An extension app contributes adapters through a collect event (REQ-CXK-001)",
-					"openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit :: A developer builds an extension from a guide, a skeleton and contract tests (REQ-CXK-004)"
+					"openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit :: An extension app contributes adapters through a collect event (REQ-CXK-001)",
+					"openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit :: A developer builds an extension from a guide, a skeleton and contract tests (REQ-CXK-004)"
 				]
 			},
 			"reachedOn": "nothing reaches it",
@@ -10737,11 +10737,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Adapter/DocumentCms/SharePointOnlineAdapter.php:153-197 (listDocuments/fetchDocument via Microsoft Graph drive API through the credential broker), :252 (IntegrationProvider list() needs a siteId filter); registered at lib/AppInfo/Application.php:1473; Store card via lib/Service/CatalogRegistryService.php:112. Importable template configurations/sharepoint-woo/sources/sharepoint.json and configurations/sharepoint-woo/synchronizations/sharepoint-publications.json. grep listDocuments/fetchDocument outside the adapter = 0 callers. Specified in openspec/changes/connectors-sharepoint-publication-intake/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/Adapter/DocumentCms/SharePointOnlineAdapter.php:153-197 (listDocuments/fetchDocument via Microsoft Graph drive API through the credential broker), :252 (IntegrationProvider list() needs a siteId filter); registered at lib/AppInfo/Application.php:1473; Store card via lib/Service/CatalogRegistryService.php:112. Importable template configurations/sharepoint-woo/sources/sharepoint.json and configurations/sharepoint-woo/synchronizations/sharepoint-publications.json. grep listDocuments/fetchDocument outside the adapter = 0 callers. Specified in openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/ (OpenSpec pass 2026-09-27).",
 				"change": "connectors-sharepoint-publication-intake",
 				"requirement": [
-					"openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors :: An administrator sets up SharePoint to publication intake from the Store (REQ-SPPI-001)",
-					"openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors :: Each dossier folder becomes a draft publication with its documents (REQ-SPPI-002)"
+					"openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors :: An administrator sets up SharePoint to publication intake from the Store (REQ-SPPI-001)",
+					"openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors :: Each dossier folder becomes a draft publication with its documents (REQ-SPPI-002)"
 				]
 			},
 			"reachedOn": "/store (adapter:sharepoint-online card, always-available) and the configuration import UI for the sharepoint-woo template; nothing in integriq's own UI calls listDocuments with a siteId",
@@ -11210,11 +11210,11 @@
 				"evidence": "Not built: only the Azure Virtual Desktop reference adapter exists, registered but called by no route or page; no Intune, Jamf or Citrix adapter (decision 389). Code that exists: openspec/specs/endpoint-workspace-connectors/spec.md is the main spec; reference adapter lib/Service/Adapter/EndpointWorkspace/AzureVirtualDesktopAdapter.php, registered in lib/Service/ServiceBindings.php:445.",
 				"spec": "openspec/specs/endpoint-workspace-connectors",
 				"requirement": [
-					"openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors :: An administrator sees the sessions or devices of a connected workspace manager (REQ-EWC-008)",
+					"openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors :: An administrator sees the sessions or devices of a connected workspace manager (REQ-EWC-008)",
 					"openspec/specs/endpoint-workspace-connectors :: Endpoint and virtual-desktop / workspace connectors SHALL register through the integration registry per ADR-019 (REQ-EWC-001)",
 					"openspec/specs/endpoint-workspace-connectors :: Each EWC adapter manifest entry SHALL declare a fixed capability vocabulary scoped to session-enumeration, user-mapping, and audit-event ingestion (REQ-EWC-002)"
 				],
-				"plan": "openspec/changes/connectors-endpoint-workspace-adapters"
+				"plan": "openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters"
 			},
 			"n8n": "unknown",
 			"tyk": "unknown",
@@ -11694,11 +11694,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:384 mappings#test and :367 synchronizations#test run a single test by hand (rows map-test, sync-test); src/views/ExecutionTrace/TraceDetailPage.vue:232,260 replay one traced request (row obs-trace-replay); there is no stored test case set that replays as a suite. Specified in openspec/changes/automation-integration-regression-tests/ (OpenSpec pass 2026-09-27).",
+				"evidence": "appinfo/routes.php:384 mappings#test and :367 synchronizations#test run a single test by hand (rows map-test, sync-test); src/views/ExecutionTrace/TraceDetailPage.vue:232,260 replay one traced request (row obs-trace-replay); there is no stored test case set that replays as a suite. Specified in openspec/changes/archive/2026-11-24-automation-integration-regression-tests/ (OpenSpec pass 2026-09-27).",
 				"change": "automation-integration-regression-tests",
 				"requirement": [
-					"openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests :: A test case stores an input, an expected output and its subject (REQ-IRT-001)",
-					"openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests :: A suite run replays every case without calling the source or writing (REQ-IRT-003)"
+					"openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests :: A test case stores an input, an expected output and its subject (REQ-IRT-001)",
+					"openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests :: A suite run replays every case without calling the source or writing (REQ-IRT-003)"
 				]
 			},
 			"reachedOn": "/mappings/:id test panel, /synchronizations/:id test action, /traces/:id Replay",
@@ -11737,11 +11737,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/JobIntervalCron.php:40-91 only translates an interval in seconds to a cron line, and lib/Service/JobService.php:511 computes nextRunDt from jobConfig['interval']; there is no calendar, weekday or month-day schedule. Specified in openspec/changes/automation-job-calendar-schedules/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/JobIntervalCron.php:40-91 only translates an interval in seconds to a cron line, and lib/Service/JobService.php:511 computes nextRunDt from jobConfig['interval']; there is no calendar, weekday or month-day schedule. Specified in openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/ (OpenSpec pass 2026-09-27).",
 				"change": "automation-job-calendar-schedules",
 				"requirement": [
-					"openspec/changes/automation-job-calendar-schedules/specs/job-scheduling :: A job can carry a calendar schedule instead of an interval (REQ-JCAL-001)",
-					"openspec/changes/automation-job-calendar-schedules/specs/job-scheduling :: The next run follows the calendar after success and after failure (REQ-JCAL-002)"
+					"openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling :: A job can carry a calendar schedule instead of an interval (REQ-JCAL-001)",
+					"openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling :: The next run follows the calendar after success and after failure (REQ-JCAL-002)"
 				]
 			},
 			"reachedOn": "nothing reaches it",
@@ -12812,10 +12812,10 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"plan": "openspec/changes/observability-opentelemetry-export-errors-and-app-spans",
+				"plan": "openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans",
 				"change": "observability-opentelemetry-export-errors-and-app-spans",
-				"requirement": "openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace :: Errors from the apps an administrator selects go to an error sink (REQ-OTEL-006)",
-				"evidence": "Not built: specified in openspec/changes/observability-opentelemetry-export-errors-and-app-spans (11/11 tasks open). obs-otel (traces) points at part 1 observability-opentelemetry-export; error tracking is a separate capability. No ErrorSink code yet."
+				"requirement": "openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace :: Errors from the apps an administrator selects go to an error sink (REQ-OTEL-006)",
+				"evidence": "Not built: specified in openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans (11/11 tasks open). obs-otel (traces) points at part 1 observability-opentelemetry-export; error tracking is a separate capability. No ErrorSink code yet."
 			},
 			"feature": "execution-trace",
 			"featureConfidence": "medium",
@@ -12948,10 +12948,10 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"plan": "openspec/changes/forms-service-fetch-for-apps",
+				"plan": "openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps",
 				"change": "forms-service-fetch-for-apps",
-				"requirement": "openspec/changes/forms-service-fetch-for-apps/specs/service-fetch :: An administrator defines a service fetch with inputs and mapped outputs (REQ-SF-001)",
-				"evidence": "Not built: specified in openspec/changes/forms-service-fetch-for-apps (10/10 tasks open). No row for an admin-defined fetch with named inputs and outputs; adds an admin page."
+				"requirement": "openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch :: An administrator defines a service fetch with inputs and mapped outputs (REQ-SF-001)",
+				"evidence": "Not built: specified in openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps (10/10 tasks open). No row for an admin-defined fetch with named inputs and outputs; adds an admin page."
 			},
 			"feature": "service-fetch",
 			"featureConfidence": "medium",

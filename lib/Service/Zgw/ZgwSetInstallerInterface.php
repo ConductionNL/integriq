@@ -38,7 +38,7 @@ interface ZgwSetInstallerInterface {
 	 *
 	 * @throws ZgwSetInstallRefusedException When a guard refuses or a seeded synchronization is missing.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function install(string $slug, string $register, string $schema): array;
 
@@ -47,7 +47,7 @@ interface ZgwSetInstallerInterface {
 	 *
 	 * @return array<string, string>
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	public function subscriptions(): array;
 
@@ -56,7 +56,7 @@ interface ZgwSetInstallerInterface {
 	 *
 	 * @return array<string, string>
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function bindings(): array;
 
@@ -65,7 +65,7 @@ interface ZgwSetInstallerInterface {
 	 *
 	 * @return list<array{slug: string, title: string, writesBack: bool}>
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function catalogue(): array;
 }

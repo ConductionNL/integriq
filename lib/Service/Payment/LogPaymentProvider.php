@@ -57,7 +57,7 @@ class LogPaymentProvider implements PaymentProviderInterface, PaymentProviderPro
 	 *
 	 * @return string `log`.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function getProviderId(): string {
 		return 'log';
@@ -147,7 +147,7 @@ class LogPaymentProvider implements PaymentProviderInterface, PaymentProviderPro
 	 *
 	 * @return array{ok: bool, mode: ?string, profile: ?string, message: ?string}
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	public function probe(array $sourceConfiguration): array {
 		return [

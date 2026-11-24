@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Spec coverage:
- * openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md
+ * openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md
  * (REQ-IRT-001, REQ-IRT-002, REQ-IRT-003, REQ-IRT-005), and the Verification
  * line of that change's tasks.md, which names this file.
  *

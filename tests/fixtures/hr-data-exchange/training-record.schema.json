@@ -1,0 +1,80 @@
+{
+  "$comment": "humaniq TrainingRecord (talent-training-and-lms D1), copied from humaniq development lib/Settings/register.d/hr-training.json on 2026-11-24: the contract the Studytube completions pull writes.",
+  "type": "object",
+  "required": [
+    "employeeId",
+    "title"
+  ],
+  "properties": {
+    "employeeId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "title": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "nullable": true
+    },
+    "plannedOn": {
+      "type": "string",
+      "format": "date",
+      "nullable": true
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "gepland",
+        "gevolgd",
+        "niet-gevolgd"
+      ]
+    },
+    "completedOn": {
+      "type": "string",
+      "format": "date",
+      "nullable": true
+    },
+    "validityMonths": {
+      "type": "integer",
+      "nullable": true
+    },
+    "validUntil": {
+      "type": "string",
+      "format": "date",
+      "nullable": true
+    },
+    "competenceCode": {
+      "type": "string",
+      "nullable": true
+    },
+    "costEur": {
+      "type": "number",
+      "nullable": true
+    },
+    "studiekostenbeding": {
+      "type": "boolean"
+    },
+    "terugbetalingsregeling": {
+      "type": "string",
+      "nullable": true
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "hr",
+        "learniq",
+        "lms"
+      ]
+    },
+    "sourceRef": {
+      "type": "string",
+      "nullable": true
+    },
+    "administrationId": {
+      "type": "string",
+      "nullable": true
+    }
+  },
+  "additionalProperties": false
+}

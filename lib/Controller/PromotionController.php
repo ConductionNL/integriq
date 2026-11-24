@@ -258,7 +258,7 @@ class PromotionController extends Controller {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
 	 */
 	private function overrideFailingTests(): bool {
 		$override = $this->request->getParam('overrideFailingTests', false);

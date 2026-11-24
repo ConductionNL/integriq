@@ -20,7 +20,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-a-form-designer-can-list-the-fetches-an-app-may-call-req-sf-003
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-a-form-designer-can-list-the-fetches-an-app-may-call-req-sf-003
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
  * The designer's list of service fetches (REQ-SF-003), and the administrator's
  * test run of one fetch (REQ-SF-001).
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-a-form-designer-can-list-the-fetches-an-app-may-call-req-sf-003
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-a-form-designer-can-list-the-fetches-an-app-may-call-req-sf-003
  */
 class ServiceFetchController extends Controller {
 
@@ -74,7 +74,7 @@ class ServiceFetchController extends Controller {
 	 *
 	 * @return JSONResponse `{results: [...]}`, 400 without an app.
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-a-form-designer-can-list-the-fetches-an-app-may-call-req-sf-003
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-a-form-designer-can-list-the-fetches-an-app-may-call-req-sf-003
 	 */
 	#[NoAdminRequired]
 	public function index(string $app = ''): JSONResponse {
@@ -108,7 +108,7 @@ class ServiceFetchController extends Controller {
 	 *
 	 * @auth admin-only the raw answer of the source is for administrators, never for an app
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 	 */
 	public function test(string $slug): JSONResponse {
 		$inputs = $this->request->getParam('inputs', []);

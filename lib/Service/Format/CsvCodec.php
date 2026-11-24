@@ -27,7 +27,7 @@
  *
  * @see \OCA\OpenRegister\Service\ImportService
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use InvalidArgumentException;
  * - `enclosure`: one character, default `"`;
  * - `header`: whether the first row names the columns, default true.
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
  */
 final class CsvCodec {
 
@@ -62,7 +62,7 @@ final class CsvCodec {
 	 *
 	 * @throws InvalidArgumentException When the delimiter or enclosure is not one character.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#scenario-a-quoted-line-break-survives
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#scenario-a-quoted-line-break-survives
 	 */
 	public static function decode(string $content, array $options = []): array {
 		$records = self::records(content: $content, options: $options);
@@ -89,7 +89,7 @@ final class CsvCodec {
 	 *
 	 * @throws InvalidArgumentException When the delimiter or enclosure is not one character.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
 	 */
 	public static function headers(string $content, array $options = []): array {
 		return (self::records(content: $content, options: $options, limit: 1)[0] ?? []);
@@ -108,7 +108,7 @@ final class CsvCodec {
 	 *
 	 * @throws InvalidArgumentException When the delimiter or enclosure is not one character.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
 	 */
 	public static function encode(array $rows, array $options = []): string {
 		[$delimiter, $enclosure] = self::characters(options: $options);

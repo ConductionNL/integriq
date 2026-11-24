@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md
  * (REQ-APGU-001, product usage is split per consumer and per endpoint).
  *
  * What an administrator does here: open an API product's detail page and read

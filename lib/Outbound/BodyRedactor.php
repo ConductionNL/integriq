@@ -151,7 +151,7 @@ class BodyRedactor {
 	 *
 	 * @return string The text with credentials and BSN-shaped numbers replaced.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function redactText(string $text): string {
 		$redacted = $this->redactBody(body: $text);

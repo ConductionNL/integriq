@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md
  * (the Playwright halves of tasks 2, 3 and 5 in that change's tasks.md).
  *
  * REQ-MFL-001, a municipal code list served as CSV. The synchronization

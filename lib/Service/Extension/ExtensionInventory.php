@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use OCA\Integriq\Service\Payment\PaymentProviderRegistry;
  * post, payment and template seams, registered and refused. Using each
  * registry once makes it ask the extension apps.
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
  */
 class ExtensionInventory {
 
@@ -48,7 +48,7 @@ class ExtensionInventory {
 	 * @param PaymentProviderRegistry     $payments    The payment provider registry.
 	 * @param ContributedTemplates|null   $templates   The contributed connector templates, read so they are listed too.
 	 *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
 	public function __construct(
 		private readonly ConnectorExtensionCollector $collector,
@@ -63,7 +63,7 @@ class ExtensionInventory {
 	 *
 	 * @return array<int,array{seam: string, id: string, appId: string, class: string, refused: bool, reason: string}>
 	 *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
 	public function record(): array {
 		$this->digitalPost->ids();

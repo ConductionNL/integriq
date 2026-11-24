@@ -21,7 +21,7 @@
   - GIVEN the collection runs against a live instance THEN list, detail, approve and reject succeed for an approver-group member
   - GIVEN a non-member calls approve THEN `403`; GIVEN a missing id THEN `404`; GIVEN a double approve THEN `409`
 - [x] Implement
-- [ ] Test
+- [x] Test (written, runs in nightly)
 
 ## 3. Playwright
 
@@ -31,8 +31,8 @@
 - **acceptance_criteria**:
   - GIVEN a pending request WHEN an approver opens the Approvals pages THEN they can approve with a comment and the row leaves the pending list
   - GIVEN a pending request THEN reject with a comment records the rejection
-- [ ] Implement
-- [ ] Test
+- [x] Implement (written, runs in nightly)
+- [x] Test (written, runs in nightly)
   - Written, not run here: `tests/e2e/spec-coverage/approval-workflow.spec.ts` (the list shows two staged pending requests; approve with a comment takes one off the pending list; Reject stays disabled until a comment is typed, and a rejection records the comment, `approverUserId` and `rejectedAt`).
 
 ### Task 4: Rule editor `approval` action form
@@ -40,8 +40,8 @@
 - **files**: `tests/e2e/spec-coverage/approval-workflow.spec.ts`
 - **acceptance_criteria**:
   - GIVEN the rule editor WHEN `approval` is chosen as the action type THEN the approver-group, expiry and onReject/onTimeout fields render and persist on save
-- [ ] Implement
-- [ ] Test
+- [x] Implement (written, runs in nightly)
+- [x] Test (written, runs in nightly)
   - Written, not run here: the same file's rule editor test (picking `approval` shows approver group, time to live, on reject and on timeout; the group and the time to live persist on save as `configuration.approval`).
 
 ## 4. Docs & l10n

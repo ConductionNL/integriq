@@ -244,7 +244,7 @@ class MappingsController extends Controller {
 	 *
 	 * @return array<string, mixed> `renderedOutput` with format, contentType and body, or nothing.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
 	 */
 	private function renderedOutput(array $mapping, array $resultObject): array {
 		$rendered = $this->mappingService->renderOutput(mapping: $mapping, result: $resultObject);

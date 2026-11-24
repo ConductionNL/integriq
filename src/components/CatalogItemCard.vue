@@ -176,7 +176,7 @@ export default {
 		 * integriq's own cards.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+		 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 		 */
 		providedByLabel() {
 			const app = this.catalogItem.providedBy

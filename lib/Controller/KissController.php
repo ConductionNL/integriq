@@ -88,7 +88,7 @@ class KissController extends Controller {
 	 * @return JSONResponse `{id, localUuid}` on success, or a 400/404/503/502 error envelope.
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -124,7 +124,7 @@ class KissController extends Controller {
 	 *
 	 * @return string The channel, or an empty string.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	private function channelOf(array $params): string {
 		$channel = (string)($params['channel'] ?? '');
@@ -144,7 +144,7 @@ class KissController extends Controller {
 	 *
 	 * @return JSONResponse The result, a 404 for an unknown call, or a 503/502 provider failure.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	private function push(array $input): JSONResponse {
 		try {
@@ -170,7 +170,7 @@ class KissController extends Controller {
 	 *
 	 * @return JSONResponse The error envelope.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	private function providerFailure(KissProviderException $exception): JSONResponse {
 		$this->logger->warning('[KissController] push failed: ' . $exception->getMessage());

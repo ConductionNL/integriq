@@ -22,7 +22,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Checks a vendor's SMS status callback and applies it.
  *
- * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+ * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
  */
 class SmsStatusCallbackService implements SmsStatusCallbackServiceInterface {
 
@@ -86,7 +86,7 @@ class SmsStatusCallbackService implements SmsStatusCallbackServiceInterface {
 	 *
 	 * @return ObjectEntity|null The source, raw, or null when none matches.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function sourceFor(string $provider, string $token): ?ObjectEntity {
 		if ($token === '' || ($this->providers->resolve(providerId: $provider) instanceof SmsStatusCallbackInterface) === false) {
@@ -119,7 +119,7 @@ class SmsStatusCallbackService implements SmsStatusCallbackServiceInterface {
 	 * @throws SmsProviderException With code `bad_signature` when the vendor's signature does not verify,
 	 *                              or `unreadable_callback` when the callback names no message.
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function receive(ObjectEntity $source, SmsStatusCallback $callback): ?ObjectEntity {
 		$configuration = ($source->getObject()['configuration'] ?? []);

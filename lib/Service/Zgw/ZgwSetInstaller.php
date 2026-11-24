@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+ * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use stdClass;
  * a pull bound without its push would read the store and never write back,
  * while every screen showed the set as installed.
  *
- * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+ * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ZgwSetCatalogue is a catalogue of constants with no
  * state to instantiate, the same reason ZgwSetInstallGuard gives.
@@ -74,7 +74,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	 * @param IL10N                         $l10n         Translates the refusals an operator meets.
 	 * @param string                        $setDirectory Where the packaged set files are read from.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -98,7 +98,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	 *
 	 * @throws ZgwSetInstallRefusedException When a guard refuses or a seeded synchronization is missing.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function install(string $slug, string $register, string $schema): array {
 		$bindings = $this->bindings();
@@ -155,7 +155,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	 *
 	 * @return array{set: string, binding: null, synchronizations: list<string>, subscriptions: array<string, string>, refused: array<string, string>}
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	private function subscribe(string $slug, array $template, array $bindings): array {
 		$subscriptions = $this->subscriptions();
@@ -202,7 +202,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	 *
 	 * @throws ZgwSetInstallRefusedException When this instance lacks the source.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	private function sourceUuid(string $slug): string {
 		$source = null;
@@ -230,7 +230,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	 *
 	 * @return array<string, string>
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	public function subscriptions(): array {
 		$decoded = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, self::SUBSCRIPTIONS_KEY, '{}'), true);
@@ -246,7 +246,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	 *
 	 * @return array<string, string>
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function bindings(): array {
 		$decoded = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, self::BINDINGS_KEY, '{}'), true);
@@ -266,7 +266,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	 *
 	 * @throws ZgwSetInstallRefusedException When the file is missing or unreadable.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-six-packaged-slug-referenced-zgw-consumer-sets-req-zgwc-001
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-six-packaged-slug-referenced-zgw-consumer-sets-req-zgwc-001
 	 */
 	private function template(string $slug): array {
 		$path     = $this->setDirectory . '/' . basename($slug) . '.json';
@@ -290,7 +290,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	 *
 	 * @throws ZgwSetInstallRefusedException Naming the first one this instance lacks.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	private function seededSynchronizations(array $slugs): array {
 		$found = [];
@@ -329,7 +329,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	private function bind(array $synchronization, string $binding): array {
 		if (($synchronization['sourceType'] ?? null) === 'register/schema') {
@@ -347,7 +347,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	 *
 	 * @return list<array{slug: string, title: string, writesBack: bool}>
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function catalogue(): array {
 		$sets = [];

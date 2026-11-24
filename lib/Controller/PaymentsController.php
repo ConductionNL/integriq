@@ -172,7 +172,7 @@ class PaymentsController extends Controller {
 	 *
 	 * @return JSONResponse The refresh result, 404 for an unknown payment, 502 on a provider error.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
 	 */
 	#[NoAdminRequired]
 	public function refresh(string $id): JSONResponse {
@@ -209,7 +209,7 @@ class PaymentsController extends Controller {
 	 *
 	 * @return JSONResponse `{providers: [{id, label, needsKey}]}`.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -233,7 +233,7 @@ class PaymentsController extends Controller {
 	 *
 	 * @return JSONResponse The check result, or 400 when no configuration object was sent.
 	 *
-	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 * @spec openspec/changes/archive/2026-11-24-messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
 	 */
 	#[NoAdminRequired]
 	public function check(): JSONResponse {

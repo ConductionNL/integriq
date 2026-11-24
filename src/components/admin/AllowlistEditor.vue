@@ -10,7 +10,7 @@
   (see the allowlistEditor mixin); this component only shows them and emits
   `add` and `remove`.
 
-  @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+  @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 -->
 <template>
 	<div class="integriq-admin__section" :data-testid="`${testid}-section`">

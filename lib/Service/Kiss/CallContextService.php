@@ -23,7 +23,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
  */
 
 declare(strict_types=1);
@@ -62,7 +62,7 @@ class CallContextService {
 	 *
 	 * @return array{caller: (array|null), openCases: array} The context.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	public function resolve(string $e164, array $sourceConfiguration = []): array {
 		$caller = $this->callerFor(e164: $e164, sourceConfiguration: $sourceConfiguration);
@@ -85,7 +85,7 @@ class CallContextService {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	private function callerFor(string $e164, array $sourceConfiguration): ?array {
 		if ($this->lookup->isUsable(e164: $e164) === false) {
@@ -118,7 +118,7 @@ class CallContextService {
 	 *
 	 * @return array<int, mixed>
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	private function openCasesOf(array $caller, array $sourceConfiguration): array {
 		try {

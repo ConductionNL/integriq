@@ -26,7 +26,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
  */
 
 declare(strict_types=1);
@@ -60,7 +60,7 @@ class WebhookCtiProvider implements CtiProviderInterface {
 	 *
 	 * @return string The id.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function getProviderId(): string {
 		return 'webhook';
@@ -72,7 +72,7 @@ class WebhookCtiProvider implements CtiProviderInterface {
 	 *
 	 * @return array<string, mixed> The JSON Schema fragment.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function getConfigSchema(): array {
 		return [
@@ -119,7 +119,7 @@ class WebhookCtiProvider implements CtiProviderInterface {
 	 *
 	 * @return boolean True when the request is genuine.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function verify(array $sourceConfiguration, array $headers, string $rawBody): bool {
 		$signatureSecret = (string) ($sourceConfiguration['signatureSecret'] ?? '');
@@ -152,7 +152,7 @@ class WebhookCtiProvider implements CtiProviderInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The normalised events.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function normalize(array $sourceConfiguration, array $payload): array {
 		$items = $this->itemsFrom(

@@ -22,7 +22,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
 /**
  * The administered list of register schemas a mapping may look up in.
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
  */
 class LookupAllowlist implements LookupAllowlistInterface {
 
@@ -61,7 +61,7 @@ class LookupAllowlist implements LookupAllowlistInterface {
 	 * @param IAppConfig      $appConfig Where the list is stored.
 	 * @param LoggerInterface $logger    The logger.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
@@ -76,7 +76,7 @@ class LookupAllowlist implements LookupAllowlistInterface {
 	 *
 	 * @return string|null The reason.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 	 */
 	public function refusalFor(string $schema): ?string {
 		if (preg_match(self::SCHEMA_PATTERN, trim($schema)) !== 1) {
@@ -93,7 +93,7 @@ class LookupAllowlist implements LookupAllowlistInterface {
 	 *
 	 * @return array<string, array{addedBy: string, addedAt: string}>
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 	 */
 	public function entries(): array {
 		$raw = $this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, '');
@@ -126,7 +126,7 @@ class LookupAllowlist implements LookupAllowlistInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
 	 */
 	public function allows(string $schema): bool {
 		return array_key_exists($schema, $this->entries());
@@ -140,7 +140,7 @@ class LookupAllowlist implements LookupAllowlistInterface {
 	 *
 	 * @return array{added: bool, reason: string}
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 	 */
 	public function add(string $schema, string $principal): array {
 		$refusal = $this->refusalFor(schema: $schema);
@@ -171,7 +171,7 @@ class LookupAllowlist implements LookupAllowlistInterface {
 	 *
 	 * @return bool Whether it was on the list.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 	 */
 	public function remove(string $schema): bool {
 		$entries = $this->entries();

@@ -204,7 +204,7 @@ export default {
 			return this.$route?.params?.id
 		},
 
-		/** @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002 */
+		/** @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002 */
 		hasRecordableStep() {
 			return recordableSteps(this.trace?.steps).length > 0
 		},

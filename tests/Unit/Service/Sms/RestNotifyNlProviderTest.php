@@ -366,7 +366,7 @@ class RestNotifyNlProviderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 * @spec openspec/changes/archive/2026-11-24-messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
 	 */
 	public function testSendEmailPostsTheMailPayload(): void {
 		$provider = $this->buildProvider([new Response(201, [], json_encode(['id' => 'notify-mail-1']))]);

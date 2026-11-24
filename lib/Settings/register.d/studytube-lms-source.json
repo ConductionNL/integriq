@@ -1,0 +1,193 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-hr-data-exchange, Task 3, design D3). The dormant Studytube learning platform set: a source for Studytube, a source for humaniq's people feed read through an integration account, the mapping of a humaniq person onto a Studytube user, the mapping of a finished Studytube course onto humaniq's TrainingRecord, and the two synchronizations (people to Studytube, completions back). No code: the synchronization engine does the work.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "studytube-lms"
+        },
+        "name": "Studytube",
+        "description": "The Studytube learning platform (Studytube Public API v2). Users: POST <location>/users and PUT <location>/users/<id>, keyed on `uid`, the humaniq employee id. Finished courses: GET <location>/learning-results with `status=completed` and the changed-since filter `updated_since`, paged by `page` and `per_page` (at most 100), answering `data` and `meta.last_page`. Auth: OAuth 2.0 client credentials, the client secret held by the credential broker. Check the paths against your Studytube API documentation, fill the client id and the credential, then enable.",
+        "type": "api",
+        "location": "https://public-api.studytube.nl/api/v2",
+        "auth": "oauth",
+        "documentation": "https://public-api.studytube.nl/api/v2/docs",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{ oauthToken(source) }}"
+          },
+          "authentication": {
+            "grant_type": "client_credentials",
+            "authentication": "body",
+            "tokenUrl": "https://public.studytube.nl/oauth/token",
+            "scope": "",
+            "client_id": "",
+            "client_secret": {
+              "credentialRef": {
+                "credentialName": "studytube-lms-client-secret"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "humaniq-learning-people"
+        },
+        "name": "humaniq people feed for a learning platform",
+        "description": "humaniq's people feed (talent-training-and-lms REQ-TRN-002): GET <location>/people?modifiedSince=<ISO time> answers every active employee with `id`, `firstName`, `lastName`, `nextcloudUserId`, `orgUnit`, `role`, `managerUserIds`, `startDate`, `endDate` and `modified`, read under the integration account's own rights. Set the location to https://<your Nextcloud>/index.php/apps/humaniq/api/learning, the integration account's user name, and the credential (an app password of that account, held by the credential broker), then enable.",
+        "type": "api",
+        "location": "",
+        "auth": "basic",
+        "documentation": "https://github.com/ConductionNL/humaniq",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "OCS-APIRequest": "true"
+          },
+          "authentication": {
+            "username": "",
+            "password": {
+              "credentialRef": {
+                "credentialName": "humaniq-learning-people-app-password"
+              }
+            }
+          },
+          "auth": [
+            "{{ source.configuration.authentication.username }}",
+            "{{ source.configuration.authentication.password }}"
+          ]
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "humaniq-person-to-studytube-user"
+        },
+        "name": "humaniq person to Studytube user",
+        "description": "One person from humaniq's people feed as a Studytube user: the humaniq employee id is the user's `uid`, so the finished courses that come back name the employee directly. The team is the person's organisation unit and the managers are their Nextcloud user ids. The feed holds active employees only; a known end date travels as `end_date`, and nobody is deleted.",
+        "mapping": {
+          "uid": "{{ id }}",
+          "first_name": "{{ firstName|default('') }}",
+          "last_name": "{{ lastName|default('') }}",
+          "username": "{{ nextcloudUserId|default('') }}",
+          "team": "{{ orgUnit|default('') }}",
+          "function": "{{ role|default('') }}",
+          "manager_uids": "{{ managerUserIds|default([])|json_encode }}",
+          "start_date": "{{ startDate|default('') }}",
+          "end_date": "{{ endDate|default('') }}"
+        },
+        "unset": [],
+        "cast": {
+          "manager_uids": "jsonToArray",
+          "end_date": "unsetIfValue=="
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "studytube-completion-to-training-record"
+        },
+        "name": "Studytube finished course to humaniq TrainingRecord",
+        "description": "One finished Studytube course as humaniq's TrainingRecord (talent-training-and-lms D1): the employee is the user's `uid`, which the people push set to the humaniq employee id; status `gevolgd`, source `lms`, and `sourceRef` the Studytube result id, which the synchronization also keys on, so a second pull of the same result writes nothing new. The completion date is the date of `completed_at`; `validUntil` is the certificate's expiry when the course has one.",
+        "mapping": {
+          "employeeId": "{{ user.uid }}",
+          "title": "{{ course.title }}",
+          "provider": "{{ course.provider|default('Studytube') }}",
+          "status": "gevolgd",
+          "completedOn": "{{ completed_at|date('Y-m-d') }}",
+          "validUntil": "{{ certificate.expires_at|default('') }}",
+          "competenceCode": "{{ course.competence_code|default('') }}",
+          "source": "lms",
+          "sourceRef": "{{ id }}"
+        },
+        "unset": [],
+        "cast": {
+          "validUntil": "unsetIfValue==",
+          "competenceCode": "unsetIfValue=="
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "lms-people-push"
+        },
+        "name": "humaniq people to Studytube",
+        "description": "Sends the people in humaniq's people feed to Studytube as users, incrementally: each run asks humaniq only for the people changed since the last complete run (`modifiedSince`, read from each person's `modified`), and the cursor moves only after a complete fetch. Each person is kept on the humaniq employee id, so a later change updates the same Studytube user. Nothing is deleted. Off until both sources are set up.",
+        "sourceId": "humaniq-learning-people",
+        "sourceType": "api",
+        "sourceTargetMapping": "humaniq-person-to-studytube-user",
+        "sourceConfig": {
+          "endpoint": "/people",
+          "query": {
+            "modifiedSince": "{{ cursor }}"
+          },
+          "idPosition": "id",
+          "resultsPosition": "_root",
+          "usesPagination": false,
+          "cursorField": "modified"
+        },
+        "syncMode": "incremental",
+        "conditions": [],
+        "targetId": "studytube-lms",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/users",
+          "targetIdPosition": "id"
+        },
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "lms-completions-pull"
+        },
+        "name": "Studytube finished courses to humaniq",
+        "description": "Writes each course finished in Studytube into humaniq as one TrainingRecord, incrementally: each run asks only for results changed since the last complete run (`updated_since`, read from each result's `updated_at`), and the cursor moves only after a complete fetch. Each result is kept on its Studytube result id, so pulling the same completion twice leaves one TrainingRecord. Nothing is deleted. Off until the Studytube source is set up and the people push has run, so the results name humaniq employees.",
+        "sourceId": "studytube-lms",
+        "sourceType": "api",
+        "sourceTargetMapping": "studytube-completion-to-training-record",
+        "sourceConfig": {
+          "endpoint": "/learning-results",
+          "query": {
+            "status": "completed",
+            "updated_since": "{{ cursor }}",
+            "per_page": 100
+          },
+          "idPosition": "id",
+          "resultsPosition": "data",
+          "usesPagination": true,
+          "paginationMode": "page",
+          "paginationQuery": "page",
+          "pageSize": 100,
+          "cursorField": "updated_at"
+        },
+        "syncMode": "incremental",
+        "conditions": [],
+        "targetId": "humaniq/TrainingRecord",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

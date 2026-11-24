@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\EventDispatcher\Event;
  * adapters, each with its app id. Integriq's built-ins are registered first
  * and keep their ids: a contribution that claims one is refused and logged.
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
  */
 abstract class ConnectorExtensionsCollectEvent extends Event {
 
@@ -82,7 +82,7 @@ abstract class ConnectorExtensionsCollectEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function addIntakeChannel(IntakeChannelAdapterInterface $adapter, string $appId): void {
 		$this->intakeChannels[] = ['adapter' => $adapter, 'appId' => $appId];
@@ -96,7 +96,7 @@ abstract class ConnectorExtensionsCollectEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function addDigitalPostProvider(DigitalPostProviderInterface $provider, string $appId): void {
 		$this->digitalPostProviders[] = ['provider' => $provider, 'appId' => $appId];
@@ -110,7 +110,7 @@ abstract class ConnectorExtensionsCollectEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function addPaymentProvider(PaymentProviderInterface $provider, string $appId): void {
 		$this->paymentProviders[] = ['provider' => $provider, 'appId' => $appId];
@@ -124,7 +124,7 @@ abstract class ConnectorExtensionsCollectEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function addConnectorTemplates(string $directory, string $appId): void {
 		$this->templateDirectories[] = ['directory' => $directory, 'appId' => $appId];
@@ -135,7 +135,7 @@ abstract class ConnectorExtensionsCollectEvent extends Event {
 	 *
 	 * @return array<int,array{adapter: IntakeChannelAdapterInterface, appId: string}>
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function getIntakeChannels(): array {
 		return $this->intakeChannels;
@@ -146,7 +146,7 @@ abstract class ConnectorExtensionsCollectEvent extends Event {
 	 *
 	 * @return array<int,array{provider: DigitalPostProviderInterface, appId: string}>
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function getDigitalPostProviders(): array {
 		return $this->digitalPostProviders;
@@ -157,7 +157,7 @@ abstract class ConnectorExtensionsCollectEvent extends Event {
 	 *
 	 * @return array<int,array{provider: PaymentProviderInterface, appId: string}>
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function getPaymentProviders(): array {
 		return $this->paymentProviders;
@@ -168,7 +168,7 @@ abstract class ConnectorExtensionsCollectEvent extends Event {
 	 *
 	 * @return array<int,array{directory: string, appId: string}>
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function getConnectorTemplates(): array {
 		return $this->templateDirectories;

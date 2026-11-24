@@ -305,7 +305,7 @@ class PromotionService implements PromotionServiceInterface {
 	 *
 	 * @return list<array<string,string>>
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
 	 */
 	private function failingTestCases(array $document): array {
 		if ($this->regressionCheck === null) {
@@ -414,7 +414,7 @@ class PromotionService implements PromotionServiceInterface {
 	 *
 	 * @throws InvalidArgumentException When cases fail and the override was not given.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
 	 */
 	private function requireTestsPassOrOverride(PromotionRun $run, array $document): void {
 		$run->failedTestCount = count($this->failingTestCases(document: $document));

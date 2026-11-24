@@ -156,6 +156,9 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'kong-gateway-discovery' => 'API gateways',
 		'azure-apim-discovery' => 'API gateways',
 		'aws-apigateway-discovery' => 'API gateways',
+		// A learning platform that learns who works where and returns finished trainings (connectors-hr-data-exchange D4).
+		'studytube-lms' => 'Education data',
+		'humaniq-learning-people' => 'Education data',
 	];
 
 	/**
@@ -453,7 +456,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	private function collectFromTemplates(): array {
 		$cards = $this->templates->cards();
 		if ($this->contributed !== null) {
-			// @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+			// @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 			$cards = [...$cards, ...$this->contributed->cards()];
 		}
 

@@ -390,7 +390,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 *
 	 * @return array<int, string> The refusal reasons.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
 	 */
 	private function calendarRefusals(array $job): array {
 		try {
@@ -417,7 +417,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 *
 	 * @return string The five-field cron.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
 	 */
 	private function cronOf(array $job): string {
 		if ($this->calendar()->isCalendar(jobData: $job) === true) {

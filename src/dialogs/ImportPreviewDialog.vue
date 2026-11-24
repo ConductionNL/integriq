@@ -292,7 +292,7 @@ export default {
 		 *
 		 * @param {object} entry A preview deprecation `{ type, slug, replacedBy, reason }`.
 		 * @return {string} The translated text.
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#scenario-an-administrator-is-steered-to-the-new-set
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#scenario-an-administrator-is-steered-to-the-new-set
 		 */
 		deprecationText(entry) {
 			const text = entry.replacedBy
