@@ -17,13 +17,21 @@ import {
 	requiredScopesOf,
 } from '../../src/views/Rule/scopeLockout.js'
 
-const rule = (requiredScopes) => ({
-	id: 'r-1',
-	uuid: 'r-1',
-	slug: 'zaken-auth',
-	type: 'authentication',
-	configuration: { authentication: { type: 'jwt', requiredScopes } },
-})
+/**
+ * An authentication rule with these required scopes.
+ *
+ * @param {Array<string>|object} requiredScopes The stored value.
+ * @return {object} The rule.
+ */
+function rule(requiredScopes) {
+	return {
+		id: 'r-1',
+		uuid: 'r-1',
+		slug: 'zaken-auth',
+		type: 'authentication',
+		configuration: { authentication: { type: 'jwt', requiredScopes } },
+	}
+}
 
 describe('scopeLockout', () => {
 	it('reads requiredScopes only from an authentication rule', () => {

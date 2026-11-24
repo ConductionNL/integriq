@@ -645,7 +645,7 @@ export default {
 			const added = addedScopes(requiredScopesOf(this.pristine), requiredScopesOf(this.draft))
 			if (addsScopes(added)) {
 				this.checkingLockout = true
-				let lockout = null
+				let lockout
 				try {
 					lockout = await this.findLockout(added)
 				} finally {
@@ -658,6 +658,7 @@ export default {
 			}
 			await this.persist()
 		},
+
 		/**
 		 * The consumers the added scopes lock out, read from the endpoints that
 		 * use this rule, their inbound call log and the consumers. A failed read
@@ -684,10 +685,11 @@ export default {
 					consumers: lockedOutConsumers({ added, consumers, callers }),
 					fromCallLog: callers.size > 0,
 				}
-			} catch (_err) {
+			} catch {
 				return null
 			}
 		},
+
 		/**
 		 * One page (500) of objects of a schema in the integriq register.
 		 *
@@ -704,6 +706,7 @@ export default {
 			if (Array.isArray(data?.results)) return data.results
 			return Array.isArray(data) ? data : []
 		},
+
 		/**
 		 * Close the lockout dialog without saving.
 		 *
@@ -713,6 +716,7 @@ export default {
 		cancelLockout() {
 			this.lockout = null
 		},
+
 		/**
 		 * Save although the listed consumers lose access.
 		 *
@@ -723,6 +727,7 @@ export default {
 			this.lockout = null
 			await this.persist()
 		},
+
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async persist() {
 			if (!this.draft || this.saving) return
