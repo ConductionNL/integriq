@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Auth\Idp;
 
-use OCA\Integriq\Auth\Idp\Adapter\OidcRelyingPartyAdapterFactory;
+use OCA\Integriq\Auth\Idp\Adapter\IdpKindAdapterFactories;
 use OCA\Integriq\Exception\IdpAssertionException;
 use Psr\Log\LoggerInterface;
 
@@ -60,15 +60,17 @@ class IdpAdapterRegistry {
 	 *                                                   when OpenRegister is not there.
 	 * @param array<string, callable> $kindAdapters A builder per registration kind (`saml-sp`, `oidc-rp`),
 	 *                                              taking the IdpRegistration; a kind without one is never live.
-	 * @param OidcRelyingPartyAdapterFactory|null $oidcAdapters Builds an `oidc-rp` registration's adapter when
-	 *                                                         $kindAdapters names no builder for that kind.
+	 * @param IdpKindAdapterFactories|null $builtInAdapters The adapter factories this app ships per kind,
+	 *                                                      used when $kindAdapters names no builder for a kind.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
 	 */
 	public function __construct(
 		private readonly GovernmentIdpAdapterInterface $boundAdapter,
 		private readonly LoggerInterface $logger,
 		private readonly ?IdpRegistrationService $registrations = null,
 		private readonly array $kindAdapters = [],
-		private readonly ?OidcRelyingPartyAdapterFactory $oidcAdapters = null,
+		private readonly ?IdpKindAdapterFactories $builtInAdapters = null,
 	) {
 
 	}//end __construct()
@@ -128,7 +130,7 @@ class IdpAdapterRegistry {
 			return $refusing;
 		}
 
-		$build = ($this->kindAdapters[$registration->kind()] ?? $this->builtInBuilder(kind: $registration->kind()));
+		$build = ($this->kindAdapters[$registration->kind()] ?? $this->builtInAdapters?->builder(kind: $registration->kind()));
 		if (is_callable($build) === false) {
 			return $refusing;
 		}
@@ -136,21 +138,5 @@ class IdpAdapterRegistry {
 		return $build($registration);
 
 	}//end forRegistration()
-
-	/**
-	 * The builder this app ships for a registration kind, or null.
-	 *
-	 * @param string $kind The registration kind.
-	 *
-	 * @return callable|null
-	 */
-	private function builtInBuilder(string $kind): ?callable {
-		if ($kind === IdpRegistration::KIND_OIDC && $this->oidcAdapters !== null) {
-			return $this->oidcAdapters->build(...);
-		}
-
-		return null;
-
-	}//end builtInBuilder()
 
 }//end class

@@ -32,10 +32,8 @@ namespace OCA\Integriq\Auth\Idp\Adapter;
 use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
 use OCA\Integriq\Auth\Idp\IdpRegistration;
 use OCA\Integriq\Auth\Idp\IdpSecretSeam;
-use OCA\Integriq\Auth\Idp\SubjectPseudonymService;
 use OCA\Integriq\Auth\Idp\TrustLevelMapper;
 use OCA\Integriq\Exception\IdpAssertionException;
-use OCA\Integriq\Exception\IdpSecretRefusedException;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
@@ -54,6 +52,8 @@ use Throwable;
  * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
  */
 class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
+	use RegistrationAdapterSupport;
+
 
 	/**
 	 * Client authentication with a JWT signed by the `signing` credential.
@@ -74,13 +74,7 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 	 *
 	 * @var array<string, string>
 	 */
-	public const SUBJECT_FIELDS = [
-		'bsn' => 'bsn',
-		'pseudonym' => SubjectPseudonymService::SUBTYPE_BSN_PSEUDONYM,
-		'kvk' => 'kvk',
-		'rsin' => 'rsin',
-		'eidasPersonIdentifier' => 'eidas-person-identifier',
-	];
+	public const SUBJECT_FIELDS = IdpRegistration::SUBJECT_TYPES;
 
 	/**
 	 * How long a client assertion is valid, in seconds.
@@ -126,29 +120,7 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 
 	}//end __construct()
 
-	/**
-	 * The provider id this adapter answers to.
-	 *
-	 * @return string The registration's provider.
-	 *
-	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
-	 */
-	public function getProviderId(): string {
-		return $this->registration->provider();
 
-	}//end getProviderId()
-
-	/**
-	 * Whether this adapter can authenticate anybody: it is built only for a ready registration.
-	 *
-	 * @return boolean True.
-	 *
-	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
-	 */
-	public function isConfigured(): bool {
-		return true;
-
-	}//end isConfigured()
 
 	/**
 	 * Start an authorization code login at the issuer.
@@ -185,7 +157,7 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 			'code_challenge' => self::base64Url(bytes: hash('sha256', $verifier, true)),
 			'code_challenge_method' => 'S256',
 		];
-		$acrValues = $this->acrValues();
+		$acrValues = $this->floorSpellings();
 		if ($acrValues !== []) {
 			$query['acr_values'] = implode(' ', $acrValues);
 		}
@@ -267,29 +239,6 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 
 	}//end claimsRequest()
 
-	/**
-	 * The spellings of the registration's assurance mapping at or above the floor, for `acr_values`.
-	 *
-	 * @return list<string>
-	 */
-	private function acrValues(): array {
-		$aliases = $this->registration->stringMap(key: 'assuranceMapping');
-		$values = [];
-		foreach (array_keys($aliases) as $spelling) {
-			try {
-				$trust = $this->trust->map(provider: $this->registration->provider(), level: $spelling, aliases: $aliases);
-			} catch (IdpAssertionException $unmapped) {
-				continue;
-			}
-
-			if ($this->trust->meetsFloor(trust: $trust) === true) {
-				$values[] = $spelling;
-			}
-		}
-
-		return $values;
-
-	}//end acrValues()
 
 	/**
 	 * The issuer's discovery document, checked against the registration.
@@ -600,28 +549,6 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 
 	}//end claimText()
 
-	/**
-	 * One of the registration's credentials, read for this request.
-	 *
-	 * @param string $role The credential role.
-	 *
-	 * @return string
-	 *
-	 * @throws IdpAssertionException When the seam refuses it.
-	 */
-	private function credential(string $role): string {
-		try {
-			return $this->secrets->read(
-				registration: $this->registration->id,
-				organisation: $this->registration->organisation(),
-				role: $role,
-				reference: $this->registration->credential(role: $role)
-			);
-		} catch (IdpSecretRefusedException $refused) {
-			throw new IdpAssertionException(message: 'The '.$role.' credential of the registration could not be read.', previous: $refused);
-		}
-
-	}//end credential()
 
 	/**
 	 * A JSON document from the issuer.
@@ -672,21 +599,6 @@ class OidcRelyingPartyAdapter implements GovernmentIdpAdapterInterface {
 
 	}//end param()
 
-	/**
-	 * A response body as a string.
-	 *
-	 * @param mixed $body The body: a string or a stream resource.
-	 *
-	 * @return string
-	 */
-	private static function body(mixed $body): string {
-		if (is_resource($body) === true) {
-			return (string)stream_get_contents($body);
-		}
-
-		return (string)$body;
-
-	}//end body()
 
 	/**
 	 * The signature algorithms an ID token or a client assertion may use; never `none` or a MAC.
