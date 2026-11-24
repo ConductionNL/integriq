@@ -27,14 +27,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCP\EventDispatcher\Event;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\EventDispatcher\IEventListener;
+use OCP\EventDispatcher\Event;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
