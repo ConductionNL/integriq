@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-5
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -111,7 +111,7 @@ class MigrateDsoStamConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-existing-configuration-migrates-without-an-account
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-existing-configuration-migrates-without-an-account
 	 */
 	public function testTheOldKeysBecomeOneConsumerWithoutAnAccount(): void {
 		$this->config = ['dso_pki_mode' => 'rsa', 'dso_pki_hmac_secret' => 'old-secret', 'dso_pki_root_ca' => 'ROOT'];
@@ -135,7 +135,7 @@ class MigrateDsoStamConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-existing-configuration-migrates-without-an-account
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-existing-configuration-migrates-without-an-account
 	 */
 	public function testASecondRunCreatesNothing(): void {
 		$this->config = ['dso_pki_hmac_secret' => 'old-secret'];
@@ -154,7 +154,7 @@ class MigrateDsoStamConnectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-5
 	 */
 	public function testNoKeysCreateNothing(): void {
 		$this->step()->run($this->createMock(IOutput::class));

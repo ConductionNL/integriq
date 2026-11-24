@@ -45,4 +45,15 @@ final class RandomUuid {
 
 		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
 	}//end version4()
+
+	/**
+	 * A fresh RFC 4122 version-4 uuid, for a caller holding an instance.
+	 *
+	 * @return string The uuid.
+	 *
+	 * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
+	 */
+	public function next(): string {
+		return self::version4();
+	}//end next()
 }//end class

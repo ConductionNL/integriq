@@ -36,23 +36,61 @@ use OCP\Settings\IDelegatedSettings;
  */
 class GenericAdminSettings implements IDelegatedSettings {
 	/**
-	 * Constructor.
+	 * The appId.
 	 *
-	 * @param string $appId The leaf app id.
-	 * @param string $sectionId The settings section id.
-	 * @param int $priority Ordering priority within the section.
-	 * @param IAppManager $appManager App manager.
-	 * @param IInitialState $initialState Initial-state service.
-	 * @param IAppConfig|null $appConfig Optional app config.
+	 * @var string
 	 */
-	public function __construct(
-		protected readonly string $appId,
-		protected readonly string $sectionId,
-		protected readonly int $priority,
-		protected readonly IAppManager $appManager,
-		protected readonly IInitialState $initialState,
-		protected readonly ?IAppConfig $appConfig = null,
-	) {
+	protected readonly string $appId;
+
+	/**
+	 * The sectionId.
+	 *
+	 * @var string
+	 */
+	protected readonly string $sectionId;
+
+	/**
+	 * The priority.
+	 *
+	 * @var int
+	 */
+	protected readonly int $priority;
+
+	/**
+	 * The appManager.
+	 *
+	 * @var IAppManager
+	 */
+	protected readonly IAppManager $appManager;
+
+	/**
+	 * The initialState.
+	 *
+	 * @var IInitialState
+	 */
+	protected readonly IInitialState $initialState;
+
+	/**
+	 * The appConfig.
+	 *
+	 * @var ?IAppConfig
+	 */
+	protected readonly ?IAppConfig $appConfig;
+
+
+	/**
+	 * Construct the admin settings panel.
+	 *
+	 * @param SettingsPlacement $placement App id, section id and priority.
+	 * @param AdminFormServices $services  App manager, initial state and app config.
+	 */
+	public function __construct(SettingsPlacement $placement, AdminFormServices $services) {
+		$this->appId        = $placement->appId;
+		$this->sectionId    = $placement->sectionId;
+		$this->priority     = $placement->priority;
+		$this->appManager   = $services->appManager;
+		$this->initialState = $services->initialState;
+		$this->appConfig    = $services->appConfig;
 	}//end __construct()
 
 	/**

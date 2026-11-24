@@ -1,14 +1,5 @@
 # endpoint-runtime Specification
 
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- gateway-mcp-proxy
-
-## Purpose
-
-An outside MCP tool server sits behind integriq's gateway with the same keys, limits and logs as an API. Row `integriq:acc-mcp-gateway`.
-
 ## ADDED Requirements
 
 ### Requirement: An outside MCP server is published as a gateway endpoint (REQ-MCPX-001)

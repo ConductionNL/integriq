@@ -24,6 +24,20 @@
           "enabled": true,
           "showMetadata": true
         },
+        "actions": [
+          {
+            "id": "bring-behind-integriq",
+            "label": "Bring behind integriq",
+            "icon": "Api",
+            "handler": "bringApiBehindIntegriqHandler",
+            "adminOnly": true,
+            "visibleWhen": {
+              "field": "openApiDocument",
+              "op": "notEmpty"
+            },
+            "_note": "REQ-FEDG-003: opens the OpenAPI import with the description this API's gateway exported, previewed at once, so its operations can become integriq endpoints. Shown only on a row with a stored description."
+          }
+        ],
         "actionToggles": {
           "showAdd": false,
           "showFormDialog": false,

@@ -33,6 +33,7 @@ Kind: code. Size M. Half for humaniq `hiring-multiposting` (row humaniq `hir-mul
 - [x] Implement
 - [ ] Test (Newman)
   > 2026-11-15, built: the endpoint `jobboard-indeed-feed` (`GET jobfeeds/indeed.xml`, anonymous with a 60-a-minute throttle, over `humaniq/Vacancy` with the fixed filters `status: gepubliceerd` and `channels: indeed`) in `jobboard-indeed-source.json`, with the rules `jobboard-indeed-feed-item` (the `jobboard-indeed` mapping over each vacancy, so no applicant data leaves) and `jobboard-indeed-feed-envelope` (the `jobboard-indeed-feed` mapping: Indeed's `<source>` root with the publisher and one `<job>` per vacancy), the same declarative shape as the ORI public endpoints. The XML hook is in `EndpointsController::inRequestedFormat()`, not `EndpointService`: a path ending in `.xml` answers as XML without an XML `Accept` header, because a crawler sends none. PHPUnit: `JobBoardSetsTest::testThePublishedVacancyIsRenderedAsTheRecordedIndeedFeed` (the seeded vacancy rendered as `tests/fixtures/jobboards/indeed-feed.xml`), `::testTheFeedEndpointListsPublishedIndeedVacanciesOnly`, `EndpointsControllerHandlePathTest::testAnXmlPathIsAnsweredAsXml`. Left: the Newman run against a live instance. humaniq's Vacancy has no `channels` field yet (humaniq `hiring-multiposting` adds it); until then the `channels` filter finds nothing.
+  > 2026-11-17, written: `tests/postman/integriq-job-board-feed.postman_collection.json` seeds two published humaniq vacancies (one listing `indeed`, one only `linkedin`), requests the feed anonymously without an Accept header, and checks the 200, the XML content type, the `<source>` root, no applicant elements, the indeed vacancy listed and the linkedin one left out; it deletes the vacancies again. humaniq's Vacancy now has `channels` on development. Without humaniq installed the two listing checks are skipped, not passed. Not run here (no live instance), so the box stays unticked until a Newman run reads green.
 
 ### Task 4: Docs and strings
 - **spec_ref**: `openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-werknl-linkedin-and-indeed-are-job-board-templates-req-jbc-002`
@@ -41,8 +42,10 @@ Kind: code. Size M. Half for humaniq `hiring-multiposting` (row humaniq `hir-mul
   - GIVEN the docs WHEN an administrator connects a board THEN the partner programme and the feed URL registration are named
 - [x] Implement
   > 2026-11-15, built: `docs/features/job-board-connectors.md` (per-item board references, connecting LinkedIn through its partner programme, the Indeed feed URL and its registration, werk.nl not shipped and why), linked from `docs/features/README.md`. No new user-facing strings: the change adds no screen. Left: the docs build.
-- [ ] Test (docs build)
+- [x] Test (docs build)
+  - `npm ci --legacy-peer-deps && npm run build` in `docs/` on 2026-11-21: the build succeeds, all 10 AI-baseline checks pass, and the build reports no warning for `docs/features/job-board-connectors.md`.
 
 ## Verification
-- [ ] `openspec validate connectors-job-board-multiposting --strict` passes
+- [x] `openspec validate connectors-job-board-multiposting --strict` passes
+  - OpenSpec 2.1.1, 2026-11-21: the change validates ("is valid") under `--strict`.
 - [ ] `composer check:strict` once before push; PHPUnit and Newman exit codes read

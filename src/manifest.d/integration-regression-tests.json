@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 manifest fragment (automation-integration-regression-tests). An index page over integration_test_case, where an integration engineer adds, edits and deletes cases, and a logs page over integration_test_run with the counts each run stored. Test cases are definitions, so they sit under Automation; a run is runtime, so Test runs sits under Operations (src/menu-layout.json). The run itself starts from POST /api/regression-suites/{subjectType}/{subjectId}/run; the buttons on the mapping and synchronization detail pages are tasks 4 and 5 of the change.",
+  "$comment": "ADR-037 manifest fragment (automation-integration-regression-tests). An index page over integration_test_case, where an integration engineer adds, edits and deletes cases (input and expected output are objects, edited as JSON because the generic dialog leaves an object out unless a field names a widget), and a logs page over integration_test_run with the counts each run stored. Test cases are definitions, so they sit under Automation; a run is runtime, so Test runs sits under Operations (src/menu-layout.json). The run itself starts from POST /api/regression-suites/{subjectType}/{subjectId}/run; the buttons on the mapping and synchronization detail pages are tasks 4 and 5 of the change.",
   "pages": [
     {
       "id": "TestCases",
@@ -19,6 +19,10 @@
         "sidebar": {
           "enabled": true,
           "showMetadata": true
+        },
+        "fieldOverrides": {
+          "input": { "widget": "json" },
+          "expectedOutput": { "widget": "json" }
         },
         "showViewAction": false,
         "showEditAction": true,

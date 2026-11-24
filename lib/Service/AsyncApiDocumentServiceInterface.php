@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/events-async-api-products/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-5
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -35,7 +35,7 @@ interface AsyncApiDocumentServiceInterface {
 	 *
 	 * @return ObjectEntity|null The row, or null when there is none.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
 	 */
 	public function latestVersion(array $versions): ?ObjectEntity;
 
@@ -47,7 +47,7 @@ interface AsyncApiDocumentServiceInterface {
 	 *
 	 * @return array<string,mixed> The document.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004
 	 */
 	public function build(ObjectEntity $product, string $baseUrl): array;
 }

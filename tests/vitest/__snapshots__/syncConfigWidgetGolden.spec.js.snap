@@ -1533,22 +1533,89 @@ exports[`SyncConfigWidget > type "file" emits from every listener as recorded 1`
     "config": [
       [
         {
-          "format": {
-            "id": "picked",
-            "label": "P",
-          },
+          "format": "picked",
         },
+      ],
+      [
+        {},
+      ],
+      [
+        {},
       ],
       [
         {},
       ],
       [
         {
-          "format": "typed",
+          "csvDelimiter": {
+            "id": "picked",
+            "label": "P",
+          },
+          "format": "csv",
         },
       ],
       [
-        {},
+        {
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "csvDelimiter": "typed",
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "csvEnclosure": {
+            "id": "picked",
+            "label": "P",
+          },
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "csvEnclosure": "typed",
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "csvHeader": false,
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "csvHeader": false,
+          "format": "csv",
+        },
       ],
       [
         {
@@ -1662,6 +1729,33 @@ exports[`SyncConfigWidget > type "file" emits from every listener as recorded 1`
       1,
     ],
     [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
       "NcTextField",
       "onUpdate:modelValue",
       {
@@ -1684,6 +1778,60 @@ exports[`SyncConfigWidget > type "file" emits from every listener as recorded 1`
     ],
     [
       "NcTextField",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcCheckboxRadioSwitch",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcCheckboxRadioSwitch",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcCheckboxRadioSwitch",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcCheckboxRadioSwitch",
       "onUpdate:modelValue",
       "",
       1,
@@ -1767,7 +1915,19 @@ exports[`SyncConfigWidget > type "file" loads and renders as recorded 2`] = `
     </div><span class="sync-config__helper">Pick a file from your Nextcloud Files app, or type a path/glob for multiple files.</span>
   </div>
   <div class="sync-config__field">
-    <div class="NcTextField" data-label="File format" data-value="&quot;csv&quot;">
+    <div class="NcSelect" data-label="File format" data-value="{&quot;id&quot;:&quot;csv&quot;,&quot;label&quot;:&quot;CSV&quot;}" data-options="[{&quot;id&quot;:&quot;json&quot;,&quot;label&quot;:&quot;JSON&quot;},{&quot;id&quot;:&quot;jsonl&quot;,&quot;label&quot;:&quot;JSON Lines&quot;},{&quot;id&quot;:&quot;xml&quot;,&quot;label&quot;:&quot;XML&quot;},{&quot;id&quot;:&quot;csv&quot;,&quot;label&quot;:&quot;CSV&quot;}]">
+    </div>
+  </div>
+  <div class="sync-config__field">
+    <div class="NcTextField" data-label="CSV delimiter" data-value="&quot;&quot;">
+    </div>
+  </div>
+  <div class="sync-config__field">
+    <div class="NcTextField" data-label="CSV enclosure" data-value="&quot;&quot;">
+    </div>
+  </div>
+  <div class="sync-config__field">
+    <div class="NcCheckboxRadioSwitch" data-value="true">The first row names the columns
     </div>
   </div>
   <div class="sync-config__field">

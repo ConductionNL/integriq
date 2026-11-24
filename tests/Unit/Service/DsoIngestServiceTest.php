@@ -901,7 +901,7 @@ class DsoIngestServiceTest extends TestCase {
 	 * The job carries the uid the intake acted as, and the record says which
 	 * connection delivered it; the register accepts receivedVia.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-3
 	 */
 	public function testIngestHandsTheActingAccountToTheJobAndRecordsReceivedVia(): void {
 		$service = $this->buildService();
@@ -942,7 +942,7 @@ class DsoIngestServiceTest extends TestCase {
 	 * A repeated delivery of a mapped or failed verzoek writes nothing and
 	 * returns the stored record.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-repeated-delivery-creates-no-second-record
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-a-repeated-delivery-creates-no-second-record
 	 */
 	public function testARepeatedDeliveryOfAMappedVerzoekWritesNothing(): void {
 		$service = $this->buildService();
@@ -970,7 +970,7 @@ class DsoIngestServiceTest extends TestCase {
 	 * A verzoek left `received` (a crash after the first save) is finished on
 	 * the next delivery, not created twice.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function testARepeatedDeliveryFinishesAReceivedVerzoek(): void {
 		$service = $this->buildService();
@@ -990,7 +990,7 @@ class DsoIngestServiceTest extends TestCase {
 	/**
 	 * A different verzoekId is a new verzoek.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function testADifferentVerzoekIdIsCreated(): void {
 		$service = $this->buildService();

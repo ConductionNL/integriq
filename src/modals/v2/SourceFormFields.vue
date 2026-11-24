@@ -161,6 +161,24 @@
 			:configuration="caseSystemConfiguration"
 			@update:configuration="updateField('configuration', $event)" />
 
+		<!-- A CTI source picks its telephony provider, maps the phone
+		     system's event fields and names the KISS source callers are
+		     looked up in (kcc-cti-adapter task 4). -->
+		<CtiSourceFields
+			v-if="isCti"
+			class="cn-source-form-fields__field"
+			:configuration="caseSystemConfiguration"
+			:sourceId="savedSourceId"
+			@update:configuration="updateField('configuration', $event)" />
+
+		<!-- A payment source picks its provider here and checks its brokered
+		     key before it goes live (messaging-payments-review D3). -->
+		<PaymentProviderFields
+			v-if="isPayment"
+			class="cn-source-form-fields__field"
+			:configuration="caseSystemConfiguration"
+			@update:configuration="updateField('configuration', $event)" />
+
 		<!-- Brokered-credential authoring block. -->
 		<div class="cn-source-form-fields__field cn-source-form-fields__broker">
 			<NcCheckboxRadioSwitch
@@ -190,6 +208,35 @@
 					}}
 				</div>
 				<template v-else>
+					<!-- sources-per-user-oauth: each user's own account next to one shared credential. -->
+					<NcCheckboxRadioSwitch
+						:modelValue="perUserEnabled"
+						type="switch"
+						@update:modelValue="onTogglePerUser">
+						{{ t('integriq', 'Each user\'s own account') }}
+					</NcCheckboxRadioSwitch>
+					<template v-if="perUserEnabled">
+						<label
+							for="cn-source-form-peruser-provider"
+							class="cn-source-form-fields__label">
+							{{ t('integriq', 'Account provider') }}
+						</label>
+						<NcSelect
+							inputId="cn-source-form-peruser-provider"
+							:inputLabel="t('integriq', 'Account provider')"
+							:aria-label-combobox="t('integriq', 'Account provider')"
+							:modelValue="selectedPerUserProvider"
+							:options="perUserProviders"
+							:loading="perUserProvidersLoading"
+							:clearable="false"
+							:placeholder="t('integriq', 'Select the provider each user connects')"
+							@update:modelValue="onPerUserProviderPick" />
+						<span class="cn-source-form-fields__helper">
+							{{ t('integriq', 'Every call is made with the signed-in user\'s own account at this provider. A user who has not connected one is asked to connect it; background jobs cannot call this source.') }}
+						</span>
+					</template>
+				</template>
+				<template v-if="!brokerUnavailable && !perUserEnabled">
 					<label
 						for="cn-source-form-credentialref"
 						class="cn-source-form-fields__label">
@@ -352,6 +399,8 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import CaseSystemSourceFields from './CaseSystemSourceFields.vue'
+import CtiSourceFields from './CtiSourceFields.vue'
+import PaymentProviderFields from './PaymentProviderFields.vue'
 import SchemaTextField from './SchemaTextField.vue'
 import jsonFieldDrafts from '../../mixins/jsonFieldDrafts.js'
 import {
@@ -359,9 +408,13 @@ import {
 	EMBEDDED_SECRET_FIELDS,
 	extractCredentialResults,
 	isBrokered,
+	isPerUser,
 	mapCredentialOptions,
+	perUserProviderOptions,
 	readCredentialId,
+	readPerUserProvider,
 	writeCredentialRef,
+	writePerUserRef,
 } from './sourceCredentialRef.js'
 
 /**
@@ -377,6 +430,7 @@ const SOURCE_TYPE_OPTIONS = [
 	{ id: 'dso', label: 'DSO' },
 	{ id: 'case-system', label: 'Case system (ZGW)' },
 	{ id: 'sms', label: 'SMS' },
+	{ id: 'cti', label: 'Telephony (CTI)' },
 ]
 
 /**
@@ -401,6 +455,8 @@ export default {
 		NcCheckboxRadioSwitch,
 		CnFieldHelper,
 		CaseSystemSourceFields,
+		CtiSourceFields,
+		PaymentProviderFields,
 	},
 
 	mixins: [jsonFieldDrafts],
@@ -427,6 +483,10 @@ export default {
 			brokerUnavailable: false,
 			credentialOptions: [],
 			credentialsLoading: false,
+			/** Local mirror of the per-user switch (sources-per-user-oauth). */
+			perUserEnabled: isPerUser(this.formData),
+			perUserProviders: [],
+			perUserProvidersLoading: false,
 			/** Digital post bindings this instance carries, from the registry. */
 			digitalPostProviders: [],
 			digitalPostLoading: false,
@@ -446,9 +506,9 @@ export default {
 		 */
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
-			// On a case-system source CaseSystemSourceFields owns the
+			// On a case-system or CTI source its own fields component owns the
 			// configuration; a raw JSON editor beside it would hold a stale draft.
-			const fields = this.isCaseSystem
+			const fields = this.isCaseSystem || this.isCti
 				? this.fields.filter((field) => field.key !== 'configuration')
 				: this.fields
 			if (!this.brokeredEnabled) return fields
@@ -468,7 +528,38 @@ export default {
 		},
 
 		/**
-		 * The configuration the case-system fields edit, as an object.
+		 * Whether this is a CTI source, which gets its own telephony fields.
+		 *
+		 * @return {boolean} True for a cti source.
+		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 */
+		isCti() {
+			return String(this.formData?.type ?? '') === 'cti'
+		},
+
+		/**
+		 * The id of the saved source, or empty before the first save.
+		 *
+		 * @return {string} The id.
+		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 */
+		savedSourceId() {
+			const data = this.formData ?? {}
+			return String(data['@self']?.id || data.id || data.uuid || '')
+		},
+
+		/**
+		 * Whether this is a payment source, which gets the provider step.
+		 *
+		 * @return {boolean} True for a payment source.
+		 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+		 */
+		isPayment() {
+			return String(this.formData?.type ?? '') === 'payment'
+		},
+
+		/**
+		 * The configuration the case-system and payment fields edit, as an object.
 		 *
 		 * @return {object} The configuration.
 		 * @spec exclude trivial projection of the form value, presentation only
@@ -560,6 +651,18 @@ export default {
 					label: id,
 				}
 			)
+		},
+
+		/**
+		 * The picker option of the per-user source's provider, or null.
+		 *
+		 * @return {object|null} The selected option.
+		 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+		 */
+		selectedPerUserProvider() {
+			const id = readPerUserProvider(this.formData)
+			if (!id) return null
+			return this.perUserProviders.find((option) => option.id === id) ?? { id, label: id }
 		},
 
 		/**
@@ -690,6 +793,7 @@ export default {
 		 */
 		formData() {
 			this.brokeredEnabled = isBrokered(this.formData)
+			this.perUserEnabled = isPerUser(this.formData)
 
 			// The type can be switched after the form opened. Without this the
 			// picker would render with an empty list and read as "no binding
@@ -718,6 +822,10 @@ export default {
 	created() {
 		if (this.brokeredEnabled) {
 			this.fetchCredentials()
+		}
+
+		if (this.perUserEnabled) {
+			this.fetchPerUserProviders()
 		}
 
 		if (this.showsDigitalPostPicker) {
@@ -853,6 +961,54 @@ export default {
 				)
 			} finally {
 				this.digitalPostLoading = false
+			}
+		},
+
+		/**
+		 * Switch between one shared credential and each user's own account.
+		 * Either way the other reference is cleared, so a source never carries both.
+		 *
+		 * @param {boolean} value The new switch state.
+		 * @return {void}
+		 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+		 */
+		onTogglePerUser(value) {
+			this.perUserEnabled = value
+			this.updateField('configuration', clearCredentialRef(this.formData?.configuration))
+			if (value && this.perUserProviders.length === 0) {
+				this.fetchPerUserProviders()
+			}
+		},
+
+		/**
+		 * Write `credentialRef = { provider, perUser: true }` for the picked provider.
+		 *
+		 * @param {object|null} option The picked provider option.
+		 * @return {void}
+		 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+		 */
+		onPerUserProviderPick(option) {
+			if (!option?.id) return
+			this.updateField('configuration', writePerUserRef(this.formData?.configuration, String(option.id)))
+		},
+
+		/**
+		 * Load the broker catalogue's OAuth 2.0 providers; only those can back a per-user source.
+		 *
+		 * @return {Promise<void>} Resolves once the options are loaded.
+		 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+		 */
+		async fetchPerUserProviders() {
+			this.perUserProvidersLoading = true
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/credentials/providers'))
+				this.perUserProviders = perUserProviderOptions(response.data?.results ?? response.data)
+			} catch (err) {
+				this.perUserProviders = []
+				// eslint-disable-next-line no-console
+				console.warn('[SourceFormFields] provider catalogue fetch failed', err)
+			} finally {
+				this.perUserProvidersLoading = false
 			}
 		},
 

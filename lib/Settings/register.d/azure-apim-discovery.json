@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (gateway-federated-api-discovery Tasks 2-3, REQ-FEDG-002). Dormant discovery of the APIs of one Azure API Management service, read daily into external_api through Azure Resource Manager (api-version 2022-08-01). Auth is OAuth 2.0 client credentials against Microsoft Entra ID, the client secret held by the credential broker.",
+  "$comment": "ADR-037 register fragment (gateway-federated-api-discovery Tasks 2-4, REQ-FEDG-002 and REQ-FEDG-003). Dormant discovery of the APIs of one Azure API Management service, read daily into external_api through Azure Resource Manager (api-version 2022-08-01). Auth is OAuth 2.0 client credentials against Microsoft Entra ID, the client secret held by the credential broker. A second dormant daily job fetches each API's OpenAPI export into external_api.openApiDocument (ApiDocumentExportAction).",
   "components": {
     "objects": [
       {
@@ -97,6 +97,31 @@
         "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "azure-apim-discovery"
+        },
+        "interval": 86400,
+        "isEnabled": false,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "job",
+          "slug": "azure-apim-discovery-documents-daily"
+        },
+        "name": "Azure API Management OpenAPI documents, daily",
+        "description": "Fetches the OpenAPI export of every API the discovery found (https://learn.microsoft.com/en-us/rest/api/apimanagement/api-export/get), so the inventory can bring it behind integriq. Azure answers with a link valid for five minutes; the document is fetched from it without the service's credentials. An API whose version has not changed since its last export is skipped. Off until the discovery job runs.",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\ApiDocumentExportAction",
+        "arguments": {
+          "gateway": "azure-apim-discovery",
+          "exportEndpoint": "/apis/{apiName}",
+          "query": {
+            "format": "openapi+json-link",
+            "export": "true",
+            "api-version": "2022-08-01"
+          },
+          "linkPosition": "value.link"
         },
         "interval": 86400,
         "isEnabled": false,

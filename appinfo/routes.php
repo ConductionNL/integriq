@@ -21,6 +21,13 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// Metrics and health
 		// First-time setup wizard (ADR-042) - the standard CnSetupWizard contract.
+		// access-oauth-and-token-validation (REQ-TOKV-003): the client credentials token endpoint, the key set, and the admin acts behind them.
+		['name' => 'oAuthToken#token',           'url' => '/api/oauth/token',                'verb' => 'POST'],
+		['name' => 'oAuthToken#jwks',            'url' => '/.well-known/jwks.json',          'verb' => 'GET'],
+		// access-oauth-and-token-validation (REQ-TOKV-004): RFC 9728 metadata of a token-protected endpoint.
+		['name' => 'wellKnown#protectedResource', 'url' => '/.well-known/oauth-protected-resource/{_path}', 'verb' => 'GET', 'requirements' => ['_path' => '.+']],
+		['name' => 'oAuthToken#createIssuerKey', 'url' => '/api/oauth/issuer-key',           'verb' => 'POST'],
+		['name' => 'oAuthToken#clientSecret',    'url' => '/api/consumers/{id}/client-secret', 'verb' => 'POST'],
 		['name' => 'setup#status',    'url' => '/api/setup/status',            'verb' => 'GET'],
 		['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST', 'requirements' => ['actionId' => '[a-z0-9\\-]+']],
 		['name' => 'setup#saveConfig', 'url' => '/api/setup/config',           'verb' => 'POST'],
@@ -89,7 +96,7 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// puts a citizen's message on a case.
 		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
 		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
-		// CloudEvents from outside systems (openspec/changes/cloudevents-receiver).
+		// CloudEvents from outside systems (openspec/changes/archive/2026-11-20-cloudevents-receiver).
 		// One receiver URL per source, public and gated by that source's webhook
 		// signature or credential over the raw bytes before the body is read.
 		['name' => 'cloudEventReceiver#receive', 'url' => '/api/cloudevents/sources/{source}', 'verb' => 'POST', 'requirements' => ['source' => '[A-Za-z0-9\\-]+']],
@@ -128,6 +135,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'outboundLog#retry', 'url' => '/api/outbound/messages/retry', 'verb' => 'POST', 'postfix' => 'bulk'],
 		['name' => 'outboundLog#forward', 'url' => '/api/outbound/messages/{id}/forward', 'verb' => 'POST'],
 		['name' => 'outboundLog#lastContact', 'url' => '/api/outbound/last-contact', 'verb' => 'GET'],
+		// One-off and suppressed recipients: the send screen's preview of who receives a message.
+		['name' => 'outboundRecipients#preview', 'url' => '/api/outbound/recipients/preview', 'verb' => 'POST'],
 
 		// Sender identity and deliverability
 		// (openspec/changes/outbound-sender-identity-and-deliverability). An
@@ -140,6 +149,7 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'senderIdentity#index', 'url' => '/api/outbound/identities', 'verb' => 'GET'],
 		['name' => 'senderIdentity#checkAlignment', 'url' => '/api/outbound/identities/{id}/alignment', 'verb' => 'POST'],
 		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
+		['name' => 'senderIdentity#release', 'url' => '/api/outbound/messages/{id}/release', 'verb' => 'POST'],
 		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
 		// opt-out-before-send: GET only shows the page, POST writes (also the
 		// RFC 8058 one-click), and an SMS carries a short id resolved here.
@@ -196,6 +206,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// authoritative status from the provider.
 		['name' => 'payments#create', 'url' => '/api/payments', 'verb' => 'POST'],
 		['name' => 'payments#webhook', 'url' => '/api/payments/webhook', 'verb' => 'POST'],
+		// Payments review (openspec/changes/messaging-payments-review).
+		['name' => 'payments#providers', 'url' => '/api/payments/providers', 'verb' => 'GET'],
+		['name' => 'payments#check', 'url' => '/api/payments/providers/check', 'verb' => 'POST'],
+		['name' => 'payments#refresh', 'url' => '/api/payments/{id}/refresh', 'verb' => 'POST'],
 		// The point-of-sale terminals of a payment source (REQ-LPP-009), for an
 		// administrator registering a device; gated by the payments.create action.
 		['name' => 'payments#terminals', 'url' => '/api/payments/sources/{slug}/terminals', 'verb' => 'GET'],
@@ -450,9 +464,18 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// its registered return address before anything leaves integriq; the
 		// callback sends the browser back only to the address kept in the
 		// signed state (openspec/changes/archive/2026-09-29-identity-broker-browser-login).
-		['name' => 'idpBroker#start', 'url' => '/api/idp/{provider}/start', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
-		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'GET', 'requirements' => ['provider' => 'digid|eherkenning|eidas']],
-		['name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'POST', 'requirements' => ['provider' => 'digid|eherkenning|eidas'], 'postfix' => 'post'],
+		[
+			'name' => 'idpBroker#start', 'url' => '/api/idp/{provider}/start', 'verb' => 'GET',
+			'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi'],
+		],
+		[
+			'name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'GET',
+			'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi'],
+		],
+		[
+			'name' => 'idpBroker#callback', 'url' => '/api/idp/{provider}/callback', 'verb' => 'POST',
+			'requirements' => ['provider' => 'digid|eherkenning|eidas|yivi'], 'postfix' => 'post',
+		],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
@@ -468,9 +491,25 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Circuit breaker manual trip/reset (admin-only, CSRF intact — REQ-009).
 		['name' => 'sources#tripCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/trip', 'verb' => 'POST'],
 		['name' => 'sources#resetCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/reset', 'verb' => 'POST'],
+		// sources-sftp-adapter: show the host key an SFTP source's server presents, and pin it once confirmed.
+		['name' => 'sourceHostKey#show', 'url' => '/api/sources/{id}/host-key', 'verb' => 'GET'],
+		['name' => 'sourceHostKey#pin', 'url' => '/api/sources/{id}/host-key', 'verb' => 'POST'],
 		// Investigation window: store call bodies for a bounded time (outbound-call-log-investigation-window).
 		['name' => 'bodyCapture#open', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'POST'],
 		['name' => 'bodyCapture#close', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'DELETE'],
+		// access-consumer-credentials: list (no hashes), generate (the key is in this one
+		// response only) and revoke one credential. Admin only; there is no read route for a key.
+		['name' => 'consumerCredentials#index', 'url' => '/api/consumers/{id}/credentials', 'verb' => 'GET'],
+		['name' => 'consumerCredentials#create', 'url' => '/api/consumers/{id}/credentials', 'verb' => 'POST'],
+		['name' => 'consumerCredentials#destroy', 'url' => '/api/consumers/{id}/credentials/{credentialId}', 'verb' => 'DELETE'],
+		// Database sources (sources-database-adapter): schema discovery and a test run of a declared read statement, admin only.
+		['name' => 'databaseSource#schema', 'url' => '/api/sources/{id}/database/schema', 'verb' => 'GET'],
+		[
+			'name' => 'databaseSource#testStatement',
+			'url' => '/api/sources/{id}/database/statements/{name}/test',
+			'verb' => 'POST',
+			'requirements' => ['name' => '[A-Za-z0-9][A-Za-z0-9_.-]{0,99}'],
+		],
 
 		// dashboard-http-datasource: governed, read-only "resolve one value
 		// from a configured source" façade for dashboard/widget hosts
@@ -481,6 +520,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// Job endpoints
 		['name' => 'jobs#schedulePreview', 'url' => '/api/jobs/schedule-preview', 'verb' => 'POST'],
+		// Declared data feeds (gateway-declared-data-feeds): re-read every enabled app's feeds.json on request. Admin only.
+		['name' => 'feeds#sync', 'url' => '/api/feeds/sync', 'verb' => 'POST'],
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#logs', 'url' => '/api/jobs/logs', 'verb' => 'GET'],
@@ -490,6 +531,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Endpoint endpoints
 		// endpoints#test route removed — controller method was deleted by agent.
 		['name' => 'endpoints#logs', 'url' => '/api/endpoints/logs', 'verb' => 'GET'],
+		// gateway-response-cache-and-problem-errors D3: clear one endpoint's response cache (action endpoint.cache.clear).
+		['name' => 'endpointResponseCache#clear', 'url' => '/api/endpoints/{id}/cache/clear', 'verb' => 'POST'],
 		// endpoints#statistics route removed — controller method was deleted by agent.
 
 		// Synchronization endpoints
@@ -641,9 +684,36 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'productSubscriptions#analytics', 'url' => '/api/products/{productId}/analytics', 'verb' => 'GET'],
 		// forms-service-fetch-for-apps (REQ-SF-003): the service fetches an app may call, for a form designer.
 		['name' => 'serviceFetch#index', 'url' => '/api/service-fetches', 'verb' => 'GET'],
+		// An administrator's test run of one fetch (forms-service-fetch-for-apps, REQ-SF-001).
+		['name' => 'serviceFetch#test', 'url' => '/api/service-fetches/{slug}/test', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+		// API design rules (gateway-api-design-rules-check): check a product, waive a finding. Admin only.
+		['name' => 'apiDesignCheck#check', 'url' => '/api/products/{productId}/design-check', 'verb' => 'POST'],
+		['name' => 'apiDesignCheck#waive', 'url' => '/api/products/design-findings/{findingId}/waive', 'verb' => 'POST'],
+		// Developer portal (access-developer-portal-and-subscriptions D1-D3): members of
+		// the developer group browse public products, create applications they own and
+		// request access through the product's approval. The group check and the
+		// ownership check run in PortalController; the settings pair is admin only.
+		['name' => 'portal#products', 'url' => '/api/portal/products', 'verb' => 'GET'],
+		['name' => 'portal#applications', 'url' => '/api/portal/applications', 'verb' => 'GET'],
+		['name' => 'portal#createApplication', 'url' => '/api/portal/applications', 'verb' => 'POST'],
+		['name' => 'portal#requestAccess', 'url' => '/api/portal/applications/{consumerId}/subscriptions', 'verb' => 'POST'],
+		// A developer's own application keys (access-developer-portal-and-subscriptions D4): the developer group and the ownership are checked in the body.
+		['name' => 'portalKeys#index', 'url' => '/api/portal/applications/{consumerId}/keys', 'verb' => 'GET'],
+		['name' => 'portalKeys#create', 'url' => '/api/portal/applications/{consumerId}/keys', 'verb' => 'POST'],
+		['name' => 'portalKeys#destroy', 'url' => '/api/portal/applications/{consumerId}/keys/{credentialId}', 'verb' => 'DELETE'],
+		['name' => 'portal#getSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'GET'],
+		['name' => 'portal#setSettings', 'url' => '/api/admin/developer-portal', 'verb' => 'PUT'],
 		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
+		// OpenAPI import and publish (openspec/changes/gateway-openapi-import-and-publish).
+		// /api/openapi.json stays the app's own API contract; the gateway's published
+		// document has its own path. Import is admin-only (#[AuthorizedAdminSetting]);
+		// both documents are public routes, a private product's checked in the controller.
+		['name' => 'openApiImport#preview', 'url' => '/api/openapi/import/preview', 'verb' => 'POST'],
+		['name' => 'openApiImport#import', 'url' => '/api/openapi/import', 'verb' => 'POST'],
+		['name' => 'gatewayOpenApi#gateway', 'url' => '/api/gateway/openapi.json', 'verb' => 'GET'],
+		['name' => 'gatewayOpenApi#product', 'url' => '/api/products/{id}/openapi.json', 'verb' => 'GET'],
 		['name' => 'productChannels#pull', 'url' => '/api/products/{productSlug}/channels/{channel}/events', 'verb' => 'GET'],
 		['name' => 'productChannels#subscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions', 'verb' => 'POST'],
 		['name' => 'productChannels#unsubscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions/{id}', 'verb' => 'DELETE'],
@@ -693,6 +763,11 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// statutory-gateways-and-frameworks: which laws this instance reaches,
 		// how far it claims to meet each one, where every endpoint sits, and
 		// which bridge a call behind a firewall travels over.
+		// gateway-graphql-and-streaming-protocols REQ-GQLP-002: a web server or broker asks
+		// whether a WebSocket, gRPC or MQTT client may connect. GET for nginx auth_request,
+		// which repeats the client's method without a body; POST for a broker plugin.
+		['name' => 'gatewayAuthorize#authorize', 'url' => '/api/gateway/authorize', 'verb' => 'GET', 'postfix' => 'get'],
+		['name' => 'gatewayAuthorize#authorize', 'url' => '/api/gateway/authorize', 'verb' => 'POST'],
 		['name' => 'gateways#index', 'url' => '/api/gateways', 'verb' => 'GET'],
 		['name' => 'gateways#overview', 'url' => '/api/gateways/overview', 'verb' => 'GET'],
 		['name' => 'gateways#exportOverview', 'url' => '/api/gateways/overview/export', 'verb' => 'GET'],
@@ -776,9 +851,27 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'objectenApi#replaceObject',     'url' => '/api/v2/objects/{uuid}', 'verb' => 'PUT', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'objectenApi#updateObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'objectenApi#deleteObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
+		// zgw-catalogi-served: the VNG Catalogi API 1.3 read half (catalogussen,
+		// informatieobjecttypen). #[PublicPage] and CSRF-free like the Objecten
+		// routes: CatalogiGate checks the binding, the ZGW JWT and the
+		// catalogi.lezen scope before any document type is read. Writes answer 405.
+		['name' => 'catalogiApi#catalogussen',          'url' => '/catalogi/api/v1/catalogussen', 'verb' => 'GET'],
+		['name' => 'catalogiApi#catalogus',             'url' => '/catalogi/api/v1/catalogussen/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'catalogiApi#informatieobjecttypen', 'url' => '/catalogi/api/v1/informatieobjecttypen', 'verb' => 'GET'],
+		['name' => 'catalogiApi#informatieobjecttype',  'url' => '/catalogi/api/v1/informatieobjecttypen/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}', 'verb' => 'POST', 'postfix' => 'create', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'PUT', 'postfix' => 'replace', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'PATCH', 'postfix' => 'update', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'DELETE', 'postfix' => 'delete', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		// The Woo starter set, administrator only (AuthorizedAdminSetting and a check in the method).
+		['name' => 'catalogiAdmin#wooStarterSet', 'url' => '/api/catalogi/woo-starter-set', 'verb' => 'POST'],
 		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
 		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
 		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],
+		// The lookup allowlist (mapping-formats-and-lookups): admin only.
+		['name' => 'mappingLookup#index',  'url' => '/api/admin/mapping-lookups', 'verb' => 'GET'],
+		['name' => 'mappingLookup#add',    'url' => '/api/admin/mapping-lookups', 'verb' => 'POST'],
+		['name' => 'mappingLookup#remove', 'url' => '/api/admin/mapping-lookups/{register}/{schema}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 
@@ -798,6 +891,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'berichtenboxSettings#setConfig', 'url' => '/api/admin/berichtenbox/{slug}', 'verb' => 'PUT'],
 		['name' => 'connectionAlertSettings#getConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'GET'],
 		['name' => 'connectionAlertSettings#setConfig', 'url' => '/api/admin/connection-alert-group', 'verb' => 'PUT'],
+		// Field names an administrator adds to the personal data masked in logged bodies (call-log-personal-data-masking REQ-PDM-001). Admin-only via #[AuthorizedAdminSetting].
+		['name' => 'personalDataSettings#getConfig', 'url' => '/api/admin/personal-data-fields', 'verb' => 'GET'],
+		['name' => 'personalDataSettings#setConfig', 'url' => '/api/admin/personal-data-fields', 'verb' => 'PUT'],
 		// OpenTelemetry trace export settings (observability-opentelemetry-export REQ-OTEL-005).
 		['name' => 'otelSettings#getConfig', 'url' => '/api/admin/otel', 'verb' => 'GET'],
 		['name' => 'otelSettings#setConfig', 'url' => '/api/admin/otel', 'verb' => 'PUT'],

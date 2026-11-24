@@ -1,0 +1,885 @@
+{
+  "info": {
+    "name": "Integriq — Nextcloud event triggers (nextcloud-event-hub-verification)",
+    "description": "nextcloud-event-hub-verification task 4, the subscription API. A subscription sent with `action` and `retryPolicy` round-trips through the subscribe answer, the stored object and the list; a non-admin whose group holds `event.subscribe` but no `event.subscribe-nextcloud-<family>` action is refused with 403 for each of the four families (Files, Calendar, Tables, Forms), while a type outside them passes; and the delivery status of a subscription's messages is readable. The member and group are created over OCS, the action matrix is read first and put back afterwards, and every fixture is removed again. Run with `tests/postman/integriq.postman_environment.json`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{admin_user}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{admin_password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "ocBase",
+      "value": "{{base_url}}/index.php/apps/integriq/api"
+    },
+    {
+      "key": "orBase",
+      "value": "{{base_url}}/index.php/apps/openregister/api/objects/integriq"
+    },
+    {
+      "key": "eventMemberPassword",
+      "value": "Newman-Event-Member-2026!"
+    }
+  ],
+  "item": [
+    {
+      "name": "POST OCS group — subscriber group fixture",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{base_url}}/ocs/v1.php/cloud/groups",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ocs",
+            "v1.php",
+            "cloud",
+            "groups"
+          ]
+        },
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "groupid",
+              "value": "newman-event-subscribers"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('group created (or already there)', () => pm.expect([200]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST OCS user — group member fixture",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{base_url}}/ocs/v1.php/cloud/users",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ocs",
+            "v1.php",
+            "cloud",
+            "users"
+          ]
+        },
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "userid",
+              "value": "newman-event-member"
+            },
+            {
+              "key": "password",
+              "value": "{{eventMemberPassword}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('user created (or already there)', () => pm.expect([200]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST OCS user group — the member joins the group",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{base_url}}/ocs/v1.php/cloud/users/newman-event-member/groups",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ocs",
+            "v1.php",
+            "cloud",
+            "users",
+            "newman-event-member",
+            "groups"
+          ]
+        },
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "groupid",
+              "value": "newman-event-subscribers"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('added to the group', () => pm.expect([200]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /admin/action-matrix — keep the matrix as it was",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{ocBase}}/admin/action-matrix",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "admin",
+            "action-matrix"
+          ]
+        },
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('an administrator reads the action matrix', () => pm.response.to.have.status(200));",
+              "const matrix = pm.response.json().matrix || {};",
+              "pm.collectionVariables.set('fxSavedMatrix', JSON.stringify(matrix));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT /admin/action-matrix — grant subscribing, but no event family",
+      "request": {
+        "method": "PUT",
+        "url": {
+          "raw": "{{ocBase}}/admin/action-matrix",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "admin",
+            "action-matrix"
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{fxGrantBody}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const matrix = JSON.parse(pm.collectionVariables.get('fxSavedMatrix') || '{}');",
+              "for (const action of ['event.subscribe', 'event.subscriptions', 'event.subscription-messages']) {",
+              "    const groups = Array.isArray(matrix[action]) ? matrix[action] : ['admin'];",
+              "    matrix[action] = Array.from(new Set([...groups, 'newman-event-subscribers']));",
+              "}",
+              "for (const family of ['files', 'calendar', 'tables', 'forms']) {",
+              "    const action = 'event.subscribe-nextcloud-' + family;",
+              "    const groups = Array.isArray(matrix[action]) ? matrix[action] : ['admin'];",
+              "    matrix[action] = groups.filter(group => group !== 'newman-event-subscribers');",
+              "}",
+              "pm.collectionVariables.set('fxGrantBody', JSON.stringify({ matrix }));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the coarse subscribe actions are granted', () => pm.response.to.have.status(200));",
+              "const stored = pm.response.json().matrix || {};",
+              "pm.test('no Nextcloud event family is granted to the group', () => {",
+              "    for (const family of ['files', 'calendar', 'tables', 'forms']) {",
+              "        pm.expect(stored['event.subscribe-nextcloud-' + family] || ['admin']).to.not.include('newman-event-subscribers');",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /events/subscriptions — ungranted Files family is 403 for a non-admin",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions"
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"newman-ungranted-files\", \"style\": \"push\", \"protocol\": \"HTTP\", \"sink\": \"https://example.org/newman-nextcloud-events\", \"types\": [\"com.nextcloud.files.node.created\"]}"
+        },
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "newman-event-member",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{eventMemberPassword}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('403: the files family is not granted to the member', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /events/subscriptions — ungranted Calendar family is 403 for a non-admin",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions"
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"newman-ungranted-calendar\", \"style\": \"push\", \"protocol\": \"HTTP\", \"sink\": \"https://example.org/newman-nextcloud-events\", \"types\": [\"com.nextcloud.calendar.object.created\"]}"
+        },
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "newman-event-member",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{eventMemberPassword}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('403: the calendar family is not granted to the member', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /events/subscriptions — ungranted Tables family is 403 for a non-admin",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions"
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"newman-ungranted-tables\", \"style\": \"push\", \"protocol\": \"HTTP\", \"sink\": \"https://example.org/newman-nextcloud-events\", \"types\": [\"com.nextcloud.tables.row.created\"]}"
+        },
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "newman-event-member",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{eventMemberPassword}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('403: the tables family is not granted to the member', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /events/subscriptions — ungranted Forms family is 403 for a non-admin",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions"
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"newman-ungranted-forms\", \"style\": \"push\", \"protocol\": \"HTTP\", \"sink\": \"https://example.org/newman-nextcloud-events\", \"types\": [\"com.nextcloud.forms.submission.created\"]}"
+        },
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "newman-event-member",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{eventMemberPassword}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('403: the forms family is not granted to the member', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /events/subscriptions — a non-Nextcloud type passes the family gate for the member",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions"
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"newman-member-custom-type\", \"style\": \"push\", \"protocol\": \"HTTP\", \"sink\": \"https://example.org/newman-nextcloud-events\", \"types\": [\"com.example.newman.test\"]}"
+        },
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "newman-event-member",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{eventMemberPassword}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200: only Nextcloud-native types are gated per family', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.collectionVariables.set('fxMemberSubUuid', b.uuid || b.id || (b['@self'] && b['@self'].id) || '');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /events/subscriptions — subscribe with action and retryPolicy",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions"
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"newman-hub-files\", \"style\": \"push\", \"protocol\": \"HTTP\", \"sink\": \"https://example.org/newman-nextcloud-events\", \"types\": [\"com.nextcloud.files.node.created\"], \"action\": {\"kind\": \"webhook\", \"sink\": \"https://example.org/newman-nextcloud-events\"}, \"retryPolicy\": {\"baseSeconds\": 30, \"factor\": 2, \"capSeconds\": 600, \"maxRetries\": 3}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+              "pm.test('the subscription has an id', () => pm.expect(uuid).to.be.a('string').and.not.empty);",
+              "pm.collectionVariables.set('fxHubSubUuid', uuid);",
+              "pm.test('the answer carries the action and the retry policy', () => {",
+              "    pm.expect(b.action).to.eql({\"kind\": \"webhook\", \"sink\": \"https://example.org/newman-nextcloud-events\"});",
+              "    pm.expect(b.retryPolicy).to.eql({\"baseSeconds\": 30, \"factor\": 2, \"capSeconds\": 600, \"maxRetries\": 3});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET event_subscription object — action and retryPolicy round-trip",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{orBase}}/event_subscription/{{fxHubSubUuid}}",
+          "host": [
+            "{{orBase}}"
+          ],
+          "path": [
+            "event_subscription",
+            "{{fxHubSubUuid}}"
+          ]
+        },
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('the stored action is the one sent', () => pm.expect(b.action).to.eql({\"kind\": \"webhook\", \"sink\": \"https://example.org/newman-nextcloud-events\"}));",
+              "pm.test('the stored retryPolicy is the one sent', () => pm.expect(b.retryPolicy).to.eql({\"baseSeconds\": 30, \"factor\": 2, \"capSeconds\": 600, \"maxRetries\": 3}));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /events/subscriptions — the subscription is listed with its retryPolicy",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions"
+          ]
+        },
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const id = pm.collectionVariables.get('fxHubSubUuid');",
+              "const row = (pm.response.json().results || []).find(r => (r.uuid || r.id || (r['@self'] && r['@self'].id)) === id);",
+              "pm.test('the subscription is listed', () => pm.expect(row).to.be.an('object'));",
+              "pm.test('its retryPolicy is listed as sent', () => pm.expect(row.retryPolicy).to.eql({\"baseSeconds\": 30, \"factor\": 2, \"capSeconds\": 600, \"maxRetries\": 3}));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /events/subscriptions/{id}/messages — delivery status is readable",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions/{{fxHubSubUuid}}/messages",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions",
+            "{{fxHubSubUuid}}",
+            "messages"
+          ]
+        },
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('the answer names the subscription and lists its messages', () => {",
+              "    pm.expect(b.subscription).to.be.an('object');",
+              "    pm.expect(b.messages).to.be.an('array');",
+              "});",
+              "pm.test('every message carries a delivery status of the lifecycle', () => {",
+              "    for (const message of b.messages) {",
+              "        const row = message.object || message;",
+              "        pm.expect(['pending', 'delivered', 'failed', 'abandoned', 'discarded']).to.include(row.status);",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /events/subscriptions/{id}/messages — unknown subscription is 404",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions/00000000-0000-0000-0000-000000000000/messages",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions",
+            "00000000-0000-0000-0000-000000000000",
+            "messages"
+          ]
+        },
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT /admin/action-matrix — put the matrix back",
+      "request": {
+        "method": "PUT",
+        "url": {
+          "raw": "{{ocBase}}/admin/action-matrix",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "admin",
+            "action-matrix"
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{fxRestoreBody}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('fxRestoreBody', JSON.stringify({ matrix: JSON.parse(pm.collectionVariables.get('fxSavedMatrix') || '{}') }));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('restored', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE /events/subscriptions/{id} — the hub subscription",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions/{{fxHubSubUuid}}",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions",
+            "{{fxHubSubUuid}}"
+          ]
+        },
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE /events/subscriptions/{id} — the member's subscription",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{ocBase}}/events/subscriptions/{{fxMemberSubUuid}}",
+          "host": [
+            "{{ocBase}}"
+          ],
+          "path": [
+            "events",
+            "subscriptions",
+            "{{fxMemberSubUuid}}"
+          ]
+        },
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE OCS user — group member fixture",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{base_url}}/ocs/v1.php/cloud/users/newman-event-member",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ocs",
+            "v1.php",
+            "cloud",
+            "users",
+            "newman-event-member"
+          ]
+        },
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE OCS group — subscriber group fixture",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{base_url}}/ocs/v1.php/cloud/groups/newman-event-subscribers",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ocs",
+            "v1.php",
+            "cloud",
+            "groups",
+            "newman-event-subscribers"
+          ]
+        },
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('removed', () => pm.expect([200, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -29,7 +29,7 @@ vi.mock('@nextcloud/vue', async () => {
 			return h('div', { class: name }, [this.$slots.default?.()])
 		},
 	})
-	return { NcCheckboxRadioSwitch: field('NcCheckboxRadioSwitch'), NcSelect: field('NcSelect'), NcTextField: field('NcTextField') }
+	return { NcButton: field('NcButton'), NcCheckboxRadioSwitch: field('NcCheckboxRadioSwitch'), NcSelect: field('NcSelect'), NcTextField: field('NcTextField') }
 })
 
 vi.mock('../../src/views/Rule/actionForms/shared.js', async (importOriginal) => ({

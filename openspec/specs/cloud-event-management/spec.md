@@ -46,6 +46,12 @@ endpoint, validate the CloudEvents envelope (specversion, source, type, id),
 persist the event as an `event` object in OpenRegister, and route it to any
 matching synchronization or rule pipelines based on `type` and `source` filters.
 
+The receiver that implements this requirement is specified in
+`openspec/specs/events-cloudevents/spec.md` REQ-017 ("Outside systems SHALL
+send CloudEvents to a receiver that checks and routes them"), built by the
+archived change `cloudevents-receiver`. Before that change this requirement
+was marked implemented while no receiver route existed.
+
 @e2e exclude backend CloudEvents inbound routing — covered by PHPUnit/Newman, not browser UI
 
 #### Scenario: valid CloudEvents envelope is persisted and routed

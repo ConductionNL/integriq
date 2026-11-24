@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -144,4 +144,34 @@ class ProductPolicyServiceTest extends TestCase {
 		$this->assertSame([], $policy->buildDeprecationHeaders(product: self::entity(uuid: 'p', data: ['status' => 'active', 'sunsetDate' => '2026-02-01'])));
 		$this->assertSame(['Deprecation' => 'true'], $policy->buildDeprecationHeaders(product: self::entity(uuid: 'p', data: ['status' => 'deprecated', 'sunsetDate' => 'not a date'])));
 	}//end testDeprecationHeaders()
+
+	/**
+	 * REQ-DEVP-005: an end date that has passed is answered as its day; one ahead, absent or unreadable is not.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 */
+	public function testASubscriptionHasEndedOnlyOnceItsEndDateHasPassed(): void {
+		$policy = new ProductPolicyService(orObjectService: $this->createMock(ORObjectService::class), logger: $this->createMock(LoggerInterface::class));
+		$now = new \DateTimeImmutable('2027-01-02T08:00:00+00:00');
+
+		$this->assertSame('2026-12-31', $policy->expiredOn(subscription: self::entity(uuid: 's', data: ['expiresAt' => '2026-12-31T23:59:59+00:00']), now: $now));
+		$this->assertNull($policy->expiredOn(subscription: self::entity(uuid: 's', data: ['expiresAt' => '2027-01-03T00:00:00+00:00']), now: $now));
+		$this->assertNull($policy->expiredOn(subscription: self::entity(uuid: 's', data: []), now: $now));
+		$this->assertNull($policy->expiredOn(subscription: self::entity(uuid: 's', data: ['expiresAt' => 'not a date']), now: $now));
+	}//end testASubscriptionHasEndedOnlyOnceItsEndDateHasPassed()
+
+	/**
+	 * Only the retired status is retired.
+	 *
+	 * @return void
+	 */
+	public function testOnlyTheRetiredStatusIsRetired(): void {
+		$policy = new ProductPolicyService(orObjectService: $this->createMock(ORObjectService::class), logger: $this->createMock(LoggerInterface::class));
+
+		$this->assertTrue($policy->isRetired(product: self::entity(uuid: 'p', data: ['status' => 'retired'])));
+		$this->assertFalse($policy->isRetired(product: self::entity(uuid: 'p', data: ['status' => 'deprecated'])));
+		$this->assertFalse($policy->isRetired(product: self::entity(uuid: 'p', data: [])));
+	}//end testOnlyTheRetiredStatusIsRetired()
 }//end class

@@ -10,6 +10,7 @@ Kind: code. Matrix row `integriq:auto-regression-tests`.
   - GIVEN the seed runs WHEN an administrator opens the test cases page THEN two cases for `lowercase-keys` are listed
 - [x] Implement
 - [ ] Test (`node tests/validate-register.js`, `node tests/validate-manifest.js`, and a Playwright check that the page lists the seeded cases)
+  - note (2026-11-21): the Test cases dialog had no control for `input` or `expectedOutput` (both `type: object`, which the generic dialog leaves out without a widget). The page now gives both `widget: 'json'`, pinned by `tests/vitest/manifestObjectFieldsInDialog.spec.js`.
 
 ### Task 2: Suite runner for mapping and synchronization cases
 - **spec_ref**: openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003

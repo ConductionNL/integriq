@@ -184,6 +184,24 @@ class CatalogRegistryServiceTest extends TestCase {
 	}//end testNewProviderAppearsWithoutCodeChange()
 
 	/**
+	 * The database adapter is listed in the store under data infrastructure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-database-adapter/specs/data-infra-connectors/spec.md#requirement-a-relational-database-is-a-source-with-declared-statements-req-dbsf-001
+	 */
+	public function testTheDatabaseAdapterIsListedUnderDataInfrastructure(): void {
+		$this->registry->withProviders([$this->makeProvider('data-infra-database', 'Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)')]);
+
+		$bySlug = array_column($this->makeService()->collect(), null, 'slug');
+
+		$this->assertArrayHasKey('adapter:data-infra-database', $bySlug);
+		$this->assertSame('Data infrastructure', $bySlug['adapter:data-infra-database']['category']);
+		$this->assertSame('adapter', $bySlug['adapter:data-infra-database']['kind']);
+		$this->assertSame('Relational database (PostgreSQL, MySQL, MariaDB, SQL Server)', $bySlug['adapter:data-infra-database']['name']);
+	}//end testTheDatabaseAdapterIsListedUnderDataInfrastructure()
+
+	/**
 	 * Seeded source templates carry the mock-seeded mechanism and their
 	 * category override, distinct from flag-gated adapters (Risk 2 — two
 	 * dormancy mechanisms modeled separately).
@@ -481,7 +499,7 @@ class CatalogRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
+	 * @spec openspec/changes/archive/2026-11-21-platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
 	 */
 	public function testTheBookkeepingConnectorsAreDormantTemplatesInTheirCategories(): void {
 		$service = $this->makeService();
@@ -514,7 +532,7 @@ class CatalogRegistryServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
+	 * @spec openspec/changes/archive/2026-11-21-platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
 	 */
 	public function testEveryBookkeepingTemplateHasABookkeepingCategory(): void {
 		$this->assertSame(['Bank', 'Payments', 'E-invoicing', 'Tax filing', 'Commerce', 'Payroll'], CatalogRegistryService::BOOKKEEPING_CATEGORIES);

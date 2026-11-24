@@ -4,7 +4,7 @@
 
 ### Requirement: A Microsoft 365 source answers a document search across files, mail and chat (REQ-DCC-008)
 
-A Microsoft 365 source MUST answer a search for terms in a date range over drive items, mail messages and chat messages, as REQ-DCC-004 hits carrying `entityType` and a handle that fetches the hit. It MUST search files with the source's application grant and mail and chat with the requesting person's delegated grant, and MUST say so with a notice when that person has no delegated grant. It MUST answer at most the requested number of hits with a count of the rest, and MUST answer `not-permitted` with the missing permission when Microsoft 365 refuses.
+A Microsoft 365 source MUST answer a search for terms in a date range over drive items, mail and chat messages, as REQ-DCC-004 hits with `entityType` and a handle that fetches the hit. It MUST search files with the source's application grant and mail and chat with the person's delegated grant, with a notice when that person has none. It MUST answer at most the requested number of hits plus a count of the rest, and `not-permitted` naming the missing permission when Microsoft 365 refuses.
 
 #### Scenario: a Woo officer searches for a project name
 - GIVEN a Microsoft 365 source with an application grant and the officer's own delegated grant

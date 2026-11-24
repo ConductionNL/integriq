@@ -240,4 +240,79 @@ class FlowGraphMigrationServiceTest extends TestCase {
 		$this->assertSame(FlowGraphMigrationService::REFUSED, $report[1]['action'], 'A graph-only flow must not be stripped to nothing');
 
 	}//end testRollbackStripsGraphAndRefusesSteplessFlows()
+
+	/**
+	 * Running the migration twice against the same store gives the same result.
+	 *
+	 * The other tests hand the service a fixed list, so a "second run" there is
+	 * a different input. Here the store is stateful: what the first run writes
+	 * is what the second run reads. The second run must write nothing, leave the
+	 * stored graph byte-for-byte as the first run left it, and refuse the flow
+	 * it refused the first time for the same reasons.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#5-prove-it
+	 */
+	public function testMigratingTwiceGivesTheSameResult(): void {
+		$store = [
+			'f-1' => [
+				'name' => 'legacy',
+				'steps' => [
+					['order' => 10, 'type' => 'mapping', 'configRef' => 'map-1', 'onError' => 'stop'],
+					['order' => 20, 'type' => 'mapping', 'configRef' => 'map-2', 'onError' => 'stop'],
+				],
+			],
+			'f-2' => [
+				'name' => 'dupes',
+				'steps' => [
+					['order' => 20, 'type' => 'mapping', 'configRef' => 'a', 'onError' => 'stop'],
+					['order' => 20, 'type' => 'mapping', 'configRef' => 'b', 'onError' => 'stop'],
+				],
+			],
+		];
+
+		$this->orObjectService->method('findAll')->willReturnCallback(
+			function () use (&$store): array {
+				$results = [];
+				foreach ($store as $uuid => $data) {
+					$results[] = $this->flow(uuid: $uuid, data: $data);
+				}
+
+				return ['results' => $results];
+			}
+		);
+
+		$writes = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			static function ($object, ObjectSaveOptions $options) use (&$store, &$writes): ObjectEntity {
+				$writes[] = $options->uuid;
+				$store[$options->uuid] = $object;
+
+				return new ObjectEntity();
+			}
+		);
+
+		$first = $this->service->migrate(apply: true);
+		$afterFirst = $store;
+		$second = $this->service->migrate(apply: true);
+
+		$this->assertSame(['f-1'], $writes, 'Only the first run writes, and only the migratable flow');
+		$this->assertSame($afterFirst, $store, 'The second run leaves the store exactly as the first run left it');
+
+		$this->assertSame(
+			[FlowGraphMigrationService::MIGRATED, FlowGraphMigrationService::REFUSED],
+			array_column($first, 'action')
+		);
+		$this->assertSame(
+			[FlowGraphMigrationService::SKIPPED, FlowGraphMigrationService::REFUSED],
+			array_column($second, 'action'),
+			'The migrated flow is skipped the second time; the refused flow is refused again'
+		);
+		$this->assertSame($first[1]['reasons'], $second[1]['reasons'], 'A refusal gives the same reasons on every run');
+		$this->assertNotEmpty($store['f-1']['nodes']);
+		$this->assertSame($afterFirst['f-1']['steps'], $store['f-1']['steps'], 'steps survives both runs');
+		$this->assertArrayNotHasKey('nodes', $store['f-2'], 'A refused flow is never given a partial graph');
+
+	}//end testMigratingTwiceGivesTheSameResult()
 }//end class

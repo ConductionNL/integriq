@@ -38,4 +38,17 @@ interface ServiceFetchServiceInterface {
 	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
 	 */
 	public function handle(ServiceFetchRequestedEvent $event): void;
+
+	/**
+	 * Run one fetch for its administrator with sample inputs.
+	 *
+	 * @param string               $slug   The fetch.
+	 * @param array<string, mixed> $inputs The sample inputs.
+	 *
+	 * @return array{found: bool, raw: array{status: int, body: mixed}|null,
+	 *     outputs: array<string, mixed>|null, refusal: string|null, detail: string|null}
+	 *
+	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+	 */
+	public function test(string $slug, array $inputs): array;
 }

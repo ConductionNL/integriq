@@ -9,7 +9,7 @@
  * Refuses an outbound URL that points into the instance's own network before an
  * HTTP call is made to it: the app-local form of the egress guard hydra ADR-067
  * decision 3 describes, until OpenRegister ships the shared `EgressGuard`. The
- * rules are the ones `openspec/changes/events-async-api-products/design.md`
+ * rules are the ones `openspec/changes/archive/2026-11-20-events-async-api-products/design.md`
  * gives a caller-chosen sink:
  *
  * - `https` only;
@@ -51,7 +51,7 @@ use OCP\IAppConfig;
 /**
  * Decides whether an outbound URL may be called.
  *
- * @spec openspec/changes/events-async-api-products/design.md
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
  */
 class EgressGuard implements EgressGuardInterface {
 
@@ -132,7 +132,7 @@ class EgressGuard implements EgressGuardInterface {
 	 * @throws EgressRefusedException When the URL is refused; the message names
 	 *                                the rule and the host, never a credential.
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	public function assertAllowed(string $url): void {
 		$parts = parse_url($url);
@@ -172,7 +172,7 @@ class EgressGuard implements EgressGuardInterface {
 	 *
 	 * @throws EgressRefusedException When an address is refused.
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private function assertAddressesAllowed(string $host, bool $allowed): void {
 		foreach ($this->addressesOf(host: $host) as $address) {
@@ -202,7 +202,7 @@ class EgressGuard implements EgressGuardInterface {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	protected function addressesOf(string $host): array {
 		if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
@@ -225,7 +225,7 @@ class EgressGuard implements EgressGuardInterface {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private static function ipv6Of(string $host): array {
 		$records = self::aaaaRecords(host: $host);
@@ -250,7 +250,7 @@ class EgressGuard implements EgressGuardInterface {
 	 *
 	 * @return array<int, array<string, mixed>>|false
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private static function aaaaRecords(string $host): array|false {
 		// The dns_get_record() call warns on a failed lookup; that is not an
@@ -318,7 +318,7 @@ class EgressGuard implements EgressGuardInterface {
 	 *
 	 * @return string|null Null when it is not an IP address.
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private static function packed(string $address): ?string {
 		if (filter_var($address, FILTER_VALIDATE_IP) === false) {
@@ -340,7 +340,7 @@ class EgressGuard implements EgressGuardInterface {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private static function unmapped(string $packed): string {
 		if (strlen($packed) === 16 && str_starts_with($packed, str_repeat("\0", 10) . "\xff\xff") === true) {
@@ -358,7 +358,7 @@ class EgressGuard implements EgressGuardInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private function inRange(string $packed, string $range): bool {
 		[$subnet, $bits] = explode('/', $range);

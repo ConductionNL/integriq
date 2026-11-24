@@ -13,7 +13,7 @@
         "slug": "external_api",
         "title": "External API",
         "icon": "ApiOff",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "An API found on another vendor's gateway, listed next to integriq's own API products",
         "description": "One row per API a discovery synchronization found on a Kong, Azure API Management or Amazon API Gateway instance (gateway-federated-api-discovery REQ-FEDG-001). Written by the synchronization engine, never by hand: `gatewayApiId` is the vendor's own id and the synchronization's origin id. An API the vendor no longer returns is not deleted: the synchronization's `markEnded` disappearance policy writes `sourceEndedAt`, so the inventory shows it as no longer seen (REQ-FEDG-002).",
         "required": [
@@ -89,6 +89,11 @@
             "type": "object",
             "title": "OpenAPI description",
             "description": "The OpenAPI document the gateway exports for this API, when it exposes one"
+          },
+          "openApiDocumentVersion": {
+            "type": "string",
+            "title": "Document exported at version",
+            "description": "The API version the stored OpenAPI document was exported at. A document export run skips an API whose version still matches"
           },
           "lastSeen": {
             "type": "string",

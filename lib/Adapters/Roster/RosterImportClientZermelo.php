@@ -22,7 +22,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
+ * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 /**
  * Live Zermelo lessons for next week.
  *
- * @spec openspec/changes/connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
+ * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
  */
 final class RosterImportClientZermelo extends RosterImportClient {
 
@@ -79,7 +79,7 @@ final class RosterImportClientZermelo extends RosterImportClient {
 	 *
 	 * @return string Always `zermelo`.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
 	 */
 	public function flavour(): string {
 		return 'zermelo';
@@ -94,7 +94,7 @@ final class RosterImportClientZermelo extends RosterImportClient {
 	 *
 	 * @throws SupplierCallException When the system has no live client, or Zermelo refuses or fails the call.
 	 *
-	 * @spec openspec/changes/connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
+	 * @spec openspec/changes/archive/2026-11-21-connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
 	 */
 	public function fetchLessons(string $systemId): array {
 		if ($systemId !== self::SYSTEM_ID) {

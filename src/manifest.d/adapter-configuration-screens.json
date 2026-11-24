@@ -445,7 +445,10 @@
             "icon": "LinkVariant",
             "title": "Registration",
             "content": {
-              "columns": 2
+              "columns": 2,
+              "exclude": [
+                "signingKeys"
+              ]
             }
           },
           {
@@ -471,6 +474,14 @@
             "gridY": 0,
             "gridWidth": 4,
             "gridHeight": 7
+          }
+        ],
+        "bodyWidgets": [
+          {
+            "id": "lti-tool-platform-details",
+            "component": "LtiPlatformDetails",
+            "placement": "after-data",
+            "colSpan": 12
           }
         ],
         "sidebar": {

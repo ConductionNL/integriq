@@ -47,6 +47,7 @@ class IdpAdapterRegistry {
 		TrustLevelMapper::PROVIDER_DIGID,
 		TrustLevelMapper::PROVIDER_EHERKENNING,
 		TrustLevelMapper::PROVIDER_EIDAS,
+		TrustLevelMapper::PROVIDER_YIVI,
 	];
 
 	/**

@@ -359,6 +359,11 @@
 				</template>
 			</section>
 
+			<!-- API design rules (gateway-api-design-rules-check) -->
+			<ApiDesignFindingsPanel
+				class="apiProductDetail__section"
+				:productId="String(productId)" />
+
 			<!-- Subscriptions -->
 			<section class="apiProductDetail__section">
 				<h3>{{ t('integriq', 'Subscriptions') }}</h3>
@@ -387,6 +392,8 @@
 					</li>
 				</ul>
 			</section>
+
+			<ProductChangeNotices :productId="productId" class="apiProductDetail__section" />
 		</div>
 
 		<NcEmptyContent
@@ -407,8 +414,10 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import { usageLabel, usageSplits } from './productUsage.js'
+import ApiDesignFindingsPanel from '../../components/ApiDesignFindingsPanel.vue'
+import ProductChangeNotices from './ProductChangeNotices.vue'
 import { channelsOf, draftOf, withChannel, withoutChannel } from './productChannels.js'
+import { usageLabel, usageSplits } from './productUsage.js'
 
 let uidCounter = 0
 
@@ -416,11 +425,13 @@ export default {
 	name: 'ApiProductDetail',
 
 	components: {
+		ApiDesignFindingsPanel,
 		NcButton,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcSelect,
 		AlertCircleOutline,
+		ProductChangeNotices,
 	},
 
 	data() {
@@ -462,12 +473,12 @@ export default {
 				: []
 		},
 
-		/** @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001 */
+		/** @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001 */
 		productChannels() {
 			return channelsOf(this.product)
 		},
 
-		/** @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004 */
+		/** @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004 */
 		asyncApiUrl() {
 			return generateUrl(`/apps/integriq/api/products/${encodeURIComponent(this.product?.productSlug || '')}/asyncapi.json`)
 		},
@@ -742,7 +753,7 @@ export default {
 		 * Add the channel in the form, or save the one being edited.
 		 *
 		 * @return {Promise<void>} Resolves once the product has been saved and reloaded.
-		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
 		 */
 		async saveChannel() {
 			const result = withChannel(this.productChannels, { draft: this.newChannel, editing: this.editingChannel })
@@ -765,7 +776,7 @@ export default {
 		 *
 		 * @param {object} channel The channel.
 		 * @return {void}
-		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
 		 */
 		editChannel(channel) {
 			this.newChannel = draftOf(channel)
@@ -778,7 +789,7 @@ export default {
 		 *
 		 * @param {string} slug The channel slug.
 		 * @return {Promise<void>} Resolves once the product has been saved and reloaded.
-		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
 		 */
 		async removeChannel(slug) {
 			await this.saveProductField('channels', withoutChannel(this.productChannels, slug))
@@ -791,7 +802,7 @@ export default {
 		 * Empty the channel form.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
 		 */
 		resetChannelForm() {
 			this.newChannel = draftOf(null)
@@ -1003,9 +1014,11 @@ export default {
 .apiProductDetail__loading {
 	margin: 32px auto;
 }
+
 .apiProductDetail__error {
 	color: var(--color-error-text);
 }
+
 .apiProductDetail__hint {
 	color: var(--color-text-maxcontrast);
 }

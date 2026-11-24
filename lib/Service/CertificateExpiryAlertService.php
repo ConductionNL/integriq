@@ -16,7 +16,7 @@
  *
  * @link https://github.com/ConductionNL/integriq
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
  * twice for the same certificate and threshold; a renewed certificate has
  * another expiry date, which clears the old alerts and arms the thresholds again.
  *
- * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+ * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
  */
 class CertificateExpiryAlertService implements CertificateExpiryAlertServiceInterface {
 
@@ -84,7 +84,7 @@ class CertificateExpiryAlertService implements CertificateExpiryAlertServiceInte
 	 *
 	 * @return array{opened: int, cleared: int}
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
 	 */
 	public function evaluate(DateTimeImmutable $now): array {
 		$outcome = ['opened' => 0, 'cleared' => 0];
@@ -109,7 +109,7 @@ class CertificateExpiryAlertService implements CertificateExpiryAlertServiceInte
 	 *
 	 * @return int[]
 	 *
-	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
 	 */
 	public static function thresholdsOf(array $source): array {
 		$configured = (($source['alertThresholds'] ?? [])['certificateExpiryDays'] ?? null);

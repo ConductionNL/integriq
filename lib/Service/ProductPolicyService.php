@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,6 +27,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use DateTimeImmutable;
+use DateTimeInterface;
 use DateTimeZone;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -39,7 +41,7 @@ use Throwable;
  * 429 answer and the throttle log stay with the caller; this service says
  * which subscription, which tier policy and which counter key apply.
  *
- * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
  */
 class ProductPolicyService implements ProductPolicyServiceInterface {
 
@@ -49,7 +51,7 @@ class ProductPolicyService implements ProductPolicyServiceInterface {
 	 * @param ORObjectService $orObjectService OpenRegister's object service.
 	 * @param LoggerInterface $logger          The logger.
 	 *
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	public function __construct(
 		private readonly ORObjectService $orObjectService,
@@ -66,7 +68,7 @@ class ProductPolicyService implements ProductPolicyServiceInterface {
 	 * @return string The key `product:<product uuid>:consumer:<consumer uuid>`.
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	public function counterKey(ObjectEntity $product, string $consumerUuid): string {
 		return 'product:' . ((string)$product->getUuid()) . ':consumer:' . $consumerUuid;
@@ -83,7 +85,7 @@ class ProductPolicyService implements ProductPolicyServiceInterface {
 	 * @return ObjectEntity|null The active subscription, or null.
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	public function resolveActiveSubscription(string $consumerUuid, string $productUuid): ?ObjectEntity {
 		try {
@@ -127,7 +129,7 @@ class ProductPolicyService implements ProductPolicyServiceInterface {
 	 * @return array{rateLimit: array|null, quota: array|null}|null
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	public function resolveTierPolicy(ObjectEntity $product, ObjectEntity $subscription): ?array {
 		$tiers = ($product->getObject()['tiers'] ?? []);
@@ -166,7 +168,7 @@ class ProductPolicyService implements ProductPolicyServiceInterface {
 	 * @return array<string, string>
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-deprecated-product-version-carries-sunset-and-deprecation-headers-req-apg-006
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	public function buildDeprecationHeaders(ObjectEntity $product): array {
 		$data = $product->getObject();
@@ -189,4 +191,52 @@ class ProductPolicyService implements ProductPolicyServiceInterface {
 
 		return $headers;
 	}//end buildDeprecationHeaders()
+
+	/**
+	 * The date a subscription ended on, when its `expiresAt` has passed, else null.
+	 *
+	 * A subscription without `expiresAt`, or with one that does not parse, does
+	 * not end on its own: an unreadable date is logged, not treated as passed,
+	 * so a typo in the end date cannot cut a consumer off.
+	 *
+	 * @param ObjectEntity            $subscription The api_product_subscription.
+	 * @param DateTimeInterface|null  $now          The moment to judge at; now when null.
+	 *
+	 * @return string|null The end date as `Y-m-d`, or null while the subscription runs.
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 */
+	public function expiredOn(ObjectEntity $subscription, ?DateTimeInterface $now=null): ?string {
+		$expiresAt = ($subscription->getObject()['expiresAt'] ?? null);
+		if (is_string($expiresAt) === false || $expiresAt === '') {
+			return null;
+		}
+
+		try {
+			$end = new DateTimeImmutable($expiresAt);
+		} catch (Throwable $e) {
+			$this->logger->warning('integriq: invalid api_product_subscription.expiresAt: ' . $e->getMessage());
+			return null;
+		}
+
+		$now = ($now ?? new DateTimeImmutable());
+		if ($end > $now) {
+			return null;
+		}
+
+		return $end->format('Y-m-d');
+	}//end expiredOn()
+
+	/**
+	 * Whether a product is retired, so its endpoints answer 410 Gone.
+	 *
+	 * @param ObjectEntity $product The api_product.
+	 *
+	 * @return bool True when its status is `retired`.
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 */
+	public function isRetired(ObjectEntity $product): bool {
+		return ($product->getObject()['status'] ?? '') === 'retired';
+	}//end isRetired()
 }//end class

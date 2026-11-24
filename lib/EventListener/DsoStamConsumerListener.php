@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-second-dso-stam-consumer-is-refused
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-second-dso-stam-consumer-is-refused
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-second-dso-stam-consumer-is-refused
+ * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/specs/consumer-management/spec.md#scenario-a-second-dso-stam-consumer-is-refused
  *
  * @SuppressWarnings(PHPMD.StaticAccess) WebhookProfiles is a final catalogue of pure lookups; there is nothing to inject.
  */
@@ -63,7 +63,7 @@ class DsoStamConsumerListener implements IEventListener {
 	 * @param LoggerInterface $logger         Diagnostics.
 	 * @param WebhookProfilesInterface $webhookProfiles The fixed webhook profiles.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function __construct(
 		private readonly PortalConnectionInterface $connection,
@@ -83,7 +83,7 @@ class DsoStamConsumerListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function handle(Event $event): void {

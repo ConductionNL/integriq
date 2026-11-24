@@ -56,6 +56,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 /**
@@ -1016,7 +1017,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @return bool True when the delivery was held.
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private function holdForProduct(ObjectEntity $message, array $subscriptionData): bool {
 		$held = $this->productGate?->hold(subscriptionData: $subscriptionData);
@@ -1045,7 +1046,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private function deferForQuota(ObjectEntity $message, array $held): void {
 		$messageData = $message->getObject();
@@ -1074,7 +1075,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @return string|null The refusal reason, or null when the sink may be called.
 	 *
-	 * @spec openspec/changes/events-async-api-products/design.md
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/design.md
 	 */
 	private function refuseUnsafeSink(ObjectEntity $message, array $subscriptionData): ?string {
 		try {
@@ -2945,6 +2946,12 @@ class EventService implements EventServiceInterface {
 	private function startDeliveryIngest(DeliveryRequestedEvent $request): DeliveryIngestRun {
 		$run = new DeliveryIngestRun(request: $request);
 		$run->payload = $request->getPayload();
+		$selection = $this->resolvedRecipients(request: $request);
+		if ($selection !== null) {
+			// The transport receives the resolved list: standing minus suppressed plus added.
+			$run->payload['recipients'] = $selection['resolved'];
+		}
+
 		$run->optOut = $this->decideDelivery(request: $request, payload: $run->payload);
 		if ($run->optOut !== null && $run->optOut['decision']['send'] === true) {
 			$run->payload = $run->optOut['payload'];
@@ -2996,6 +3003,11 @@ class EventService implements EventServiceInterface {
 			'correlationId' => $request->getCorrelationId(),
 			'externalReference' => $request->getExternalReference(),
 		];
+		$selection = $request->getRecipientSelection();
+		if ($selection !== null) {
+			$delivery['recipientSelection'] = $this->recordedSelection(selection: $selection);
+		}
+
 		if ($optOut !== null) {
 			$delivery['optOut'] = [
 				'send' => $optOut['decision']['send'],
@@ -3114,16 +3126,75 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @param DeliveryIngestRun $run The run.
 	 *
-	 * @return array<string,string> The source app, correlation id and case reference.
+	 * @return array<string,mixed> The source app, correlation id and case reference, and the
+	 *                             recipient decision when the request carried one.
 	 */
 	private function deliveryLogOptions(DeliveryIngestRun $run): array {
-		return [
+		$options = [
 			'sourceApp' => $run->request->getSourceApp(),
 			'correlationId' => $run->request->getCorrelationId(),
 			'caseRef' => (string)($run->payload['caseRef'] ?? ''),
 		];
+		$selection = $run->request->getRecipientSelection();
+		if ($selection !== null) {
+			$options['recipientSelection'] = $this->recordedSelection(selection: $selection);
+		}
+
+		return $options;
 
 	}//end deliveryLogOptions()
+
+	/**
+	 * The resolved recipient decision of a request, or null when it carries none.
+	 *
+	 * The decision is resolved by integriq's own listener before ingest. A request
+	 * that carries a decision nobody resolved fails closed rather than sending to
+	 * a list nobody decided.
+	 *
+	 * @param DeliveryRequestedEvent $request The request.
+	 *
+	 * @return array<string,mixed>|null The standing, added, suppressed and resolved parts.
+	 *
+	 * @throws RuntimeException When a decision was handed over but not resolved.
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 */
+	private function resolvedRecipients(DeliveryRequestedEvent $request): ?array {
+		$selection = $request->getRecipientSelection();
+		if ($selection !== null) {
+			return $selection;
+		}
+
+		$asked = array_filter(
+			$request->getRecipientDecision(),
+			static fn (mixed $part): bool => (is_array($part) === true && $part !== [])
+		);
+		if ($asked !== []) {
+			throw new RuntimeException('The delivery request carries a recipient decision that was not resolved; nothing was sent.');
+		}
+
+		return null;
+
+	}//end resolvedRecipients()
+
+	/**
+	 * The parts of a recipient decision the record keeps: standing, added and
+	 * suppressed, each on its own, never the flattened list alone.
+	 *
+	 * @param array<string,mixed> $selection The resolved selection.
+	 *
+	 * @return array{standing: array<int,mixed>, added: array<int,mixed>, suppressed: array<int,mixed>}
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+	 */
+	private function recordedSelection(array $selection): array {
+		return [
+			'standing' => (array)($selection['standing'] ?? []),
+			'added' => (array)($selection['added'] ?? []),
+			'suppressed' => (array)($selection['suppressed'] ?? []),
+		];
+
+	}//end recordedSelection()
 
 	/**
 	 * Ask the opt-out list about a delivery that names a personal recipient.

@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\ServiceFetchController;
 use OCA\Integriq\Service\ServiceFetch\ServiceFetchCatalogue;
+use OCA\Integriq\Service\ServiceFetch\ServiceFetchService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
@@ -34,8 +35,9 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * REQ-SF-003.
+ * REQ-SF-003, and the administrator's test run of REQ-SF-001.
  *
+ * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
  * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-a-form-designer-can-list-the-fetches-an-app-may-call-req-sf-003
  */
 #[CoversClass(ServiceFetchController::class)]
@@ -46,10 +48,12 @@ class ServiceFetchControllerTest extends TestCase {
 	 * The controller over a register holding these fetches, or failing.
 	 *
 	 * @param list<array<string, mixed>>|null $fetches The fetches, or null for a failing read.
+	 * @param IRequest|null                   $request The request, a blank one by default.
+	 * @param ServiceFetchService|null        $service The test runner, a blank one by default.
 	 *
 	 * @return ServiceFetchController
 	 */
-	private function controller(?array $fetches): ServiceFetchController {
+	private function controller(?array $fetches, ?IRequest $request = null, ?ServiceFetchService $service = null): ServiceFetchController {
 		$objects = $this->createMock(OrObjectService::class);
 		if ($fetches === null) {
 			$objects->method('findAll')->willThrowException(new RuntimeException('down'));
@@ -61,9 +65,10 @@ class ServiceFetchControllerTest extends TestCase {
 
 		return new ServiceFetchController(
 			'integriq',
-			$this->createMock(IRequest::class),
+			($request ?? $this->createMock(IRequest::class)),
 			new ServiceFetchCatalogue($objects),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			($service ?? $this->createMock(ServiceFetchService::class))
 		);
 	}//end controller()
 
@@ -123,4 +128,82 @@ class ServiceFetchControllerTest extends TestCase {
 
 		$this->assertSame([NoAdminRequired::class], $attributes);
 	}//end testTheListIsOpenToSignedInUsers()
+
+	/**
+	 * A request carrying these inputs.
+	 *
+	 * @param mixed $inputs The `inputs` parameter.
+	 *
+	 * @return IRequest
+	 */
+	private function requestWith(mixed $inputs): IRequest {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->with('inputs', [])->willReturn($inputs);
+		return $request;
+	}//end requestWith()
+
+	/**
+	 * The test run hands the slug and sample inputs on and answers the raw
+	 * answer next to the outputs.
+	 *
+	 * @return void
+	 */
+	public function testATestRunShowsTheRawAnswerNextToTheOutputs(): void {
+		$service = $this->createMock(ServiceFetchService::class);
+		$service->expects($this->once())->method('test')->with('kadaster-eigenaar', ['bsn' => '999993653'])->willReturn(
+			['found' => true, 'raw' => ['status' => 200, 'body' => ['eigenaar' => true]], 'outputs' => ['isEigenaar' => true], 'refusal' => null, 'detail' => null]
+		);
+
+		$response = $this->controller(fetches: [], request: $this->requestWith(['bsn' => '999993653']), service: $service)->test(slug: 'kadaster-eigenaar');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(
+			['raw' => ['status' => 200, 'body' => ['eigenaar' => true]], 'outputs' => ['isEigenaar' => true], 'refusal' => null, 'detail' => null],
+			$response->getData()
+		);
+	}//end testATestRunShowsTheRawAnswerNextToTheOutputs()
+
+	/**
+	 * An unknown fetch is 404; inputs that are not an object are 400 and run nothing.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownFetchIs404AndNonObjectInputsAre400(): void {
+		$service = $this->createMock(ServiceFetchService::class);
+		$service->method('test')->willReturn(['found' => false, 'raw' => null, 'outputs' => null, 'refusal' => null, 'detail' => null]);
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller(fetches: [], request: $this->requestWith([]), service: $service)->test(slug: 'nope')->getStatus());
+
+		$never = $this->createMock(ServiceFetchService::class);
+		$never->expects($this->never())->method('test');
+		foreach (['a string', ['a', 'list']] as $inputs) {
+			$response = $this->controller(fetches: [], request: $this->requestWith($inputs), service: $never)->test(slug: 'kadaster-eigenaar');
+			$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+			$this->assertSame(['error' => 'inputs must be an object'], $response->getData());
+		}
+	}//end testAnUnknownFetchIs404AndNonObjectInputsAre400()
+
+	/**
+	 * A failing test run is 503 without its detail.
+	 *
+	 * @return void
+	 */
+	public function testAFailingTestRunIs503(): void {
+		$service = $this->createMock(ServiceFetchService::class);
+		$service->method('test')->willThrowException(new RuntimeException('secret detail'));
+
+		$response = $this->controller(fetches: [], request: $this->requestWith([]), service: $service)->test(slug: 'kadaster-eigenaar');
+
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame(['error' => 'The service fetch could not be tested.'], $response->getData());
+	}//end testAFailingTestRunIs503()
+
+	/**
+	 * The test run is for administrators only: the method carries no attribute
+	 * that opens it to other users.
+	 *
+	 * @return void
+	 */
+	public function testTheTestRunIsAdminOnly(): void {
+		$this->assertSame([], (new \ReflectionMethod(ServiceFetchController::class, 'test'))->getAttributes());
+	}//end testTheTestRunIsAdminOnly()
 }//end class

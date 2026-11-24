@@ -288,7 +288,7 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function testLegacyRsaModeNameStillVerifiesTheChain(): void {
 		$body = '{"verzoekId":"legacy-rsa"}';
@@ -312,7 +312,7 @@ class DSOSignatureVerifierServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function testTrustComesFromTheArgument(): void {
 		$body = '{"verzoekId":"two-trusts"}';

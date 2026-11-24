@@ -1,0 +1,117 @@
+{
+  "$comment": "ADR-037 register fragment (zgw-catalogi-served). Declares catalogi_binding: the catalogue the Catalogi API facade serves (domein, rsin, naam, the uuid it is published under), the register and schema holding the organisation's document types, a field map onto the InformatieObjectType resource, and the ZGW clients that may read it with their scopes. Admin-only: the binding decides what a public, token-guarded API serves and who may read it.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": [
+          "catalogi_binding"
+        ]
+      }
+    },
+    "schemas": {
+      "catalogi_binding": {
+        "slug": "catalogi_binding",
+        "title": "Catalogi API binding",
+        "icon": "BookOpenPageVariantOutline",
+        "version": "1.0.0",
+        "summary": "Which catalogue the Catalogi API serves, over which schema of document types",
+        "description": "Serves the organisation's document types as the informatieobjecttypen of one catalogue, so a Documenten API references them and no second catalogue is kept. Only the clients listed here, holding catalogi.lezen, may read it.",
+        "authorization": {
+          "create": [
+            "admin"
+          ],
+          "read": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "required": [
+          "publishedUuid",
+          "register",
+          "schema"
+        ],
+        "type": "object",
+        "properties": {
+          "domein": {
+            "type": "string",
+            "title": "Domain",
+            "description": "The catalogue's domain, for example WOO.",
+            "maxLength": 5
+          },
+          "rsin": {
+            "type": "string",
+            "title": "RSIN",
+            "description": "The RSIN of the organisation that owns the catalogue.",
+            "pattern": "^[0-9]{9}$"
+          },
+          "naam": {
+            "type": "string",
+            "title": "Name",
+            "description": "The catalogue's name."
+          },
+          "publishedUuid": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Catalogue uuid",
+            "description": "The uuid the catalogue is published under. It stays the same when a register is rebuilt."
+          },
+          "register": {
+            "type": "string",
+            "title": "Register",
+            "description": "The register that holds the document types."
+          },
+          "schema": {
+            "type": "string",
+            "title": "Schema",
+            "description": "The schema that holds the document types."
+          },
+          "fieldMap": {
+            "type": "object",
+            "title": "Field map",
+            "description": "Which field of the schema fills which field of an informatieobjecttype. A leading ! inverts a yes/no field. Fields left out keep the default map.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "clients": {
+            "type": "array",
+            "title": "Clients",
+            "description": "The ZGW clients that may read the catalogue, with their scopes.",
+            "items": {
+              "type": "object",
+              "required": [
+                "clientId"
+              ],
+              "properties": {
+                "clientId": {
+                  "type": "string",
+                  "title": "Client id",
+                  "description": "The client_id the client's JWT carries."
+                },
+                "scopes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Scopes",
+                  "description": "The scopes the client holds. catalogi.lezen reads the catalogue."
+                },
+                "concepts": {
+                  "type": "boolean",
+                  "default": false,
+                  "title": "Reads concepts",
+                  "description": "Whether the client may read document types that are still a concept."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

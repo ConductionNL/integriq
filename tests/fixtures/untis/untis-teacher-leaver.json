@@ -1,0 +1,13 @@
+{
+  "teachers": [
+    {
+      "externKey": "j.jansen",
+      "shortName": "JAN",
+      "lastName": "Jansen",
+      "forename": "Jan",
+      "entryDate": "2019-08-01",
+      "exitDate": "2025-06-30",
+      "active": false
+    }
+  ]
+}

@@ -18,7 +18,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCA\OpenRegister\Service\ObjectService;
  * the same publication date, with the euro itself at 1. A pair without the
  * euro is such a division of two stored rates and is marked derived.
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
  */
 class ExchangeRateService {
 
@@ -102,7 +102,7 @@ class ExchangeRateService {
 	 *
 	 * @param ObjectService $objectService OpenRegister object store holding the `exchange_rate` objects.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -120,7 +120,7 @@ class ExchangeRateService {
 	 * @return array<string,mixed> Either `{result: {rate, rateDate, source, derived}}`
 	 *                             or `{refusal: {code, reason, newestDate}}`.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function quote(string $baseCurrency, string $quoteCurrency, string $asOf, int $maxAgeDays = 7): array {
 		$invalid = $this->invalidReason(base: $baseCurrency, quote: $quoteCurrency, asOf: $asOf, maxAgeDays: $maxAgeDays);
@@ -257,7 +257,7 @@ class ExchangeRateService {
 	 *
 	 * @return list<array<string, mixed>> The object data.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	private function stored(array $filters, array $options): array {
 		// System path: the rate table is instance-wide reference data any app may read.

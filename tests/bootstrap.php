@@ -268,6 +268,14 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
 		}
 
+		// openregister main's object API value objects (ObjectFindOptions and
+		// friends), which replaced the register:/schema: named arguments.
+		foreach (['ObjectFindTarget', 'ObjectFindOptions', 'ObjectSaveOptions', 'ObjectDeletion'] as $valueStub) {
+			if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\' . $valueStub) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/' . $valueStub . '.php';
+			}
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectServiceMapperAdapter') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectServiceMapperAdapter.php';
 		}
@@ -304,6 +312,8 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 				'Exception/AuthenticationException',
 				'Db/ConsumerMapper',
 				'Service/Consumer/ConsumerSource',
+				'Service/Consumer/ConsumerIdentity',
+				'Service/Consumer/ConsumerAuthorization',
 				'Service/Consumer/ResolvedConsumer',
 				'Service/Consumer/RsaJwsVerifier',
 				'Service/Consumer/JwtValidator',
@@ -613,6 +623,12 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// The leaf `IntegriqAdmin` (Settings + Sections) and
 		// `InitializeActions` classes extend these directly, so autoloading
 		// the subclass requires the parent to resolve.
+		foreach (['SettingsPlacement', 'SectionAppearance', 'AdminFormServices'] as $settingsValue) {
+			if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\' . $settingsValue) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/AppHost/Settings/' . $settingsValue . '.php';
+			}
+		}
+
 		if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\GenericAdminSettings') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/AppHost/Settings/GenericAdminSettings.php';
 		}

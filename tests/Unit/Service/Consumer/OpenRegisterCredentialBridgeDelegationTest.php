@@ -27,6 +27,8 @@ use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\AuthenticationException as OpenRegisterAuthenticationException;
 use OCA\OpenRegister\Service\AuthorizationService;
+use OCA\OpenRegister\Service\Consumer\ConsumerAuthorization;
+use OCA\OpenRegister\Service\Consumer\ConsumerIdentity;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\Response;
@@ -270,12 +272,8 @@ class OpenRegisterCredentialBridgeDelegationTest extends TestCase {
 	 */
 	private function resolved(mixed $record, string $source=IntegriqConsumerSource::SOURCE): ResolvedConsumer {
 		return new ResolvedConsumer(
-			source: $source,
-			uuid: 'c-1',
-			name: 'partner',
-			userId: null,
-			authorizationType: 'apiKey',
-			configuration: [],
+			identity: new ConsumerIdentity(source: $source, uuid: 'c-1', name: 'partner'),
+			authorization: new ConsumerAuthorization(userId: null, authorizationType: 'apiKey', configuration: []),
 			record: $record,
 		);
 	}//end resolved()

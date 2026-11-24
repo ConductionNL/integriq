@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use OCP\EventDispatcher\Event;
  * a `code` (`no-rate`, `invalid-request` or `unavailable`), a `reason` and
  * `newestDate`, the newest stored publication date or null.
  *
- * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+ * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
  */
 class ExchangeRateRequestedEvent extends Event {
 
@@ -74,7 +74,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 * @param string|DateTimeInterface $asOf          The date asked for, `Y-m-d` or a date object.
 	 * @param int                      $maxAgeDays    How many days before `asOf` a rate may be published.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function __construct(
 		private readonly string $sourceApp,
@@ -91,7 +91,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 *
 	 * @return string The app id.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function getSourceApp(): string {
 		return $this->sourceApp;
@@ -102,7 +102,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 *
 	 * @return string The ISO 4217 code.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function getBaseCurrency(): string {
 		return strtoupper(trim($this->baseCurrency));
@@ -113,7 +113,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 *
 	 * @return string The ISO 4217 code.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function getQuoteCurrency(): string {
 		return strtoupper(trim($this->quoteCurrency));
@@ -124,7 +124,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 *
 	 * @return string The date; a date object is read in its own time zone.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function getAsOf(): string {
 		if ($this->asOf instanceof DateTimeInterface) {
@@ -139,7 +139,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 *
 	 * @return int The age in days.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function getMaxAgeDays(): int {
 		return $this->maxAgeDays;
@@ -152,7 +152,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function setResult(array $result): void {
 		$this->result  = $result;
@@ -169,7 +169,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function setRefusal(string $code, string $reason, ?string $newestDate = null): void {
 		$this->refusal = ['code' => $code, 'reason' => $reason, 'newestDate' => $newestDate];
@@ -182,7 +182,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 *
 	 * @return bool True when handled.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function isHandled(): bool {
 		return $this->handled;
@@ -193,7 +193,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 *
 	 * @return array<string,mixed>|null `{rate, rateDate, source, derived}`.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function getResult(): ?array {
 		return $this->result;
@@ -204,7 +204,7 @@ class ExchangeRateRequestedEvent extends Event {
 	 *
 	 * @return array<string,mixed>|null `{code, reason, newestDate}`.
 	 *
-	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 * @spec openspec/changes/archive/2026-11-21-sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
 	 */
 	public function getRefusal(): ?array {
 		return $this->refusal;

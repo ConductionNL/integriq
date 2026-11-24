@@ -53,7 +53,7 @@ use Throwable;
  *
  * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
  */
-class MolliePaymentProvider implements PaymentProviderInterface {
+class MolliePaymentProvider implements PaymentProviderInterface, PaymentProviderProbeInterface {
 
 	/**
 	 * Default Mollie Payments API v2 base URL.
@@ -92,6 +92,17 @@ class MolliePaymentProvider implements PaymentProviderInterface {
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The id a payment source names this provider by.
+	 *
+	 * @return string `mollie`.
+	 *
+	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 */
+	public function getProviderId(): string {
+		return 'mollie';
+	}//end getProviderId()
 
 	/**
 	 * {@inheritDoc}
@@ -234,6 +245,70 @@ class MolliePaymentProvider implements PaymentProviderInterface {
 		];
 
 	}//end fetchPaymentStatus()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * A read-only `GET {baseUrl}/profiles/me` through the broker: Mollie answers it
+	 * for an API key with the website profile the key belongs to, including its
+	 * `mode`, so the check names the profile and says `test` or `live` while the
+	 * key itself never reaches integriq. A refusal is an answer, not an error.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object.
+	 *
+	 * @return array{ok: bool, mode: ?string, profile: ?string, message: ?string}
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	public function probe(array $sourceConfiguration): array {
+		try {
+			$response = $this->dispatch(
+				sourceConfiguration: $sourceConfiguration,
+				call: new PaymentCall(
+					method: 'GET',
+					url: $this->baseUrl(sourceConfiguration: $sourceConfiguration) . '/profiles/me'
+				)
+			);
+		} catch (PaymentProviderException $exception) {
+			return $this->refusedProbe(message: $exception->getMessage());
+		}
+
+		$decoded = (array)json_decode($response, true);
+		$mode    = ($decoded['mode'] ?? null);
+		if (in_array($mode, ['test', 'live'], true) === false) {
+			return $this->refusedProbe(message: 'Mollie answered the profile lookup without a test or live mode.');
+		}
+
+		$profile = ($decoded['name'] ?? null);
+		if ($this->isUsableText(value: $profile) === false) {
+			$profile = null;
+		}
+
+		return [
+			'ok' => true,
+			'mode' => $mode,
+			'profile' => $profile,
+			'message' => null,
+		];
+
+	}//end probe()
+
+	/**
+	 * A probe result for a key or configuration Mollie did not accept.
+	 *
+	 * @param string $message Why, free of any secret.
+	 *
+	 * @return array{ok: bool, mode: ?string, profile: ?string, message: ?string}
+	 */
+	private function refusedProbe(string $message): array {
+		return [
+			'ok' => false,
+			'mode' => null,
+			'profile' => null,
+			'message' => $message,
+		];
+
+	}//end refusedProbe()
 
 	/**
 	 * Resolve the Mollie API base URL, defaulting to the real v2 endpoint.

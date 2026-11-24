@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+# SPDX-License-Identifier: EUPL-1.2
+#
+# Runs the connector extension skeleton's tests against IntegrIQ's contract
+# test cases (platform-connector-extension-kit, REQ-CXK-004). Only changes to
+# the kit trigger it, so it costs nothing on every other change.
+name: Connector extension kit
+
+on:
+  pull_request:
+    paths:
+      - 'examples/connector-extension/**'
+      - 'tests/Contract/**'
+      - 'lib/Event/RegisterConnectorExtensionsEvent.php'
+      - 'lib/Intake/**'
+      - 'lib/Service/Payment/PaymentProviderInterface.php'
+      - 'lib/Service/DigitalPost/DigitalPostProviderInterface.php'
+      - '.github/workflows/connector-extension-kit.yml'
+  push:
+    branches: [development, main]
+    paths:
+      - 'examples/connector-extension/**'
+      - 'tests/Contract/**'
+
+permissions:
+  contents: read
+
+jobs:
+  skeleton:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: bcmath, soap
+          coverage: none
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: vendor/bin/phpunit -c examples/connector-extension/phpunit.xml

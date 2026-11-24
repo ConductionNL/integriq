@@ -64,7 +64,7 @@ interface PortalConnectionInterface {
 	 * @throws DsoConnectionUnavailableException When the connection, the account or its rights are missing.
 	 * @throws DsoSignatureException When the signature does not verify.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function authenticate(string $rawBody, ?string $signatureHeader): DsoIdentity;
 
@@ -80,7 +80,7 @@ interface PortalConnectionInterface {
 	 *
 	 * @return list<ObjectEntity> The consumers, normally zero or one.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
 	public function findConsumers(string $authorizationType = self::AUTHORIZATION_TYPE): array;
@@ -92,7 +92,7 @@ interface PortalConnectionInterface {
 	 *
 	 * @throws DsoConnectionUnavailableException When two or more exist.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md
 	 */
 	public function findConsumer(): ?ObjectEntity;
 
@@ -105,7 +105,7 @@ interface PortalConnectionInterface {
 	 *
 	 * @throws DsoConnectionUnavailableException With reason no_account, account_unknown or account_disabled.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-1
 	 */
 	public function resolveAccount(string $userId): IUser;
 
@@ -117,7 +117,7 @@ interface PortalConnectionInterface {
 	 * @return list<string>|null The missing actions (empty when all are held), or null
 	 *                           when OpenRegister cannot answer the question.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function missingRights(string $userId): ?array;
 
@@ -132,7 +132,7 @@ interface PortalConnectionInterface {
 	 *
 	 * @return ObjectEntity The saved consumer.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-4
 	 */
 	public function saveConsumer(array $data, ?string $uuid): ObjectEntity;
 
@@ -147,7 +147,7 @@ interface PortalConnectionInterface {
 	 *
 	 * @return mixed Whatever the operation returns.
 	 *
-	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-2
 	 */
 	public function runAs(IUser $account, callable $operation): mixed;
 }

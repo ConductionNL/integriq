@@ -172,6 +172,69 @@ final class IdpRegistration {
 	}//end isEnabled()
 
 	/**
+	 * The attributes an attribute login (Yivi) may ask for, keyed by attribute id.
+	 *
+	 * Read from `yiviAttributes`. An entry without an id or a claim name is
+	 * no entry: it cannot be asked for, so it allows nothing.
+	 *
+	 * @return array<string, array{claim: string, carriesBsn: bool}>
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-login-asks-for-exactly-the-attributes-the-consumer-names-req-yivi-002
+	 */
+	public function attributeAllowlist(): array {
+		$entries = ($this->data['yiviAttributes'] ?? []);
+		if (is_array($entries) === false) {
+			return [];
+		}
+
+		$allowed = [];
+		foreach ($entries as $entry) {
+			if (is_array($entry) === false) {
+				continue;
+			}
+
+			$id = self::scalarText(value: ($entry['id'] ?? null));
+			$claim = self::scalarText(value: ($entry['claim'] ?? null));
+			if ($id !== '' && $claim !== '') {
+				$allowed[$id] = ['claim' => $claim, 'carriesBsn' => (($entry['carriesBsn'] ?? false) === true)];
+			}
+		}
+
+		return $allowed;
+
+	}//end attributeAllowlist()
+
+	/**
+	 * Whether a disclosed BSN attribute may reach the consumer as it is (`yiviBsnToConsumer`).
+	 *
+	 * Anything but `true` keeps the default: the BSN is replaced by its pseudonym.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi/spec.md#requirement-a-yivi-envelope-carries-only-the-disclosed-attributes-req-yivi-003
+	 */
+	public function passesBsnToConsumer(): bool {
+		return ($this->data['yiviBsnToConsumer'] ?? false) === true;
+
+	}//end passesBsnToConsumer()
+
+	/**
+	 * A scalar as trimmed text; '' for anything else.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string
+	 */
+	private static function scalarText(mixed $value): string {
+		if (is_scalar($value) === false) {
+			return '';
+		}
+
+		return trim((string)$value);
+
+	}//end scalarText()
+
+	/**
 	 * The name the screen and the messages use: the label, else the id.
 	 *
 	 * @return string

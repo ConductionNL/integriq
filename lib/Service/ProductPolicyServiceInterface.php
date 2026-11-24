@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
@@ -37,7 +38,7 @@ interface ProductPolicyServiceInterface {
 	 * @return string The key `product:<product uuid>:consumer:<consumer uuid>`.
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
-	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
 	 */
 	public function counterKey(ObjectEntity $product, string $consumerUuid): string;
 
@@ -52,7 +53,7 @@ interface ProductPolicyServiceInterface {
 	 * @return ObjectEntity|null The active subscription, or null.
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	public function resolveActiveSubscription(string $consumerUuid, string $productUuid): ?ObjectEntity;
 
@@ -66,7 +67,7 @@ interface ProductPolicyServiceInterface {
 	 * @return array{rateLimit: array|null, quota: array|null}|null
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	public function resolveTierPolicy(ObjectEntity $product, ObjectEntity $subscription): ?array;
 
@@ -79,7 +80,30 @@ interface ProductPolicyServiceInterface {
 	 * @return array<string, string>
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-deprecated-product-version-carries-sunset-and-deprecation-headers-req-apg-006
-	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-11-20-events-async-api-products/tasks.md#task-1
 	 */
 	public function buildDeprecationHeaders(ObjectEntity $product): array;
+
+	/**
+	 * The date a subscription ended on, when its `expiresAt` has passed, else null.
+	 *
+	 * @param ObjectEntity            $subscription The api_product_subscription.
+	 * @param DateTimeInterface|null  $now          The moment to judge at; now when null.
+	 *
+	 * @return string|null The end date as `Y-m-d`, or null while the subscription runs.
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 */
+	public function expiredOn(ObjectEntity $subscription, ?DateTimeInterface $now=null): ?string;
+
+	/**
+	 * Whether a product is retired, so its endpoints answer 410 Gone.
+	 *
+	 * @param ObjectEntity $product The api_product.
+	 *
+	 * @return bool True when its status is `retired`.
+	 *
+	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 */
+	public function isRetired(ObjectEntity $product): bool;
 }

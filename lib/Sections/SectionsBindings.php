@@ -26,6 +26,8 @@ namespace OCA\Integriq\Sections;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Sections\IntegriqAdmin as IntegriqAdminSection;
+use OCA\OpenRegister\AppHost\Settings\SectionAppearance;
+use OCA\OpenRegister\AppHost\Settings\SettingsPlacement;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -76,11 +78,8 @@ final class SectionsBindings {
 				$name = $c->get(\OCP\IL10N::class)->t('Integriq');
 
 				return new IntegriqAdminSection(
-					sectionId: 'integriq',
-					name: $name,
-					appId: AppIdentity::APP_ID,
-					iconFile: 'app-dark.svg',
-					priority: 97,
+					placement: new SettingsPlacement(appId: AppIdentity::APP_ID, sectionId: 'integriq', priority: 97),
+					appearance: new SectionAppearance(name: $name, iconFile: 'app-dark.svg'),
 					urlGenerator: $c->get(\OCP\IURLGenerator::class)
 				);
 			}

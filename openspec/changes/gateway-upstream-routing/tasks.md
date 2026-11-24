@@ -35,9 +35,12 @@ Kind: code. Size M. Rows `integriq:gw-loadbalance`, `integriq:gw-canary`, `integ
 - **files**: the endpoint editor, `src/manifest.json` (split widget on the endpoint detail), `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN an administrator WHEN they add a second target with weight 5 THEN the endpoint page shows both and, after traffic, the split per target
-- [ ] Implement
+- [x] Implement
+  - The endpoint editor offers target type `api`, whose fields are `src/modals/v2/EndpointTargetsFields.vue`: the one source (`targetId`) while the endpoint has no targets, else the targets with source, weight, group and each one's share of its group (`endpointTargets.js`, the same groups and even split at weight 0 as `UpstreamSelector`), and the sticky switch once there are two. A stored `when` rule is kept and the row says it has one; rules are not authored here. The source picker is the shared mixin `src/mixins/sourceOptions.js`, now also used by `McpEndpointFields`. The endpoint page gains the chart `ep-target-split` ("Calls per target", a donut over `call_log` filtered to the endpoint, grouped by `routedTarget`, labelled with the source name), shown only when the endpoint has targets. Vitest: `tests/vitest/endpointTargetsFields.spec.js`, `tests/vitest/endpointFormFieldsRender.spec.js`.
 - [ ] Test (Playwright)
+  - Written, not run here: `tests/e2e/endpoint-targets.spec.ts` (the dialog shows two targets at 95% and 5% and adds a third; the endpoint page shows the calls per target).
 
 ## Verification
-- [ ] `openspec validate gateway-upstream-routing --type change --strict` passes
+- [x] `openspec validate gateway-upstream-routing --type change --strict` passes
+  - OpenSpec 2.1.1, 2026-11-23: valid under `--strict`.
 - [ ] PHPUnit and Playwright run, exit codes read
