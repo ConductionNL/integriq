@@ -40,6 +40,7 @@
 const fs = require('fs')
 const path = require('path')
 const vm = require('vm')
+const { loadSourceCatalogue } = require('../../scripts/lib/l10n.js')
 
 const ROOT = process.cwd()
 const L10N_DIR = path.join(ROOT, 'l10n')
@@ -104,6 +105,9 @@ const sets = [
 		enFile: path.join(L10N_DIR, 'en.js'),
 		file: (loc) => path.join(L10N_DIR, `${loc}.js`),
 		load: loadJs,
+		// en.js is generated without its identity entries; the source key set
+		// is en.js completed from en.json (scripts/lib/l10n.js).
+		loadEn: (file) => loadSourceCatalogue(file).translations,
 	},
 	{
 		kind: 'backend (.json)',
@@ -121,7 +125,7 @@ for (const set of sets) {
 		continue // this app does not ship this translation set
 	}
 	checkedSets++
-	const enKeys = Object.keys(set.load(set.enFile))
+	const enKeys = Object.keys((set.loadEn || set.load)(set.enFile))
 	for (const loc of REQUIRED) {
 		const locFile = set.file(loc)
 		if (!fs.existsSync(locFile)) {

@@ -55,6 +55,39 @@ function loadJsTranslations(file) {
 }
 
 /**
+ * Load the English SOURCE catalogue: l10n/en.js completed from l10n/en.json.
+ *
+ * scripts/build-l10n-js.js generates en.js from en.json and drops every entry
+ * equal to its own key, because `t()` already falls back to the key and the
+ * identity entries were ~99% of the file. So en.js alone no longer lists every
+ * source string. The checks that ask "is this key in the catalogue" read this
+ * instead: the en.js entries, plus every en.json key en.js leaves out, valued
+ * as en.json has it. Without a sibling en.json this is plain loadJsTranslations.
+ *
+ * Divergence from openregister's copy of this file: openregister's en.js is
+ * not generated, so it has no counterpart.
+ *
+ * @spec PERF-HANDOFF.md (all apps: drop identity entries from the English catalogue at build time)
+ * @param {string} file path to l10n/en.js
+ * @return {{app: string, translations: object, pluralForm: string}} the catalogue
+ */
+function loadSourceCatalogue(file) {
+	const loaded = loadJsTranslations(file)
+	const jsonFile = file.replace(/\.js$/, '.json')
+	if (jsonFile === file || !fs.existsSync(jsonFile)) {
+		return loaded
+	}
+	const source = JSON.parse(fs.readFileSync(jsonFile, 'utf8')).translations || {}
+	const translations = { ...loaded.translations }
+	for (const key of Object.keys(source)) {
+		if (!Object.hasOwn(translations, key)) {
+			translations[key] = source[key]
+		}
+	}
+	return { ...loaded, translations }
+}
+
+/**
  * Case-insensitive alphabetical order so "apple" sorts next to "Apple" instead
  * of after "Zebra" the way a raw code-unit sort puts it, tie-broken by code
  * unit so the result is stable. Deliberately NOT localeCompare: that varies
@@ -679,6 +712,7 @@ function collectSchemaKeys(repoRoot) {
 
 module.exports = {
 	loadJsTranslations,
+	loadSourceCatalogue,
 	serializeJs,
 	walk,
 	extractTranslationCalls,
