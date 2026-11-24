@@ -45,6 +45,9 @@ class DocumentRenderedEvent extends Event {
 	 * @param string $requestedBy The user the render was made for.
 	 * @param string $fileReference The reference to the produced document, '' when there is none.
 	 * @param string $error Why there is no document, '' when there is one.
+	 * @param string $document The fetched document itself, '' when there is none.
+	 *
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
 	 */
 	public function __construct(
 		private readonly string $jobId,
@@ -52,6 +55,7 @@ class DocumentRenderedEvent extends Event {
 		private readonly string $requestedBy = '',
 		private readonly string $fileReference = '',
 		private readonly string $error = '',
+		private readonly string $document = '',
 	) {
 		parent::__construct();
 
@@ -106,4 +110,19 @@ class DocumentRenderedEvent extends Event {
 		return $this->error;
 
 	}//end getError()
+
+	/**
+	 * The fetched document, so the requester can file it.
+	 *
+	 * Integriq keeps only the document's length on the job; the bytes travel
+	 * once, on this event, to the app that asked for the render.
+	 *
+	 * @return string The document bytes, '' when there is none.
+	 *
+	 * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-a-render-is-a-typed-command-with-a-tracked-job-req-dgv-002
+	 */
+	public function getDocument(): string {
+		return $this->document;
+
+	}//end getDocument()
 }//end class
