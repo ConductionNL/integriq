@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-each-dossier-folder-becomes-a-draft-publication-with-its-documents-req-sppi-002
+ * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-each-dossier-folder-becomes-a-draft-publication-with-its-documents-req-sppi-002
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -72,7 +72,7 @@ class SharePointPublicationSet implements SharePointPublicationSetInterface {
 	 *
 	 * @param string|null $path The set's JSON file; the packaged one when null.
 	 *
-	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-each-dossier-folder-becomes-a-draft-publication-with-its-documents-req-sppi-002
+	 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-each-dossier-folder-becomes-a-draft-publication-with-its-documents-req-sppi-002
 	 */
 	public function __construct(
 		private readonly ?string $path=null,
@@ -86,7 +86,7 @@ class SharePointPublicationSet implements SharePointPublicationSetInterface {
 	 *
 	 * @throws InvalidArgumentException When the file is missing or is not a JSON object.
 	 *
-	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-each-dossier-folder-becomes-a-draft-publication-with-its-documents-req-sppi-002
+	 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-each-dossier-folder-becomes-a-draft-publication-with-its-documents-req-sppi-002
 	 */
 	public function template(): array {
 		$path = ($this->path ?? dirname(__DIR__, 3) . '/Settings/configurations/' . self::SLUG . '.json');
@@ -114,7 +114,7 @@ class SharePointPublicationSet implements SharePointPublicationSetInterface {
 	 *
 	 * @return string[] The refusals, empty when the declaration is sound.
 	 *
-	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-each-dossier-folder-becomes-a-draft-publication-with-its-documents-req-sppi-002
+	 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-each-dossier-folder-becomes-a-draft-publication-with-its-documents-req-sppi-002
 	 */
 	public function refuseTemplate(array $template): array {
 		$refusals   = $this->fleetAppRefusals(template: $template);
@@ -205,7 +205,7 @@ class SharePointPublicationSet implements SharePointPublicationSetInterface {
 	 *
 	 * @throws InvalidArgumentException When a choice is missing or the declaration is refused.
 	 *
-	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+	 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 	 */
 	public function build(array $choices): array {
 		$values   = $this->checkedChoices(choices: $choices);

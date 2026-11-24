@@ -9,8 +9,8 @@
  * These rules read the manifest, the row-action table and the merged register
  * schemas, so a rename on any side fails here rather than on a live page.
  *
- * @spec openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-every-log-page-declares-its-filter-controls-req-logf-001
- * @spec openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
+ * @spec openspec/changes/archive/2026-11-24-observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-every-log-page-declares-its-filter-controls-req-logf-001
+ * @spec openspec/changes/archive/2026-11-24-observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
  */
 
 import { readdirSync, readFileSync } from 'node:fs'

@@ -22,7 +22,7 @@
  * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+ * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Reads and changes the log retention, and queues its rebase.
  *
- * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+ * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
  */
 class SettingsService implements SettingsServiceInterface {
 
@@ -51,7 +51,7 @@ class SettingsService implements SettingsServiceInterface {
 	 * @param LoggerInterface                   $logger          Records a change and a queued rebase.
 	 * @param ErrorSinkSettings|null            $errorSink       Reads, validates and stores the `errorsink_*` keys; the container always gives it.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function __construct(
 		private readonly IAppConfig $config,
@@ -113,7 +113,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @return array{retention: array<string,int>, defaults: array<string,int>, rebase: array<string,mixed>}
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function getSettings(): array {
 		$rebase = json_decode($this->config->getValueString(app: 'integriq', key: RetentionSettings::REBASE_PROGRESS_KEY, default: ''), true);
@@ -142,7 +142,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @throws InvalidArgumentException When a field is unknown or its value is not a whole non-negative number.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function updateSettings(array $payload): array {
 		$changes = ($payload['retention'] ?? null);
@@ -171,7 +171,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @throws InvalidArgumentException When a kind has no logs to rebase.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	public function rebase(array $kinds=[]): array {
 		$kinds = self::rebaseKinds(kinds: $kinds);
@@ -195,7 +195,7 @@ class SettingsService implements SettingsServiceInterface {
 	 *
 	 * @throws InvalidArgumentException When a kind has no logs to rebase.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	private static function rebaseKinds(array $kinds): array {
 		if ($kinds === []) {

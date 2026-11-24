@@ -15,7 +15,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
  * ids; an extension app's provider is added on first use, and one that claims
  * a taken id is refused and logged.
  *
- * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+ * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
  */
 class PaymentProviderRegistry {
 
@@ -61,7 +61,7 @@ class PaymentProviderRegistry {
 	 * @param iterable<PaymentProviderInterface> $providers  Integriq's own bindings; the first wins a duplicate id.
 	 * @param ConnectorExtensionCollector|null   $extensions Asks the extension apps for theirs, on first use.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function __construct(
 		iterable $providers = [],
@@ -83,7 +83,7 @@ class PaymentProviderRegistry {
 	 *
 	 * @return bool True when one is registered.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function has(string $providerId): bool {
 		$this->extend();
@@ -97,7 +97,7 @@ class PaymentProviderRegistry {
 	 *
 	 * @return PaymentProviderInterface|null The binding.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function find(string $providerId): ?PaymentProviderInterface {
 		$this->extend();
@@ -126,7 +126,7 @@ class PaymentProviderRegistry {
 	 *
 	 * @return array<int,string> The ids, built-ins first.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function ids(): array {
 		$this->extend();
@@ -140,7 +140,7 @@ class PaymentProviderRegistry {
 	 *
 	 * @return string|null The app id, or null when nothing answers to it.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
 	public function appIdOf(string $providerId): ?string {
 		$this->extend();
@@ -152,7 +152,7 @@ class PaymentProviderRegistry {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
 	 */
 	private function extend(): void {
 		if ($this->extended === true || $this->extensions === null) {

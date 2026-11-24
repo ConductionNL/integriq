@@ -168,7 +168,7 @@ export default {
 		 * Whether this card offers "Route to publications" (the SharePoint card).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		offersPublicationRoute() {
 			return offersPublicationRoute(this.catalogItem)
@@ -323,7 +323,7 @@ export default {
 		 * Close this dialog and open the SharePoint to publication setup.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+		 * @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 		 */
 		openPublicationRoute() {
 			this.close()

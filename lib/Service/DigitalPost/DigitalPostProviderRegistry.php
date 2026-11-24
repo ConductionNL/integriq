@@ -60,7 +60,7 @@ class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterfac
 	 * @param iterable<DigitalPostProviderInterface> $providers  The bindings.
 	 * @param ConnectorExtensionCollector|null       $extensions Asks the extension apps for theirs, on first use.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function __construct(
 		iterable $providers = [],
@@ -79,7 +79,7 @@ class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterfac
 	 *
 	 * @return string|null The app id, or null when nothing answers to it.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
 	public function appIdOf(string $providerId): ?string {
 		$this->extend();
@@ -91,7 +91,7 @@ class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterfac
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
 	 */
 	private function extend(): void {
 		if ($this->extended === true || $this->extensions === null) {

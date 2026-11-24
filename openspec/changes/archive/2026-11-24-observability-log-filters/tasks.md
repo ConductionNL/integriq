@@ -4,7 +4,7 @@ Kind: config. Matrix row `integriq:obs-filter-logs`. The rendering is a
 nextcloud-vue change; these tasks are integriq's.
 
 ### Task 1: Scope source and endpoint logs by direction
-- **spec_ref**: openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
+- **spec_ref**: openspec/changes/archive/2026-11-24-observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-source-and-endpoint-logs-show-only-their-own-direction-req-logf-003
 - **files**: `src/manifest.json`
 - **acceptance_criteria**:
   - GIVEN inbound and outbound calls WHEN the source logs page opens THEN only outbound calls are listed
@@ -16,7 +16,7 @@ nextcloud-vue change; these tasks are integriq's.
 - [x] Test (tests/vitest/logFilterControls.spec.js 'scopes the endpoint logs to inbound calls'; Playwright `tests/e2e/observability-log-filters.spec.ts` not written: it needs the nextcloud-vue rendering)
 
 ### Task 2: Declare filter controls on the six log pages
-- **spec_ref**: openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-every-log-page-declares-its-filter-controls-req-logf-001
+- **spec_ref**: openspec/changes/archive/2026-11-24-observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-every-log-page-declares-its-filter-controls-req-logf-001
 - **files**: `src/manifest.json`, `tests/validate-manifest.js`
 - **acceptance_criteria**:
   - GIVEN the manifest WHEN it is validated THEN each of the six pages has status (where the schema has one), subject and date range controls, and the three call log pages have direction
@@ -25,15 +25,16 @@ nextcloud-vue change; these tasks are integriq's.
 - [x] Test (tests/vitest/logFilterControls.spec.js: every control names a property of the merged register schema, each page has a date range on its sort column, the call log pages have direction and the three status code ranges, trace status and entry point equal the schema enums, and every row action's query key has a reference picker on its page. It is a vitest rule rather than a rule in `tests/validate-manifest.js` because `src/handlers/logTargets.js` is an ES module.)
 
 ### Task 3: Ask nextcloud-vue for the rendering and take the release
-- **spec_ref**: openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-a-filtered-view-is-a-link-req-logf-002
+- **spec_ref**: openspec/changes/archive/2026-11-24-observability-log-filters/specs/app-shell-and-logs-ui/spec.md#requirement-a-filtered-view-is-a-link-req-logf-002
 - **files**: an issue on ConductionNL/nextcloud-vue, `package-lock.json`
 - **acceptance_criteria**:
   - GIVEN the issue WHEN opened THEN it names the `filterControls` shape, the three control types and the address-bar behaviour
   - GIVEN the nextcloud-vue release WHEN integriq updates its lockfile within `^2.37.0` THEN the controls render on all six pages
 - [x] Ask: ConductionNL/nextcloud-vue#1291 names the `filterControls` shape, the three control types and the address-bar behaviour.
-- [ ] Take the release: move `package-lock.json` inside `^2.37.0` once #1291 ships.
+- [x] Take the release: move `package-lock.json` inside `^2.37.0` once #1291 ships.
+      > 2026-11-24: taken. package.json asks `^2.203.0` and the lockfile resolves 2.203.0, whose `CnLogsPage` reads `config.filterControls` (`src/utils/logFilterControls.js`) and keeps the selection in the address; the six pages are `type: logs`, rendered by `CnLogsPage`.
       > 2026-11-14: not yet: the latest @conduction/nextcloud-vue (2.180.0) does not read `filterControls`.
-- [ ] Test (Playwright `tests/e2e/observability-log-filters.spec.ts` covering a filtered view reopened from its address)
+- [x] Test (Playwright `tests/e2e/observability-log-filters.spec.ts` covering a filtered view reopened from its address) — written, runs in nightly
 
 ## Verification
 

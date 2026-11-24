@@ -66,7 +66,7 @@ class IntakeChannelRegistry implements IntakeChannelRegistryInterface {
 	 * @param array<int,IntakeChannelAdapterInterface> $adapters The adapters registered at boot.
 	 * @param ConnectorExtensionsInterface|null $extensions Asks the extension apps for theirs, on first use.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
@@ -86,7 +86,7 @@ class IntakeChannelRegistry implements IntakeChannelRegistryInterface {
 	 *
 	 * @return string|null The app id, or null when no adapter answers to it.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
 	public function appIdOf(string $channelId): ?string {
 		$this->extend();
@@ -102,7 +102,7 @@ class IntakeChannelRegistry implements IntakeChannelRegistryInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
 	 */
 	private function extend(): void {
 		if ($this->extended === true || $this->extensions === null) {

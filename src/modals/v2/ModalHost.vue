@@ -381,12 +381,12 @@ export default {
 			this.catalogItemDetail = { open: false, item: null }
 		},
 
-		/** @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001 */
+		/** @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001 */
 		openSharePointPublicationSetup() {
 			this.sharePointPublicationSetup = { open: true }
 		},
 
-		/** @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001 */
+		/** @spec openspec/changes/archive/2026-11-24-connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001 */
 		closeSharePointPublicationSetup() {
 			this.sharePointPublicationSetup = { open: false }
 		},

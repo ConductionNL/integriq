@@ -98,7 +98,7 @@ class MolliePaymentProvider implements PaymentProviderInterface, PaymentProvider
 	 *
 	 * @return string `mollie`.
 	 *
-	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	public function getProviderId(): string {
 		return 'mollie';

@@ -28,7 +28,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+ * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use Throwable;
 /**
  * Recomputes `expires` on existing log objects, a bounded number of pages per run.
  *
- * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+ * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
  */
 class RetentionRebaseJob extends QueuedJob {
 
@@ -89,7 +89,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 * @param IJobList         $jobList       Queues the next run.
 	 * @param LoggerInterface  $logger        Records a page that could not be saved.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -108,7 +108,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	protected function run($argument): void {
 		$cursor = self::cursorOf(argument: $argument);
@@ -127,7 +127,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	private function runPages(array $cursor, array $progress): void {
 		$retention = new RetentionSettings(appConfig: $this->appConfig);
@@ -153,7 +153,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	private function runPage(array &$cursor, array &$progress, RetentionSettings $retention): void {
 		$kind = $cursor['kinds'][$cursor['kind']];
@@ -179,7 +179,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	private function finish(array $progress): void {
 		$progress['status'] = 'done';
@@ -214,7 +214,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @return bool Whether the log was saved with a new expiry.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	private function rebaseRow(ObjectEntity $row, array $retention): bool {
 		$object = $row->getObject();
@@ -241,7 +241,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @return bool Whether it was saved.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	private function saveExpiry(ObjectEntity $row, array $object, string $kind): bool {
 		try {
@@ -265,7 +265,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	private function persist(ObjectEntity $row, array $object, string $kind): void {
 		$this->objectService->saveObject(
@@ -308,7 +308,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @return string|null|false
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	public static function expiresFor(string $created, int $retentionMs): string|null|false {
 		if (trim($created) === '') {
@@ -337,7 +337,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	public static function isSuccess(string $kind, array $object): bool {
 		return match ($kind) {
@@ -375,7 +375,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @return list<string>
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	private static function kindsOf(mixed $kinds): array {
 		return array_values(

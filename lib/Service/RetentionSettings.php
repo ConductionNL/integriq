@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
+ * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCP\IAppConfig;
 /**
  * Resolves the retention of each log kind, in milliseconds.
  *
- * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
+ * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
  */
 class RetentionSettings {
 
@@ -86,7 +86,7 @@ class RetentionSettings {
 	 *
 	 * @param IAppConfig $appConfig The app config the retention JSON is read from.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
@@ -102,7 +102,7 @@ class RetentionSettings {
 	 *
 	 * @throws InvalidArgumentException When the kind is unknown.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
 	 */
 	public function get(string $kind): int {
 		$setting = (self::KINDS[$kind] ?? null);
@@ -122,7 +122,7 @@ class RetentionSettings {
 	 *
 	 * @throws InvalidArgumentException When the kind is unknown.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
 	 */
 	public function errorAndSuccess(string $kind): array {
 		return [$this->get(kind: $kind), $this->get(kind: 'success')];
@@ -138,7 +138,7 @@ class RetentionSettings {
 	 *
 	 * @return array<string,int> Milliseconds per setting.
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
 	 */
 	public function all(): array {
 		$stored = $this->stored();
@@ -159,7 +159,7 @@ class RetentionSettings {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
+	 * @spec openspec/changes/archive/2026-11-24-platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
 	 */
 	public function stored(): array {
 		$raw = $this->appConfig->getValueString(app: 'integriq', key: self::CONFIG_KEY, default: '');

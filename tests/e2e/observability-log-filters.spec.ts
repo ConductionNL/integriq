@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-24-observability-log-filters/specs/app-shell-and-logs-ui/spec.md
  * (REQ-LOGF-001 every log page declares its filter controls, REQ-LOGF-002 a
  * filtered view is a link, REQ-LOGF-003 source and endpoint logs show only
  * their own direction).
