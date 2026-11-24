@@ -242,6 +242,7 @@ class DocumentGenerationServiceTest extends TestCase {
 		$this->assertCount(1, $this->dispatched);
 		$this->assertInstanceOf(DocumentRenderedEvent::class, $this->dispatched[0]);
 		$this->assertSame('failed', $this->dispatched[0]->getStatus());
+		$this->assertSame('', $this->dispatched[0]->getDocument());
 
 	}//end testARefusalIsRecordedWithItsReasonAndAnnounced()
 
@@ -272,6 +273,7 @@ class DocumentGenerationServiceTest extends TestCase {
 		$this->assertCount(1, $this->dispatched);
 		$this->assertSame('doc-1', $this->dispatched[0]->getFileReference());
 		$this->assertSame('ambtenaar', $this->dispatched[0]->getRequestedBy());
+		$this->assertSame('%PDF-1.4 a whole beschikking', $this->dispatched[0]->getDocument());
 
 	}//end testARenderedDocumentIsFetchedBeforeTheJobIsCalledComplete()
 

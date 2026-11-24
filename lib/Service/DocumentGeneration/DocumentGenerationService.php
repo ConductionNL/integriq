@@ -353,7 +353,8 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 					status: $outcome->status,
 					requestedBy: (string)($data['requestedBy'] ?? ''),
 					fileReference: $outcome->fileReference,
-					error: (string)$data['lastError']
+					error: (string)$data['lastError'],
+					document: (string)$bytes
 				)
 			);
 		}
