@@ -66,7 +66,8 @@
 			</NcButton>
 			<NcButton
 				variant="primary"
-				:disabled="saving || !dirty || missingFlow"
+				:disabled="saving || checkingLockout || !dirty || missingFlow"
+				data-testid="rule-save"
 				@click="onSave">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
@@ -223,16 +224,28 @@
 				@update="onConfigurationUpdate"
 				@update:type="onActionTypeUpdate" />
 		</CnDetailCard>
+
+		<!-- access-oauth-and-token-validation REQ-TOKV-005: before a new
+		     scope requirement is saved, name the consumers it locks out. -->
+		<ScopeLockoutDialog
+			v-if="lockout"
+			:consumers="lockout.consumers"
+			:fromCallLog="lockout.fromCallLog"
+			@cancel="cancelLockout"
+			@confirm="confirmLockout" />
 	</CnDetailPage>
 </template>
 
 <script>
 import { CnDetailCard, CnDetailPage } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import CodeJson from 'vue-material-design-icons/CodeJson.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
 import AutomationDeprecationNotice from '../../components/AutomationDeprecationNotice.vue'
+import ScopeLockoutDialog from '../../modals/Rule/ScopeLockoutDialog.vue'
 import RuleActionConfig from './RuleActionConfig.vue'
 import RuleConditionGroup from './RuleConditionGroup.vue'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
@@ -244,8 +257,19 @@ import {
 	normaliseConditions,
 	TIMING_OPTIONS,
 } from './ruleDraft.js'
+import {
+	addedScopes,
+	addsScopes,
+	callersOf,
+	endpointsUsingRule,
+	lockedOutConsumers,
+	requiredScopesOf,
+} from './scopeLockout.js'
 
 const OBJECT_TYPE = 'rule'
+
+/** OpenRegister's object API for the integriq register. */
+const OBJECTS_URL = '/apps/openregister/api/objects/integriq'
 
 export default {
 	name: 'RuleDetailPage',
@@ -263,6 +287,7 @@ export default {
 		UndoIcon,
 		RuleConditionGroup,
 		RuleActionConfig,
+		ScopeLockoutDialog,
 	},
 
 	mixins: [liveObjectSubscription],
@@ -310,6 +335,10 @@ export default {
 			rawConditions: false,
 			rawConditionsDraft: '',
 			rawConditionsError: '',
+			/** True while the save checks who a new scope requirement locks out. */
+			checkingLockout: false,
+			/** The open lockout dialog: `{consumers, fromCallLog}`, or null. */
+			lockout: null,
 		}
 	},
 
@@ -580,9 +609,105 @@ export default {
 			}
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Save, but first show who a newly required scope locks out
+		 * (REQ-TOKV-005). Without added scopes, or with nobody locked out,
+		 * the rule saves at once.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005
+		 */
 		async onSave() {
-			if (!this.draft || this.saving || this.missingFlow) return
+			if (!this.draft || this.saving || this.checkingLockout || this.missingFlow) return
+			const added = addedScopes(requiredScopesOf(this.pristine), requiredScopesOf(this.draft))
+			if (addsScopes(added)) {
+				this.checkingLockout = true
+				let lockout
+				try {
+					lockout = await this.findLockout(added)
+				} finally {
+					this.checkingLockout = false
+				}
+				if (lockout && lockout.consumers.length > 0) {
+					this.lockout = lockout
+					return
+				}
+			}
+			await this.persist()
+		},
+
+		/**
+		 * The consumers the added scopes lock out, read from the endpoints that
+		 * use this rule, their inbound call log and the consumers. A failed read
+		 * gives null: the check informs the save and never blocks it.
+		 *
+		 * @param {{read: Array<string>, write: Array<string>}} added The added scopes.
+		 * @return {Promise<{consumers: Array<object>, fromCallLog: boolean}|null>} The lockout.
+		 * @spec openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005
+		 */
+		async findLockout(added) {
+			try {
+				// `_limit`, not `limit`: an unprefixed param is a property filter.
+				const [endpoints, consumers] = await Promise.all([
+					this.listObjects('endpoint', {}),
+					this.listObjects('consumer', {}),
+				])
+				const used = endpointsUsingRule(endpoints, this.draft)
+				const rows = (await Promise.all(used
+					.filter((endpoint) => endpoint.uuid || endpoint.id)
+					.map((endpoint) => this.listObjects('call_log', { endpoint: String(endpoint.uuid || endpoint.id) }))))
+					.flat()
+				const callers = callersOf(rows, used)
+				return {
+					consumers: lockedOutConsumers({ added, consumers, callers }),
+					fromCallLog: callers.size > 0,
+				}
+			} catch {
+				return null
+			}
+		},
+
+		/**
+		 * One page (500) of objects of a schema in the integriq register.
+		 *
+		 * @param {string} schema The schema slug.
+		 * @param {object} filters Property filters.
+		 * @return {Promise<Array<object>>} The objects.
+		 * @spec openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005
+		 */
+		async listObjects(schema, filters) {
+			const res = await axios.get(generateUrl(`${OBJECTS_URL}/${schema}`), {
+				params: { ...filters, _limit: 500 },
+			})
+			const data = res.data
+			if (Array.isArray(data?.results)) return data.results
+			return Array.isArray(data) ? data : []
+		},
+
+		/**
+		 * Close the lockout dialog without saving.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005
+		 */
+		cancelLockout() {
+			this.lockout = null
+		},
+
+		/**
+		 * Save although the listed consumers lose access.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005
+		 */
+		async confirmLockout() {
+			this.lockout = null
+			await this.persist()
+		},
+
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		async persist() {
+			if (!this.draft || this.saving) return
 			this.saving = true
 			this.error = null
 			try {
