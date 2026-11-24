@@ -29,6 +29,7 @@ namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Service\Helper\RandomUuid;
 use DateTime;
+use InvalidArgumentException;
 use OCA\Integriq\Service\Helper\RegisterSave;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
@@ -266,12 +267,24 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 	 *
 	 * @return array<int, int> Bit values indexed by position.
 	 *
+	 * @throws InvalidArgumentException When `lst` does not inflate.
+	 *
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
 	 */
 	public static function decodeStatusList(string $lst, int $bits = 1): array {
 		$padded = str_pad($lst, ((int)ceil(strlen($lst) / 4) * 4), '=');
 		$bytes = base64_decode(strtr($padded, '-_', '+/'));
-		$compressed = gzinflate($bytes);
+		// A corrupt `lst` is reported by the exception below, not by gzinflate's warning.
+		set_error_handler(static fn (): bool => true);
+		try {
+			$compressed = gzinflate($bytes);
+		} finally {
+			restore_error_handler();
+		}
+
+		if ($compressed === false) {
+			throw new InvalidArgumentException('The status list is not valid DEFLATE data.');
+		}
 
 		$result = [];
 		$length = strlen($compressed);

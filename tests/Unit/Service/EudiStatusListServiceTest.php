@@ -189,6 +189,20 @@ class EudiStatusListServiceTest extends TestCase {
 	}//end testBitstringEncodeDecodeRoundTrips()
 
 	/**
+	 * A `lst` that does not inflate is refused with a clear exception
+	 * instead of a TypeError from strlen(false).
+	 *
+	 * @return void
+	 */
+	public function testDecodeStatusListRefusesDataThatDoesNotInflate(): void {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('not valid DEFLATE data');
+
+		EudiStatusListService::decodeStatusList(rtrim(strtr(base64_encode('not deflate'), '+/', '-_'), '='), 1);
+
+	}//end testDecodeStatusListRefusesDataThatDoesNotInflate()
+
+	/**
 	 * signAndCache() produces a JWT whose payload carries the current
 	 * bitstring and a future exp, verifiable against the issuer's active key.
 	 *
