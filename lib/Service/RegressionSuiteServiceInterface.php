@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+ * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ interface RegressionSuiteServiceInterface {
 	 *
 	 * @throws InvalidArgumentException When the subject type is not known.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
 	 */
 	public function run(string $subjectType, string $subjectId, string $userId): array;
 }

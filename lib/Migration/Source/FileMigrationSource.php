@@ -198,7 +198,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 *
 	 * @return array<int,array<string,string>> The rows.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
 	 */
 	public function parse(string $content, array $config = []): array {
 		return CsvCodec::decode(content: $content, options: ['delimiter' => (string)($config['delimiter'] ?? ',')]);
@@ -212,7 +212,7 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 *
 	 * @return array<int,string> The headers.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
 	 */
 	public function headers(string $content, array $config = []): array {
 		return CsvCodec::headers(content: $content, options: ['delimiter' => (string)($config['delimiter'] ?? ',')]);

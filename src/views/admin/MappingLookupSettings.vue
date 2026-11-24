@@ -12,7 +12,7 @@
   it and when. The backend refuses anyone but an instance administrator
   (/api/admin/mapping-lookups) and records every change.
 
-  @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+  @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 -->
 <template>
 	<AllowlistEditor
@@ -80,7 +80,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the list is shown.
 		 *
-		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+		 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 		 */
 		async load() {
 			const schemas = await this.fetchList(API, 'schemas')
@@ -94,7 +94,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the list is reloaded.
 		 *
-		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+		 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 		 */
 		async add() {
 			const schema = this.newSchema.trim()
@@ -117,7 +117,7 @@ export default {
 		 * @param {string} schema The schema.
 		 * @return {Promise<void>} Resolves once the list is reloaded.
 		 *
-		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+		 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 		 */
 		async remove(schema) {
 			await this.changeList(

@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+ * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\Integriq\Service\Regression;
 /**
  * Path-by-path difference of two outputs.
  *
- * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+ * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
  */
 final class OutputComparator {
 
@@ -52,7 +52,7 @@ final class OutputComparator {
 	 *
 	 * @return array<int,array{path:string,expected:mixed,actual:mixed}> The differences; empty when the outputs match.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
 	 */
 	public static function differences(array $expected, array $actual, array $ignored = []): array {
 		$want = self::flatten(value: $expected, prefix: '');

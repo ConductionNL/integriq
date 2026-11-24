@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+ * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use OutOfBoundsException;
 /**
  * Records a test case from a trace step.
  *
- * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+ * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
  */
 class TraceCaseRecorder implements TraceCaseRecorderInterface {
 
@@ -89,7 +89,7 @@ class TraceCaseRecorder implements TraceCaseRecorderInterface {
 	 * @throws OutOfBoundsException     When the trace or the step does not exist.
 	 * @throws InvalidArgumentException When the step is not a mapping or synchronization step, or names no subject.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 	 */
 	public function record(string $traceId, int $stepOrder, array $edits = []): array {
 		$step = $this->recordableStep(traceId: $traceId, stepOrder: $stepOrder);
@@ -177,7 +177,7 @@ class TraceCaseRecorder implements TraceCaseRecorderInterface {
 	 *
 	 * @return list<string> The paths, in document order.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 	 */
 	public static function redactedPaths(array $data, string $prefix = ''): array {
 		$paths = [];

@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+ * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
 /**
  * The suite runner.
  *
- * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+ * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
  */
 class RegressionSuiteService implements RegressionSuiteServiceInterface {
 
@@ -106,7 +106,7 @@ class RegressionSuiteService implements RegressionSuiteServiceInterface {
 	 *
 	 * @throws InvalidArgumentException When the subject type is not known.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
 	 */
 	public function run(string $subjectType, string $subjectId, string $userId): array {
 		if (in_array($subjectType, self::SUBJECT_TYPES, true) === false) {
@@ -150,7 +150,7 @@ class RegressionSuiteService implements RegressionSuiteServiceInterface {
 	 *
 	 * @return list<array<string,mixed>> One entry per failing case.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
 	 */
 	public function failures(string $subjectType, string $subjectId): array {
 		if (in_array($subjectType, self::SUBJECT_TYPES, true) === false || $subjectId === '') {
@@ -186,7 +186,7 @@ class RegressionSuiteService implements RegressionSuiteServiceInterface {
 	 *
 	 * @return array<string,mixed>|null The failure, or null.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003
 	 */
 	public function runCase(array $case): ?array {
 		$input = $this->objectOf(value: $case['input'] ?? []);

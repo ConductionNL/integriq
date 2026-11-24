@@ -275,7 +275,7 @@ export default {
 			return !!this.mapping && Object.keys(this.mapping).length > 0
 		},
 
-		/** @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003 */
+		/** @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003 */
 		suiteSubjectId() {
 			return subjectIdOf(this.mapping, this.resolvedId)
 		},

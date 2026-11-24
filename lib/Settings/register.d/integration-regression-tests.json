@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (automation-integration-regression-tests). Declares integration_test_case (a known input with its expected output for a mapping or a synchronization) and integration_test_run (one suite run: counts and, per failed case, the paths that differ). See openspec/changes/automation-integration-regression-tests/design.md D1 and D3. Seeds two cases for the seeded lowercase-keys mapping; a run seeds nothing, it is history.",
+  "$comment": "ADR-037 register fragment (automation-integration-regression-tests). Declares integration_test_case (a known input with its expected output for a mapping or a synchronization) and integration_test_run (one suite run: counts and, per failed case, the paths that differ). See openspec/changes/archive/2026-11-24-automation-integration-regression-tests/design.md D1 and D3. Seeds two cases for the seeded lowercase-keys mapping; a run seeds nothing, it is history.",
   "components": {
     "registers": {
       "integriq": {
@@ -16,7 +16,7 @@
         "icon": "FormatListCheckbox",
         "version": "1.0.0",
         "summary": "A known input and the output a mapping or synchronization must produce for it",
-        "description": "A regression test case. A suite run feeds the input through its subject and compares the result with the expected output, ignoring the listed paths. See openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md REQ-IRT-001.",
+        "description": "A regression test case. A suite run feeds the input through its subject and compares the result with the expected output, ignoring the listed paths. See openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md REQ-IRT-001.",
         "required": [
           "name",
           "subjectType",

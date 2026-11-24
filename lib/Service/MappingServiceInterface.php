@@ -203,7 +203,7 @@ interface MappingServiceInterface {
 	 *
 	 * @return array{format: string, contentType: string, body: string|null}
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
 	 */
 	public function renderOutput(OrMapping|ObjectEntity|array $mapping, array $result): array;
 }

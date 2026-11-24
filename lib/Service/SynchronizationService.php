@@ -9095,7 +9095,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return list<array<int|string,string>> The rows.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
 	 */
 	private function decodeCsvPage(string $body, array $sourceConfig): array {
 		return CsvCodec::decode(
@@ -11139,7 +11139,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return array The call config.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-sends-the-mappings-output-format-to-an-api-target-req-mfl-003
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-sends-the-mappings-output-format-to-an-api-target-req-mfl-003
 	 */
 	private function formattedTargetConfig(TargetWrite $write, string $method): array {
 		$config = $write->targetConfig;

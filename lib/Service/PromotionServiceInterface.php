@@ -130,7 +130,7 @@ interface PromotionServiceInterface {
 	 * @throws RuntimeException When the target's import call fails (still audited as `failed`).
 	 *
 	 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-every-promotion-attempt-is-recorded-in-an-append-only-promotion-audit-log-req-006
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
 	 */
 	public function promote(
 		string $configurationId,

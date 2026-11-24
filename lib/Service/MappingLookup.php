@@ -24,7 +24,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use RuntimeException;
 /**
  * One register lookup per distinct question, behind the lookup allowlist.
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
  */
 class MappingLookup implements MappingLookupInterface {
 
@@ -63,7 +63,7 @@ class MappingLookup implements MappingLookupInterface {
 	 * @param SourceMappingServiceInterface $objectService Gives OpenRegister's object service.
 	 * @param LoggerInterface               $logger        Where a warning is recorded.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
 	 */
 	public function __construct(
 		private readonly LookupAllowlist $allowlist,
@@ -84,7 +84,7 @@ class MappingLookup implements MappingLookupInterface {
 	 *
 	 * @throws RuntimeException When the schema is not allowed, a filter is not scalar, or OpenRegister is missing.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
 	 */
 	public function lookup(string $schema, array $filters, string $field, mixed $default = null): mixed {
 		if ($this->allowlist->allows(schema: $schema) === false) {
@@ -125,7 +125,7 @@ class MappingLookup implements MappingLookupInterface {
 	 *
 	 * @return list<string>
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
 	 */
 	public function warnings(): array {
 		return $this->warnings;

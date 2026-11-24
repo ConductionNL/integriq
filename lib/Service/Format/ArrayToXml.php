@@ -21,7 +21,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * @spec openspec/specs/xml-response/spec.md
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
  */
 
 namespace OCA\Integriq\Service\Format;

@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-sends-the-mappings-output-format-to-an-api-target-req-mfl-003
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-sends-the-mappings-output-format-to-an-api-target-req-mfl-003
  */
 
 declare(strict_types=1);

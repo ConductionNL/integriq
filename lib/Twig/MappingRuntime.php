@@ -104,7 +104,7 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	 *
 	 * @throws \RuntimeException When the lookup is refused.
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
 	 */
 	public function lookup(string $schema, array $filters, string $field, mixed $default = null): mixed {
 		if ($this->lookup === null) {
