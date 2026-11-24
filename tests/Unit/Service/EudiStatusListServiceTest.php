@@ -195,8 +195,8 @@ class EudiStatusListServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testDecodeStatusListRefusesDataThatDoesNotInflate(): void {
-		$this->expectException(\InvalidArgumentException::class);
-		$this->expectExceptionMessage('not valid DEFLATE data');
+		$this->expectException(exception: \InvalidArgumentException::class);
+		$this->expectExceptionMessage(message: 'not valid DEFLATE data');
 
 		EudiStatusListService::decodeStatusList(rtrim(strtr(base64_encode('not deflate'), '+/', '-_'), '='), 1);
 

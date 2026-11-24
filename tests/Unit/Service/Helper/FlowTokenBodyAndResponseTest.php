@@ -275,6 +275,6 @@ class FlowTokenBodyAndResponseTest extends TestCase {
 		$method = new \ReflectionMethod(FlowToken::class, 'getRawContent');
 		$method->setAccessible(true);
 
-		$this->assertSame('', $method->invoke(new FlowToken()));
+		$this->assertSame(expected: '', actual: $method->invoke(new FlowToken()));
 	}//end testRawContentIsAlwaysAString()
 }//end class

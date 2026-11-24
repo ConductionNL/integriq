@@ -1340,6 +1340,6 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'getRawContent');
 		$method->setAccessible(true);
 
-		$this->assertSame('', $method->invoke($service));
+		$this->assertSame(expected: '', actual: $method->invoke($service));
 	}//end testRawContentIsAlwaysAString()
 }//end class
