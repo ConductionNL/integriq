@@ -54,6 +54,12 @@ final class SamlStubIdentityProvider {
 	/** @var array{0: string, 1: string} The SP's decryption certificate and key. */
 	private array $spDecryption;
 
+	/**
+	 * Constructor: three fresh key pairs, for the identity provider and the SP.
+	 *
+	 * @param string $spEntityId The SP EntityID an assertion is meant for.
+	 * @param string $acsUrl     The assertion consumer service a Response is sent to.
+	 */
 	public function __construct(
 		public readonly string $spEntityId,
 		public readonly string $acsUrl,
@@ -65,6 +71,8 @@ final class SamlStubIdentityProvider {
 
 	/**
 	 * A fresh RSA key and a self-signed certificate for it, both PEM.
+	 *
+	 * @param string $commonName The certificate's common name.
 	 *
 	 * @return array{0: string, 1: string}
 	 */
@@ -82,29 +90,50 @@ final class SamlStubIdentityProvider {
 		return [$certificatePem, $keyPem];
 	}
 
-	/** The SP signing credential as Keepiq would hold it: certificate and key in one PEM. */
+	/**
+	 * The SP signing credential as Keepiq would hold it: certificate and key in one PEM.
+	 *
+	 * @return string
+	 */
 	public function spSigningCredential(): string {
 		return $this->spSigning[0].$this->spSigning[1];
 	}
 
-	/** The SP decryption credential as Keepiq would hold it. */
+	/**
+	 * The SP decryption credential as Keepiq would hold it.
+	 *
+	 * @return string
+	 */
 	public function spDecryptionCredential(): string {
 		return $this->spDecryption[0].$this->spDecryption[1];
 	}
 
-	/** The SP signing certificate, PEM. */
+	/**
+	 * The SP signing certificate, PEM.
+	 *
+	 * @return string
+	 */
 	public function spSigningCertificate(): string {
 		return $this->spSigning[0];
 	}
 
-	/** The identity provider's metadata, with its signing certificate and a Redirect sign-on service. */
+	/**
+	 * The identity provider's metadata, with its signing certificate and a Redirect sign-on service.
+	 *
+	 * @param string $ssoUrl The sign-on service address it publishes.
+	 *
+	 * @return string
+	 */
 	public function metadata(string $ssoUrl = self::SSO_URL): string {
 		$certificate = self::derBody(pem: $this->idpKeys[0]);
 
 		return '<?xml version="1.0"?>'
-			.'<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" entityID="'.self::ENTITY_ID.'">'
+			.'<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"'
+			.' xmlns:ds="http://www.w3.org/2000/09/xmldsig#" entityID="'.self::ENTITY_ID.'">'
 			.'<md:IDPSSODescriptor WantAuthnRequestsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">'
-			.'<md:KeyDescriptor use="signing"><ds:KeyInfo><ds:X509Data><ds:X509Certificate>'.$certificate.'</ds:X509Certificate></ds:X509Data></ds:KeyInfo></md:KeyDescriptor>'
+			.'<md:KeyDescriptor use="signing"><ds:KeyInfo><ds:X509Data>'
+			.'<ds:X509Certificate>'.$certificate.'</ds:X509Certificate>'
+			.'</ds:X509Data></ds:KeyInfo></md:KeyDescriptor>'
 			.'<md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="'.$ssoUrl.'"/>'
 			.'</md:IDPSSODescriptor></md:EntityDescriptor>';
 	}
@@ -117,6 +146,8 @@ final class SamlStubIdentityProvider {
 	 * @param array<string,mixed>  $options      `encrypt`, `sign` (default true), `audience`, `classRef`, `tamper`
 	 *                                           (change a value after signing), `wrap` (XML signature wrapping),
 	 *                                           `doctype` (an entity declaration), `destination`.
+	 *
+	 * @return string
 	 */
 	public function response(string $inResponseTo, array $attributes, array $options = []): string {
 		$document = new DOMDocument();
@@ -169,6 +200,11 @@ final class SamlStubIdentityProvider {
 	/**
 	 * Wrapping: an unsigned forged assertion with the signed one's ID takes its place
 	 * directly under the Response, and the signed original hides inside it.
+	 *
+	 * @param DOMDocument $document  The Response.
+	 * @param DOMElement  $assertion The signed assertion.
+	 *
+	 * @return void
 	 */
 	private function wrap(DOMDocument $document, DOMElement $assertion): void {
 		$forged = $assertion->cloneNode(true);
@@ -187,7 +223,14 @@ final class SamlStubIdentityProvider {
 		$forged->insertBefore($advice, $conditions->nextSibling);
 	}
 
-	/** Replace the assertion with an EncryptedAssertion for the SP's decryption certificate. */
+	/**
+	 * Replace the assertion with an EncryptedAssertion for the SP's decryption certificate.
+	 *
+	 * @param DOMDocument $document  The Response.
+	 * @param DOMElement  $assertion The (signed) assertion.
+	 *
+	 * @return void
+	 */
 	private function encrypt(DOMDocument $document, DOMElement $assertion): void {
 		$sessionKey = new XMLSecurityKey(XMLSecurityKey::AES256_GCM);
 		$sessionKey->generateSessionKey();
@@ -207,7 +250,14 @@ final class SamlStubIdentityProvider {
 		$encrypted->appendChild($document->importNode($data, true));
 	}
 
-	/** @param array<string,mixed> $options */
+	/**
+	 * The Response envelope, without its assertion.
+	 *
+	 * @param string              $inResponseTo The AuthnRequest ID.
+	 * @param array<string,mixed> $options      `destination`.
+	 *
+	 * @return string
+	 */
 	private function responseXml(string $inResponseTo, array $options): string {
 		return '<samlp:Response xmlns:samlp="'.self::NS_SAMLP.'" xmlns:saml="'.self::NS_SAML.'"'
 			.' ID="_r'.bin2hex(random_bytes(16)).'" Version="2.0" IssueInstant="'.self::instant(offset: 0).'"'
@@ -218,8 +268,13 @@ final class SamlStubIdentityProvider {
 	}
 
 	/**
-	 * @param array<string,string> $attributes
-	 * @param array<string,mixed>  $options
+	 * The assertion, unsigned.
+	 *
+	 * @param string               $inResponseTo The AuthnRequest ID.
+	 * @param array<string,string> $attributes   Attribute name => value.
+	 * @param array<string,mixed>  $options      `audience`, `classRef`.
+	 *
+	 * @return string
 	 */
 	private function assertionXml(string $inResponseTo, array $attributes, array $options): string {
 		$statement = '';
@@ -232,7 +287,8 @@ final class SamlStubIdentityProvider {
 			$statement = '<saml:AttributeStatement>'.$statement.'</saml:AttributeStatement>';
 		}
 
-		return '<saml:Assertion xmlns:saml="'.self::NS_SAML.'" ID="_a'.bin2hex(random_bytes(16)).'" Version="2.0" IssueInstant="'.self::instant(offset: 0).'">'
+		return '<saml:Assertion xmlns:saml="'.self::NS_SAML.'" ID="_a'.bin2hex(random_bytes(16)).'"'
+			.' Version="2.0" IssueInstant="'.self::instant(offset: 0).'">'
 			.'<saml:Issuer>'.self::ENTITY_ID.'</saml:Issuer>'
 			.'<saml:Subject><saml:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">_t'.bin2hex(random_bytes(8)).'</saml:NameID>'
 			.'<saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">'
@@ -242,16 +298,32 @@ final class SamlStubIdentityProvider {
 			.'<saml:AudienceRestriction><saml:Audience>'.($options['audience'] ?? $this->spEntityId).'</saml:Audience></saml:AudienceRestriction>'
 			.'</saml:Conditions>'
 			.'<saml:AuthnStatement AuthnInstant="'.self::instant(offset: 0).'" SessionIndex="_s1">'
-			.'<saml:AuthnContext><saml:AuthnContextClassRef>'.($options['classRef'] ?? 'urn:oasis:names:tc:SAML:2.0:ac:classes:Smartcard').'</saml:AuthnContextClassRef></saml:AuthnContext>'
+			.'<saml:AuthnContext><saml:AuthnContextClassRef>'
+			.($options['classRef'] ?? 'urn:oasis:names:tc:SAML:2.0:ac:classes:Smartcard')
+			.'</saml:AuthnContextClassRef></saml:AuthnContext>'
 			.'</saml:AuthnStatement>'
 			.$statement
 			.'</saml:Assertion>';
 	}
 
+	/**
+	 * A SAML instant, offset from now.
+	 *
+	 * @param integer $offset Seconds from now.
+	 *
+	 * @return string
+	 */
 	public static function instant(int $offset): string {
 		return gmdate('Y-m-d\TH:i:s\Z', time() + $offset);
 	}
 
+	/**
+	 * The base64 body of a PEM certificate.
+	 *
+	 * @param string $pem The certificate.
+	 *
+	 * @return string
+	 */
 	private static function derBody(string $pem): string {
 		return trim(str_replace(['-----BEGIN CERTIFICATE-----', '-----END CERTIFICATE-----', "\n", "\r"], '', $pem));
 	}

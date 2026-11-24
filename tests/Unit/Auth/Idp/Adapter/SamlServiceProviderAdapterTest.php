@@ -72,11 +72,23 @@ class SamlServiceProviderAdapterTest extends TestCase {
 
 	private const METADATA_URL = 'https://broker.example/metadata.xml';
 
-	/** The registration's subject mapping: a BSN attribute under a broker-specific name. */
+	/**
+	 * The registration's subject mapping: a BSN attribute under a broker-specific name.
+	 */
 	private const BSN_ATTRIBUTE = 'urn:broker:attribute:bsn';
 
+	/**
+	 * The stub, kept for the class: generating its keys is the slow part.
+	 *
+	 * @var SamlStubIdentityProvider|null
+	 */
 	private static ?SamlStubIdentityProvider $sharedIdp = null;
 
+	/**
+	 * The stub identity provider.
+	 *
+	 * @var SamlStubIdentityProvider
+	 */
 	private SamlStubIdentityProvider $idp;
 
 	/** @var IdpSecretSeam&MockObject */
@@ -85,15 +97,25 @@ class SamlServiceProviderAdapterTest extends TestCase {
 	/** @var list<string> The addresses the adapter fetched. */
 	private array $fetched = [];
 
+	/**
+	 * The metadata the stub answers; a test may replace it.
+	 *
+	 * @var string
+	 */
 	private string $metadata;
 
+	/**
+	 * A fresh seam, and the stub identity provider shared by the class.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
 		parent::setUp();
 		// Key generation is the slow part; one stub per test class is enough.
 		self::$sharedIdp ??= new SamlStubIdentityProvider(spEntityId: self::ENTITY_ID, acsUrl: self::ACS);
 		$this->idp = self::$sharedIdp;
 		$this->metadata = $this->idp->metadata();
-		$this->seam = $this->createMock(IdpSecretSeam::class);
+		$this->seam = $this->createMock(originalClassName: IdpSecretSeam::class);
 		$this->seam->method('read')->willReturnCallback(
 			fn (string $registration, string $organisation, string $role, string $reference): string => match ($role) {
 				'signing' => $this->idp->spSigningCredential(),
@@ -103,6 +125,13 @@ class SamlServiceProviderAdapterTest extends TestCase {
 		);
 	}
 
+	/**
+	 * A ready saml-sp registration, with overrides.
+	 *
+	 * @param array<string, mixed> $data Property overrides.
+	 *
+	 * @return IdpRegistration
+	 */
 	private function registration(array $data = []): IdpRegistration {
 		return new IdpRegistration(
 			id: 'reg-1',
@@ -125,23 +154,35 @@ class SamlServiceProviderAdapterTest extends TestCase {
 		);
 	}
 
+	/**
+	 * An HTTP client that answers the stub metadata and records the addresses read.
+	 *
+	 * @return IClientService
+	 */
 	private function http(): IClientService {
-		$client = $this->createMock(IClient::class);
+		$client = $this->createMock(originalClassName: IClient::class);
 		$client->method('get')->willReturnCallback(
 			function (string $uri): IResponse {
 				$this->fetched[] = $uri;
-				$response = $this->createMock(IResponse::class);
+				$response = $this->createMock(originalClassName: IResponse::class);
 				$response->method('getBody')->willReturn($this->metadata);
 
 				return $response;
 			}
 		);
-		$http = $this->createMock(IClientService::class);
+		$http = $this->createMock(originalClassName: IClientService::class);
 		$http->method('newClient')->willReturn($client);
 
 		return $http;
 	}
 
+	/**
+	 * The adapter under test, for a registration.
+	 *
+	 * @param ?IdpRegistration $registration The registration, or the default one.
+	 *
+	 * @return SamlServiceProviderAdapter
+	 */
 	private function adapter(?IdpRegistration $registration = null): SamlServiceProviderAdapter {
 		return new SamlServiceProviderAdapter(
 			registration: ($registration ?? $this->registration()),
@@ -153,6 +194,8 @@ class SamlServiceProviderAdapterTest extends TestCase {
 
 	/**
 	 * The query parameters of the redirect, still url-encoded, in order.
+	 *
+	 * @param string $url The redirect address.
 	 *
 	 * @return array<string, string>
 	 */
@@ -166,52 +209,81 @@ class SamlServiceProviderAdapterTest extends TestCase {
 		return $query;
 	}
 
+	/**
+	 * The AuthnRequest a redirect carries, inflated.
+	 *
+	 * @param string $url The redirect address.
+	 *
+	 * @return DOMDocument
+	 */
 	private static function authnRequest(string $url): DOMDocument {
 		$document = new DOMDocument();
-		$document->loadXML((string)gzinflate(base64_decode(urldecode(self::rawQuery($url)['SAMLRequest']))));
+		$document->loadXML((string)gzinflate(base64_decode(urldecode(self::rawQuery(url: $url)['SAMLRequest']))));
 
 		return $document;
 	}
 
+	/**
+	 * The AuthnRequest is signed and answered with its ID.
+	 *
+	 * @return void
+	 */
 	public function testTheAuthnRequestIsSignedAndAnsweredWithItsId(): void {
 		$begun = $this->adapter()->beginAuthentication(['relayState' => 'state-1']);
 
-		$this->assertStringStartsWith(SamlStubIdentityProvider::SSO_URL.'?', $begun['redirectUrl']);
-		$query = self::rawQuery($begun['redirectUrl']);
-		$this->assertSame('state-1', urldecode($query['RelayState']));
-		$this->assertSame('http://www.w3.org/2001/04/xmldsig-more#rsa-sha256', urldecode($query['SigAlg']));
+		$this->assertStringStartsWith(prefix: SamlStubIdentityProvider::SSO_URL.'?', string: $begun['redirectUrl']);
+		$query = self::rawQuery(url: $begun['redirectUrl']);
+		$this->assertSame(expected: 'state-1', actual: urldecode($query['RelayState']));
+		$this->assertSame(expected: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256', actual: urldecode($query['SigAlg']));
 
 		$signed = 'SAMLRequest='.$query['SAMLRequest'].'&RelayState='.$query['RelayState'].'&SigAlg='.$query['SigAlg'];
 		$this->assertSame(
-			1,
-			openssl_verify($signed, base64_decode(urldecode($query['Signature'])), $this->idp->spSigningCertificate(), OPENSSL_ALGO_SHA256),
-			'The redirect signature verifies with the SP signing certificate.'
+			expected: 1,
+			actual: openssl_verify($signed, base64_decode(urldecode($query['Signature'])), $this->idp->spSigningCertificate(), OPENSSL_ALGO_SHA256),
+			message: 'The redirect signature verifies with the SP signing certificate.'
 		);
 
-		$request = self::authnRequest($begun['redirectUrl'])->documentElement;
-		$this->assertSame($begun['requestId'], $request->getAttribute('ID'));
-		$this->assertSame(self::ACS, $request->getAttribute('AssertionConsumerServiceURL'));
-		$this->assertSame(SamlStubIdentityProvider::SSO_URL, $request->getAttribute('Destination'));
-		$this->assertSame(self::ENTITY_ID, $request->getElementsByTagNameNS(SamlStubIdentityProvider::NS_SAML, 'Issuer')->item(0)?->textContent);
-		$this->assertSame([self::METADATA_URL], $this->fetched);
+		$request = self::authnRequest(url: $begun['redirectUrl'])->documentElement;
+		$this->assertSame(expected: $begun['requestId'], actual: $request->getAttribute('ID'));
+		$this->assertSame(expected: self::ACS, actual: $request->getAttribute('AssertionConsumerServiceURL'));
+		$this->assertSame(expected: SamlStubIdentityProvider::SSO_URL, actual: $request->getAttribute('Destination'));
+		$issuer = $request->getElementsByTagNameNS(SamlStubIdentityProvider::NS_SAML, 'Issuer')->item(0);
+		$this->assertSame(expected: self::ENTITY_ID, actual: $issuer?->textContent);
+		$this->assertSame(expected: [self::METADATA_URL], actual: $this->fetched);
 	}
 
+	/**
+	 * The request asks only for the spellings at or above the floor.
+	 *
+	 * @return void
+	 */
 	public function testTheRequestAsksOnlyForTheSpellingsAtOrAboveTheFloor(): void {
 		$begun = $this->adapter()->beginAuthentication(['relayState' => 'state-1']);
 
 		$classRefs = [];
-		foreach (self::authnRequest($begun['redirectUrl'])->getElementsByTagNameNS(SamlStubIdentityProvider::NS_SAML, 'AuthnContextClassRef') as $classRef) {
+		$request = self::authnRequest(url: $begun['redirectUrl']);
+		foreach ($request->getElementsByTagNameNS(SamlStubIdentityProvider::NS_SAML, 'AuthnContextClassRef') as $classRef) {
 			$classRefs[] = $classRef->textContent;
 		}
 
-		$this->assertSame(['urn:oasis:names:tc:SAML:2.0:ac:classes:Smartcard'], $classRefs);
+		$this->assertSame(expected: ['urn:oasis:names:tc:SAML:2.0:ac:classes:Smartcard'], actual: $classRefs);
 	}
 
+	/**
+	 * A login without relay state does not start.
+	 *
+	 * @return void
+	 */
 	public function testALoginWithoutRelayStateDoesNotStart(): void {
-		$this->expectException(IdpAssertionException::class);
+		$this->expectException(exception: IdpAssertionException::class);
 		$this->adapter()->beginAuthentication([]);
 	}
 
+	/**
+	 * An encrypted signed assertion decrypts and passes the guard.
+	 *
+	 * @return void
+	 */
 	public function testAnEncryptedSignedAssertionDecryptsAndPassesTheGuard(): void {
 		$adapter = $this->adapter();
 		$begun = $adapter->beginAuthentication(['relayState' => 'state-1']);
@@ -223,36 +295,43 @@ class SamlServiceProviderAdapterTest extends TestCase {
 
 		$assertion = $adapter->readAssertion(['SAMLResponse' => $response, 'RelayState' => 'state-1']);
 
-		$this->assertSame($begun['requestId'], $assertion['inResponseTo']);
-		$this->assertSame(self::ENTITY_ID, $assertion['audience']);
-		$this->assertSame('123456782', $assertion['subject']);
-		$this->assertSame('bsn', $assertion['subType']);
-		$this->assertSame('urn:oasis:names:tc:SAML:2.0:ac:classes:Smartcard', $assertion['assuranceLevel']);
-		$this->assertSame('org-x', $assertion['organisation']);
-		$this->assertNotSame('', $assertion['id']);
-		$this->assertNotSame($begun['requestId'], $assertion['id']);
+		$this->assertSame(expected: $begun['requestId'], actual: $assertion['inResponseTo']);
+		$this->assertSame(expected: self::ENTITY_ID, actual: $assertion['audience']);
+		$this->assertSame(expected: '123456782', actual: $assertion['subject']);
+		$this->assertSame(expected: 'bsn', actual: $assertion['subType']);
+		$this->assertSame(expected: 'urn:oasis:names:tc:SAML:2.0:ac:classes:Smartcard', actual: $assertion['assuranceLevel']);
+		$this->assertSame(expected: 'org-x', actual: $assertion['organisation']);
+		$this->assertNotSame(expected: '', actual: $assertion['id']);
+		$this->assertNotSame(expected: $begun['requestId'], actual: $assertion['id']);
 
-		$caches = $this->createMock(ICacheFactory::class);
+		$caches = $this->createMock(originalClassName: ICacheFactory::class);
 		$caches->method('isAvailable')->willReturn(true);
 		$caches->method('createDistributed')->willReturn(new FakeMemcache());
 		$guard = new AssertionGuard(replayGuard: new EnvelopeReplayGuard(cacheFactory: $caches));
 		$guard->assertAcceptable(assertion: $assertion, outstandingRequestId: $begun['requestId'], expectedAudience: self::ENTITY_ID);
-		$this->addToAssertionCount(1);
+		$this->addToAssertionCount(count: 1);
 	}
 
+	/**
+	 * A signed plain assertion is read when no decryption key is named.
+	 *
+	 * @return void
+	 */
 	public function testASignedPlainAssertionIsReadWhenNoDecryptionKeyIsNamed(): void {
-		$registration = $this->registration(['credentials' => ['signing' => 'cred-signing', 'salt' => 'cred-salt']]);
-		$adapter = $this->adapter($registration);
+		$registration = $this->registration(data: ['credentials' => ['signing' => 'cred-signing', 'salt' => 'cred-salt']]);
+		$adapter = $this->adapter(registration: $registration);
 		$begun = $adapter->beginAuthentication(['relayState' => 'state-1']);
 
 		$assertion = $adapter->readAssertion(
 			['SAMLResponse' => $this->idp->response(inResponseTo: $begun['requestId'], attributes: [self::BSN_ATTRIBUTE => '123456782'])]
 		);
 
-		$this->assertSame('123456782', $assertion['subject']);
+		$this->assertSame(expected: '123456782', actual: $assertion['subject']);
 	}
 
 	/**
+	 * The Responses a stub can forge that the adapter must refuse.
+	 *
 	 * @return array<string, array{0: array<string, mixed>}>
 	 */
 	public static function forgedResponses(): array {
@@ -267,53 +346,74 @@ class SamlServiceProviderAdapterTest extends TestCase {
 	}
 
 	/**
-	 * @param array<string, mixed> $options
+	 * A forged Response is refused, and the refusal names no attribute value.
+	 *
+	 * @param array<string, mixed> $options How the stub forges the Response.
+	 *
+	 * @return void
 	 */
 	#[DataProvider('forgedResponses')]
 	public function testAForgedResponseIsRefusedBeforeAnyAttributeIsRead(array $options): void {
 		$registration = $this->registration();
 		if (($options['encrypt'] ?? false) === false) {
-			$registration = $this->registration(['credentials' => ['signing' => 'cred-signing', 'salt' => 'cred-salt']]);
+			$registration = $this->registration(data: ['credentials' => ['signing' => 'cred-signing', 'salt' => 'cred-salt']]);
 		}
 
-		$adapter = $this->adapter($registration);
+		$adapter = $this->adapter(registration: $registration);
 		$begun = $adapter->beginAuthentication(['relayState' => 'state-1']);
 		$response = $this->idp->response(inResponseTo: $begun['requestId'], attributes: [self::BSN_ATTRIBUTE => '123456782'], options: $options);
 
 		try {
 			$adapter->readAssertion(['SAMLResponse' => $response]);
-			$this->fail('The forged Response was accepted.');
+			$this->fail(message: 'The forged Response was accepted.');
 		} catch (IdpAssertionException $refused) {
-			$this->assertStringNotContainsString('123456782', $refused->getMessage());
-			$this->assertStringNotContainsString('999999990', $refused->getMessage());
+			$this->assertStringNotContainsString(needle: '123456782', haystack: $refused->getMessage());
+			$this->assertStringNotContainsString(needle: '999999990', haystack: $refused->getMessage());
 		}
 	}
 
+	/**
+	 * A plain assertion is refused when encryption is expected.
+	 *
+	 * @return void
+	 */
 	public function testAPlainAssertionIsRefusedWhenEncryptionIsExpected(): void {
 		$adapter = $this->adapter();
 		$begun = $adapter->beginAuthentication(['relayState' => 'state-1']);
 
-		$this->expectException(IdpAssertionException::class);
+		$this->expectException(exception: IdpAssertionException::class);
 		$adapter->readAssertion(
 			['SAMLResponse' => $this->idp->response(inResponseTo: $begun['requestId'], attributes: [self::BSN_ATTRIBUTE => '123456782'])]
 		);
 	}
 
+	/**
+	 * A response without in response to is refused.
+	 *
+	 * @return void
+	 */
 	public function testAResponseWithoutInResponseToIsRefused(): void {
-		$this->expectException(IdpAssertionException::class);
-		$this->expectExceptionMessage('InResponseTo');
+		$this->expectException(exception: IdpAssertionException::class);
+		$this->expectExceptionMessage(message: 'InResponseTo');
 		$this->adapter()->readAssertion(
 			['SAMLResponse' => $this->idp->response(inResponseTo: '', attributes: [self::BSN_ATTRIBUTE => '123456782'], options: ['encrypt' => true])]
 		);
 	}
 
+	/**
+	 * A callback without a response is refused.
+	 *
+	 * @return void
+	 */
 	public function testACallbackWithoutAResponseIsRefused(): void {
-		$this->expectException(IdpAssertionException::class);
-		$this->expectExceptionMessage('SAMLResponse');
+		$this->expectException(exception: IdpAssertionException::class);
+		$this->expectExceptionMessage(message: 'SAMLResponse');
 		$this->adapter()->readAssertion(['RelayState' => 'state-1']);
 	}
 
 	/**
+	 * Mappings, the attributes asserted, and the subject and type expected.
+	 *
 	 * @return array<string, array{0: array<string, string>, 1: array<string, string>, 2: string, 3: string}>
 	 */
 	public static function mappedSubjects(): array {
@@ -329,27 +429,43 @@ class SamlServiceProviderAdapterTest extends TestCase {
 	}
 
 	/**
-	 * @param array<string, string> $mapping
-	 * @param array<string, string> $attributes
+	 * The subject is read from the attribute the mapping names, and from no other.
+	 *
+	 * @param array<string, string> $mapping    The registration's subject mapping.
+	 * @param array<string, string> $attributes The attributes the stub asserts.
+	 * @param string                $subject    The subject expected.
+	 * @param string                $subType    The subject type expected.
+	 *
+	 * @return void
 	 */
 	#[DataProvider('mappedSubjects')]
-	public function testTheSubjectIsReadFromTheMappedAttributeOnly(array $mapping, array $attributes, string $subject, string $subType): void {
-		$adapter = $this->adapter($this->registration(['subjectMapping' => $mapping]));
+	public function testTheSubjectIsReadFromTheMappedAttributeOnly(
+		array $mapping,
+		array $attributes,
+		string $subject,
+		string $subType
+	): void {
+		$adapter = $this->adapter(registration: $this->registration(data: ['subjectMapping' => $mapping]));
 		$begun = $adapter->beginAuthentication(['relayState' => 'state-1']);
 
 		$assertion = $adapter->readAssertion(
 			['SAMLResponse' => $this->idp->response(inResponseTo: $begun['requestId'], attributes: $attributes, options: ['encrypt' => true])]
 		);
 
-		$this->assertSame($subject, $assertion['subject']);
-		$this->assertSame($subType, $assertion['subType']);
+		$this->assertSame(expected: $subject, actual: $assertion['subject']);
+		$this->assertSame(expected: $subType, actual: $assertion['subType']);
 	}
 
+	/**
+	 * The branch is read from its mapped attribute.
+	 *
+	 * @return void
+	 */
 	public function testTheBranchIsReadFromItsMappedAttribute(): void {
 		$registration = $this->registration(
-			['provider' => 'eherkenning', 'subjectMapping' => ['kvk' => 'urn:a:kvk', 'branch' => 'urn:a:vestiging']]
+			data: ['provider' => 'eherkenning', 'subjectMapping' => ['kvk' => 'urn:a:kvk', 'branch' => 'urn:a:vestiging']]
 		);
-		$adapter = $this->adapter($registration);
+		$adapter = $this->adapter(registration: $registration);
 		$begun = $adapter->beginAuthentication(['relayState' => 'state-1']);
 
 		$assertion = $adapter->readAssertion(
@@ -362,26 +478,41 @@ class SamlServiceProviderAdapterTest extends TestCase {
 			]
 		);
 
-		$this->assertSame('000012345678', $assertion['branch']);
-		$this->assertSame('urn:etoegang:core:assurance-class:loa3', $assertion['assuranceLevel']);
+		$this->assertSame(expected: '000012345678', actual: $assertion['branch']);
+		$this->assertSame(expected: 'urn:etoegang:core:assurance-class:loa3', actual: $assertion['assuranceLevel']);
 	}
 
+	/**
+	 * Metadata without an https redirect sign on service is refused.
+	 *
+	 * @return void
+	 */
 	public function testMetadataWithoutAnHttpsRedirectSignOnServiceIsRefused(): void {
 		$this->metadata = $this->idp->metadata(ssoUrl: 'http://idp.example/sso');
 
-		$this->expectException(IdpAssertionException::class);
+		$this->expectException(exception: IdpAssertionException::class);
 		$this->adapter()->beginAuthentication(['relayState' => 'state-1']);
 	}
 
+	/**
+	 * Metadata with an entity declaration is refused.
+	 *
+	 * @return void
+	 */
 	public function testMetadataWithAnEntityDeclarationIsRefused(): void {
 		$this->metadata = '<?xml version="1.0"?><!DOCTYPE x [<!ENTITY e "x">]>'.substr($this->idp->metadata(), strlen('<?xml version="1.0"?>'));
 
-		$this->expectException(IdpAssertionException::class);
+		$this->expectException(exception: IdpAssertionException::class);
 		$this->adapter()->beginAuthentication(['relayState' => 'state-1']);
 	}
 
+	/**
+	 * A signing credential without a private key is refused.
+	 *
+	 * @return void
+	 */
 	public function testASigningCredentialWithoutAPrivateKeyIsRefused(): void {
-		$seam = $this->createMock(IdpSecretSeam::class);
+		$seam = $this->createMock(originalClassName: IdpSecretSeam::class);
 		$seam->method('read')->willReturn($this->idp->spSigningCertificate());
 		$adapter = new SamlServiceProviderAdapter(
 			registration: $this->registration(),
@@ -390,13 +521,18 @@ class SamlServiceProviderAdapterTest extends TestCase {
 			acsUrl: self::ACS
 		);
 
-		$this->expectException(IdpAssertionException::class);
-		$this->expectExceptionMessage('signing credential holds no certificate and private key');
+		$this->expectException(exception: IdpAssertionException::class);
+		$this->expectExceptionMessage(message: 'signing credential holds no certificate and private key');
 		$adapter->beginAuthentication(['relayState' => 'state-1']);
 	}
 
+	/**
+	 * A refused credential refuses the login.
+	 *
+	 * @return void
+	 */
 	public function testARefusedCredentialRefusesTheLogin(): void {
-		$seam = $this->createMock(IdpSecretSeam::class);
+		$seam = $this->createMock(originalClassName: IdpSecretSeam::class);
 		$seam->method('read')->willThrowException(new IdpSecretRefusedException(reason: 'keepiq-missing', detail: 'no keepiq'));
 		$adapter = new SamlServiceProviderAdapter(
 			registration: $this->registration(),
@@ -405,33 +541,49 @@ class SamlServiceProviderAdapterTest extends TestCase {
 			acsUrl: self::ACS
 		);
 
-		$this->expectException(IdpAssertionException::class);
+		$this->expectException(exception: IdpAssertionException::class);
 		$adapter->beginAuthentication(['relayState' => 'state-1']);
 	}
 
+	/**
+	 * The current address is put back after a response is read.
+	 *
+	 * @return void
+	 */
 	public function testTheCurrentAddressIsPutBackAfterAResponseIsRead(): void {
 		$_SERVER['REQUEST_URI'] = '/index.php/apps/other';
 		$_SERVER['QUERY_STRING'] = 'a=b';
 		$adapter = $this->adapter();
 		$begun = $adapter->beginAuthentication(['relayState' => 'state-1']);
 		$adapter->readAssertion(
-			['SAMLResponse' => $this->idp->response(inResponseTo: $begun['requestId'], attributes: [self::BSN_ATTRIBUTE => '123456782'], options: ['encrypt' => true])]
+			[
+				'SAMLResponse' => $this->idp->response(
+					inResponseTo: $begun['requestId'],
+					attributes: [self::BSN_ATTRIBUTE => '123456782'],
+					options: ['encrypt' => true]
+				),
+			]
 		);
 
-		$this->assertSame('/index.php/apps/other', $_SERVER['REQUEST_URI']);
-		$this->assertSame('a=b', $_SERVER['QUERY_STRING']);
+		$this->assertSame(expected: '/index.php/apps/other', actual: $_SERVER['REQUEST_URI']);
+		$this->assertSame(expected: 'a=b', actual: $_SERVER['QUERY_STRING']);
 		unset($_SERVER['REQUEST_URI'], $_SERVER['QUERY_STRING']);
 	}
 
+	/**
+	 * The factory builds the adapter of a registration with its callback.
+	 *
+	 * @return void
+	 */
 	public function testTheFactoryBuildsTheAdapterOfARegistrationWithItsCallback(): void {
-		$urls = $this->createMock(IURLGenerator::class);
+		$urls = $this->createMock(originalClassName: IURLGenerator::class);
 		$urls->method('linkToRouteAbsolute')->willReturnCallback(
 			fn (string $route, array $params): string => match ($route) {
 				'integriq.idpBroker.callback' => self::ACS,
 				default => self::ENTITY_ID,
 			}
 		);
-		$metadata = $this->createMock(IdpMetadataService::class);
+		$metadata = $this->createMock(originalClassName: IdpMetadataService::class);
 		$metadata->method('entityId')->willReturn(self::ENTITY_ID);
 		$factory = new SamlServiceProviderAdapterFactory(
 			services: new IdpAdapterServices(secrets: $this->seam, http: $this->http(), trust: new TrustLevelMapper()),
@@ -442,8 +594,9 @@ class SamlServiceProviderAdapterTest extends TestCase {
 		$adapter = $factory->build($this->registration());
 		$begun = $adapter->beginAuthentication(['relayState' => 'state-1']);
 
-		$this->assertSame('digid', $adapter->getProviderId());
-		$this->assertTrue($adapter->isConfigured());
-		$this->assertSame(self::ACS, self::authnRequest($begun['redirectUrl'])->documentElement->getAttribute('AssertionConsumerServiceURL'));
+		$this->assertSame(expected: 'digid', actual: $adapter->getProviderId());
+		$this->assertTrue(condition: $adapter->isConfigured());
+		$request = self::authnRequest(url: $begun['redirectUrl'])->documentElement;
+		$this->assertSame(expected: self::ACS, actual: $request->getAttribute('AssertionConsumerServiceURL'));
 	}
 }
