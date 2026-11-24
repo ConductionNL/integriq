@@ -23,7 +23,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/automation-job-calendar-schedules/design.md
+ * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/design.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use InvalidArgumentException;
  * A time that does not exist on a daylight saving day runs at the first valid
  * minute after the gap; a time that exists twice runs once.
  *
- * @spec openspec/changes/automation-job-calendar-schedules/design.md
+ * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/design.md
  */
 final class JobCalendarSchedule {
 
@@ -73,7 +73,7 @@ final class JobCalendarSchedule {
 	 *
 	 * @return boolean True for a calendar job.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-job-can-carry-a-calendar-schedule-instead-of-an-interval-req-jcal-001
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-job-can-carry-a-calendar-schedule-instead-of-an-interval-req-jcal-001
 	 */
 	public function isCalendar(array $jobData): bool {
 		$schedule = ($jobData['schedule'] ?? null);
@@ -91,7 +91,7 @@ final class JobCalendarSchedule {
 	 *
 	 * @return string The fingerprint.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
 	 */
 	public function fingerprint(array $schedule): string {
 		return sha1((string)json_encode(self::sortKeys(value: $schedule)));
@@ -108,7 +108,7 @@ final class JobCalendarSchedule {
 	 *
 	 * @throws InvalidArgumentException When the calendar is malformed; the message names the field.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
 	 */
 	public function nextRunAfter(DateTimeInterface $after, array $calendar): ?DateTimeImmutable {
 		$normal = $this->normalise(calendar: $calendar);
@@ -143,7 +143,7 @@ final class JobCalendarSchedule {
 	 *
 	 * @throws InvalidArgumentException When the calendar is malformed or `$count` is below 1.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-job-form-previews-the-next-five-run-times-req-jcal-003
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-job-form-previews-the-next-five-run-times-req-jcal-003
 	 */
 	public function preview(array $calendar, int $count, ?DateTimeInterface $from = null): array {
 		if ($count < 1) {
@@ -180,7 +180,7 @@ final class JobCalendarSchedule {
 	 *
 	 * @throws InvalidArgumentException When the calendar is malformed.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
 	 */
 	public function cronRefusals(array $calendar, string $serverZone): array {
 		$normal = $this->normalise(calendar: $calendar);
@@ -217,7 +217,7 @@ final class JobCalendarSchedule {
 	 *
 	 * @throws InvalidArgumentException When the calendar is malformed.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-calendar-job-migrates-to-a-flow-only-when-a-cron-can-say-it-req-jcal-004
 	 */
 	public function cronFor(array $calendar): string {
 		$normal = $this->normalise(calendar: $calendar);
@@ -287,7 +287,7 @@ final class JobCalendarSchedule {
 	 *
 	 * @throws InvalidArgumentException When a field is malformed; the message names it.
 	 *
-	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-job-can-carry-a-calendar-schedule-instead-of-an-interval-req-jcal-001
+	 * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-job-can-carry-a-calendar-schedule-instead-of-an-interval-req-jcal-001
 	 */
 	public function normalise(array $calendar): array {
 		return [

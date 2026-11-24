@@ -13,7 +13,7 @@
  * that every key is written under the name the backend reads, and that the
  * ids the form offers are the ids the PHP side switches on.
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'

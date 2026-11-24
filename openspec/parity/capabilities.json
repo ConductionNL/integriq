@@ -3163,11 +3163,11 @@
 				"evidence": "Not built: the \"by whom\" part: lib/Controller/ProductSubscriptionsController.php analytics() returns one product-wide figure with no split per consumer. Planned in gateway-usage-per-consumer-and-endpoint (decision 389, verify round 2026-11-12). Code that exists: appinfo/routes.php:504 productSubscriptions#analytics; lib/Controller/ProductSubscriptionsController.php:310 analytics() reads bounded call_log rows for request count/error rate; called from src/views/ApiProducts/ApiProductDetail.vue:455 (frontend-api-paths.txt).",
 				"spec": "openspec/specs/api-product-gateway",
 				"requirement": [
-					"openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
+					"openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
 					"openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
 				],
 				"change": "gateway-usage-per-consumer-and-endpoint",
-				"plan": "openspec/changes/gateway-usage-per-consumer-and-endpoint"
+				"plan": "openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint"
 			},
 			"reachedOn": "/products/:id detail page, analytics panel (ApiProductDetail.vue)",
 			"provider": "integriq",
@@ -6630,11 +6630,11 @@
 				"evidence": "Not built: lib/Controller/ProductSubscriptionsController.php analytics() returns one product-wide figure over every consumer and endpoint, with no breakdown per consumer or per endpoint; planned in gateway-usage-per-consumer-and-endpoint (decision 389, verify round 2026-11-12). Code that exists: appinfo/routes.php:504 productSubscriptions#analytics (/api/products/{productId}/analytics, GET, admin-only per spec_ref); src/views/ApiProducts/ApiProductDetail.vue:448-459 loadAnalytics() calls it, tagged openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007.",
 				"spec": "openspec/specs/api-product-gateway",
 				"requirement": [
-					"openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
+					"openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
 					"openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
 				],
 				"change": "gateway-usage-per-consumer-and-endpoint",
-				"plan": "openspec/changes/gateway-usage-per-consumer-and-endpoint"
+				"plan": "openspec/changes/archive/2026-11-24-gateway-usage-per-consumer-and-endpoint"
 			},
 			"reachedOn": "/products/:id (ApiProductDetail), analytics tab",
 			"note": "Per-product analytics exist (request count, error rate, percentiles), but only as one product-wide figure. The split per consumer and per endpoint the row asks for is planned in gateway-usage-per-consumer-and-endpoint.",
@@ -6795,8 +6795,8 @@
 				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-zaken.json (source ships disabled until an administrator installs the set).",
 				"readOn": "2026-10-30",
 				"requirement": [
-					"openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)",
-					"openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: An external change shows within a minute and a local change writes back (REQ-ZGWC-003)"
+					"openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)",
+					"openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: An external change shows within a minute and a local change writes back (REQ-ZGWC-003)"
 				]
 			},
 			"reachedOn": "nothing reaches it",
@@ -6839,7 +6839,7 @@
 				],
 				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-documenten.json (source ships disabled until an administrator installs the set).",
 				"readOn": "2026-10-30",
-				"requirement": "openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Delivered by the ZGW set installer (lib/Service/Zgw/ZgwSetInstaller.php) with the seeded set in lib/Settings/configurations/zgw-documenten.json; only the change's Playwright test is open in zgw-connectors-for-dossiq.",
@@ -6878,7 +6878,7 @@
 				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-catalogi.json (source ships disabled until an administrator installs the set).",
 				"change": "zgw-connectors-for-dossiq",
 				"readOn": "2026-10-30",
-				"requirement": "openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Delivered by the ZGW set installer (lib/Service/Zgw/ZgwSetInstaller.php) with the seeded set in lib/Settings/configurations/zgw-catalogi.json. Sibling row opencatalogi:svc-import covers serving a catalogue; this row is consuming an outside one.",
@@ -6964,7 +6964,7 @@
 				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-besluiten.json (source ships disabled until an administrator installs the set).",
 				"change": "zgw-connectors-for-dossiq",
 				"readOn": "2026-10-30",
-				"requirement": "openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
+				"requirement": "openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Delivered by the ZGW set installer (lib/Service/Zgw/ZgwSetInstaller.php) with the seeded set in lib/Settings/configurations/zgw-besluiten.json; only the change's Playwright test is open in zgw-connectors-for-dossiq.",
@@ -7776,7 +7776,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:89 cti#events -> lib/Controller/CtiController.php:92 events() -> lib/Service/Kiss/CtiEventIntake.php:161 handle() verifies, deduplicates and dispatches a typed lib/Event/CallEvent.php via IEventDispatcher; lib/Service/Kiss/WebhookCtiProvider.php is a real binding alongside LogCtiProvider.php (mock).",
 				"change": "kcc-cti-adapter",
-				"requirement": "openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge :: A call carries its caller context as a typed event (REQ-006)"
+				"requirement": "openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge :: A call carries its caller context as a typed event (REQ-006)"
 			},
 			"reachedOn": "machine route: POST /api/cti/{sourceId}/events (PBX webhook, #[PublicPage]) -> dispatches CallEvent for a consuming app (e.g. dossiq) to show next to the caller's details",
 			"note": "Integriq delivers the event; the 'next to the caller's details' display itself lives in the consuming case app (matches sibling row dossiq:6.13), not in integriq's own UI.",
@@ -8394,7 +8394,7 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:286-288 eudiIssuerKeyAdmin#status/generateKey/rotateKey -> lib/Controller/EudiIssuerKeyAdminController.php. A case-insensitive grep of src/ for 'eudi' returns zero matches, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue. Covered by openspec/changes/adapter-configuration-screens/ (0 of 12 tasks ticked; OpenSpec pass 2026-09-27): Task 5 specifies the EUDI status list and its issuer key surface, the screen this row lacks.",
+				"evidence": "appinfo/routes.php:286-288 eudiIssuerKeyAdmin#status/generateKey/rotateKey -> lib/Controller/EudiIssuerKeyAdminController.php. A case-insensitive grep of src/ for 'eudi' returns zero matches, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue. Covered by openspec/changes/archive/2026-11-24-adapter-configuration-screens/ (0 of 12 tasks ticked; OpenSpec pass 2026-09-27): Task 5 specifies the EUDI status list and its issuer key surface, the screen this row lacks.",
 				"change": "adapter-configuration-screens",
 				"spec": "openspec/specs/eudi-wallet-credential-issuance",
 				"requirement": "openspec/specs/eudi-wallet-credential-issuance :: Issuer signing-key lifecycle under Beheer > Authenticatie (REQ-EUDI-002)"
@@ -11210,11 +11210,11 @@
 				"evidence": "Not built: only the Azure Virtual Desktop reference adapter exists, registered but called by no route or page; no Intune, Jamf or Citrix adapter (decision 389). Code that exists: openspec/specs/endpoint-workspace-connectors/spec.md is the main spec; reference adapter lib/Service/Adapter/EndpointWorkspace/AzureVirtualDesktopAdapter.php, registered in lib/Service/ServiceBindings.php:445.",
 				"spec": "openspec/specs/endpoint-workspace-connectors",
 				"requirement": [
-					"openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors :: An administrator sees the sessions or devices of a connected workspace manager (REQ-EWC-008)",
+					"openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors :: An administrator sees the sessions or devices of a connected workspace manager (REQ-EWC-008)",
 					"openspec/specs/endpoint-workspace-connectors :: Endpoint and virtual-desktop / workspace connectors SHALL register through the integration registry per ADR-019 (REQ-EWC-001)",
 					"openspec/specs/endpoint-workspace-connectors :: Each EWC adapter manifest entry SHALL declare a fixed capability vocabulary scoped to session-enumeration, user-mapping, and audit-event ingestion (REQ-EWC-002)"
 				],
-				"plan": "openspec/changes/connectors-endpoint-workspace-adapters"
+				"plan": "openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters"
 			},
 			"n8n": "unknown",
 			"tyk": "unknown",
@@ -11737,11 +11737,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/JobIntervalCron.php:40-91 only translates an interval in seconds to a cron line, and lib/Service/JobService.php:511 computes nextRunDt from jobConfig['interval']; there is no calendar, weekday or month-day schedule. Specified in openspec/changes/automation-job-calendar-schedules/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/JobIntervalCron.php:40-91 only translates an interval in seconds to a cron line, and lib/Service/JobService.php:511 computes nextRunDt from jobConfig['interval']; there is no calendar, weekday or month-day schedule. Specified in openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/ (OpenSpec pass 2026-09-27).",
 				"change": "automation-job-calendar-schedules",
 				"requirement": [
-					"openspec/changes/automation-job-calendar-schedules/specs/job-scheduling :: A job can carry a calendar schedule instead of an interval (REQ-JCAL-001)",
-					"openspec/changes/automation-job-calendar-schedules/specs/job-scheduling :: The next run follows the calendar after success and after failure (REQ-JCAL-002)"
+					"openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling :: A job can carry a calendar schedule instead of an interval (REQ-JCAL-001)",
+					"openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling :: The next run follows the calendar after success and after failure (REQ-JCAL-002)"
 				]
 			},
 			"reachedOn": "nothing reaches it",
@@ -12812,10 +12812,10 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"plan": "openspec/changes/observability-opentelemetry-export-errors-and-app-spans",
+				"plan": "openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans",
 				"change": "observability-opentelemetry-export-errors-and-app-spans",
-				"requirement": "openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace :: Errors from the apps an administrator selects go to an error sink (REQ-OTEL-006)",
-				"evidence": "Not built: specified in openspec/changes/observability-opentelemetry-export-errors-and-app-spans (11/11 tasks open). obs-otel (traces) points at part 1 observability-opentelemetry-export; error tracking is a separate capability. No ErrorSink code yet."
+				"requirement": "openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace :: Errors from the apps an administrator selects go to an error sink (REQ-OTEL-006)",
+				"evidence": "Not built: specified in openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans (11/11 tasks open). obs-otel (traces) points at part 1 observability-opentelemetry-export; error tracking is a separate capability. No ErrorSink code yet."
 			},
 			"feature": "execution-trace",
 			"featureConfidence": "medium",
@@ -12948,10 +12948,10 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"plan": "openspec/changes/forms-service-fetch-for-apps",
+				"plan": "openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps",
 				"change": "forms-service-fetch-for-apps",
-				"requirement": "openspec/changes/forms-service-fetch-for-apps/specs/service-fetch :: An administrator defines a service fetch with inputs and mapped outputs (REQ-SF-001)",
-				"evidence": "Not built: specified in openspec/changes/forms-service-fetch-for-apps (10/10 tasks open). No row for an admin-defined fetch with named inputs and outputs; adds an admin page."
+				"requirement": "openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch :: An administrator defines a service fetch with inputs and mapped outputs (REQ-SF-001)",
+				"evidence": "Not built: specified in openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps (10/10 tasks open). No row for an admin-defined fetch with named inputs and outputs; adds an admin page."
 			},
 			"feature": "service-fetch",
 			"featureConfidence": "medium",

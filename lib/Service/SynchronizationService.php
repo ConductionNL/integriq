@@ -2169,7 +2169,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @throws TargetWriteRefusedException When the target refused the write.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	private function pushOnObjectEvent(array $synchronization, \OCA\OpenRegister\Db\ObjectEntity $object, array $objectArray): void {
 		$this->synchronize(synchronization: $synchronization, force: true, object: $objectArray);
@@ -2193,7 +2193,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	private function recordWriteBackRefusal(
 		array $synchronization,
@@ -2215,7 +2215,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return string|null The remote id, or null when none is declared or present.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	private function targetIdFromObject(array $targetConfig, array $object): ?string {
 		$position = ($targetConfig['targetIdPosition'] ?? null);
@@ -2244,7 +2244,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @throws Exception When the url is not under the location.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	private function endpointUnderTarget(string $url, string $targetLocation): string {
 		$location = rtrim($targetLocation, '/');
@@ -2273,7 +2273,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @throws TargetWriteRefusedException When the target answered 4xx.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	private function refuseOnTargetConflict(ObjectEntity $callLog, array $targetConfig): void {
 		$property = ($targetConfig['conflictStatusProperty'] ?? null);
@@ -2300,7 +2300,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	private function markWriteBack(\OCA\OpenRegister\Db\ObjectEntity $object, string $property, ?string $from, string $to): void {
 		$data    = $object->getObject();

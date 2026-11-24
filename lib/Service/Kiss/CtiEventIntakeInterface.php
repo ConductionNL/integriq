@@ -35,7 +35,7 @@ interface CtiEventIntakeInterface {
 	 *
 	 * @return array<string, mixed>|null The source's configuration, or null.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function findSource(string $sourceId): ?array;
 
@@ -46,7 +46,7 @@ interface CtiEventIntakeInterface {
 	 *
 	 * @return array<string, string> The allowed headers, keys lower-cased.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function headersFrom(IRequest $request): array;
 
@@ -63,7 +63,7 @@ interface CtiEventIntakeInterface {
 	 *
 	 * @return boolean True when the request is genuine.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function verify(array $source, array $headers, string $rawBody): bool;
 
@@ -76,7 +76,7 @@ interface CtiEventIntakeInterface {
 	 *
 	 * @return integer How many events were accepted and dispatched.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	public function handle(array $source, string $sourceId, array $payload): int;
 }

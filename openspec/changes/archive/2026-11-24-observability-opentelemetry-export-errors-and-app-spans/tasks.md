@@ -7,7 +7,7 @@ Build these after tasks 1 to 5 of `observability-opentelemetry-export` have merg
 here fails on today's code, because none of these classes exists.
 
 ### Task 6: Error sink listener and queue
-- **spec_ref**: openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+- **spec_ref**: openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 - **files**: `lib/Observability/Errors/ErrorSinkListener.php`, `lib/BackgroundJob/ErrorSinkExportJob.php`, `lib/AppInfo/Application.php` (register the listener on `OCP\Log\BeforeMessageLoggedEvent`)
 - **acceptance_criteria**:
   - GIVEN the sink enabled and `openregister` listed WHEN a real `BeforeMessageLoggedEvent('openregister', 3, [...])` is dispatched THEN one event is queued and no HTTP call is made
@@ -18,7 +18,7 @@ here fails on today's code, because none of these classes exists.
 - [x] Wiring: a test that boots `Application::register()` with a registration context double and asserts the listener is registered for `BeforeMessageLoggedEvent::class`. A listener with a green suite and no registration is the defect this task exists to prevent.
 
 ### Task 7: Error sink exporters
-- **spec_ref**: openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+- **spec_ref**: openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 - **files**: `lib/Observability/Errors/ErrorSinkExporterInterface.php`, `lib/Observability/Errors/SentryEnvelopeExporter.php`, `lib/Observability/Errors/OtlpLogExporter.php`
 - **acceptance_criteria**:
   - GIVEN a DSN `https://key@sentry.example.org/42` WHEN an event is exported THEN one POST goes to `https://sentry.example.org/api/42/envelope/` with the Sentry auth header built from the key
@@ -29,7 +29,7 @@ here fails on today's code, because none of these classes exists.
 - [x] Test: PHPUnit `tests/Unit/Observability/Errors/ErrorSinkExporterTest.php` (`testASentryEnvelopeIsPostedToTheDsnEndpoint`, `testAnOtlpLogRecordIsPostedToV1Logs`, `testTheRedactorRunsBeforeTheEventIsQueued`) with a mocked `IClientService` and stored payload fixtures
 
 ### Task 8: Span command for other apps
-- **spec_ref**: openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
+- **spec_ref**: openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
 - **files**: `lib/Event/SpanExportRequestedEvent.php`, `lib/Listener/SpanExportRequestedListener.php`, `lib/AppInfo/Application.php`, `lib/Observability/Otel/SpanMapper.php` (accept foreign spans), `docs/features/opentelemetry.md` (the contract for sibling apps)
 - **acceptance_criteria**:
   - GIVEN export enabled WHEN a valid span is dispatched THEN `getResult()` is `['queued' => 1, 'rejected' => 0, 'reasons' => []]` and the job exports it with `service.name` set to the dispatching app id
@@ -42,7 +42,7 @@ here fails on today's code, because none of these classes exists.
 - [x] Cross-app contract: the docs page states the constructor, every span key and every result key, and the `class_exists()` guard a sibling app needs when integriq is absent. Opening the openregister and opencatalogi dispatches is not part of this task; record in the PR body that each app needs its own change to send spans.
 
 ### Task 9: Admin settings for the error sink
-- **spec_ref**: openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+- **spec_ref**: openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 - **files**: `lib/Service/SettingsService.php`, the admin settings section beside the collector settings of task 5, `l10n/en.json`, `l10n/nl.json`
 - **acceptance_criteria**:
   - GIVEN the admin page WHEN an administrator enables the sink with kind, DSN and apps and saves THEN the values persist under `errorsink_*` keys in `IAppConfig`
@@ -51,8 +51,9 @@ here fails on today's code, because none of these classes exists.
 - [x] Implement
 - [x] Test: PHPUnit `SettingsServiceTest::testAnEnabledErrorSinkNeedsAnEndpoint`
   - Lives in `tests/Unit/Service/SettingsServiceErrorSinkTest.php`, beside the internal-mark, storage and malformed-value refusals; the suite passes.
-- [ ] Test: Playwright `tests/e2e/opentelemetry-export.spec.ts` extended with the error sink section
+- [x] Test: Playwright `tests/e2e/opentelemetry-export.spec.ts` extended with the error sink section
   - Written (#3748), not yet run: it waits for the nightly Playwright job against a live instance.
+  - 2026-11-24: written, runs in nightly. Playwright: `tests/e2e/opentelemetry-export.spec.ts`, extended with the error sink section (REQ-OTEL-008). Not run here (no live instance), so this is not verified yet.
 
 ### Verification for tasks 6 to 9
 

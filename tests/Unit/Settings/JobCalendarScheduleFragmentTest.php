@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-job-can-carry-a-calendar-schedule-instead-of-an-interval-req-jcal-001
+ * @spec openspec/changes/archive/2026-11-24-automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-a-job-can-carry-a-calendar-schedule-instead-of-an-interval-req-jcal-001
  */
 
 declare(strict_types=1);

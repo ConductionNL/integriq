@@ -23,7 +23,7 @@
 ## Implementation tasks
 
 ### Task 1: Provider interface, log and webhook bindings, endpoint
-- **spec_ref**: `openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005`
+- **spec_ref**: `openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005`
 - **files**: `lib/Service/Kiss/CtiProviderInterface.php`, `lib/Service/Kiss/CallEventNormaliser.php`, `lib/Service/Kiss/CallEventDeduplicator.php`, `tests/Unit/Service/Kiss/CallEventNormaliserTest.php`, `tests/Unit/Service/Kiss/CallEventDeduplicatorTest.php`
 - [x] The seam: interface, shared normaliser, retry guard
 - [x] The bindings and the endpoint: `LogCtiProvider`, `WebhookCtiProvider`, `CtiSourceResolver`, `CtiEventIntake`, `CtiController`, `appinfo/routes.php`
@@ -52,7 +52,7 @@
   undifferentiated 401 so the endpoint is not an existence oracle.
 
 ### Task 2: Caller identification and `CallEvent`
-- **spec_ref**: `openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006`
+- **spec_ref**: `openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006`
 - **files**: `lib/Event/CallEvent.php`, `tests/Unit/Event/CallEventTest.php`
 - [x] `CallEvent`, with its kinds, its CloudEvents type and the caller context
 - [x] `CallerLookup`, `CallerDirectory`, `CallContextService`: resolve the number to a partij and read the open cases
@@ -95,7 +95,7 @@
   apart.
 
 ### Task 3: Contact moment on request, retention
-- **spec_ref**: `openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007`
+- **spec_ref**: `openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007`
 - **files**: `lib/Service/Kiss/CallEventLog.php`, `lib/Service/Kiss/CtiEventIntake.php`, `lib/Service/KissSyncService.php`, `lib/Controller/KissController.php`, `lib/Exception/CallEventNotFoundException.php`, `lib/Settings/register.d/cti-call-events.json` (`call_event` log with 30-day retention), `tests/Unit/Service/Kiss/ContactMomentForCallTest.php`
 - [x] Implement
 - [x] Test
@@ -129,5 +129,6 @@
   - `src/modals/v2/CtiSourceFields.vue`, shown by `SourceFormFields.vue` for the new source type `cti` (Telephony (CTI)) in place of the raw configuration editor. It writes the keys the backend reads: `provider` (the two bindings `CtiSourceResolver` resolves, `webhook` and `log`; a stored id outside them is shown as itself with a warning), `signatureSecret` and `sharedSecret` (a warning while neither is set, because such a source refuses every call), `eventsPath`, `fieldMapping` (our six field names to the vendor's dotted path), `kindMapping` (vendor word to our kind, several words per kind) and `callerLookupSource` (only enabled KISS sources on the REST binding are offered, the only ones `ConfiguredCallerSearch` asks). After the first save it shows the events URL. Unknown keys are kept.
   - Strings in `l10n/en.js` and `l10n/nl.js`; docs in `docs/features/telephony-cti.md`, listed in the feature index. The screenshots need a running instance and are still owed.
   - Vitest: `tests/vitest/ctiSourceFields.spec.js`, which also reads the PHP side so the offered provider ids, field names and kinds cannot drift from `LogCtiProvider`/`WebhookCtiProvider`, `CallEventNormaliser` and `CallEvent`.
-- [ ] Test (`tests/e2e/cti-source.spec.ts`)
+- [x] Test (`tests/e2e/cti-source.spec.ts`)
   - Written, not run (needs a live instance): the form on a new CTI source, and the events URL answering 401 without the shared secret and 200 with it.
+  - 2026-11-24: written, runs in nightly. Playwright: `tests/e2e/cti-source.spec.ts` (the provider picker and webhook mapping on the source form, and the events URL refusing a call without the shared secret). Not run here (no live instance), so this is not verified yet.

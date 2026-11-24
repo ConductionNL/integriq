@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+ * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
  * message; the pull is an outbound call carrying the set's credentials. A url
  * on any other host would hand those credentials to whoever sent it.
  *
- * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+ * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
  */
 class ZgwNotificationPullListener {
 
@@ -56,7 +56,7 @@ class ZgwNotificationPullListener {
 	 * @param IAppConfig             $appConfig              Holds the set bindings (which sets are installed).
 	 * @param LoggerInterface        $logger                 Records what was not pulled, and why.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -76,7 +76,7 @@ class ZgwNotificationPullListener {
 	 *
 	 * @return string|null The url that was pulled, or null when nothing was.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	public function handle(array $notification): ?string {
 		$set = $this->installedSetFor(kanaal: (string)($notification['kanaal'] ?? ''));

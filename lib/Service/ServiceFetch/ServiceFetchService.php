@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Throwable;
 /**
  * The service fetch command's work (design D3, D4).
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
  */
 class ServiceFetchService implements ServiceFetchServiceInterface {
 
@@ -115,7 +115,7 @@ class ServiceFetchService implements ServiceFetchServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
 	 */
 	public function handle(ServiceFetchRequestedEvent $event): void {
 		try {
@@ -147,7 +147,7 @@ class ServiceFetchService implements ServiceFetchServiceInterface {
 	 *         `found` is false for an unknown slug; `refusal` names the first
 	 *         step that refused, with `raw` set once the source answered.
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 	 */
 	public function test(string $slug, array $inputs): array {
 		$result = ['found' => false, 'raw' => null, 'outputs' => null, 'refusal' => null, 'detail' => null];
@@ -323,7 +323,7 @@ class ServiceFetchService implements ServiceFetchServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
 	 */
 	private function markCallLog(ObjectEntity $callLog, array $fetch, array $request): void {
 		$uuid = $callLog->getUuid();

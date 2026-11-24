@@ -28,7 +28,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
  */
 
 declare(strict_types=1);
@@ -73,7 +73,7 @@ class ConfiguredCallerSearch implements CallerSearchInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The candidate parties.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	public function findPartiesByPhoneNumber(array $sourceConfiguration, string $e164): array {
 		$directory = $this->directoryConfiguration(ctiConfiguration: $sourceConfiguration);
@@ -93,7 +93,7 @@ class ConfiguredCallerSearch implements CallerSearchInterface {
 	 *
 	 * @return array<int, string> The case references, newest first.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	public function findOpenCasesForParty(array $sourceConfiguration, array $party): array {
 		$directory = $this->directoryConfiguration(ctiConfiguration: $sourceConfiguration);
@@ -113,7 +113,7 @@ class ConfiguredCallerSearch implements CallerSearchInterface {
 	 *
 	 * @return array<string, mixed>|null The KISS source's configuration, or null.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	private function directoryConfiguration(array $ctiConfiguration): ?array {
 		$sourceId = trim((string) ($ctiConfiguration[self::SOURCE_KEY] ?? ''));

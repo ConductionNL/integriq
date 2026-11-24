@@ -14,7 +14,7 @@
   The component keeps its own draft and emits the whole configuration on every
   change, so several edits in a row never read a stale prop.
 
-  @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+  @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 -->
 <template>
 	<div class="cn-cti-fields">
@@ -258,7 +258,7 @@ export default {
 		 * The provider picker options.
 		 *
 		 * @return {object[]} the options
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		providerOptions() {
 			return CTI_PROVIDERS.map((provider) => ({ id: provider.id, label: provider.label() }))
@@ -269,7 +269,7 @@ export default {
 		 * binding for is shown as itself, so it is visible rather than empty.
 		 *
 		 * @return {object|null} the option
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		selectedProvider() {
 			const id = String(this.draft.provider ?? '')
@@ -281,7 +281,7 @@ export default {
 		 * Whether the stored provider is one CtiSourceResolver would refuse.
 		 *
 		 * @return {boolean} true for an unknown provider id
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		unknownProvider() {
 			const id = String(this.draft.provider ?? '')
@@ -292,7 +292,7 @@ export default {
 		 * Whether a secret is set that the picked binding verifies with.
 		 *
 		 * @return {boolean} true when the source can admit a call
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		hasSecret() {
 			const shared = String(this.draft.sharedSecret ?? '') !== ''
@@ -326,7 +326,7 @@ export default {
 		 * The absolute URL the phone system posts call events to (CtiController::events).
 		 *
 		 * @return {string} the URL, or an empty string before the first save
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		eventsUrl() {
 			const id = String(this.sourceId ?? '')
@@ -344,7 +344,7 @@ export default {
 		 *
 		 * @param {object} item a source object
 		 * @return {boolean} true for a searchable KISS source
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 		 */
 		acceptsSource(item) {
 			return item?.type === KISS_SOURCE_TYPE && item?.configuration?.provider === 'rest'
@@ -366,7 +366,7 @@ export default {
 		 *
 		 * @param {string} kind one of CTI_CALL_KINDS
 		 * @return {string} the words
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		vendorWordsFor(kind) {
 			return Object.entries(mapOf(this.draft.kindMapping))
@@ -383,7 +383,7 @@ export default {
 		 * @param {string} key one of CTI_CALL_FIELDS
 		 * @param {string} path the vendor's dotted path
 		 * @return {void}
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		writeMapping(key, path) {
 			const mapping = { ...mapOf(this.draft.fieldMapping) }
@@ -404,7 +404,7 @@ export default {
 		 * @param {string} kind one of CTI_CALL_KINDS
 		 * @param {string} words the vendor words, comma separated
 		 * @return {void}
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		writeKind(kind, words) {
 			const kindMapping = Object.fromEntries(

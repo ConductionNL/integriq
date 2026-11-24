@@ -25,7 +25,7 @@ namespace OCA\Integriq\Service\Kiss;
 /**
  * Value object for one CTI intake run (ADR-011).
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
  */
 final class CtiIntakeRun {
 

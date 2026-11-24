@@ -15,7 +15,7 @@
 				"icon": "PhoneLog",
 				"version": "1.0.0",
 				"summary": "A telephony event from a CTI source, kept 30 days",
-				"description": "One row per call event a CTI source delivered: ringing, answered, ended or transferred. An agent records a contact moment for an ended call by its callId; nothing creates one by itself. Rows are dropped 30 days after they were written. See openspec/changes/kcc-cti-adapter/design.md D5.",
+				"description": "One row per call event a CTI source delivered: ringing, answered, ended or transferred. An agent records a contact moment for an ended call by its callId; nothing creates one by itself. Rows are dropped 30 days after they were written. See openspec/changes/archive/2026-11-24-kcc-cti-adapter/design.md D5.",
 				"type": "object",
 				"required": [
 					"callId",

@@ -38,7 +38,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ class CallerLookup {
 	 *
 	 * @return array<string, mixed>|null The single matching party, or null.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	public function match(string $e164, array $parties): ?array {
 		if ($this->isUsable(e164: $e164) === false) {
@@ -110,7 +110,7 @@ class CallerLookup {
 	 *
 	 * @return boolean True when it is safe to match on.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	public function isUsable(string $e164): bool {
 		return (preg_match('/^\+[1-9]\d{6,14}$/', $e164) === 1);

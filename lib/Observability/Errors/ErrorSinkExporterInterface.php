@@ -19,7 +19,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+ * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ namespace OCA\Integriq\Observability\Errors;
  * `time`, `exceptionClass`, `file`, `line`, `requestId` and `message`,
  * already redacted.
  *
- * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+ * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
  */
 interface ErrorSinkExporterInterface {
 
@@ -44,7 +44,7 @@ interface ErrorSinkExporterInterface {
 	 *
 	 * @return string The body.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function body(array $event): string;
 
@@ -57,7 +57,7 @@ interface ErrorSinkExporterInterface {
 	 *
 	 * @throws \RuntimeException When the service refused or could not be reached.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
 	 */
 	public function export(array $event): void;
 }//end interface

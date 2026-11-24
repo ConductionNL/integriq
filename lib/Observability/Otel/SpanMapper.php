@@ -121,7 +121,7 @@ class SpanMapper implements SpanMapperInterface {
 	 *
 	 * @throws InvalidArgumentException When a field is malformed; the message starts with the field name.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
 	 */
 	public function foreignSpan(array $span): array {
 		$traceId = $span['traceId'] ?? null;
@@ -178,7 +178,7 @@ class SpanMapper implements SpanMapperInterface {
 	 *
 	 * @return array The OTLP JSON payload.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
 	 */
 	public function mapForeign(array $spans, string $serviceName): array {
 		$mapped = [];

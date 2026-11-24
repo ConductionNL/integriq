@@ -15,7 +15,7 @@
 				"icon": "CloudDownloadOutline",
 				"version": "1.0.0",
 				"summary": "A named call another app may ask integriq to make",
-				"description": "A service fetch takes named inputs, calls one integriq source with them and answers named outputs through an output mapping. An app asks for it by slug; it never sees the source, its credential or the raw answer. See openspec/changes/forms-service-fetch-for-apps/design.md D2.",
+				"description": "A service fetch takes named inputs, calls one integriq source with them and answers named outputs through an output mapping. An app asks for it by slug; it never sees the source, its credential or the raw answer. See openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/design.md D2.",
 				"type": "object",
 				"required": [
 					"slug",

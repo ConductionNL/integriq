@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connectors-endpoint-workspace-adapters/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/tasks.md#task-2
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,7 +27,7 @@ namespace OCA\Integriq\Service\Adapter\EndpointWorkspace;
  * (`intune`, `jamf-pro`, `citrix-daas` or `azure-virtual-desktop`) to the kind
  * of entry it reports and to the entries themselves.
  *
- * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+ * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
  */
 class WorkspaceAdapterSet {
 
@@ -54,7 +54,7 @@ class WorkspaceAdapterSet {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+	 * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
 	 */
 	public function kindOf(string $adapterId): ?string {
 		if ($adapterId === $this->avd->getId()) {
@@ -72,7 +72,7 @@ class WorkspaceAdapterSet {
 	 *
 	 * @return array<int, array<string, mixed>>|null
 	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+	 * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
 	 */
 	public function entriesOf(string $adapterId, array $settings): ?array {
 		$adapter = $this->workspaceAdapter(adapterId: $adapterId);

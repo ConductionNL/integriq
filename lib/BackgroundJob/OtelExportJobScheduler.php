@@ -59,7 +59,7 @@ class OtelExportJobScheduler implements TraceExportSchedulerInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
 	 */
 	public function scheduleForeignSpan(string $appId, array $span): void {
 		$this->jobList->add(OtelExportJob::class, ['appId' => $appId, 'span' => $span, 'attempt' => 0]);

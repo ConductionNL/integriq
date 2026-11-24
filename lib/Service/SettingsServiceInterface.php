@@ -66,7 +66,7 @@ interface SettingsServiceInterface {
 	 *
 	 * @return array<string, mixed> enabled, kind, endpoint, allowLocal, minLevel, apps, headerName, credentialName.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 	 */
 	public function getErrorSinkSettings(): array;
 
@@ -79,7 +79,7 @@ interface SettingsServiceInterface {
 	 *
 	 * @throws \InvalidArgumentException When a value is refused; the message is the translated reason.
 	 *
-	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 * @spec openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
 	 */
 	public function saveErrorSinkSettings(array $values): array;
 }//end interface

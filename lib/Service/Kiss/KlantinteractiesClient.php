@@ -571,7 +571,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface, Calle
 	 *
 	 * @return array<int, array<string, mixed>> The candidate parties.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	public function findPartiesByPhoneNumber(array $sourceConfiguration, string $e164): array {
 		$addresses = $this->listResults(
@@ -612,7 +612,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface, Calle
 	 *
 	 * @return array<string, array<int, array<string, mixed>>> The addresses by party uuid, at most MAX_CALLER_CANDIDATES parties.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	private function addressesByParty(array $addresses): array {
 		$byParty = [];
@@ -652,7 +652,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface, Calle
 	 *
 	 * @return array<int, string> The case references, newest first.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	public function findOpenCasesForParty(array $sourceConfiguration, array $party): array {
 		$partyId = (string) ($party['uuid'] ?? '');

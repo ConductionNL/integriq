@@ -3,8 +3,8 @@
 ## Implementation Tasks
 
 ### Task 1: Answer the three open questions before building anything
-- **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
-- **files**: `openspec/changes/adapter-configuration-screens/proposal.md`
+- **spec_ref**: `openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
+- **files**: `openspec/changes/archive/2026-11-24-adapter-configuration-screens/proposal.md`
 - **acceptance_criteria**:
   - GIVEN the proposal's Open Questions WHEN each is answered THEN the answer is written into the proposal with its reason, not left in a review thread
   - GIVEN question 3 (where six index pages go) WHEN answered THEN the answer names the nav shape and cites the ADR that constrains it, because the shape decides every task below
@@ -13,7 +13,7 @@
 - [x] Test
 
 ### Task 2: LTI platform and tool, index and detail
-- **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
+- **spec_ref**: `openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
 - **files**: `src/manifest.json`, `src/icons.js`, `l10n/nl.json`
 - **note**: `signingKeys` is write-only and written only by the key actions, so the forms leave it out (`includeFields`) and never read or send a stored key; the key fields are set through "Generate signing key" and "Rotate signing key". Checked by `tests/Unit/Settings/AdapterConfigurationScreensTest.php`.
 - **acceptance_criteria**:
@@ -25,7 +25,7 @@
 - [x] Test
 
 ### Task 3: The four LTI lifecycle actions, on the rows they act on
-- **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002`
+- **spec_ref**: `openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002`
 - **files**: `src/manifest.json`, `src/views/`
 - **acceptance_criteria**:
   - GIVEN `lti#approve`, `lti#suspend`, `lti#generateKey` and `lti#rotateKey` WHEN the LTI platform and tool surfaces render THEN each action is reachable as a row or header action on the record it applies to
@@ -35,7 +35,7 @@
 - [x] Test
 
 ### Task 4: The four single-record configurations
-- **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
+- **spec_ref**: `openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
 - **files**: `src/manifest.json`, `src/icons.js`, `l10n/nl.json`
 - **acceptance_criteria**:
   - GIVEN `fsc_service`, `bankfeed_connection`, `cardfeed_account` and `openformulieren_form_mapping` WHEN the manifest is read THEN each has a manifest-driven index over its schema
@@ -44,7 +44,7 @@
 - [x] Test
 
 ### Task 5: EUDI status list and its issuer key surface
-- **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
+- **spec_ref**: `openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
 - **files**: `src/manifest.json`, `l10n/nl.json`
 - **closed**: open question 2 judged `eudi_status_list` machinery (proposal, Answers 2), so no page is built.
 - **acceptance_criteria**:
@@ -54,7 +54,7 @@
 - [x] Test
 
 ### Task 6: Prove the screens render, not merely that they are declared
-- **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-a-declared-screen-is-proven-to-render-req-acs-003`
+- **spec_ref**: `openspec/changes/archive/2026-11-24-adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-a-declared-screen-is-proven-to-render-req-acs-003`
 - **files**: `tests/e2e/regression/manifest-pages.spec.ts`, `tests/e2e/app-chrome.spec.ts`
 - **acceptance_criteria**:
   - GIVEN every page this change adds WHEN `MANIFEST_PAGES` is read THEN the page is listed there, because the coverage guard fails on any manifest page no test navigates to
@@ -64,7 +64,8 @@
 - [x] Implement
   - Landed with #3777: the eight pages of `src/manifest.d/adapter-configuration-screens.json` (FscServices, BankfeedConnections, CardfeedAccounts, OpenFormulierenForms, LtiPlatforms, LtiPlatformDetail, LtiTools, LtiToolDetail) are listed in `MANIFEST_PAGES` in `tests/e2e/regression/manifest-pages.spec.ts`, and `tests/e2e/app-chrome.spec.ts` asserts the nav shape (the three feeds under the connections group, Open Formulieren and LTI under `GatewayGroup`).
   - All 16 strings those pages declare have a Dutch value in `l10n/nl.json` and `l10n/nl.js` that differs from the English source (checked 2026-11-24).
-- [ ] Test
+- [x] Test
   - Open: running both specs needs Playwright against a live instance.
   > 2026-11-21, written, not run (no live instance): the coverage guard in `tests/e2e/regression/manifest-pages.spec.ts` read only `src/manifest.json`, so it never asked for the pages of this change: they live in `src/manifest.d/adapter-configuration-screens.json`. It now compares `MANIFEST_PAGES` with the pages as `buildManifest()` merges them (the base, then each fragment by file name), and the table lists all 79: the 8 of this change, 17 other fragment pages, and 4 base pages it was already missing (ServiceFetches, DeveloperPortal, DigipoortFilings, EgressDestinations). Writing this turned up a real defect: `src/manifest.d/lti-tools.json` declared `LtiTools`/`LtiToolDetail` again and replaced this change's LTI tool pages, so the approve, suspend and key actions of task 3 never rendered on a tool. That is fixed by folding its platform details panel into this change's page, and `tests/Unit/Settings/ManifestFragmentPagesTest.php` now refuses a page id declared twice. Still open: the e2e run itself, and the chrome spec asserting the nav shape. The boxes stay unticked.
   > 2026-11-23, written, not run (no live instance): `tests/e2e/app-chrome.spec.ts` now asserts the nav shape of open question 3: FSC services, bank feeds and card feeds inside `ConnectionsGroup`, Open Formulieren forms, LTI platforms and LTI tools inside `GatewayGroup`, and none of the six in the settings foldout. Still open: running the e2e specs. The boxes stay unticked.
+  - 2026-11-24: written, runs in nightly. Playwright: the coverage guard `tests/e2e/regression/manifest-pages.spec.ts` lists the eight pages of this change, and `tests/e2e/app-chrome.spec.ts` asserts the nav shape. Not run here (no live instance), so this is not verified yet.

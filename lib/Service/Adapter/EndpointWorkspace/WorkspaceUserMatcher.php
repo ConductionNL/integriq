@@ -12,7 +12,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connectors-endpoint-workspace-adapters/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/tasks.md#task-2
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -33,7 +33,7 @@ use OCP\IUserManager;
  * e-mail and anything else by user id. A value that matches no user, or more
  * than one by e-mail, matches nobody: no user is ever guessed.
  *
- * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+ * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
  */
 class WorkspaceUserMatcher {
 
@@ -55,7 +55,7 @@ class WorkspaceUserMatcher {
 	 *
 	 * @return array{uid: string, displayName: string}|null
 	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+	 * @spec openspec/changes/archive/2026-11-24-connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
 	 */
 	public function match(array $entry, array $mapping = []): ?array {
 		$value = $this->remoteValue(entry: $entry, attribute: (string)($mapping['remoteUserAttribute'] ?? ''));

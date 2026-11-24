@@ -12,7 +12,7 @@
  * The export itself (a POST to the collector from a background job) is
  * covered by PHPUnit: a browser cannot see a cron job's outbound call.
  *
- * Error sink: openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md
+ * Error sink: openspec/changes/archive/2026-11-24-observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md
  * (REQ-OTEL-008, the error sink is configured on the admin page). An
  * administrator switches the sink on with a Sentry DSN and the default apps
  * and saves; a plain http address not marked internal is refused with the

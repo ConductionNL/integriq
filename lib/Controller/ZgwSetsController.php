@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+ * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCP\IRequest;
 /**
  * GET /api/zgw-sets and POST /api/zgw-sets/{slug}/install, admin only.
  *
- * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+ * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
  */
 class ZgwSetsController extends Controller {
 
@@ -47,7 +47,7 @@ class ZgwSetsController extends Controller {
 	 * @param IRequest        $request   The request.
 	 * @param ZgwSetInstallerInterface $installer Installs a set and reads the bindings.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function __construct(
 		IRequest $request,
@@ -61,7 +61,7 @@ class ZgwSetsController extends Controller {
 	 *
 	 * @return JSONResponse {results: list<{slug, title, writesBack, binding}>}
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function index(): JSONResponse {
@@ -82,7 +82,7 @@ class ZgwSetsController extends Controller {
 	 *
 	 * @return JSONResponse The binding, or 409 with the refusal.
 	 *
-	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 * @spec openspec/changes/archive/2026-11-24-zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function install(string $slug): JSONResponse {

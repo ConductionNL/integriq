@@ -21,7 +21,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\Integriq\Service\Sms\PhoneNumberValidator;
 /**
  * Normalises one vendor call payload into the shared call-event shape.
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
  */
 class CallEventNormaliser {
 
@@ -64,7 +64,7 @@ class CallEventNormaliser {
 	 *
 	 * @return array<string, mixed>|null The normalised event, or null when it is not one we carry.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function normalise(array $payload, array $mapping = [], array $kindMap = []): ?array {
 		$source  = new MappedPayload(payload: $payload, mapping: $mapping);
@@ -161,7 +161,7 @@ class CallEventNormaliser {
 	 *
 	 * @return string The E.164 number, or '' when there is nothing safe to read.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	public function toE164(string $number): string {
 		$trimmed = trim($number);
