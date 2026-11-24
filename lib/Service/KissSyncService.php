@@ -269,7 +269,7 @@ class KissSyncService implements KissSyncServiceInterface {
 	 * @throws CallEventNotFoundException When `callId` names no single ended call.
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	public function pushCustomerContact(array $input): array {
 		// A contact moment for a call: refused before anything reaches KISS
@@ -424,7 +424,7 @@ class KissSyncService implements KissSyncServiceInterface {
 	 *
 	 * @return array The call fields, empty without a call.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	private function callFields(?array $call): array {
 		if ($call === null) {
@@ -450,7 +450,7 @@ class KissSyncService implements KissSyncServiceInterface {
 	 *
 	 * @return array The push payload for that call.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	private function callInput(array $input, array $call): array {
 		$input['channel'] = 'telefoon';
@@ -470,7 +470,7 @@ class KissSyncService implements KissSyncServiceInterface {
 	 *
 	 * @return ObjectEntity|null The local mirror, or null.
 	 *
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	private function findByCall(array $call): ?ObjectEntity {
 		$matches = $this->objectService->findAll(

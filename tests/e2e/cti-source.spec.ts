@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md
  *   Task 4: the CTI provider picker and field mapping on the source form.
  *
  * An administrator creates a source of type Telephony (CTI): the raw

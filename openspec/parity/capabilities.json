@@ -7776,7 +7776,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:89 cti#events -> lib/Controller/CtiController.php:92 events() -> lib/Service/Kiss/CtiEventIntake.php:161 handle() verifies, deduplicates and dispatches a typed lib/Event/CallEvent.php via IEventDispatcher; lib/Service/Kiss/WebhookCtiProvider.php is a real binding alongside LogCtiProvider.php (mock).",
 				"change": "kcc-cti-adapter",
-				"requirement": "openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge :: A call carries its caller context as a typed event (REQ-006)"
+				"requirement": "openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge :: A call carries its caller context as a typed event (REQ-006)"
 			},
 			"reachedOn": "machine route: POST /api/cti/{sourceId}/events (PBX webhook, #[PublicPage]) -> dispatches CallEvent for a consuming app (e.g. dossiq) to show next to the caller's details",
 			"note": "Integriq delivers the event; the 'next to the caller's details' display itself lives in the consuming case app (matches sibling row dossiq:6.13), not in integriq's own UI.",

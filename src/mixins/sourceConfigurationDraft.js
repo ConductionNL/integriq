@@ -14,7 +14,7 @@ import { generateUrl } from '@nextcloud/router'
  * It also loads the instance's sources for the component's source pickers.
  * The component says which sources it offers with `acceptsSource(item)`.
  *
- * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+ * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
  */
 export default {
 	props: {
@@ -51,7 +51,7 @@ export default {
 	 * Load the sources the component's pickers offer.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	created() {
 		this.lastEmitted = null
@@ -75,7 +75,7 @@ export default {
 		 * leaves an empty list, never a broken editor.
 		 *
 		 * @return {Promise<void>} resolves once the list is loaded
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		async fetchSources() {
 			this.sourcesLoading = true
@@ -125,7 +125,7 @@ export default {
 		 * @param {string} key the configuration key the backend reads
 		 * @param {string|boolean|object} value the value
 		 * @return {void}
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		write(key, value) {
 			this.draft = { ...this.draft, [key]: value }

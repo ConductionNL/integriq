@@ -531,7 +531,7 @@ export default {
 		 * Whether this is a CTI source, which gets its own telephony fields.
 		 *
 		 * @return {boolean} True for a cti source.
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		isCti() {
 			return String(this.formData?.type ?? '') === 'cti'
@@ -541,7 +541,7 @@ export default {
 		 * The id of the saved source, or empty before the first save.
 		 *
 		 * @return {string} The id.
-		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		savedSourceId() {
 			const data = this.formData ?? {}

@@ -78,7 +78,7 @@ interface KissSyncServiceInterface {
 	 * @throws CallEventNotFoundException When `callId` names no single ended call.
 	 *
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
-	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
+	 * @spec openspec/changes/archive/2026-11-24-kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-contact-moment-is-written-only-when-the-agent-asks-req-007
 	 */
 	public function pushCustomerContact(array $input): array;
 
