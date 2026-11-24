@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/record-provenance-tab/specs/synchronization/spec.md
+ * @spec openspec/specs/synced-from-tab/spec.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -31,7 +31,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 /**
  * The contract that targets a record, its synchronization and source, and its newest log entries.
  *
- * @spec openspec/changes/record-provenance-tab/specs/synchronization/spec.md#requirement-a-record-says-where-it-was-synchronized-from
+ * @spec openspec/specs/synced-from-tab/spec.md#requirement-a-record-says-where-it-was-synchronized-from
  */
 final class RecordProvenanceServiceTest extends TestCase {
 

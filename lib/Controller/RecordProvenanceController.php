@@ -69,7 +69,7 @@ class RecordProvenanceController extends Controller {
 	 *
 	 * @return JSONResponse The provenance, 400 without the three, 404 for a record the caller cannot read.
 	 *
-	 * @spec openspec/changes/record-provenance-tab/specs/synchronization/spec.md#requirement-a-record-says-where-it-was-synchronized-from
+	 * @spec openspec/specs/synced-from-tab/spec.md#requirement-a-record-says-where-it-was-synchronized-from
 	 */
 	#[NoAdminRequired]
 	public function show(): JSONResponse {

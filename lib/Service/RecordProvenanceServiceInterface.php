@@ -33,7 +33,7 @@ interface RecordProvenanceServiceInterface {
 	 *
 	 * @return array<string, mixed> `synced: false` for a record no synchronization wrote, else the provenance.
 	 *
-	 * @spec openspec/changes/record-provenance-tab/specs/synchronization/spec.md#requirement-a-record-says-where-it-was-synchronized-from
+	 * @spec openspec/specs/synced-from-tab/spec.md#requirement-a-record-says-where-it-was-synchronized-from
 	 */
 	public function provenance(string $recordId): array;
 }
