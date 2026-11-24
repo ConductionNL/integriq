@@ -33,6 +33,7 @@ const fs = require('fs')
 const path = require('path')
 const {
 	loadJsTranslations,
+	loadSourceCatalogue,
 	serializeJs,
 	collectUsedKeys,
 	listJsLocaleFiles,
@@ -66,7 +67,7 @@ function main() {
 		process.exit(1)
 	}
 
-	const { app, translations: english } = loadJsTranslations(ENGLISH_FILE)
+	const { app, translations: english } = loadSourceCatalogue(ENGLISH_FILE)
 	const existingKeys = new Set(Object.keys(english))
 	const usedKeys = collectUsedKeys(SRC_DIR, app)
 	// Keys reached through a variable cannot be found by scanning. They are live,

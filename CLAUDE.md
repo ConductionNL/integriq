@@ -41,6 +41,16 @@ loads. The gate used to assert frontend keys against `en.json` while the one the
 browser reads went unaudited; `tests/l10n/check-l10n.js` now targets `en.js`.
 Auditing the generated file and editing the source is the intended shape.
 
+**`en.js` carries no identity entries** (2026-11-24, PERF-HANDOFF): the build
+drops every `en` entry whose value equals its key, because `t()` falls back to
+the key anyway; that took `en.js` from 502 KB to about 4 KB. `en.json` stays
+complete. So the audits read `en.js` completed from `en.json`
+(`loadSourceCatalogue` in `scripts/lib/l10n.js`), and `test:l10n:write` adds
+missing keys to `en.json`; run `npm run l10n:build` after it. A key that is in
+`en.js` and not in `en.json` is lost on the next build, which is how 310 `en`
+and 132 `nl` strings had drifted: they were backfilled into the JSON in the
+same change.
+
 There is **no scanner for the backend set**. Auditing `en.json` would mean
 walking `lib/` for PHP `$l->t()` calls, not `src/`. Until that exists, `en.json`
 is maintained by hand.
