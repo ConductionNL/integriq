@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 /**
  * Input-value redaction of a call log row.
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
  */
 class ServiceFetchRedactor {
 
@@ -45,7 +45,7 @@ class ServiceFetchRedactor {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
 	 */
 	public function redact(array $row, array $values): array {
 		$values = array_values(array_filter($values, static fn (string $value): bool => $value !== ''));

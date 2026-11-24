@@ -275,13 +275,13 @@ export default {
 
 		/**
 		 * @param {{fetch: object}} payload The row.
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		openTestServiceFetch(payload) {
 			this.testServiceFetch = { open: true, fetch: payload?.fetch ?? null }
 		},
 
-		/** @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001 */
+		/** @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001 */
 		closeTestServiceFetch() {
 			this.testServiceFetch = { open: false, fetch: null }
 		},

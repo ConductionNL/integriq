@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md
  */
 
 declare(strict_types=1);
@@ -37,8 +37,8 @@ use RuntimeException;
 /**
  * REQ-SF-003, and the administrator's test run of REQ-SF-001.
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-a-form-designer-can-list-the-fetches-an-app-may-call-req-sf-003
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-a-form-designer-can-list-the-fetches-an-app-may-call-req-sf-003
  */
 #[CoversClass(ServiceFetchController::class)]
 #[UsesClass(ServiceFetchCatalogue::class)]

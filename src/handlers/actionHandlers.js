@@ -210,7 +210,7 @@ export function testMappingModalHandler({ item }) {
  * Open the service fetch test modal ("Testen") for the clicked serviceFetch row.
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
  */
 export function testServiceFetchHandler({ item }) {
 	modalBus.emit(EVENT_OPEN_TEST_SERVICE_FETCH, { fetch: item })

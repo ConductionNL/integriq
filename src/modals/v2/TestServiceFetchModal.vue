@@ -121,7 +121,7 @@ export default {
 		 * The fetch's slug, the key of the test route.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		slug() {
 			return String(this.fetch?.slug || '')
@@ -131,7 +131,7 @@ export default {
 		 * The name shown above the fields.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		fetchName() {
 			return String(this.fetch?.title || this.slug)
@@ -141,7 +141,7 @@ export default {
 		 * The declared inputs that have a name.
 		 *
 		 * @return {Array<{name: string, required: boolean}>}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		inputs() {
 			const declared = Array.isArray(this.fetch?.inputs) ? this.fetch.inputs : []
@@ -154,7 +154,7 @@ export default {
 		 * The refusal, named for the administrator.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		refusalText() {
 			const refusal = this.result?.refusal || ''
@@ -170,7 +170,7 @@ export default {
 		 * Start empty each time the modal opens, or another fetch is tested.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		open() {
 			this.reset()
@@ -180,7 +180,7 @@ export default {
 		 * Start empty when another fetch is tested.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		slug() {
 			this.reset()
@@ -194,7 +194,7 @@ export default {
 		 * Clear the fields and the last result.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		reset() {
 			this.values = {}
@@ -208,7 +208,7 @@ export default {
 		 * @param {string} name The input.
 		 * @param {string} value Its value.
 		 * @return {void}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		setValue(name, value) {
 			this.values = { ...this.values, [name]: value ?? '' }
@@ -218,7 +218,7 @@ export default {
 		 * Run the fetch with the filled-in inputs; an empty field is not sent.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		async runTest() {
 			if (!this.slug || this.running) {
@@ -257,7 +257,7 @@ export default {
 		 *
 		 * @param {*} value The value.
 		 * @return {string}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		pretty(value) {
 			return JSON.stringify(value, null, 2)
@@ -267,7 +267,7 @@ export default {
 		 * Close the modal.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+		 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
 		 */
 		onClose() {
 			this.$emit('close')

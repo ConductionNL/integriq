@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use InvalidArgumentException;
 /**
  * Input checking and template rendering for a service fetch (design D3 steps 3 and 4).
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
  */
 class ServiceFetchInputs {
 
@@ -49,7 +49,7 @@ class ServiceFetchInputs {
 	 *
 	 * @throws InvalidArgumentException Naming the first missing or wrongly typed input.
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
 	 */
 	public function accepted(array $declared, array $given): array {
 		$accepted = [];
@@ -92,7 +92,7 @@ class ServiceFetchInputs {
 	 *
 	 * @throws InvalidArgumentException When the rendered path leaves the source location.
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
 	 */
 	public function path(string $path, array $inputs): string {
 		$rendered = $this->render(template: $path, inputs: $inputs, encode: true);
@@ -121,7 +121,7 @@ class ServiceFetchInputs {
 	 *
 	 * @return array<string, string> The rendered query.
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
 	 */
 	public function query(array $query, array $inputs): array {
 		$rendered = [];
@@ -146,7 +146,7 @@ class ServiceFetchInputs {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
 	 */
 	public function text(mixed $value): string {
 		if ($value === true) {

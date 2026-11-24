@@ -12948,10 +12948,10 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"plan": "openspec/changes/forms-service-fetch-for-apps",
+				"plan": "openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps",
 				"change": "forms-service-fetch-for-apps",
-				"requirement": "openspec/changes/forms-service-fetch-for-apps/specs/service-fetch :: An administrator defines a service fetch with inputs and mapped outputs (REQ-SF-001)",
-				"evidence": "Not built: specified in openspec/changes/forms-service-fetch-for-apps (10/10 tasks open). No row for an admin-defined fetch with named inputs and outputs; adds an admin page."
+				"requirement": "openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch :: An administrator defines a service fetch with inputs and mapped outputs (REQ-SF-001)",
+				"evidence": "Not built: specified in openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps (10/10 tasks open). No row for an admin-defined fetch with named inputs and outputs; adds an admin page."
 			},
 			"feature": "service-fetch",
 			"featureConfidence": "medium",

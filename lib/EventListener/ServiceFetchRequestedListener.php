@@ -31,7 +31,7 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<ServiceFetchRequestedEvent>
  *
- * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+ * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
  */
 class ServiceFetchRequestedListener implements IEventListener {
 
@@ -52,7 +52,7 @@ class ServiceFetchRequestedListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
+	 * @spec openspec/changes/archive/2026-11-24-forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ServiceFetchRequestedEvent === false) {
