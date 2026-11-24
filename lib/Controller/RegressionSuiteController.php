@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-running-and-recording-suites-are-named-actions-req-irt-004
+ * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-running-and-recording-suites-are-named-actions-req-irt-004
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OutOfBoundsException;
 /**
  * Suite runs, behind the `regression-suite.run` action.
  *
- * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-running-and-recording-suites-are-named-actions-req-irt-004
+ * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-running-and-recording-suites-are-named-actions-req-irt-004
  */
 class RegressionSuiteController extends Controller {
 
@@ -94,7 +94,7 @@ class RegressionSuiteController extends Controller {
 	 *
 	 * @return JSONResponse The run record; 400 for an unknown subject type; 401 or 403 when not allowed.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-running-and-recording-suites-are-named-actions-req-irt-004
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-running-and-recording-suites-are-named-actions-req-irt-004
 	 */
 	#[NoAdminRequired]
 	public function run(string $subjectType, string $subjectId): JSONResponse {
@@ -133,7 +133,7 @@ class RegressionSuiteController extends Controller {
 	 *
 	 * @return JSONResponse The case as stored with the paths still redacted; 400, 401, 403 or 404 otherwise.
 	 *
-	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+	 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 	 */
 	#[NoAdminRequired]
 	public function record(string $id): JSONResponse {

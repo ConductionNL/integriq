@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\Integriq\Service\Format;
 /**
  * A mapping result in its declared output format.
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
  */
 final class MappingOutput {
 
@@ -54,7 +54,7 @@ final class MappingOutput {
 	 *
 	 * @return array{format: string, options: array<string,mixed>}
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
 	 */
 	public function settings(array $mapping): array {
 		$format = strtolower(trim((string)($mapping['outputFormat'] ?? 'json')));
@@ -80,7 +80,7 @@ final class MappingOutput {
 	 *
 	 * @return array{format: string, contentType: string, body: string|null}
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
 	 */
 	public function render(array $mapping, array $result): array {
 		['format' => $format, 'options' => $options] = $this->settings(mapping: $mapping);

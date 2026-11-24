@@ -544,7 +544,7 @@ export default {
 		 * The file formats a synchronization reads.
 		 *
 		 * @return {Array<{id: string, label: string}>} The options.
-		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+		 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
 		 */
 		formatOptions() {
 			return [
@@ -559,7 +559,7 @@ export default {
 		 * The selected file format, or null when none is set.
 		 *
 		 * @return {object|null} The option.
-		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+		 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
 		 */
 		formatOption() {
 			return this.formatOptions.find((option) => option.id === this.configValue('format')) || null

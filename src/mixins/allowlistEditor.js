@@ -12,7 +12,7 @@ import { generateUrl } from '@nextcloud/router'
  * component provides `load()` (read its list with `fetchList`) and calls
  * `changeList` for every add or remove.
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
  */
 export default {
 	data() {
@@ -23,7 +23,7 @@ export default {
 		}
 	},
 
-	/** @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005 */
+	/** @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005 */
 	mounted() {
 		this.load()
 	},
@@ -39,7 +39,7 @@ export default {
 		 * @return {Promise<Array|null>} The entries, or null when the read failed
 		 *   (the reason is then shown).
 		 *
-		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+		 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 		 */
 		async fetchList(url, field) {
 			this.loading = true
@@ -65,7 +65,7 @@ export default {
 		 * @param {string} failure The translated text when the backend gave no reason.
 		 * @return {Promise<void>} Resolves once the list is reloaded.
 		 *
-		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
+		 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
 		 */
 		async changeList(request, success, failure) {
 			this.busy = true

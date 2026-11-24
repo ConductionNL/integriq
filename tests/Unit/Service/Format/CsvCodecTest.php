@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/mapping-formats-and-lookups/tasks.md
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/tasks.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\Integriq\Service\Format\CsvCodec
  *
- * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+ * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
  */
 class CsvCodecTest extends TestCase {
 
@@ -38,7 +38,7 @@ class CsvCodecTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#scenario-a-quoted-line-break-survives
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#scenario-a-quoted-line-break-survives
 	 */
 	public function testAQuotedLineBreakStaysOneField(): void {
 		$rows = CsvCodec::decode("naam,adres\nJansen,\"Dorpsstraat 1\n1234 AB Ergens\"\nDe Vries,Kerkweg 2\n");

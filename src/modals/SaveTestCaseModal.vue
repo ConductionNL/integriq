@@ -11,7 +11,7 @@
   redaction marker and lets the engineer replace it with a test value before
   saving (POST /api/execution-traces/{id}/test-case).
 
-  @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+  @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 -->
 <template>
 	<NcModal
@@ -131,7 +131,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002 */
+		/** @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002 */
 		stepOptions() {
 			return recordableSteps(this.steps).map((step) => ({
 				id: step.order,
@@ -143,7 +143,7 @@ export default {
 		/**
 		 * Every redacted field of the chosen step, prefixed by `input` or `expectedOutput`.
 		 *
-		 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+		 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 		 */
 		redacted() {
 			const step = this.selectedStep?.step
@@ -162,7 +162,7 @@ export default {
 			 * Start over each time the dialog opens.
 			 *
 			 * @param {boolean} isOpen Whether the dialog is now open.
-			 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+			 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 			 */
 			handler(isOpen) {
 				if (isOpen) this.reset()
@@ -176,7 +176,7 @@ export default {
 		/**
 		 * Start from the first recordable step with nothing replaced.
 		 *
-		 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+		 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 		 */
 		reset() {
 			this.errorMessage = ''
@@ -188,7 +188,7 @@ export default {
 		 * Choose the step; its name becomes the default case name.
 		 *
 		 * @param {object|null} option The step option.
-		 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+		 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 		 */
 		onSelectStep(option) {
 			this.selectedStep = option
@@ -201,7 +201,7 @@ export default {
 		 *
 		 * @param {string} path The field's path.
 		 * @param {string} value The test value.
-		 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+		 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 		 */
 		setReplacement(path, value) {
 			this.replacements = { ...this.replacements, [path]: value }
@@ -212,7 +212,7 @@ export default {
 		 * snapshots with every replaced field filled in.
 		 *
 		 * @return {object} The request body.
-		 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+		 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 		 */
 		requestBody() {
 			const step = this.selectedStep.step
@@ -238,7 +238,7 @@ export default {
 		/**
 		 * Save the case.
 		 *
-		 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
+		 * @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 		 */
 		async save() {
 			this.saving = true
@@ -258,7 +258,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002 */
+		/** @spec openspec/changes/archive/2026-11-24-automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002 */
 		onClose() {
 			this.$emit('close')
 		},

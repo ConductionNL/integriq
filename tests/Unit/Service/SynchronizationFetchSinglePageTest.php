@@ -153,7 +153,7 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#scenario-a-municipal-code-list-served-as-csv
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#scenario-a-municipal-code-list-served-as-csv
 	 */
 	public function testACsvPageGivesOneObjectPerRow(): void {
 		$page = $this->fetch(
@@ -174,7 +174,7 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
 	 */
 	public function testACsvPageWithoutAHeaderGivesLists(): void {
 		$page = $this->fetch(
