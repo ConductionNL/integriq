@@ -1,0 +1,26 @@
+[
+  {
+    "id": "6f1c2b9e-3d4a-4e5f-9a8b-7c6d5e4f3a21",
+    "firstName": "Sanne",
+    "lastName": "de Vries",
+    "nextcloudUserId": "sdevries",
+    "orgUnit": "Advies",
+    "role": "Adviseur",
+    "managerUserIds": ["pkade"],
+    "startDate": "2021-03-01",
+    "endDate": null,
+    "modified": "2026-10-01T08:00:00+00:00"
+  },
+  {
+    "id": "0b9a8c7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d",
+    "firstName": "Mark",
+    "lastName": "Jansen",
+    "nextcloudUserId": "mjansen",
+    "orgUnit": "Backoffice",
+    "role": "Medewerker financiële administratie",
+    "managerUserIds": [],
+    "startDate": "2024-09-01",
+    "endDate": "2026-12-31",
+    "modified": "2026-10-02T10:15:00+00:00"
+  }
+]

@@ -26,8 +26,10 @@ Kind: config. Size M. Halves for humaniq `payroll-external-bureau-handoff` and `
 - **files**: `lib/Settings/register.d/studytube-lms-source.json`, synchronizations `lms-people-push`, `lms-completions-pull`
 - **acceptance_criteria**:
   - GIVEN a recorded completion WHEN the pull runs twice THEN one `TrainingRecord` with source `lms` exists
-- [ ] Implement
-- [ ] Test (PHPUnit against recorded Studytube answers)
+- [x] Implement
+  - `lib/Settings/register.d/studytube-lms-source.json`: the dormant sources `studytube-lms` (OAuth client credentials, secret `studytube-lms-client-secret`) and `humaniq-learning-people` (humaniq's `GET /api/learning/people` through an integration account, app password `humaniq-learning-people-app-password`), the mappings `humaniq-person-to-studytube-user` (`uid` = the humaniq employee id) and `studytube-completion-to-training-record` (`gevolgd`, `lms`, `sourceRef` = the result id; no certificate leaves `validUntil` out), and the disabled synchronizations `lms-people-push` (incremental on `modified`, api to api `/users`) and `lms-completions-pull` (incremental on `updated_at`, keyed on the result id, into `humaniq/TrainingRecord`).
+- [x] Test (PHPUnit against recorded Studytube answers)
+  - `tests/Unit/Settings/StudytubeLmsSetTest.php` over `tests/fixtures/hr-data-exchange/studytube/`, each TrainingRecord validated against humaniq's contract (`training-record.schema.json`, copied from humaniq development). The answers follow the Studytube Public API v2 shape and are example answers, not captured from a live tenant: one run against a Studytube test tenant is owed (live pass).
 
 ### Task 4: Catalogue, docs and strings
 - **spec_ref**: `openspec/changes/connectors-hr-data-exchange/specs/hr-data-exchange/spec.md#requirement-a-learning-platform-learns-who-works-where-and-finished-trainings-come-back-req-hrx-002`
@@ -35,6 +37,7 @@ Kind: config. Size M. Halves for humaniq `payroll-external-bureau-handoff` and `
 - **acceptance_criteria**:
   - GIVEN an upgrade WHEN the catalogue is materialised THEN the payroll templates show under `Payroll` and Studytube under `Education data`
 - [ ] Implement
+  - Studytube half done: `studytube-lms` and `humaniq-learning-people` under `Education data` (`CatalogRegistryService::SLUG_CATEGORY_OVERRIDES`, `CatalogRegistryServiceTest::testTheLearningPlatformTemplatesAreEducationData`), `docs/features/hr-data-exchange.md`. Open: the payroll templates under `Payroll`, with Task 1.
 - [ ] Test (PHPUnit on the catalogue)
 
 ## Verification

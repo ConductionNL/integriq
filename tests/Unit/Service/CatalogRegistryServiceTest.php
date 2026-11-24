@@ -243,6 +243,22 @@ class CatalogRegistryServiceTest extends TestCase {
 	}//end testRouteAndVehicleTemplatesAreListedInTheirCategories()
 
 	/**
+	 * The Studytube learning platform and humaniq's people feed show under Education data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-hr-data-exchange/specs/hr-data-exchange/spec.md#requirement-a-learning-platform-learns-who-works-where-and-finished-trainings-come-back-req-hrx-002
+	 */
+	public function testTheLearningPlatformTemplatesAreEducationData(): void {
+		$bySlug = array_column($this->makeService()->collect(), null, 'slug');
+
+		foreach (['studytube-lms', 'humaniq-learning-people'] as $slug) {
+			$this->assertSame('Education data', $bySlug['source-template:' . $slug]['category'], $slug);
+			$this->assertSame($slug, $bySlug['source-template:' . $slug]['sourceTemplateSlug'], $slug);
+		}
+	}//end testTheLearningPlatformTemplatesAreEducationData()
+
+	/**
 	 * The three service desk templates show under Service management.
 	 *
 	 * @return void

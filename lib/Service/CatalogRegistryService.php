@@ -156,6 +156,9 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'kong-gateway-discovery' => 'API gateways',
 		'azure-apim-discovery' => 'API gateways',
 		'aws-apigateway-discovery' => 'API gateways',
+		// A learning platform that learns who works where and returns finished trainings (connectors-hr-data-exchange D4).
+		'studytube-lms' => 'Education data',
+		'humaniq-learning-people' => 'Education data',
 	];
 
 	/**
