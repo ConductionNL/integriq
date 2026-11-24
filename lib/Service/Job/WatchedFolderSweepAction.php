@@ -38,6 +38,8 @@ use OCA\Integriq\Service\WatchedFolderService;
 
 /**
  * Runs the watched-folder sweep as a scheduled job action.
+ *
+ * @spec openspec/specs/data-infra-connectors/spec.md#requirement-scheduled-pulls-shall-run-as-openregister-scheduledworkflow-records-not-as-integriq-timedjob-classes-req-dic-005
  */
 class WatchedFolderSweepAction {
 
