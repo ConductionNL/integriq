@@ -64,7 +64,7 @@ class RecordProvenanceService implements RecordProvenanceServiceInterface {
 	 *
 	 * @return array<string, mixed> `synced: false` for a record no synchronization wrote, else the provenance.
 	 *
-	 * @spec openspec/changes/record-provenance-tab/specs/synchronization/spec.md#requirement-a-record-says-where-it-was-synchronized-from
+	 * @spec openspec/specs/synced-from-tab/spec.md#requirement-a-record-says-where-it-was-synchronized-from
 	 */
 	public function provenance(string $recordId): array {
 		$contract = ($this->read(schema: 'synchronization_contract', filters: ['targetId' => $recordId], limit: 1)[0] ?? null);
