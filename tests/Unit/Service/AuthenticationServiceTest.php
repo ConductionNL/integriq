@@ -455,10 +455,10 @@ namespace OCA\Integriq\Tests\Unit\Service {
 				$base + ['grant_type' => 'password', 'username' => 1234, 'password' => 'pw']
 			);
 
-			$this->assertSame(['4021', 'secret'], $client['auth']);
-			$this->assertSame(['1234', 'pw'], $user['auth']);
-			$this->assertSame('client_credentials', $client['form_params']['grant_type']);
-			$this->assertArrayNotHasKey('client_id', $client['form_params']);
+			$this->assertSame(expected: ['4021', 'secret'], actual: $client['auth']);
+			$this->assertSame(expected: ['1234', 'pw'], actual: $user['auth']);
+			$this->assertSame(expected: 'client_credentials', actual: $client['form_params']['grant_type']);
+			$this->assertArrayNotHasKey(key: 'client_id', array: $client['form_params']);
 		}//end testBasicAuthOptionIsAStringPair()
 	}//end class
 }//end namespace
