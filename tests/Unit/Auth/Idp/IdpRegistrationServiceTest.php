@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Auth\Idp;
 
 use OCA\Integriq\Auth\Idp\GovernmentIdpAdapterInterface;
+use OCA\Integriq\Auth\Idp\Adapter\IdpKindAdapterFactories;
 use OCA\Integriq\Auth\Idp\Adapter\OidcRelyingPartyAdapter;
 use OCA\Integriq\Auth\Idp\Adapter\OidcRelyingPartyAdapterFactory;
 use OCA\Integriq\Auth\Idp\Adapter\SamlServiceProviderAdapter;
@@ -443,7 +444,7 @@ class IdpRegistrationServiceTest extends TestCase {
 			boundAdapter: new LogGovernmentIdpAdapter(logger: new NullLogger()),
 			logger: new NullLogger(),
 			registrations: $this->service(),
-			oidcAdapters: $factory
+			builtInAdapters: new IdpKindAdapterFactories(oidc: $factory)
 		);
 
 		$this->assertSame($adapter, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));
@@ -473,7 +474,7 @@ class IdpRegistrationServiceTest extends TestCase {
 			boundAdapter: new LogGovernmentIdpAdapter(logger: new NullLogger()),
 			logger: new NullLogger(),
 			registrations: $this->service(),
-			samlAdapters: $factory
+			builtInAdapters: new IdpKindAdapterFactories(saml: $factory)
 		);
 
 		$this->assertSame($adapter, $registry->forRegistration(organisation: 'gemeente-x', provider: 'digid'));

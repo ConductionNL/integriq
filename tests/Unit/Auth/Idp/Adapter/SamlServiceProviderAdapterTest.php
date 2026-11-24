@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Auth\Idp\Adapter;
 
 use DOMDocument;
+use OCA\Integriq\Auth\Idp\Adapter\IdpAdapterServices;
 use OCA\Integriq\Auth\Idp\Adapter\SamlCurrentAddress;
 use OCA\Integriq\Auth\Idp\Adapter\SamlServiceProviderAdapter;
 use OCA\Integriq\Auth\Idp\Adapter\SamlServiceProviderAdapterFactory;
@@ -57,6 +58,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(SamlServiceProviderAdapterFactory::class)]
 #[CoversClass(SamlCurrentAddress::class)]
 #[CoversClass(SamlVerifiedAssertion::class)]
+#[CoversClass(IdpAdapterServices::class)]
 #[UsesClass(IdpRegistration::class)]
 #[UsesClass(TrustLevelMapper::class)]
 #[UsesClass(AssertionGuard::class)]
@@ -143,9 +145,7 @@ class SamlServiceProviderAdapterTest extends TestCase {
 	private function adapter(?IdpRegistration $registration = null): SamlServiceProviderAdapter {
 		return new SamlServiceProviderAdapter(
 			registration: ($registration ?? $this->registration()),
-			secrets: $this->seam,
-			http: $this->http(),
-			trust: new TrustLevelMapper(),
+			services: new IdpAdapterServices(secrets: $this->seam, http: $this->http(), trust: new TrustLevelMapper()),
 			entityId: self::ENTITY_ID,
 			acsUrl: self::ACS
 		);
@@ -385,9 +385,7 @@ class SamlServiceProviderAdapterTest extends TestCase {
 		$seam->method('read')->willReturn($this->idp->spSigningCertificate());
 		$adapter = new SamlServiceProviderAdapter(
 			registration: $this->registration(),
-			secrets: $seam,
-			http: $this->http(),
-			trust: new TrustLevelMapper(),
+			services: new IdpAdapterServices(secrets: $seam, http: $this->http(), trust: new TrustLevelMapper()),
 			entityId: self::ENTITY_ID,
 			acsUrl: self::ACS
 		);
@@ -402,9 +400,7 @@ class SamlServiceProviderAdapterTest extends TestCase {
 		$seam->method('read')->willThrowException(new IdpSecretRefusedException(reason: 'keepiq-missing', detail: 'no keepiq'));
 		$adapter = new SamlServiceProviderAdapter(
 			registration: $this->registration(),
-			secrets: $seam,
-			http: $this->http(),
-			trust: new TrustLevelMapper(),
+			services: new IdpAdapterServices(secrets: $seam, http: $this->http(), trust: new TrustLevelMapper()),
 			entityId: self::ENTITY_ID,
 			acsUrl: self::ACS
 		);
@@ -438,9 +434,7 @@ class SamlServiceProviderAdapterTest extends TestCase {
 		$metadata = $this->createMock(IdpMetadataService::class);
 		$metadata->method('entityId')->willReturn(self::ENTITY_ID);
 		$factory = new SamlServiceProviderAdapterFactory(
-			secrets: $this->seam,
-			http: $this->http(),
-			trust: new TrustLevelMapper(),
+			services: new IdpAdapterServices(secrets: $this->seam, http: $this->http(), trust: new TrustLevelMapper()),
 			urlGenerator: $urls,
 			metadata: $metadata
 		);

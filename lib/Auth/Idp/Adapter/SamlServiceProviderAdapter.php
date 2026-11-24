@@ -39,7 +39,6 @@ use OCA\Integriq\Auth\Idp\IdpRegistration;
 use OCA\Integriq\Auth\Idp\IdpSecretSeam;
 use OCA\Integriq\Auth\Idp\TrustLevelMapper;
 use OCA\Integriq\Exception\IdpAssertionException;
-use OCA\Integriq\Exception\IdpSecretRefusedException;
 use OCP\Http\Client\IClientService;
 use OneLogin\Saml2\Auth;
 use OneLogin\Saml2\Constants;
@@ -55,6 +54,8 @@ use Throwable;
  * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
  */
 class SamlServiceProviderAdapter implements GovernmentIdpAdapterInterface {
+	use RegistrationAdapterSupport;
+
 
 	/**
 	 * The HTTP timeout toward the metadata address, in seconds.
@@ -71,49 +72,49 @@ class SamlServiceProviderAdapter implements GovernmentIdpAdapterInterface {
 	private ?array $idp = null;
 
 	/**
+	 * Reads the `signing` and `decryption` credentials, for this request only.
+	 *
+	 * @var IdpSecretSeam
+	 */
+	private readonly IdpSecretSeam $secrets;
+
+	/**
+	 * Reads the identity provider's metadata.
+	 *
+	 * @var IClientService
+	 */
+	private readonly IClientService $http;
+
+	/**
+	 * Says which spellings of the registration reach the floor.
+	 *
+	 * @var TrustLevelMapper
+	 */
+	private readonly TrustLevelMapper $trust;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IdpRegistration  $registration The organisation's ready `saml-sp` registration.
-	 * @param IdpSecretSeam    $secrets      Reads the `signing` and `decryption` credentials, for this request only.
-	 * @param IClientService   $http         Reads the identity provider's metadata.
-	 * @param TrustLevelMapper $trust        Says which spellings of the registration reach the floor.
-	 * @param string           $entityId     Our EntityID: the registration's own, else its metadata address (D3).
-	 * @param string           $acsUrl       The shared assertion consumer service of the registration's provider.
+	 * @param IdpRegistration    $registration The organisation's ready `saml-sp` registration.
+	 * @param IdpAdapterServices $services     The secret seam, the HTTP client and the trust table.
+	 * @param string             $entityId     Our EntityID: the registration's own, else its metadata address (D3).
+	 * @param string             $acsUrl       The shared assertion consumer service of the registration's provider.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
 	 */
 	public function __construct(
 		private readonly IdpRegistration $registration,
-		private readonly IdpSecretSeam $secrets,
-		private readonly IClientService $http,
-		private readonly TrustLevelMapper $trust,
+		IdpAdapterServices $services,
 		private readonly string $entityId,
 		private readonly string $acsUrl,
 	) {
+		$this->secrets = $services->secrets;
+		$this->http = $services->http;
+		$this->trust = $services->trust;
 
 	}//end __construct()
 
-	/**
-	 * The provider id this adapter answers to.
-	 *
-	 * @return string The registration's provider.
-	 *
-	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
-	 */
-	public function getProviderId(): string {
-		return $this->registration->provider();
 
-	}//end getProviderId()
-
-	/**
-	 * Whether this adapter can authenticate anybody: it is built only for a ready registration.
-	 *
-	 * @return boolean True.
-	 *
-	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
-	 */
-	public function isConfigured(): bool {
-		return true;
-
-	}//end isConfigured()
 
 	/**
 	 * Start a login with a signed AuthnRequest over the HTTP Redirect binding.
@@ -204,7 +205,7 @@ class SamlServiceProviderAdapter implements GovernmentIdpAdapterInterface {
 	 * @throws IdpAssertionException When the metadata cannot be used.
 	 */
 	private function settings(string $certificate, string $privateKey): array {
-		$requestedContext = $this->requestedAuthnContext();
+		$requestedContext = $this->floorSpellings();
 		$comparison = 'exact';
 		if (count($requestedContext) === 1) {
 			$comparison = 'minimum';
@@ -245,29 +246,6 @@ class SamlServiceProviderAdapter implements GovernmentIdpAdapterInterface {
 
 	}//end settings()
 
-	/**
-	 * The spellings of the registration's assurance mapping at or above the floor, for RequestedAuthnContext.
-	 *
-	 * @return list<string>
-	 */
-	private function requestedAuthnContext(): array {
-		$aliases = $this->registration->stringMap(key: 'assuranceMapping');
-		$values = [];
-		foreach (array_keys($aliases) as $spelling) {
-			try {
-				$trust = $this->trust->map(provider: $this->registration->provider(), level: $spelling, aliases: $aliases);
-			} catch (IdpAssertionException $unmapped) {
-				continue;
-			}
-
-			if ($this->trust->meetsFloor(trust: $trust) === true) {
-				$values[] = $spelling;
-			}
-		}
-
-		return $values;
-
-	}//end requestedAuthnContext()
 
 	/**
 	 * The identity provider part of the settings, read from its metadata address.
@@ -321,17 +299,7 @@ class SamlServiceProviderAdapter implements GovernmentIdpAdapterInterface {
 	 * @throws IdpAssertionException When the seam refuses it, or it lacks a certificate or a private key.
 	 */
 	private function keyPair(string $role): array {
-		try {
-			$secret = $this->secrets->read(
-				registration: $this->registration->id,
-				organisation: $this->registration->organisation(),
-				role: $role,
-				reference: $this->registration->credential(role: $role)
-			);
-		} catch (IdpSecretRefusedException $refused) {
-			throw new IdpAssertionException(message: 'The '.$role.' credential of the registration could not be read.', previous: $refused);
-		}
-
+		$secret = $this->credential(role: $role);
 		$hasCertificate = preg_match('/-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----/s', $secret, $certificate);
 		$hasKey = preg_match('/-----BEGIN (?:RSA |ENCRYPTED )?PRIVATE KEY-----.+?-----END (?:RSA |ENCRYPTED )?PRIVATE KEY-----/s', $secret, $key);
 		if ($hasCertificate !== 1 || $hasKey !== 1) {
@@ -342,20 +310,5 @@ class SamlServiceProviderAdapter implements GovernmentIdpAdapterInterface {
 
 	}//end keyPair()
 
-	/**
-	 * A response body as a string.
-	 *
-	 * @param mixed $body The body: a string or a stream resource.
-	 *
-	 * @return string
-	 */
-	private static function body(mixed $body): string {
-		if (is_resource($body) === true) {
-			return (string)stream_get_contents($body);
-		}
-
-		return (string)$body;
-
-	}//end body()
 
 }//end class

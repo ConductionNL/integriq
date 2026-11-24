@@ -29,9 +29,6 @@ namespace OCA\Integriq\Auth\Idp\Adapter;
 
 use OCA\Integriq\Auth\Idp\IdpMetadataService;
 use OCA\Integriq\Auth\Idp\IdpRegistration;
-use OCA\Integriq\Auth\Idp\IdpSecretSeam;
-use OCA\Integriq\Auth\Idp\TrustLevelMapper;
-use OCP\Http\Client\IClientService;
 use OCP\IURLGenerator;
 
 /**
@@ -44,16 +41,14 @@ class SamlServiceProviderAdapterFactory {
 	/**
 	 * Constructor.
 	 *
-	 * @param IdpSecretSeam      $secrets      Reads the registration's credentials.
-	 * @param IClientService     $http         Reads the identity provider's metadata.
-	 * @param TrustLevelMapper   $trust        Says which spellings reach the floor.
+	 * @param IdpAdapterServices $services     The secret seam, the HTTP client and the trust table.
 	 * @param IURLGenerator      $urlGenerator Builds the assertion consumer service address.
 	 * @param IdpMetadataService $metadata     Answers the registration's EntityID, as its metadata publishes it.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
 	 */
 	public function __construct(
-		private readonly IdpSecretSeam $secrets,
-		private readonly IClientService $http,
-		private readonly TrustLevelMapper $trust,
+		private readonly IdpAdapterServices $services,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IdpMetadataService $metadata,
 	) {
@@ -72,9 +67,7 @@ class SamlServiceProviderAdapterFactory {
 	public function build(IdpRegistration $registration): SamlServiceProviderAdapter {
 		return new SamlServiceProviderAdapter(
 			registration: $registration,
-			secrets: $this->secrets,
-			http: $this->http,
-			trust: $this->trust,
+			services: $this->services,
 			entityId: $this->metadata->entityId(registration: $registration),
 			acsUrl: $this->urlGenerator->linkToRouteAbsolute(
 				'integriq.idpBroker.callback',

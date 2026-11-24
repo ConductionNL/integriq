@@ -30,7 +30,6 @@ namespace OCA\Integriq\Auth\Idp\Adapter;
 use DOMDocument;
 use DOMElement;
 use OCA\Integriq\Auth\Idp\IdpRegistration;
-use OCA\Integriq\Auth\Idp\SubjectPseudonymService;
 use OCA\Integriq\Exception\IdpAssertionException;
 use OneLogin\Saml2\Constants;
 use OneLogin\Saml2\Response;
@@ -43,19 +42,6 @@ use Throwable;
  * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001
  */
 final class SamlVerifiedAssertion {
-
-	/**
-	 * The subject fields in the order they are looked for, with the subject type each yields.
-	 *
-	 * @var array<string, string>
-	 */
-	public const SUBJECT_FIELDS = [
-		'bsn' => 'bsn',
-		'pseudonym' => SubjectPseudonymService::SUBTYPE_BSN_PSEUDONYM,
-		'kvk' => 'kvk',
-		'rsin' => 'rsin',
-		'eidasPersonIdentifier' => 'eidas-person-identifier',
-	];
 
 	/**
 	 * Constructor.
@@ -253,7 +239,7 @@ final class SamlVerifiedAssertion {
 	 * @return array{0: string, 1: string} The subject and its type; both empty when none is carried.
 	 */
 	private static function subject(array $attributes, array $mapping): array {
-		foreach (self::SUBJECT_FIELDS as $field => $subType) {
+		foreach (IdpRegistration::SUBJECT_TYPES as $field => $subType) {
 			$name = ($mapping[$field] ?? '');
 			if ($name === '') {
 				continue;
