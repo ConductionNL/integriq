@@ -45,6 +45,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [ECB exchange rates](exchange-rates.md) | The daily euro reference rates of the European Central Bank, stored as objects and answered to a sibling app for a currency pair on a date | Implemented |
 | [Connection calls and route distance](connection-calls.md) | Other apps call a connection they declared, and ask the road distance between two postcodes, without holding a credential | Implemented |
 | [Web shop orders](webshop-orders.md) | WooCommerce and Shopify orders arrive in shillinq as web shop orders, refunds included | Partial |
+| [HR data exchange](hr-data-exchange.md) | Studytube learns who works where and finished courses return to humaniq as training records | Partial |
 | [Documents to the case system](case-system-document-delivery.md) | Two seeded synchronizations send a filinq document, or its anonymised copy, to the case system as a new document, and write the outcome back | Partial |
 | [Registering form submissions](submission-registration.md) | A sibling app registers a form submission at an outside system (JSON endpoint, Objects API) with one typed command, once per submission | Partial |
 | [SFTP and FTPS file servers](sftp-ftps-file-pickup.md) | A partner's SFTP or FTPS server as a source with a pinned host key, and a synchronization that picks its new files up into Nextcloud Files, archiving them only after a safe write | Partial |
