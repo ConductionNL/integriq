@@ -76,7 +76,7 @@ class ClientCertificateReader {
 	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
 	 */
 	private function serverValue(string $key): mixed {
-		$server = $this->request->server;
+		$server = ($this->request->server ?? null);
 		if (is_array($server) === false) {
 			return null;
 		}
