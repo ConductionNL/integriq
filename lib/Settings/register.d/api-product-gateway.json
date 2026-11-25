@@ -52,9 +52,9 @@
           },
           "status": {
             "type": "string",
-            "enum": ["active", "deprecated", "retired"],
+            "enum": ["draft", "active", "deprecated", "retired"],
             "default": "active",
-            "description": "When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594). When 'retired', the product's endpoints answer 410 Gone to subscribers. Deprecating, moving the sunset date or retiring writes one product_change_notice per active subscription (access-developer-portal-and-subscriptions D5)",
+            "description": "'draft' is not yet published: a product integriq generates (such as an app's data feeds) starts there, and an administrator makes it active once its API design check has no open error (REQ-ADRC-003). When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594). When 'retired', the product's endpoints answer 410 Gone to subscribers. Deprecating, moving the sunset date or retiring writes one product_change_notice per active subscription (access-developer-portal-and-subscriptions D5)",
             "title": "Status"
           },
           "sunsetDate": {

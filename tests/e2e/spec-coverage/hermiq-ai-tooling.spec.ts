@@ -158,7 +158,8 @@ async function deadLetter(n: number): Promise<string> {
 		},
 		error: '429 Too Many Requests from the supplier API',
 		status: 'failed',
-		attempts: 3,
+		// The schema keeps one entry per attempt, not a count.
+		attempts: [1, 2, 3].map((i) => ({ at: `2026-11-25T0${i}:00:00+00:00`, error: '429 Too Many Requests from the supplier API' })),
 	})
 	const id = String(row.id ?? row.uuid)
 	created.push({ schema: 'sync_item_dead_letter', id })
@@ -220,14 +221,18 @@ test.describe('hermiq-ai-tooling: the agent triages dead letters with a person a
 		const resp = await rpc(api.request, 'tools/list')
 		expect(resp.status()).toBe(200)
 		const tools: Array<{
+			id?: string
 			name: string
 			description?: string
+			readOnlyHint?: boolean
 			annotations?: Record<string, unknown>
 		}> = (await resp.json()).result?.tools ?? []
+		// OpenRegister lists an app tool with its namespaced `id`
+		// (`integriq.runSynchronization`) and its bare `name`.
 		const ours = new Map(
 			tools
-				.filter((t) => t.name.startsWith('integriq.'))
-				.map((t) => [t.name.slice('integriq.'.length), t]),
+				.filter((t) => (t.id ?? '').startsWith('integriq.'))
+				.map((t) => [(t.id ?? '').slice('integriq.'.length), t]),
 		)
 		for (const name of TOOLS) {
 			expect(ours.has(name), `integriq.${name} is listed`).toBe(true)
@@ -239,7 +244,9 @@ test.describe('hermiq-ai-tooling: the agent triages dead letters with a person a
 		]) {
 			expect(ours.get(name)?.description ?? '').toContain('Needs approval')
 		}
-		expect(ours.get('listDeadLetters')?.annotations?.readOnlyHint).toBe(true)
+		// OpenRegister lists the hint on the descriptor; MCP clients read it from `annotations`.
+		const listing = ours.get('listDeadLetters')
+		expect(listing?.annotations?.readOnlyHint ?? listing?.readOnlyHint).toBe(true)
 	})
 
 	// @e2e openconnector-mcp-tool-surface::the-canonical-nightly-triage-chat-flow
@@ -311,6 +318,8 @@ test.describe('hermiq-ai-tooling: the agent triages dead letters with a person a
 		expect(again.refused, 'one approval runs one batch once').toBe(true)
 
 		await page.goto(`${APP_BASE}/dead-letters`)
+		// The page opens on event deliveries; a synchronization item is on the other tab.
+		await page.getByTestId('dead-letters-queue-sync').click()
 		await expect(page.getByText(`${runId}-origin-2`).first()).toBeVisible({
 			timeout: 20_000,
 		})

@@ -309,6 +309,42 @@ test.describe('messaging-intake-routing-rules', () => {
 		}
 	})
 
+	// Task 2 (no scenario of its own in the spec): the row actions write
+	// through saveRule(), so the order and the enabled flag are read back from
+	// the stored rules rather than from the list.
+	test('Move up swaps two rules of a channel and Disable then Enable flips one', async ({ page, request }) => {
+		const stamp = Date.now()
+		const firstName = `E2E eerste ${stamp}`
+		const secondName = `E2E tweede ${stamp}`
+		const first = await saveRule(request, { name: firstName, channelId: 'form-submission', targetSchema: caseTypeSlug, isEnabled: true, order: 10 })
+		expect(first.status()).toBe(201)
+		const second = await saveRule(request, { name: secondName, channelId: 'form-submission', targetSchema: caseTypeSlug, isEnabled: true, order: 20 })
+		expect(second.status()).toBe(201)
+
+		const orderOf = async (name: string): Promise<number> => {
+			const rule = (await rulesOn(request, 'form-submission')).find((item) => item.name === name)
+			return Number(rule?.order)
+		}
+		const enabledOf = async (name: string): Promise<unknown> => (await rulesOn(request, 'form-submission')).find((item) => item.name === name)?.isEnabled
+
+		await page.goto(`${APP_BASE}/intake/routing-rules`, { waitUntil: 'domcontentloaded' })
+		const secondRow = page.getByRole('row').filter({ hasText: secondName })
+		await expect(secondRow).toBeVisible({ timeout: 20_000 })
+		await secondRow.getByRole('button', { name: /actions/i }).click()
+		await page.getByRole('menuitem', { name: 'Move up' }).click()
+		await expect.poll(async () => (await orderOf(secondName)) < (await orderOf(firstName)), { message: 'the second rule now comes first', timeout: 15_000 }).toBe(true)
+
+		const firstRow = page.getByRole('row').filter({ hasText: firstName })
+		await firstRow.getByRole('button', { name: /actions/i }).click()
+		await page.getByRole('menuitem', { name: 'Disable' }).click()
+		await expect.poll(() => enabledOf(firstName), { message: 'Disable is stored', timeout: 15_000 }).toBe(false)
+
+		await firstRow.getByRole('button', { name: /actions/i }).click()
+		await expect(page.getByRole('menuitem', { name: 'Disable' }), 'a disabled rule offers Enable instead').toHaveCount(0)
+		await page.getByRole('menuitem', { name: 'Enable' }).click()
+		await expect.poll(() => enabledOf(firstName), { message: 'Enable is stored', timeout: 15_000 }).toBe(true)
+	})
+
 	// @e2e intake-channels::a-fresh-demo-install-shows-working-rules
 	test('the seeded rules name channels integriq has and no placeholder', async ({ page, request }) => {
 		const resp = await request.get(`${OR_BASE}/intake_routing_rule`, { params: { _limit: 200 } })

@@ -55,7 +55,7 @@ Kind: code. Size M. Row `integriq:src-sftp`.
 - **acceptance_criteria**:
   - GIVEN a new SFTP source WHEN the administrator tests it the first time THEN the server's fingerprint is shown for confirmation
 - [x] Implement
-- [ ] Test (Playwright)
+- [x] Test (Playwright): run live 25 Nov 2026 on NC 34 + MariaDB, `tests/e2e/sftp-source.spec.ts` 4/4. The run found an unreachable server answered 500, not 502: phpseclib's connection exception is now a RemoteFileException.
 - **note**: the seed has a dormant `example-sftp-partner` source and a
   `status: disabled` pickup `example-sftp-pickup` for `*.csv`, archiving to
   `processed`. The docs are `docs/features/sftp-ftps-file-pickup.md`. A first
