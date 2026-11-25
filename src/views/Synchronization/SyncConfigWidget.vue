@@ -567,7 +567,7 @@ export default {
 
 		/**
 		 * @return {object[]} The two validation modes.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 		 */
 		validationModeOptions() {
 			return [
@@ -578,7 +578,7 @@ export default {
 
 		/**
 		 * @return {object} The selected mode; record when none is set, as the engine reads it.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 		 */
 		validationModeOption() {
 			const mode = this.config?.validation?.mode || 'record'
@@ -587,7 +587,7 @@ export default {
 
 		/**
 		 * @return {object|null} The picked message schema, or null when none is picked.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 		 */
 		validationSchemaOption() {
 			return this.messageSchemaOptionFor(
@@ -882,7 +882,7 @@ export default {
 		 *
 		 * @param {object|null} validation The new block; null removes it.
 		 * @return {void}
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 		 */
 		writeValidation(validation) {
 			const next = configCopy(this.config)
@@ -900,7 +900,7 @@ export default {
 		 *
 		 * @param {{ id: string, label: string }|null} option The picked option.
 		 * @return {void}
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 		 */
 		onValidationSchemaPick(option) {
 			if (!option?.id) {
@@ -918,7 +918,7 @@ export default {
 		 *
 		 * @param {{ id: string, label: string }|null} option The picked option.
 		 * @return {void}
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 		 */
 		onValidationModePick(option) {
 			this.writeValidation({

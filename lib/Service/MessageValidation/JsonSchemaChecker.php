@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -35,7 +35,7 @@ use Opis\JsonSchema\Validator;
  * required property is reported under its own path (`/bsn`), not under the
  * object that lacks it, so a refusal names the field a partner forgot.
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ValidationOutcome's named constructors build a value object; there is nothing to inject.
  */
@@ -55,7 +55,7 @@ class JsonSchemaChecker {
 	 *
 	 * @return string|null The parser's message.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
 	 */
 	public function documentProblem(string $schema): ?string {
 		$document = json_decode($schema, false);
@@ -78,7 +78,7 @@ class JsonSchemaChecker {
 	 *
 	 * @return ValidationOutcome
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	public function check(string|array|object $schema, mixed $payload): ValidationOutcome {
 		$document = self::toJsonValue(value: $schema);

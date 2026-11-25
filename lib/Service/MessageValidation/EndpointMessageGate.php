@@ -18,7 +18,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Throwable;
  * Mode `refuse` answers a failing request 400 and a failing proxied answer
  * 502, both as `application/problem+json` listing the first twenty errors.
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ValidationOutcome::failure is the value object's named constructor.
  */
@@ -91,7 +91,7 @@ class EndpointMessageGate {
 	 *
 	 * @return ValidationOutcome|null Null when the endpoint declares nothing for this direction.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	public function check(array $endpointData, string $direction, mixed $body, array $context = []): ?ValidationOutcome {
 		$declared = ($endpointData['validation'][$direction] ?? null);
@@ -115,7 +115,7 @@ class EndpointMessageGate {
 	 *
 	 * @return ValidationOutcome
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	public function checkDeclared(array $declared, string $direction, mixed $body, array $context = []): ValidationOutcome {
 		$messageSchema = $this->messageSchema(uuid: (string)$declared['messageSchema']);
@@ -148,7 +148,7 @@ class EndpointMessageGate {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	public function refuses(array $endpointData): bool {
 		return ($endpointData['validation']['mode'] ?? 'record') === 'refuse';
@@ -162,7 +162,7 @@ class EndpointMessageGate {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	public function refusal(ValidationOutcome $outcome, string $direction): JSONResponse {
 		$status = 400;
@@ -195,7 +195,7 @@ class EndpointMessageGate {
 	 *
 	 * @return array{direction: string, messageSchema: string, errors: array}
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	public function finding(ValidationOutcome $outcome, string $direction, array $endpointData): array {
 		return [
@@ -217,7 +217,7 @@ class EndpointMessageGate {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	public function record(?ObjectEntity $callLog, array $findings, string $endpoint): void {
 		if ($findings === []) {

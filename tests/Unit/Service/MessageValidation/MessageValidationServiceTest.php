@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
  */
 
 declare(strict_types=1);
@@ -323,7 +323,7 @@ class MessageValidationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	public function testAJsonSchemaDocumentReadBackAsAnArrayIsChecked(): void {
 		$schema = $this->seededSchema(slug: 'example-person-json');
@@ -345,7 +345,7 @@ class MessageValidationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	public function testAnOpenApiDocumentReadBackAsAnArrayIsChecked(): void {
 		$schema = $this->schema(kind: 'openapi', file: 'person.openapi.yaml');

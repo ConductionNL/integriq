@@ -459,7 +459,7 @@ export default {
 
 		/**
 		 * @return {object[]} The two validation modes.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
 		validationModeOptions() {
 			return [
@@ -470,7 +470,7 @@ export default {
 
 		/**
 		 * @return {object} The selected mode; record when none is set.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
 		validationModeOption() {
 			const mode = this.formData.validation?.mode || 'record'
@@ -482,7 +482,7 @@ export default {
 		 * and `validation` its own section, so neither is drawn twice.
 		 *
 		 * @return {object[]} The fields to draw.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
@@ -866,7 +866,7 @@ export default {
 		 *
 		 * @param {string} direction request or response.
 		 * @return {object|null} The option, or null when none is picked.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
 		messageSchemaOption(direction) {
 			return this.messageSchemaOptionFor(
@@ -956,7 +956,7 @@ export default {
 		 * @param {string} key The key: mode, request or response.
 		 * @param {string|object|null} value The value; null removes the key.
 		 * @return {void}
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
 		setValidation(key, value) {
 			const validation = { ...(this.formData.validation || {}) }
@@ -974,7 +974,7 @@ export default {
 		 * @param {string} direction request or response.
 		 * @param {object|null} option The picked option.
 		 * @return {void}
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
 		setValidationSchema(direction, option) {
 			if (!option) {

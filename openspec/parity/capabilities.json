@@ -12107,19 +12107,19 @@
 			"source": "demand-signal",
 			"origin": "changelog",
 			"originUrl": "https://github.com/frankframework/frankframework/pull/10459",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:2033-2039 a register-backed endpoint returns OpenRegister's ValidationException as a refusal when a write breaks the register schema; lib/Controller/MappingsController.php:176-186 and :278 validate a mapping result against a schema with Opis JSON Schema in the test panel; proxied traffic (lib/Service/EndpointService.php:2174-2266) is passed through unvalidated and there is no XSD or OpenAPI validator. Specified in openspec/changes/mapping-message-schema-validation/ (OpenSpec pass 2026-09-27).",
-				"change": "mapping-message-schema-validation",
+				"evidence": "lib/Service/MessageValidation/ (EndpointMessageGate, SynchronizationMessageGate, MessageValidationService with JSON Schema, XSD and OpenAPI checkers); lib/Service/EndpointService.php checks the request and the proxied answer, lib/Service/SynchronizationService.php each source object and each api target body, refuse or record. PHPUnit EndpointServiceMessageValidationTest and SynchronizationMessageValidationTest; Newman folder 18; tests/e2e/message-schema-validation.spec.ts. Archived as openspec/changes/archive/2026-11-25-mapping-message-schema-validation.",
+				"spec": "openspec/specs/message-schema-validation",
 				"requirement": [
-					"openspec/changes/mapping-message-schema-validation/specs/message-schema-validation :: An endpoint validates its request and its proxied answer (REQ-MSV-002)",
-					"openspec/changes/mapping-message-schema-validation/specs/message-schema-validation :: A synchronization validates source objects and target bodies (REQ-MSV-003)"
+					"openspec/specs/message-schema-validation :: An endpoint validates its request and its proxied answer (REQ-MSV-002)",
+					"openspec/specs/message-schema-validation :: A synchronization validates source objects and target bodies (REQ-MSV-003)"
 				]
 			},
 			"reachedOn": "/endpoints with targetType=register/schema; /mappings/:id test panel",
-			"note": "Frank!Framework 10.1.0 (2026-04-25) added an OpenAPI validator next to its XML and JSON validators. Integriq: Register writes and mapping tests are validated against JSON Schema; proxied messages, XSD and OpenAPI are not.",
+			"note": "Frank!Framework 10.1.0 (2026-04-25) added an OpenAPI validator next to its XML and JSON validators. Integriq: endpoints and synchronizations check messages against a declared JSON Schema, XSD or OpenAPI operation, in mode refuse or record.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "mapping-and-search",
