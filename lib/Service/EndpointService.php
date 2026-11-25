@@ -4894,7 +4894,8 @@ class EndpointService implements EndpointServiceInterface {
 			_rbac: false,
 			_multitenancy: false
 		);
-		if ($object === null || $this->sameOrganisation(first: $this->organisationOf(object: $rule), second: $this->organisationOf(object: $object)) === false) {
+		$ruleOrganisation = $this->organisationOf(object: $rule);
+		if ($object === null || $this->sameOrganisation(first: $ruleOrganisation, second: $this->organisationOf(object: $object)) === false) {
 			throw new DoesNotExistException(sprintf('Mapping "%s" does not exist.', $mappingId));
 		}
 

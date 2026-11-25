@@ -1366,7 +1366,7 @@ class EndpointServiceTest extends TestCase {
 		$method->setAccessible(true);
 		$mapping = $method->invoke($this->service, $rule, 'mapping-uuid');
 
-		$this->assertSame('ORI item fields', $mapping->getName());
+		$this->assertSame(expected: 'ORI item fields', actual: $mapping->getName());
 	}//end testARuleReadsItsMappingUnscopedSoAnAnonymousCallerIsServed()
 
 	/**
@@ -1388,7 +1388,7 @@ class EndpointServiceTest extends TestCase {
 		$method = new \ReflectionMethod(EndpointService::class, 'ruleMapping');
 		$method->setAccessible(true);
 
-		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+		$this->expectException(exception: \OCP\AppFramework\Db\DoesNotExistException::class);
 		$method->invoke($this->service, $rule, 'mapping-uuid');
 	}//end testAMappingOfAnotherOrganisationIsNotFoundForTheRule()
 }//end class
