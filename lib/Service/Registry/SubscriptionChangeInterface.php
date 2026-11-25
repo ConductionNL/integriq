@@ -80,7 +80,7 @@ interface SubscriptionChangeInterface {
 	 *
 	 * @return self The mapped change; empty when no field is kept.
 	 *
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
 	public function mappedTo(array $map): self;
 }

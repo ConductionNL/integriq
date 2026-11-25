@@ -26,7 +26,7 @@ namespace OCA\Integriq\Service\Registry;
  * may call it `residence`. OpenRegister applies only what a schema owns, so
  * the translation happens here, per target schema (decision 178).
  *
- * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
  */
 interface MapsSourceFieldsInterface {
 	/**
@@ -37,7 +37,7 @@ interface MapsSourceFieldsInterface {
 	 * @return array<string,string>|null Source field to schema property, or null when this binding
 	 *                                   has no map for that schema (the change then goes out unchanged).
 	 *
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
 	public function fieldMapFor(string $targetSchema): ?array;
 }//end interface

@@ -98,7 +98,7 @@ class SubscriptionRequestHandler implements SubscriptionRequestHandlerInterface 
 	 *
 	 * @return SubscriptionResult|null
 	 *
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
 	private function maskedRefusal(SubscriptionRequest $subscription): ?SubscriptionResult {
 		if (str_contains($subscription->identity, '*') === false) {
@@ -193,7 +193,7 @@ class SubscriptionRequestHandler implements SubscriptionRequestHandlerInterface 
 	 *
 	 * @return string The slug, or the value as given.
 	 *
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
 	private function schemaSlug(string $schema): string {
 		if ($this->schemaMapper === null) {
