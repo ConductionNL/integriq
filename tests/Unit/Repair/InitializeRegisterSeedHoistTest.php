@@ -34,6 +34,16 @@ use Psr\Log\LoggerInterface;
 final class InitializeRegisterSeedHoistTest extends TestCase {
 
 	/**
+	 * Load the ConfigurationService stand-in when OpenRegister is absent.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		require_once __DIR__ . '/../../stubs/openregister-service-stubs.php';
+	}//end setUp()
+
+	/**
 	 * Seeds move to components.objects after the objects already listed, and the key is removed.
 	 *
 	 * @return void
