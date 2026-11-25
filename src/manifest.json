@@ -2027,24 +2027,24 @@
               "field": "targets",
               "op": "notEmpty"
             },
-            "props": {
+            "content": {
               "chartKind": "donut",
               "legendPosition": "bottom",
-              "emptyLabel": "No call has been routed to a target yet."
-            },
-            "dataSource": {
-              "register": "integriq",
-              "schema": "call_log",
-              "filter": {
-                "endpoint": "@objectId"
-              },
-              "aggregate": {
-                "groupBy": "routedTarget",
-                "metric": "count",
-                "labelResolve": {
-                  "register": "integriq",
-                  "schema": "source",
-                  "labelField": "name"
+              "emptyLabel": "No call has been routed to a target yet.",
+              "dataSource": {
+                "register": "integriq",
+                "schema": "call_log",
+                "filter": {
+                  "endpoint": "@objectId"
+                },
+                "aggregate": {
+                  "groupBy": "routedTarget",
+                  "metric": "count",
+                  "labelResolve": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "labelField": "name"
+                  }
                 }
               }
             }

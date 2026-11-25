@@ -43,4 +43,6 @@ Kind: code. Size M. Rows `integriq:gw-loadbalance`, `integriq:gw-canary`, `integ
 ## Verification
 - [x] `openspec validate gateway-upstream-routing --type change --strict` passes
   - OpenSpec 2.1.1, 2026-11-23: valid under `--strict`.
-- [ ] PHPUnit and Playwright run, exit codes read
+- [x] PHPUnit and Playwright run, exit codes read
+  - PHPUnit 2026-11-25, exit 0: `UpstreamRouterTest` (9), `UpstreamSelectorTest` (11), `GatewayUpstreamRoutingFragmentTest` (2), `EndpointServiceTest` (31), `EndpointServiceMcpTargetTest` (3); vitest `endpointTargetSplitManifest.spec.js` (2).
+  - Playwright 2026-11-25 on a live Nextcloud 34 (MariaDB, OpenRegister main, ci-seed), `tests/e2e/endpoint-targets.spec.ts`: 2 passed, exit 0. The first run was red: the endpoint page's "Calls per target" chart drew an empty axis because the manifest gave it the dashboard shape (`props` and a top-level `dataSource`), while a detail page hands a chart only its `content`. The chart's kind and data source moved into `content`; the vitest guards that.
