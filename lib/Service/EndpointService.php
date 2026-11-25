@@ -512,7 +512,7 @@ class EndpointService implements EndpointServiceInterface {
 	 * @return Response
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function transformError(Response $result, IRequest $request): Response {
 		if ($result->getStatus() < 200 || $result->getStatus() >= 300) {
@@ -550,7 +550,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return Response The problem document, or the answer unchanged.
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function asProblem(Response $response, IRequest $request): Response {
 		if ($response->getStatus() < 400
@@ -582,7 +582,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return ProblemResponse
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function internalProblem(string $detail, ?IRequest $request): ProblemResponse {
 		return ProblemResponse::fromLegacy(data: ['error' => $detail], status: Http::STATUS_INTERNAL_SERVER_ERROR, instance: $request?->getId());
@@ -668,7 +668,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *                  when synthetic-request construction fails (see `buildSyntheticRequest()`).
 	 *
 	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operation-s-onevent-must-dispatch-to-endpointservice-triggerfromflow-req-003
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function triggerFromFlow(ObjectEntity $endpoint, array $parameters = []): Response {
 		try {
@@ -1447,7 +1447,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution-trace-object-per-execution-req-004
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function resumeFromApproval(
 		ObjectEntity $endpoint,
@@ -1544,7 +1544,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-dry-run-replay-performs-no-writes-req-005
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-forced-replay-reuses-the-original-entry-point-s-real-dispatch-path-req-006
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function replay(ObjectEntity $endpoint, array $requestSnapshot, ExecutionTraceContext $trace, bool $dryRun = true): Response {
 		try {
@@ -3164,7 +3164,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return array{settings: array<string, mixed>, request: array<string, mixed>}|null
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	private function responseCacheOf(array $endpointData, IRequest $request, string $path): ?array {
 		$settings = $this->responseCache?->settings(endpointData: $endpointData);
@@ -3205,7 +3205,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return string|null The caller, or null to not cache this request.
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	private function cacheCaller(array $settings): ?string {
 		if (($settings['sharedAcrossConsumers'] ?? false) === true) {
@@ -3234,7 +3234,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	private function answerFromCache(ObjectEntity $endpoint, ?ObjectEntity $source, array $hit): JSONResponse {
 		$log = [

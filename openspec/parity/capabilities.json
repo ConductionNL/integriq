@@ -2150,9 +2150,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointCacheService.php (the only class with 'Cache' in the name for endpoints) caches the endpoint CONFIG list for path/method matching (getAllEndpoints/refreshCache/findByPathRegex), not response bodies; no Cache-Control/ETag/TTL field exists on the endpoint schema (grep '\"cache' lib/Settings/integriq_register.json returns 0); no Cache-Control handling found in EndpointService.php or EndpointsController.php. Specified in openspec/changes/gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/EndpointCacheService.php (the only class with 'Cache' in the name for endpoints) caches the endpoint CONFIG list for path/method matching (getAllEndpoints/refreshCache/findByPathRegex), not response bodies; no Cache-Control/ETag/TTL field exists on the endpoint schema (grep '\"cache' lib/Settings/integriq_register.json returns 0); no Cache-Control handling found in EndpointService.php or EndpointsController.php. Specified in openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
 				"change": "gateway-response-cache-and-problem-errors",
-				"requirement": "openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: An endpoint can cache its answers (REQ-RCPE-001)"
+				"requirement": "openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: An endpoint can cache its answers (REQ-RCPE-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "EndpointCacheService is a routing-lookup cache, easy to mistake for a response cache from its name alone, it never caches an endpoint's answer.",
@@ -2583,9 +2583,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rn \"problem\\+json|application/problem\" lib/ src/ returns 0 hits; error responses seen in lib/Service/EndpointService.php (e.g. transformError(), the 400/404/429 JSONResponse bodies) use ad-hoc {\"error\": ...} or {\"error\", \"message\", \"reason\"} shapes, never RFC 7807 application/problem+json. Specified in openspec/changes/gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
+				"evidence": "grep -rn \"problem\\+json|application/problem\" lib/ src/ returns 0 hits; error responses seen in lib/Service/EndpointService.php (e.g. transformError(), the 400/404/429 JSONResponse bodies) use ad-hoc {\"error\": ...} or {\"error\", \"message\", \"reason\"} shapes, never RFC 7807 application/problem+json. Specified in openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
 				"change": "gateway-response-cache-and-problem-errors",
-				"requirement": "openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: Every gateway error is a problem document (REQ-RCPE-002)"
+				"requirement": "openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: Every gateway error is a problem document (REQ-RCPE-002)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",

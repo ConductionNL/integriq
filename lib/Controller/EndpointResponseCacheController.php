@@ -18,7 +18,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 /**
  * POST /api/endpoints/{id}/cache/clear, gated by the ADR-023 action `endpoint.cache.clear`.
  *
- * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
  */
 class EndpointResponseCacheController extends Controller {
 
@@ -82,7 +82,7 @@ class EndpointResponseCacheController extends Controller {
 	 *
 	 * @return JSONResponse 200 `{endpoint, cleared}`; 401 anonymous; 403 without the action; 404 for an unknown endpoint.
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	#[NoAdminRequired]
 	public function clear(string $id): JSONResponse {

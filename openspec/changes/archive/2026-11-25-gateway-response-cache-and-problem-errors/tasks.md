@@ -5,7 +5,7 @@ Kind: code. Size M. Rows `integriq:gw-cache`, `integriq:gw-problem-json`.
 ## Implementation tasks
 
 ### Task 1: The response cache
-- **spec_ref**: `openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001`
+- **spec_ref**: `openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001`
 - **files**: `lib/Service/Endpoint/EndpointResponseCache.php`, `lib/Service/EndpointService.php`, `lib/Settings/integriq_register.json` (endpoint `cache`, call_log `cacheHit`)
 - **acceptance_criteria**:
   - GIVEN a cached GET endpoint WHEN the same consumer calls twice within the lifetime THEN the source is called once and the second answer carries X-Cache HIT
@@ -16,7 +16,7 @@ Kind: code. Size M. Rows `integriq:gw-cache`, `integriq:gw-problem-json`.
   - `EndpointResponseCacheTest` (13) and `EndpointServiceResponseCacheTest` (4: one source call for two asks with HIT and the hit logged, private reaches the source twice, no cache says nothing, a clear reaches the source again).
 
 ### Task 2: Cache settings on the endpoint page and the clear action
-- **spec_ref**: `openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001`
+- **spec_ref**: `openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001`
 - **files**: the endpoint editor, `lib/Controller/EndpointsController.php`, `appinfo/routes.php`, `lib/actions.seed.json`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN an administrator on a cached endpoint WHEN they press clear cache THEN the next call reaches the source
@@ -26,7 +26,7 @@ Kind: code. Size M. Rows `integriq:gw-cache`, `integriq:gw-problem-json`.
   - PHPUnit done: `EndpointResponseCacheControllerTest` (anonymous 401, no action 403, unknown 404, a permitted clear), the generation bump in `EndpointResponseCacheTest`; vitest `endpointResponseCache.spec.js`. Playwright written, not run here (it needs a running instance), runs in nightly: `tests/e2e/endpoint-cache.spec.ts` switches the cache on in the endpoint dialog, and "Clear cache on the endpoint makes the next call reach the source" (`@e2e endpoint-runtime::an-administrator-clears-a-stale-answer`).
 
 ### Task 3: The problem document class
-- **spec_ref**: `openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002`
+- **spec_ref**: `openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002`
 - **files**: `lib/Http/ProblemResponse.php`, `docs/problems/*.md`
 - **acceptance_criteria**:
   - GIVEN a validation failure WHEN rendered THEN the content type is application/problem+json and invalid-params lists each field
@@ -34,7 +34,7 @@ Kind: code. Size M. Rows `integriq:gw-cache`, `integriq:gw-problem-json`.
 - [x] Test (PHPUnit on the class)
 
 ### Task 4: Route every gateway error through it
-- **spec_ref**: `openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002`
+- **spec_ref**: `openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002`
 - **files**: `lib/Service/EndpointService.php`
 - **acceptance_criteria**:
   - GIVEN each error path in EndpointService WHEN it fires THEN the answer is a problem document that still carries error and details

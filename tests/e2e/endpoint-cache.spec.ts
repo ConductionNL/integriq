@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md
  * (REQ-RCPE-001; the Playwright half of task 2 in that change's tasks.md).
  *
  * What an administrator does here: switch the response cache on for a source

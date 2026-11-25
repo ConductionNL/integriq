@@ -9,7 +9,7 @@ import axios from '@nextcloud/axios'
  * (gateway-response-cache-and-problem-errors, REQ-RCPE-001), and its
  * Clear cache button asks the server to forget the endpoint's answers.
  *
- * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
