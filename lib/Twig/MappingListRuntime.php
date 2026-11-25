@@ -35,6 +35,8 @@ use Twig\Extension\RuntimeExtensionInterface;
 
 /**
  * The list lookup a mapping template calls as `lookupAll()`.
+ *
+ * @spec openspec/specs/mapping-and-search/spec.md
  */
 class MappingListRuntime implements RuntimeExtensionInterface {
 
