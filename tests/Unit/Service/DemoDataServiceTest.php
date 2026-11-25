@@ -163,6 +163,48 @@ class DemoDataServiceTest extends TestCase {
 		$this->service()->install();
 	}
 
+	/**
+	 * Only the objects reach the importer: the descriptor's schemas and register
+	 * are integriq's own, and imported under the demo namespace they became a
+	 * second set of schemas with the same slugs that held every demo object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/first-time-setup/spec.md
+	 */
+	public function testOnlyTheObjectsAreHandedToTheImporter(): void {
+		file_put_contents(
+			$this->descriptor(),
+			json_encode(
+				[
+					'openapi' => '3.0.0',
+					'components' => [
+						'registers' => ['integriq' => ['slug' => 'integriq']],
+						'schemas' => ['consumer' => ['slug' => 'consumer']],
+						'objects' => [['@self' => ['register' => 'integriq', 'schema' => 'consumer'], 'name' => 'Demo']],
+					],
+				]
+			)
+		);
+
+		$importer = new class {
+			public array $data = [];
+
+			public function importFromApp(string $appId, array $data, string $version, bool $force): array {
+				$this->data = $data;
+
+				return [];
+			}
+		};
+		$this->container->method('get')->willReturn($importer);
+
+		$this->service()->install();
+
+		$this->assertSame(expected: ['objects'], actual: array_keys($importer->data['components']));
+		$this->assertCount(expectedCount: 1, haystack: $importer->data['components']['objects']);
+		$this->assertSame(expected: '3.0.0', actual: $importer->data['openapi']);
+	}//end testOnlyTheObjectsAreHandedToTheImporter()
+
 	public function testInstallCountsTheObjectsInTheFileNotTheImportersReply(): void {
 		file_put_contents(
 			$this->descriptor(),
@@ -247,3 +289,4 @@ class DemoDataServiceTest extends TestCase {
 		$this->assertSame(['integriq.demo', ['components' => ['objects' => 'not a list']], '1.2.3', true], $importer->seen);
 	}//end testInstallRefusalsAndTheLoggedImport()
 }
+
