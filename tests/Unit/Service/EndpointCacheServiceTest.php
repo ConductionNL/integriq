@@ -116,40 +116,37 @@ class EndpointCacheServiceTest extends TestCase {
 
 		$this->assertSame(['name' => 'cached', 'endpoint' => 'api/klanten', 'method' => 'GET', 'endpointRegex' => '#^api/klanten$#', 'endpointArray' => ['api', 'klanten']], $match->getObject());
 		$this->assertNull($service->findByPathRegex(path: 'api/klanten', method: 'DELETE', isRetry: true));
-		$this->assertSame(expected: 'x', actual: $match->getUuid(), message: 'The rebuilt endpoint keeps its uuid.');
 	}//end testACachedRowResolvesWithoutAskingOpenRegisterAndBecomesAnEntity()
 
 	/**
-	 * An endpoint rebuilt from the distributed cache keeps its uuid, organisation, owner,
-	 * register and schema, so what is keyed on it stays apart per endpoint.
+	 * A cached endpoint keeps its uuid and organisation, so keys and boundaries built from them hold.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
 	 */
-	public function testACachedRowKeepsItsSelfMetadata(): void {
+	public function testACachedEndpointKeepsItsUuidAndOrganisation(): void {
 		$this->stored['integriq_endpoints_cache'] = [
 			[
-				'@self' => ['id' => 'ep-uuid-1', 'organisation' => 'org-1', 'owner' => 'admin', 'register' => '26', 'schema' => '43'],
-				'name' => 'tools',
-				'endpoint' => 'mcp/tools',
-				'method' => 'POST',
+				'@self' => ['id' => '1b2c3d4e-0000-4000-8000-00000000000a', 'organisation' => 'org-a', 'register' => '26', 'schema' => '30', 'owner' => 'admin'],
+				'name' => 'tools a', 'endpoint' => 'tools/a', 'method' => 'POST',
 			],
-			['@self' => ['id' => 'ep-uuid-2', 'organisation' => null], 'name' => 'other', 'endpoint' => 'mcp/other', 'method' => 'POST'],
+			[
+				'@self' => ['id' => '1b2c3d4e-0000-4000-8000-00000000000b', 'organisation' => null],
+				'name' => 'tools b', 'endpoint' => 'tools/b', 'method' => 'POST',
+			],
 		];
 		$service = $this->service();
 
-		$match = $service->findByPathRegex(path: 'mcp/tools', method: 'POST');
-		$this->assertSame(expected: 'ep-uuid-1', actual: $match->getUuid());
-		$this->assertSame(expected: 'org-1', actual: $match->getOrganisation());
-		$this->assertSame(expected: 'admin', actual: $match->getOwner());
-		$this->assertSame(expected: '26', actual: $match->getRegister());
-		$this->assertSame(expected: '43', actual: $match->getSchema());
+		$a = $service->findByPathRegex(path: 'tools/a', method: 'POST');
+		$b = $service->findByPathRegex(path: 'tools/b', method: 'POST');
 
-		$other = $service->findByPathRegex(path: 'mcp/other', method: 'POST');
-		$this->assertSame(expected: 'ep-uuid-2', actual: $other->getUuid());
-		$this->assertNull(actual: $other->getOrganisation());
-	}//end testACachedRowKeepsItsSelfMetadata()
+		$this->assertSame(expected: '1b2c3d4e-0000-4000-8000-00000000000a', actual: $a->getUuid());
+		$this->assertSame(expected: 'org-a', actual: $a->getOrganisation());
+		$this->assertSame(expected: '26', actual: (string)$a->getRegister());
+		$this->assertSame(expected: '30', actual: (string)$a->getSchema());
+		$this->assertSame(expected: 'admin', actual: $a->getOwner());
+		$this->assertSame(expected: '1b2c3d4e-0000-4000-8000-00000000000b', actual: $b->getUuid(), message: 'Two cached endpoints never share a uuid.');
+		$this->assertNull(actual: $b->getOrganisation(), message: 'A missing organisation stays missing.');
+	}//end testACachedEndpointKeepsItsUuidAndOrganisation()
 
 	public function testNoMatchRefreshesOnceAndThenGivesUp(): void {
 		$this->stored['integriq_endpoints_cache'] = [['name' => 'stale', 'endpoint' => 'api/oud', 'method' => 'GET']];

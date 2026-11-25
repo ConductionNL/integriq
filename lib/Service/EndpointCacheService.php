@@ -219,7 +219,7 @@ class EndpointCacheService implements EndpointCacheServiceInterface {
 			unset($payload['@self']);
 			// SetObject via positional call to avoid named-arg / __call bug.
 			$entity->setObject($this->withRouting(endpointData: $payload));
-			$this->restoreSelf(entity: $entity, self: (array)($matchedEndpoint['@self'] ?? []));
+			$this->restoreMetadata(entity: $entity, cached: $matchedEndpoint);
 			return $entity;
 		}
 
@@ -227,30 +227,39 @@ class EndpointCacheService implements EndpointCacheServiceInterface {
 	}//end matchedEntity()
 
 	/**
-	 * Put the cached `@self` metadata back on an endpoint rebuilt from the distributed cache.
+	 * Put the metadata of a cached endpoint back on its entity.
 	 *
-	 * Without it the rebuilt endpoint has no uuid and no organisation, so everything keyed on
-	 * the endpoint (a tool's own limit, the response cache, the call log, the trace) and the
-	 * organisation check on its source would see an empty endpoint on any instance with
-	 * Redis or Memcached, while an instance without one keeps the entity and works.
+	 * The cache holds jsonSerialize() output, whose identity sits under
+	 * `@self`. Without it a cached endpoint has no uuid and no organisation:
+	 * every key built from its uuid (the endpoint rate limit, an MCP tool
+	 * limit) is shared by all endpoints, and the organisation boundary
+	 * between an endpoint and its source passes for any source.
 	 *
-	 * @param ObjectEntity         $entity The rebuilt endpoint.
-	 * @param array<string, mixed> $self   The cached `@self` block.
+	 * @param ObjectEntity        $entity The reconstructed endpoint.
+	 * @param array<string,mixed> $cached The cached row.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
 	 */
-	private function restoreSelf(ObjectEntity $entity, array $self): void {
-		// Positional setter calls, for the same __call reason as setObject above.
-		$setters = ['id' => 'setUuid', 'organisation' => 'setOrganisation', 'owner' => 'setOwner', 'register' => 'setRegister', 'schema' => 'setSchema'];
-		foreach ($setters as $field => $setter) {
+	private function restoreMetadata(ObjectEntity $entity, array $cached): void {
+		$self = $cached['@self'] ?? [];
+		if (is_array($self) === false) {
+			$self = [];
+		}
+
+		$uuid = ($self['id'] ?? $self['uuid'] ?? $cached['uuid'] ?? $cached['id'] ?? null);
+		if (is_string($uuid) === true && $uuid !== '') {
+			$entity->setUuid($uuid);
+		}
+
+		foreach (['organisation' => 'setOrganisation', 'register' => 'setRegister', 'schema' => 'setSchema', 'owner' => 'setOwner'] as $field => $setter) {
 			$value = ($self[$field] ?? null);
 			if (is_scalar($value) === true && (string)$value !== '') {
 				$entity->$setter((string)$value);
 			}
 		}
-	}//end restoreSelf()
+	}//end restoreMetadata()
 
 	/**
 	 * Get all endpoints from cache or database as ObjectEntity arrays (for performance).

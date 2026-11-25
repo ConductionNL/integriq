@@ -57,6 +57,11 @@ class McpProxyHandlerTest extends TestCase {
 	private array $relayed = [];
 
 	/**
+	 * The call logs saved.
+	 *
+	 * @var array<int, array{0: array<string, mixed>, 1: string|null}>
+	 */
+	/**
 	 * The limiter keys counted.
 	 *
 	 * @var array<int, string>
@@ -252,7 +257,10 @@ class McpProxyHandlerTest extends TestCase {
 	}//end testAnEventStreamIsRelayedAsItArrives()
 
 	/**
-	 * The call log names the method and, for tools/call, the tool; without its arguments.
+	 * The call log is written naming the method and, for tools/call, the tool; without its arguments.
+	 *
+	 * The names go with the call, so the record is written with them: call_log
+	 * is append-only and a saved record cannot be stamped afterwards.
 	 *
 	 * @return void
 	 */
@@ -262,11 +270,33 @@ class McpProxyHandlerTest extends TestCase {
 		$handler->handle(call: $this->call(body: '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"fetch","arguments":{"bsn":"999999990"}}}'))
 			->callback($this->recordingOutput(log: $log));
 
-		// Named when the record is written: the call log is append-only.
+		$this->assertCount(expectedCount: 1, haystack: $this->relayed);
 		$this->assertSame(expected: ['mcpMethod' => 'tools/call', 'mcpTool' => 'fetch'], actual: $this->relayed[0]['config']['logFields']);
 		$this->assertStringNotContainsString(needle: '999999990', haystack: (string)json_encode($this->relayed[0]['config']['logFields']));
-		$this->assertTrue(condition: $this->relayed[0]['withholdBodies']);
+		$this->assertTrue(condition: $this->relayed[0]['withholdBodies'], message: 'The arguments are not stored.');
+
+		$initialize = McpProxyHandler::rpcOf(rawBody: '{"jsonrpc":"2.0","id":1,"method":"initialize"}');
+		$this->assertSame(expected: ['mcpMethod' => 'initialize'], actual: McpProxyHandler::logFields(rpc: $initialize));
 	}//end testTheCallLogNamesTheMethodAndTheTool()
+
+	/**
+	 * The upstream status replaces the 502 Nextcloud sent before the relay ran.
+	 *
+	 * Nextcloud sends a response's status as a raw status line, which PHP keeps
+	 * over a later http_response_code(); the relay sends a status line of its own.
+	 *
+	 * @return void
+	 */
+	public function testTheUpstreamStatusIsSentAsAStatusLine(): void {
+		$this->assertSame(expected: 'HTTP/1.1 200 OK', actual: McpProxyHandler::statusLine(upstream: new PsrResponse(200)));
+		$this->assertSame(expected: 'HTTP/1.1 202 Accepted', actual: McpProxyHandler::statusLine(upstream: new PsrResponse(202)));
+		$this->assertSame(expected: 'HTTP/1.1 404 Not Found', actual: McpProxyHandler::statusLine(upstream: new PsrResponse(404)));
+
+		$log = [];
+		$this->handler(status: 401, chunks: ['{}'])->handle(call: $this->call(body: '{"jsonrpc":"2.0","id":5,"method":"tools/list"}'))
+			->callback($this->recordingOutput(log: $log));
+		$this->assertSame(expected: ['status 401', 'header HTTP/1.1 401 Unauthorized'], actual: array_slice($log, 0, 2));
+	}//end testTheUpstreamStatusIsSentAsAStatusLine()
 
 	/**
 	 * An endpoint that stores arguments says so to the call; a body that is not JSON-RPC is not stamped.
@@ -278,7 +308,7 @@ class McpProxyHandlerTest extends TestCase {
 		$this->handler(chunks: ['{}'])->handle(call: $this->call(body: 'plain', endpointExtra: ['mcpStoreArguments' => true]))->callback($this->recordingOutput(log: $log));
 
 		$this->assertFalse($this->relayed[0]['withholdBodies']);
-		$this->assertSame(expected: [], actual: $this->relayed[0]['config']['logFields']);
+		$this->assertArrayNotHasKey(key: 'logFields', array: $this->relayed[0]['config'], message: 'A body that is not JSON-RPC names nothing.');
 	}//end testStoringArgumentsIsTheEndpointsChoice()
 
 	/**
@@ -347,41 +377,4 @@ class McpProxyHandlerTest extends TestCase {
 		$this->assertSame(expected: '', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example/mcp', path: ''));
 		$this->assertSame(expected: '?session=1', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example/mcp', path: '?session=1'));
 	}//end testTheUpstreamPathJoinsTheLocationWithOneSlash()
-
-	/**
-	 * A relative endpoint path reaches the tool server under the location, not glued to its host.
-	 *
-	 * @return void
-	 */
-	public function testARelativeEndpointPathIsSentUnderTheLocation(): void {
-		$handler = $this->handler(chunks: ['{}']);
-		$call    = $this->call(body: '{"jsonrpc":"2.0","id":1,"method":"initialize"}');
-		$log     = [];
-		$handler->handle(call: new McpProxyCall(
-			endpoint: $call->endpoint,
-			request: $call->request,
-			source: $call->source,
-			upstreamPath: 'mcp/example',
-			rawBody: $call->rawBody,
-			consumerKey: $call->consumerKey
-		))->callback($this->recordingOutput(log: $log));
-
-		$this->assertSame(expected: '/mcp/example', actual: $this->relayed[0]['endpoint']);
-	}//end testARelativeEndpointPathIsSentUnderTheLocation()
-
-	/**
-	 * The tool server's status also goes out as a status line: Nextcloud already sent this
-	 * response's own 502 as one, and http_response_code() does not replace it.
-	 *
-	 * @return void
-	 */
-	public function testTheUpstreamStatusReplacesTheBadGatewayStatusLine(): void {
-		$log = [];
-		McpProxyHandler::relayHeaders(
-			upstream: new PsrResponse(status: 404, headers: ['Content-Type' => 'application/json']),
-			output: $this->recordingOutput(log: $log)
-		);
-
-		$this->assertSame(expected: ['status 404', 'header HTTP/1.1 404 Not Found', 'header Content-Type: application/json'], actual: $log);
-	}//end testTheUpstreamStatusReplacesTheBadGatewayStatusLine()
 }//end class

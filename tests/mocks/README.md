@@ -5,7 +5,6 @@ Small HTTP servers that replay the documented response shapes of outside systems
 | Directory | Stands in for | Used by |
 |---|---|---|
 | `github/` | GitHub code search (`GET /search/code`) with `Link` paging and `X-RateLimit-*` headers | `sources-github-publiccode` |
-| `mcp/` | An MCP tool server over streamable HTTP (JSON-RPC, `Mcp-Session-Id`, an event stream) | `gateway-mcp-proxy`, `tests/postman/integriq-mcp-proxy.postman_collection.json` |
 
 ## Run one
 

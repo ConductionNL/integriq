@@ -225,10 +225,15 @@ class McpProxyHandler {
 		$config = [
 			'headers' => self::forwardedHeaders(request: $call->request),
 			'timeout' => self::maxStreamSeconds(endpointData: $endpointData),
-			'logFields' => self::logFields(rpc: $rpc),
 		];
 		if ($call->rawBody !== '') {
 			$config['body'] = $call->rawBody;
+		}
+
+		// Written with the call log record, which is append-only (REQ-MCPX-002).
+		$logFields = self::logFields(rpc: $rpc);
+		if ($logFields !== []) {
+			$config['logFields'] = $logFields;
 		}
 
 		return new McpProxyResponse(
@@ -276,9 +281,10 @@ class McpProxyHandler {
 	 */
 	public static function relayHeaders(ResponseInterface $upstream, IOutput $output): void {
 		$output->setHttpResponseCode($upstream->getStatusCode());
-		// Nextcloud sent this response's own status (502) as a raw status line, which
-		// http_response_code() alone does not replace; a status line of our own does.
-		$output->setHeader(trim('HTTP/1.1 ' . $upstream->getStatusCode() . ' ' . str_replace(["\r", "\n"], '', $upstream->getReasonPhrase())));
+		// Nextcloud sent this response's own status (502) as a raw status line
+		// before the callback ran, and PHP keeps a raw status line over a later
+		// http_response_code(); only a new status line replaces it.
+		$output->setHeader(self::statusLine(upstream: $upstream));
 		foreach (self::RELAYED_HEADERS as $name) {
 			$value = $upstream->getHeaderLine($name);
 			if ($value !== '') {
@@ -311,16 +317,14 @@ class McpProxyHandler {
 	}//end maxStreamSeconds()
 
 	/**
-	 * Make the call through CallService, relaying into the output; its log names the method and tool.
+	 * Make the call through CallService, relaying into the output; the call log names the method and tool.
 	 *
-	 * @param McpProxyCall         $call           The call.
-	 * @param array<string, mixed> $config         The request configuration, its `logFields` naming the method and tool.
-	 * @param IOutput              $output         The caller's output.
-	 * @param bool                 $storeArguments Whether the request body is logged.
+	 * @param McpProxyCall                                             $call           The call.
+	 * @param array<string, mixed>                                     $config         The request configuration.
+	 * @param IOutput                                                  $output         The caller's output.
+	 * @param bool                                                     $storeArguments Whether the request body is logged.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
 	private function relay(McpProxyCall $call, array $config, IOutput $output, bool $storeArguments): void {
 		try {
@@ -341,14 +345,14 @@ class McpProxyHandler {
 	}//end relay()
 
 	/**
-	 * The JSON-RPC method and the tool, as call log fields the log filters on.
+	 * The JSON-RPC method and the tool a call log names, so the log filters on them.
 	 *
-	 * They go on the record when it is written: the call log is append-only, so
-	 * it cannot be named afterwards.
+	 * They are written with the record itself: `call_log` is append-only, so a
+	 * record cannot be stamped after it was saved.
 	 *
 	 * @param array{method: string|null, tool: string|null, id: mixed} $rpc What the body asked.
 	 *
-	 * @return array<string, string> `mcpMethod` and, for a tool call, `mcpTool`; empty for a body that is not JSON-RPC.
+	 * @return array<string, string> `mcpMethod` and, for `tools/call`, `mcpTool`; nothing for a body that is not JSON-RPC.
 	 *
 	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
@@ -364,6 +368,22 @@ class McpProxyHandler {
 
 		return $fields;
 	}//end logFields()
+
+	/**
+	 * The HTTP status line of the upstream answer.
+	 *
+	 * Only the code and phrase count: PHP takes the status from the line and
+	 * the web server speaks its own protocol version to the caller.
+	 *
+	 * @param ResponseInterface $upstream The upstream response.
+	 *
+	 * @return string The status line, such as `HTTP/1.1 200 OK`.
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 */
+	public static function statusLine(ResponseInterface $upstream): string {
+		return trim('HTTP/1.1 ' . $upstream->getStatusCode() . ' ' . str_replace(["\r", "\n"], '', $upstream->getReasonPhrase()));
+	}//end statusLine()
 
 	/**
 	 * A header name in its usual spelling.

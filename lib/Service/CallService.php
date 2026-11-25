@@ -161,6 +161,7 @@ class CallService implements CallServiceInterface {
 		'url' => '',
 		'endpoint' => '',
 		'logBody' => false,
+		'logFields' => [],
 		'brokeredCredential' => null,
 		'postRequest' => null,
 		'retryPolicyOverride' => null,
@@ -1892,7 +1893,7 @@ class CallService implements CallServiceInterface {
 	 * @param ExecutionTraceContext|null $trace The active execution trace context, when present.
 	 * @param boolean $persistLog When false, return a transient (unsaved) CallLog and mutate nothing.
 	 * @param boolean $withholdBodies When true, the record is written without any body and names the user.
-	 * @param integer $pacedMs The milliseconds the call waited for its paced turn.
+	 * @param array<string, scalar> $logFields Extra fields the record is written with, such as `pacedMs`; a field the engine sets wins.
 	 *
 	 * The record is filed under the source's organisation, so that organisation's scoped log views list it.
 	 *
@@ -1902,7 +1903,6 @@ class CallService implements CallServiceInterface {
 	 *
 	 * @spec openspec/changes/call-log-without-bodies/specs/outbound-call-log/spec.md#requirement-a-caller-can-have-a-call-recorded-without-any-body
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
-	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	private function buildAndPersistCallLog(
@@ -1915,7 +1915,7 @@ class CallService implements CallServiceInterface {
 		?ExecutionTraceContext $trace = null,
 		bool $persistLog = true,
 		bool $withholdBodies = false,
-		int $pacedMs = 0,
+		array $logFields = [],
 	): ObjectEntity {
 		// Interactive "Test connection" path (persistLog=false): return the response
 		// WITHOUT the expensive CallLog write. Persisting a CallLog runs a full
@@ -1951,12 +1951,9 @@ class CallService implements CallServiceInterface {
 			'created' => (new DateTime())->format('c'),
 		] + $this->organisationSelf(object: $source);
 
-		// The time the call waited for its paced turn (REQ-RLPC-001). Left out
-		// for a call that did not wait, so unpaced sources log as before.
-		// Then the fields the caller names on its record, such as an mcp call's
-		// method and tool (REQ-MCPX-002): written now, because the call log is
-		// append-only; they never replace the engine's own fields.
-		$callLogData += array_filter(['pacedMs' => $pacedMs]) + (array)($data['logFields'] ?? []);
+		// The paced wait (REQ-RLPC-001), the MCP method and tool (REQ-MCPX-002): written with the
+		// record, as call_log is append-only; a field the engine set above is never replaced.
+		$callLogData += $logFields;
 
 		// Bodies are stored only inside the source's investigation window, or
 		// for a caller that passed logBody; a failure keeps its request for a
@@ -3077,9 +3074,32 @@ class CallService implements CallServiceInterface {
 		$run->prepared = $this->preparedCall(run: $run, successExpires: $expiries['successExpires']);
 
 		$this->takeRetryPolicyOverride(run: $run);
+		$this->takeLogFields(run: $run);
 
 		return $run;
 	}//end startPreparation()
+
+	/**
+	 * Phase 1c: take the fields the caller names the call by (`logFields` in
+	 * the call configuration), so they are written with the call log record
+	 * and never sent upstream. call_log is append-only: a field that is not
+	 * on the record when it is saved cannot be added afterwards.
+	 *
+	 * @param CallPreparation $run The call being prepared.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
+	 */
+	private function takeLogFields(CallPreparation $run): void {
+		$fields = ($run->config['logFields'] ?? []);
+		unset($run->config['logFields']);
+		if (is_array($fields) === false) {
+			return;
+		}
+
+		$run->prepared['logFields'] = array_filter($fields, 'is_scalar');
+	}//end takeLogFields()
 
 	/**
 	 * The prepared call before any phase ran.
@@ -3304,14 +3324,16 @@ class CallService implements CallServiceInterface {
 		return $this->buildAndPersistCallLog(
 			source: $prepared['source'],
 			sourceData: $prepared['sourceData'],
-			data: ($call->data + ['logFields' => (array)($prepared['logFields'] ?? [])]),
+			data: $call->data,
 			logBody: $prepared['logBody'],
 			successExpires: $prepared['successExpires'],
 			errorExpires: $prepared['errorExpires'],
 			trace: $prepared['request']->trace,
 			persistLog: $prepared['request']->persistLog,
 			withholdBodies: $prepared['request']->withholdBodies,
-			pacedMs: (int)($prepared['pacedMs'] ?? 0),
+			// The time the call waited for its paced turn (REQ-RLPC-001), left out
+			// for a call that did not wait, then the fields its caller names it by.
+			logFields: array_filter(['pacedMs' => (int)($prepared['pacedMs'] ?? 0)]) + (array)($prepared['logFields'] ?? []),
 		);
 	}//end persistCallLog()
 
@@ -3546,12 +3568,13 @@ class CallService implements CallServiceInterface {
 	 * @param ObjectEntity               $source         The source to call.
 	 * @param string                     $endpoint       The path on the source.
 	 * @param string                     $method         The HTTP method.
-	 * @param array<string, mixed>       $config         The request configuration (headers, body, timeout), and
-	 *                                                   `logFields`: fields written on the call log record (append-only).
+	 * @param array<string, mixed>       $config         The request configuration (headers, body, timeout).
 	 * @param mixed                      $sink           A writable PSR-7 stream the body is relayed into.
 	 * @param callable                   $onHeaders      Called with the PSR-7 response once its headers arrived.
 	 * @param bool                       $withholdBodies When true, the call log keeps no request body either.
 	 * @param ExecutionTraceContext|null $trace          The active execution trace context, when any.
+	 *
+	 * `$config['logFields']` names fields the call log record is written with, such as the MCP method and tool.
 	 *
 	 * @return ObjectEntity The call log.
 	 *
@@ -3568,8 +3591,6 @@ class CallService implements CallServiceInterface {
 		bool $withholdBodies = true,
 		?ExecutionTraceContext $trace = null,
 	): ObjectEntity {
-		$logFields = (array)($config['logFields'] ?? []);
-		unset($config['logFields']);
 		$prepared = $this->prepareCall(
 			source: $source,
 			request: new CallRequest(
@@ -3585,8 +3606,6 @@ class CallService implements CallServiceInterface {
 		if ($prepared['shortCircuit'] !== null) {
 			return $prepared['shortCircuit'];
 		}
-
-		$prepared['logFields'] = $logFields;
 
 		$prepared = $this->withTraceParent(prepared: $prepared, trace: $trace);
 		$dispatched = $this->dispatchWithRetry(prepared: $prepared);

@@ -316,8 +316,9 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		try {
+			// `upstreamPath` names the tool server's path, as for an api endpoint; without it the public path is used.
 			$upstreamPath = $this->callService->renderEndpointPath(
-				endpoint: (string)($endpointData['endpoint'] ?? ''),
+				endpoint: (new UpstreamPathTemplate())->forEndpoint(endpointData: $endpointData),
 				context: $this->buildUpstreamPathContext(endpointData: $endpointData, request: $request, path: $path, rawBody: $rawBody)
 			);
 		} catch (UnexpectedValueException $exception) {
