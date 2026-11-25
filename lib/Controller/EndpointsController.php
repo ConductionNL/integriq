@@ -223,15 +223,14 @@ class EndpointsController extends Controller {
 	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function noEndpointFor(string $path): JSONResponse {
-		return ProblemResponse::fromLegacy(
-			data: [
-				'error' => $this->l->t(
-					'No matching endpoint found for path and method: %1$s %2$s',
-					[$path, $this->request->getMethod()]
-				),
-			],
+		$message = $this->l->t('No matching endpoint found for path and method: %1$s %2$s', [$path, $this->request->getMethod()]);
+
+		return new ProblemResponse(
+			slug: 'not-found',
 			status: 404,
-			instance: $this->request->getId()
+			detail: $message,
+			instance: $this->request->getId(),
+			extensions: ['error' => $message]
 		);
 	}//end noEndpointFor()
 
@@ -245,10 +244,12 @@ class EndpointsController extends Controller {
 	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function ambiguousEndpoint(\Exception $exception): JSONResponse {
-		return ProblemResponse::fromLegacy(
-			data: ['error' => $exception->getMessage()],
+		return new ProblemResponse(
+			slug: ProblemResponse::GENERIC,
 			status: 409,
-			instance: $this->request->getId()
+			detail: $exception->getMessage(),
+			instance: $this->request->getId(),
+			extensions: ['error' => $exception->getMessage()]
 		);
 	}//end ambiguousEndpoint()
 
