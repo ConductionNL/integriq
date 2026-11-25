@@ -1,23 +1,17 @@
 <?php
 
 /**
- * Integriq MappingFinder
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  *
- * Resolves a mapping object by uuid, id, slug or imported reference.
+ * Finds a mapping object by uuid, id, slug or imported reference, for
+ * MappingService and the mapping event a sibling app dispatches.
  *
  * @category Service
  * @package  OCA\Integriq\Service
- *
- * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2026 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://www.Integriq.nl
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
+ * @author   Conduction Development Team <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://www.Integriq.nl
  */
 
 declare(strict_types=1);
