@@ -275,6 +275,18 @@ describe('ConsumerCredentialsPanel', () => {
 		expect(get).toHaveBeenCalledWith(CONSUMER_URL)
 	})
 
+	it('keeps the panel test id when the detail page passes its own data-testid down', async () => {
+		// CnBodySections mounts a body widget with `data-testid="cn-body-section-component-<id>"`;
+		// that attribute lands on the wrapper and must not overwrite `credential-keys`.
+		const wrapper = mount(ConsumerCredentialsPanel, {
+			attrs: { 'data-testid': 'cn-body-section-component-con-credentials' },
+			global: { provide: { cnSectionContext: { value: { objectId: 'c-1', object: {} } } } },
+		})
+		await flushPromises()
+
+		expect(wrapper.find('[data-testid="credential-keys"]').exists()).toBe(true)
+	})
+
 	it('renders nothing before the consumer is known', () => {
 		const wrapper = mount(ConsumerCredentialsPanel, { global: { provide: { cnSectionContext: { value: { objectId: null, object: null } } } } })
 		expect(wrapper.findComponent(CredentialKeysPanel).exists()).toBe(false)

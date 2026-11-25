@@ -10,7 +10,8 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **acceptance_criteria**:
   - GIVEN a consumer with a plaintext apiKey WHEN the repair step runs THEN it has one hashed credential and no plaintext key, and its calls still pass
 - [x] Implement
-- [ ] Test (PHPUnit on the repair step including a failure halfway; Newman call with the old key after repair)
+- [x] Test (PHPUnit on the repair step including a failure halfway; Newman call with the old key after repair)
+  > 2026-11-25, live (sandbox Nextcloud 34.0.6 + MariaDB, OpenRegister main 292aa09d with openregister#11279 applied): `HashConsumerApiKeysTest` 6/6 (failure on the first and on the second save keep the plaintext and the consumer working). Newman `tests/postman/integriq-consumer-key-repair.postman_collection.json`: folder 1 makes a consumer with a plaintext key and an endpoint whose apikey rule has no keys of its own, the key passes (5/5); `occ maintenance:repair` reports "hashed 1 consumer API key(s), 0 failed"; folder 2 + teardown 15/15: the old key still passes, the credentials route lists one `migrated` entry with the key's prefix and no key or hash, the consumer read carries neither, a wrong key is 401. Without openregister#11279 the create answer of folder 1 carries the plaintext key in `@self.relations["authorizationConfiguration.apiKey"]` (1 failed assertion).
 
 ### Task 2: Generate, reveal once, revoke
 - **spec_ref**: `openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-new-key-is-shown-exactly-once-req-cred-002`
@@ -20,6 +21,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - [x] Implement
   > 2026-11-21, the screen: `src/components/ConsumerCredentialsPanel.vue`, a ConsumerDetail body widget over `CredentialKeysPanel` (shared with the developer portal), reads and writes `/api/consumers/{id}/credentials`. Generating shows the key once, with a copy button. Reloading shows only its label and prefix, because no route answers a key again. Revoking removes one credential and leaves the others. Vitest: `tests/vitest/credentialKeysPanel.spec.js`.
 - [x] Test (Playwright for generate, copy and revoke; PHPUnit that no route returns a key); written, runs in nightly
+  > 2026-11-25, run live: 2/2 green after three fixes. The panel's own `credential-keys` test id was overwritten by the `data-testid` the detail page's body section passes down (a wrapper element now takes it; vitest case added); the spec's API calls went with the session cookie only (412, now with `OCS-APIRequest`); the label field's test id sits on the input itself, so `.locator('input')` found nothing.
   > 2026-11-23, written, not run (no live instance): `tests/e2e/consumer-credentials.spec.ts` generates a key on a seeded consumer, copies it, checks the credentials list never carries it and a reload shows only label and prefix, then puts a second key next to the first and revokes the old one. PHPUnit that no route returns a key is `ConsumerCredentialsControllerTest::testAGeneratedKeyIsInTheCreateResponseAndNeverInTheList`.
 
 ### Task 3: Two keys at once and last used
@@ -73,8 +75,11 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
     key, basic auth for the admin user] behind an endpoint, calls it with each method alone and with
     neither (401 with the reasons `0:apikey` and `1:basic`), and deletes both again. The box stays
     unticked until a Newman run reads green.
+  - 2026-11-25, run live: 7 requests, 9/9 assertions, exit 0.
 
 ## Verification
 - [x] `openspec validate access-consumer-credentials --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
-- [ ] PHPUnit and Newman run, exit codes read
-- [ ] A read of every consumer over the OpenRegister object API shows no key and no hash
+- [x] PHPUnit and Newman run, exit codes read
+  > 2026-11-25: PHPUnit `--filter 'ConsumerCredentials|ClientCertificate|EndpointAuthenticationMtls|EndpointAuthenticationAnyOf'` 44/44 and `HashConsumerApiKeysTest` 6/6, exit 0; Newman any-of 9/9 and key-repair 5/5 + 15/15, exit 0; Playwright `consumer-credentials.spec.ts` 2/2.
+- [x] A read of every consumer over the OpenRegister object API shows no key and no hash
+  > 2026-11-25, RK.8 of the key-repair collection: the list read carries no `authorizationConfiguration.apiKey`, no `clientSecretHash`, no `credentials` and no `keyHash` anywhere. A consumer that still holds a plaintext key (before the repair) shows it in `@self.relations` on OpenRegister main until openregister#11279 lands.
