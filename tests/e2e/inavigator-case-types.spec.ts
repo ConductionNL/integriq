@@ -26,6 +26,9 @@ import type { APIRequestContext } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { APP_BASE, assertNoAppErrors, trackErrors } from './spec-coverage/_helpers.ts'
 
+/** The header that lets a cookie-session API call past Nextcloud's CSRF check. */
+const OCS = { 'OCS-APIRequest': 'true' }
+
 interface ApprovalDetail {
 	id: string
 	status: string
@@ -44,13 +47,16 @@ interface ApprovalDetail {
 async function pendingRequestWithChangeSet(request: APIRequestContext): Promise<ApprovalDetail | null> {
 	const list = await request.get(`${APP_BASE}/api/approvals`, {
 		params: { status: 'pending' },
+		// The session cookie alone fails Nextcloud's CSRF check (412); the OCS
+		// header is the API client's way through it.
+		headers: OCS,
 		failOnStatusCode: false,
 	})
 	expect(list.status()).toBe(200)
 	const { results } = await list.json()
 
 	for (const row of results as Array<{ id: string }>) {
-		const detail = await request.get(`${APP_BASE}/api/approvals/${row.id}`, { failOnStatusCode: false })
+		const detail = await request.get(`${APP_BASE}/api/approvals/${row.id}`, { headers: OCS, failOnStatusCode: false })
 		if (detail.status() !== 200) {
 			continue
 		}
@@ -99,7 +105,7 @@ test.describe('i-Navigator case types: the change set at the approval gate', () 
 		}
 
 		// Opening the preview writes nothing: the request is still pending.
-		const after = await page.request.get(`${APP_BASE}/api/approvals/${approval!.id}`)
+		const after = await page.request.get(`${APP_BASE}/api/approvals/${approval!.id}`, { headers: OCS })
 		expect((await after.json()).status).toBe('pending')
 
 		assertNoAppErrors(sink)

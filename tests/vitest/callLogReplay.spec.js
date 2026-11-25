@@ -376,15 +376,15 @@ describe('the SourceLogs page wiring', () => {
 		expect(page.actionsComponent).toBe('CallLogActions')
 
 		// Importing the registry pulls in the whole published component
-		// library, so its wiring is read from the source: both components are
-		// imported from their files and exported under the names the manifest
-		// uses.
+		// library, so its wiring is read from the source: both components load
+		// lazily from their files and are exported under the names the
+		// manifest uses.
 		const registry = readFileSync(join(root, 'src/registry.js'), 'utf8')
-		expect(registry).toContain(
-			"import CallLogRowActions from './components/callLog/CallLogRowActions.vue'",
+		expect(registry).toMatch(
+			/const CallLogRowActions = lazyComponent\(\s*\(\) => import\('\.\/components\/callLog\/CallLogRowActions\.vue'\),\s*'CallLogRowActions',?\s*\)/,
 		)
-		expect(registry).toContain(
-			"import CallLogActions from './components/callLog/CallLogActions.vue'",
+		expect(registry).toMatch(
+			/const CallLogActions = lazyComponent\(\s*\(\) => import\('\.\/components\/callLog\/CallLogActions\.vue'\),\s*'CallLogActions',?\s*\)/,
 		)
 		expect(registry).toMatch(/^\tCallLogRowActions,$/m)
 		expect(registry).toMatch(/^\tCallLogActions,$/m)

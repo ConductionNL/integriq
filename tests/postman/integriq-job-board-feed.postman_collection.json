@@ -9,7 +9,7 @@
       "name": "0. Setup (via OpenRegister)",
       "item": [
         {
-          "name": "Seed a published vacancy that lists indeed",
+          "name": "Seed a vacancy that lists indeed",
           "request": {
             "method": "POST",
             "header": [
@@ -44,7 +44,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Newman feed vacature Indeed\",\n  \"description\": \"Newman job-board feed fixture. Geen echte vacature.\",\n  \"department\": \"Newman\",\n  \"status\": \"gepubliceerd\",\n  \"publishedDate\": \"2026-11-02\",\n  \"closingDate\": \"2026-12-31\",\n  \"channels\": [\n    \"indeed\",\n    \"werk-nl\"\n  ]\n}"
+              "raw": "{\n  \"title\": \"Newman feed vacature Indeed\",\n  \"description\": \"Newman job-board feed fixture. Geen echte vacature.\",\n  \"department\": \"Newman\",\n  \"status\": \"concept\",\n  \"publishedDate\": \"2026-11-02\",\n  \"closingDate\": \"2026-12-31\",\n  \"channels\": [\n    \"indeed\",\n    \"werk-nl\"\n  ]\n}"
             }
           },
           "event": [
@@ -53,6 +53,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "// humaniq's Vacancy lifecycle starts every vacancy in \"concept\"; the next request publishes it.",
                   "// humaniq is optional on this instance. A 404 means its register or the Vacancy",
                   "// schema is not installed; the feed checks that need its vacancies are then skipped.",
                   "if (pm.response.code === 404) {",
@@ -70,7 +71,62 @@
           ]
         },
         {
-          "name": "Seed a published vacancy that lists only linkedin",
+          "name": "Publish the Indeed vacancy (concept -> gepubliceerd)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/humaniq/vacancy/{{feedIndeedVacancyId}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"gepubliceerd\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('humaniqPresent') !== 'true') {",
+                  "    pm.test.skip('Setup: the Indeed vacancy is published (humaniq not installed)', () => {});",
+                  "    return;",
+                  "}",
+                  "pm.test('Setup: the Indeed vacancy is published', () => pm.expect(pm.response.code).to.be.below(300));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seed a vacancy that lists only linkedin",
           "request": {
             "method": "POST",
             "header": [
@@ -105,7 +161,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Newman feed vacature LinkedIn\",\n  \"description\": \"Newman job-board feed fixture. Geen echte vacature.\",\n  \"department\": \"Newman\",\n  \"status\": \"gepubliceerd\",\n  \"publishedDate\": \"2026-11-02\",\n  \"closingDate\": \"2026-12-31\",\n  \"channels\": [\n    \"linkedin\"\n  ]\n}"
+              "raw": "{\n  \"title\": \"Newman feed vacature LinkedIn\",\n  \"description\": \"Newman job-board feed fixture. Geen echte vacature.\",\n  \"department\": \"Newman\",\n  \"status\": \"concept\",\n  \"publishedDate\": \"2026-11-02\",\n  \"closingDate\": \"2026-12-31\",\n  \"channels\": [\n    \"linkedin\"\n  ]\n}"
             }
           },
           "event": [
@@ -114,6 +170,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "// humaniq's Vacancy lifecycle starts every vacancy in \"concept\"; the next request publishes it.",
                   "// humaniq is optional on this instance. A 404 means its register or the Vacancy",
                   "// schema is not installed; the feed checks that need its vacancies are then skipped.",
                   "if (pm.response.code === 404) {",
@@ -125,6 +182,61 @@
                   "const b = pm.response.json();",
                   "pm.collectionVariables.set('feedLinkedinVacancyId', b.id || (b['@self'] || {}).id || '');",
                   "pm.collectionVariables.set('humaniqPresent', 'true');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publish the LinkedIn vacancy (concept -> gepubliceerd)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/humaniq/vacancy/{{feedLinkedinVacancyId}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"gepubliceerd\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('humaniqPresent') !== 'true') {",
+                  "    pm.test.skip('Setup: the LinkedIn vacancy is published (humaniq not installed)', () => {});",
+                  "    return;",
+                  "}",
+                  "pm.test('Setup: the LinkedIn vacancy is published', () => pm.expect(pm.response.code).to.be.below(300));"
                 ]
               }
             }
@@ -146,6 +258,19 @@
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Truly anonymous: the setup requests signed in as admin, and Newman's cookie jar",
+                  "// would otherwise send that session along, so a feed RBAC hides would still pass.",
+                  "const jar = pm.cookies.jar();",
+                  "const base = pm.variables.replaceIn('{{base_url}}');",
+                  "jar.clear(base, (error) => { if (error) { console.log('cookie jar not cleared', error); } });"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {

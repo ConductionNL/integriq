@@ -263,9 +263,12 @@ class TokenIssuer implements TokenIssuerInterface {
 		}
 
 		try {
+			// Unrendered: clientSecretHash is writeOnly, and OpenRegister strips a
+			// writeOnly property from every rendered row, an unscoped read included,
+			// so a rendered read found no hash and refused every client with 401.
 			$object = $this->objectService->find(
 				id: $clientId,
-				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA, render: false),
 				_rbac: false,
 				_multitenancy: false
 			);
