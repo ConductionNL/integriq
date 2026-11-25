@@ -271,6 +271,41 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 	 *
 	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
 	 */
+	/**
+	 * The lookup for an app's event is not narrowed to the caller: the Woo-index
+	 * harvester reads opencatalogi's sitemap anonymously, and a lookup scoped to that
+	 * caller found no mapping, so the sitemap fell back to the built-in fields.
+	 * findMapping() for everything else stays scoped by default.
+	 *
+	 * @return void
+	 */
+	public function testAnAppEventLooksTheMappingUpWithoutTheCallersScope(): void {
+		$seen = [];
+		$orObjectService = $this->createMock(originalClassName: OrObjectService::class);
+		$orObjectService->method('find')->willReturnCallback(
+			function (...$args) use (&$seen): ObjectEntity {
+				$seen[] = ['rbac' => ($args['_rbac'] ?? $args[2] ?? true), 'multitenancy' => ($args['_multitenancy'] ?? $args[3] ?? true)];
+				return $this->entity(data: self::seededWooMapping());
+			}
+		);
+		$mappingService = new MappingService(
+			loader: new ArrayLoader(templates: []),
+			callService: $this->createMock(originalClassName: CallService::class),
+			fileService: $this->createMock(originalClassName: FileService::class),
+			objectService: $this->createMock(originalClassName: ObjectService::class),
+			orObjectService: $orObjectService,
+			synchronizationContractService: $this->createMock(originalClassName: SynchronizationContractService::class),
+		);
+		$listener = new MappingExecutionRequestedListener(mappingService: $mappingService, logger: new NullLogger());
+
+		$event = new MappingExecutionRequestedEvent(mappingSlug: 'woo-index-publication', input: ['title' => 'T'], sourceApp: 'opencatalogi');
+		$listener->handle($event);
+		$mappingService->findMapping(reference: 'woo-index-publication');
+
+		$this->assertSame(expected: ['rbac' => false, 'multitenancy' => false], actual: $seen[0]);
+		$this->assertSame(expected: ['rbac' => true, 'multitenancy' => true], actual: $seen[1]);
+	}//end testAnAppEventLooksTheMappingUpWithoutTheCallersScope()
+
 	public function testTheIdentifierFallbackRunsWhenFindThrows(): void {
 		$orObjectService = $this->createMock(OrObjectService::class);
 		$orObjectService->method('find')->willThrowException(new DoesNotExistException('Object not found'));
