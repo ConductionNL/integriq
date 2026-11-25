@@ -106,6 +106,7 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 		$run->version = $this->appConfig->getValueString('integriq', 'installed_version', '1.0.0');
 
 		$this->mergeFragments(run: $run);
+		$run->descriptor = self::hoistSchemaSeeds(descriptor: $run->descriptor);
 		$this->tagVersionWithFragments(run: $run);
 		$this->importDescriptor(configurationService: $configurationService, run: $run);
 
@@ -324,6 +325,66 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 		$run->output->info('Integriq: register descriptor imported (existing schemas reused).');
 
 	}//end callImportFromApp()
+
+	/**
+	 * Move every schema's `x-openregister-seed` list into `components.objects`.
+	 *
+	 * OpenRegister seeds only `components.objects` (and the top-level `objects`);
+	 * it drops a schema's `x-openregister-seed` key as unknown, so those seeds
+	 * never reached an install. A seed without `@self.slug` is left out: the
+	 * import finds a seed again by register, schema and slug, so one without a
+	 * slug would be created again on every upgrade.
+	 *
+	 * @param array<mixed> $descriptor The merged register descriptor.
+	 *
+	 * @return array<mixed> The descriptor with the seeds listed as objects and the key removed.
+	 *
+	 * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-register-descriptor-import-via-or-configurationservice-on-install-upgrade-req-001
+	 */
+	public static function hoistSchemaSeeds(array $descriptor): array {
+		$schemas = ($descriptor['components']['schemas'] ?? null);
+		if (is_array($schemas) === false) {
+			return $descriptor;
+		}
+
+		$objects = ($descriptor['components']['objects'] ?? []);
+		foreach ($schemas as $schemaKey => $schema) {
+			if (is_array($schema) === false || array_key_exists('x-openregister-seed', $schema) === false) {
+				continue;
+			}
+
+			$objects = array_merge($objects, self::slugSeeds(seeds: $schema['x-openregister-seed']));
+			unset($descriptor['components']['schemas'][$schemaKey]['x-openregister-seed']);
+		}
+
+		if ($objects !== []) {
+			$descriptor['components']['objects'] = $objects;
+		}
+
+		return $descriptor;
+	}//end hoistSchemaSeeds()
+
+	/**
+	 * The seeds of one block that carry a `@self.slug`.
+	 *
+	 * @param mixed $seeds The block's value.
+	 *
+	 * @return list<array<mixed>>
+	 */
+	private static function slugSeeds(mixed $seeds): array {
+		if (is_array($seeds) === false) {
+			return [];
+		}
+
+		$kept = [];
+		foreach ($seeds as $seed) {
+			if (is_array($seed) === true && (string)($seed['@self']['slug'] ?? '') !== '') {
+				$kept[] = $seed;
+			}
+		}
+
+		return $kept;
+	}//end slugSeeds()
 
 	/**
 	 * Deep-merge a register fragment onto the base config (ADR-037).
