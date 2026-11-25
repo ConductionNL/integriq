@@ -345,14 +345,22 @@ class OpenApiPublishServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testATrailingSlashRouteIsPublishedWithItsSlash(): void {
-		$this->rows['endpoint'][] = ['uuid' => 'ep-slash', 'name' => 'Besluiten', 'endpoint' => 'run/besluiten/', 'endpointArray' => ['run', 'besluiten', ''], 'method' => 'GET', 'targetType' => 'api', 'targetId' => 'src-1'];
-		$this->rows['endpoint'][] = ['uuid' => 'ep-array', 'name' => 'Array only', 'endpointArray' => ['run', 'besluit', ''], 'method' => 'GET', 'targetType' => 'api', 'targetId' => 'src-1'];
-		$this->rows['endpoint'][] = ['uuid' => 'ep-root', 'name' => 'Root', 'endpoint' => '/', 'endpointArray' => ['', ''], 'method' => 'GET', 'targetType' => 'api', 'targetId' => 'src-1'];
-		$product = ['uuid' => 'p', 'name' => 'Besluiten API', 'visibility' => 'public', 'status' => 'active', 'endpoints' => ['ep-slash', 'ep-array', 'ep-root', 'ep-zaak']];
+		$api = ['method' => 'GET', 'targetType' => 'api', 'targetId' => 'src-1'];
+		$slash = ['uuid' => 'ep-slash', 'name' => 'Besluiten', 'endpoint' => 'run/besluiten/'];
+		$this->rows['endpoint'][] = $slash + ['endpointArray' => ['run', 'besluiten', '']] + $api;
+		$this->rows['endpoint'][] = ['uuid' => 'ep-array', 'name' => 'Array only', 'endpointArray' => ['run', 'besluit', '']] + $api;
+		$this->rows['endpoint'][] = ['uuid' => 'ep-root', 'name' => 'Root', 'endpoint' => '/', 'endpointArray' => ['', '']] + $api;
+		$product = [
+			'uuid' => 'p',
+			'name' => 'Besluiten API',
+			'visibility' => 'public',
+			'status' => 'active',
+			'endpoints' => ['ep-slash', 'ep-array', 'ep-root', 'ep-zaak'],
+		];
 
 		$document = $this->service()->productDocument(product: self::entity(row: $product), serverUrl: self::SERVER);
 		$this->assertValidOpenApi31(document: $document);
 
-		$this->assertSame(['/run/besluit/', '/run/besluiten/', '/zaken'], array_keys($document['paths']));
+		$this->assertSame(expected: ['/run/besluit/', '/run/besluiten/', '/zaken'], actual: array_keys($document['paths']));
 	}//end testATrailingSlashRouteIsPublishedWithItsSlash()
 }//end class

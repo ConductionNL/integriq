@@ -259,7 +259,11 @@ class OpenApiPublishService {
 			return;
 		}
 
-		[$path, $pathParameters] = self::templatedPath(segments: $segments, trailingSlash: self::endsWithSlash(data: $data));
+		[$path, $pathParameters] = self::templatedPath(segments: $segments);
+		if (self::endsWithSlash(data: $data) === true) {
+			$path .= '/';
+		}
+
 		$operation = $this->operationFor(document: $document, data: $data, pathParameters: $pathParameters);
 		$operation = self::named(operation: $operation, data: $data, uuid: (string) $endpoint->getUuid());
 
@@ -320,14 +324,11 @@ class OpenApiPublishService {
 	/**
 	 * The OpenAPI path of route segments, with `{x}` and `{{x}}` placeholders as path parameters.
 	 *
-	 * @param array<int,string|int|float|bool> $segments      The route segments.
-	 * @param bool                             $trailingSlash Whether the route ends in a slash.
+	 * @param array<int,string|int|float|bool> $segments The route segments.
 	 *
 	 * @return array{0:string,1:array<int,string>} The path and its parameter names.
-	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
 	 */
-	private static function templatedPath(array $segments, bool $trailingSlash=false): array {
+	private static function templatedPath(array $segments): array {
 		$pathParameters = [];
 		foreach ($segments as $index => $segment) {
 			if (preg_match('#^\{\{?\s*([^}\s]+)\s*\}?\}$#', (string) $segment, $match) === 1) {
@@ -336,12 +337,7 @@ class OpenApiPublishService {
 			}
 		}
 
-		$path = '/'.implode('/', $segments);
-		if ($trailingSlash === true) {
-			$path .= '/';
-		}
-
-		return [$path, $pathParameters];
+		return ['/'.implode('/', $segments), $pathParameters];
 	}//end templatedPath()
 
 	/**
