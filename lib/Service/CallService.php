@@ -2162,7 +2162,7 @@ class CallService implements CallServiceInterface {
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
 	 */
 	private function guardCallPreconditions(
 		ObjectEntity $source,
@@ -3163,8 +3163,8 @@ class CallService implements CallServiceInterface {
 	 *
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
 	 */
 	private function paceCall(ObjectEntity $source, array &$sourceData, ?\DateTime $errorExpires, bool $live): ObjectEntity|int {
 		$decision = $this->pacer?->turn(sourceKey: (string)($source->getUuid() ?? $source->getId()), sourceData: $sourceData, live: $live);

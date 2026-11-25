@@ -989,7 +989,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @return bool True when the page cursor is kept.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
 	 */
 	private function resumesFromPageCursor(array $source): bool {
 		return ($source['rateLimitLimit'] ?? null) !== null

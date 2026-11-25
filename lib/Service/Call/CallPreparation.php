@@ -85,7 +85,7 @@ final class CallPreparation {
 	 *
 	 * @return bool True for a live caller.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
 	 */
 	public function takePacingMode(): bool {
 		$live = (($this->config['pacing'] ?? null) === 'live' || $this->request->persistLog === false);

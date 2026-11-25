@@ -3152,7 +3152,10 @@ OC.L10N.register(
         "Assigned to {case}": "Toegewezen aan {case}",
         "Reply sent": "Antwoord verstuurd",
         "The reply was not sent.": "Het antwoord is niet verstuurd.",
-        "The message could not be assigned.": "Het bericht kon niet worden toegewezen."
+        "The message could not be assigned.": "Het bericht kon niet worden toegewezen.",
+        "Pace: calls per window": "Tempo: aanroepen per venster",
+        "Pace: window (seconds)": "Tempo: venster (seconden)",
+        "Pace: burst": "Tempo: piek"
     },
     "nplurals=2; plural=(n != 1);"
 )
