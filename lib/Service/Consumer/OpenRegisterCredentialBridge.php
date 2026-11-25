@@ -52,7 +52,7 @@ use OCP\IUserSession;
  * check is REFUSED with a message saying so. There is no fallback to a local
  * or looser check.
  *
- * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
  *
  * It bridges to each of OpenRegister's credential checks, so it depends on each of them.
  *
@@ -127,7 +127,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 *
 	 * @throws AuthenticationException When the token is refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeJwt(string $authorization): void {
 		$this->resolvedConsumer = null;
@@ -163,7 +163,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 *
 	 * @throws AuthenticationException When the key is refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeApiKey(string $header, array $keys): void {
 		$this->resolvedConsumer = null;
@@ -240,7 +240,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 *
 	 * @throws AuthenticationException When the credentials are refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeBasic(string $header, array $users, array $groups): void {
 		$this->resolvedConsumer = null;
@@ -263,7 +263,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 *
 	 * @throws AuthenticationException When the call is refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeOAuth(string $header, array $users, array $groups): void {
 		$this->resolvedConsumer = null;
@@ -285,7 +285,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 *
 	 * @throws AuthenticationException When the session is refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeNcSession(array $users = [], array $groups = []): void {
 		$this->resolvedConsumer = null;
@@ -309,7 +309,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 *
 	 * @throws AuthenticationException When the claims are refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-keeps-its-token-lifetime-cap-req-007
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-keeps-its-token-lifetime-cap-req-007
 	 */
 	public function validatePayload(array $payload): void {
 		$this->assertEntryPoints();
@@ -344,7 +344,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function getResolvedConsumer(): ?ObjectEntity {
 		return $this->resolvedConsumer;
@@ -495,7 +495,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 *
 	 * @return bool True when every required entry point is callable and the ConsumerSource interface exists.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) delegates to the one shared rule set
 	 */

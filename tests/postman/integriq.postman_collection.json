@@ -5638,7 +5638,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006",
+                  "// @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006",
                   "// Task 6 live check, written as a Newman folder: fresh names and an HS256 secret per run.",
                   "const run = Date.now() + '-' + Math.floor(Math.random() * 1e6);",
                   "pm.collectionVariables.set('caRun', run);",
@@ -5998,7 +5998,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-keeps-its-token-lifetime-cap-req-007",
+                  "// @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-keeps-its-token-lifetime-cap-req-007",
                   "pm.test('401', () => pm.response.to.have.status(401));",
                   "const b = pm.response.json();",
                   "pm.test('the cap message', () => pm.expect(b.error).to.eql('The token lifetime exceeds the maximum allowed duration'));",

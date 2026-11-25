@@ -18,7 +18,7 @@
  * @version   GIT: <git_id>
  * @link      https://github.com/ConductionNL/integriq
  *
- * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -38,7 +38,7 @@ use Throwable;
 /**
  * Warns when OpenRegister is too old for integriq's inbound authentication.
  *
- * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
  */
 class OpenRegisterEntryPointsCheck implements ISetupCheck {
 
@@ -71,7 +71,7 @@ class OpenRegisterEntryPointsCheck implements ISetupCheck {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function getCategory(): string {
 		return 'system';
@@ -83,7 +83,7 @@ class OpenRegisterEntryPointsCheck implements ISetupCheck {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function getName(): string {
 		return $this->l10n->t('Integriq: OpenRegister credential checks');
@@ -98,7 +98,7 @@ class OpenRegisterEntryPointsCheck implements ISetupCheck {
 	 * @SuppressWarnings(PHPMD.StaticAccess) SetupResult's named constructors are the only way Nextcloud offers to
 	 * build one; the bridge's probe is static so the check and the bridge share one verdict.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function run(): SetupResult {
 		if (class_exists(self::AUTHORIZATION_SERVICE) === false) {

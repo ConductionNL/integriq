@@ -56,5 +56,5 @@ Kind: code. Size M. Hydra gate 23 rule 6 on `lib/Service/AuthorizationService.ph
 ## Verification
 - [x] PHPUnit unit tests for new/changed business logic (`tests/Unit/`)
 - [x] Newman/Postman tests for new/changed API endpoints: no endpoint changes shape; the live recipe is Task 6, written, runs in nightly
-- [ ] Vitest: N/A, no frontend surface
-- [ ] Playwright: N/A, the scenarios carry `@e2e exclude` with the reason
+- [x] Vitest: N/A, no frontend surface
+- [x] Playwright: N/A, the scenarios carry `@e2e exclude` with the reason
