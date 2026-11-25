@@ -3591,7 +3591,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return JSONResponse|array|null A refusal, a finding for the call log, or null when it passes.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	private function validateMessage(array $endpointData, string $direction, mixed $body, array $context): JSONResponse|array|null {
 		if ((string)($endpointData['validation'][$direction]['messageSchema'] ?? '') === '') {

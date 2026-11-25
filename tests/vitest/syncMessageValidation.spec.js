@@ -10,7 +10,7 @@ import axios from '@nextcloud/axios'
  * REQ-MSV-003): `{mode, messageSchema}` under `sourceConfig` or
  * `targetConfig`, with mode `record` until someone picks `refuse`.
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'

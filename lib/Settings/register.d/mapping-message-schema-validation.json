@@ -15,7 +15,7 @@
         "icon": "FileCheckOutline",
         "version": "1.0.0",
         "summary": "The schema a message must match",
-        "description": "A JSON Schema, an XSD or an OpenAPI description that an endpoint or a synchronization checks its messages against. See openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001.",
+        "description": "A JSON Schema, an XSD or an OpenAPI description that an endpoint or a synchronization checks its messages against. See openspec/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001.",
         "type": "object",
         "required": [
           "name",

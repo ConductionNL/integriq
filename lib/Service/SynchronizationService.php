@@ -10641,7 +10641,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @throws MessageValidationRefusedException In mode refuse, when the message does not match.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	private function inspectMessage(array $config, string $side, mixed $message, ?string $originId): ?array {
 		if (SynchronizationMessageGate::declares(config: $config) === false) {
@@ -10673,7 +10673,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return SynchronizationMessageGate|null
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	private function messageGate(): ?SynchronizationMessageGate {
 		if ($this->messageGateResolved === false) {
@@ -10700,7 +10700,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @throws MessageValidationRefusedException In mode refuse, when the body does not match.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	private function inspectTargetBody(array $targetConfig, array $contract): void {
 		$originId = null;
@@ -10726,7 +10726,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return array The result, with the findings under `validation`.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	private function takeValidationFindings(array $result): array {
 		foreach ($this->pendingValidationFindings as $finding) {

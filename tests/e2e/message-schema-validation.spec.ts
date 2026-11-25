@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md
+ * Spec coverage: openspec/specs/message-schema-validation/spec.md
  *
  * The message schemas page under Automation: both seeds are listed, a
  * partner's XSD is stored once and listed with its kind and version, and a

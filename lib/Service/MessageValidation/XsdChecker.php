@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -38,7 +38,7 @@ use OCA\Integriq\Util\SafeXmlParser;
  * loads nothing, so a relative location is not read from the server's disk
  * either.
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ValidationOutcome's named constructors build a value object;
  *   SafeXmlParser::loadDom is the app's one hardened XML loader.
@@ -70,7 +70,7 @@ class XsdChecker {
 	 *
 	 * @return string|null The parser's message.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
 	 */
 	public function documentProblem(string $xsd): ?string {
 		$previousErrors = libxml_use_internal_errors(true);
@@ -102,7 +102,7 @@ class XsdChecker {
 	 *
 	 * @return ValidationOutcome
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
 	 */
 	public function check(string $xsd, mixed $payload): ValidationOutcome {
 		if (is_string($payload) === false) {

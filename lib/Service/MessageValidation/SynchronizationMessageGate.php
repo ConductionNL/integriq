@@ -20,7 +20,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Psr\Log\LoggerInterface;
  * finding for the run log and lets the message through. A declared validation
  * is never skipped: an unreadable message schema is a failure, not a pass.
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
  */
 class SynchronizationMessageGate {
 
@@ -79,7 +79,7 @@ class SynchronizationMessageGate {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	public static function declares(array $config): bool {
 		$declared = ($config['validation'] ?? null);
@@ -94,7 +94,7 @@ class SynchronizationMessageGate {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	public static function refuses(array $config): bool {
 		return (($config['validation']['mode'] ?? 'record') === 'refuse');
@@ -113,7 +113,7 @@ class SynchronizationMessageGate {
 	 *
 	 * @throws MessageValidationRefusedException In mode refuse, when the message does not match.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	public function inspect(array $config, string $side, mixed $message, ?string $originId = null): ?array {
 		if (self::declares(config: $config) === false) {
@@ -152,7 +152,7 @@ class SynchronizationMessageGate {
 	 *
 	 * @return string EndpointMessageGate::RESPONSE or EndpointMessageGate::REQUEST.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	private static function directionOf(string $side): string {
 		if ($side === self::SOURCE) {
@@ -169,7 +169,7 @@ class SynchronizationMessageGate {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	private function recorded(array $finding): void {
 		$this->logger->warning(
@@ -186,7 +186,7 @@ class SynchronizationMessageGate {
 	 *
 	 * @return MessageValidationRefusedException
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 	 */
 	public static function unavailable(array $config, string $side): MessageValidationRefusedException {
 		return new MessageValidationRefusedException(
