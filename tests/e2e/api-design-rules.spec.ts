@@ -14,6 +14,9 @@
  *
  * The product is this run's own, with one endpoint whose path ends in a
  * slash, so the built-in rule `/core/no-trailing-slash` finds an error. The
+ * description the gateway writes also fails rules that hold for every product
+ * on the instance (contact, URI version, API-Version header, http); the waiver
+ * test waives those first, so the product carries the one error it is about. The
  * seeded `besluiten-api` is left alone: other specs read its seeded findings.
  * Making the product active goes through OpenRegister's object API, where
  * ApiProductPublishGuardListener refuses it; the rule evaluation itself
@@ -72,6 +75,33 @@ async function makeActive(request: APIRequestContext) {
 	})
 }
 
+/** A design finding, as the check and the refusal return it. */
+type Finding = { id: string, ruleId: string, severity: string, status: string }
+
+/**
+ * Run the design check on the product through the app's API.
+ *
+ * @param request The request fixture.
+ * @return The findings.
+ */
+async function checkDesign(request: APIRequestContext): Promise<Finding[]> {
+	const resp = await request.post(`${APP_BASE}/api/products/${ids.product}/design-check`, { failOnStatusCode: false, headers: HEADERS })
+	expect(resp.status(), `the design check: ${await resp.text()}`).toBe(200)
+	const body = await resp.json()
+
+	return (Array.isArray(body) ? body : (body.findings ?? [])) as Finding[]
+}
+
+/**
+ * The rule ids of the open errors a refusal lists.
+ *
+ * @param body The refusal's JSON body.
+ * @return The rule ids.
+ */
+function openErrorRuleIds(body: { errors?: { findings?: Finding[] } }): string[] {
+	return (body.errors?.findings ?? []).filter((f) => f.severity === 'error' && f.status === 'open').map((f) => f.ruleId)
+}
+
 /**
  * Open the product page and wait for its design rules panel.
  *
@@ -121,7 +151,8 @@ test.describe('gateway-api-design-rules-check: checking a product before it is p
 		await expect(errors).toBeVisible({ timeout: 30_000 })
 		const finding = errors.getByRole('listitem').filter({ hasText: RULE })
 		await expect(finding).toBeVisible()
-		await expect(finding.locator('code'), 'the path in the description').toContainText('besluiten/')
+		// The path is a JSON Pointer into the description, as the seeded finding stores it (`~1` is `/`).
+		await expect(finding.locator('code'), 'the path in the description').toHaveText(`/paths/~1${RUN}~1besluiten~1`)
 		await expect(finding.getByRole('link', { name: RULE }), 'a link to the rule').toHaveAttribute('href', /^https?:\/\//)
 
 		const groups = panel.locator('[data-testid^="api-design-group-"]')
@@ -130,9 +161,22 @@ test.describe('gateway-api-design-rules-check: checking a product before it is p
 
 	// @e2e api-design-rules::a-waiver-lets-a-known-exception-through
 	test('an open error refuses activation until it is waived, and the page shows the waiver', async ({ page, request }) => {
+		// The scenario's GIVEN is one open error. A description the gateway writes also fails
+		// rules that hold for every product on this instance (no info.contact, no /vN in the
+		// server URL, no API-Version header, http in the sandbox); those are waived first so the
+		// product carries exactly the one error this scenario is about.
+		for (const other of (await checkDesign(request)).filter((f) => f.severity === 'error' && f.status === 'open' && f.ruleId !== RULE)) {
+			const waived = await request.post(`${APP_BASE}/api/products/design-findings/${other.id}/waive`, {
+				failOnStatusCode: false,
+				headers: HEADERS,
+				data: { reason: `instance-wide, not this scenario's finding (${RUN})` },
+			})
+			expect(waived.status(), `waiving ${other.ruleId}: ${await waived.text()}`).toBe(200)
+		}
+
 		const refused = await makeActive(request)
 		expect(refused.status(), 'activation with an open error is refused').toBeGreaterThanOrEqual(400)
-		expect(await refused.text(), 'the refusal names the finding').toContain(RULE)
+		expect(openErrorRuleIds(await refused.json()), 'the refusal lists the one open finding').toEqual([RULE])
 
 		const panel = await openPanel(page)
 		const finding = panel.getByTestId('api-design-group-error').getByRole('listitem').filter({ hasText: RULE })
@@ -141,7 +185,8 @@ test.describe('gateway-api-design-rules-check: checking a product before it is p
 
 		const dialog = page.getByTestId('waive-finding-dialog')
 		await expect(dialog).toBeVisible({ timeout: 15_000 })
-		await dialog.getByTestId('waive-finding-reason').locator('input, textarea').first().fill(REASON)
+		// NcTextField puts the test id on the input itself.
+		await dialog.getByRole('textbox', { name: 'Reason' }).fill(REASON)
 		await dialog.getByTestId('waive-finding-submit').click()
 		await expect(panel.getByText(REASON)).toBeVisible({ timeout: 15_000 })
 

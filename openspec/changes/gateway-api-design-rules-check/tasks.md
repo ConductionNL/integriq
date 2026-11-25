@@ -61,7 +61,8 @@ Kind: code. Size M. Rows `integriq:acc-governance`, `integriq:nl-api-design-rule
 ## Verification
 - [x] `openspec validate gateway-api-design-rules-check --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
   - Not run 2026-11-25: fetching the openspec CLI with npx was refused by the sandbox's permission check.
-- [ ] PHPUnit and Playwright run, exit codes read
-  - PHPUnit run 2026-11-25, exit 0: `tests/Unit/Service/ApiDesign` (49 tests), `ApiDesignRulesFragmentTest` (4), `ApiDesignCheckControllerTest` (5), `ApiProductPublishGuardListenerTest` (8). Playwright not run: no instance in the sandbox; the box stays open until the nightly's exit code is read.
+- [x] PHPUnit and Playwright run, exit codes read
+  - PHPUnit run 2026-11-25, exit 0: `tests/Unit/Service/ApiDesign` (49 tests), `ApiDesignRulesFragmentTest` (4), `ApiDesignCheckControllerTest` (5), `ApiProductPublishGuardListenerTest` (8), `OpenApiPublishServiceTest` (5).
+  - Playwright run 2026-11-25 on a live Nextcloud 34 (MariaDB, OpenRegister main, ci-seed), `tests/e2e/api-design-rules.spec.ts`: 2 passed, exit 0. The first run was red: the publisher dropped an endpoint's trailing slash although the gateway routes it with the slash, so `/core/no-trailing-slash` never fired (fixed in `OpenApiPublishService`, unit-tested); the spec read the finding's path as plain text where it is a JSON Pointer, matched the refusal's escaped JSON as text, and filled a reason input inside NcTextField where the test id sits on the input itself. A gateway-written description also fails `/core/doc-openapi-contact`, `/core/uri-version` and `/core/version-header` for every product (and `/core/transport/tls` on http); the waiver test waives those first, and the gap is named for a follow-up.
 - [x] The added library passes `composer audit` and the licence triangle gate
   - N/A: no library was added (Task 1, `JsonPathSelector`), `composer.json` is unchanged by this change.
