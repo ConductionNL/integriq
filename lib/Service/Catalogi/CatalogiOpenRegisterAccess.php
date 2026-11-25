@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Catalogi;
 
+use OCA\Integriq\Service\Helper\RegisterSave;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -144,8 +145,7 @@ class CatalogiOpenRegisterAccess {
 	public function createType(CatalogiBinding $binding, array $stored): void {
 		$this->service(name: self::OBJECT_SERVICE)->saveObject(
 			object: $stored,
-			register: $binding->register,
-			schema: $binding->schema
+			options: RegisterSave::options(register: $binding->register, schema: $binding->schema)
 		);
 	}//end createType()
 

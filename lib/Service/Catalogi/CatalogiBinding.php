@@ -121,8 +121,11 @@ final class CatalogiBinding {
 	 */
 	public static function fromObject(array $row): ?self {
 		$uuid = trim((string)($row['publishedUuid'] ?? ''));
-		$register = trim((string)($row['register'] ?? ''));
-		$schema = trim((string)($row['schema'] ?? ''));
+		// OpenRegister drops `register` and `schema` from an object body, so the
+		// binding names them typesRegister and typesSchema; a row stored under
+		// the first names (a seed or import from before) is still read.
+		$register = trim((string)($row['typesRegister'] ?? ($row['register'] ?? '')));
+		$schema = trim((string)($row['typesSchema'] ?? ($row['schema'] ?? '')));
 		if ($uuid === '' || $register === '' || $schema === '') {
 			return null;
 		}

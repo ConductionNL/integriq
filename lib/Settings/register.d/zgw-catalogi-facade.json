@@ -13,7 +13,7 @@
         "slug": "catalogi_binding",
         "title": "Catalogi API binding",
         "icon": "BookOpenPageVariantOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Which catalogue the Catalogi API serves, over which schema of document types",
         "description": "Serves the organisation's document types as the informatieobjecttypen of one catalogue, so a Documenten API references them and no second catalogue is kept. Only the clients listed here, holding catalogi.lezen, may read it.",
         "authorization": {
@@ -32,8 +32,8 @@
         },
         "required": [
           "publishedUuid",
-          "register",
-          "schema"
+          "typesRegister",
+          "typesSchema"
         ],
         "type": "object",
         "properties": {
@@ -60,12 +60,12 @@
             "title": "Catalogue uuid",
             "description": "The uuid the catalogue is published under. It stays the same when a register is rebuilt."
           },
-          "register": {
+          "typesRegister": {
             "type": "string",
             "title": "Register",
-            "description": "The register that holds the document types."
+            "description": "The register that holds the document types. Named typesRegister because OpenRegister reserves `register` and `schema` as request keys and drops them from an object body."
           },
-          "schema": {
+          "typesSchema": {
             "type": "string",
             "title": "Schema",
             "description": "The schema that holds the document types."

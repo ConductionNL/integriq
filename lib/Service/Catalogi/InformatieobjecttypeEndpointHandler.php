@@ -142,6 +142,31 @@ class InformatieobjecttypeEndpointHandler {
 	}//end write()
 
 	/**
+	 * The URLs of a binding's definitive types, for a catalogue the gate already opened.
+	 *
+	 * The caller has checked the token: opening the gate again in the same
+	 * request presents the same jti, which the credential bridge refuses as a
+	 * replay, so the catalogue would list no types at all.
+	 *
+	 * @param CatalogiBinding $binding The binding.
+	 * @param string          $baseUrl The absolute URL of `/catalogi/api/v1`.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-integriq-serves-catalogussen-and-informatieobjecttypen-read-only-req-zcs-001
+	 */
+	public function definitiveUrls(CatalogiBinding $binding, string $baseUrl): array {
+		$urls = [];
+		foreach ($this->types(binding: $binding, baseUrl: $baseUrl) as $type) {
+			if ($type['concept'] === false) {
+				$urls[] = (string)$type['url'];
+			}
+		}
+
+		return $urls;
+	}//end definitiveUrls()
+
+	/**
 	 * The URL of the bound catalogue.
 	 *
 	 * @param CatalogiBinding $binding The binding.

@@ -125,7 +125,9 @@
               "const b = pm.response.json();",
               "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id));",
               "pm.expect(id, 'the created id').to.be.a('string').and.not.empty;",
-              "pm.collectionVariables.set('ctSchema', String(id));"
+              "pm.collectionVariables.set('ctSchema', String(id));",
+              "// A register lists its schemas by numeric id (OpenRegister's register-scoped slug boundary); a uuid there is never resolved.",
+              "pm.collectionVariables.set('ctSchemaNumId', String(b.id || (b['@self'] && b['@self'].id)));"
             ]
           }
         }
@@ -148,7 +150,7 @@
         "url": "{{base_url}}/index.php/apps/openregister/api/registers",
         "body": {
           "mode": "raw",
-          "raw": "{\"title\": \"Newman documenten {{ctStamp}}\", \"slug\": \"{{ctRegister}}\", \"schemas\": [\"{{ctSchema}}\"]}",
+          "raw": "{\"title\": \"Newman documenten {{ctStamp}}\", \"slug\": \"{{ctRegister}}\", \"schemas\": [{{ctSchemaNumId}}]}",
           "options": {
             "raw": {
               "language": "json"
@@ -354,7 +356,7 @@
         "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/catalogi_binding",
         "body": {
           "mode": "raw",
-          "raw": "{\"domein\": \"NEWMN\", \"rsin\": \"123456782\", \"naam\": \"Newman catalogus {{ctStamp}}\", \"publishedUuid\": \"{{ctCatalogusUuid}}\", \"register\": \"{{ctRegister}}\", \"schema\": \"{{ctSchemaSlug}}\", \"clients\": [{\"clientId\": \"{{ctReader}}\", \"scopes\": [\"catalogi.lezen\"], \"concepts\": false}, {\"clientId\": \"{{ctOther}}\", \"scopes\": [\"documenten.lezen\"], \"concepts\": false}]}",
+          "raw": "{\"domein\": \"NEWMN\", \"rsin\": \"123456782\", \"naam\": \"Newman catalogus {{ctStamp}}\", \"publishedUuid\": \"{{ctCatalogusUuid}}\", \"typesRegister\": \"{{ctRegister}}\", \"typesSchema\": \"{{ctSchemaSlug}}\", \"clients\": [{\"clientId\": \"{{ctReader}}\", \"scopes\": [\"catalogi.lezen\"], \"concepts\": false}, {\"clientId\": \"{{ctOther}}\", \"scopes\": [\"documenten.lezen\"], \"concepts\": false}]}",
           "options": {
             "raw": {
               "language": "json"

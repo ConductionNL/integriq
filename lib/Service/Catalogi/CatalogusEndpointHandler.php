@@ -63,7 +63,7 @@ class CatalogusEndpointHandler {
 			return $gate['refusal'];
 		}
 
-		$catalogue = $this->catalogue(binding: $gate['binding'], authorization: $authorization, baseUrl: $baseUrl);
+		$catalogue = $this->catalogue(binding: $gate['binding'], baseUrl: $baseUrl);
 		$items = [];
 		if (self::matches(catalogue: $catalogue, query: $query) === true) {
 			$items[] = $catalogue;
@@ -95,21 +95,24 @@ class CatalogusEndpointHandler {
 			return (new CatalogiProblem(status: 404, code: 'not-found', title: 'No such catalogus.'))->answer();
 		}
 
-		return ['status' => 200, 'body' => $this->catalogue(binding: $gate['binding'], authorization: $authorization, baseUrl: $baseUrl)];
+		return ['status' => 200, 'body' => $this->catalogue(binding: $gate['binding'], baseUrl: $baseUrl)];
 	}//end show()
 
 	/**
 	 * The catalogue resource.
 	 *
-	 * @param CatalogiBinding $binding       The binding.
-	 * @param string          $authorization The `Authorization` header, for the type list.
-	 * @param string          $baseUrl       The absolute URL of `/catalogi/api/v1`.
+	 * The type list reuses the gate the caller opened: a second gate check
+	 * would present the token's jti again and be refused as a replay.
+	 *
+	 * @param CatalogiBinding $binding The binding.
+	 * @param string          $baseUrl The absolute URL of `/catalogi/api/v1`.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-integriq-serves-catalogussen-and-informatieobjecttypen-read-only-req-zcs-001
 	 */
-	private function catalogue(CatalogiBinding $binding, string $authorization, string $baseUrl): array {
-		$types = $this->types->index(authorization: $authorization, baseUrl: $baseUrl, query: ['page' => 1]);
-		$urls = array_column(($types['body']['results'] ?? []), 'url');
+	private function catalogue(CatalogiBinding $binding, string $baseUrl): array {
+		$urls = $this->types->definitiveUrls(binding: $binding, baseUrl: $baseUrl);
 
 		return [
 			'url' => $this->types->catalogusUrl(binding: $binding, baseUrl: $baseUrl),
