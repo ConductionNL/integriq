@@ -7,11 +7,12 @@
  * Finds a mapping object by uuid, id, slug or imported reference, for
  * MappingService and the mapping event a sibling app dispatches.
  *
- * @category Service
- * @package  OCA\Integriq\Service
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://www.Integriq.nl
+ * @category  Service
+ * @package   OCA\Integriq\Service
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://www.Integriq.nl
  */
 
 declare(strict_types=1);
@@ -20,7 +21,7 @@ namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjects;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -52,10 +53,10 @@ final class MappingFinder {
 	/**
 	 * Constructor.
 	 *
-	 * @param OrObjectService $objects OpenRegister's object service.
+	 * @param OpenRegisterObjects $objects OpenRegister's object service.
 	 */
 	public function __construct(
-		private readonly OrObjectService $objects,
+		private readonly OpenRegisterObjects $objects,
 	) {
 	}//end __construct()
 
