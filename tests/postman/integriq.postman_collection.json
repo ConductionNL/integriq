@@ -2971,7 +2971,7 @@
                   "const s = pm.response.json();",
                   "pm.test('points at the vendor server', () => pm.expect(s.location).to.eql('https://petstore.example.test/v1'));",
                   "const conf = s.configuration || {};",
-                  "pm.test('a credential is still to be named', () => pm.expect(((conf.authentication || {}).credentialRef || {}).credentialName).to.eql(''));",
+                  "pm.test('a credential is still to be named: no broker reference yet, and the source stays disabled until one is', () => { pm.expect((conf.authentication || {}).credentialRef).to.eql(undefined); pm.expect(s.isEnabled).to.eql(false); });",
                   "pm.test('the placeholder names the scheme', () => pm.expect((conf.credentialPlaceholders || []).map((c) => c.scheme)).to.eql(['api_key']));"
                 ]
               }
@@ -3059,7 +3059,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('the answer is the mock source\\'s', () => { const b = pm.response.json(); pm.expect(b.installed).to.eql(true); pm.expect(b).to.have.property('versionstring'); });"
+                  "pm.test('the answer is the mock source\\'s', () => { const b = pm.response.json(); const body = typeof b.body === 'string' ? JSON.parse(b.body) : b.body; pm.expect(b.statusCode).to.eql(200); pm.expect(body.installed).to.eql(true); pm.expect(body).to.have.property('versionstring'); });"
                 ]
               }
             }

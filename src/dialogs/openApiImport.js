@@ -5,7 +5,7 @@
  * Pure helpers of OpenApiImportDialog: the request body and the sentences that
  * report an import.
  *
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
  */
 
 /**
@@ -18,7 +18,7 @@
  * @param input.prefix
  * @param input.serverIndex
  * @return {object} The request body.
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
  */
 export function importRequest({ url = '', text = '', prefix = '', serverIndex = null } = {}) {
 	const body = { prefix: String(prefix).trim() }
@@ -40,7 +40,7 @@ export function importRequest({ url = '', text = '', prefix = '', serverIndex = 
  * @param {Function} t The translate function.
  * @param {Function} n The plural translate function.
  * @return {string} The sentence, or '' without a result.
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-an-administrator-connects-a-vendor-api-from-its-document
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-an-administrator-connects-a-vendor-api-from-its-document
  */
 export function importSummary(result, t, n) {
 	if (!result) {
@@ -68,7 +68,7 @@ export function importSummary(result, t, n) {
  * @param {object|null} result The import answer.
  * @param {Function} t The translate function.
  * @return {string} The sentence.
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-an-administrator-connects-a-vendor-api-from-its-document
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-an-administrator-connects-a-vendor-api-from-its-document
  */
 export function credentialSummary(result, t) {
 	const credentials = result?.source?.credentials ?? []
