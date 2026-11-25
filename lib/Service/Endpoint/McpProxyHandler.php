@@ -340,7 +340,10 @@ class McpProxyHandler {
 	}//end logFields()
 
 	/**
-	 * The HTTP status line of the upstream answer, in the caller's protocol.
+	 * The HTTP status line of the upstream answer.
+	 *
+	 * Only the code and phrase count: PHP takes the status from the line and
+	 * the web server speaks its own protocol version to the caller.
 	 *
 	 * @param ResponseInterface $upstream The upstream response.
 	 *
@@ -349,12 +352,7 @@ class McpProxyHandler {
 	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public static function statusLine(ResponseInterface $upstream): string {
-		$protocol = 'HTTP/1.1';
-		if (preg_match('#^HTTP/\d(\.\d)?$#', (string)($_SERVER['SERVER_PROTOCOL'] ?? '')) === 1) {
-			$protocol = (string)$_SERVER['SERVER_PROTOCOL'];
-		}
-
-		return trim($protocol . ' ' . $upstream->getStatusCode() . ' ' . str_replace(["\r", "\n"], '', $upstream->getReasonPhrase()));
+		return trim('HTTP/1.1 ' . $upstream->getStatusCode() . ' ' . str_replace(["\r", "\n"], '', $upstream->getReasonPhrase()));
 	}//end statusLine()
 
 	/**
