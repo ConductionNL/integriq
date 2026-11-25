@@ -4,7 +4,8 @@
  * Integriq DSO Account Rights.
  *
  * Asks OpenRegister whether an account holds actions on `dso_verzoek`,
- * through `PermissionHandler::hasPermission()`. That handler is not a
+ * through `PermissionHandler::hasPermission()`, in either of the two
+ * signatures OpenRegister has shipped (see takesPermissionAsk()). That handler is not a
  * published OpenRegister contract, so it is resolved lazily from the
  * container: integriq still loads without it, and the answer is then
  * "unknown" (null), never "allowed". See the design's "Contract gaps".
@@ -29,8 +30,11 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Dso;
 
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
+use ReflectionNamedType;
 use Throwable;
 
 /**
@@ -157,6 +161,11 @@ class DsoAccountRights {
 	 */
 	private function granted(AccountRightsCheck $check, string $action): ?bool {
 		try {
+			if ($this->takesPermissionAsk(handler: $check->handler) === true) {
+				$ask = (new PermissionAsk(schema: $check->schema, action: $action))->askedBy(userId: $check->userId, objectOwner: null);
+				return ($check->handler->hasPermission($ask) === true);
+			}
+
 			return ($check->handler->hasPermission(schema: $check->schema, action: $action, userId: $check->userId) === true);
 		} catch (Throwable $exception) {
 			$this->logger->error(
@@ -167,6 +176,28 @@ class DsoAccountRights {
 		}
 
 	}//end granted()
+
+	/**
+	 * Whether the handler takes one PermissionAsk, OpenRegister's current signature.
+	 *
+	 * Older OpenRegister releases take `schema`, `action` and `userId` as
+	 * separate arguments; current main takes a `PermissionAsk`. Calling the
+	 * old shape on the new handler raised "Unknown named parameter $schema",
+	 * which made every rights check unverifiable and every push a 503.
+	 *
+	 * @param object $handler The PermissionHandler, known to have hasPermission().
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 */
+	private function takesPermissionAsk(object $handler): bool {
+		$parameters = (new ReflectionMethod($handler, 'hasPermission'))->getParameters();
+		$type       = ($parameters[0] ?? null)?->getType();
+
+		return ($type instanceof ReflectionNamedType && $type->getName() === PermissionAsk::class);
+
+	}//end takesPermissionAsk()
 
 	/**
 	 * Resolve OpenRegister's PermissionHandler, or null when it is absent.

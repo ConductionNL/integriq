@@ -36,7 +36,7 @@ id 65), and the schema slugs used are: `source`, `mapping`, `rule`, `endpoint`,
 | 10. DSO STAM signature verification | `PUT /api/admin/dso-pki-config`; `POST /api/dso/stam/verzoeken` | valid HMAC signature -> 202 | forged/missing signature -> 401 | — |
 | 11. Observability (AppHost health/metrics) | `GET /api/health`; `GET /api/metrics` | health anonymous 200 (`status/checks.database/checks.openregister/app/version`); metrics admin 200 (exposition format, all 11 `openconnector_*` metric names) | — | metrics no-auth 401 |
 
-**Total: 58 requests, 79 assertions — all green.**
+**Total: 64 requests, 99 assertions — all green** (2026-11-25, Nextcloud 34.0.6 on MariaDB, openregister main, two consecutive runs).
 
 Folder 11 covers `adopt-apphost`'s Requirement: Declarative Metrics Parity / Declarative Health per ADR-006 (`openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md`) — the two scenarios each `@e2e exclude`s to this Newman suite as the API-contract source of truth. The 503-on-critical-failure health scenario is not exercised here (it requires deliberately breaking the DB connection, which this suite does not do); it is covered by the AppHost observability engine's own contract collection and unit tests.
 
