@@ -3039,9 +3039,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Consumer/OpenRegisterCredentialBridge.php:120 authorizeJwt() and :155 authorizeApiKey() hand the check to OpenRegister's AuthorizationService (DECISIONS 56, 62, 64; integriq's own AuthorizationService was removed by 441f67de on 5 Oct), passing lib/Service/Consumer/IntegriqConsumerSource.php, whose resolve() (:137-168) gives OpenRegister the consumer's userId; OpenRegister then makes that Nextcloud user act for the request, and the bridge clears the volatile user again when integriq's lifetime cap refuses the token (:136). A rule-inline apiKey map key => uid (:155, $keys) does the same for rule keys.",
 				"spec": "openspec/specs/consumer-management",
-				"change": "consumer-auth-on-openregister",
 				"requirement": [
-					"openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt :: integriq consumers are checked by OpenRegister (REQ-006)",
+					"openspec/specs/authorization-jwt :: integriq consumers are checked by OpenRegister (REQ-006)",
 					"openspec/specs/authorization-jwt :: API key authorization via header-to-uid map (REQ-004)"
 				],
 				"readOn": "2026-10-30"

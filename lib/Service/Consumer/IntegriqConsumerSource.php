@@ -43,7 +43,7 @@ use OCA\OpenRegister\Service\ObjectService;
  * OpenRegister older than #4361 the interface is missing and loading it is a
  * fatal error. OpenRegisterCredentialBridge does that check.
  *
- * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
  */
 class IntegriqConsumerSource implements ConsumerSource {
 
@@ -136,7 +136,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 * issuer instead, so it can be named for people; a name match is only
 	 * taken for a consumer with a static key.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 * @spec openspec/changes/access-oauth-and-token-validation/tasks.md#task-2
 	 */
 	public function findByIssuer(string $issuer): ?ResolvedConsumer {
@@ -216,7 +216,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 *
 	 * @return ResolvedConsumer|null The consumer, or null when no key matches.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function findByApiKey(string $apiKey): ?ResolvedConsumer {
 		if ($apiKey === '') {
@@ -274,7 +274,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	private static function holdsApiKey(array $data, string $apiKey): bool {
 		if (strtolower((string)($data['authorizationType'] ?? '')) !== 'apikey') {
@@ -318,7 +318,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 *
 	 * @return ObjectEntity The stored consumer, or the listed one when it cannot be read.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	private function unrendered(ObjectEntity $consumer): ObjectEntity {
 		$uuid = $consumer->getUuid();
@@ -367,7 +367,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 *
 	 * @return array{uuid: string|null, name: string, userId: string|null}
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	private static function whoOf(ObjectEntity $consumer, array $data): array {
 		return [
@@ -433,7 +433,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	private static function uuidOf(ObjectEntity $consumer, array $data): ?string {
 		$uuid = $consumer->getUuid();
@@ -451,7 +451,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	private static function stringOrNull(mixed $value): ?string {
 		if (is_string($value) === false) {
@@ -468,7 +468,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	private static function typeOf(array $data): ?string {
 		if (isset($data['authorizationType']) === false) {
