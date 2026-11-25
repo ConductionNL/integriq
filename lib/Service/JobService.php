@@ -343,6 +343,9 @@ class JobService implements JobServiceInterface {
 	 *                                          (execution-trace REQ-001/REQ-004). When supplied
 	 *                                          (`ExecutionTraceService::replay()`'s job-entryPoint
 	 *                                          dispatch), reused instead.
+	 * @param bool $scheduled Whether the cron loop (`run()`) started this run. A scheduled run of
+	 *                        a job without `userId` acts as the system (SystemWrite); a run
+	 *                        started by a person or an event delivery never does.
 	 *
 	 * @return ObjectEntity|null The job log entry created for this execution
 	 *
@@ -357,9 +360,16 @@ class JobService implements JobServiceInterface {
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
+	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
 	 */
-	public function executeJob(ObjectEntity $job, bool $forceRun = false, ?ExecutionTraceContext $trace = null): ?ObjectEntity {
+	public function executeJob(
+		ObjectEntity $job,
+		bool $forceRun = false,
+		?ExecutionTraceContext $trace = null,
+		bool $scheduled = false
+	): ?ObjectEntity {
 		$run  = new JobRun(job: $job, forceRun: $forceRun);
+		$run->scheduled = $scheduled;
 		$gate = $this->checkJobMayRun(run: $run);
 		if ($gate['run'] === false) {
 			return $gate['log'];
@@ -538,7 +548,7 @@ class JobService implements JobServiceInterface {
 		$result = null;
 		$exception = null;
 		try {
-			$result = $action->run($arguments);
+			$result = $run->callAction(action: $action, arguments: $arguments);
 		} catch (\Throwable $e) {
 			$exception = $e;
 		} finally {
@@ -1074,7 +1084,7 @@ class JobService implements JobServiceInterface {
 			// the failing job's nextRun unchanged (otherwise it stays "due
 			// immediately" and re-blocks every subsequent tick).
 			try {
-				$log = $this->executeJob(job: $job);
+				$log = $this->executeJob(job: $job, scheduled: true);
 				if ($log !== null) {
 					$results[] = $log;
 				}
