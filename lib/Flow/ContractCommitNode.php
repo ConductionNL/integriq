@@ -78,6 +78,7 @@ use DateTime;
 use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -420,14 +421,71 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 
 		$this->persistPage(payloads: $payloads, reference: $reference);
 
-		return $this->stampItems(
+		$out = $this->stampItems(
 			indexed: $indexed,
 			plans: $plans,
 			contractPosition: $contractPosition,
 			stepId: $stepId,
 			reference: $reference
 		);
+
+		// Written after the output is fully constructed, not right after the
+		// persist itself, matching OpenRegister's ObjectWriteNode convention
+		// (and ContractSweepNode's own report call): a report describes a
+		// COMPLETED node execution.
+		$this->writeReport(context: $context, report: $this->commitCounts(plans: $plans));
+
+		return $out;
 	}//end commitPage()
+
+	/**
+	 * Tally what a page's plans decided: committed, skipped, or failed to build.
+	 *
+	 * `$plans[$index]` is the committed uuid (string) on success, null for a
+	 * `skip`/`invalid` decision that was never committable, or the caught
+	 * {@see FlowNodeException} for a payload that could not be built under
+	 * `continue`/`dead_letter` (see commitPage()'s onError handling).
+	 *
+	 * @param array<int, string|FlowNodeException|null> $plans Per-item outcome, same order as the input.
+	 *
+	 * @return array{committed: int, skipped: int, failed: int} The counts.
+	 */
+	private function commitCounts(array $plans): array {
+		$committed = 0;
+		$skipped = 0;
+		$failed = 0;
+		foreach ($plans as $plan) {
+			if ($plan instanceof FlowNodeException) {
+				$failed++;
+			} elseif ($plan === null) {
+				$skipped++;
+			} else {
+				$committed++;
+			}
+		}
+
+		return ['committed' => $committed, 'skipped' => $skipped, 'failed' => $failed];
+	}//end commitCounts()
+
+	/**
+	 * Write this hop's commit tally onto the run log, via the context's report handle.
+	 *
+	 * Silently a no-op when the handle is absent — a run from before this
+	 * handle existed, or a caller that never wired one.
+	 *
+	 * @param array $context The run context.
+	 * @param array $report The summary, keyed per {@see FlowStepReport::put()}.
+	 *
+	 * @return void
+	 */
+	private function writeReport(array $context, array $report): void {
+		$handle = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($handle instanceof FlowStepReport) === false) {
+			return;
+		}
+
+		$handle->put(key: 'commit', value: $report);
+	}//end writeReport()
 
 	/**
 	 * Build one contract payload from an item's decision block.
