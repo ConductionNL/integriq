@@ -83,7 +83,7 @@ class MappingExecutionRequestedListener implements IEventListener {
 
 		$slug = $event->getMappingSlug();
 		if (array_key_exists($slug, $this->resolved) === false) {
-			$this->resolved[$slug] = $this->mappingService->findMappingForApp(reference: $slug);
+			$this->resolved[$slug] = $this->mappingService->findMapping(reference: $slug, scoped: false);
 		}
 
 		$mapping = $this->resolved[$slug];

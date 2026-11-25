@@ -241,39 +241,9 @@ class MappingService implements MappingServiceInterface {
 	 * fallback could run, so a mapping known only by its imported reference
 	 * never resolved (mapping-woo-index-field-mapping D4).
 	 *
-	 * @param string $reference The uuid, id, slug or reference.
-	 *
-	 * @return ObjectEntity|null The mapping object, or null when nothing matches.
-	 *
-	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
-	 */
-	public function findMapping(string $reference): ?ObjectEntity {
-		return $this->lookupMapping(reference: $reference, scoped: true);
-	}//end findMapping()
-
-	/**
-	 * Resolve a mapping for a sibling app's MappingExecutionRequestedEvent, whoever
-	 * the caller of the request is.
-	 *
-	 * The mapping is configuration and its `callableBy` list decides which app may
-	 * run it, so the lookup does not narrow to the caller's read rule or
-	 * organisation. The caller can be anonymous: the Woo-index harvester reads
-	 * opencatalogi's sitemap without a session, and a scoped lookup found no mapping
-	 * for it, so the sitemap fell back to the built-in fields. Only the lookup is
-	 * unscoped; the mapping runs over the input the app hands it.
-	 *
-	 * @param string $reference The uuid, id, slug or reference.
-	 *
-	 * @return ObjectEntity|null The mapping object, or null when nothing matches.
-	 *
-	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
-	 */
-	public function findMappingForApp(string $reference): ?ObjectEntity {
-		return $this->lookupMapping(reference: $reference, scoped: false);
-	}//end findMappingForApp()
-
-	/**
-	 * Resolve a mapping by uuid, id or slug, then by imported identifiers.
+	 * Unscoped (`$scoped` false) for a sibling app's MappingExecutionRequestedEvent:
+	 * its `callableBy` decides who may run the mapping, and the caller may be
+	 * anonymous (the Woo-index harvester reading opencatalogi's sitemap).
 	 *
 	 * @param string $reference The uuid, id, slug or reference.
 	 * @param bool   $scoped    Whether the caller's read rule and organisation narrow the lookup.
@@ -282,7 +252,7 @@ class MappingService implements MappingServiceInterface {
 	 *
 	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
 	 */
-	private function lookupMapping(string $reference, bool $scoped): ?ObjectEntity {
+	public function findMapping(string $reference, bool $scoped=true): ?ObjectEntity {
 		try {
 			$object = $this->orObjectService->find(
 				id: $reference,
@@ -299,7 +269,7 @@ class MappingService implements MappingServiceInterface {
 		}
 
 		return $object;
-	}//end lookupMapping()
+	}//end findMapping()
 
 	/**
 	 * Find a mapping by imported configuration identifiers.

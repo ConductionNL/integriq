@@ -275,13 +275,13 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 	 * The lookup for an app's event is not narrowed to the caller: the Woo-index
 	 * harvester reads opencatalogi's sitemap anonymously, and a lookup scoped to that
 	 * caller found no mapping, so the sitemap fell back to the built-in fields.
-	 * findMapping() for everything else stays scoped.
+	 * findMapping() for everything else stays scoped by default.
 	 *
 	 * @return void
 	 */
 	public function testAnAppEventLooksTheMappingUpWithoutTheCallersScope(): void {
 		$seen = [];
-		$orObjectService = $this->createMock(OrObjectService::class);
+		$orObjectService = $this->createMock(originalClassName: OrObjectService::class);
 		$orObjectService->method('find')->willReturnCallback(
 			function (...$args) use (&$seen): ObjectEntity {
 				$seen[] = ['rbac' => ($args['_rbac'] ?? $args[2] ?? true), 'multitenancy' => ($args['_multitenancy'] ?? $args[3] ?? true)];
@@ -289,12 +289,12 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 			}
 		);
 		$mappingService = new MappingService(
-			new ArrayLoader([]),
-			$this->createMock(CallService::class),
-			$this->createMock(FileService::class),
-			$this->createMock(ObjectService::class),
-			$orObjectService,
-			$this->createMock(SynchronizationContractService::class),
+			loader: new ArrayLoader(templates: []),
+			callService: $this->createMock(originalClassName: CallService::class),
+			fileService: $this->createMock(originalClassName: FileService::class),
+			objectService: $this->createMock(originalClassName: ObjectService::class),
+			orObjectService: $orObjectService,
+			synchronizationContractService: $this->createMock(originalClassName: SynchronizationContractService::class),
 		);
 		$listener = new MappingExecutionRequestedListener(mappingService: $mappingService, logger: new NullLogger());
 
