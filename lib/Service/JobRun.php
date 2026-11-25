@@ -66,12 +66,18 @@ final class JobRun {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectEntity $job      The job.
-	 * @param bool         $forceRun Whether this is a force run.
+	 * @param ObjectEntity $job       The job.
+	 * @param bool         $forceRun  Whether this is a force run.
+	 * @param bool         $scheduled Whether the cron loop started this run, rather than a
+	 *                                person or an event delivery. Only a scheduled run
+	 *                                without a userId acts as the system.
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectEntity $job,
 		public readonly bool $forceRun,
+		public readonly bool $scheduled = false,
 	) {
 		$this->jobData = $job->getObject();
 

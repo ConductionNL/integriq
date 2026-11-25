@@ -24,6 +24,8 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\SystemOperationContext;
+use OCP\IUser;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -89,6 +91,18 @@ class JobServiceExecuteJobTest extends TestCase {
 	private mixed $actionOutcome = null;
 
 	/**
+	 * Whether the system-operation context was active while the action ran.
+	 *
+	 * @var bool|null
+	 */
+	private ?bool $actionRanAsSystem = null;
+
+	/**
+	 * @var IUserManager&MockObject
+	 */
+	private $userManager;
+
+	/**
 	 * Set up test fixtures.
 	 *
 	 * @return void
@@ -123,13 +137,15 @@ class JobServiceExecuteJobTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
 
+		$this->userManager = $this->createMock(IUserManager::class);
+
 		$this->service = new JobService(
 			$this->createMock(IJobList::class),
 			$this->objectService,
 			$this->createMock(IDBConnection::class),
 			$this->container,
 			$this->createMock(IUserSession::class),
-			$this->createMock(IUserManager::class),
+			$this->userManager,
 			$appConfig,
 		);
 	}//end setUp()
@@ -143,6 +159,7 @@ class JobServiceExecuteJobTest extends TestCase {
 	 */
 	public function runAction(array $args): mixed {
 		$this->receivedArguments = $args;
+		$this->actionRanAsSystem = SystemOperationContext::isActive();
 		if ($this->actionOutcome instanceof \Throwable) {
 			throw $this->actionOutcome;
 		}
@@ -410,4 +427,70 @@ class JobServiceExecuteJobTest extends TestCase {
 
 		$this->assertNotNull($result);
 	}//end testTracePersistenceFailureIsSwallowed()
+
+	/**
+	 * A cron run of a job without userId acts as the system, so a clean cron
+	 * (no session user) can write integriq's bookkeeping and its targets.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
+	 */
+	public function testAScheduledRunWithoutAUserActsAsTheSystem(): void {
+		$this->actionOutcome = ['level' => 'SUCCESS'];
+		$this->service->executeJob(job: $this->job(), scheduled: true);
+
+		$this->assertTrue($this->actionRanAsSystem);
+		$this->assertFalse(SystemOperationContext::isActive(), 'the context ends with the action');
+	}//end testAScheduledRunWithoutAUserActsAsTheSystem()
+
+	/**
+	 * A cron run of a job with userId keeps acting as that user.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
+	 */
+	public function testAScheduledRunWithAUserActsAsThatUser(): void {
+		$this->userManager->method('get')->with('alice')->willReturn($this->createMock(IUser::class));
+		$this->actionOutcome = ['level' => 'SUCCESS'];
+		$this->service->executeJob(job: $this->job(['userId' => 'alice']), scheduled: true);
+
+		$this->assertFalse($this->actionRanAsSystem);
+	}//end testAScheduledRunWithAUserActsAsThatUser()
+
+	/**
+	 * A run started by a person (the run/test endpoints) or an event delivery
+	 * never acts as the system, even for a job without userId.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
+	 */
+	public function testAManualRunWithoutAUserActsAsTheCaller(): void {
+		$this->actionOutcome = ['level' => 'SUCCESS'];
+		$this->service->executeJob(job: $this->job(), forceRun: true);
+		$this->assertFalse($this->actionRanAsSystem);
+
+		$this->actionRanAsSystem = null;
+		$this->service->executeJob(job: $this->job());
+		$this->assertFalse($this->actionRanAsSystem);
+	}//end testAManualRunWithoutAUserActsAsTheCaller()
+
+	/**
+	 * A scheduled action that throws inside the system context is logged as an
+	 * error like any other, and leaves no context behind.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
+	 */
+	public function testAThrowingScheduledActionIsLoggedAndLeavesNoContext(): void {
+		$this->actionOutcome = new RuntimeException('boom');
+		$this->service->executeJob(job: $this->job(), scheduled: true);
+
+		$this->assertTrue($this->actionRanAsSystem);
+		$this->assertFalse(SystemOperationContext::isActive());
+		$this->assertSame('ERROR', $this->saved['job_log'][0]['level']);
+	}//end testAThrowingScheduledActionIsLoggedAndLeavesNoContext()
 }//end class

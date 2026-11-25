@@ -778,4 +778,48 @@ class JobServiceTest extends TestCase {
 		$this->assertGreaterThan(new \DateTime('+6 days'), $nextRuns['job-control']);
 	}//end testResumeSoonSchedulesTheNextRunOnTheNextTick()
 
+	/**
+	 * The cron loop runs a due job without userId as the system: on a clean
+	 * cron there is no session user, and the action's writes (the shipped
+	 * synchronization jobs' persistSynchronization) would be refused as
+	 * Anonymous otherwise.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
+	 */
+	public function testRunActsAsTheSystemForAJobWithoutAUser(): void {
+		$job = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'isEnabled' => true,
+				'jobClass' => 'OCA\\Integriq\\Action\\NoUserAction',
+				'interval' => 300,
+				'nextRun' => (new \DateTime('-1 hour'))->format('c'),
+				'arguments' => [],
+			],
+			'job-no-user'
+		);
+		$this->objectService->method('findAll')->willReturn(['results' => [$job], 'total' => 1]);
+		$this->objectService->method('saveObject')->willReturnCallback(
+			fn (...$args) => ObjectServiceMockBuilder::objectEntity($this, is_array($args[0] ?? null) === true ? $args[0] : [], 'saved')
+		);
+		$this->session->method('getUser')->willReturn(null);
+
+		$observed = new \ArrayObject();
+		$this->container->method('get')->willReturn(
+			new class($observed) {
+				public function __construct(private \ArrayObject $observed) {
+				}
+				public function run(array $args): array {
+					$this->observed[] = \OCA\OpenRegister\Service\SystemOperationContext::isActive();
+					return ['level' => 'SUCCESS'];
+				}
+			}
+		);
+
+		$this->service->run();
+
+		$this->assertSame([true], $observed->getArrayCopy());
+	}//end testRunActsAsTheSystemForAJobWithoutAUser()
 }//end class
