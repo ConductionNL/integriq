@@ -364,4 +364,34 @@ class McpProxyHandlerTest extends TestCase {
 		$this->assertSame(60, McpProxyHandler::maxStreamSeconds(endpointData: ['mcpMaxStreamSeconds' => 0]));
 		$this->assertSame(300, McpProxyHandler::maxStreamSeconds(endpointData: ['mcpMaxStreamSeconds' => 300]));
 	}//end testTheMaximumDurationDefaultsToSixtySeconds()
+	/**
+	 * The path joins the source location with exactly one slash, so `mcp/example` on
+	 * `https://tools.example` reaches `https://tools.example/mcp/example`.
+	 *
+	 * @return void
+	 */
+	public function testTheUpstreamPathJoinsTheLocationWithOneSlash(): void {
+		$cases = [
+			['https://tools.example', 'mcp/example', '/mcp/example'],
+			['https://tools.example', '/mcp/example', '/mcp/example'],
+			['https://tools.example/', '/mcp/example', 'mcp/example'],
+			['https://tools.example/mcp', '', ''],
+			['https://tools.example/mcp', '?session=1', '?session=1'],
+		];
+		foreach ($cases as $index => [$location, $path, $sent]) {
+			$template = $this->call(body: '{"jsonrpc":"2.0","id":1,"method":"initialize"}');
+			$call = new McpProxyCall(
+				endpoint: $template->endpoint,
+				request: $template->request,
+				source: ObjectServiceMockBuilder::objectEntity($this, ['location' => $location], 'src-1'),
+				upstreamPath: $path,
+				rawBody: $template->rawBody,
+				consumerKey: $template->consumerKey
+			);
+			$log = [];
+			$this->handler(chunks: ['{}'])->handle(call: $call)->callback($this->recordingOutput(log: $log));
+
+			$this->assertSame(expected: $sent, actual: $this->relayed[$index]['endpoint'], message: $location . ' + ' . $path);
+		}
+	}//end testTheUpstreamPathJoinsTheLocationWithOneSlash()
 }//end class

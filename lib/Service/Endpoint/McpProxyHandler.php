@@ -304,7 +304,7 @@ class McpProxyHandler {
 		try {
 			$this->calls->relay(
 				source: $call->source,
-				endpoint: $call->upstreamPath,
+				endpoint: (new McpUpstreamPath())->under(location: (string)($call->source->getObject()['location'] ?? ''), path: $call->upstreamPath),
 				method: $call->request->getMethod(),
 				config: $config,
 				sink: new McpRelayStream(output: $output),

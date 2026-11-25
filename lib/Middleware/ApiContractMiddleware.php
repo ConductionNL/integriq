@@ -275,7 +275,7 @@ class ApiContractMiddleware extends Middleware {
 	 * @spec openspec/specs/api-contract/spec.md
 	 */
 	private function problemFor(mixed $data, int $status): array {
-		if (is_array($data) === false || $this->isListBody(data: $data) === true) {
+		if (is_array($data) === false || $this->isListBody(data: $data) === true || (new JsonRpcBody())->matches(data: $data) === true) {
 			return [];
 		}
 
