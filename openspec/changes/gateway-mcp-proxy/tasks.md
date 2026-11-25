@@ -52,5 +52,7 @@ Kind: code. Size M. Row `integriq:acc-mcp-gateway`.
 ## Verification
 - [x] `openspec validate gateway-mcp-proxy --type change --strict` passes
   - OpenSpec 2.1.1, 2026-11-23: valid under `--strict` once the delta spec starts at `## ADDED Requirements`; its status and purpose lines already sit in `proposal.md`.
-- [ ] PHPUnit and Newman run, exit codes read
+- [x] PHPUnit and Newman run, exit codes read
+  - 25 Nov 2026, live on Nextcloud 34.0.6 + MariaDB + APCu with OpenRegister main, OpenRegister's own MCP server as the tool server: `tests/postman/integriq-mcp-proxy.postman_collection.json` 14 requests / 27 assertions, exit 0 three runs in a row. Against development before the fixes of this PR it fails 10 of 24 assertions (every answer 502, no method or tool on the call log, `upstreamPath` ignored). PHPUnit: McpProxyHandlerTest 10/10, EndpointServiceMcpTargetTest 4/4, CallServiceRelayLogFieldsTest 3/3, EndpointCacheServiceTest 10/10, exit 0.
+  - Found live and fixed: the relayed status was lost behind Nextcloud's raw 502 status line; the method and tool were stamped by updating the append-only call_log (refused, so never recorded) and are now written with the record (`CallService::relay(logFields:)`); a cached endpoint had no uuid or organisation, so every mcp endpoint shared one tool-limit counter per caller (and the organisation boundary passed for any source); an mcp endpoint ignored `upstreamPath`.
 - [x] An api endpoint's behaviour is unchanged, asserted by the existing endpoint tests (the unit suite fails the same 7 cases as development, none of them endpoint tests; `EndpointServiceMcpTargetTest::testAnApiEndpointIsUnchanged`)
