@@ -540,7 +540,7 @@ export default {
 		 * Whether the endpoint relays to an outside MCP tool server.
 		 *
 		 * @return {boolean} True when Target Type is `mcp`.
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/tasks.md#task-4
 		 */
 		isMcpTarget() {
 			return this.formData?.targetType === 'mcp'

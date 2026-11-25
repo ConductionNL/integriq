@@ -6,7 +6,7 @@
  * as the editable rows the endpoint editor shows, and back
  * (gateway-mcp-proxy, task 4).
  *
- * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+ * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
  */
 
 /**
@@ -14,7 +14,7 @@
  *
  * @param {object|undefined} limits The endpoint's `mcpToolLimits`.
  * @return {Array<{tool: string, limit: number, window: number}>}
- * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/tasks.md#task-4
  */
 export function limitRowsOf(limits) {
 	if (!limits || typeof limits !== 'object' || Array.isArray(limits)) return []
@@ -32,7 +32,7 @@ export function limitRowsOf(limits) {
  *
  * @param {Array<{tool: string, limit: number|string, window: number|string}>} rows The rows.
  * @return {object} The map.
- * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/tasks.md#task-4
  */
 export function toolLimitsOf(rows) {
 	const limits = {}
