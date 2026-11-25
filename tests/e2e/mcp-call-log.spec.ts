@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md
  * (REQ-MCPX-002, the call log names the MCP tool).
  *
  * What an administrator does here: open the source logs and pick the MCP

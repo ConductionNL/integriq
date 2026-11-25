@@ -7,7 +7,7 @@
   limits), the longest an answer is relayed (`mcpMaxStreamSeconds`) and whether
   tool arguments are kept in the call log (`mcpStoreArguments`). Shown by
   EndpointFormFields when the target type is `mcp`.
-  @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+  @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
 -->
 <template>
 	<fieldset class="cn-mcp-endpoint-fields" data-testid="mcp-endpoint-fields">
@@ -104,7 +104,7 @@ export default {
 		/**
 		 * Add an empty limit row.
 		 *
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/tasks.md#task-4
 		 */
 		addRow() {
 			this.limitRows = [...this.limitRows, { tool: '', limit: 10, window: 60 }]
@@ -115,7 +115,7 @@ export default {
 		 * Remove one limit row.
 		 *
 		 * @param {number} index The row.
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/tasks.md#task-4
 		 */
 		removeRow(index) {
 			this.limitRows = this.limitRows.filter((row, position) => position !== index)
@@ -128,7 +128,7 @@ export default {
 		 * @param {number} index The row.
 		 * @param {string} key tool, limit or window.
 		 * @param {string} value The typed value.
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/tasks.md#task-4
 		 */
 		setRow(index, key, value) {
 			this.limitRows = this.limitRows.map((row, position) => (position === index ? { ...row, [key]: value } : row))
@@ -138,7 +138,7 @@ export default {
 		/**
 		 * Write the rows back as the endpoint's `mcpToolLimits`.
 		 *
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/tasks.md#task-4
 		 */
 		write() {
 			this.updateField('mcpToolLimits', toolLimitsOf(this.limitRows))
@@ -150,7 +150,7 @@ export default {
 		 * @param {string} value The typed value.
 		 * @param {number} fallback The fallback.
 		 * @return {number}
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/tasks.md#task-4
 		 */
 		toPositive(value, fallback) {
 			const number = Math.floor(Number(value))

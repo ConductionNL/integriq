@@ -270,7 +270,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return McpProxyHandler The handler.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	private function mcpProxyHandler(): McpProxyHandler {
 		if ($this->mcpProxyHandler === null) {
@@ -298,7 +298,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return Response The relaying answer, or a refusal.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	private function handleMcpRequest(ObjectEntity $endpoint, IRequest $request, string $path): Response {
 		$endpointData = $endpoint->getObject();
