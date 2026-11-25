@@ -91,7 +91,7 @@
 
 ## Verification
 - [ ] All tasks checked off
-- [ ] `openspec validate` passes
+- [x] `openspec validate` passes (`openspec validate ori-public-serving --strict`, openspec 2.2.0)
 - [ ] Manual testing against acceptance criteria
 - [ ] Code review against spec requirements
 

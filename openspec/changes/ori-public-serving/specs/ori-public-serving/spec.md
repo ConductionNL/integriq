@@ -1,9 +1,5 @@
 # ori-public-serving Specification (delta)
 
----
-status: proposed
----
-
 ## Purpose
 
 integriq serves the public ORI 1.4 API (`/api/ori/v1/*`) on decidesk's
@@ -70,12 +66,9 @@ objects never appear in a collection response.
 
 The system MUST project each returned object's fields onto the ORI vocabulary
 (`name`, `start_date`, `end_date`, `location`, `status`, `classification`,
-`text`, plus `email` for `Organization`/`Person`-typed resources only, plus
-the `publications`-specific field set), using the first present source
-property per target key (matching `OriSerializer::FIELD_RULES`/
-`PAYLOAD_FIELD_RULES` semantics), and MUST wrap collection responses in a
-`{"@context", "@type", "count", "items"}` envelope and single-item responses
-in a `{"@context", "@type", ...fields}` shape — not integriq's default
+`text`, `email` as its scenario limits it, and the `publications`-specific
+field set), using the first present source property per target key, and MUST wrap
+responses in the ORI envelope its scenario shows, not integriq's default
 `{count, results, next, previous}` pagination envelope.
 
 #### Scenario: title maps to name when name is absent
@@ -84,6 +77,7 @@ in a `{"@context", "@type", ...fields}` shape — not integriq's default
   property
 - **WHEN** the event is projected
 - **THEN** the output carries `"name": "Raadsvergadering"`
+- **AND** the first-present-source rule matches `OriSerializer::FIELD_RULES`/`PAYLOAD_FIELD_RULES` semantics
 
 #### Scenario: email is present only for Organization/Person types
 
@@ -91,7 +85,7 @@ in a `{"@context", "@type", ...fields}` shape — not integriq's default
   object (`@type: Event`), both carrying an `email` source field
 - **WHEN** each is projected
 - **THEN** the `Organization` output carries `email`
-- **AND** the `Event` output does not carry `email`
+- **AND** the `Event` output does not carry `email`: `email` is projected for `Organization`/`Person`-typed resources only
 
 #### Scenario: Collection envelope shape matches ORI, not the default pagination envelope
 
@@ -99,18 +93,17 @@ in a `{"@context", "@type", ...fields}` shape — not integriq's default
   `{count, results, next, previous}`
 - **WHEN** it is served through an ORI Endpoint
 - **THEN** the response is `{"@context": "https://argu.co/ns/core", "@type": "<resource type>", "count": <n>, "items": [...]}`
+- **AND** a single-item response is `{"@context", "@type", ...fields}`
 
 ### Requirement: Single-item 404 non-disclosure across discriminator, lifecycle, and publish-window gates (REQ-ORIPUB-004)
 
 The system MUST return HTTP 404 (never 403, never 200 with the raw object)
 for `GET /api/ori/v1/{resource}/{id}` when the object at `{id}` exists but
-(a) belongs to the wrong discriminated sub-type for that resource (a
-`decisionType: amendment` object fetched via `/motions/{id}`), (b) fails the
-resource's lifecycle gate (a non-`published` object on a lifecycle-gated
-resource), or (c) — for `publications` — falls outside the
+belongs to the wrong discriminated sub-type for that resource, fails the
+resource's lifecycle gate, or (for `publications`) falls outside the
 publish/depublish window, so that an anonymous caller cannot distinguish
-"exists but hidden" from "does not exist." This closes the gap identified in
-this change's design.md (Gap 2) via `endpoint-runtime` REQ-EP-010.
+"exists but hidden" from "does not exist" (design.md Gap 2, closed through
+`endpoint-runtime` REQ-EP-010).
 
 #### Scenario: Fetching an amendment via the motions path 404s
 
@@ -131,32 +124,3 @@ this change's design.md (Gap 2) via `endpoint-runtime` REQ-EP-010.
 - **WHEN** a caller requests `GET /api/ori/v1/publications/Z`
 - **THEN** the response is HTTP 404
 
-## Non-Functional Requirements
-
-- **Performance:** dispatch reuses integriq's existing endpoint
-  resolution cache (`endpoint-runtime` REQ-EP-004) — no new per-request
-  OpenRegister query beyond what the default Endpoint dispatch already does.
-- **Internationalization:** ORI field names and the JSON-LD vocabulary are
-  fixed by the ORI/Popolo standard, not localised (matches
-  `OriController`/`OriSerializer` today — no `t()`/`IL10N` wrapping of
-  output field names).
-
-## Acceptance Criteria
-
-- [ ] Every scenario above passes against the parity test plan
-      (`test-plan.md`) run against both `OriController` and the new
-      integriq Endpoints, with zero response diffs.
-- [ ] REQ-ORIPUB-004 (Gap 2) is closed before the companion decidesk
-      retirement change cuts the public `/api/ori/v1/*` mount over —
-      documented, not silently deferred.
-
-## Notes
-
-- Gap 1 (envelope-reshaping composition — REQ-ORIPUB-003's envelope
-  scenario) is expected to be achievable through existing `mapping`-type
-  after-rule composition (see design.md); if implementation proves it is
-  not expressible in one or two chained rules, that is a blocking finding
-  for this change, not a silent scope reduction.
-- `motions`/`amendments` sharing the `decision` schema, and the
-  RBAC-vs-application-logic split for the `publications` publish-window gate,
-  are detailed in `contract.md`'s per-resource filter/type reference.
