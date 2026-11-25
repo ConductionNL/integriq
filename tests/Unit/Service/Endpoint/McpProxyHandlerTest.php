@@ -212,7 +212,13 @@ class McpProxyHandlerTest extends TestCase {
 		$this->assertSame(60, $this->relayed[0]['config']['timeout']);
 		$this->assertTrue($this->relayed[0]['withholdBodies'], 'Tool arguments are not stored by default.');
 		$this->assertSame(
-			['status 200', 'header HTTP/1.1 200 OK', 'header Content-Type: application/json', 'header Mcp-Session-Id: sess-42', 'body {"jsonrpc":"2.0","id":2,"result":{}}'],
+			[
+				'status 200',
+				'header HTTP/1.1 200 OK',
+				'header Content-Type: application/json',
+				'header Mcp-Session-Id: sess-42',
+				'body {"jsonrpc":"2.0","id":2,"result":{}}',
+			],
 			$log
 		);
 	}//end testTheCallCarriesTheSessionAndTheUpstreamSessionComesBack()
@@ -232,7 +238,15 @@ class McpProxyHandlerTest extends TestCase {
 
 		$this->assertSame(15, $this->relayed[0]['config']['timeout']);
 		$this->assertSame(
-			['status 200', 'header HTTP/1.1 200 OK', 'header Content-Type: text/event-stream', 'header X-Accel-Buffering: no', 'body ' . $events[0], 'body ' . $events[1], 'body ' . $events[2]],
+			[
+				'status 200',
+				'header HTTP/1.1 200 OK',
+				'header Content-Type: text/event-stream',
+				'header X-Accel-Buffering: no',
+				'body ' . $events[0],
+				'body ' . $events[1],
+				'body ' . $events[2],
+			],
 			$log
 		);
 	}//end testAnEventStreamIsRelayedAsItArrives()
