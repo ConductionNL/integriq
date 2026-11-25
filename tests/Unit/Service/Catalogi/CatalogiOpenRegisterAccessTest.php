@@ -85,6 +85,20 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 	public ?array $concepts = null;
 
 	/**
+	 * The one scheme URI the concept register resolves, or null for any.
+	 *
+	 * @var string|null
+	 */
+	public ?string $schemeUri = null;
+
+	/**
+	 * The scheme URIs asked for, in order.
+	 *
+	 * @var list<string>
+	 */
+	public array $schemesAsked = [];
+
+	/**
 	 * {@inheritDoc}
 	 *
 	 * @return void
@@ -115,10 +129,14 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 			CatalogiOpenRegisterAccess::CONCEPTS => new class($test) {
 				public function __construct(private readonly CatalogiOpenRegisterAccessTest $test) {}
 				public function scheme(string $uri): ?array {
-					return ($this->test->concepts === null) ? null : ['uri' => $uri];
+					$this->test->schemesAsked[] = $uri;
+					if ($this->test->concepts === null || ($this->test->schemeUri !== null && $uri !== $this->test->schemeUri)) {
+						return null;
+					}
+					return ['uri' => $uri];
 				}
 				public function conceptsOf(string $uri): array {
-					return (array)$this->test->concepts;
+					return ($this->test->schemeUri !== null && $uri !== $this->test->schemeUri) ? [] : (array)$this->test->concepts;
 				}
 			},
 		];
@@ -185,6 +203,52 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 		$this->services[CatalogiOpenRegisterAccess::CONCEPTS] = new \stdClass();
 		self::assertNull($this->access()->wooCategories(), 'a concept register without the method');
 	}//end testWooCategoriesComeFromTheConceptRegister()
+
+	/**
+	 * The categories are found under the scheme OpenRegister seeds
+	 * (`tooi/def/thes/kern/`), and under the TOOI set URI when only that resolves.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-a-woo-starter-set-gives-one-type-per-woo-information-category-req-zcs-003
+	 */
+	public function testWooCategoriesAreReadFromTheSeededScheme(): void {
+		$this->concepts = ['https://identifier.overheid.nl/tooi/def/thes/kern/c_1' => ['prefLabel' => 'besluiten']];
+
+		$this->schemeUri = 'https://identifier.overheid.nl/tooi/def/thes/kern/';
+		self::assertSame([['uri' => 'https://identifier.overheid.nl/tooi/def/thes/kern/c_1', 'label' => 'besluiten']], $this->access()->wooCategories());
+
+		$this->schemeUri = CatalogiOpenRegisterAccess::TOOI_SCHEME;
+		$this->schemesAsked = [];
+		self::assertSame([['uri' => 'https://identifier.overheid.nl/tooi/def/thes/kern/c_1', 'label' => 'besluiten']], $this->access()->wooCategories());
+		self::assertSame(CatalogiOpenRegisterAccess::TOOI_SCHEMES, $this->schemesAsked);
+	}//end testWooCategoriesAreReadFromTheSeededScheme()
+
+	/**
+	 * A language-map prefLabel, as OpenRegister's concept register stores it,
+	 * gives the Dutch label, then English, then any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-a-woo-starter-set-gives-one-type-per-woo-information-category-req-zcs-003
+	 */
+	public function testALanguageMapLabelReadsDutchFirst(): void {
+		$this->concepts = [
+			'https://x/c_1' => ['prefLabel' => ['en' => 'Laws', 'nl' => 'Wetten']],
+			'https://x/c_2' => ['prefLabel' => ['en' => 'Covenants']],
+			'https://x/c_3' => ['prefLabel' => ['de' => 'Berichte']],
+			'https://x/c_4' => ['prefLabel' => ['nl' => ' ', 'fr' => [], 'de' => '']],
+		];
+
+		self::assertSame(
+			[
+				['uri' => 'https://x/c_1', 'label' => 'Wetten'],
+				['uri' => 'https://x/c_2', 'label' => 'Covenants'],
+				['uri' => 'https://x/c_3', 'label' => 'Berichte'],
+			],
+			$this->access()->wooCategories()
+		);
+	}//end testALanguageMapLabelReadsDutchFirst()
 
 	/**
 	 * Every facade service is registered and built with its seams on the access.
