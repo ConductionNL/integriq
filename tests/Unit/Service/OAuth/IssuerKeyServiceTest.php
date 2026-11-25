@@ -26,6 +26,8 @@ use OCA\Integriq\Service\OAuth\IssuerKeyService;
 use OCA\Integriq\Service\OrganisationBridgeService;
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -119,17 +121,17 @@ final class IssuerKeyServiceTest extends TestCase {
 			}//end __construct()
 
 			/**
-			 * The broker's mint() shape.
+			 * The broker's mintCredential() shape on OpenRegister main.
 			 *
 			 * @return ObjectEntity
 			 */
-			public function mint(string $name, string $provider, string $owner, array $allowedApps = [], ?string $secret = null, string $scope = 'personal', ?string $organisation = null): ObjectEntity {
-				$this->test->minted[] = [$name, $provider, $owner, $allowedApps, $scope, $organisation];
-				$this->test->secret   = $secret;
+			public function mintCredential(CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
+				$this->test->minted[] = [$mint->name, $mint->provider, $mint->owner, $options->allowedApps, $options->scope, $options->organisation];
+				$this->test->secret   = $options->secret();
 				$entity = (new \ReflectionClass(ObjectEntity::class))->newInstanceWithoutConstructor();
 				$entity->setUuid('cred-1');
 				return $entity;
-			}//end mint()
+			}//end mintCredential()
 
 			/**
 			 * The broker's resolveInjectable() shape.
