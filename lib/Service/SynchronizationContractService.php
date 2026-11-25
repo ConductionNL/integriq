@@ -106,18 +106,26 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 	/**
 	 * Find all contract objects matching the supplied filters.
 	 *
-	 * @param array $filters Additional `filters` payload (register+schema injected).
+	 * A system read skips OpenRegister's RBAC and multitenancy filters. Only an
+	 * engine path that has already authenticated its caller another way may ask
+	 * for it, such as a signed destruction notice on a public route, where the
+	 * request has no user and an ordinary read finds no contract at all.
+	 *
+	 * @param array $filters    Additional `filters` payload (register+schema injected).
+	 * @param bool  $systemRead True to read without RBAC and multitenancy filters.
 	 *
 	 * @return array<ObjectEntity> The matching contract objects.
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
 	 */
-	public function findAllObjects(array $filters = []): array {
+	public function findAllObjects(array $filters = [], bool $systemRead = false): array {
 		$config = [
 			'filters' => array_merge(
 				['register' => self::REGISTER, 'schema' => self::SCHEMA],
 				$filters
 			),
 		];
-		$matches = $this->orObjectService->findAll(config: $config);
+		$matches = $this->orObjectService->findAll(config: $config, _rbac: $systemRead === false, _multitenancy: $systemRead === false);
 
 		return array_values(($matches['results'] ?? $matches));
 	}//end findAllObjects()

@@ -1036,17 +1036,21 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * `synchronization_contract`) so the cleanup path can scope-check each target
 	 * object itself, rather than relying on the retired QBMapper JOIN.
 	 *
-	 * @param array $filters Filters keyed by contract field (e.g. `synchronizationId`).
+	 * @param array $filters    Filters keyed by contract field (e.g. `synchronizationId`).
+	 * @param bool  $systemRead True to read without OpenRegister's RBAC and multitenancy
+	 *                          filters; only for a caller authenticated another way.
 	 *
 	 * @return \OCA\OpenRegister\Db\ObjectEntity[] The OpenRegister contract objects.
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
 	 */
-	private function findAllContractObjects(array $filters = []): array {
+	private function findAllContractObjects(array $filters = [], bool $systemRead = false): array {
 		if ($this->synchronizationContractService !== null) {
-			return $this->synchronizationContractService->findAllObjects(filters: $filters);
+			return $this->synchronizationContractService->findAllObjects(filters: $filters, systemRead: $systemRead);
 		}
 
 		$config = ['filters' => array_merge(['register' => 'integriq', 'schema' => 'synchronization_contract'], $filters)];
-		$matches = $this->orObjectService->findAll(config: $config);
+		$matches = $this->orObjectService->findAll(config: $config, _rbac: $systemRead === false, _multitenancy: $systemRead === false);
 
 		return array_values(($matches['results'] ?? $matches));
 	}//end findAllContractObjects()
@@ -6444,15 +6448,27 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * Both fields are checked on the row as well: a lookup that ignored a
 	 * filter must not hand back another synchronization's contract.
 	 *
+	 * The read is a system read. A notice arrives on a public route with no
+	 * user, after its signature was verified against the source's secret, so
+	 * the caller's own rights would find no contract; the synchronization
+	 * itself is read the same way (SourceDestructionService::findObject()).
+	 *
 	 * @param string       $synchronizationId The synchronization.
 	 * @param list<string> $originIds         The candidates, in order.
 	 *
 	 * @return array|null
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
 	 */
 	private function findDestroyedContract(string $synchronizationId, array $originIds): ?array {
 		foreach ($originIds as $originId) {
-			$matches = [];
-			$this->findContractBySyncAndOrigin(synchronizationId: $synchronizationId, originId: (string)$originId, allMatches: $matches);
+			$matches = array_map(
+				static fn ($match): array => $match->jsonSerialize(),
+				$this->findAllContractObjects(
+					filters: ['synchronizationId' => $synchronizationId, 'originId' => (string)$originId],
+					systemRead: true
+				)
+			);
 			foreach ($matches as $match) {
 				if ((string)($match['synchronizationId'] ?? '') === $synchronizationId && (string)($match['originId'] ?? '') === (string)$originId) {
 					return $match;

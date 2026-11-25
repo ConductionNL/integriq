@@ -164,7 +164,10 @@ test.describe('synchronisation-source-destruction-purge', () => {
 		const register = await create(req, `${OR_API}/registers`, {
 			title: 'E2E vernietiging',
 			slug: `e2e-vernietiging-${STAMP}`,
-			schemas: [schema.ref],
+			// A register lists its schemas by their numeric id; the uuid in `ref`
+			// leaves the register without the schema, and every object create
+			// then answers 404 "Schema not found".
+			schemas: [schema.id ?? schema.ref],
 		})
 		const target = await create(
 			req,
