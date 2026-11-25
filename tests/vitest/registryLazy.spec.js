@@ -10,7 +10,10 @@
  * in the whole published component library, so its wiring is read from the
  * source, and the lazy wrapper is exercised on its own with a stand-in.
  */
-import { lazyComponent, resolveLazyComponent } from '@conduction/nextcloud-vue/src/utils/lazyComponent.js'
+import {
+	lazyComponent,
+	resolveLazyComponent,
+} from '@conduction/nextcloud-vue/src/utils/lazyComponent.js'
 import { flushPromises, mount } from '@vue/test-utils'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -19,8 +22,13 @@ import { defineComponent, h } from 'vue'
 
 const root = join(__dirname, '..', '..')
 const source = readFileSync(join(root, 'src/registry.js'), 'utf8')
-const LAZY = /^const (\w+) = lazyComponent\(\(\) => import\('(\.\/[^']+\.vue)'\), '(\w+)'\)$/gm
-const entries = [...source.matchAll(LAZY)].map(([, name, path, label]) => ({ name, path, label }))
+const LAZY =
+	/^const (\w+) = lazyComponent\(\s*\(\) => import\('(\.\/[^']+\.vue)'\),\s*'(\w+)',?\s*\)$/gm
+const entries = [...source.matchAll(LAZY)].map(([, name, path, label]) => ({
+	name,
+	path,
+	label,
+}))
 
 describe('the custom-component registry', () => {
 	it('imports no component eagerly', () => {
@@ -32,7 +40,10 @@ describe('the custom-component registry', () => {
 		expect(entries.length).toBeGreaterThan(40)
 		for (const { name, path, label } of entries) {
 			expect(label, name).toBe(name)
-			expect(existsSync(join(dirname(join(root, 'src/registry.js')), path)), path).toBe(true)
+			expect(
+				existsSync(join(dirname(join(root, 'src/registry.js')), path)),
+				path,
+			).toBe(true)
 		}
 	})
 
@@ -41,7 +52,9 @@ describe('the custom-component registry', () => {
 		for (const { name } of entries) {
 			// Shorthand in the default export, or the component of a v2
 			// `registry` entry.
-			expect(exported, name).toMatch(new RegExp(`^\\t${name},$|component: ${name}\\b`, 'm'))
+			expect(exported, name).toMatch(
+				new RegExp(`^\\t${name},$|component: ${name}\\b`, 'm'),
+			)
 		}
 	})
 })
@@ -53,25 +66,40 @@ describe('a lazily registered component', () => {
 		emits: ['view'],
 		setup(props, { emit, slots, expose }) {
 			expose({ reload: () => `reloaded ${props.register}` })
-			return () => h('button', {
-				'data-testid': 'panel',
-				onClick: () => emit('view', props.register),
-			}, [props.register, slots.default?.()])
+			return () =>
+				h(
+					'button',
+					{
+						'data-testid': 'panel',
+						onClick: () => emit('view', props.register),
+					},
+					[props.register, slots.default?.()],
+				)
 		},
 	})
 
 	it('renders the loaded component with its props, listeners, slots and ref', async () => {
-		const Lazy = lazyComponent(() => Promise.resolve({ default: Panel }), 'Panel')
+		const Lazy = lazyComponent(
+			() => Promise.resolve({ default: Panel }),
+			'Panel',
+		)
 		const seen = []
 		const Host = defineComponent({
 			setup(props, { expose }) {
 				const inner = { value: null }
 				expose({ inner })
-				return () => h(Lazy, {
-					ref: (el) => { inner.value = el },
-					register: 'integriq',
-					onView: (value) => seen.push(value),
-				}, { default: () => 'slot text' })
+				return () =>
+					h(
+						Lazy,
+						{
+							ref: (el) => {
+								inner.value = el
+							},
+							register: 'integriq',
+							onView: (value) => seen.push(value),
+						},
+						{ default: () => 'slot text' },
+					)
 			},
 		})
 		const wrapper = mount(Host)
@@ -88,7 +116,13 @@ describe('a lazily registered component', () => {
 
 	it('renders nothing until the module arrives', async () => {
 		let arrive
-		const Lazy = lazyComponent(() => new Promise((resolve) => { arrive = resolve }), 'Panel')
+		const Lazy = lazyComponent(
+			() =>
+				new Promise((resolve) => {
+					arrive = resolve
+				}),
+			'Panel',
+		)
 		const wrapper = mount(Lazy, { props: { register: 'integriq' } })
 		await flushPromises()
 		expect(wrapper.find('[data-testid="panel"]').exists()).toBe(false)

@@ -380,11 +380,11 @@ describe('the SourceLogs page wiring', () => {
 		// lazily from their files and are exported under the names the
 		// manifest uses.
 		const registry = readFileSync(join(root, 'src/registry.js'), 'utf8')
-		expect(registry).toContain(
-			"const CallLogRowActions = lazyComponent(() => import('./components/callLog/CallLogRowActions.vue'), 'CallLogRowActions')",
+		expect(registry).toMatch(
+			/const CallLogRowActions = lazyComponent\(\s*\(\) => import\('\.\/components\/callLog\/CallLogRowActions\.vue'\),\s*'CallLogRowActions',?\s*\)/,
 		)
-		expect(registry).toContain(
-			"const CallLogActions = lazyComponent(() => import('./components/callLog/CallLogActions.vue'), 'CallLogActions')",
+		expect(registry).toMatch(
+			/const CallLogActions = lazyComponent\(\s*\(\) => import\('\.\/components\/callLog\/CallLogActions\.vue'\),\s*'CallLogActions',?\s*\)/,
 		)
 		expect(registry).toMatch(/^\tCallLogRowActions,$/m)
 		expect(registry).toMatch(/^\tCallLogActions,$/m)
