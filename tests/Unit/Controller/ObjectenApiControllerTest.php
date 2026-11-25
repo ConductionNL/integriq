@@ -41,7 +41,6 @@ use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjecttypeRegistry;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
 use OCP\IRequest;
-use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -115,6 +114,8 @@ class ObjectenApiControllerTest extends TestCase {
 			}
 		);
 		$request->method('getServerHost')->willReturn('example.nl');
+		$request->method('getServerProtocol')->willReturn('https');
+		$request->method('getRequestUri')->willReturn('/index.php/apps/integriq/api/v2/objects');
 
 		return $request;
 	}//end request()
@@ -166,24 +167,9 @@ class ObjectenApiControllerTest extends TestCase {
 				},
 				announce: static function (array $notification): void {
 				}
-			),
-			urls: $this->urls()
+			)
 		);
 	}//end controller()
-
-	/**
-	 * A URL generator that answers the objecttypes route absolutely.
-	 *
-	 * @return IURLGenerator
-	 */
-	private function urls(): IURLGenerator {
-		$urls = $this->createMock(IURLGenerator::class);
-		$urls->method('linkToRouteAbsolute')->willReturnCallback(
-			static fn (string $route): string => ($route === 'integriq.objectenApi.objecttypes' ? 'https://example.nl/index.php/apps/integriq/api/v2/objecttypes' : '')
-		);
-
-		return $urls;
-	}//end urls()
 
 	/**
 	 * Every route answers 401 when no token is presented.
@@ -280,10 +266,10 @@ class ObjectenApiControllerTest extends TestCase {
 		);
 
 		$answer = $this->controller(request: $request)->createObject();
-		$this->assertSame(201, $answer->getStatus());
-		$this->assertSame('leverancier', $this->written[0]['principal']);
+		$this->assertSame(expected: 201, actual: $answer->getStatus());
+		$this->assertSame(expected: 'leverancier', actual: $this->written[0]['principal']);
 		// The record's url is absolute, under the API's own route.
-		$this->assertSame('https://example.nl/index.php/apps/integriq/api/v2/objects/new-1', $answer->getData()['url']);
+		$this->assertSame(expected: 'https://example.nl/index.php/apps/integriq/api/v2/objects/new-1', actual: $answer->getData()['url']);
 	}//end testACreateIsAttributedToTheTokensPrincipal()
 
 	/**

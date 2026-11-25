@@ -46,7 +46,6 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IURLGenerator;
 
 /**
  * Serves both standards' read routes.
@@ -63,6 +62,13 @@ use OCP\IURLGenerator;
 class ObjectenApiController extends Controller {
 
 	/**
+	 * The path every route of this controller sits under.
+	 *
+	 * @var string
+	 */
+	private const API_PATH = '/api/v2';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                    $request The request.
@@ -70,7 +76,6 @@ class ObjectenApiController extends Controller {
 	 * @param ObjecttypeEndpointHandlerInterface   $types   The Objecttypen API.
 	 * @param ObjectEndpointHandlerInterface       $objects The Objecten API read paths.
 	 * @param ObjectWriteHandlerInterface          $writes  The Objecten API write paths.
-	 * @param IURLGenerator                        $urls    Builds the absolute base of every returned `url`.
 	 */
 	public function __construct(
 		IRequest $request,
@@ -78,7 +83,6 @@ class ObjectenApiController extends Controller {
 		private readonly ObjecttypeEndpointHandlerInterface $types,
 		private readonly ObjectEndpointHandlerInterface $objects,
 		private readonly ObjectWriteHandlerInterface $writes,
-		private readonly IURLGenerator $urls,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -540,8 +544,15 @@ class ObjectenApiController extends Controller {
 	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
 	private function baseUrl(): string {
-		$list = $this->urls->linkToRouteAbsolute(AppIdentity::APP_ID . '.objectenApi.objecttypes');
+		// Every route of this controller sits under `/api/v2`; the request's own
+		// path up to it carries the web root and `index.php` as the client used them.
+		$uri = (string)$this->request->getRequestUri();
+		$at = strpos($uri, self::API_PATH);
+		$path = '';
+		if ($at !== false) {
+			$path = substr($uri, 0, ($at + strlen(self::API_PATH)));
+		}
 
-		return substr($list, 0, (strlen($list) - strlen('/objecttypes')));
+		return $this->request->getServerProtocol() . '://' . $this->request->getServerHost() . $path;
 	}//end baseUrl()
 }//end class
