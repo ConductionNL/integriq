@@ -69,6 +69,33 @@ final class InitializeRegisterSeedHoistTest extends TestCase {
 	}//end testSchemaSeedsAreListedAsObjects()
 
 	/**
+	 * A seed whose identity a fragment already lists is left out: the listed object wins.
+	 *
+	 * @return void
+	 */
+	public function testAnAlreadyListedSeedIsNotListedTwice(): void {
+		$listed     = ['@self' => ['register' => 'integriq', 'schema' => 'api_product', 'slug' => 'p1'], 'name' => 'Listed'];
+		$descriptor = [
+			'components' => [
+				'objects' => [$listed],
+				'schemas' => [
+					'api_product' => [
+						'x-openregister-seed' => [
+							['@self' => ['register' => 'integriq', 'schema' => 'api_product', 'slug' => 'p1'], 'name' => 'Seed'],
+							['@self' => ['register' => 'integriq', 'schema' => 'api_product', 'slug' => 'p2'], 'name' => 'Other'],
+							['@self' => ['register' => 'integriq', 'schema' => 'api_product', 'slug' => 'p2'], 'name' => 'Again'],
+						],
+					],
+				],
+			],
+		];
+
+		$hoisted = InitializeRegister::hoistSchemaSeeds(descriptor: $descriptor);
+
+		$this->assertSame(expected: ['Listed', 'Other'], actual: array_column(array: $hoisted['components']['objects'], column_key: 'name'));
+	}//end testAnAlreadyListedSeedIsNotListedTwice()
+
+	/**
 	 * A seed without a slug is left out: the import could never find it again.
 	 *
 	 * @return void
@@ -130,7 +157,9 @@ final class InitializeRegisterSeedHoistTest extends TestCase {
 					}
 				}
 			);
-			$seen[$object['@self']['schema'] . ':' . $object['@self']['slug']] = true;
+			$key = $object['@self']['schema'] . ':' . $object['@self']['slug'];
+			$this->assertArrayNotHasKey(key: $key, array: $seen, message: $key . ' is listed twice');
+			$seen[$key] = true;
 		}
 
 		$this->assertArrayHasKey(key: 'api_product:api-product-zaken-api-v1', array: $seen);

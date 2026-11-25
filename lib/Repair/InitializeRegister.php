@@ -348,12 +348,20 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 		}
 
 		$objects = ($descriptor['components']['objects'] ?? []);
+		$listed  = array_fill_keys(array_map(static fn (mixed $object): string => self::seedKey(seed: $object), $objects), true);
 		foreach ($schemas as $schemaKey => $schema) {
 			if (is_array($schema) === false || array_key_exists('x-openregister-seed', $schema) === false) {
 				continue;
 			}
 
-			$objects = array_merge($objects, self::slugSeeds(seeds: $schema['x-openregister-seed']));
+			foreach (self::slugSeeds(seeds: $schema['x-openregister-seed']) as $seed) {
+				// An object a fragment already lists wins; two seeds of one identity would overwrite each other on every import.
+				if (isset($listed[self::seedKey(seed: $seed)]) === false) {
+					$listed[self::seedKey(seed: $seed)] = true;
+					$objects[] = $seed;
+				}
+			}
+
 			unset($descriptor['components']['schemas'][$schemaKey]['x-openregister-seed']);
 		}
 
@@ -363,6 +371,22 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 
 		return $descriptor;
 	}//end hoistSchemaSeeds()
+
+	/**
+	 * A seed's identity as the import finds it again: register, schema and slug.
+	 *
+	 * @param mixed $seed The seed object.
+	 *
+	 * @return string
+	 */
+	private static function seedKey(mixed $seed): string {
+		if (is_array($seed) === false) {
+			return '';
+		}
+
+		$self = ($seed['@self'] ?? []);
+		return (string)($self['register'] ?? '') . '/' . (string)($self['schema'] ?? '') . '/' . (string)($self['slug'] ?? '');
+	}//end seedKey()
 
 	/**
 	 * The seeds of one block that carry a `@self.slug`.

@@ -37,17 +37,6 @@
         "@self": {
           "register": "integriq",
           "schema": "endpoint",
-          "slug": "echo"
-        },
-        "name": "Echo",
-        "description": "Sample endpoint that echoes the request body.",
-        "endpoint": "/api/echo",
-        "method": "POST"
-      },
-      {
-        "@self": {
-          "register": "integriq",
-          "schema": "endpoint",
           "slug": "version"
         },
         "name": "Version",
@@ -237,7 +226,7 @@
             "version": "2.0.0",
             "visibility": "public",
             "status": "active",
-            "endpoints": ["@ref:endpoint:echo"],
+            "endpoints": ["@ref:endpoint:ping"],
             "channels": [
               {
                 "slug": "publications",
