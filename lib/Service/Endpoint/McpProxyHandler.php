@@ -257,7 +257,7 @@ class McpProxyHandler {
 	 *
 	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
-	public static function upstreamPathFor(string $location, string $path): string {
+	private static function upstreamPathFor(string $location, string $path): string {
 		if ($path === '' || str_starts_with($path, '?') === true) {
 			return $path;
 		}

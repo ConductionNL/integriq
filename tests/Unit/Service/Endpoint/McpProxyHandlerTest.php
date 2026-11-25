@@ -371,10 +371,27 @@ class McpProxyHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheUpstreamPathJoinsTheLocationWithOneSlash(): void {
-		$this->assertSame(expected: '/mcp/example', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example', path: 'mcp/example'));
-		$this->assertSame(expected: '/mcp/example', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example', path: '/mcp/example'));
-		$this->assertSame(expected: 'mcp/example', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example/', path: '/mcp/example'));
-		$this->assertSame(expected: '', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example/mcp', path: ''));
-		$this->assertSame(expected: '?session=1', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example/mcp', path: '?session=1'));
+		$cases = [
+			['https://tools.example', 'mcp/example', '/mcp/example'],
+			['https://tools.example', '/mcp/example', '/mcp/example'],
+			['https://tools.example/', '/mcp/example', 'mcp/example'],
+			['https://tools.example/mcp', '', ''],
+			['https://tools.example/mcp', '?session=1', '?session=1'],
+		];
+		foreach ($cases as $index => [$location, $path, $sent]) {
+			$template = $this->call(body: '{"jsonrpc":"2.0","id":1,"method":"initialize"}');
+			$call = new McpProxyCall(
+				endpoint: $template->endpoint,
+				request: $template->request,
+				source: ObjectServiceMockBuilder::objectEntity($this, ['location' => $location], 'src-1'),
+				upstreamPath: $path,
+				rawBody: $template->rawBody,
+				consumerKey: $template->consumerKey
+			);
+			$log = [];
+			$this->handler(chunks: ['{}'])->handle(call: $call)->callback($this->recordingOutput(log: $log));
+
+			$this->assertSame(expected: $sent, actual: $this->relayed[$index]['endpoint'], message: $location . ' + ' . $path);
+		}
 	}//end testTheUpstreamPathJoinsTheLocationWithOneSlash()
 }//end class
