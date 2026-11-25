@@ -23,8 +23,6 @@ namespace OCA\Integriq\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
-use OCP\IUserManager;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -56,15 +54,13 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 	 * @param OrObjectService        $objectService OpenRegister's object service, for synchronizations and sources.
 	 * @param SynchronizationService $engine        The engine that resolves the contract and acts on the object.
 	 * @param LoggerInterface        $logger        Logger.
-	 * @param IUserManager           $userManager   Resolves a synchronization's owner to a user.
-	 * @param IUserSession           $userSession   Carries the acting identity while a notice is applied.
+	 * @param ActingUser             $actingUser    Who the notice acts as.
 	 */
 	public function __construct(
 		private readonly OrObjectService $objectService,
 		private readonly SynchronizationService $engine,
 		private readonly LoggerInterface $logger,
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
+		private readonly ActingUser $actingUser,
 	) {
 	}//end __construct()
 
@@ -146,9 +142,8 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 	 * runs as the synchronization's owner: OpenRegister refuses a sessionless
 	 * delete (anonymous is default-deny), and the owner is the person who set
 	 * the synchronization up, so the notice never acts with more rights than
-	 * theirs. Without an owner that still exists nothing is acted on. The prior
-	 * identity is restored in a `finally`, volatile so it never reaches the PHP
-	 * session (the same pattern as FlowOwner::runAs() and JobService).
+	 * theirs. Without an owner that still exists nothing is acted on.
+	 * ActingUser::runAs() restores the prior identity afterwards.
 	 *
 	 * @param ObjectEntity $synchronization The synchronization the notice is for.
 	 * @param \Closure     $work            The engine call; returns the outcome.
@@ -158,17 +153,12 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
 	 */
 	private function asActingUser(ObjectEntity $synchronization, \Closure $work): array {
-		$prior = $this->userSession->getUser();
-		if ($prior !== null) {
+		if ($this->actingUser->current() !== null) {
 			return $work();
 		}
 
-		$ownerId = trim((string)$synchronization->getOwner());
-		$owner = null;
-		if ($ownerId !== '') {
-			$owner = $this->userManager->get($ownerId);
-		}
-
+		$ownerId = (string)$synchronization->getOwner();
+		$owner = $this->actingUser->find(userId: $ownerId);
 		if ($owner === null) {
 			$this->logger->warning(
 				'[integriq] destruction notice: the synchronization has no owner to act as; nothing was purged',
@@ -177,12 +167,7 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 			return ['outcome' => self::OUTCOME_NO_OWNER, 'synchronizationId' => (string)$synchronization->getUuid()];
 		}
 
-		$this->userSession->setVolatileActiveUser($owner);
-		try {
-			return $work();
-		} finally {
-			$this->userSession->setVolatileActiveUser($prior);
-		}
+		return $this->actingUser->runAs(user: $owner, work: $work);
 	}//end asActingUser()
 
 	/**

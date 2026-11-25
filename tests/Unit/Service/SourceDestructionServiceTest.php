@@ -29,6 +29,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\ActingUser;
 use OCA\Integriq\Service\SourceDestructionService;
 use OCA\Integriq\Service\SynchronizationContractLogService;
 use OCA\Integriq\Service\SynchronizationLogService;
@@ -197,7 +198,7 @@ class SourceDestructionServiceTest extends TestCase {
 		);
 
 		$contractLogService = $this->createMock(SynchronizationContractLogService::class);
-		// createFromArray() only builds an entry; an entry counts as written once it is
+		// The builder createFromArray() only builds an entry; an entry counts as written once it is
 		// stored, so the log is captured at insert()/update(), not at the builder.
 		$contractLogService->method('createFromArray')->willReturnArgument(0);
 		$store = function (array $log): array {
@@ -237,23 +238,39 @@ class SourceDestructionServiceTest extends TestCase {
 		);
 
 		$user = function (string $uid): IUser {
-			$mock = $this->createMock(IUser::class);
+			$mock = $this->createMock(originalClassName: IUser::class);
 			$mock->method('getUID')->willReturn($uid);
 			return $mock;
 		};
-		$session = $this->createMock(IUserSession::class);
-		$session->method('getUser')->willReturn($sessionUser === null ? null : $user($sessionUser));
+		$current = null;
+		if ($sessionUser !== null) {
+			$current = $user($sessionUser);
+		}
+
+		$session = $this->createMock(originalClassName: IUserSession::class);
+		$session->method('getUser')->willReturn($current);
 		$session->method('setVolatileActiveUser')->willReturnCallback(
 			function (?IUser $active): void {
 				$this->actingUsers[] = $active?->getUID();
 			}
 		);
-		$users = $this->createMock(IUserManager::class);
+		$users = $this->createMock(originalClassName: IUserManager::class);
 		$users->method('get')->willReturnCallback(
-			fn (string $uid): ?IUser => (in_array($uid, $knownUsers, true) === true ? $user($uid) : null)
+			static function (string $uid) use ($knownUsers, $user): ?IUser {
+				if (in_array($uid, $knownUsers, true) === true) {
+					return $user($uid);
+				}
+
+				return null;
+			}
 		);
 
-		return new SourceDestructionService($orObjectService, $engine, $this->createMock(LoggerInterface::class), $users, $session);
+		return new SourceDestructionService(
+			objectService: $orObjectService,
+			engine: $engine,
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			actingUser: new ActingUser(userManager: $users, userSession: $session)
+		);
 	}//end service()
 
 	/**
@@ -400,16 +417,16 @@ class SourceDestructionServiceTest extends TestCase {
 	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
 	 */
 	public function testASessionlessNoticeActsAsTheSynchronizationsOwner(): void {
-		$service = $this->service(['onSourceDestroyed' => 'purge'], sessionUser: null, owner: 'beheerder', knownUsers: ['beheerder']);
+		$service = $this->service(sourceConfig: ['onSourceDestroyed' => 'purge'], sessionUser: null, owner: 'beheerder', knownUsers: ['beheerder']);
 
 		$outcome = $service->handleDestroyed(synchronizationId: self::SYNC_ID, originId: 'doc-2', reference: 'vernietigingsverklaring-7');
 
-		$this->assertSame('purged', $outcome['outcome']);
-		$this->assertSame([['uuid' => 'pub-2', 'permanent' => true]], $this->deletes);
-		$this->assertSame(['beheerder', null], $this->actingUsers, 'acts as the owner, then restores the prior (no) user');
-		$this->assertCount(1, $this->contractLogs, 'the purge is written to the contract log');
+		$this->assertSame(expected: 'purged', actual: $outcome['outcome']);
+		$this->assertSame(expected: [['uuid' => 'pub-2', 'permanent' => true]], actual: $this->deletes);
+		$this->assertSame(expected: ['beheerder', null], actual: $this->actingUsers, message: 'acts as the owner, then restores the prior (no) user');
+		$this->assertCount(expectedCount: 1, haystack: $this->contractLogs, message: 'the purge is written to the contract log');
 		// OpenRegister refuses an entry whose `expires` is not a string.
-		$this->assertIsString($this->contractLogs[0]['expires']);
+		$this->assertIsString(actual: $this->contractLogs[0]['expires']);
 	}//end testASessionlessNoticeActsAsTheSynchronizationsOwner()
 
 	/**
@@ -420,12 +437,12 @@ class SourceDestructionServiceTest extends TestCase {
 	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
 	 */
 	public function testASessionlessZgwNoticeActsAsTheOwnerToo(): void {
-		$service = $this->service(['onSourceDestroyed' => 'purge'], sessionUser: null, owner: 'beheerder', knownUsers: ['beheerder']);
+		$service = $this->service(sourceConfig: ['onSourceDestroyed' => 'purge'], sessionUser: null, owner: 'beheerder', knownUsers: ['beheerder']);
 
 		$outcomes = $service->handleZgwDestroyed(sourceId: self::SOURCE_ID, resourceUrl: self::DRC . 'doc-1');
 
-		$this->assertSame('purged', $outcomes[0]['outcome']);
-		$this->assertSame(['beheerder', null], $this->actingUsers);
+		$this->assertSame(expected: 'purged', actual: $outcomes[0]['outcome']);
+		$this->assertSame(expected: ['beheerder', null], actual: $this->actingUsers);
 	}//end testASessionlessZgwNoticeActsAsTheOwnerToo()
 
 	/**
@@ -439,13 +456,13 @@ class SourceDestructionServiceTest extends TestCase {
 		foreach (['' => [], 'vertrokken' => []] as $owner => $known) {
 			$this->deletes = [];
 			$this->actingUsers = [];
-			$service = $this->service(['onSourceDestroyed' => 'purge'], sessionUser: null, owner: (string)$owner, knownUsers: $known);
+			$service = $this->service(sourceConfig: ['onSourceDestroyed' => 'purge'], sessionUser: null, owner: (string)$owner, knownUsers: $known);
 
 			$outcome = $service->handleDestroyed(synchronizationId: self::SYNC_ID, originId: 'doc-2', reference: null);
 
-			$this->assertSame('no_owner', $outcome['outcome'], 'owner "' . $owner . '"');
-			$this->assertSame([], $this->deletes);
-			$this->assertSame([], $this->actingUsers, 'no identity is switched');
+			$this->assertSame(expected: 'no_owner', actual: $outcome['outcome'], message: 'owner "' . $owner . '"');
+			$this->assertSame(expected: [], actual: $this->deletes);
+			$this->assertSame(expected: [], actual: $this->actingUsers, message: 'no identity is switched');
 		}
 	}//end testASessionlessNoticeWithoutAnOwnerTouchesNothing()
 
@@ -457,10 +474,11 @@ class SourceDestructionServiceTest extends TestCase {
 	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
 	 */
 	public function testASignedInCallerKeepsItsOwnIdentity(): void {
-		$service = $this->service(['onSourceDestroyed' => 'purge'], owner: 'beheerder', knownUsers: ['beheerder']);
+		$service = $this->service(sourceConfig: ['onSourceDestroyed' => 'purge'], owner: 'beheerder', knownUsers: ['beheerder']);
 
-		$this->assertSame('purged', $service->handleDestroyed(synchronizationId: self::SYNC_ID, originId: 'doc-2', reference: null)['outcome']);
-		$this->assertSame([], $this->actingUsers);
+		$outcome = $service->handleDestroyed(synchronizationId: self::SYNC_ID, originId: 'doc-2', reference: null);
+		$this->assertSame(expected: 'purged', actual: $outcome['outcome']);
+		$this->assertSame(expected: [], actual: $this->actingUsers);
 	}//end testASignedInCallerKeepsItsOwnIdentity()
 
 	/**
@@ -471,14 +489,14 @@ class SourceDestructionServiceTest extends TestCase {
 	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
 	 */
 	public function testANoticeReadsContractsAndSynchronizationsUnscoped(): void {
-		$service = $this->service(['onSourceDestroyed' => 'purge']);
+		$service = $this->service(sourceConfig: ['onSourceDestroyed' => 'purge']);
 
 		$service->handleZgwDestroyed(sourceId: self::SOURCE_ID, resourceUrl: self::DRC . 'doc-1');
 
-		$this->assertNotSame([], $this->lookupAccess);
+		$this->assertNotSame(expected: [], actual: $this->lookupAccess);
 		foreach ($this->lookupAccess as $access) {
-			$this->assertFalse($access['rbac'], 'the ' . $access['schema'] . ' lookup skips RBAC');
-			$this->assertFalse($access['multitenancy'], 'the ' . $access['schema'] . ' lookup skips multitenancy');
+			$this->assertFalse(condition: $access['rbac'], message: 'the ' . $access['schema'] . ' lookup skips RBAC');
+			$this->assertFalse(condition: $access['multitenancy'], message: 'the ' . $access['schema'] . ' lookup skips multitenancy');
 		}
 	}//end testANoticeReadsContractsAndSynchronizationsUnscoped()
 }//end class

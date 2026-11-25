@@ -132,7 +132,7 @@ class SynchronizationContractServiceTest extends TestCase {
 		$this->service->findAllObjects(['originId' => 'origin-7']);
 		$this->service->findAllObjects(['originId' => 'origin-7'], systemRead: true);
 
-		$this->assertSame([[true, true], [false, false]], $calls);
+		$this->assertSame(expected: [[true, true], [false, false]], actual: $calls);
 	}//end testFindAllObjectsIsScopedUnlessASystemReadIsAskedFor()
 
 	/**

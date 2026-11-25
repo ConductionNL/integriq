@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
+use OCA\Integriq\Service\ActingUser;
 use OCA\Integriq\Service\SourceDestructionService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
@@ -639,7 +640,12 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 			$this->urlGenerator,
 			$logger,
 			null,
-			new SourceDestructionService($objects, $engine, $logger, $this->createMock(\OCP\IUserManager::class), $this->signedInSession())
+			new SourceDestructionService(
+				objectService: $objects,
+				engine: $engine,
+				logger: $logger,
+				actingUser: new ActingUser(userManager: $this->createMock(originalClassName: \OCP\IUserManager::class), userSession: $this->signedInSession())
+			)
 		);
 	}//end serviceWithDestruction()
 
@@ -649,8 +655,8 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 	 * @return \OCP\IUserSession
 	 */
 	private function signedInSession(): \OCP\IUserSession {
-		$session = $this->createMock(\OCP\IUserSession::class);
-		$session->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
+		$session = $this->createMock(originalClassName: \OCP\IUserSession::class);
+		$session->method('getUser')->willReturn($this->createMock(originalClassName: \OCP\IUser::class));
 
 		return $session;
 	}//end signedInSession()

@@ -129,7 +129,7 @@ class SynchronizationServicePurgeTest extends TestCase {
 		);
 
 		$contractLogService = $this->createMock(SynchronizationContractLogService::class);
-		// createFromArray() only builds an entry; an entry counts as written once it is
+		// The builder createFromArray() only builds an entry; an entry counts as written once it is
 		// stored, so the log is captured at insert()/update(), not at the builder.
 		$contractLogService->method('createFromArray')->willReturnArgument(0);
 		$store = function (array $log): array {

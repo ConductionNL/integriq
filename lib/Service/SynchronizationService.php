@@ -6584,7 +6584,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$message = 'Purge of object ' . $targetId . ' refused, the object is left as it was: ' . $reason;
 		}
 
-		// createFromArray() only builds the entry; insert() stores it (append-only), as
+		// The builder createFromArray() only builds the entry; insert() stores it (append-only), as
 		// openContractLog() and closeContractLog() do for a run's own entries.
 		$entry = $this->synchronizationContractLogService->createFromArray(
 			object: [

@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\SourceDestroyedController;
+use OCA\Integriq\Service\ActingUser;
 use OCA\Integriq\Service\SourceDestructionService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
@@ -59,7 +60,12 @@ final class SourceDestroyedControllerTest extends TestCase {
 	 *
 	 * @return SourceDestroyedController
 	 */
-	private function makeController(IRequest $request, SynchronizationService $engine, string $rawBody = self::BODY, string $owner = 'beheerder'): SourceDestroyedController {
+	private function makeController(
+		IRequest $request,
+		SynchronizationService $engine,
+		string $rawBody = self::BODY,
+		string $owner = 'beheerder',
+	): SourceDestroyedController {
 		$l = $this->createMock(IL10N::class);
 		$l->method('t')->willReturnArgument(0);
 
@@ -84,11 +90,18 @@ final class SourceDestroyedControllerTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		// The public route: no session user.
-		$session = $this->createMock(IUserSession::class);
+		$session = $this->createMock(originalClassName: IUserSession::class);
 		$session->method('getUser')->willReturn(null);
-		$users = $this->createMock(IUserManager::class);
+		$beheerder = $this->createMock(originalClassName: IUser::class);
+		$users = $this->createMock(originalClassName: IUserManager::class);
 		$users->method('get')->willReturnCallback(
-			fn (string $uid): ?IUser => ($uid === 'beheerder' ? $this->createMock(IUser::class) : null)
+			static function (string $uid) use ($beheerder): ?IUser {
+				if ($uid === 'beheerder') {
+					return $beheerder;
+				}
+
+				return null;
+			}
 		);
 
 		$controller = $this->getMockBuilder(SourceDestroyedController::class)
@@ -96,7 +109,12 @@ final class SourceDestroyedControllerTest extends TestCase {
 				[
 					'integriq',
 					$request,
-					new SourceDestructionService($objects, $engine, $logger, $users, $session),
+					new SourceDestructionService(
+						objectService: $objects,
+						engine: $engine,
+						logger: $logger,
+						actingUser: new ActingUser(userManager: $users, userSession: $session)
+					),
 					new WebhookSignatureService($logger),
 					$l,
 				]
@@ -205,15 +223,16 @@ final class SourceDestroyedControllerTest extends TestCase {
 	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
 	 */
 	public function testASignedCallForASynchronizationWithoutAnOwnerIsForbidden(): void {
-		$request = $this->request((new WebhookSignatureService($this->createMock(LoggerInterface::class)))->sign(self::BODY, self::SECRET));
+		$signer = new WebhookSignatureService(logger: $this->createMock(originalClassName: LoggerInterface::class));
+		$request = $this->request(signature: $signer->sign(self::BODY, self::SECRET));
 		$request->method('getParams')->willReturn(['id' => 'sync-1', 'originId' => 'doc-2']);
 
-		$engine = $this->createMock(SynchronizationService::class);
+		$engine = $this->createMock(originalClassName: SynchronizationService::class);
 		$engine->expects($this->never())->method('applySourceDestruction');
 
-		$response = $this->makeController($request, $engine, self::BODY, '')->destroyed('sync-1');
+		$response = $this->makeController(request: $request, engine: $engine, rawBody: self::BODY, owner: '')->destroyed('sync-1');
 
-		$this->assertSame(403, $response->getStatus());
-		$this->assertSame('no_owner', $response->getData()['outcome']);
+		$this->assertSame(expected: 403, actual: $response->getStatus());
+		$this->assertSame(expected: 'no_owner', actual: $response->getData()['outcome']);
 	}//end testASignedCallForASynchronizationWithoutAnOwnerIsForbidden()
 }//end class
