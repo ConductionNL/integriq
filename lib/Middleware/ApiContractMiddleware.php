@@ -275,7 +275,7 @@ class ApiContractMiddleware extends Middleware {
 	 * @spec openspec/specs/api-contract/spec.md
 	 */
 	private function problemFor(mixed $data, int $status): array {
-		if (is_array($data) === false || $this->isListBody(data: $data) === true || $this->isJsonRpc(data: $data) === true) {
+		if (is_array($data) === false || $this->isListBody(data: $data) === true || (new JsonRpcBody())->is(data: $data) === true) {
 			return [];
 		}
 
@@ -295,20 +295,6 @@ class ApiContractMiddleware extends Middleware {
 
 		return array_merge($problem, $data);
 	}//end problemFor()
-
-	/**
-	 * Whether an error body is a JSON-RPC 2.0 message, such as the per-tool limit refusal of an
-	 * mcp gateway endpoint. JSON-RPC fixes its own error format, so it is left as it is.
-	 *
-	 * @param array<array-key,mixed> $data The error body.
-	 *
-	 * @return bool True for a JSON-RPC message.
-	 *
-	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
-	 */
-	private function isJsonRpc(array $data): bool {
-		return ($data['jsonrpc'] ?? null) === '2.0';
-	}//end isJsonRpc()
 
 	/**
 	 * The HTTP reason phrase of an error status.
