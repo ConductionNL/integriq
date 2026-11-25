@@ -3798,7 +3798,9 @@
                   "const b = pm.response.json();",
                   "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
                   "pm.expect(id, 'the created id').to.not.be.undefined;",
-                  "pm.collectionVariables.set('objSchema', String(id));"
+                  "pm.collectionVariables.set('objSchema', String(id));",
+                  "// A register lists its schemas by numeric id; a uuid there is never resolved.",
+                  "pm.collectionVariables.set('objSchemaNumId', String(b.id || (b['@self'] && b['@self'].id)));"
                 ]
               }
             }
@@ -3817,7 +3819,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"title\":\"Newman objecten\",\"slug\":\"newman-objecten-{{objStamp}}\",\"schemas\":[\"{{objSchema}}\"]}"
+              "raw": "{\"title\":\"Newman objecten\",\"slug\":\"newman-objecten-{{objStamp}}\",\"schemas\":[{{objSchemaNumId}}]}"
             }
           },
           "event": [
@@ -3850,7 +3852,7 @@
             "description": "REQ-OAF-001: an objecttype is a schema named on purpose, under a stable published uuid.",
             "body": {
               "mode": "raw",
-              "raw": "{\"publishedUuid\":\"{{objTypeUuid}}\",\"name\":\"newman-boom\",\"register\":\"newman-objecten-{{objStamp}}\",\"schema\":\"newman-boom-{{objStamp}}\",\"versions\":[\"1\",\"2\"]}"
+              "raw": "{\"publishedUuid\":\"{{objTypeUuid}}\",\"name\":\"newman-boom\",\"objectsRegister\":\"newman-objecten-{{objStamp}}\",\"objectsSchema\":\"newman-boom-{{objStamp}}\",\"versions\":[\"1\",\"2\"]}"
             }
           },
           "event": [

@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\IRequest;
+use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -354,8 +355,21 @@ class ObjectenWiringTest extends TestCase {
 			types: $container->get(ObjecttypeEndpointHandler::class),
 			objects: $container->get(ObjectEndpointHandler::class),
 			writes: $container->get(ObjectWriteHandler::class),
+			urls: $this->urls(),
 		);
 	}//end controller()
+
+	/**
+	 * A URL generator that answers the objecttypes route absolutely.
+	 *
+	 * @return IURLGenerator
+	 */
+	private function urls(): IURLGenerator {
+		$urls = $this->createMock(IURLGenerator::class);
+		$urls->method('linkToRouteAbsolute')->willReturn('https://example.nl/index.php/apps/integriq/api/v2/objecttypes');
+
+		return $urls;
+	}//end urls()
 
 	/**
 	 * A container answering the registered factories and a fake OpenRegister.

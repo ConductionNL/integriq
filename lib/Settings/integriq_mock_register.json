@@ -12750,8 +12750,8 @@
         },
         "publishedUuid": "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01",
         "name": "melding openbare ruimte",
-        "register": "meldingen",
-        "schema": "melding",
+        "objectsRegister": "meldingen",
+        "objectsSchema": "melding",
         "versions": ["1"]
       },
       {
@@ -12762,8 +12762,8 @@
         },
         "publishedUuid": "8a2d4c61-1e3f-4a5b-8c7d-9e0f1a2b3c02",
         "name": "boom",
-        "register": "openbare-ruimte",
-        "schema": "boom",
+        "objectsRegister": "openbare-ruimte",
+        "objectsSchema": "boom",
         "versions": []
       },
       {
@@ -12774,8 +12774,8 @@
         },
         "publishedUuid": "c5e7f901-2a3b-4c4d-9e5f-6a7b8c9d0e03",
         "name": "parkeervergunning",
-        "register": "vergunningen",
-        "schema": "parkeervergunning",
+        "objectsRegister": "vergunningen",
+        "objectsSchema": "parkeervergunning",
         "versions": ["1", "2"]
       },
       {

@@ -46,6 +46,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IURLGenerator;
 
 /**
  * Serves both standards' read routes.
@@ -69,6 +70,7 @@ class ObjectenApiController extends Controller {
 	 * @param ObjecttypeEndpointHandlerInterface   $types   The Objecttypen API.
 	 * @param ObjectEndpointHandlerInterface       $objects The Objecten API read paths.
 	 * @param ObjectWriteHandlerInterface          $writes  The Objecten API write paths.
+	 * @param IURLGenerator                        $urls    Builds the absolute base of every returned `url`.
 	 */
 	public function __construct(
 		IRequest $request,
@@ -76,6 +78,7 @@ class ObjectenApiController extends Controller {
 		private readonly ObjecttypeEndpointHandlerInterface $types,
 		private readonly ObjectEndpointHandlerInterface $objects,
 		private readonly ObjectWriteHandlerInterface $writes,
+		private readonly IURLGenerator $urls,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -527,11 +530,18 @@ class ObjectenApiController extends Controller {
 	}//end typeParam()
 
 	/**
-	 * The base a returned `url` is built from.
+	 * The base a returned `url` is built from: the absolute `/api/v2` URL.
 	 *
-	 * @return string The base.
+	 * The server host alone gave `localhost:8080/objects/<uuid>`, with no
+	 * scheme and no route, which a counterparty cannot follow.
+	 *
+	 * @return string The base, without a trailing slash.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
 	private function baseUrl(): string {
-		return rtrim((string)$this->request->getServerHost(), '/');
+		$list = $this->urls->linkToRouteAbsolute(AppIdentity::APP_ID . '.objectenApi.objecttypes');
+
+		return substr($list, 0, (strlen($list) - strlen('/objecttypes')));
 	}//end baseUrl()
 }//end class

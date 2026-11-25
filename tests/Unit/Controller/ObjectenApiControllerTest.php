@@ -41,6 +41,7 @@ use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjecttypeRegistry;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
 use OCP\IRequest;
+use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -165,9 +166,24 @@ class ObjectenApiControllerTest extends TestCase {
 				},
 				announce: static function (array $notification): void {
 				}
-			)
+			),
+			urls: $this->urls()
 		);
 	}//end controller()
+
+	/**
+	 * A URL generator that answers the objecttypes route absolutely.
+	 *
+	 * @return IURLGenerator
+	 */
+	private function urls(): IURLGenerator {
+		$urls = $this->createMock(IURLGenerator::class);
+		$urls->method('linkToRouteAbsolute')->willReturnCallback(
+			static fn (string $route): string => ($route === 'integriq.objectenApi.objecttypes' ? 'https://example.nl/index.php/apps/integriq/api/v2/objecttypes' : '')
+		);
+
+		return $urls;
+	}//end urls()
 
 	/**
 	 * Every route answers 401 when no token is presented.
@@ -263,8 +279,11 @@ class ObjectenApiControllerTest extends TestCase {
 			params: ['record' => ['data' => ['straatnaam' => 'Kerkstraat']]]
 		);
 
-		$this->assertSame(201, $this->controller(request: $request)->createObject()->getStatus());
+		$answer = $this->controller(request: $request)->createObject();
+		$this->assertSame(201, $answer->getStatus());
 		$this->assertSame('leverancier', $this->written[0]['principal']);
+		// The record's url is absolute, under the API's own route.
+		$this->assertSame('https://example.nl/index.php/apps/integriq/api/v2/objects/new-1', $answer->getData()['url']);
 	}//end testACreateIsAttributedToTheTokensPrincipal()
 
 	/**
