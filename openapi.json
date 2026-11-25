@@ -5174,6 +5174,48 @@
                 }
             }
         },
+        "/intake/messages/rights": {
+            "get": {
+                "operationId": "intake-channels-rights",
+                "summary": "What the signed-in user may do from the intake inbox",
+                "description": "What the signed-in user may do from the intake inbox: whether they hold `intake.assign` and `intake.reply`, so the inbox shows its Assign and Reply row actions only to a handler with the right. The assign and reply routes check the right again.",
+                "tags": [
+                    "intake-channels"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{assign: bool, reply: bool}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "assign": {
+                                            "type": "boolean"
+                                        },
+                                        "reply": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "assign",
+                                        "reply"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
         "/intake/messages/{id}/reply": {
             "post": {
                 "operationId": "intake-channels-reply",

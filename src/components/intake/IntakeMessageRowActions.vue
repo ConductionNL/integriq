@@ -1,22 +1,31 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!-- SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl> -->
-
 <!--
-  IntakeMessageRowActions: "Route again" on a held or failed message in the
-  intake inbox.
+  IntakeMessageRowActions: the row actions of a message in the intake inbox.
 
-  Wired through `pages[].slots["row-actions"]` on IntakeMessages. Routing runs
-  once, on arrival, so a message held before its rule existed stays held until
-  someone chooses this. It posts to `POST /api/intake/messages/{id}/route`,
-  which runs the same match and dispatch as a new arrival and writes the
-  outcome onto the same message, then reads the inbox again.
+  Wired through `pages[].slots["row-actions"]` on IntakeMessages.
+  - "Route again" on a held or failed message. Routing runs once, on arrival,
+    so a message held before its rule existed stays held until someone chooses
+    this. It posts to `POST /api/intake/messages/{id}/route`.
+  - "Assign to case" on a held or routed message, for a handler with
+    `intake.assign`: the handler names the case, and
+    `POST /api/intake/messages/{id}/assign` links the message and its
+    attachments to it and records who assigned it.
+  - "Reply" on a message from a channel that can reply, for a handler with
+    `intake.reply`: `POST /api/intake/messages/{id}/reply` sends the text on
+    the channel the message arrived on.
+  A user without the right does not see the action; which rights the user has
+  is asked once per page load (`GET /api/intake/messages/rights`). Each action
+  reads the inbox again afterwards.
 
   @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-held-message-is-routed-again-on-request-with-its-files-req-ire-003
+  @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
 -->
 <template>
-	<div v-if="routable" class="intakeMessageRowActions">
+	<div v-if="routable || assignable || answerable" class="intakeMessageRowActions">
 		<NcActions :aria-label="t('integriq', 'Message actions')">
 			<NcActionButton
+				v-if="routable"
 				:closeAfterClick="true"
 				:disabled="routing"
 				data-testid="intake-message-route-again"
@@ -26,7 +35,33 @@
 				</template>
 				{{ t('integriq', 'Route again') }}
 			</NcActionButton>
+			<NcActionButton
+				v-if="assignable"
+				:closeAfterClick="true"
+				data-testid="intake-message-assign"
+				@click="openDialog('assign')">
+				<template #icon>
+					<BriefcaseArrowLeftRightOutlineIcon :size="20" />
+				</template>
+				{{ t('integriq', 'Assign to case') }}
+			</NcActionButton>
+			<NcActionButton
+				v-if="answerable"
+				:closeAfterClick="true"
+				data-testid="intake-message-reply"
+				@click="openDialog('reply')">
+				<template #icon>
+					<ReplyOutlineIcon :size="20" />
+				</template>
+				{{ t('integriq', 'Reply') }}
+			</NcActionButton>
 		</NcActions>
+
+		<IntakeMessageActionDialog
+			:kind="dialog"
+			:sending="sending"
+			@submit="onSubmit"
+			@close="closeDialog" />
 	</div>
 </template>
 
@@ -34,16 +69,33 @@
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { NcActionButton, NcActions } from '@nextcloud/vue'
+import BriefcaseArrowLeftRightOutlineIcon from 'vue-material-design-icons/BriefcaseArrowLeftRightOutline.vue'
+import ReplyOutlineIcon from 'vue-material-design-icons/ReplyOutline.vue'
 import SignDirectionIcon from 'vue-material-design-icons/SignDirection.vue'
+import IntakeMessageActionDialog from '../../modals/Intake/IntakeMessageActionDialog.vue'
 import { refusalOf, routeAgain } from '../../modals/v2/intakeRuleApi.js'
 import { ruleId } from '../../modals/v2/intakeRuleDraft.js'
 import { refreshLogPage } from '../callLog/refreshLogPage.js'
+import {
+	assignMessage,
+	fetchInboxRights,
+	fetchReplyChannels,
+	isAnswerable,
+	isAssignable,
+	replyToMessage,
+} from './inboxActions.js'
 import { describeOutcome, isRoutable } from './routeAgainOutcome.js'
 
 export default {
 	name: 'IntakeMessageRowActions',
-
-	components: { NcActionButton, NcActions, SignDirectionIcon },
+	components: {
+		BriefcaseArrowLeftRightOutlineIcon,
+		IntakeMessageActionDialog,
+		NcActionButton,
+		NcActions,
+		ReplyOutlineIcon,
+		SignDirectionIcon,
+	},
 
 	props: {
 		row: {
@@ -55,6 +107,10 @@ export default {
 	data() {
 		return {
 			routing: false,
+			rights: { assign: false, reply: false },
+			replyChannels: new Set(),
+			dialog: '',
+			sending: false,
 		}
 	},
 
@@ -68,10 +124,70 @@ export default {
 		routable() {
 			return isRoutable(this.row) && ruleId(this.row) !== ''
 		},
+
+		/**
+		 * Whether the user may assign this message to a case.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
+		assignable() {
+			return this.rights.assign && isAssignable(this.row) && ruleId(this.row) !== ''
+		},
+
+		/**
+		 * Whether the user may reply to this message on its channel.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
+		answerable() {
+			return this.rights.reply && isAnswerable(this.row, this.replyChannels) && ruleId(this.row) !== ''
+		},
+
+	},
+
+	created() {
+		this.loadRights()
 	},
 
 	methods: {
 		t,
+		/**
+		 * Read which actions the user may use, and which channels can reply.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
+		async loadRights() {
+			this.rights = await fetchInboxRights()
+			if (this.rights.reply) {
+				this.replyChannels = await fetchReplyChannels()
+			}
+		},
+
+		/**
+		 * Open the assign or the reply dialog.
+		 *
+		 * @param {string} kind `assign` or `reply`.
+		 * @return {void}
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
+		openDialog(kind) {
+			this.dialog = kind
+		},
+
+		/**
+		 * Close the dialog, unless something is being sent.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
+		closeDialog() {
+			if (!this.sending) {
+				this.dialog = ''
+			}
+		},
 
 		/**
 		 * Route the message again and say what happened.
@@ -89,7 +205,6 @@ export default {
 			} finally {
 				this.routing = false
 			}
-
 			if (outcome.routed) {
 				showSuccess(outcome.text)
 			} else {
@@ -97,6 +212,67 @@ export default {
 			}
 			refreshLogPage(this)
 			return outcome.routed
+		},
+
+		/**
+		 * Send what the open dialog collected and say what happened.
+		 *
+		 * @param {string} value The case reference or the reply text.
+		 * @return {Promise<boolean>} Whether it went through.
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
+		async onSubmit(value) {
+			const text = typeof value === 'string' ? value : ''
+			if (text.trim() === '') {
+				return false
+			}
+			this.sending = true
+			const done = this.dialog === 'assign' ? await this.sendAssign(text.trim()) : await this.sendReply(text)
+			this.sending = false
+			if (done) {
+				this.dialog = ''
+				refreshLogPage(this)
+			}
+			return done
+		},
+
+		/**
+		 * Assign the message to the named case and say what happened.
+		 *
+		 * @param {string} caseRef The case reference.
+		 * @return {Promise<boolean>} Whether it was assigned.
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
+		async sendAssign(caseRef) {
+			try {
+				const result = await assignMessage(ruleId(this.row), caseRef)
+				showSuccess(t('integriq', 'Assigned to {case}', { case: result?.targetRef || caseRef }))
+				return true
+			} catch (error) {
+				showError(refusalOf(error, t('integriq', 'The message could not be assigned.')))
+				return false
+			}
+		},
+
+		/**
+		 * Send the reply on the message's channel and say what happened.
+		 *
+		 * @param {string} text The reply.
+		 * @return {Promise<boolean>} Whether it was sent.
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
+		async sendReply(text) {
+			try {
+				const result = await replyToMessage(ruleId(this.row), text)
+				if (result?.status === 'sent') {
+					showSuccess(t('integriq', 'Reply sent'))
+					return true
+				}
+				showError(result?.detail || t('integriq', 'The reply was not sent.'))
+			} catch (error) {
+				showError(refusalOf(error, t('integriq', 'The reply was not sent.')))
+			}
+			return false
 		},
 	},
 }

@@ -3190,7 +3190,16 @@
         "Where each call field is in the request, as a dotted path. Leave a field empty when the phone system uses the same name.": "Waar elk gespreksveld in het verzoek staat, als pad met punten. Laat een veld leeg als de telefooncentrale dezelfde naam gebruikt.",
         "With few consumers this unbalances the weights.": "Met weinig afnemers raken de gewichten hierdoor uit balans.",
         "Yivi is reached through an OIDC bridge, so the protocol is always OIDC Relying Party.": "Yivi wordt bereikt via een OIDC-brug, dus het protocol is altijd OIDC Relying Party.",
-        "{share}% of its group": "{share}% van de groep"
+        "{share}% of its group": "{share}% van de groep",
+        "Assign to case": "Toewijzen aan zaak",
+        "Reply": "Beantwoorden",
+        "Case reference": "Zaaknummer",
+        "Your reply": "Je antwoord",
+        "Assign": "Toewijzen",
+        "Assigned to {case}": "Toegewezen aan {case}",
+        "Reply sent": "Antwoord verstuurd",
+        "The reply was not sent.": "Het antwoord is niet verstuurd.",
+        "The message could not be assigned.": "Het bericht kon niet worden toegewezen."
     },
     "plurals": {}
 }
