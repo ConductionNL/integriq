@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\InitializeRegister;
+use OCA\Integriq\Repair\SchemaSeedHoist;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -61,7 +62,7 @@ final class InitializeRegisterSeedHoistTest extends TestCase {
 			],
 		];
 
-		$hoisted = InitializeRegister::hoistSchemaSeeds(descriptor: $descriptor);
+		$hoisted = (new SchemaSeedHoist())->hoist(descriptor: $descriptor);
 
 		$this->assertSame(expected: [$listed, $seed], actual: $hoisted['components']['objects']);
 		$this->assertArrayNotHasKey(key: 'x-openregister-seed', array: $hoisted['components']['schemas']['api_product']);
@@ -90,7 +91,7 @@ final class InitializeRegisterSeedHoistTest extends TestCase {
 			],
 		];
 
-		$hoisted = InitializeRegister::hoistSchemaSeeds(descriptor: $descriptor);
+		$hoisted = (new SchemaSeedHoist())->hoist(descriptor: $descriptor);
 
 		$this->assertSame(expected: ['Listed', 'Other'], actual: array_column(array: $hoisted['components']['objects'], column_key: 'name'));
 	}//end testAnAlreadyListedSeedIsNotListedTwice()
@@ -111,7 +112,7 @@ final class InitializeRegisterSeedHoistTest extends TestCase {
 			],
 		];
 
-		$hoisted = InitializeRegister::hoistSchemaSeeds(descriptor: $descriptor);
+		$hoisted = (new SchemaSeedHoist())->hoist(descriptor: $descriptor);
 
 		$this->assertArrayNotHasKey(key: 'objects', array: $hoisted['components']);
 		$this->assertArrayNotHasKey(key: 'x-openregister-seed', array: $hoisted['components']['schemas']['notificaties_abonnement']);
@@ -123,7 +124,7 @@ final class InitializeRegisterSeedHoistTest extends TestCase {
 	 * @return void
 	 */
 	public function testADescriptorWithoutSchemasIsUnchanged(): void {
-		$this->assertSame(expected: ['openapi' => '3.0.0'], actual: InitializeRegister::hoistSchemaSeeds(descriptor: ['openapi' => '3.0.0']));
+		$this->assertSame(expected: ['openapi' => '3.0.0'], actual: (new SchemaSeedHoist())->hoist(descriptor: ['openapi' => '3.0.0']));
 	}//end testADescriptorWithoutSchemasIsUnchanged()
 
 	/**
