@@ -291,7 +291,7 @@ class EndpointServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
 	 */
 	public function testAnEndpointWithTargetsIsRoutedAndAnswers503WhenNoneIsHealthy(): void {
 		$down = ObjectServiceMockBuilder::objectEntity(

@@ -550,7 +550,7 @@ export default {
 		 * Whether the endpoint proxies to one or several sources.
 		 *
 		 * @return {boolean} True when Target Type is `api`.
-		 * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+		 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
 		 */
 		isApiTarget() {
 			return this.formData?.targetType === 'api'

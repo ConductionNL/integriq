@@ -308,7 +308,7 @@ class OpenApiPublishService {
 	 *
 	 * @return bool True when the endpoint path, or its endpointArray, ends in an empty segment.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
 	 */
 	private static function endsWithSlash(array $data): bool {
 		$endpoint = (string) ($data['endpoint'] ?? '');

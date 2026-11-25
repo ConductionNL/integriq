@@ -8,7 +8,7 @@
  * `dataSource`, the dashboard shape, never reaches it and the chart draws an
  * empty axis. Found on a live run of tests/e2e/endpoint-targets.spec.ts.
  *
- * Spec coverage: openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md (REQ-UPRT-003)
+ * Spec coverage: openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md (REQ-UPRT-003)
  */
 
 import { readFileSync } from 'node:fs'

@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 /**
  * Keeps the findings of a product version and the custom rule sets as OpenRegister objects.
  *
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
  */
 class ApiDesignFindingStore {
 
@@ -74,7 +74,7 @@ class ApiDesignFindingStore {
 	 *
 	 * @return list<array<string, mixed>>
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	public function storedRuleSets(): array {
 		$sets = [];
@@ -103,7 +103,7 @@ class ApiDesignFindingStore {
 	 *
 	 * @return list<array<string, mixed>> The findings of the version now: kept waivers first, then the open ones.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	public function replace(string $productId, string $version, array $findings, string $checkedAt): array {
 		$fresh = [];
@@ -131,7 +131,7 @@ class ApiDesignFindingStore {
 	 *
 	 * @return list<array<string, mixed>> The kept waivers.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private function keptWaivers(array $of, array &$fresh): array {
 		$kept = [];
@@ -159,7 +159,7 @@ class ApiDesignFindingStore {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private static function openFinding(array $finding, array $context): array {
 		return [
@@ -189,7 +189,7 @@ class ApiDesignFindingStore {
 	 *
 	 * @throws InvalidArgumentException When the reason is empty, or the finding is unknown or not open.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 	 */
 	public function waive(string $findingId, string $reason, string $userId, string $waivedAt): array {
 		$reason = trim($reason);
@@ -225,7 +225,7 @@ class ApiDesignFindingStore {
 	 *
 	 * @return list<ObjectEntity>
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private function findingsOf(string $productId, string $version): array {
 		$matching = [];
@@ -248,7 +248,7 @@ class ApiDesignFindingStore {
 	 *
 	 * @return list<ObjectEntity>
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private function objectsOf(string $schema, array $filters): array {
 		$result = $this->objectService->findAll(
@@ -273,7 +273,7 @@ class ApiDesignFindingStore {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private static function matchKey(array $finding): string {
 		return (string)($finding['ruleset'] ?? '') . "\n" . (string)($finding['ruleId'] ?? '') . "\n" . (string)($finding['path'] ?? '');
@@ -285,7 +285,7 @@ class ApiDesignFindingStore {
 	 *
 	 * @return ObjectFindTarget
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private static function findingTarget(): ObjectFindTarget {
 		return new ObjectFindTarget(register: self::REGISTER, schema: self::FINDING_SCHEMA);

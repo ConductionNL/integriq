@@ -6,7 +6,7 @@
  * as the editable rows the endpoint editor shows, and back
  * (gateway-upstream-routing, task 4).
  *
- * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
  */
 
 /**
@@ -25,7 +25,7 @@ function isRule(value) {
  *
  * @param {Array<object>|undefined} targets The endpoint's `targets`.
  * @return {Array<{source: string, weight: number, group: string, when: object|null}>}
- * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
  */
 export function targetRowsOf(targets) {
 	if (!Array.isArray(targets)) return []
@@ -45,7 +45,7 @@ export function targetRowsOf(targets) {
  *
  * @param {number|string} value The typed weight.
  * @return {number}
- * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
  */
 export function weightOf(value) {
 	if (value === '' || value === null || value === undefined) return 1
@@ -61,7 +61,7 @@ export function weightOf(value) {
  *
  * @param {Array<{source: string, weight: number|string, group?: string, when?: object|null}>} rows The rows.
  * @return {Array<{source: string, weight: number, group?: string, when?: object}>}
- * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
  */
 export function targetsOf(rows) {
 	const targets = []
@@ -98,7 +98,7 @@ function groupKeyOf(row, index) {
  *
  * @param {Array<{source: string, weight: number|string, group?: string, when?: object|null}>} rows The rows.
  * @return {number[]} One percentage per row.
- * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
  */
 export function sharesOf(rows) {
 	const list = Array.isArray(rows) ? rows : []

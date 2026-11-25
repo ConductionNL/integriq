@@ -40,7 +40,7 @@ use RuntimeException;
 /**
  * An administrator checks an API product against the design rules, and waives a finding.
  *
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
  */
 class ApiDesignCheckController extends Controller {
 
@@ -77,7 +77,7 @@ class ApiDesignCheckController extends Controller {
 	 *
 	 * @return JSONResponse 200 with findings and manual rules, or 409 when the description cannot be checked.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function check(string $productId): JSONResponse {
@@ -101,7 +101,7 @@ class ApiDesignCheckController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the waived finding, or 400 without a reason or for a finding that is not open.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function waive(string $findingId, string $reason = ''): JSONResponse {

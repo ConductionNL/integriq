@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
  * the calls. The random source is injectable so the weighted spread can be
  * tested with a seeded generator.
  *
- * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
  */
 class UpstreamSelector {
 
@@ -89,7 +89,7 @@ class UpstreamSelector {
 	 *
 	 * @return list<array{index: int, source: string, weight: int, when: mixed, group: string}>
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
 	 */
 	public function targetsOf(array $endpointData): array {
 		$targets = ($endpointData['targets'] ?? []);
@@ -135,7 +135,7 @@ class UpstreamSelector {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/design.md
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/design.md
 	 */
 	public function readsBody(array $targets): bool {
 		foreach ($targets as $target) {
@@ -155,7 +155,7 @@ class UpstreamSelector {
 	 *
 	 * @return array{group: string, reason: string, targets: list<array{index: int, source: string, weight: int, when: mixed, group: string}>}
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
 	 */
 	public function candidates(array $targets, array $request): array {
 		foreach ($targets as $target) {
@@ -188,7 +188,7 @@ class UpstreamSelector {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
 	 */
 	public function isDown(array $sourceData, int $now): bool {
 		if ((string)($sourceData['circuitBreakerState'] ?? 'closed') !== 'open') {
@@ -212,7 +212,7 @@ class UpstreamSelector {
 	 *
 	 * @template T of array{weight: int}
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
 	 */
 	public function pick(array $candidates, ?string $stickyKey = null): ?array {
 		if ($candidates === []) {
@@ -248,7 +248,7 @@ class UpstreamSelector {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
 	 */
 	public function mayRetry(string $method, int $status): bool {
 		return in_array(strtoupper($method), self::RETRYABLE_METHODS, true) === true

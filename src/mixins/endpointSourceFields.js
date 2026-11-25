@@ -9,7 +9,7 @@ import { generateUrl } from '@nextcloud/router'
  *
  * @param {object} source One source object.
  * @return {{id: string, label: string}} The option.
- * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
  */
 export function sourceOption(source) {
 	const id = source.id || source.uuid
@@ -22,7 +22,7 @@ export function sourceOption(source) {
  * mutator EndpointFormFields hands them, and the sources they pick from,
  * loaded when the fields are created. A failed load leaves the list empty.
  *
- * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
  */
 export default {
 	props: {
@@ -44,7 +44,7 @@ export default {
 		 * The sources to pick from.
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
 		 */
 		sourceOptions() {
 			return this.sources.map(sourceOption)
@@ -60,7 +60,7 @@ export default {
 		 * Load the sources.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
 		 */
 		async fetchSources() {
 			this.sourcesLoading = true
@@ -79,7 +79,7 @@ export default {
 		 *
 		 * @param {string} id The source uuid.
 		 * @return {{id: string, label: string}|null}
-		 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
 		 */
 		optionFor(id) {
 			return this.sourceOptions.find((option) => option.id === id) || null
