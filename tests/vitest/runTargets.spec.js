@@ -33,6 +33,7 @@ describe('getRunDescriptor', () => {
 		['synchronization', 'test'],
 		['job', 'run'],
 		['job', 'test'],
+		['flow', 'run'],
 	])('resolves %s/%s', (target, mode) => {
 		expect(getRunDescriptor(target, mode)).not.toBeNull()
 	})
@@ -128,6 +129,57 @@ describe('job descriptors — request routing and locked force', () => {
 	it('job/run seeds its force switch off', () => {
 		expect(initialOptionValues(getRunDescriptor('job', 'run'))).toEqual({
 			forceRun: false,
+		})
+	})
+})
+
+describe('flow/run — request routing', () => {
+	const descriptor = getRunDescriptor('flow', 'run')
+
+	it('posts to the existing FlowsController::run() endpoint', () => {
+		const { url, body } = descriptor.request({ id: 'f-1' }, {})
+		expect(url).toBe('/apps/integriq/api/flows/f-1/run')
+		expect(body).toEqual({})
+	})
+
+	it('declares no options: a manual flow run has nothing to gate', () => {
+		expect(descriptor.options).toEqual([])
+		expect(initialOptionValues(descriptor)).toEqual({})
+	})
+})
+
+describe('flow status classification', () => {
+	const { status } = getRunDescriptor('flow', 'run')
+
+	it('reports completed as success', () => {
+		expect(status({ status: 'completed' })).toEqual({
+			type: 'success',
+			text: 'The flow completed successfully.',
+		})
+	})
+
+	it('reports suspended (mid-flight approval wait) as a warning, not a failure', () => {
+		expect(status({ status: 'suspended' })).toEqual({
+			type: 'warning',
+			text: 'The flow is waiting on an approval step and has not finished yet.',
+		})
+	})
+
+	it('reports failed/stopped/dead_letter as an error, preferring the engine message', () => {
+		expect(status({ status: 'failed', error: 'step "write" threw' })).toEqual({
+			type: 'error',
+			text: 'step "write" threw',
+		})
+		expect(status({ status: 'stopped' })).toEqual({
+			type: 'error',
+			text: 'The flow did not complete.',
+		})
+	})
+
+	it('reports a missing payload as a warning', () => {
+		expect(status(null)).toEqual({
+			type: 'warning',
+			text: 'The run returned no result.',
 		})
 	})
 })
@@ -359,6 +411,10 @@ describe('logsLink', () => {
 		expect(getRunDescriptor('job', 'run').logsLink({ id: 3 })).toEqual({
 			name: 'JobLogs',
 			query: { jobId: 3 },
+		})
+		expect(getRunDescriptor('flow', 'run').logsLink({ id: 'f-1' })).toEqual({
+			name: 'FlowRuns',
+			query: { flowId: 'f-1' },
 		})
 	})
 

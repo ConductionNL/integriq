@@ -66,6 +66,7 @@ export const VIEW_LOGS_TARGETS = {
 		queryParam: 'synchronizationId',
 	},
 	'view-cloud-event-logs': { route: 'CloudEventLogs', queryParam: null },
+	'view-flow-runs': { route: 'FlowRuns', queryParam: 'flowId' },
 }
 
 /**

@@ -22,6 +22,7 @@ const PAIRS = [
 	['synchronization', 'test'],
 	['job', 'run'],
 	['job', 'test'],
+	['flow', 'run'],
 ]
 
 const ITEMS = [

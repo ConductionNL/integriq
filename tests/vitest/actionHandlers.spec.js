@@ -35,6 +35,7 @@ vi.mock('@nextcloud/dialogs', () => ({
 
 import {
 	addEndpointRuleHandler,
+	runFlowHandler,
 	runJobHandler,
 	runSynchronizationHandler,
 	testJobHandler,
@@ -106,6 +107,7 @@ describe('run/test handlers — open the shared run modal instead of posting', (
 		],
 		['runJobHandler', runJobHandler, 'job', 'run'],
 		['testJobHandler', testJobHandler, 'job', 'test'],
+		['runFlowHandler', runFlowHandler, 'flow', 'run'],
 	])('%s emits open-run-action for %s/%s', (_name, handler, target, mode) => {
 		const item = { id: 9, name: 'row' }
 		const payload = captureRunAction(() => handler({ item }))
@@ -117,6 +119,7 @@ describe('run/test handlers — open the shared run modal instead of posting', (
 		testSynchronizationHandler({ item: { id: 9 } })
 		runJobHandler({ item: { id: 3 } })
 		testJobHandler({ item: { id: 3 } })
+		runFlowHandler({ item: { id: 'f-1' } })
 		expect(post).not.toHaveBeenCalled()
 		expect(showSuccess).not.toHaveBeenCalled()
 		expect(showError).not.toHaveBeenCalled()

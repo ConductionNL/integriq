@@ -91,6 +91,7 @@ import {
 	releaseHeldMessageHandler,
 	rerunFailedRunHandler,
 	runDirectorySyncHandler,
+	runFlowHandler,
 	runJobHandler,
 	runSynchronizationHandler,
 	setSourceResidencyHandler,
@@ -121,6 +122,10 @@ export default {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	// Flows table's "Force run" row action (nextcloud-vue's indexSources.js
+	// flowsSource() names this handler by registry string — see
+	// handlers/actionHandlers.js's runFlowHandler docblock).
+	runFlowHandler,
 	// Run again on a failed run: one POST, no dialog (connection-run-monitoring
 	// REQ-CRUN-003). Shown only on failed rows through the action's visibleWhen.
 	rerunFailedRunHandler,

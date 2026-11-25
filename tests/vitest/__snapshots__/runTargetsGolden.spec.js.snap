@@ -1,5 +1,763 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`run descriptors golden > flow/run renders as recorded 1`] = `
+{
+  "initialOptionValues": {},
+  "logsLink": [
+    {
+      "name": "FlowRuns",
+      "query": {
+        "flowId": 9,
+      },
+    },
+    {
+      "name": "FlowRuns",
+      "query": {
+        "flowId": "u-1",
+      },
+    },
+    {
+      "name": "FlowRuns",
+      "query": {
+        "flowId": 4,
+      },
+    },
+    null,
+  ],
+  "options": [],
+  "request": [
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/9/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/9/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/9/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/9/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/9/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/u-1/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/u-1/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/u-1/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/u-1/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/u-1/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/4/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/4/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/4/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/4/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/4/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/null/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/null/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/null/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/null/run",
+    },
+    {
+      "body": {},
+      "url": "/apps/integriq/api/flows/null/run",
+    },
+  ],
+  "runLabel": "Run",
+  "sections": [
+    [],
+    [],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+    [
+      {
+        "id": "run",
+        "kind": "meta",
+        "title": "Run",
+        "value": [
+          {
+            "label": "Status",
+            "value": "—",
+          },
+          {
+            "label": "Trigger",
+            "value": "Manual",
+          },
+          {
+            "label": "Triggered by",
+            "value": "—",
+          },
+        ],
+      },
+    ],
+  ],
+  "status": [
+    {
+      "text": "The run returned no result.",
+      "type": "warning",
+    },
+    {
+      "text": "The run returned no result.",
+      "type": "warning",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+    {
+      "text": "The flow did not complete.",
+      "type": "error",
+    },
+  ],
+  "title": "Run flow",
+  "visibleOptions": [
+    [],
+    [],
+    [],
+    [],
+    [],
+  ],
+}
+`;
+
 exports[`run descriptors golden > job/run renders as recorded 1`] = `
 {
   "initialOptionValues": {
