@@ -7,7 +7,7 @@
   given or moved a sunset date, versioned or retired, and fourteen days
   before a subscription ends. Read from OpenRegister's object API.
 
-  @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+  @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 -->
 <template>
 	<section class="productChangeNotices" data-testid="api-product-change-notices">
@@ -72,7 +72,7 @@ export default {
 		 * Reload when the product changes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 		 */
 		productId() {
 			this.load()
@@ -89,7 +89,7 @@ export default {
 		/**
 		 * @param {string} kind The notice kind.
 		 * @return {string} Its label.
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 		 */
 		kindLabel(kind) {
 			return noticeKindLabel(kind)
@@ -99,7 +99,7 @@ export default {
 		 * Read this product's notices, newest first.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 		 */
 		async load() {
 			this.loading = true

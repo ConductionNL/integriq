@@ -15,7 +15,7 @@ export const CLIENT_CERTIFICATE = 'clientCertificate'
  *
  * @param {string} applicationId the application's id
  * @return {string} the URL
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
  */
 export function portalKeysUrl(applicationId) {
 	return generateUrl('/apps/integriq/api/portal/applications/{id}/keys', { id: applicationId })
