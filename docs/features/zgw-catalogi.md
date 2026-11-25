@@ -25,7 +25,7 @@ Every `url` and `catalogus` in an answer is the absolute URL served here.
 An administrator creates one `catalogi_binding` object in the integriq register:
 
 - `publishedUuid`, `domein`, `rsin`, `naam`: the catalogue.
-- `register`, `schema`: where the organisation's document types live.
+- `typesRegister`, `typesSchema`: where the organisation's document types live (not `register` and `schema`: OpenRegister reserves those names in an object body and drops them).
 - `fieldMap` (optional): which stored field fills which resource field. The
   default reads `name` → `omschrijving`, `confidentiality` →
   `vertrouwelijkheidaanduiding`, `category` → `informatieobjectcategorie`,

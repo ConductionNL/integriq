@@ -87,6 +87,22 @@ async function adminHeaders(request: APIRequestContext): Promise<Record<string, 
 }
 
 /**
+ * The numeric id of something stored in OpenRegister.
+ *
+ * @param request The request context.
+ * @param path The stored item's path.
+ * @return The numeric id.
+ */
+async function numericId(request: APIRequestContext, path: string): Promise<number> {
+	const resp = await request.get(path, { failOnStatusCode: false, headers: await adminHeaders(request) })
+	expect(resp.status(), `read ${path}`).toBe(200)
+	const id = Number((await resp.json()).id)
+	expect(Number.isInteger(id), `${path} has a numeric id`).toBe(true)
+
+	return id
+}
+
+/**
  * Create something through OpenRegister and remember its path for cleanup.
  *
  * @param request The request fixture.
@@ -191,7 +207,8 @@ test.describe('zgw-catalogi-served: the Woo starter set', () => {
 		await create(request, `${OR_API}/registers`, {
 			title: `E2E documenten ${RUN}`,
 			slug: REGISTER,
-			schemas: [schemaId],
+			// A register lists its schemas by numeric id; a uuid there is never resolved.
+			schemas: [await numericId(request, `${OR_API}/schemas/${schemaId}`)],
 		})
 		await create(request, `${OR_BASE}/consumer`, {
 			name: CLIENT,
@@ -205,8 +222,8 @@ test.describe('zgw-catalogi-served: the Woo starter set', () => {
 			rsin: '123456782',
 			naam: `E2E catalogus ${RUN}`,
 			publishedUuid: randomUUID(),
-			register: REGISTER,
-			schema: SCHEMA,
+			typesRegister: REGISTER,
+			typesSchema: SCHEMA,
 			clients: [{ clientId: CLIENT, scopes: ['catalogi.lezen'], concepts: false }],
 		})
 

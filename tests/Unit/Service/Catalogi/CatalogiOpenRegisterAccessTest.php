@@ -99,8 +99,8 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 					$this->test->calls[] = ['findAll', $config, $rbac, $multi];
 					return ['results' => ($this->test->objects[$config['filters']['schema']] ?? [])];
 				}
-				public function saveObject(array $object, ?array $extend = [], mixed $register = null, mixed $schema = null): void {
-					$this->test->calls[] = ['saveObject', $object, $register, $schema];
+				public function saveObject(array $object, ?object $options = null): void {
+					$this->test->calls[] = ['saveObject', $object, $options?->target->register, $options?->target->schema];
 				}
 			},
 			CatalogiOpenRegisterAccess::SCHEMA_MAPPER => new class($test) {
@@ -145,7 +145,7 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 	public function testTheBindingResolvesOnlyWithItsSchema(): void {
 		self::assertNull($this->access()->binding(), 'no binding');
 
-		$this->objects['catalogi_binding'] = [['publishedUuid' => 'cat-1', 'register' => 'documents', 'schema' => 'documentType']];
+		$this->objects['catalogi_binding'] = [['publishedUuid' => 'cat-1', 'typesRegister' => 'documents', 'typesSchema' => 'documentType']];
 		$binding = $this->access()->binding();
 		self::assertSame('cat-1', $binding?->uuid);
 		self::assertSame(['findAll', ['filters' => ['register' => 'integriq', 'schema' => 'catalogi_binding'], 'limit' => 5000], false, false], $this->calls[1]);
@@ -160,7 +160,7 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 	 * @return void
 	 */
 	public function testTypesAreReadAndCreatedInTheBoundSchema(): void {
-		$binding = CatalogiBinding::fromObject(row: ['publishedUuid' => 'cat-1', 'register' => 'documents', 'schema' => 'documentType']);
+		$binding = CatalogiBinding::fromObject(row: ['publishedUuid' => 'cat-1', 'typesRegister' => 'documents', 'typesSchema' => 'documentType']);
 		$this->objects['documentType'] = [['id' => 'type-1', 'name' => 'Besluit']];
 
 		self::assertSame([['id' => 'type-1', 'name' => 'Besluit']], $this->access()->types(binding: $binding));
@@ -202,7 +202,7 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 		CatalogiWiring::register(context: $context);
 		self::assertSame([CatalogiGate::class, InformatieobjecttypeEndpointHandler::class, WooStarterSet::class], array_keys($factories));
 
-		$this->objects['catalogi_binding'] = [['publishedUuid' => 'cat-1', 'register' => 'documents', 'schema' => 'documentType']];
+		$this->objects['catalogi_binding'] = [['publishedUuid' => 'cat-1', 'typesRegister' => 'documents', 'typesSchema' => 'documentType']];
 		$this->objects['documentType'] = [['id' => 'own', 'category' => 'besluiten']];
 		$this->concepts = ['https://x/c_1' => ['prefLabel' => 'besluiten'], 'https://x/c_2' => ['prefLabel' => 'convenanten']];
 		$access = $this->access();

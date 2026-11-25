@@ -50,9 +50,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen",
         "auth": {
           "type": "noauth"
         }
@@ -106,9 +104,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas"
-        },
+        "url": "{{base_url}}/index.php/apps/openregister/api/schemas",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"Newman document type {{ctStamp}}\", \"slug\": \"{{ctSchemaSlug}}\", \"properties\": {\"name\": {\"type\": \"string\"}, \"confidentiality\": {\"type\": \"string\"}, \"category\": {\"type\": \"string\"}, \"categoryUri\": {\"type\": \"string\"}, \"active\": {\"type\": \"boolean\"}, \"validFrom\": {\"type\": \"string\"}}}",
@@ -129,7 +125,9 @@
               "const b = pm.response.json();",
               "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id));",
               "pm.expect(id, 'the created id').to.be.a('string').and.not.empty;",
-              "pm.collectionVariables.set('ctSchema', String(id));"
+              "pm.collectionVariables.set('ctSchema', String(id));",
+              "// A register lists its schemas by numeric id (OpenRegister's register-scoped slug boundary); a uuid there is never resolved.",
+              "pm.collectionVariables.set('ctSchemaNumId', String(b.id || (b['@self'] && b['@self'].id)));"
             ]
           }
         }
@@ -149,12 +147,10 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/registers"
-        },
+        "url": "{{base_url}}/index.php/apps/openregister/api/registers",
         "body": {
           "mode": "raw",
-          "raw": "{\"title\": \"Newman documenten {{ctStamp}}\", \"slug\": \"{{ctRegister}}\", \"schemas\": [\"{{ctSchema}}\"]}",
+          "raw": "{\"title\": \"Newman documenten {{ctStamp}}\", \"slug\": \"{{ctRegister}}\", \"schemas\": [{{ctSchemaNumId}}]}",
           "options": {
             "raw": {
               "language": "json"
@@ -192,9 +188,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}"
-        },
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}",
         "body": {
           "mode": "raw",
           "raw": "{\"name\": \"Besluit\", \"confidentiality\": \"openbaar\", \"category\": \"besluiten\", \"active\": true, \"validFrom\": \"2026-01-01\"}",
@@ -235,9 +229,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}"
-        },
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}",
         "body": {
           "mode": "raw",
           "raw": "{\"name\": \"Concept notitie\", \"confidentiality\": \"intern\", \"category\": \"overig\", \"active\": false}",
@@ -278,9 +270,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer"
-        },
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer",
         "body": {
           "mode": "raw",
           "raw": "{\"name\": \"{{ctReader}}\", \"description\": \"newman zgw-catalogi-served reader\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{ctReaderSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
@@ -322,9 +312,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer"
-        },
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer",
         "body": {
           "mode": "raw",
           "raw": "{\"name\": \"{{ctOther}}\", \"description\": \"newman zgw-catalogi-served client without the scope\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{ctOtherSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
@@ -365,12 +353,10 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/catalogi_binding"
-        },
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/catalogi_binding",
         "body": {
           "mode": "raw",
-          "raw": "{\"domein\": \"NEWMN\", \"rsin\": \"123456782\", \"naam\": \"Newman catalogus {{ctStamp}}\", \"publishedUuid\": \"{{ctCatalogusUuid}}\", \"register\": \"{{ctRegister}}\", \"schema\": \"{{ctSchemaSlug}}\", \"clients\": [{\"clientId\": \"{{ctReader}}\", \"scopes\": [\"catalogi.lezen\"], \"concepts\": false}, {\"clientId\": \"{{ctOther}}\", \"scopes\": [\"documenten.lezen\"], \"concepts\": false}]}",
+          "raw": "{\"domein\": \"NEWMN\", \"rsin\": \"123456782\", \"naam\": \"Newman catalogus {{ctStamp}}\", \"publishedUuid\": \"{{ctCatalogusUuid}}\", \"typesRegister\": \"{{ctRegister}}\", \"typesSchema\": \"{{ctSchemaSlug}}\", \"clients\": [{\"clientId\": \"{{ctReader}}\", \"scopes\": [\"catalogi.lezen\"], \"concepts\": false}, {\"clientId\": \"{{ctOther}}\", \"scopes\": [\"documenten.lezen\"], \"concepts\": false}]}",
           "options": {
             "raw": {
               "language": "json"
@@ -399,9 +385,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen",
         "auth": {
           "type": "noauth"
         }
@@ -424,9 +408,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -457,9 +439,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -506,9 +486,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{ctTypeUrl}}"
-        },
+        "url": "{{ctTypeUrl}}",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -548,9 +526,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{ctCatalogusUrl}}"
-        },
+        "url": "{{ctCatalogusUrl}}",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -587,9 +563,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/catalogussen"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/catalogussen",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -621,9 +595,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen?catalogus={{ctCatalogusUrl}}"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen?catalogus={{ctCatalogusUrl}}",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -653,9 +625,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctConcept}}"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctConcept}}",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -684,9 +654,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen?status=alles"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen?status=alles",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -717,9 +685,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen?catalogus=https://example.invalid/catalogi/api/v1/catalogussen/00000000-0000-4000-8000-000000000000"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen?catalogus=https://example.invalid/catalogi/api/v1/catalogussen/00000000-0000-4000-8000-000000000000",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -749,9 +715,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/00000000-0000-4000-8000-00000000dead"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/00000000-0000-4000-8000-00000000dead",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -785,9 +749,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen",
         "body": {
           "mode": "raw",
           "raw": "{\"omschrijving\": \"Newman write\", \"vertrouwelijkheidaanduiding\": \"openbaar\", \"informatieobjectcategorie\": \"besluiten\", \"catalogus\": \"{{ctCatalogusUrl}}\"}",
@@ -831,9 +793,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctType}}"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctType}}",
         "body": {
           "mode": "raw",
           "raw": "{\"omschrijving\": \"Newman write\", \"vertrouwelijkheidaanduiding\": \"openbaar\", \"informatieobjectcategorie\": \"besluiten\", \"catalogus\": \"{{ctCatalogusUrl}}\"}",
@@ -877,9 +837,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctType}}"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctType}}",
         "body": {
           "mode": "raw",
           "raw": "{\"omschrijving\": \"Newman write\", \"vertrouwelijkheidaanduiding\": \"openbaar\", \"informatieobjectcategorie\": \"besluiten\", \"catalogus\": \"{{ctCatalogusUrl}}\"}",
@@ -918,9 +876,7 @@
       "request": {
         "method": "DELETE",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctType}}"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen/{{ctType}}",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -955,9 +911,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/catalogussen"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/catalogussen",
         "body": {
           "mode": "raw",
           "raw": "{\"omschrijving\": \"Newman write\", \"vertrouwelijkheidaanduiding\": \"openbaar\", \"informatieobjectcategorie\": \"besluiten\", \"catalogus\": \"{{ctCatalogusUrl}}\"}",
@@ -996,9 +950,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -1038,9 +990,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/catalogi_binding/{{ctBinding}}"
-        }
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/catalogi_binding/{{ctBinding}}"
       },
       "event": [
         {
@@ -1064,9 +1014,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer/{{ctReaderConsumer}}"
-        }
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer/{{ctReaderConsumer}}"
       },
       "event": [
         {
@@ -1090,9 +1038,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer/{{ctOtherConsumer}}"
-        }
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/consumer/{{ctOtherConsumer}}"
       },
       "event": [
         {
@@ -1116,9 +1062,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}/{{ctType}}"
-        }
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}/{{ctType}}"
       },
       "event": [
         {
@@ -1142,9 +1086,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}/{{ctConcept}}"
-        }
+        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{ctRegister}}/{{ctSchemaSlug}}/{{ctConcept}}"
       },
       "event": [
         {
@@ -1168,9 +1110,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{ctRegisterId}}"
-        }
+        "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{ctRegisterId}}"
       },
       "event": [
         {
@@ -1194,9 +1134,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{ctSchema}}"
-        }
+        "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{ctSchema}}"
       },
       "event": [
         {
@@ -1215,9 +1153,7 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": {
-          "raw": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen"
-        },
+        "url": "{{base_url}}/index.php/apps/integriq/catalogi/api/v1/informatieobjecttypen",
         "auth": {
           "type": "noauth"
         }
