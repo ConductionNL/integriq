@@ -135,9 +135,9 @@ class EndpointServiceMcpTargetTest extends TestCase {
 	 */
 	public function testAnMcpEndpointReachesItsUpstreamPath(): void {
 		$response = $this->dispatch(targetType: 'mcp', ruleResult: [], endpointExtra: ['endpoint' => 'tools/documents', 'upstreamPath' => 'mcp']);
-		$response->callback($this->createMock(IOutput::class));
+		$response->callback($this->createMock(originalClassName: IOutput::class));
 
-		$this->assertSame([['relay', 'mcp', 'POST']], $this->calls);
+		$this->assertSame(expected: [['relay', 'mcp', 'POST']], actual: $this->calls);
 	}//end testAnMcpEndpointReachesItsUpstreamPath()
 
 	/**

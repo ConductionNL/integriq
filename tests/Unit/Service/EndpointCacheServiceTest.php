@@ -139,13 +139,13 @@ class EndpointCacheServiceTest extends TestCase {
 		$a = $service->findByPathRegex(path: 'tools/a', method: 'POST');
 		$b = $service->findByPathRegex(path: 'tools/b', method: 'POST');
 
-		$this->assertSame('1b2c3d4e-0000-4000-8000-00000000000a', $a->getUuid());
-		$this->assertSame('org-a', $a->getOrganisation());
-		$this->assertSame('26', (string)$a->getRegister());
-		$this->assertSame('30', (string)$a->getSchema());
-		$this->assertSame('admin', $a->getOwner());
-		$this->assertSame('1b2c3d4e-0000-4000-8000-00000000000b', $b->getUuid(), 'Two cached endpoints never share a uuid.');
-		$this->assertNull($b->getOrganisation(), 'A missing organisation stays missing.');
+		$this->assertSame(expected: '1b2c3d4e-0000-4000-8000-00000000000a', actual: $a->getUuid());
+		$this->assertSame(expected: 'org-a', actual: $a->getOrganisation());
+		$this->assertSame(expected: '26', actual: (string)$a->getRegister());
+		$this->assertSame(expected: '30', actual: (string)$a->getSchema());
+		$this->assertSame(expected: 'admin', actual: $a->getOwner());
+		$this->assertSame(expected: '1b2c3d4e-0000-4000-8000-00000000000b', actual: $b->getUuid(), message: 'Two cached endpoints never share a uuid.');
+		$this->assertNull(actual: $b->getOrganisation(), message: 'A missing organisation stays missing.');
 	}//end testACachedEndpointKeepsItsUuidAndOrganisation()
 
 	public function testNoMatchRefreshesOnceAndThenGivesUp(): void {

@@ -44,8 +44,8 @@ use Twig\Loader\ArrayLoader;
 /**
  * A CallService over a recording ObjectService and a Guzzle double.
  *
- * call_log is append-only, so a field a caller wants on the record has to be
- * on it when it is first saved: these tests read the one save.
+ * The call_log schema is append-only, so a field a caller wants on the record
+ * has to be on it when it is first saved: these tests read the one save.
  *
  * @covers \OCA\Integriq\Service\CallService
  * @uses \OCA\Integriq\Service\Call\CallRequest
@@ -69,7 +69,7 @@ class CallServiceRelayLogFieldsTest extends TestCase {
 	 * @return CallService
 	 */
 	private function service(): CallService {
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(originalClassName: ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
 			function ($object = [], ObjectSaveOptions $options = new ObjectSaveOptions()) {
 				$this->saved[] = ['object' => $object, 'schema' => $options->target->schema];
@@ -80,31 +80,31 @@ class CallServiceRelayLogFieldsTest extends TestCase {
 			}
 		);
 
-		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
 		$appConfig->method('getValueInt')->willReturnArgument(2);
 
-		$clock = $this->createMock(ClockInterface::class);
+		$clock = $this->createMock(originalClassName: ClockInterface::class);
 		$clock->method('now')->willReturn(new DateTimeImmutable('2026-11-25T12:00:00+00:00'));
 
-		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered = $this->createMock(originalClassName: BrokeredCallService::class);
 		$brokered->method('hasCredentialRef')->willReturn(false);
 
-		$session = $this->createMock(IUserSession::class);
+		$session = $this->createMock(originalClassName: IUserSession::class);
 		$session->method('getUser')->willReturn(null);
 
 		$service = new CallService(
-			$objectService,
-			new ArrayLoader([]),
-			$this->createMock(AuthenticationService::class),
-			$appConfig,
-			$this->createMock(LoggerInterface::class),
-			$brokered,
-			new SensitiveFieldRegistry(),
-			new BodyCapturePolicy($appConfig, $clock, $session),
+			objectService: $objectService,
+			loader: new ArrayLoader([]),
+			authenticationService: $this->createMock(originalClassName: AuthenticationService::class),
+			appConfig: $appConfig,
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			brokeredCallService: $brokered,
+			sensitiveFieldRegistry: new SensitiveFieldRegistry(),
+			bodyCapturePolicy: new BodyCapturePolicy(appConfig: $appConfig, clock: $clock, userSession: $session),
 		);
 
-		$client = $this->createMock(Client::class);
+		$client = $this->createMock(originalClassName: Client::class);
 		$client->method('request')->willReturn(new Response(200, ['Content-Type' => 'application/json'], '{"jsonrpc":"2.0","id":1,"result":{}}'));
 		$property = new ReflectionProperty(CallService::class, 'client');
 		$property->setValue($service, $client);
@@ -153,7 +153,10 @@ class CallServiceRelayLogFieldsTest extends TestCase {
 			source: $this->source(),
 			endpoint: 'mcp',
 			method: 'POST',
-			config: ['body' => '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"q":"secret"}}}', 'logFields' => $logFields],
+			config: [
+				'body' => '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"q":"secret"}}}',
+				'logFields' => $logFields,
+			],
 			sink: Utils::streamFor(''),
 			onHeaders: static function (): void {
 			}
@@ -169,11 +172,15 @@ class CallServiceRelayLogFieldsTest extends TestCase {
 		$this->relay(logFields: ['mcpMethod' => 'tools/call', 'mcpTool' => 'search']);
 
 		$logs = $this->callLogs();
-		$this->assertCount(1, $logs, 'One save: an append-only record is never updated.');
-		$this->assertSame('tools/call', $logs[0]['mcpMethod']);
-		$this->assertSame('search', $logs[0]['mcpTool']);
-		$this->assertSame(200, $logs[0]['statusCode']);
-		$this->assertStringNotContainsString('secret', (string)json_encode($logs[0]), 'A relay withholds its bodies by default.');
+		$this->assertCount(expectedCount: 1, haystack: $logs, message: 'One save: an append-only record is never updated.');
+		$this->assertSame(expected: 'tools/call', actual: $logs[0]['mcpMethod']);
+		$this->assertSame(expected: 'search', actual: $logs[0]['mcpTool']);
+		$this->assertSame(expected: 200, actual: $logs[0]['statusCode']);
+		$this->assertStringNotContainsString(
+			needle: 'secret',
+			haystack: (string)json_encode($logs[0]),
+			message: 'A relay withholds its bodies by default.'
+		);
 	}//end testTheRecordIsWrittenWithTheCallersFields()
 
 	/**
@@ -185,9 +192,9 @@ class CallServiceRelayLogFieldsTest extends TestCase {
 		$this->relay(logFields: ['statusCode' => 299, 'direction' => 'inbound', 'mcpMethod' => 'tools/list']);
 
 		$logs = $this->callLogs();
-		$this->assertSame(200, $logs[0]['statusCode']);
-		$this->assertSame('outbound', $logs[0]['direction']);
-		$this->assertSame('tools/list', $logs[0]['mcpMethod']);
+		$this->assertSame(expected: 200, actual: $logs[0]['statusCode']);
+		$this->assertSame(expected: 'outbound', actual: $logs[0]['direction']);
+		$this->assertSame(expected: 'tools/list', actual: $logs[0]['mcpMethod']);
 	}//end testACallersFieldDoesNotReplaceTheEngines()
 
 	/**
@@ -199,8 +206,8 @@ class CallServiceRelayLogFieldsTest extends TestCase {
 		$this->relay(logFields: []);
 
 		$logs = $this->callLogs();
-		$this->assertCount(1, $logs);
-		$this->assertArrayNotHasKey('mcpMethod', $logs[0]);
-		$this->assertArrayNotHasKey('mcpTool', $logs[0]);
+		$this->assertCount(expectedCount: 1, haystack: $logs);
+		$this->assertArrayNotHasKey(key: 'mcpMethod', array: $logs[0]);
+		$this->assertArrayNotHasKey(key: 'mcpTool', array: $logs[0]);
 	}//end testWithoutFieldsTheRecordIsUnchanged()
 }//end class
