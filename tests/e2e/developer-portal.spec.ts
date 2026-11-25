@@ -21,9 +21,9 @@
  * Newman folder "Developer portal" in tests/postman/integriq.postman_collection.json.
  */
 
-import { seedFirstVisitOverlaysSeen } from '@conduction/nextcloud-vue/testing/playwright'
 import type { APIRequestContext, Browser, BrowserContext } from '@playwright/test'
 
+import { seedFirstVisitOverlaysSeen } from '@conduction/nextcloud-vue/testing/playwright'
 import { expect, test } from '@playwright/test'
 import { APP_BASE } from './spec-coverage/_helpers.ts'
 import { BASE_URL } from './support/baseUrl.ts'
