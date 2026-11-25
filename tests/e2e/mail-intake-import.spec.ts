@@ -21,6 +21,9 @@ const OCS_USERS = '/ocs/v1.php/cloud/users'
 const PLAIN_USER = `e2e-no-mail-import-${Date.now()}`
 const PLAIN_PASSWORD = 'E2e-No-Mail-Import-2026!'
 
+// Basic-auth API calls without this header fail Nextcloud's CSRF check (412).
+test.use({ extraHTTPHeaders: { 'OCS-APIRequest': 'true' } })
+
 /**
  * A mailbox source in mock mode, named so the dialog's select can find it.
  *
