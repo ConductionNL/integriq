@@ -44,7 +44,8 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 - **acceptance_criteria**:
   - GIVEN a product with two active subscriptions WHEN an administrator deprecates it THEN two notices are written and both owners get a notification
 - [x] Implement (`product_change_notice` with a `created` notification over `nc-notification` and `email` to `recipientUserId`; `ProductChangeNoticeListener` on product updates and creates; `retired` answers 410 in `EndpointService`)
-- [ ] Test (PHPUnit for notice fan-out and the 410; one notification observed in the Nextcloud notifications list)
+- [x] Test (PHPUnit for notice fan-out and the 410; one notification observed in the Nextcloud notifications list)
+  - 2026-11-25 live (same sandbox as task 6): as admin, PATCH Zaken API (subscribed by developer1's `example-developer-app`) to `deprecated` wrote one `product_change_notice` (kind `deprecated`, recipient developer1); after cron (OpenRegister defers annotation notifications to its job) developer1's Nextcloud notifications list shows "Wijziging in een API die je gebruikt: Zaken API" (app openregister).
   - PHPUnit done: `ProductChangeNoticeServiceTest`, `ProductChangeNoticeListenerTest`, `EndpointServiceTierPolicyTest::testARetiredProductAnswersGone`. Left: observing the notification on a live instance.
 
 ### Task 5: Subscription end dates
