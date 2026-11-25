@@ -41,6 +41,13 @@ use ReflectionClass;
 class EndpointServiceErrorHeadersTest extends TestCase {
 
 	/**
+	 * The challenge of a token-protected endpoint.
+	 *
+	 * @var string
+	 */
+	private const CHALLENGE = 'Bearer resource_metadata="https://cloud.example.nl/apps/integriq/.well-known/oauth-protected-resource/zaken"';
+
+	/**
 	 * The 401 of a token-protected endpoint.
 	 *
 	 * @return JSONResponse
@@ -50,7 +57,7 @@ class EndpointServiceErrorHeadersTest extends TestCase {
 			data: ['error' => 'unauthorized', 'details' => 'This endpoint requires a bearer token'],
 			statusCode: 401
 		);
-		$response->addHeader(name: 'WWW-Authenticate', value: 'Bearer resource_metadata="https://cloud.example.nl/apps/integriq/.well-known/oauth-protected-resource/zaken"');
+		$response->addHeader(name: 'WWW-Authenticate', value: self::CHALLENGE);
 
 		return $response;
 	}//end challenged()
@@ -95,7 +102,7 @@ class EndpointServiceErrorHeadersTest extends TestCase {
 		// Response::getHeaders() needs a running server; read the stored headers.
 		$headers = (new \ReflectionProperty(Response::class, 'headers'))->getValue($problem);
 		$this->assertSame(
-			expected: 'Bearer resource_metadata="https://cloud.example.nl/apps/integriq/.well-known/oauth-protected-resource/zaken"',
+			expected: self::CHALLENGE,
 			actual: ($headers['WWW-Authenticate'] ?? null)
 		);
 		$this->assertSame(expected: ProblemResponse::CONTENT_TYPE, actual: ($headers['Content-Type'] ?? null));
