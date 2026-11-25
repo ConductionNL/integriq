@@ -237,8 +237,8 @@ class McpProxyHandler {
 		}
 
 		return new McpProxyResponse(
-			relay: function (IOutput $output) use ($call, $config, $rpc, $endpointData): void {
-				$this->relay(call: $call, config: $config, output: $output, storeArguments: (($endpointData['mcpStoreArguments'] ?? false) === true), rpc: $rpc);
+			relay: function (IOutput $output) use ($call, $config, $endpointData): void {
+				$this->relay(call: $call, config: $config, output: $output, storeArguments: (($endpointData['mcpStoreArguments'] ?? false) === true));
 			}
 		);
 	}//end handle()
@@ -297,11 +297,10 @@ class McpProxyHandler {
 	 * @param array<string, mixed>                                     $config         The request configuration.
 	 * @param IOutput                                                  $output         The caller's output.
 	 * @param bool                                                     $storeArguments Whether the request body is logged.
-	 * @param array{method: string|null, tool: string|null, id: mixed} $rpc            What the body asks.
 	 *
 	 * @return void
 	 */
-	private function relay(McpProxyCall $call, array $config, IOutput $output, bool $storeArguments, array $rpc): void {
+	private function relay(McpProxyCall $call, array $config, IOutput $output, bool $storeArguments): void {
 		try {
 			$this->calls->relay(
 				source: $call->source,
