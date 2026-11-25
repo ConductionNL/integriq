@@ -234,22 +234,51 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	}//end finding()
 
 	/**
-	 * The findings that hold back publication: open and error-level.
+	 * The findings that hold back publication: open and error-level, on what the product owner controls.
+	 *
+	 * A built-in rule marked `"scope": "gateway"` judges what the gateway writes into every
+	 * product's description (the server URL, info.contact, response headers). Its findings are
+	 * shown, but no product owner can fix them, so they do not refuse activation.
 	 *
 	 * @param list<array<string, mixed>> $findings The findings.
 	 *
 	 * @return list<array<string, mixed>>
 	 *
 	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 * @spec openspec/changes/gateway-design-findings-do-not-block-products/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 	 */
 	public function blockingFindings(array $findings): array {
+		$gatewayRules = array_flip($this->gatewayRuleIds());
+
 		return array_values(
 			array_filter(
 				$findings,
-				static fn (array $finding): bool => ($finding['severity'] ?? null) === 'error' && ($finding['status'] ?? 'open') === 'open'
+				static fn (array $finding): bool => ($finding['severity'] ?? null) === 'error'
+					&& ($finding['status'] ?? 'open') === 'open'
+					&& isset($gatewayRules[(string) ($finding['ruleId'] ?? '')]) === false
 			)
 		);
 	}//end blockingFindings()
+
+	/**
+	 * The ids of the built-in rules that judge the gateway rather than the product.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/gateway-design-findings-do-not-block-products/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 */
+	private function gatewayRuleIds(): array {
+		$ids = [];
+		foreach ($this->builtInRuleSets() as $ruleSet) {
+			foreach ((array) ($ruleSet['rules'] ?? []) as $rule) {
+				if (is_array($rule) === true && ($rule['scope'] ?? null) === 'gateway') {
+					$ids[] = (string) ($rule['id'] ?? '');
+				}
+			}
+		}
+
+		return $ids;
+	}//end gatewayRuleIds()
 
 	/**
 	 * Run one rule over a document.
