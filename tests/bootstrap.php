@@ -276,6 +276,12 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			}
 		}
 
+		// OpenRegister main's PermissionHandler::hasPermission() takes one
+		// PermissionAsk; DsoAccountRights builds it when the handler asks for it.
+		if (class_exists('OCA\\OpenRegister\\Service\\Object\\PermissionAsk') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/PermissionAsk.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectServiceMapperAdapter') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectServiceMapperAdapter.php';
 		}
