@@ -1893,7 +1893,6 @@ class CallService implements CallServiceInterface {
 	 * @param boolean $persistLog When false, return a transient (unsaved) CallLog and mutate nothing.
 	 * @param boolean $withholdBodies When true, the record is written without any body and names the user.
 	 * @param integer $pacedMs The milliseconds the call waited for its paced turn.
-	 * @param array<string, mixed> $logFields Fields the caller adds to the record; the engine's own fields win.
 	 *
 	 * The record is filed under the source's organisation, so that organisation's scoped log views list it.
 	 *
@@ -1917,7 +1916,6 @@ class CallService implements CallServiceInterface {
 		bool $persistLog = true,
 		bool $withholdBodies = false,
 		int $pacedMs = 0,
-		array $logFields = [],
 	): ObjectEntity {
 		// Interactive "Test connection" path (persistLog=false): return the response
 		// WITHOUT the expensive CallLog write. Persisting a CallLog runs a full
@@ -1955,12 +1953,10 @@ class CallService implements CallServiceInterface {
 
 		// The time the call waited for its paced turn (REQ-RLPC-001). Left out
 		// for a call that did not wait, so unpaced sources log as before.
-		$callLogData += array_filter(['pacedMs' => $pacedMs]);
-
-		// Fields the caller names on its record, such as an mcp call's method and
-		// tool (REQ-MCPX-002). Written now, because the call log is append-only;
-		// they never replace the engine's own fields.
-		$callLogData += $logFields;
+		// Then the fields the caller names on its record, such as an mcp call's
+		// method and tool (REQ-MCPX-002): written now, because the call log is
+		// append-only; they never replace the engine's own fields.
+		$callLogData += array_filter(['pacedMs' => $pacedMs]) + (array)($data['logFields'] ?? []);
 
 		// Bodies are stored only inside the source's investigation window, or
 		// for a caller that passed logBody; a failure keeps its request for a
@@ -3308,7 +3304,7 @@ class CallService implements CallServiceInterface {
 		return $this->buildAndPersistCallLog(
 			source: $prepared['source'],
 			sourceData: $prepared['sourceData'],
-			data: $call->data,
+			data: ($call->data + ['logFields' => (array)($prepared['logFields'] ?? [])]),
 			logBody: $prepared['logBody'],
 			successExpires: $prepared['successExpires'],
 			errorExpires: $prepared['errorExpires'],
@@ -3316,7 +3312,6 @@ class CallService implements CallServiceInterface {
 			persistLog: $prepared['request']->persistLog,
 			withholdBodies: $prepared['request']->withholdBodies,
 			pacedMs: (int)($prepared['pacedMs'] ?? 0),
-			logFields: $prepared['request']->logFields,
 		);
 	}//end persistCallLog()
 
@@ -3551,12 +3546,12 @@ class CallService implements CallServiceInterface {
 	 * @param ObjectEntity               $source         The source to call.
 	 * @param string                     $endpoint       The path on the source.
 	 * @param string                     $method         The HTTP method.
-	 * @param array<string, mixed>       $config         The request configuration (headers, body, timeout).
+	 * @param array<string, mixed>       $config         The request configuration (headers, body, timeout), and
+	 *                                                   `logFields`: fields written on the call log record (append-only).
 	 * @param mixed                      $sink           A writable PSR-7 stream the body is relayed into.
 	 * @param callable                   $onHeaders      Called with the PSR-7 response once its headers arrived.
 	 * @param bool                       $withholdBodies When true, the call log keeps no request body either.
 	 * @param ExecutionTraceContext|null $trace          The active execution trace context, when any.
-	 * @param array<string, mixed>       $logFields      Fields added to the call log record when it is written (the call log is append-only).
 	 *
 	 * @return ObjectEntity The call log.
 	 *
@@ -3572,8 +3567,9 @@ class CallService implements CallServiceInterface {
 		callable $onHeaders,
 		bool $withholdBodies = true,
 		?ExecutionTraceContext $trace = null,
-		array $logFields = [],
 	): ObjectEntity {
+		$logFields = (array)($config['logFields'] ?? []);
+		unset($config['logFields']);
 		$prepared = $this->prepareCall(
 			source: $source,
 			request: new CallRequest(
@@ -3584,12 +3580,13 @@ class CallService implements CallServiceInterface {
 				trace: $trace,
 				onHeaders: $onHeaders,
 				withholdBodies: $withholdBodies,
-				logFields: $logFields,
 			)
 		);
 		if ($prepared['shortCircuit'] !== null) {
 			return $prepared['shortCircuit'];
 		}
+
+		$prepared['logFields'] = $logFields;
 
 		$prepared = $this->withTraceParent(prepared: $prepared, trace: $trace);
 		$dispatched = $this->dispatchWithRetry(prepared: $prepared);

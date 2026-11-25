@@ -176,8 +176,8 @@ class CallServiceRelayTest extends TestCase {
 	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
 	public function testTheCallerFieldsAreWrittenOnTheCallLog(): void {
-		$service = $this->service(new Response(200, ['Content-Type' => 'application/json']));
-		$output = $this->createMock(IOutput::class);
+		$service = $this->service(answer: new Response(status: 200, headers: ['Content-Type' => 'application/json']));
+		$output = $this->createMock(originalClassName: IOutput::class);
 		$sink = new McpRelayStream(output: $output, flush: static function (): void {
 		});
 
@@ -185,17 +185,20 @@ class CallServiceRelayTest extends TestCase {
 			source: $this->source(),
 			endpoint: '/mcp',
 			method: 'POST',
-			config: ['body' => '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search"}}'],
+			config: [
+				'body' => '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search"}}',
+				'logFields' => ['mcpMethod' => 'tools/call', 'mcpTool' => 'search', 'statusCode' => 999],
+			],
 			sink: $sink,
 			onHeaders: static function (): void {
-			},
-			logFields: ['mcpMethod' => 'tools/call', 'mcpTool' => 'search', 'statusCode' => 999]
+			}
 		);
 
 		$callLogs = array_values(array_filter($this->saved, static fn (array $row): bool => $row['schema'] === 'call_log'));
-		$this->assertCount(1, $callLogs);
-		$this->assertSame('tools/call', $callLogs[0]['object']['mcpMethod']);
-		$this->assertSame('search', $callLogs[0]['object']['mcpTool']);
-		$this->assertSame(200, $callLogs[0]['object']['statusCode'], 'A caller field never replaces the engine\'s own.');
+		$this->assertCount(expectedCount: 1, haystack: $callLogs);
+		$this->assertSame(expected: 'tools/call', actual: $callLogs[0]['object']['mcpMethod']);
+		$this->assertSame(expected: 'search', actual: $callLogs[0]['object']['mcpTool']);
+		$this->assertSame(expected: 200, actual: $callLogs[0]['object']['statusCode'], message: 'A caller field never replaces the engine\'s own.');
+		$this->assertArrayNotHasKey(key: 'logFields', array: $this->options[0], message: 'logFields never reaches the HTTP client.');
 	}//end testTheCallerFieldsAreWrittenOnTheCallLog()
 }//end class

@@ -116,7 +116,7 @@ class EndpointCacheServiceTest extends TestCase {
 
 		$this->assertSame(['name' => 'cached', 'endpoint' => 'api/klanten', 'method' => 'GET', 'endpointRegex' => '#^api/klanten$#', 'endpointArray' => ['api', 'klanten']], $match->getObject());
 		$this->assertNull($service->findByPathRegex(path: 'api/klanten', method: 'DELETE', isRetry: true));
-		$this->assertSame('x', $match->getUuid(), 'The rebuilt endpoint keeps its uuid.');
+		$this->assertSame(expected: 'x', actual: $match->getUuid(), message: 'The rebuilt endpoint keeps its uuid.');
 	}//end testACachedRowResolvesWithoutAskingOpenRegisterAndBecomesAnEntity()
 
 	/**
@@ -129,21 +129,26 @@ class EndpointCacheServiceTest extends TestCase {
 	 */
 	public function testACachedRowKeepsItsSelfMetadata(): void {
 		$this->stored['integriq_endpoints_cache'] = [
-			['@self' => ['id' => 'ep-uuid-1', 'organisation' => 'org-1', 'owner' => 'admin', 'register' => '26', 'schema' => '43'], 'name' => 'tools', 'endpoint' => 'mcp/tools', 'method' => 'POST'],
+			[
+				'@self' => ['id' => 'ep-uuid-1', 'organisation' => 'org-1', 'owner' => 'admin', 'register' => '26', 'schema' => '43'],
+				'name' => 'tools',
+				'endpoint' => 'mcp/tools',
+				'method' => 'POST',
+			],
 			['@self' => ['id' => 'ep-uuid-2', 'organisation' => null], 'name' => 'other', 'endpoint' => 'mcp/other', 'method' => 'POST'],
 		];
 		$service = $this->service();
 
 		$match = $service->findByPathRegex(path: 'mcp/tools', method: 'POST');
-		$this->assertSame('ep-uuid-1', $match->getUuid());
-		$this->assertSame('org-1', $match->getOrganisation());
-		$this->assertSame('admin', $match->getOwner());
-		$this->assertSame('26', $match->getRegister());
-		$this->assertSame('43', $match->getSchema());
+		$this->assertSame(expected: 'ep-uuid-1', actual: $match->getUuid());
+		$this->assertSame(expected: 'org-1', actual: $match->getOrganisation());
+		$this->assertSame(expected: 'admin', actual: $match->getOwner());
+		$this->assertSame(expected: '26', actual: $match->getRegister());
+		$this->assertSame(expected: '43', actual: $match->getSchema());
 
 		$other = $service->findByPathRegex(path: 'mcp/other', method: 'POST');
-		$this->assertSame('ep-uuid-2', $other->getUuid());
-		$this->assertNull($other->getOrganisation());
+		$this->assertSame(expected: 'ep-uuid-2', actual: $other->getUuid());
+		$this->assertNull(actual: $other->getOrganisation());
 	}//end testACachedRowKeepsItsSelfMetadata()
 
 	public function testNoMatchRefreshesOnceAndThenGivesUp(): void {

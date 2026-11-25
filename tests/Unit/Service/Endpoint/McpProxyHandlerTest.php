@@ -76,8 +76,8 @@ class McpProxyHandlerTest extends TestCase {
 	private function handler(int $status = 200, array $headers = [], array $chunks = [], int $allowed = PHP_INT_MAX): McpProxyHandler {
 		$calls = $this->createMock(CallService::class);
 		$calls->method('relay')->willReturnCallback(
-			function ($source, string $endpoint, string $method, array $config, $sink, callable $onHeaders, bool $withholdBodies = true, $trace = null, array $logFields = []) use ($status, $headers, $chunks) {
-				$this->relayed[] = compact('source', 'endpoint', 'method', 'config', 'withholdBodies', 'logFields');
+			function ($source, string $endpoint, string $method, array $config, $sink, callable $onHeaders, bool $withholdBodies = true) use ($status, $headers, $chunks) {
+				$this->relayed[] = compact('source', 'endpoint', 'method', 'config', 'withholdBodies');
 				$onHeaders(new PsrResponse($status, $headers));
 				foreach ($chunks as $chunk) {
 					$sink->write($chunk);
@@ -96,7 +96,7 @@ class McpProxyHandlerTest extends TestCase {
 			}
 		);
 
-		return new McpProxyHandler($calls, $limits, $this->createMock(LoggerInterface::class));
+		return new McpProxyHandler(calls: $calls, limits: $limits, logger: $this->createMock(originalClassName: LoggerInterface::class));
 	}//end handler()
 
 	/**
@@ -249,9 +249,9 @@ class McpProxyHandlerTest extends TestCase {
 			->callback($this->recordingOutput(log: $log));
 
 		// Named when the record is written: the call log is append-only.
-		$this->assertSame(['mcpMethod' => 'tools/call', 'mcpTool' => 'fetch'], $this->relayed[0]['logFields']);
-		$this->assertStringNotContainsString('999999990', (string)json_encode($this->relayed[0]['logFields']));
-		$this->assertTrue($this->relayed[0]['withholdBodies']);
+		$this->assertSame(expected: ['mcpMethod' => 'tools/call', 'mcpTool' => 'fetch'], actual: $this->relayed[0]['config']['logFields']);
+		$this->assertStringNotContainsString(needle: '999999990', haystack: (string)json_encode($this->relayed[0]['config']['logFields']));
+		$this->assertTrue(condition: $this->relayed[0]['withholdBodies']);
 	}//end testTheCallLogNamesTheMethodAndTheTool()
 
 	/**
@@ -264,7 +264,7 @@ class McpProxyHandlerTest extends TestCase {
 		$this->handler(chunks: ['{}'])->handle(call: $this->call(body: 'plain', endpointExtra: ['mcpStoreArguments' => true]))->callback($this->recordingOutput(log: $log));
 
 		$this->assertFalse($this->relayed[0]['withholdBodies']);
-		$this->assertSame([], $this->relayed[0]['logFields']);
+		$this->assertSame(expected: [], actual: $this->relayed[0]['config']['logFields']);
 	}//end testStoringArgumentsIsTheEndpointsChoice()
 
 	/**
@@ -327,11 +327,11 @@ class McpProxyHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheUpstreamPathJoinsTheLocationWithOneSlash(): void {
-		$this->assertSame('/mcp/example', McpProxyHandler::upstreamPathFor(location: 'https://tools.example', path: 'mcp/example'));
-		$this->assertSame('/mcp/example', McpProxyHandler::upstreamPathFor(location: 'https://tools.example', path: '/mcp/example'));
-		$this->assertSame('mcp/example', McpProxyHandler::upstreamPathFor(location: 'https://tools.example/', path: '/mcp/example'));
-		$this->assertSame('', McpProxyHandler::upstreamPathFor(location: 'https://tools.example/mcp', path: ''));
-		$this->assertSame('?session=1', McpProxyHandler::upstreamPathFor(location: 'https://tools.example/mcp', path: '?session=1'));
+		$this->assertSame(expected: '/mcp/example', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example', path: 'mcp/example'));
+		$this->assertSame(expected: '/mcp/example', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example', path: '/mcp/example'));
+		$this->assertSame(expected: 'mcp/example', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example/', path: '/mcp/example'));
+		$this->assertSame(expected: '', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example/mcp', path: ''));
+		$this->assertSame(expected: '?session=1', actual: McpProxyHandler::upstreamPathFor(location: 'https://tools.example/mcp', path: '?session=1'));
 	}//end testTheUpstreamPathJoinsTheLocationWithOneSlash()
 
 	/**
@@ -352,7 +352,7 @@ class McpProxyHandlerTest extends TestCase {
 			consumerKey: $call->consumerKey
 		))->callback($this->recordingOutput(log: $log));
 
-		$this->assertSame('/mcp/example', $this->relayed[0]['endpoint']);
+		$this->assertSame(expected: '/mcp/example', actual: $this->relayed[0]['endpoint']);
 	}//end testARelativeEndpointPathIsSentUnderTheLocation()
 
 	/**
@@ -363,8 +363,11 @@ class McpProxyHandlerTest extends TestCase {
 	 */
 	public function testTheUpstreamStatusReplacesTheBadGatewayStatusLine(): void {
 		$log = [];
-		McpProxyHandler::relayHeaders(upstream: new PsrResponse(404, ['Content-Type' => 'application/json']), output: $this->recordingOutput(log: $log));
+		McpProxyHandler::relayHeaders(
+			upstream: new PsrResponse(status: 404, headers: ['Content-Type' => 'application/json']),
+			output: $this->recordingOutput(log: $log)
+		);
 
-		$this->assertSame(['status 404', 'header HTTP/1.1 404 Not Found', 'header Content-Type: application/json'], $log);
+		$this->assertSame(expected: ['status 404', 'header HTTP/1.1 404 Not Found', 'header Content-Type: application/json'], actual: $log);
 	}//end testTheUpstreamStatusReplacesTheBadGatewayStatusLine()
 }//end class

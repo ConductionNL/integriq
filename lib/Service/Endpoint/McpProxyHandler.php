@@ -225,6 +225,7 @@ class McpProxyHandler {
 		$config = [
 			'headers' => self::forwardedHeaders(request: $call->request),
 			'timeout' => self::maxStreamSeconds(endpointData: $endpointData),
+			'logFields' => self::logFields(rpc: $rpc),
 		];
 		if ($call->rawBody !== '') {
 			$config['body'] = $call->rawBody;
@@ -333,8 +334,7 @@ class McpProxyHandler {
 				onHeaders: static function (ResponseInterface $upstream) use ($output): void {
 					self::relayHeaders(upstream: $upstream, output: $output);
 				},
-				withholdBodies: ($storeArguments === false),
-				logFields: self::logFields(rpc: $rpc)
+				withholdBodies: ($storeArguments === false)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: the MCP relay failed: ' . $e->getMessage());
