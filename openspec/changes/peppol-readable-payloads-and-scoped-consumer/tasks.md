@@ -11,7 +11,8 @@ Kind: code. Size S to M. Halves for shillinq `sales-einvoice-exchange` (rows shi
   - GIVEN an object in register `integriq`, schema `event`, with type `nl.conduction.peppol.outbound.requested` WHEN it is created THEN a `peppol_transmission` is queued
   - GIVEN the same payload in another register WHEN it is created THEN nothing is queued
 - [x] Implement
-- [ ] Test (PHPUnit with real `ObjectEntity` instances carrying numeric ids; the live check of #1222 on a dev instance, and close #1222's Peppol finding with its result)
+- [x] Test (PHPUnit with real `ObjectEntity` instances carrying numeric ids; the live check of #1222 on a dev instance, and close #1222's Peppol finding with its result)
+  > 2026-11-25, live (sandbox Nextcloud 34.0.6 + MariaDB, OpenRegister main 292aa09d): Newman `tests/postman/integriq-peppol-outbound-scope.postman_collection.json` 14/14, two runs in a row. A `nl.conduction.peppol.outbound.requested` CloudEvent created over the OpenRegister objects API in register `integriq`, schema `event` queues one `peppol_transmission`. The same CloudEvent in another register, whose schema is also called `event`, queues nothing. OpenRegister hands the listener numeric ids (the other register was 27, its schema 135), so this is the case #1222 found. Result for #1222's Peppol finding: fixed, the consumer is scoped on resolved ids. PHPUnit `--filter Peppol` 70/70, exit 0. Shape note: the request fields are read from the CloudEvent's `data`; a variant with `objectUri` at the top level is ignored as "missing required fields", as it should be.
 
 ### Task 2: Submit the UBL, not its reference
 - **spec_ref**: `openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-the-access-point-receives-the-ubl-document-itself-req-008`
@@ -29,7 +30,8 @@ Kind: code. Size S to M. Halves for shillinq `sales-einvoice-exchange` (rows shi
   - GIVEN a signed inbound notification WHEN it is received THEN a `peppol_inbound_document` with the UBL attached exists and the emitted event names its path and file id
   - GIVEN an access point that answers 500 on the fetch WHEN the notification arrives THEN the webhook answers 200, the object is `fetch-failed` and no event is emitted
 - [x] Implement
-- [ ] Test (PHPUnit; Newman for the signed webhook with the `log` provider)
+- [x] Test (PHPUnit; Newman for the signed webhook with the `log` provider)
+  > 2026-11-25, live: Newman `tests/postman/integriq-peppol-inbound.postman_collection.json` 25/25, two runs in a row. An unsigned notification and one signed with another secret answer 401 `invalid signature`. A notification signed with the Peppol connection's secret (`X-OpenConnector-Signature: t=..,v1=HMAC-SHA256('<t>.<body>')`) answers 200. The `log` provider's fixture invoice is stored as a `peppol_inbound_document` with status `stored`, a `fileId` and `peppol-inbound-<uuid>.xml`, listed on the object's files. Exactly one `nl.conduction.peppol.inbound.received` event names `payloadReference`, `payloadFileId` and `payloadFileName`. A redelivery changes nothing: still one document, still one event. The `fetch-failed` path (an access point answering 500) has no `log` equivalent and stays with PHPUnit (`--filter Peppol` 70/70).
 
 ### Task 4: Docs, seed and strings
 - **spec_ref**: `openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009`
