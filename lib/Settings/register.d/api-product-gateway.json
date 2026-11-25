@@ -473,7 +473,7 @@
           "update": ["admin"],
           "delete": ["admin"]
         },
-        "description": "One row per active subscription, written when an administrator deprecates a product, sets or moves its sunset date, publishes a new version or retires it, and fourteen days before a subscription ends. The row is the record of who was told what and when; its created trigger sends the Nextcloud notification and the mail. See openspec/changes/access-developer-portal-and-subscriptions/design.md D5 and D6.",
+        "description": "One row per active subscription, written when an administrator deprecates a product, sets or moves its sunset date, publishes a new version or retires it, and fourteen days before a subscription ends. The row is the record of who was told what and when; its created trigger sends the Nextcloud notification and the mail. See openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md D5 and D6.",
         "required": ["product", "recipientUserId", "kind"],
         "type": "object",
         "properties": {

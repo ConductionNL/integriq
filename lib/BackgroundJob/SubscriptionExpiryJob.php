@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d6-subscription-end-dates
+ * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d6-subscription-end-dates
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
  *
  * @psalm-api
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
  */
 class SubscriptionExpiryJob extends TimedJob {
 
@@ -57,7 +57,7 @@ class SubscriptionExpiryJob extends TimedJob {
 	 * @param SubscriptionExpiryService $expiry  The expiry pass.
 	 * @param LoggerInterface           $logger  Logger for the outcome.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d6-subscription-end-dates
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d6-subscription-end-dates
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -80,7 +80,7 @@ class SubscriptionExpiryJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
 	 */
 	public function run(mixed $argument): void {
 		try {

@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d6-subscription-end-dates
+ * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d6-subscription-end-dates
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Marks ended subscriptions expired and reminds owners fourteen days ahead.
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
  */
 class SubscriptionExpiryService {
 
@@ -82,7 +82,7 @@ class SubscriptionExpiryService {
 	 * @param ProductPolicyService       $policy          Judges whether a subscription has ended.
 	 * @param LoggerInterface            $logger          The logger.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d6-subscription-end-dates
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d6-subscription-end-dates
 	 */
 	public function __construct(
 		private readonly OrObjectService $orObjectService,
@@ -99,7 +99,7 @@ class SubscriptionExpiryService {
 	 *
 	 * @return array{expired: int, reminded: int} How many were marked expired and how many owners reminded.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface() is PHP's own converter.
 	 */

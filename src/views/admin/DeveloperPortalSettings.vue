@@ -9,7 +9,7 @@
   administrator names another), and how many accounts are in it, so a group
   left empty that hides the portal from everyone is visible here.
 
-  @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
+  @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
 -->
 <template>
 	<section
@@ -79,7 +79,7 @@ export default {
 	computed: {
 		/**
 		 * @return {string} The setting endpoint.
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
+		 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
 		 */
 		settingUrl() {
 			return URL
@@ -87,7 +87,7 @@ export default {
 
 		/**
 		 * @return {string} How many accounts the group holds, or that it does not exist.
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#risks
+		 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#risks
 		 */
 		membersText() {
 			if (this.members === null) {
@@ -105,7 +105,7 @@ export default {
 		 *
 		 * @param {object|null} data The stored setting.
 		 * @return {void}
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
+		 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
 		 */
 		applyStored(data) {
 			this.saved = data?.group || ''
@@ -117,7 +117,7 @@ export default {
 		 * What to store.
 		 *
 		 * @return {object} The request body.
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
+		 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
 		 */
 		settingBody() {
 			return { group: this.group.trim() }
