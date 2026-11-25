@@ -91,14 +91,20 @@ test.describe('declared data feeds page', () => {
 	// @e2e declared-data-feeds::an-administrator-sees-the-declared-feeds
 	test('Data feeds in the menu lists the declared feed with its address, fields and page size', async ({ page }) => {
 		await page.goto('/index.php/apps/integriq/')
-		await page.getByRole('link', { name: 'Data feeds' }).first().click()
+		// Data feeds sits in the Gateway group, which starts collapsed.
+		const dataFeeds = page.getByRole('link', { name: 'Data feeds' }).first()
+		if (!(await dataFeeds.isVisible())) {
+			await page.getByRole('navigation').getByText('Gateway', { exact: true }).click()
+		}
+		await dataFeeds.click()
 		await expect(page).toHaveURL(/targetType=feed/)
 
 		const row = page.getByRole('row').filter({ hasText: FEED_NAME })
 		await expect(row).toBeVisible({ timeout: 15_000 })
 		await expect(row).toContainText(APP)
 		await expect(row).toContainText(`feeds/${APP}/ledger-lines`)
-		await expect(row).toContainText('administrationId')
+		// A list cell shows the first three fields and counts the rest.
+		await expect(row).toContainText('period, account, amount +1')
 		await expect(row).toContainText('750')
 	})
 
