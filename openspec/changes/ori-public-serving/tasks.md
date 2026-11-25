@@ -37,12 +37,20 @@
       output depends on its input and cannot be read as a filter set.
       `EndpointIdFetchGuard` checks the object's own fields; a mismatch, or a
       missing field, answers the same 404 as a missing object.
-- [ ] Test. PHPUnit covers TC-8 and TC-9's shape
+- [x] Test (Newman written, runs in nightly where decidiq is installed). PHPUnit covers TC-8 and TC-9's shape
       (`tests/Unit/Service/EndpointIdFetchGuardTest.php`,
       `EndpointServiceTest::testASingleObjectFailingTheEndpointsFixedFiltersAnswersNotFound`,
       `::testADraftAnswersTheSameNotFoundAsAMissingObject`, red before the guard).
-      Still open: TC-8/TC-9 in Newman against the ORI endpoints (Task 1) and
-      the TC-10 publish-window comparison (Risk 3), which needs an instance.
+      Newman: `tests/postman/ori-public-serving.postman_collection.json` stages
+      an amendment, a draft meeting and a future-dated publication in
+      decidiq's register and reads them anonymously from the `ori-parity/v1`
+      endpoints. TC-8: the amendment is 404 under /motions and 200 under
+      /amendments, so the guard is selective. TC-9: the draft meeting is 404.
+      TC-10, the Risk 3 check: the future publication answers what
+      OriController answers (404). TC-11: never 403. Each check is compared
+      with decidiq's own OriController. Without decidiq's register the first
+      request stops the run. The scripts were checked against a local stub
+      (both paths pass); the live run is in nightly.
 
 ### Task 3: Wire anonymous rate-limiting and CORS parity for the ORI Endpoints
 - **spec_ref**: `openspec/changes/ori-public-serving/contract.md#error-codes`, `openspec/changes/ori-public-serving/design.md#security-considerations`
