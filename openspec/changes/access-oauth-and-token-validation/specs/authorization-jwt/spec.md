@@ -1,10 +1,3 @@
-# authorization-jwt Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- access-oauth-and-token-validation
-
 ## Purpose
 
 Consumers prove who they are with tokens from their own identity provider, or with tokens integriq issues, and a client can find out by itself where to get one. Rows `integriq:acc-jwks`, `integriq:acc-oidc`, `integriq:acc-oauth-server` and `integriq:acc-protected-resource-metadata`.

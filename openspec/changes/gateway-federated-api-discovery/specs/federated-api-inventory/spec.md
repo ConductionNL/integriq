@@ -1,10 +1,3 @@
-# federated-api-inventory Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- gateway-federated-api-discovery
-
 ## Purpose
 
 The APIs running on other vendors' gateways are listed next to integriq's own, read on a schedule, and can be brought behind integriq from their description. Row `integriq:gw-federated`.

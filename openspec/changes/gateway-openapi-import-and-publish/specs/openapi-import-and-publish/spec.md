@@ -1,10 +1,3 @@
-# openapi-import-and-publish Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- gateway-openapi-import-and-publish
-
 ## Purpose
 
 A vendor's OpenAPI document becomes a source and ready endpoints in one step, and developers get an OpenAPI description of the endpoints they call. Rows `integriq:gw-openapi-import`, `integriq:gw-openapi-publish` and `buildiq:int-openapi-import`.

@@ -52,7 +52,7 @@ Kind: code. Size M. Row `integriq:gw-federated`.
   - Written, not run here: `tests/e2e/api-inventory.spec.ts` (the inventory lists both gateways and filters on Azure; the row action opens the preview with the API's operations).
 
 ## Verification
-- [ ] `openspec validate gateway-federated-api-discovery --type change --strict` passes
+- [x] `openspec validate gateway-federated-api-discovery --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [ ] PHPUnit and Playwright run, exit codes read
 
 ## Build notes (continuation)

@@ -46,6 +46,6 @@ Kind: code. Size M. Rows `integriq:gw-graphql`, `integriq:gw-protocols`.
 - [ ] Test (walked once against nginx and Mosquitto in the dev compose, result recorded in the PR)
 
 ## Verification
-- [ ] `openspec validate gateway-graphql-and-streaming-protocols --type change --strict` passes
+- [x] `openspec validate gateway-graphql-and-streaming-protocols --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [ ] PHPUnit and Newman run, exit codes read
 - [ ] `webonyx/graphql-php` passes `composer audit` and the licence gate

@@ -1,10 +1,3 @@
-# endpoint-runtime Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- gateway-graphql-and-streaming-protocols
-
 ## Purpose
 
 GraphQL traffic is governed per operation, and WebSocket, gRPC and MQTT connections are allowed or refused by integriq while the web server or broker carries them. Rows `integriq:gw-graphql` and `integriq:gw-protocols`.

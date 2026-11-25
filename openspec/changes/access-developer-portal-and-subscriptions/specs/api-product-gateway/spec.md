@@ -1,10 +1,3 @@
-# api-product-gateway Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- access-developer-portal-and-subscriptions
-
 ## Purpose
 
 Developers find the published APIs, ask for access and manage their own keys, and they hear about changes before their calls break. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc-change-notice` and `acc-subscription-expiry`.

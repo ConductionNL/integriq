@@ -1,10 +1,3 @@
-# http-call-engine Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- sources-per-user-oauth
-
 ## Purpose
 
 A source calls an outside API with the signed-in user's own OAuth 2.0 account, held and refreshed by the credential broker. Row `buildiq:int-per-user-oauth` from buildiq's matrix.

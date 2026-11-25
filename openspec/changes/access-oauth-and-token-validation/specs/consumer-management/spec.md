@@ -1,10 +1,3 @@
-# consumer-management Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- access-oauth-and-token-validation
-
 ## Purpose
 
 A consumer reaches only the endpoints and actions its scopes allow. Row `integriq:acc-scopes`.

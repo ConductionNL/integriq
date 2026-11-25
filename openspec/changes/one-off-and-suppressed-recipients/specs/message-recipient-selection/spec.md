@@ -1,10 +1,3 @@
-# message-recipient-selection Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- one-off-and-suppressed-recipients
-
 ## Purpose
 
 Integriq resolves the recipients of one outgoing message from the standing list

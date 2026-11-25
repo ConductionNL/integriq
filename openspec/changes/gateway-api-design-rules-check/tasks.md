@@ -59,7 +59,7 @@ Kind: code. Size M. Rows `integriq:acc-governance`, `integriq:nl-api-design-rule
   - Walked 2026-11-25 against the code: the menu entries (Gateway → API products, Gateway → API design rules), the panel's labels (API design rules, Check design, Errors/Warnings/Notes, To check by hand, Waive), the refusal of an empty reason (`ApiDesignFindingStore::waive()`), the `enabled` switch (`ApiDesignRuleService`, `ApiDesignFindingStore`) and the seed (Besluiten API 1.0.0 deprecated, the open `/core/no-trailing-slash` error, the waived warning with "partner requires this path until 2027") all match. A walk through the screens on a live instance follows with the nightly.
 
 ## Verification
-- [ ] `openspec validate gateway-api-design-rules-check --type change --strict` passes
+- [x] `openspec validate gateway-api-design-rules-check --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
   - Not run 2026-11-25: fetching the openspec CLI with npx was refused by the sandbox's permission check.
 - [ ] PHPUnit and Playwright run, exit codes read
   - PHPUnit run 2026-11-25, exit 0: `tests/Unit/Service/ApiDesign` (49 tests), `ApiDesignRulesFragmentTest` (4), `ApiDesignCheckControllerTest` (5), `ApiProductPublishGuardListenerTest` (8). Playwright not run: no instance in the sandbox; the box stays open until the nightly's exit code is read.
