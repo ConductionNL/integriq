@@ -305,7 +305,10 @@ class OpenApiImportService {
 			'description' => (string) ($document['info']['description'] ?? ''),
 			'location' => $preview['source']['location'],
 			'type' => 'api',
-			'isEnabled' => true,
+			// A source whose document declares security schemes stays disabled until the
+			// administrator names a credential: the call engine refuses a disabled source,
+			// so it asks for one instead of calling unauthenticated.
+			'isEnabled' => $preview['credentials'] === [],
 			'configuration' => $configuration,
 			'openApiDocument' => $this->credentials->withoutSecretShapes(document: $document),
 		];
@@ -358,14 +361,11 @@ class OpenApiImportService {
 			return [];
 		}
 
-		// The broker reference is left empty: the source refuses to call
-		// until the administrator names a credential (an empty
-		// credentialRef is a configuration error at call time), so it
-		// visibly asks for one instead of calling unauthenticated.
-		return [
-			'authentication' => ['credentialRef' => ['credentialName' => '']],
-			'credentialPlaceholders' => $credentials,
-		];
+		// No broker reference is written: the source schema refuses an empty
+		// `credentialRef` (it needs one non-empty key), so the import failed on
+		// every document with a security scheme. The placeholders say which
+		// credential to name; createSource() leaves the source disabled until then.
+		return ['credentialPlaceholders' => $credentials];
 	}//end sourceConfiguration()
 
 	/**
@@ -384,9 +384,11 @@ class OpenApiImportService {
 			// `endpoint` is the gateway route, prefix included: the routing
 			// listener derives endpointArray and endpointRegex from it on
 			// every save. The vendor's own path goes in `upstreamPath`, which
-			// the proxy renders instead of `endpoint` when it is set.
+			// the proxy renders instead of `endpoint` when it is set. The call
+			// engine appends it to the source location as is, and the location
+			// is stored without a trailing slash, so it keeps its leading one.
 			'endpoint' => $operation['gatewayPath'],
-			'upstreamPath' => $operation['endpoint'],
+			'upstreamPath' => '/'.$operation['endpoint'],
 			'endpointArray' => $operation['endpointArray'],
 			'endpointRegex' => self::regexOf(segments: $operation['endpointArray']),
 			'method' => $operation['method'],

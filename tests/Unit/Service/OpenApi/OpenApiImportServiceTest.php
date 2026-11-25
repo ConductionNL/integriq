@@ -286,7 +286,9 @@ class OpenApiImportServiceTest extends TestCase {
 		$this->assertSame('Swagger Petstore', $source['name']);
 		$this->assertSame('https://petstore.example.com/v1', $source['location']);
 		$this->assertSame('api', $source['type']);
-		$this->assertSame(['credentialRef' => ['credentialName' => '']], $source['configuration']['authentication']);
+		// No empty credentialRef (the source schema refuses one); disabled until a credential is named.
+		$this->assertArrayNotHasKey(key: 'authentication', array: $source['configuration']);
+		$this->assertFalse(condition: $source['isEnabled']);
 		$this->assertSame('apiKeyAuth', $source['configuration']['credentialPlaceholders'][0]['scheme']);
 		$this->assertSame('3.1.0', $source['openApiDocument']['openapi']);
 		$this->assertSame(['listPets', 'createPets'], [$source['openApiDocument']['paths']['/pets']['get']['operationId'], $source['openApiDocument']['paths']['/pets']['post']['operationId']]);
@@ -304,7 +306,8 @@ class OpenApiImportServiceTest extends TestCase {
 		// The gateway route, prefix included, is what the routing listener
 		// rebuilds endpointArray from on save; the vendor path is proxied to.
 		$this->assertSame('vendor/pets/{{petId}}', $show['endpoint']);
-		$this->assertSame('pets/{{petId}}', $show['upstreamPath']);
+		// Appended to the location `https://petstore.example.com/v1` as is, so it carries its slash.
+		$this->assertSame(expected: '/pets/{{petId}}', actual: $show['upstreamPath']);
 		$this->assertSame(['vendor', 'pets', '{{petId}}'], $show['endpointArray']);
 		$this->assertSame($show['endpointArray'], explode('/', $show['endpoint']));
 		$this->assertSame(1, preg_match($show['endpointRegex'], 'vendor/pets/42'));
@@ -315,6 +318,29 @@ class OpenApiImportServiceTest extends TestCase {
 		$this->assertSame([1, 1, 1], array_column($result['endpoints'], 'batch'));
 		$this->assertSame('endpoint-uuid-4', $result['endpoints'][2]['uuid']);
 	}//end testAnImportCreatesOneSourceAndAnEndpointPerOperation()
+
+	/**
+	 * A document without security schemes needs no credential: its source is created enabled.
+	 *
+	 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+	 *
+	 * @return void
+	 */
+	public function testAnOpenDocumentCreatesAnEnabledSource(): void {
+		$document = self::petstore(version: '3.1');
+		unset($document['components']['securitySchemes'], $document['security']);
+		foreach ($document['paths'] as $path => $operations) {
+			foreach (array_keys($operations) as $method) {
+				unset($document['paths'][$path][$method]['security']);
+			}
+		}
+
+		$this->service()->import(document: $document, prefix: 'open', operationKeys: ['listPets']);
+
+		$source = $this->saved[0][1];
+		$this->assertTrue(condition: $source['isEnabled']);
+		$this->assertSame(expected: [], actual: $source['configuration']);
+	}//end testAnOpenDocumentCreatesAnEnabledSource()
 
 	/**
 	 * A colliding or unknown chosen operation is reported, not written; the rest are created.
