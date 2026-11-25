@@ -51,7 +51,7 @@ final class OpenRegisterEntryPoints {
 	 *
 	 * @return bool True when every required entry point is callable and the ConsumerSource interface exists.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public static function available(object $authorization): bool {
 		$available = interface_exists(ConsumerSource::class);

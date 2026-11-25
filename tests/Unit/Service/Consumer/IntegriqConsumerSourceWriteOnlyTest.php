@@ -14,7 +14,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The key check sees the stored credential, not the rendered row.
  *
- * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
  */
 class IntegriqConsumerSourceWriteOnlyTest extends TestCase {
 
@@ -57,7 +57,7 @@ class IntegriqConsumerSourceWriteOnlyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function testAnApiKeyMatchesTheStoredCredentialTheListLeavesOut(): void {
 		$listed = self::consumer(data: ['name' => 'scim', 'authorizationType' => 'apiKey', 'userId' => 'svc-scim']);

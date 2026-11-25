@@ -29,7 +29,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md
+ * @spec openspec/specs/authorization-jwt/spec.md
  */
 
 declare(strict_types=1);

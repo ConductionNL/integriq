@@ -41,7 +41,7 @@ interface OpenRegisterCredentialBridgeInterface {
 	 *
 	 * @throws AuthenticationException When the token is refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeJwt(string $authorization): void;
 
@@ -55,7 +55,7 @@ interface OpenRegisterCredentialBridgeInterface {
 	 *
 	 * @throws AuthenticationException When the key is refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeApiKey(string $header, array $keys): void;
 
@@ -84,7 +84,7 @@ interface OpenRegisterCredentialBridgeInterface {
 	 *
 	 * @throws AuthenticationException When the credentials are refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeBasic(string $header, array $users, array $groups): void;
 
@@ -99,7 +99,7 @@ interface OpenRegisterCredentialBridgeInterface {
 	 *
 	 * @throws AuthenticationException When the call is refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeOAuth(string $header, array $users, array $groups): void;
 
@@ -113,7 +113,7 @@ interface OpenRegisterCredentialBridgeInterface {
 	 *
 	 * @throws AuthenticationException When the session is refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeNcSession(array $users = [], array $groups = []): void;
 
@@ -129,7 +129,7 @@ interface OpenRegisterCredentialBridgeInterface {
 	 *
 	 * @throws AuthenticationException When the claims are refused.
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-keeps-its-token-lifetime-cap-req-007
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-keeps-its-token-lifetime-cap-req-007
 	 */
 	public function validatePayload(array $payload): void;
 
@@ -153,7 +153,7 @@ interface OpenRegisterCredentialBridgeInterface {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function getResolvedConsumer(): ?ObjectEntity;
 }
