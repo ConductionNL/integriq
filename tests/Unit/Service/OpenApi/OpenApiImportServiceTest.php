@@ -287,8 +287,8 @@ class OpenApiImportServiceTest extends TestCase {
 		$this->assertSame('https://petstore.example.com/v1', $source['location']);
 		$this->assertSame('api', $source['type']);
 		// No empty credentialRef (the source schema refuses one); disabled until a credential is named.
-		$this->assertArrayNotHasKey('authentication', $source['configuration']);
-		$this->assertFalse($source['isEnabled']);
+		$this->assertArrayNotHasKey(key: 'authentication', array: $source['configuration']);
+		$this->assertFalse(condition: $source['isEnabled']);
 		$this->assertSame('apiKeyAuth', $source['configuration']['credentialPlaceholders'][0]['scheme']);
 		$this->assertSame('3.1.0', $source['openApiDocument']['openapi']);
 		$this->assertSame(['listPets', 'createPets'], [$source['openApiDocument']['paths']['/pets']['get']['operationId'], $source['openApiDocument']['paths']['/pets']['post']['operationId']]);
@@ -307,7 +307,7 @@ class OpenApiImportServiceTest extends TestCase {
 		// rebuilds endpointArray from on save; the vendor path is proxied to.
 		$this->assertSame('vendor/pets/{{petId}}', $show['endpoint']);
 		// Appended to the location `https://petstore.example.com/v1` as is, so it carries its slash.
-		$this->assertSame('/pets/{{petId}}', $show['upstreamPath']);
+		$this->assertSame(expected: '/pets/{{petId}}', actual: $show['upstreamPath']);
 		$this->assertSame(['vendor', 'pets', '{{petId}}'], $show['endpointArray']);
 		$this->assertSame($show['endpointArray'], explode('/', $show['endpoint']));
 		$this->assertSame(1, preg_match($show['endpointRegex'], 'vendor/pets/42'));
@@ -338,8 +338,8 @@ class OpenApiImportServiceTest extends TestCase {
 		$this->service()->import(document: $document, prefix: 'open', operationKeys: ['listPets']);
 
 		$source = $this->saved[0][1];
-		$this->assertTrue($source['isEnabled']);
-		$this->assertSame([], $source['configuration']);
+		$this->assertTrue(condition: $source['isEnabled']);
+		$this->assertSame(expected: [], actual: $source['configuration']);
 	}//end testAnOpenDocumentCreatesAnEnabledSource()
 
 	/**
