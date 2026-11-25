@@ -63,6 +63,28 @@ class ClientCertificateReader {
 	}//end __construct()
 
 	/**
+	 * A server variable of the current request ($_SERVER), or null.
+	 *
+	 * Not IRequest::getEnv(): that reads $_ENV, where neither the peer address
+	 * nor the web server's SSL_CLIENT_* variables are, so no certificate was
+	 * ever found behind Apache or nginx.
+	 *
+	 * @param string $key The variable.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	private function serverValue(string $key): mixed {
+		$server = $this->request->server;
+		if (is_array($server) === false) {
+			return null;
+		}
+
+		return ($server[$key] ?? null);
+	}//end serverValue()
+
+	/**
 	 * The verified client certificate of the current request, or null.
 	 *
 	 * @return ClientCertificate|null
@@ -70,13 +92,13 @@ class ClientCertificateReader {
 	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
 	 */
 	public function fromRequest(): ?ClientCertificate {
-		$verified = ($this->request->getEnv('SSL_CLIENT_VERIFY') === 'SUCCESS');
-		$serverCertificate = $this->request->getEnv('SSL_CLIENT_CERT');
+		$verified = ($this->serverValue(key: 'SSL_CLIENT_VERIFY') === 'SUCCESS');
+		$serverCertificate = $this->serverValue(key: 'SSL_CLIENT_CERT');
 		if ($verified === true && is_string($serverCertificate) === true && $serverCertificate !== '') {
 			return self::parse(pem: $serverCertificate);
 		}
 
-		$peer = (string)($this->request->getEnv('REMOTE_ADDR') ?? '');
+		$peer = (string)($this->serverValue(key: 'REMOTE_ADDR') ?? '');
 		if ($this->isTrustedProxy(address: $peer) === false) {
 			return null;
 		}

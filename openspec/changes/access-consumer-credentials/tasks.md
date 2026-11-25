@@ -48,11 +48,24 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
     with an optional `consumers` list), and `POST /api/consumers/{id}/credentials` with
     `type=clientCertificate`. The consumer detail page part is left with the other screens.
   - 2026-11-21, the screen: `CredentialKeysPanel` in its administrator mode lists the pinned certificates (fingerprint, subject pattern, OIN), pins a PEM certificate or an issuing CA with a subject pattern, shows a refusal as the server words it, and revokes one. Vitest in `tests/vitest/credentialKeysPanel.spec.js`.
-- [ ] Test (PHPUnit with fixture certificates including a PKIoverheid subject; a documented Apache and nginx config walked once)
+- [x] Test (PHPUnit with fixture certificates including a PKIoverheid subject; a documented Apache and nginx config walked once)
   - PHPUnit done with certificates generated at test time (CA, PKIoverheid-style leaf with an OIN,
     a same-subject leaf from another CA): `ClientCertificateReaderTest`,
     `ClientCertificateCredentialsTest`, `EndpointAuthenticationMtlsTest`, two controller cases.
     The Apache and nginx config is documented in `docs/features/endpoints.md`; walking it once is live.
+  - 2026-11-25, both configs walked live, copied from `docs/features/endpoints.md` with only the CA path
+    changed: nginx 1.24 terminating TLS in front of Nextcloud (its address in `trusted_proxies`), and
+    Apache 2.4.58 terminating TLS itself with php-fpm. Test PKI: a "PKIoverheid" CA, a leaf with
+    `serialNumber=00000001234567890000`, a renewed leaf with the same subject, the same subject from another CA.
+    The walk found a defect: no certificate was ever found, under either server. `ClientCertificateReader`
+    read `SSL_CLIENT_VERIFY`, `SSL_CLIENT_CERT` and `REMOTE_ADDR` through `IRequest::getEnv()`, which reads
+    `$_ENV`; the web server puts them in `$_SERVER`. The unit test mocked `getEnv`, so it passed. Now read
+    from `$request->server`; the test sets `server` and fails if `getEnv` is called. After the fix, per server:
+    leaf pinned by fingerprint 200 (OIN read, lastUsedAt set); renewed leaf pinned by CA + subject pattern 200;
+    same subject from another CA refused by the web server (nginx 400, Apache handshake abort); no
+    certificate 401; a client-sent `X-SSL-Client-Cert` through nginx 401 (`proxy_set_header` replaces it);
+    the same header sent straight to Nextcloud from an address outside `trusted_proxies` 401. Control:
+    the old reader under Apache answered 401 for the pinned leaf.
 
 ### Task 5: anyOf on an authentication rule
 - **spec_ref**: `openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-accepts-any-one-of-several-login-methods-req-cred-005`
