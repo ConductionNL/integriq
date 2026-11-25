@@ -1,5 +1,6 @@
 [
 	"context.registerMiddleware(OCA\\Integriq\\Middleware\\ApiContractMiddleware, bool)",
+	"context.registerMiddleware(OCA\\Integriq\\Middleware\\ActionRefusalMiddleware, bool)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\CallServiceInterface, OCA\\Integriq\\Service\\CallService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\EndpointServiceInterface, OCA\\Integriq\\Service\\EndpointService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\EventServiceInterface, OCA\\Integriq\\Service\\EventService)",
