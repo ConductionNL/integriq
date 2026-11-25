@@ -15,7 +15,7 @@
  *
  * @link https://github.com/ConductionNL/integriq
  *
- * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+ * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCP\AppFramework\Http\JSONResponse;
  * `{name, reason}`. The old `error` and `details` members stay as extensions
  * for one release, so existing clients keep reading them; they are deprecated.
  *
- * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+ * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
  */
 class ProblemResponse extends JSONResponse {
 
@@ -106,7 +106,7 @@ class ProblemResponse extends JSONResponse {
 	 * @param array<string,mixed>              $extensions    More members, such as the deprecated `error` and `details`.
 	 * @param array<string,string>             $headers       More headers.
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function __construct(
 		string $slug,
@@ -154,7 +154,7 @@ class ProblemResponse extends JSONResponse {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public static function slugForStatus(int $status): string {
 		if (isset(self::STATUS_TYPES[$status]) === true) {
@@ -181,7 +181,7 @@ class ProblemResponse extends JSONResponse {
 	 *
 	 * @return self
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public static function fromLegacy(array $data, int $status, ?string $instance = null, array $headers = []): self {
 		$detail = '';

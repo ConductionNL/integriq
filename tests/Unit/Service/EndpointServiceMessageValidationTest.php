@@ -413,7 +413,7 @@ class EndpointServiceMessageValidationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function testARefusedRequestIsAProblemDocument(): void {
 		$service = $this->service(rawBody: '{"naam":"Jansen"}');
@@ -440,7 +440,7 @@ class EndpointServiceMessageValidationTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function testAProxiedSourceErrorIsPassedThrough(): void {
 		$service = $this->service(rawBody: '{"bsn":"999990019"}', withGate: false);

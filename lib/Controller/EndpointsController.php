@@ -220,7 +220,7 @@ class EndpointsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function noEndpointFor(string $path): JSONResponse {
 		$message = $this->l->t('No matching endpoint found for path and method: %1$s %2$s', [$path, $this->request->getMethod()]);
@@ -241,7 +241,7 @@ class EndpointsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function ambiguousEndpoint(\Exception $exception): JSONResponse {
 		return new ProblemResponse(
