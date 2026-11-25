@@ -227,12 +227,8 @@ export default {
 				return false
 			}
 			this.sending = true
-			let done = false
-			try {
-				done = this.dialog === 'assign' ? await this.sendAssign(text.trim()) : await this.sendReply(text)
-			} finally {
-				this.sending = false
-			}
+			const done = this.dialog === 'assign' ? await this.sendAssign(text.trim()) : await this.sendReply(text)
+			this.sending = false
 			if (done) {
 				this.dialog = ''
 				refreshLogPage(this)
