@@ -802,15 +802,28 @@ class JobServiceTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn(['results' => [$job], 'total' => 1]);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			fn (...$args) => ObjectServiceMockBuilder::objectEntity($this, is_array($args[0] ?? null) === true ? $args[0] : [], 'saved')
+			fn (array $object) => ObjectServiceMockBuilder::objectEntity($this, $object, 'saved')
 		);
 		$this->session->method('getUser')->willReturn(null);
 
 		$observed = new \ArrayObject();
 		$this->container->method('get')->willReturn(
 			new class($observed) {
+				/**
+				 * Keeps the list the action reports into.
+				 *
+				 * @param \ArrayObject $observed Whether the context was active, per run.
+				 */
 				public function __construct(private \ArrayObject $observed) {
 				}
+
+				/**
+				 * Records whether the system context is active, and succeeds.
+				 *
+				 * @param array $args The action arguments.
+				 *
+				 * @return array The result.
+				 */
 				public function run(array $args): array {
 					$this->observed[] = \OCA\OpenRegister\Service\SystemOperationContext::isActive();
 					return ['level' => 'SUCCESS'];
@@ -820,6 +833,6 @@ class JobServiceTest extends TestCase {
 
 		$this->service->run();
 
-		$this->assertSame([true], $observed->getArrayCopy());
+		$this->assertSame(expected: [true], actual: $observed->getArrayCopy());
 	}//end testRunActsAsTheSystemForAJobWithoutAUser()
 }//end class

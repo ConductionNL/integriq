@@ -137,7 +137,7 @@ class JobServiceExecuteJobTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
 
-		$this->userManager = $this->createMock(IUserManager::class);
+		$this->userManager = $this->createMock(originalClassName: IUserManager::class);
 
 		$this->service = new JobService(
 			$this->createMock(IJobList::class),
@@ -440,8 +440,8 @@ class JobServiceExecuteJobTest extends TestCase {
 		$this->actionOutcome = ['level' => 'SUCCESS'];
 		$this->service->executeJob(job: $this->job(), scheduled: true);
 
-		$this->assertTrue($this->actionRanAsSystem);
-		$this->assertFalse(SystemOperationContext::isActive(), 'the context ends with the action');
+		$this->assertTrue(condition: $this->actionRanAsSystem);
+		$this->assertFalse(condition: SystemOperationContext::isActive(), message: 'the context ends with the action');
 	}//end testAScheduledRunWithoutAUserActsAsTheSystem()
 
 	/**
@@ -452,11 +452,11 @@ class JobServiceExecuteJobTest extends TestCase {
 	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
 	 */
 	public function testAScheduledRunWithAUserActsAsThatUser(): void {
-		$this->userManager->method('get')->with('alice')->willReturn($this->createMock(IUser::class));
+		$this->userManager->method('get')->with('alice')->willReturn($this->createMock(originalClassName: IUser::class));
 		$this->actionOutcome = ['level' => 'SUCCESS'];
-		$this->service->executeJob(job: $this->job(['userId' => 'alice']), scheduled: true);
+		$this->service->executeJob(job: $this->job(overrides: ['userId' => 'alice']), scheduled: true);
 
-		$this->assertFalse($this->actionRanAsSystem);
+		$this->assertFalse(condition: $this->actionRanAsSystem);
 	}//end testAScheduledRunWithAUserActsAsThatUser()
 
 	/**
@@ -470,11 +470,11 @@ class JobServiceExecuteJobTest extends TestCase {
 	public function testAManualRunWithoutAUserActsAsTheCaller(): void {
 		$this->actionOutcome = ['level' => 'SUCCESS'];
 		$this->service->executeJob(job: $this->job(), forceRun: true);
-		$this->assertFalse($this->actionRanAsSystem);
+		$this->assertFalse(condition: $this->actionRanAsSystem);
 
 		$this->actionRanAsSystem = null;
 		$this->service->executeJob(job: $this->job());
-		$this->assertFalse($this->actionRanAsSystem);
+		$this->assertFalse(condition: $this->actionRanAsSystem);
 	}//end testAManualRunWithoutAUserActsAsTheCaller()
 
 	/**
@@ -489,8 +489,8 @@ class JobServiceExecuteJobTest extends TestCase {
 		$this->actionOutcome = new RuntimeException('boom');
 		$this->service->executeJob(job: $this->job(), scheduled: true);
 
-		$this->assertTrue($this->actionRanAsSystem);
-		$this->assertFalse(SystemOperationContext::isActive());
-		$this->assertSame('ERROR', $this->saved['job_log'][0]['level']);
+		$this->assertTrue(condition: $this->actionRanAsSystem);
+		$this->assertFalse(condition: SystemOperationContext::isActive());
+		$this->assertSame(expected: 'ERROR', actual: $this->saved['job_log'][0]['level']);
 	}//end testAThrowingScheduledActionIsLoggedAndLeavesNoContext()
 }//end class

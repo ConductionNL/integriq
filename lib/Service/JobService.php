@@ -368,7 +368,8 @@ class JobService implements JobServiceInterface {
 		?ExecutionTraceContext $trace = null,
 		bool $scheduled = false
 	): ?ObjectEntity {
-		$run  = new JobRun(job: $job, forceRun: $forceRun, scheduled: $scheduled);
+		$run  = new JobRun(job: $job, forceRun: $forceRun);
+		$run->scheduled = $scheduled;
 		$gate = $this->checkJobMayRun(run: $run);
 		if ($gate['run'] === false) {
 			return $gate['log'];
@@ -547,7 +548,7 @@ class JobService implements JobServiceInterface {
 		$result = null;
 		$exception = null;
 		try {
-			$result = $this->callJobAction(run: $run, action: $action, arguments: $arguments);
+			$result = $run->callAction(action: $action, arguments: $arguments);
 		} catch (\Throwable $e) {
 			$exception = $e;
 		} finally {
@@ -558,41 +559,6 @@ class JobService implements JobServiceInterface {
 
 		return ['result' => $result, 'exception' => $exception];
 	}//end invokeJobAction()
-
-	/**
-	 * Calls the job's action as the identity the run acts under.
-	 *
-	 * A cron run of a job without `userId` has no user of its own: whatever
-	 * session user the cron process happens to hold is an accident (none on a
-	 * clean cron, an admin left behind by another job otherwise). Such a run
-	 * acts as the system, through OpenRegister's SystemOperationContext, for
-	 * integriq's own bookkeeping and for its target writes alike (Ruben,
-	 * 25 Nov 2026). A job with `userId` keeps acting as that user, and a run
-	 * started by a person or an event delivery keeps acting as the caller, so
-	 * the `#[NoAdminRequired]` run endpoint never becomes a way to act as the
-	 * system. When OpenRegister cannot grant the context, SystemWrite throws
-	 * and the run is logged as an error rather than run as nobody.
-	 *
-	 * @param JobRun $run       The run.
-	 * @param mixed  $action    The job's action, from the container.
-	 * @param array  $arguments The arguments for the action.
-	 *
-	 * @return mixed The action's result.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) SystemWrite is integriq's static system-write guard; there is no instance API.
-	 *
-	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
-	 */
-	private function callJobAction(JobRun $run, mixed $action, array $arguments): mixed {
-		if ($run->scheduled === false || $run->user !== null) {
-			return $action->run($arguments);
-		}
-
-		return SystemWrite::run(
-			what: sprintf('scheduled job %s', $run->job->getUuid()),
-			operation: static fn (): mixed => $action->run($arguments)
-		);
-	}//end callJobAction()
 
 	/**
 	 * Builds the arguments passed to a job's action.

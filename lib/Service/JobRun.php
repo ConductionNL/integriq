@@ -64,22 +64,60 @@ final class JobRun {
 	public ?IUser $priorSessionUser = null;
 
 	/**
-	 * Constructor.
+	 * Whether the cron loop started this run, rather than a person or an event
+	 * delivery. Only a scheduled run without a userId acts as the system.
 	 *
-	 * @param ObjectEntity $job       The job.
-	 * @param bool         $forceRun  Whether this is a force run.
-	 * @param bool         $scheduled Whether the cron loop started this run, rather than a
-	 *                                person or an event delivery. Only a scheduled run
-	 *                                without a userId acts as the system.
+	 * @var bool
 	 *
 	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
+	 */
+	public bool $scheduled = false;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectEntity $job      The job.
+	 * @param bool         $forceRun Whether this is a force run.
 	 */
 	public function __construct(
 		public readonly ObjectEntity $job,
 		public readonly bool $forceRun,
-		public readonly bool $scheduled = false,
 	) {
 		$this->jobData = $job->getObject();
 
 	}//end __construct()
+
+	/**
+	 * Calls the job's action as the identity the run acts under.
+	 *
+	 * A cron run of a job without `userId` has no user of its own: whatever
+	 * session user the cron process happens to hold is an accident (none on a
+	 * clean cron, an admin left behind by another job otherwise). Such a run
+	 * acts as the system, through OpenRegister's SystemOperationContext, for
+	 * integriq's own bookkeeping and for its target writes alike (Ruben,
+	 * 25 Nov 2026). A job with `userId` keeps acting as that user, and a run
+	 * started by a person or an event delivery keeps acting as the caller, so
+	 * the `#[NoAdminRequired]` run endpoint never becomes a way to act as the
+	 * system. When OpenRegister cannot grant the context, SystemWrite throws
+	 * and the run is logged as an error rather than run as nobody.
+	 *
+	 * @param mixed $action    The job's action, from the container.
+	 * @param array $arguments The arguments for the action.
+	 *
+	 * @return mixed The action's result.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemWrite is integriq's static system-write guard; there is no instance API.
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-scheduled-jobs-without-a-user-run-as-system/specs/job-scheduling/spec.md
+	 */
+	public function callAction(mixed $action, array $arguments): mixed {
+		if ($this->scheduled === false || $this->user !== null) {
+			return $action->run($arguments);
+		}
+
+		return SystemWrite::run(
+			what: sprintf('scheduled job %s', $this->job->getUuid()),
+			operation: static fn (): mixed => $action->run($arguments)
+		);
+	}//end callAction()
 }//end class
