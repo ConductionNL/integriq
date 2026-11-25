@@ -87,4 +87,4 @@ cluster 4. Waits on nothing.
 - [x] (openregister#4169) Say in the same message that C-access-and-privacy-40 sits in cluster 4, which is openregister's, and that this change takes only the source half
 - [x] Point `rule-pipeline` and `flow-token-helper` at the registry so integriq has one reach outward and not three
   - MEASURED 29 Sep: neither reads the environment today (`grep -rn 'getenv(\|$_ENV' lib` finds only the two storage-migration bypass flags in `Application.php`), so the registry is already integriq's only reach. Letting a rule configuration or a flow token name `env:` is a new feature, not a repoint, and is not specified here.
-- [ ] Test (`tests/e2e/expression-value-sources.spec.ts`, `openspec validate allowlisted-expression-sources --type change --strict`)
+- [x] Test (`tests/e2e/expression-value-sources.spec.ts`, `openspec validate allowlisted-expression-sources --type change --strict`): run live 25 Nov 2026 on NC 34 + MariaDB, 3/3 pass; the change validates strict.
