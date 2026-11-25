@@ -259,7 +259,7 @@ class OpenApiPublishService {
 			return;
 		}
 
-		[$path, $pathParameters] = self::templatedPath(segments: $segments);
+		[$path, $pathParameters] = self::templatedPath(segments: $segments, trailingSlash: self::endsWithSlash(data: $data));
 		$operation = $this->operationFor(document: $document, data: $data, pathParameters: $pathParameters);
 		$operation = self::named(operation: $operation, data: $data, uuid: (string) $endpoint->getUuid());
 
@@ -294,13 +294,40 @@ class OpenApiPublishService {
 	}//end segmentsOf()
 
 	/**
+	 * Whether the endpoint is routed with a trailing slash.
+	 *
+	 * The gateway's route regex is built from the endpoint path as written, so `x/besluiten/`
+	 * is served only at `x/besluiten/`. The published path must say so, or the description
+	 * names a URI the gateway does not answer and `/core/no-trailing-slash` can never fire.
+	 *
+	 * @param array<string,mixed> $data The endpoint's data.
+	 *
+	 * @return bool True when the endpoint path, or its endpointArray, ends in an empty segment.
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
+	 */
+	private static function endsWithSlash(array $data): bool {
+		$endpoint = (string) ($data['endpoint'] ?? '');
+		if (trim($endpoint, '/') !== '') {
+			return str_ends_with($endpoint, '/');
+		}
+
+		$array = array_values((array) ($data['endpointArray'] ?? []));
+
+		return count($array) > 1 && $array[(count($array) - 1)] === '';
+	}//end endsWithSlash()
+
+	/**
 	 * The OpenAPI path of route segments, with `{x}` and `{{x}}` placeholders as path parameters.
 	 *
-	 * @param array<int,string|int|float|bool> $segments The route segments.
+	 * @param array<int,string|int|float|bool> $segments      The route segments.
+	 * @param bool                             $trailingSlash Whether the route ends in a slash.
 	 *
 	 * @return array{0:string,1:array<int,string>} The path and its parameter names.
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
 	 */
-	private static function templatedPath(array $segments): array {
+	private static function templatedPath(array $segments, bool $trailingSlash=false): array {
 		$pathParameters = [];
 		foreach ($segments as $index => $segment) {
 			if (preg_match('#^\{\{?\s*([^}\s]+)\s*\}?\}$#', (string) $segment, $match) === 1) {
@@ -309,7 +336,12 @@ class OpenApiPublishService {
 			}
 		}
 
-		return ['/'.implode('/', $segments), $pathParameters];
+		$path = '/'.implode('/', $segments);
+		if ($trailingSlash === true) {
+			$path .= '/';
+		}
+
+		return [$path, $pathParameters];
 	}//end templatedPath()
 
 	/**
