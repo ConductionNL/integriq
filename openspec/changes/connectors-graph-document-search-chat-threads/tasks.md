@@ -26,7 +26,13 @@ today: no thread is fetched and no Talk source exists.
   - GIVEN Talk absent WHEN searched THEN the notice `talk-not-installed` and the Teams hits unaffected
 - [x] Implement. Read the Talk signatures named in this change's `design.md` D5 on the Talk release matching this app's supported Nextcloud versions before writing the calls, and record the release in the PR body. A dynamic call to a renamed method compiles; only the read catches it.
 - [x] Test: PHPUnit `TalkMessageSourceTest::testATalkHitIsFoundAndFetchedWithItsThread`, `::testALeftConversationIsRefused`, `::testTalkAbsentGivesANotice`. Use the real `OCP\Comments\ICommentsManager` interface for the double; Talk's classes are doubled only where Talk is installed in the test container, and the test says so when it skips.
-- [ ] One live run against a Talk instance in the dev environment: search, fetch, and leave the conversation and fetch again. Record the output in the PR body.
+- [x] One live run against a Talk instance in the dev environment: search, fetch, and leave the conversation and fetch again. Record the output in the PR body.
+  > 2026-11-25, live: sandbox Nextcloud 34.0.6 + MariaDB, Talk 24.0.8 (`nextcloud/spreed` stable34 @ d64583b), OpenRegister main 292aa09d. Setup: two users in a group conversation "Dorpsstraat 1 bezwaar" with five messages, and an `app_connection` for dossiq linked to a source. The real `DocumentSearchRequestedEvent` / `DocumentFetchRequestedEvent` were dispatched through Nextcloud's dispatcher as the officer.
+  > - Search "Dorpsstraat" on `nextcloud-talk`: one hit, `platform` `nextcloud-talk`, handle `chatMessage:talk:{token}:5`, with the snippet.
+  > - Fetch with context 2: `chat-{token}.txt` plus `thread`, which holds the conversation (name, `group`), both participants and 5 messages in order, only the hit having `isHit`.
+  > - The officer leaves the conversation, then fetches again: `{"error": "not-a-participant"}`. A search now finds nothing.
+  > - With Talk disabled, a search answers the notice `talk-not-installed`.
+  > The full output is in the PR body.
 
 ### Task 7: The caller sees the thread
 - **spec_ref**: `openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors/spec.md#requirement-a-fetched-chat-message-comes-with-its-conversation-req-dcc-010`
