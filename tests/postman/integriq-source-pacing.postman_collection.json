@@ -1,0 +1,413 @@
+{
+  "info": {
+    "name": "Integriq — outbound pacing, the live 429 (sources-outbound-rate-limit-pacing)",
+    "description": "Newman test of task 2 of openspec/changes/sources-outbound-rate-limit-pacing (REQ-RLPC-002): a live gateway call whose paced turn is further away than the source's `pace.maxLiveWaitMs` answers 429 with Retry-After at once, is not sent upstream, and leaves a 429 call log entry carrying `retryAfter`.\n\nSetup creates a source paced at one call per 10 seconds with a 2 second live limit, and a gateway endpoint in front of it. The first call spends the budget; the second, made straight after, is 10 seconds from its turn.\n\nThe budget is shared by every worker only when the instance has a distributed memcache (Redis, Memcached); without one it is kept per process (design D1, `SourcePacer::isShared()`), and the second request can land in a fresh process with a fresh budget. When the second call is not refused, the pacing checks are reported as skipped, not passed. Teardown deletes both objects.\n\nSPDX-License-Identifier: EUPL-1.2\nSPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "pacedSourceUuid",
+      "value": ""
+    },
+    {
+      "key": "pacedEndpointUuid",
+      "value": ""
+    },
+    {
+      "key": "pacedEndpointPath",
+      "value": ""
+    },
+    {
+      "key": "pacedShared",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup",
+      "item": [
+        {
+          "name": "Create a source paced at 1 call per 10 s",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/source",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-paced-source\", \"type\": \"api\", \"location\": \"{{base_url}}/status.php\", \"isEnabled\": true, \"auth\": \"none\", \"pace\": {\"maxCalls\": 1, \"perSeconds\": 10, \"maxLiveWaitMs\": 2000}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: paced source created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('pacedSourceUuid', body.id || (body['@self'] || {}).id);",
+                  "pm.test('Setup: the pace is stored', () => pm.expect(body.pace.maxCalls).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create a gateway endpoint in front of it",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/endpoint",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-paced-endpoint\",\"endpoint\":\"{{pacedEndpointPath}}\",\"method\":\"GET\",\"targetType\":\"api\",\"targetId\":\"{{pacedSourceUuid}}\",\"isEnabled\":true}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// A fresh path per run, so a run never meets an endpoint an earlier run left behind.",
+                  "pm.collectionVariables.set('pacedEndpointPath', 'newman-paced-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: endpoint created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('pacedEndpointUuid', body.id || (body['@self'] || {}).id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. The live 429",
+      "item": [
+        {
+          "name": "First call spends the budget",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{pacedEndpointPath}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('The first call is not refused by the pacer', () => pm.expect(pm.response.code).to.not.eql(429));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Second call is 10 s from its turn: 429 at once",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{pacedEndpointPath}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const shared = pm.response.code === 429;",
+                  "pm.collectionVariables.set('pacedShared', shared ? 'true' : 'false');",
+                  "if (shared === false) {",
+                  "    console.log('Second call answered ' + pm.response.code + ': this instance keeps the pace budget per process (no distributed memcache). Pacing checks skipped.');",
+                  "}",
+                  "(shared ? pm.test : pm.test.skip)('REQ-RLPC-002: a live call beyond the live limit answers 429', () => pm.response.to.have.status(429));",
+                  "(shared ? pm.test : pm.test.skip)('REQ-RLPC-002: Retry-After names the seconds to the turn (1 to 10)', () => {",
+                  "    const after = parseInt(pm.response.headers.get('Retry-After'), 10);",
+                  "    pm.expect(after).to.be.within(1, 10);",
+                  "});",
+                  "(shared ? pm.test : pm.test.skip)('REQ-RLPC-002: the live call did not wait for its turn (under the 2 s live limit)', () => pm.expect(pm.response.responseTime).to.be.below(2000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The call log holds the refusal, and only one call went upstream",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/call_log?source={{pacedSourceUuid}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Call log readable', () => pm.response.to.have.status(200));",
+                  "const shared = pm.collectionVariables.get('pacedShared') === 'true';",
+                  "const entries = pm.response.json().results || [];",
+                  "const refused = entries.filter(e => e.statusCode === 429);",
+                  "const sent = entries.filter(e => e.statusCode !== 429);",
+                  "(shared ? pm.test : pm.test.skip)('REQ-RLPC-002: one 429 entry with retryAfter', () => {",
+                  "    pm.expect(refused.length).to.eql(1);",
+                  "    pm.expect(refused[0].retryAfter).to.be.within(1, 10);",
+                  "});",
+                  "(shared ? pm.test : pm.test.skip)('REQ-RLPC-002: the refused call was not sent upstream (one sent call)', () => pm.expect(sent.length).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Teardown",
+      "item": [
+        {
+          "name": "Delete the endpoint",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/endpoint/{{pacedEndpointUuid}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: endpoint deleted', () => pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the source",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/source/{{pacedSourceUuid}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: source deleted', () => pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
