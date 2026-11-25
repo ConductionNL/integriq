@@ -230,6 +230,12 @@ class McpProxyHandler {
 			$config['body'] = $call->rawBody;
 		}
 
+		// Written with the call log record, which is append-only (REQ-MCPX-002).
+		$logFields = self::logFields(rpc: $rpc);
+		if ($logFields !== []) {
+			$config['logFields'] = $logFields;
+		}
+
 		return new McpProxyResponse(
 			relay: function (IOutput $output) use ($call, $config, $rpc, $endpointData): void {
 				$this->relay(call: $call, config: $config, output: $output, storeArguments: (($endpointData['mcpStoreArguments'] ?? false) === true), rpc: $rpc);
@@ -306,8 +312,7 @@ class McpProxyHandler {
 				onHeaders: static function (ResponseInterface $upstream) use ($output): void {
 					self::relayHeaders(upstream: $upstream, output: $output);
 				},
-				withholdBodies: ($storeArguments === false),
-				logFields: self::logFields(rpc: $rpc)
+				withholdBodies: ($storeArguments === false)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: the MCP relay failed: ' . $e->getMessage());

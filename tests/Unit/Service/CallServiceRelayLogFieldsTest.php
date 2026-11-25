@@ -153,11 +153,10 @@ class CallServiceRelayLogFieldsTest extends TestCase {
 			source: $this->source(),
 			endpoint: 'mcp',
 			method: 'POST',
-			config: ['body' => '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"q":"secret"}}}'],
+			config: ['body' => '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"q":"secret"}}}', 'logFields' => $logFields],
 			sink: Utils::streamFor(''),
 			onHeaders: static function (): void {
-			},
-			logFields: $logFields
+			}
 		);
 	}//end relay()
 

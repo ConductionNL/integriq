@@ -81,8 +81,8 @@ class McpProxyHandlerTest extends TestCase {
 	private function handler(int $status = 200, array $headers = [], array $chunks = [], int $allowed = PHP_INT_MAX): McpProxyHandler {
 		$calls = $this->createMock(CallService::class);
 		$calls->method('relay')->willReturnCallback(
-			function ($source, string $endpoint, string $method, array $config, $sink, callable $onHeaders, bool $withholdBodies = true, $trace = null, array $logFields = []) use ($status, $headers, $chunks) {
-				$this->relayed[] = compact('source', 'endpoint', 'method', 'config', 'withholdBodies', 'logFields');
+			function ($source, string $endpoint, string $method, array $config, $sink, callable $onHeaders, bool $withholdBodies = true) use ($status, $headers, $chunks) {
+				$this->relayed[] = compact('source', 'endpoint', 'method', 'config', 'withholdBodies');
 				$onHeaders(new PsrResponse($status, $headers));
 				foreach ($chunks as $chunk) {
 					$sink->write($chunk);
@@ -257,8 +257,8 @@ class McpProxyHandlerTest extends TestCase {
 			->callback($this->recordingOutput(log: $log));
 
 		$this->assertCount(1, $this->relayed);
-		$this->assertSame(['mcpMethod' => 'tools/call', 'mcpTool' => 'fetch'], $this->relayed[0]['logFields']);
-		$this->assertStringNotContainsString('999999990', (string)json_encode($this->relayed[0]['logFields']));
+		$this->assertSame(['mcpMethod' => 'tools/call', 'mcpTool' => 'fetch'], $this->relayed[0]['config']['logFields']);
+		$this->assertStringNotContainsString('999999990', (string)json_encode($this->relayed[0]['config']['logFields']));
 		$this->assertTrue($this->relayed[0]['withholdBodies'], 'The arguments are not stored.');
 
 		$this->assertSame(['mcpMethod' => 'initialize'], McpProxyHandler::logFields(rpc: McpProxyHandler::rpcOf(rawBody: '{"jsonrpc":"2.0","id":1,"method":"initialize"}')));
@@ -293,7 +293,7 @@ class McpProxyHandlerTest extends TestCase {
 		$this->handler(chunks: ['{}'])->handle(call: $this->call(body: 'plain', endpointExtra: ['mcpStoreArguments' => true]))->callback($this->recordingOutput(log: $log));
 
 		$this->assertFalse($this->relayed[0]['withholdBodies']);
-		$this->assertSame([], $this->relayed[0]['logFields'], 'A body that is not JSON-RPC names nothing.');
+		$this->assertArrayNotHasKey('logFields', $this->relayed[0]['config'], 'A body that is not JSON-RPC names nothing.');
 	}//end testStoringArgumentsIsTheEndpointsChoice()
 
 	/**
