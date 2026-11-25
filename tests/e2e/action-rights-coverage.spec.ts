@@ -49,7 +49,9 @@ async function as(baseURL: string, user: { username: string, password: string })
 	return pwRequest.newContext({
 		baseURL,
 		storageState: { cookies: [], origins: [] },
-		httpCredentials: user,
+		// `send: 'always'`: Nextcloud answers an unauthenticated OCS call 401 without a
+		// Basic challenge, so credentials sent only on a challenge are never sent.
+		httpCredentials: { ...user, send: 'always' },
 		extraHTTPHeaders: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
 	})
 }

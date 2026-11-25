@@ -27,6 +27,7 @@ namespace OCA\Integriq\AppInfo;
 
 // @todo Remove ViewUpdatedOrCreatedEventListener once it lives in the software catalog application.
 use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Middleware\ActionRefusalMiddleware;
 use OCA\Integriq\Middleware\ApiContractMiddleware;
 use OCA\Integriq\Outbound\OutboundRegistrar;
 use OCA\Integriq\Expression\ExpressionRegistrar;
@@ -130,6 +131,9 @@ class Application extends App implements IBootstrap {
 
 		// API-Version header and problem details on the JSON API (spec api-contract).
 		$context->registerMiddleware(ApiContractMiddleware::class);
+
+		// An action refusal (OCSForbiddenException) from a plain controller answers 403, not 500.
+		$context->registerMiddleware(ActionRefusalMiddleware::class);
 
 		$this->assertStorageMigrated();
 
