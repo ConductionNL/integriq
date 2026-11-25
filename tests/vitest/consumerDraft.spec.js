@@ -458,7 +458,7 @@ describe('Consumer form configuration consistency', () => {
 			'utf8',
 		)
 		expect(registry).toContain(
-			"import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'",
+			"const ConsumerEditorModal = lazyComponent(() => import('./modals/v2/ConsumerEditorModal.vue'), 'ConsumerEditorModal')",
 		)
 		expect(registry).toMatch(/^\tConsumerEditorModal,$/m)
 	})

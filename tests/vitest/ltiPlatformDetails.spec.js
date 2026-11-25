@@ -204,7 +204,7 @@ describe('LTI tools manifest pages', () => {
 	it('registers the panel component', () => {
 		const registry = readFileSync(join(root, 'src/registry.js'), 'utf8')
 		expect(registry).toMatch(
-			/import LtiPlatformDetails from '\.\/components\/LtiPlatformDetails\.vue'/,
+			/const LtiPlatformDetails = lazyComponent\(\(\) => import\('\.\/components\/LtiPlatformDetails\.vue'\), 'LtiPlatformDetails'\)/,
 		)
 		expect(registry).toMatch(/^\s+LtiPlatformDetails,$/m)
 	})

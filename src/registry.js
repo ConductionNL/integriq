@@ -32,49 +32,7 @@
 //   2. Built-in widget types        (version-info, register-mapping, …)
 //   3. customComponents (this file) — escape hatch for handlers + future widgets
 
-import AutomationDeprecationNotice from './components/AutomationDeprecationNotice.vue'
-import BodyCaptureWindow from './components/BodyCaptureWindow.vue'
-import CallLogActions from './components/callLog/CallLogActions.vue'
-import CallLogDetail from './components/callLog/CallLogDetail.vue'
-import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
-import CatalogItemCard from './components/CatalogItemCard.vue'
-import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
-import CloudEventReceiverUrl from './components/CloudEventReceiverUrl.vue'
-import ConsumerCredentialsPanel from './components/ConsumerCredentialsPanel.vue'
-import DatabaseSourcePanel from './components/DatabaseSourcePanel.vue'
-import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
-import IntakeMessageActions from './components/intake/IntakeMessageActions.vue'
-import IntakeMessageRowActions from './components/intake/IntakeMessageRowActions.vue'
-import MailImportAction from './components/intake/MailImportAction.vue'
-import LtiPlatformDetails from './components/LtiPlatformDetails.vue'
-import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
-import SourceHostKeyPanel from './components/SourceHostKeyPanel.vue'
-import SourceRunSummaryWidget from './components/SourceRunSummaryWidget.vue'
-import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
-import ColumnMappingEditorModal from './modals/Migration/ColumnMappingEditorModal.vue'
-import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'
-import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
-import IntakeRuleEditorModal from './modals/v2/IntakeRuleEditorModal.vue'
-import JobFormFields from './modals/v2/JobFormFields.vue'
-import MappingEditorModal from './modals/v2/MappingEditorModal.vue'
-import RuleEditorModal from './modals/v2/RuleEditorModal.vue'
-import SourceFormFields from './modals/v2/SourceFormFields.vue'
-import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.vue'
-import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
-import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
-import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
-import DeveloperPortalPage from './views/DeveloperPortal/DeveloperPortalPage.vue'
-import EgressDestinationsPage from './views/EgressDestinations/EgressDestinationsPage.vue'
-import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
-import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
-import FlowDetailSidebar from './views/Flow/FlowDetailSidebar.vue'
-import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
-import DeadLettersPage from './views/Operations/DeadLettersPage.vue'
-import RecipientOptOutsPage from './views/RecipientOptOuts/RecipientOptOutsPage.vue'
-import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
-import SyncDeadLetterPage from './views/Synchronization/SyncDeadLetterPage.vue'
-import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
-import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
+import { lazyComponent } from '@conduction/nextcloud-vue'
 import {
 	addEndpointRuleHandler,
 	bringApiBehindIntegriqHandler,
@@ -108,6 +66,62 @@ import {
 	moveIntakeRuleUpHandler,
 	toggleIntakeRuleHandler,
 } from './handlers/intakeRuleHandlers.js'
+
+// Every component below loads on first render (nextcloud-vue's
+// `lazyComponent`), not with the main bundle: a page, panel or editor
+// modal is fetched when the manifest first mounts it. Imported eagerly,
+// these components and the library parts only they use put ~2.2 MB on
+// integriq-main.js (8.5 -> 6.3 MB), parsed on every page before the
+// shell can draw (ADR-124 speed budget). The wrapper forwards every
+// attribute, listener, slot and template ref to the loaded component,
+// and nextcloud-vue reads the loaded definition through
+// `resolveLazyComponent`, so the renderer treats an entry as the
+// component itself. Handlers stay static imports: they are plain
+// functions, not components. tests/vitest/registryLazy.spec.js keeps
+// this file free of eager .vue imports.
+const AutomationDeprecationNotice = lazyComponent(() => import('./components/AutomationDeprecationNotice.vue'), 'AutomationDeprecationNotice')
+const BodyCaptureWindow = lazyComponent(() => import('./components/BodyCaptureWindow.vue'), 'BodyCaptureWindow')
+const CallLogActions = lazyComponent(() => import('./components/callLog/CallLogActions.vue'), 'CallLogActions')
+const CallLogDetail = lazyComponent(() => import('./components/callLog/CallLogDetail.vue'), 'CallLogDetail')
+const CallLogRowActions = lazyComponent(() => import('./components/callLog/CallLogRowActions.vue'), 'CallLogRowActions')
+const CatalogItemCard = lazyComponent(() => import('./components/CatalogItemCard.vue'), 'CatalogItemCard')
+const CircuitBreakerBadge = lazyComponent(() => import('./components/CircuitBreakerBadge.vue'), 'CircuitBreakerBadge')
+const CloudEventReceiverUrl = lazyComponent(() => import('./components/CloudEventReceiverUrl.vue'), 'CloudEventReceiverUrl')
+const ConsumerCredentialsPanel = lazyComponent(() => import('./components/ConsumerCredentialsPanel.vue'), 'ConsumerCredentialsPanel')
+const DatabaseSourcePanel = lazyComponent(() => import('./components/DatabaseSourcePanel.vue'), 'DatabaseSourcePanel')
+const DocumentGenerationSourcePanel = lazyComponent(() => import('./components/DocumentGenerationSourcePanel.vue'), 'DocumentGenerationSourcePanel')
+const IntakeMessageActions = lazyComponent(() => import('./components/intake/IntakeMessageActions.vue'), 'IntakeMessageActions')
+const IntakeMessageRowActions = lazyComponent(() => import('./components/intake/IntakeMessageRowActions.vue'), 'IntakeMessageRowActions')
+const MailImportAction = lazyComponent(() => import('./components/intake/MailImportAction.vue'), 'MailImportAction')
+const LtiPlatformDetails = lazyComponent(() => import('./components/LtiPlatformDetails.vue'), 'LtiPlatformDetails')
+const MigrationTestRunPanel = lazyComponent(() => import('./components/MigrationTestRunPanel.vue'), 'MigrationTestRunPanel')
+const SourceHostKeyPanel = lazyComponent(() => import('./components/SourceHostKeyPanel.vue'), 'SourceHostKeyPanel')
+const SourceRunSummaryWidget = lazyComponent(() => import('./components/SourceRunSummaryWidget.vue'), 'SourceRunSummaryWidget')
+const SubscriptionActionFields = lazyComponent(() => import('./modals/EventSubscription/SubscriptionActionFields.vue'), 'SubscriptionActionFields')
+const ColumnMappingEditorModal = lazyComponent(() => import('./modals/Migration/ColumnMappingEditorModal.vue'), 'ColumnMappingEditorModal')
+const ConsumerEditorModal = lazyComponent(() => import('./modals/v2/ConsumerEditorModal.vue'), 'ConsumerEditorModal')
+const EndpointFormFields = lazyComponent(() => import('./modals/v2/EndpointFormFields.vue'), 'EndpointFormFields')
+const IntakeRuleEditorModal = lazyComponent(() => import('./modals/v2/IntakeRuleEditorModal.vue'), 'IntakeRuleEditorModal')
+const JobFormFields = lazyComponent(() => import('./modals/v2/JobFormFields.vue'), 'JobFormFields')
+const MappingEditorModal = lazyComponent(() => import('./modals/v2/MappingEditorModal.vue'), 'MappingEditorModal')
+const RuleEditorModal = lazyComponent(() => import('./modals/v2/RuleEditorModal.vue'), 'RuleEditorModal')
+const SourceFormFields = lazyComponent(() => import('./modals/v2/SourceFormFields.vue'), 'SourceFormFields')
+const SynchronizationEditorModal = lazyComponent(() => import('./modals/v2/SynchronizationEditorModal.vue'), 'SynchronizationEditorModal')
+const ApiProductDetail = lazyComponent(() => import('./views/ApiProducts/ApiProductDetail.vue'), 'ApiProductDetail')
+const ApprovalDetail = lazyComponent(() => import('./views/Approvals/ApprovalDetail.vue'), 'ApprovalDetail')
+const ApprovalsIndex = lazyComponent(() => import('./views/Approvals/ApprovalsIndex.vue'), 'ApprovalsIndex')
+const DeveloperPortalPage = lazyComponent(() => import('./views/DeveloperPortal/DeveloperPortalPage.vue'), 'DeveloperPortalPage')
+const EgressDestinationsPage = lazyComponent(() => import('./views/EgressDestinations/EgressDestinationsPage.vue'), 'EgressDestinationsPage')
+const EventDeliveriesPage = lazyComponent(() => import('./views/EventDelivery/EventDeliveriesPage.vue'), 'EventDeliveriesPage')
+const TraceDetailPage = lazyComponent(() => import('./views/ExecutionTrace/TraceDetailPage.vue'), 'TraceDetailPage')
+const FlowDetailSidebar = lazyComponent(() => import('./views/Flow/FlowDetailSidebar.vue'), 'FlowDetailSidebar')
+const NotificatiesAbonnementenPage = lazyComponent(() => import('./views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'), 'NotificatiesAbonnementenPage')
+const DeadLettersPage = lazyComponent(() => import('./views/Operations/DeadLettersPage.vue'), 'DeadLettersPage')
+const RecipientOptOutsPage = lazyComponent(() => import('./views/RecipientOptOuts/RecipientOptOutsPage.vue'), 'RecipientOptOutsPage')
+const RuleDetailPage = lazyComponent(() => import('./views/Rule/RuleDetailPage.vue'), 'RuleDetailPage')
+const SyncDeadLetterPage = lazyComponent(() => import('./views/Synchronization/SyncDeadLetterPage.vue'), 'SyncDeadLetterPage')
+const SynchronizationDetailPage = lazyComponent(() => import('./views/Synchronization/SynchronizationDetailPage.vue'), 'SynchronizationDetailPage')
+const MappingDetailPage = lazyComponent(() => import('./views/wrappers/MappingDetailPage.vue'), 'MappingDetailPage')
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
