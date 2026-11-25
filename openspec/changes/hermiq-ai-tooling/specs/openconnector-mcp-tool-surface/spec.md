@@ -1,12 +1,5 @@
 # openconnector-mcp-tool-surface Specification Delta — hermiq-ai-tooling
 
-This delta extends the canonical spec (created by the archived `openconnector-mcp-adoption`,
-REQ-MCP-101..104) with a governed **action** surface. It MODIFIES REQ-MCP-101 (curated
-`#[McpTool]` action methods become the sanctioned exception to "no MCP code in `lib/`") and
-REQ-MCP-103 (object writes stay forbidden; action execution is admitted only under the two
-conditions REQ-MCP-103 itself named — HITL approval on the write path and agent-principal
-attribution). REQ-MCP-102 and REQ-MCP-104 are unchanged. This delta ADDS REQ-MCP-105..109.
-
 ## MODIFIED Requirements
 
 ### Requirement: REQ-MCP-101 — Integriq's MCP tool surface MUST be declared on the schema via the `x-openregister-mcp` dialect and MUST NOT be hand-written in PHP, except for curated action tools
@@ -63,75 +56,72 @@ agent-principal attribution in the audit trail (REQ-MCP-108).
 
 ### Requirement: REQ-MCP-105 — Exactly six curated tools MUST exist, each an action over existing configuration or a payload-free read, with honest scope and reach
 
-`IntegriqAgentTools` MUST expose exactly: `integriq.runSynchronization` (scope
-`update`, reach `external`, approval-gated), `integriq.testSynchronization` (scope `read`,
-reach `external`, confirm-classified), `integriq.testSource` (scope `read`, reach
-`external`, confirm-classified), `integriq.replayDeadLetters` (scope `update`, reach
-`external`, approval-gated, batch of ids), `integriq.discardDeadLetters` (scope `delete`,
-reach `instance`, `destructiveHint: true`, approval-gated, batch of ids), and
-`integriq.listDeadLetters` (scope `read`, reach `instance`). Reach MUST use Hermiq's
-`ToolReachResolver` vocabulary; every tool that calls a remote system MUST declare `external`.
-`runSynchronization` MUST NOT expose `forceDeletion` (the deletion-ratio-guard override stays a
-human, UI-only act) and MUST run with the sync-safety guardrails unchanged. The following actions
-are named as refused or deferred and MUST NOT be added without a change to this requirement:
-job enable/disable (refused — object write), `resetCursor`, circuit-breaker trip/reset, contract
-activate/deactivate/execute, event-subscription management, environment promotion, configuration
-import/export (deferred — each needs its own risk argument).
+`IntegriqAgentTools` MUST expose exactly six tools: `integriq.runSynchronization`,
+`integriq.testSynchronization`, `integriq.testSource`, `integriq.replayDeadLetters`,
+`integriq.discardDeadLetters` and `integriq.listDeadLetters`, each with the scope, reach
+and approval class its scenario lists. Reach MUST use Hermiq's `ToolReachResolver`
+vocabulary; every tool that calls a remote system MUST declare `external`. No other action MUST be added without a change to this requirement.
 
 #### Scenario: the curated surface is exactly six tools with the declared metadata
 - **WHEN** the tool list is enumerated
 - **THEN** exactly six 2-segment `integriq.*` tools exist beside the 16 derived reads
-- **AND** their scope, reach, and hints match this requirement (run/test/replay = `external`)
+- **AND** `integriq.runSynchronization` is scope `update`, reach `external`, approval-gated
+- **AND** `integriq.testSynchronization` and `integriq.testSource` are scope `read`, reach `external`, confirm-classified
+- **AND** `integriq.replayDeadLetters` is scope `update`, reach `external`, approval-gated, over a batch of ids
+- **AND** `integriq.discardDeadLetters` is scope `delete`, reach `instance`, `destructiveHint: true`, approval-gated, over a batch of ids
+- **AND** `integriq.listDeadLetters` is scope `read`, reach `instance`
 - @e2e exclude backend catalogue metadata — covered by PHPUnit
 
 #### Scenario: `forceDeletion` is unreachable through MCP
 - **GIVEN** an agent calls `integriq.runSynchronization` with a `forceDeletion` argument
 - **WHEN** arguments are validated
 - **THEN** the call is rejected as invalid arguments and nothing is staged
+- **AND** the deletion-ratio-guard override stays a human, UI-only act: `runSynchronization` never exposes `forceDeletion`, and runs with the sync-safety guardrails unchanged
 - @e2e exclude backend argument validation — covered by PHPUnit
+
+#### Scenario: refused and deferred actions stay absent
+- **WHEN** the tool list is enumerated
+- **THEN** no tool exists for job enable/disable (refused: an object write)
+- **AND** none exists for `resetCursor`, circuit-breaker trip/reset, contract activate/deactivate/execute, event-subscription management, environment promotion, or configuration import/export (deferred: each needs its own risk argument)
+- @e2e exclude backend catalogue assertion — covered by PHPUnit
 
 ### Requirement: REQ-MCP-106 — Every curated tool MUST run the existing ADR-023 action check and delegate to the existing controller-backed service path
 
-Before any staging or execution, each tool MUST call `ActionAuthService::requireAction()` with
-its action id — `synchronization.run`, `synchronization.test`, `source.test` (existing seeds) or
-`sync-dead-letter.replay` / `sync-dead-letter.discard` (new, seeded `["admin"]` in
-`lib/actions.seed.json`) — as the granting user of the agent's session, and MUST return the
-matrix's forbidden error unchanged when denied. Execution MUST delegate to the same service path
-the controllers use (`SynchronizationsController::run()/test()`, `SourcesController::test()`, the
-audited dead-letter replay/discard paths of REQ-DLR-003/004/009/010), so guardrails, retry and
-terminal-state rules run unchanged and a request the UI path would refuse fails identically
-through MCP. Hermiq's grant/approval layer and the ADR-023 matrix are independent and MUST both
-pass; neither may be bypassed by the other.
+Before any staging or execution, each tool MUST call `ActionAuthService::requireAction()`
+with its action id as the granting user of the agent's session, and MUST return the
+matrix's forbidden error unchanged when denied. Execution MUST delegate to the same service
+path the controllers use, so a request the UI path would refuse fails identically through MCP. Hermiq's grant/approval
+layer and the ADR-023 matrix are independent and MUST both pass; neither may bypass the
+other.
 
 #### Scenario: the matrix denies before anything is staged
 - **GIVEN** a granting user whose groups lack `synchronization.run`
 - **WHEN** an agent invokes `integriq.runSynchronization`
 - **THEN** `requireAction()` denies with the forbidden error and no proposal is staged
+- **AND** each tool checks its own action id: `synchronization.run`, `synchronization.test`, `source.test` (existing seeds), or `sync-dead-letter.replay` / `sync-dead-letter.discard` (new, seeded `["admin"]` in `lib/actions.seed.json`)
 - @e2e exclude backend authorization — covered by PHPUnit
 
 #### Scenario: gate parity with the UI path
 - **GIVEN** a synchronization whose test run the UI path refuses for a fixture user
 - **WHEN** the same user's agent invokes `integriq.testSynchronization`
 - **THEN** the tool returns the same domain error and no remote call is made
+- **AND** the tools delegate to `SynchronizationsController::run()/test()`, `SourcesController::test()` and the audited dead-letter replay/discard paths of REQ-DLR-003/004/009/010, so guardrails, retry and terminal-state rules run unchanged
 - @e2e exclude backend gate parity — covered by PHPUnit against the same fixture
 
 ### Requirement: REQ-MCP-107 — Run, replay, and discard MUST be two-phase with a server-verified human approval bound to the batch
 
-`runSynchronization`, `replayDeadLetters`, and `discardDeadLetters` MUST be two-phase: phase 1
-validates ids, passes REQ-MCP-106, and stages a proposal (tool, target ids, requesting agent,
-granting user) without executing anything; phase 2 executes only when presented with an approval
-token the server verifies was minted for a human approver distinct from the acting agent,
-unexpired, and bound to that exact staged batch. The gate MUST be enforced in Integriq's tool
-path so a non-Hermiq MCP client without a token can never execute. The batch is the approval
-unit; the approver MUST see the full id list, and reviews dead-letter payloads in the existing
-DeadLetters UI, never through the agent. `testSynchronization`, `testSource`, and
-`listDeadLetters` MUST be single-phase.
+`runSynchronization`, `replayDeadLetters`, and `discardDeadLetters` MUST be two-phase:
+phase 1 validates ids, passes REQ-MCP-106, and stages a proposal (tool, target ids,
+requesting agent, granting user) without executing anything; phase 2 executes only when
+presented with an approval token the server verifies was minted for a human approver
+distinct from the acting agent, unexpired, and bound to that exact staged batch.
 
 #### Scenario: the canonical nightly-triage chat flow
 - **GIVEN** last night's synchronization dead-lettered 14 items
 - **WHEN** an agent triages via the derived log reads and `listDeadLetters`, stages `replayDeadLetters` for the 14 ids, and an admin reviews and approves the batch in Hermiq
 - **THEN** phase 2 replays each id through the audited replay path
 - **AND** a batch the admin rejects replays nothing
+- **AND** the batch is the approval unit: the admin saw the full id list, and reviewed dead-letter payloads in the existing DeadLetters UI, never through the agent
 - @e2e tests/e2e/spec-coverage/hermiq-ai-tooling.spec.ts
 
 #### Scenario: a token cannot be replayed onto another batch
@@ -146,19 +136,29 @@ DeadLetters UI, never through the agent. `testSynchronization`, `testSource`, an
 - **THEN** no synchronization run occurred and the proposal is auditable as proposed-but-not-approved
 - @e2e exclude backend two-phase state machine — covered by PHPUnit
 
+#### Scenario: a client without a token never executes
+- **GIVEN** an MCP client other than Hermiq that holds no approval token
+- **WHEN** it invokes phase 2 of `runSynchronization`, `replayDeadLetters` or `discardDeadLetters`
+- **THEN** execution is refused, because the gate is enforced in Integriq's own tool path
+- @e2e exclude backend token gate — covered by PHPUnit
+
+#### Scenario: tests and the dead-letter list are single-phase
+- **WHEN** an agent invokes `testSynchronization`, `testSource` or `listDeadLetters`
+- **THEN** the tool answers in one call, with no proposal staged and no token asked
+- @e2e exclude backend two-phase classification — covered by PHPUnit
+
 ### Requirement: REQ-MCP-108 — Every invocation, including refusals, MUST be attributed to the agent principal in the audit trail
 
 Every curated tool invocation MUST record the acting agent identity (from the MCP session
-context), the granting user, the tool id, the outcome (denied by matrix / staged / approved /
-executed / refused-token), the proposal reference, and the approval token id where a gate
-applies — alongside the existing audit fields the underlying service path already writes. A
-replayed dead letter or an executed run MUST be answerable from the trail as "agent A proposed,
-approver B approved, on behalf of user C", never as a purely human act.
+context), the granting user, the tool id, the outcome (denied by matrix / staged / approved
+/ executed / refused-token), the proposal reference, and the approval token id where a gate
+applies — alongside the existing audit fields the underlying service path already writes.
 
 #### Scenario: an approved replay is traceable end to end
 - **GIVEN** a dead letter replayed via an approved batch
 - **WHEN** its audit trail is read
 - **THEN** it names the agent, the granting user, the tool id, the batch reference, and the approval token id
+- **AND** it reads as "agent A proposed, approver B approved, on behalf of user C", never as a purely human act; an executed run reads the same way
 - @e2e exclude backend audit assertion — covered by PHPUnit
 
 #### Scenario: a matrix refusal is auditable
@@ -170,13 +170,11 @@ approver B approved, on behalf of user C", never as a purely human act.
 ### Requirement: REQ-MCP-109 — The dead-letter read MUST be payload-free, and no tool may return or accept payload content
 
 `integriq.listDeadLetters` MUST be the only dead-letter-reading tool and MUST return per
-row exactly: `id`, `store` (`sync`/`event`), the `synchronization` or `subscription` reference,
-`phase`, `error` (truncated to a fixed length), `attempts`/`retryCount`, `status`, `created`,
-`replayedAt`, `discardedAt`. It MUST NOT return `payload` or `lastResponse`, and no curated tool
-MUST accept payload content as an argument (replay/discard take ids only). Neither
-`sync_item_dead_letter` nor `event_message` may gain the `x-openregister-mcp` dialect. Rationale
-(binding, extending REQ-MCP-104's logic): `payload` is raw data from remote systems the instance
-does not control; what reaches the agent's context can steer the agent, so it must never reach it.
+row exactly: `id`, `store` (`sync`/`event`), the `synchronization` or `subscription`
+reference, `phase`, `error` (truncated to a fixed length), `attempts`/`retryCount`,
+`status`, `created`, `replayedAt`, `discardedAt`. It MUST NOT return `payload` or
+`lastResponse`, and no curated tool MUST accept payload content as an argument
+(replay/discard take ids only).
 
 #### Scenario: triage works on metadata alone
 - **GIVEN** pending dead letters with upstream error responses
@@ -186,5 +184,5 @@ does not control; what reaches the agent's context can steer the agent, so it mu
 
 #### Scenario: no derived dead-letter tool exists
 - **WHEN** the tool list is enumerated
-- **THEN** no `integriq.sync_item_dead_letter.*` or `integriq.event_message.*` tool exists
+- **THEN** no `integriq.sync_item_dead_letter.*` or `integriq.event_message.*` tool exists: neither schema may gain the `x-openregister-mcp` dialect
 - @e2e exclude backend catalogue assertion — covered by PHPUnit

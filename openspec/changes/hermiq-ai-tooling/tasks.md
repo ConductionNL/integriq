@@ -75,7 +75,7 @@
 
 ## Verification
 - [ ] All tasks checked off
-- [ ] `openspec validate hermiq-ai-tooling --type change --strict` passes
+- [x] `openspec validate hermiq-ai-tooling --type change --strict` passes
 - [ ] Manual testing against acceptance criteria (matrix denial, rejected batch, approved batch, token replay, `forceDeletion` rejection)
 - [ ] Code review against spec requirements
 

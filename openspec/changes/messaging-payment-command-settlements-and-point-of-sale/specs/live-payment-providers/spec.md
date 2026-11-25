@@ -4,23 +4,23 @@
 
 ### Requirement: A sibling app creates a payment through a typed command (REQ-LPP-007)
 
-Integriq MUST offer `OCA\Integriq\Event\PaymentRequestedEvent`, a typed ADR-041 command carrying the source app, a subject reference, the amount, the currency, a description, a redirect URL and optionally a method, a terminal id, a source slug and metadata. Its listener MUST create the payment through the same path as `POST /api/payments`, MUST set integriq's own absolute webhook URL on the payment, and MUST write the payment intent id, the provider payment id, the checkout URL, the status and whether the source is dormant into the result slot. A request that cannot be served MUST be marked handled with a refusal code (`invalid`, `no-source`, `provider-error` or `unsupported`) and a reason, and MUST NOT throw to the caller. The command MUST work without a Nextcloud session.
+Integriq MUST offer `OCA\Integriq\Event\PaymentRequestedEvent`, a typed ADR-041 command carrying the source app, a subject reference, the amount, the currency, a description, a redirect URL and optionally a method, a terminal id, a source slug and metadata. Its listener MUST create the payment through the same path as `POST /api/payments` and MUST write the payment intent id, the provider payment id, the checkout URL, the status and whether the source is dormant into the result slot.
 
 #### Scenario: shillinq gets a payment link for an invoice from a background job
 - GIVEN a Mollie payment source and a shillinq job without a user session
 - WHEN shillinq dispatches `PaymentRequestedEvent` for invoice 2026-0142, EUR 125.00, description "Factuur 2026-0142"
-- THEN the result slot holds a payment intent id, the Mollie payment id and a checkout URL, the stored `payment_intent` names shillinq as source app, and Mollie was given integriq's webhook URL
+- THEN the result slot holds a payment intent id, the Mollie payment id and a checkout URL, the stored `payment_intent` names shillinq as source app, and Mollie was given integriq's own absolute webhook URL, all without a Nextcloud session
 - @e2e exclude backend command event; covered by PHPUnit with the real event class
 
 #### Scenario: no payment source is configured
 - GIVEN an instance with no payment source
 - WHEN shillinq dispatches the command
-- THEN the event is handled with refusal code `no-source` and a reason, and shillinq receives no exception
+- THEN the event is handled with refusal code `no-source` and a reason, and shillinq receives no exception: every request that cannot be served is marked handled with one of `invalid`, `no-source`, `provider-error` or `unsupported` and a reason, and never throws to the caller
 - @e2e exclude backend command event; covered by PHPUnit
 
 ### Requirement: Every provider settlement is reported once with its transactions (REQ-LPP-008)
 
-For every payment source whose provider is not `log`, integriq MUST fetch the provider's settlements once a day, MUST store each new settlement as a `payment_settlement` object unique per source and settlement reference, and MUST emit one `nl.conduction.payment.settlement` CloudEvent per new settlement with `settlementReference`, `settledAt`, `currency`, `amountGross`, `amountFees`, `amountRefunds`, `amountChargebacks`, `amountNet` and `transactions` (each `providerPaymentId`, `type`, `amount`, `fee`). A settlement already stored MUST NOT be emitted again.
+For every payment source whose provider is not `log`, integriq MUST fetch the provider's settlements once a day, MUST store each new settlement as a `payment_settlement` object, and MUST emit one `nl.conduction.payment.settlement` CloudEvent per new settlement with `settlementReference`, `settledAt`, `currency`, `amountGross`, `amountFees`, `amountRefunds`, `amountChargebacks`, `amountNet` and `transactions` (each `providerPaymentId`, `type`, `amount`, `fee`).
 
 #### Scenario: a Mollie payout is reported to shillinq
 - GIVEN a live Mollie source and a settlement `st_example0001` of 14 payments, one refund and EUR 4.06 fees
@@ -31,7 +31,7 @@ For every payment source whose provider is not `log`, integriq MUST fetch the pr
 #### Scenario: the pull runs twice
 - GIVEN the settlement `st_example0001` was reported yesterday
 - WHEN the pull runs again
-- THEN no event is emitted for it
+- THEN no event is emitted for it and no second `payment_settlement` is stored: a settlement is unique per source and settlement reference, and one already stored is never emitted again
 - @e2e exclude scheduled pull; covered by PHPUnit
 
 ### Requirement: A payment can be taken on a registered point-of-sale device (REQ-LPP-009)

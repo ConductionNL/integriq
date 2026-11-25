@@ -116,6 +116,12 @@ their own `replayedBy` / `discardedBy`: the granting user.
   as `unidentified`, and its phase 2 can never pass, because the verdict must
   echo the acting agent.
 
+### Why the dead-letter read is payload-free (REQ-MCP-109)
+
+Binding rationale, extending REQ-MCP-104's logic: `payload` is raw data from remote
+systems the instance does not control; what reaches the agent's context can steer the
+agent, so it must never reach it.
+
 ## Risks / Trade-offs
 
 Carried in proposal.md. Trade-off accepted: truncated `error` strings may echo upstream fragments (triage is impossible without them); flagged to the security reviewer.
