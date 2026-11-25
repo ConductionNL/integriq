@@ -124,7 +124,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "TC-8 control: the same amendment is served under /amendments (the guard is selective, not vacuous)",
@@ -155,7 +158,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "TC-8 parity: OriController hides it under /motions too",
@@ -186,7 +192,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "Stage: a draft meeting",
@@ -257,7 +266,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "TC-9 parity: OriController hides the draft meeting too",
@@ -288,7 +300,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "Stage: a publication dated in the future",
@@ -359,7 +374,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "TC-10: the endpoint hides the future publication as OriController does (Risk 3)",
@@ -395,7 +413,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "Teardown: delete the staged decision",
