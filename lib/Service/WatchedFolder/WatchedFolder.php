@@ -123,7 +123,7 @@ final class WatchedFolder {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+	 * @spec openspec/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
 	 */
 	public function intakeApp(): ?string {
 		if ($this->text(key: 'target', default: 'mapping') !== 'intake') {
@@ -138,7 +138,7 @@ final class WatchedFolder {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
+	 * @spec openspec/specs/data-infra-connectors/spec.md#requirement-a-watched-folder-hands-a-file-to-a-named-intake-through-a-typed-event-req-sftp-005
 	 */
 	public function ownerUid(): string {
 		$configuration = ($this->source['configuration'] ?? []);

@@ -12725,14 +12725,13 @@
 			"area": "sources",
 			"name": "Hand each file from a watched folder to an intake app such as scan intake.",
 			"source": "open-change-triage-2026-11-12",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"plan": "openspec/changes/sources-sftp-adapter-intake-hand-over",
-				"change": "sources-sftp-adapter-intake-hand-over",
-				"requirement": "openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors :: A watched folder hands a file to a named intake through a typed event (REQ-SFTP-005)",
-				"evidence": "Not built: specified in openspec/changes/sources-sftp-adapter-intake-hand-over (12/12 tasks open). Part 3 of sources-sftp-adapter; depends on the watched-folder row proposed for part 2."
+				"evidence": "lib/Event/WatchedFileArrivedEvent.php, dispatched by lib/Service/WatchedFolder/WatchedFileDelivery.php for target intake; only accept() by the named intake app marks the file (#3786). Archived as openspec/changes/archive/2026-11-24-sources-sftp-adapter-intake-hand-over.",
+				"spec": "openspec/specs/data-infra-connectors",
+				"requirement": "openspec/specs/data-infra-connectors :: A watched folder hands a file to a named intake through a typed event (REQ-SFTP-005)"
 			},
 			"feature": "data-infra-connectors",
 			"featureConfidence": "medium",
