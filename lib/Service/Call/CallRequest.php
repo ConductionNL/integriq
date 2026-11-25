@@ -50,6 +50,7 @@ final class CallRequest {
 	 * @param mixed                      $onHeaders             Optional callable run once the response headers arrive.
 	 * @param bool                       $persistLog            When false, a transient unsaved call log is returned.
 	 * @param bool                       $withholdBodies        When true, the call log and trace step hold no body.
+	 * @param array<string, mixed>       $logFields             Fields the caller adds to the call log record when it is written.
 	 */
 	public function __construct(
 		public readonly string $endpoint = '',
@@ -64,6 +65,7 @@ final class CallRequest {
 		public readonly mixed $onHeaders = null,
 		public readonly bool $persistLog = true,
 		public readonly bool $withholdBodies = false,
+		public readonly array $logFields = [],
 	) {
 	}//end __construct()
 }//end class

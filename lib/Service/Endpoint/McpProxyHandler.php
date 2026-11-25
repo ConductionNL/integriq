@@ -31,10 +31,6 @@ namespace OCA\Integriq\Service\Endpoint;
 
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\IOutput;
 use OCP\AppFramework\Http\JSONResponse;
@@ -98,13 +94,11 @@ class McpProxyHandler {
 	 *
 	 * @param CallService             $calls      The outbound path, relaying the answer.
 	 * @param InboundRateLimitService $limits     The limiter the consumer rate limit uses.
-	 * @param ORObjectService         $objects    Stamps the call log with the method and tool.
 	 * @param LoggerInterface         $logger     The logger.
 	 */
 	public function __construct(
 		private readonly CallService $calls,
 		private readonly InboundRateLimitService $limits,
-		private readonly ORObjectService $objects,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -316,7 +310,7 @@ class McpProxyHandler {
 	}//end maxStreamSeconds()
 
 	/**
-	 * Make the call through CallService, relaying into the output, then name the method and tool on its log.
+	 * Make the call through CallService, relaying into the output; its log names the method and tool.
 	 *
 	 * @param McpProxyCall                                             $call           The call.
 	 * @param array<string, mixed>                                     $config         The request configuration.
@@ -325,10 +319,12 @@ class McpProxyHandler {
 	 * @param array{method: string|null, tool: string|null, id: mixed} $rpc            What the body asks.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
 	private function relay(McpProxyCall $call, array $config, IOutput $output, bool $storeArguments, array $rpc): void {
 		try {
-			$callLog = $this->calls->relay(
+			$this->calls->relay(
 				source: $call->source,
 				endpoint: self::upstreamPathFor(location: (string)($call->source->getObject()['location'] ?? ''), path: $call->upstreamPath),
 				method: $call->request->getMethod(),
@@ -337,29 +333,29 @@ class McpProxyHandler {
 				onHeaders: static function (ResponseInterface $upstream) use ($output): void {
 					self::relayHeaders(upstream: $upstream, output: $output);
 				},
-				withholdBodies: ($storeArguments === false)
+				withholdBodies: ($storeArguments === false),
+				logFields: self::logFields(rpc: $rpc)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: the MCP relay failed: ' . $e->getMessage());
-			return;
 		}
-
-		$this->stamp(callLog: $callLog, rpc: $rpc);
 	}//end relay()
 
 	/**
-	 * Name the JSON-RPC method and the tool on the call log, so the log filters on them.
+	 * The JSON-RPC method and the tool, as call log fields the log filters on.
 	 *
-	 * @param ObjectEntity                                             $callLog The call log.
-	 * @param array{method: string|null, tool: string|null, id: mixed} $rpc     What the body asked.
+	 * They go on the record when it is written: the call log is append-only, so
+	 * it cannot be named afterwards.
 	 *
-	 * @return void
+	 * @param array{method: string|null, tool: string|null, id: mixed} $rpc What the body asked.
+	 *
+	 * @return array<string, string> `mcpMethod` and, for a tool call, `mcpTool`; empty for a body that is not JSON-RPC.
 	 *
 	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
-	public function stamp(ObjectEntity $callLog, array $rpc): void {
-		if ($rpc['method'] === null || (string)$callLog->getUuid() === '') {
-			return;
+	public static function logFields(array $rpc): array {
+		if ($rpc['method'] === null) {
+			return [];
 		}
 
 		$fields = ['mcpMethod' => $rpc['method']];
@@ -367,18 +363,8 @@ class McpProxyHandler {
 			$fields['mcpTool'] = $rpc['tool'];
 		}
 
-		try {
-			// System write, unscoped: the call_log schema is admin-only and the caller is a consumer.
-			$this->objects->saveObject(
-				object: array_merge($callLog->getObject(), $fields),
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'), uuid: (string)$callLog->getUuid()),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning('integriq: the MCP method could not be written on call log ' . $callLog->getUuid() . ': ' . $e->getMessage());
-		}
-	}//end stamp()
+		return $fields;
+	}//end logFields()
 
 	/**
 	 * A header name in its usual spelling.

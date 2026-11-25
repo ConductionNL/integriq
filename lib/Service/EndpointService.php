@@ -277,7 +277,6 @@ class EndpointService implements EndpointServiceInterface {
 			$this->mcpProxyHandler = new McpProxyHandler(
 				calls: $this->callService,
 				limits: $this->rateLimitService,
-				objects: $this->orObjectService,
 				logger: $this->logger
 			);
 		}

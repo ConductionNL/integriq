@@ -29,8 +29,6 @@ use OCA\Integriq\Service\Endpoint\McpRelayStream;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\RateLimit\RateLimitDecision;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\IOutput;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -59,13 +57,6 @@ class McpProxyHandlerTest extends TestCase {
 	private array $relayed = [];
 
 	/**
-	 * The call logs saved.
-	 *
-	 * @var array<int, array{0: array<string, mixed>, 1: string|null}>
-	 */
-	private array $saved = [];
-
-	/**
 	 * The limiter keys counted.
 	 *
 	 * @var array<int, string>
@@ -85,8 +76,8 @@ class McpProxyHandlerTest extends TestCase {
 	private function handler(int $status = 200, array $headers = [], array $chunks = [], int $allowed = PHP_INT_MAX): McpProxyHandler {
 		$calls = $this->createMock(CallService::class);
 		$calls->method('relay')->willReturnCallback(
-			function ($source, string $endpoint, string $method, array $config, $sink, callable $onHeaders, bool $withholdBodies = true) use ($status, $headers, $chunks) {
-				$this->relayed[] = compact('source', 'endpoint', 'method', 'config', 'withholdBodies');
+			function ($source, string $endpoint, string $method, array $config, $sink, callable $onHeaders, bool $withholdBodies = true, $trace = null, array $logFields = []) use ($status, $headers, $chunks) {
+				$this->relayed[] = compact('source', 'endpoint', 'method', 'config', 'withholdBodies', 'logFields');
 				$onHeaders(new PsrResponse($status, $headers));
 				foreach ($chunks as $chunk) {
 					$sink->write($chunk);
@@ -105,15 +96,7 @@ class McpProxyHandlerTest extends TestCase {
 			}
 		);
 
-		$objects = $this->createMock(ORObjectService::class);
-		$objects->method('saveObject')->willReturnCallback(
-			function (array $object, ObjectSaveOptions $options) {
-				$this->saved[] = [$object, $options->uuid];
-				return ObjectServiceMockBuilder::objectEntity($this, $object, $options->uuid);
-			}
-		);
-
-		return new McpProxyHandler($calls, $limits, $objects, $this->createMock(LoggerInterface::class));
+		return new McpProxyHandler($calls, $limits, $this->createMock(LoggerInterface::class));
 	}//end handler()
 
 	/**
@@ -265,11 +248,10 @@ class McpProxyHandlerTest extends TestCase {
 		$handler->handle(call: $this->call(body: '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"fetch","arguments":{"bsn":"999999990"}}}'))
 			->callback($this->recordingOutput(log: $log));
 
-		$this->assertCount(1, $this->saved);
-		$this->assertSame('log-1', $this->saved[0][1]);
-		$this->assertSame('tools/call', $this->saved[0][0]['mcpMethod']);
-		$this->assertSame('fetch', $this->saved[0][0]['mcpTool']);
-		$this->assertStringNotContainsString('999999990', (string)json_encode($this->saved[0][0]));
+		// Named when the record is written: the call log is append-only.
+		$this->assertSame(['mcpMethod' => 'tools/call', 'mcpTool' => 'fetch'], $this->relayed[0]['logFields']);
+		$this->assertStringNotContainsString('999999990', (string)json_encode($this->relayed[0]['logFields']));
+		$this->assertTrue($this->relayed[0]['withholdBodies']);
 	}//end testTheCallLogNamesTheMethodAndTheTool()
 
 	/**
@@ -282,7 +264,7 @@ class McpProxyHandlerTest extends TestCase {
 		$this->handler(chunks: ['{}'])->handle(call: $this->call(body: 'plain', endpointExtra: ['mcpStoreArguments' => true]))->callback($this->recordingOutput(log: $log));
 
 		$this->assertFalse($this->relayed[0]['withholdBodies']);
-		$this->assertSame([], $this->saved);
+		$this->assertSame([], $this->relayed[0]['logFields']);
 	}//end testStoringArgumentsIsTheEndpointsChoice()
 
 	/**

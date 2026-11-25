@@ -8,6 +8,8 @@ It answers JSON-RPC on every POST path:
 - ``initialize``: a result, with the header ``Mcp-Session-Id: mock-session-1``.
 - ``tools/list``: the tools ``search`` and ``stream``.
 - ``tools/call`` of ``search``: a text result naming the query it got.
+- ``tools/call`` of ``headers``: a text result holding, as JSON, the request
+  headers the tool server received (so a test sees what the gateway passed on).
 - ``tools/call`` of ``stream``: with ``Accept: text/event-stream``, three
   ``message`` events, one JSON-RPC message each (the last carries the result).
 - anything else: the JSON-RPC error -32601.
@@ -27,6 +29,7 @@ SESSION = "mock-session-1"
 STATE = {"last": None, "count": 0}
 TOOLS = [
     {"name": "search", "description": "Search the mock index.", "inputSchema": {"type": "object", "properties": {"q": {"type": "string"}}}},
+    {"name": "headers", "description": "Answer the request headers received.", "inputSchema": {"type": "object"}},
     {"name": "stream", "description": "Answer as an event stream.", "inputSchema": {"type": "object"}},
 ]
 
@@ -74,6 +77,9 @@ class Handler(BaseHTTPRequestHandler):
         elif method == "tools/call" and (message.get("params") or {}).get("name") == "search":
             query = ((message.get("params") or {}).get("arguments") or {}).get("q", "")
             result = {"content": [{"type": "text", "text": "found: " + str(query)}]}
+            self._json(200, {"jsonrpc": "2.0", "id": rpc_id, "result": result}, {"Mcp-Session-Id": SESSION})
+        elif method == "tools/call" and (message.get("params") or {}).get("name") == "headers":
+            result = {"content": [{"type": "text", "text": json.dumps(STATE["last"]["headers"])}]}
             self._json(200, {"jsonrpc": "2.0", "id": rpc_id, "result": result}, {"Mcp-Session-Id": SESSION})
         elif method == "tools/call" and (message.get("params") or {}).get("name") == "stream":
             events = [

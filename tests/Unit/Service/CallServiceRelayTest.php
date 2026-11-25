@@ -167,4 +167,35 @@ class CallServiceRelayTest extends TestCase {
 		$this->assertSame(200, $callLogs[0]['object']['statusCode']);
 		$this->assertInstanceOf(ObjectEntity::class, $log);
 	}//end testTheRelayStreamsIntoTheSinkAndLogsNoBody()
+	/**
+	 * Fields the caller names go on the call log record when it is written (the call log is
+	 * append-only); they never replace the engine's own.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
+	 */
+	public function testTheCallerFieldsAreWrittenOnTheCallLog(): void {
+		$service = $this->service(new Response(200, ['Content-Type' => 'application/json']));
+		$output = $this->createMock(IOutput::class);
+		$sink = new McpRelayStream(output: $output, flush: static function (): void {
+		});
+
+		$service->relay(
+			source: $this->source(),
+			endpoint: '/mcp',
+			method: 'POST',
+			config: ['body' => '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search"}}'],
+			sink: $sink,
+			onHeaders: static function (): void {
+			},
+			logFields: ['mcpMethod' => 'tools/call', 'mcpTool' => 'search', 'statusCode' => 999]
+		);
+
+		$callLogs = array_values(array_filter($this->saved, static fn (array $row): bool => $row['schema'] === 'call_log'));
+		$this->assertCount(1, $callLogs);
+		$this->assertSame('tools/call', $callLogs[0]['object']['mcpMethod']);
+		$this->assertSame('search', $callLogs[0]['object']['mcpTool']);
+		$this->assertSame(200, $callLogs[0]['object']['statusCode'], 'A caller field never replaces the engine\'s own.');
+	}//end testTheCallerFieldsAreWrittenOnTheCallLog()
 }//end class
