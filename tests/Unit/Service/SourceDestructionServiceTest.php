@@ -408,6 +408,8 @@ class SourceDestructionServiceTest extends TestCase {
 		$this->assertSame([['uuid' => 'pub-2', 'permanent' => true]], $this->deletes);
 		$this->assertSame(['beheerder', null], $this->actingUsers, 'acts as the owner, then restores the prior (no) user');
 		$this->assertCount(1, $this->contractLogs, 'the purge is written to the contract log');
+		// OpenRegister refuses an entry whose `expires` is not a string.
+		$this->assertIsString($this->contractLogs[0]['expires']);
 	}//end testASessionlessNoticeActsAsTheSynchronizationsOwner()
 
 	/**

@@ -6598,7 +6598,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				'target' => ['id' => $targetId],
 				'targetResult' => $result,
 				'message' => $message,
-				'expires' => $this->calculateExpires(...[$this->successRetention, $this->successRetention]),
+				// The schema stores `expires` as a string, as closeContractLog() writes it.
+				'expires' => $this->calculateExpires(...[$this->successRetention, $this->successRetention])?->format(DateTime::ATOM),
 			]
 		);
 		$this->synchronizationContractLogService->insert(log: $entry);
