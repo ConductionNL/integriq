@@ -1,10 +1,5 @@
 # zgw-catalogi-facade Specification
 
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- zgw-catalogi-served
-
 ## Purpose
 
 Integriq serves the read half of the VNG Catalogi API for document types over
@@ -21,23 +16,25 @@ answer `GET /catalogi/api/v1/catalogussen`, `/catalogussen/{uuid}`,
 API 1.3 shape. An `InformatieObjectType` SHALL carry `url`, `catalogus`,
 `omschrijving`, `vertrouwelijkheidaanduiding`, `informatieobjectcategorie`,
 `beginGeldigheid`, `concept` and `besluittypen` (empty list), mapped from the
-bound schema by the binding's field map. Every `url` and `catalogus` SHALL be
-the absolute URL integriq serves, so following it returns the same resource.
-List answers SHALL use the paged envelope `count`, `next`, `previous`,
-`results` and SHALL support the filters `catalogus` and `status`. `POST`,
-`PUT`, `PATCH` and `DELETE` SHALL answer 405.
+bound schema by the binding's field map.
 
 #### Scenario: a document store resolves a document type
 - GIVEN a binding onto filinq's `documentType` with a type "Besluit" (confidentiality `openbaar`, category "besluiten")
 - WHEN a Documenten API client with `catalogi.lezen` follows the type's `url`
-- THEN it receives the type with `omschrijving` "Besluit", `vertrouwelijkheidaanduiding` `openbaar`, `informatieobjectcategorie` "besluiten", and a `catalogus` URL that resolves to the catalogue
+- THEN it receives the type with `omschrijving` "Besluit", `vertrouwelijkheidaanduiding` `openbaar`, `informatieobjectcategorie` "besluiten", and a `catalogus` URL that resolves to the catalogue; every `url` and `catalogus` is the absolute URL integriq serves, so following it returns the same resource
 - @e2e exclude a machine-to-machine API; covered by Newman `tests/postman/zgw-catalogi-served.postman_collection.json` and PHPUnit `InformatieobjecttypeEndpointHandlerTest::testATypeIsServedWithItsOwnUrl`
 
 #### Scenario: a write is refused
 - GIVEN a client with every catalogi scope
-- WHEN it posts a new informatieobjecttype
-- THEN the answer is 405 and nothing is written
+- WHEN it sends `POST`, `PUT`, `PATCH` or `DELETE` to any catalogi route
+- THEN the answer is 405 and nothing is written: the facade is read only
 - @e2e exclude a refusal; covered by Newman and PHPUnit `InformatieobjecttypeEndpointHandlerTest::testWritesAnswer405`
+
+#### Scenario: a list is filtered by catalogue and status
+- GIVEN two catalogues, each with definitive types
+- WHEN a client lists informatieobjecttypen with the filters `catalogus` and `status`
+- THEN only the types of that catalogue in that status come back, in the paged envelope `count`, `next`, `previous`, `results` that every list answer uses
+- @e2e exclude a machine-to-machine API; covered by Newman `tests/postman/zgw-catalogi-served.postman_collection.json`
 
 #### Scenario: no catalogue is configured
 - GIVEN no `catalogi_binding`, as on an instance without filinq

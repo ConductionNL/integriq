@@ -1,10 +1,5 @@
 # objecten-api-facade Specification
 
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- objecten-api-facade
-
 ## Purpose
 
 Serve the VNG Objecten API and Objecttypen API from integriq, over
@@ -128,9 +123,7 @@ resolve a permission per objecttype, read or read and write. A request for
 an objecttype the token does not name MUST be refused with 403; an unknown
 objecttype MUST answer 404. The request MUST NOT depend on a Nextcloud
 session, and after the token check OpenRegister's own RBAC, multitenancy
-and field-level rules MUST still apply. The key MUST be resolved through
-the credential broker and MUST NOT appear in a log line, an endpoint
-configuration export or the objecttype configuration.
+and field-level rules MUST still apply.
 
 #### Scenario: a token scoped to one objecttype is refused on a second
 - GIVEN a token with read on objecttype A only
@@ -151,9 +144,9 @@ configuration export or the objecttype configuration.
 - @e2e exclude fail-closed ordering; covered by PHPUnit
 
 #### Scenario: the key never appears anywhere readable
-- GIVEN a configured token
-- WHEN an operator exports the endpoint configuration and reads the logs of a request
-- THEN no key material appears in either
+- GIVEN a configured token, whose key is resolved through the credential broker
+- WHEN an operator exports the endpoint configuration, reads the objecttype configuration and reads the logs of a request
+- THEN no key material appears in any of them
 - @e2e exclude credential custody; covered by PHPUnit with a log assertion
 
 ### Requirement: A leaf app declares the objecttypes it publishes (REQ-OAF-006)
