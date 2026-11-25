@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md
  * (REQ-OAPI-001, an OpenAPI document is imported as a source and endpoints;
  * the Playwright half of Task 3 in that change's tasks.md).
  *

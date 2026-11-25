@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -45,7 +45,7 @@ use OCP\IRequest;
  * document comes in the body (`document`, as an object or as JSON/YAML text)
  * or by `url`, fetched through the egress guard.
  *
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
  */
 class OpenApiImportController extends Controller {
 
@@ -71,7 +71,7 @@ class OpenApiImportController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the preview, 400 for a document, URL or prefix that cannot be used.
 	 *
-	 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function preview(): JSONResponse {
@@ -100,7 +100,7 @@ class OpenApiImportController extends Controller {
 	 * @return JSONResponse 201 when anything was created, 200 when every chosen operation was skipped,
 	 *                      400 for a document, URL, prefix or selection that cannot be used.
 	 *
-	 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function import(): JSONResponse {

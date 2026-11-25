@@ -313,7 +313,7 @@ export function openGatewayCatalogueHandler() {
  * and create one source and the picked endpoints. Wired to the Sources page's
  * "Import an OpenAPI description" header action.
  *
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
  */
 export function openOpenApiImportHandler() {
 	modalBus.emit(EVENT_OPEN_OPENAPI_IMPORT, {})
