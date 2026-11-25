@@ -3128,9 +3128,7 @@
           "name": "POST /oauth/issuer-key — admin creates the signing key",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/issuer-key"
-            },
+            "url": "{{ocBase}}/oauth/issuer-key",
             "header": [
               {
                 "key": "Content-Type",
@@ -3162,9 +3160,7 @@
           "name": "GET /.well-known/jwks.json — public, the new key listed",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/integriq/.well-known/jwks.json"
-            },
+            "url": "{{base_url}}/index.php/apps/integriq/.well-known/jwks.json",
             "header": [
               {
                 "key": "Content-Type",
@@ -3194,9 +3190,7 @@
           "name": "POST consumer — client credentials fixture",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{orBase}}/consumer"
-            },
+            "url": "{{orBase}}/consumer",
             "header": [
               {
                 "key": "Content-Type",
@@ -3228,9 +3222,7 @@
           "name": "POST /consumers/{id}/client-secret — shown once, not cached",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/consumers/{{fxOAuthConsumerUuid}}/client-secret"
-            },
+            "url": "{{ocBase}}/consumers/{{fxOAuthConsumerUuid}}/client-secret",
             "header": [
               {
                 "key": "Content-Type",
@@ -3262,9 +3254,7 @@
           "name": "POST /consumers/{id}/client-secret — an unknown consumer is 404",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/consumers/00000000-0000-4000-8000-000000000000/client-secret"
-            },
+            "url": "{{ocBase}}/consumers/00000000-0000-4000-8000-000000000000/client-secret",
             "header": [
               {
                 "key": "Content-Type",
@@ -3292,9 +3282,7 @@
           "name": "GET consumer — no secret or key material in the OpenRegister object",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{orBase}}/consumer/{{fxOAuthConsumerUuid}}"
-            },
+            "url": "{{orBase}}/consumer/{{fxOAuthConsumerUuid}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -3321,9 +3309,7 @@
           "name": "POST /oauth/token — no client credentials is 401 invalid_client",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/token"
-            },
+            "url": "{{ocBase}}/oauth/token",
             "header": [
               {
                 "key": "Content-Type",
@@ -3357,9 +3343,7 @@
           "name": "POST /oauth/token — a wrong secret is 401 invalid_client",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/token"
-            },
+            "url": "{{ocBase}}/oauth/token",
             "header": [
               {
                 "key": "Content-Type",
@@ -3403,9 +3387,7 @@
           "name": "POST /oauth/token — another grant type is 400 unsupported_grant_type",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/token"
-            },
+            "url": "{{ocBase}}/oauth/token",
             "header": [
               {
                 "key": "Content-Type",
@@ -3449,9 +3431,7 @@
           "name": "POST /oauth/token — client credentials issues a signed JWT with the consumer's scopes",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/token"
-            },
+            "url": "{{ocBase}}/oauth/token",
             "header": [
               {
                 "key": "Content-Type",
@@ -3506,9 +3486,7 @@
           "name": "POST /oauth/token — a scope the consumer does not hold is 400 invalid_scope",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/token"
-            },
+            "url": "{{ocBase}}/oauth/token",
             "header": [
               {
                 "key": "Content-Type",
@@ -3553,9 +3531,7 @@
           "name": "POST rule — token-protected fixture",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{orBase}}/rule"
-            },
+            "url": "{{orBase}}/rule",
             "header": [
               {
                 "key": "Content-Type",
@@ -3587,9 +3563,7 @@
           "name": "POST endpoint — token-protected fixture",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{orBase}}/endpoint"
-            },
+            "url": "{{orBase}}/endpoint",
             "header": [
               {
                 "key": "Content-Type",
@@ -3621,9 +3595,7 @@
           "name": "GET /.well-known/oauth-protected-resource/newman-oauth — the metadata document",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/integriq/.well-known/oauth-protected-resource/newman-oauth"
-            },
+            "url": "{{base_url}}/index.php/apps/integriq/.well-known/oauth-protected-resource/newman-oauth",
             "header": [
               {
                 "key": "Content-Type",
@@ -3655,9 +3627,7 @@
           "name": "GET /.well-known/oauth-protected-resource/newman-fixture — nothing for an open endpoint",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/integriq/.well-known/oauth-protected-resource/newman-fixture"
-            },
+            "url": "{{base_url}}/index.php/apps/integriq/.well-known/oauth-protected-resource/newman-fixture",
             "header": [
               {
                 "key": "Content-Type",
@@ -3685,9 +3655,7 @@
           "name": "GET /endpoint/newman-oauth — without a token the 401 names the metadata URL",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{ocBase}}/endpoint/newman-oauth"
-            },
+            "url": "{{ocBase}}/endpoint/newman-oauth",
             "header": [
               {
                 "key": "Content-Type",
@@ -3716,9 +3684,7 @@
           "name": "DELETE endpoint — token-protected fixture",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{orBase}}/endpoint/{{fxOAuthEndpointUuid}}"
-            },
+            "url": "{{orBase}}/endpoint/{{fxOAuthEndpointUuid}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -3742,9 +3708,7 @@
           "name": "DELETE rule — token-protected fixture",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{orBase}}/rule/{{fxOAuthRuleUuid}}"
-            },
+            "url": "{{orBase}}/rule/{{fxOAuthRuleUuid}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -3768,9 +3732,7 @@
           "name": "DELETE consumer — client credentials fixture",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{orBase}}/consumer/{{fxOAuthConsumerUuid}}"
-            },
+            "url": "{{orBase}}/consumer/{{fxOAuthConsumerUuid}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -5043,9 +5005,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/api_product"
-            },
+            "url": "{{orBase}}/api_product",
             "body": {
               "mode": "raw",
               "raw": "{\"name\": \"Newman channel product\", \"productSlug\": \"{{chProductSlug}}\", \"version\": \"2.0.0\", \"visibility\": \"public\", \"status\": \"active\", \"endpoints\": [], \"tiers\": {\"free\": {\"rateLimit\": {\"requestsPerWindow\": 2, \"windowSeconds\": 60}}}, \"channels\": [{\"slug\": \"publications\", \"title\": \"Publicaties\", \"types\": [\"nl.woo.publication.created\"], \"description\": \"Nieuwe Woo-publicaties\"}]}",
@@ -5096,9 +5056,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/asyncapi.json"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/asyncapi.json",
             "auth": {
               "type": "noauth"
             }
@@ -5130,9 +5088,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/newman-no-such-product/asyncapi.json"
-            },
+            "url": "{{ocBase}}/products/newman-no-such-product/asyncapi.json",
             "auth": {
               "type": "noauth"
             }
@@ -5159,9 +5115,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events",
             "auth": {
               "type": "noauth"
             }
@@ -5193,9 +5147,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/consumer"
-            },
+            "url": "{{orBase}}/consumer",
             "body": {
               "mode": "raw",
               "raw": "{\"name\": \"{{chConsumerName}}\", \"description\": \"newman product channel consumer\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{chConsumerSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
@@ -5233,9 +5185,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -5285,9 +5235,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/no-such-channel/events"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/no-such-channel/events",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -5341,9 +5289,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/api_product_subscription"
-            },
+            "url": "{{orBase}}/api_product_subscription",
             "body": {
               "mode": "raw",
               "raw": "{\"product\": \"{{chProductUuid}}\", \"consumer\": \"{{chConsumerUuid}}\", \"tier\": \"free\", \"status\": \"active\"}",
@@ -5381,9 +5327,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -5439,9 +5383,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/subscriptions"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/subscriptions",
             "body": {
               "mode": "raw",
               "raw": "{\"sink\": \"http://169.254.169.254/latest\"}",
@@ -5511,9 +5453,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -5564,9 +5504,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/api_product/{{chProductUuid}}"
-            }
+            "url": "{{orBase}}/api_product/{{chProductUuid}}"
           },
           "event": [
             {
@@ -5619,9 +5557,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/rule"
-            },
+            "url": "{{orBase}}/rule",
             "body": {
               "mode": "raw",
               "raw": "{\"name\": \"newman-ca-jwt-rule\", \"action\": \"get\", \"timing\": \"before\", \"type\": \"authentication\", \"conditions\": {}, \"order\": 1, \"configuration\": {\"authentication\": {\"type\": \"jwt\"}}}",
@@ -5674,9 +5610,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/endpoint"
-            },
+            "url": "{{orBase}}/endpoint",
             "body": {
               "mode": "raw",
               "raw": "{\"name\": \"newman-ca-jwt-endpoint\", \"endpoint\": \"newman-ca-jwt\", \"method\": \"GET\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"rules\": [\"{{caJwtRuleUuid}}\"]}",
@@ -5713,9 +5647,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/rule"
-            },
+            "url": "{{orBase}}/rule",
             "body": {
               "mode": "raw",
               "raw": "{\"name\": \"newman-ca-apikey-rule\", \"action\": \"get\", \"timing\": \"before\", \"type\": \"authentication\", \"conditions\": {}, \"order\": 1, \"configuration\": {\"authentication\": {\"type\": \"apikey\", \"header\": \"X-Api-Key\", \"keys\": {}}}}",
@@ -5752,9 +5684,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/endpoint"
-            },
+            "url": "{{orBase}}/endpoint",
             "body": {
               "mode": "raw",
               "raw": "{\"name\": \"newman-ca-apikey-endpoint\", \"endpoint\": \"newman-ca-apikey\", \"method\": \"GET\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"rules\": [\"{{caKeyRuleUuid}}\"]}",
@@ -5791,9 +5721,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/consumer"
-            },
+            "url": "{{orBase}}/consumer",
             "body": {
               "mode": "raw",
               "raw": "{\"name\": \"{{caConsumerName}}\", \"description\": \"newman consumer-auth-on-openregister JWT consumer\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{caConsumerSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
@@ -5830,9 +5758,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/consumer"
-            },
+            "url": "{{orBase}}/consumer",
             "body": {
               "mode": "raw",
               "raw": "{\"name\": \"newman-ca-apikey-{{caRun}}\", \"description\": \"newman consumer-auth-on-openregister API-key consumer\", \"authorizationType\": \"apiKey\", \"authorizationConfiguration\": {\"apiKey\": \"{{caApiKey}}\"}, \"userId\": \"{{admin_user}}\"}",
@@ -5869,9 +5795,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/endpoint/newman-ca-jwt"
-            },
+            "url": "{{ocBase}}/endpoint/newman-ca-jwt",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -5923,9 +5847,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/endpoint/newman-ca-jwt"
-            },
+            "url": "{{ocBase}}/endpoint/newman-ca-jwt",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -5961,9 +5883,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/endpoint/newman-ca-jwt"
-            },
+            "url": "{{ocBase}}/endpoint/newman-ca-jwt",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -6022,9 +5942,7 @@
                 "value": "{{caApiKey}}"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/endpoint/newman-ca-apikey"
-            },
+            "url": "{{ocBase}}/endpoint/newman-ca-apikey",
             "auth": {
               "type": "noauth"
             }
@@ -6056,9 +5974,7 @@
                 "value": "newman-ca-no-such-key"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/endpoint/newman-ca-apikey"
-            },
+            "url": "{{ocBase}}/endpoint/newman-ca-apikey",
             "auth": {
               "type": "noauth"
             }
@@ -6081,9 +5997,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{orBase}}/consumer/{{caKeyConsumerUuid}}"
-            }
+            "url": "{{orBase}}/consumer/{{caKeyConsumerUuid}}"
           },
           "event": [
             {
@@ -6102,9 +6016,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{orBase}}/consumer/{{caJwtConsumerUuid}}"
-            }
+            "url": "{{orBase}}/consumer/{{caJwtConsumerUuid}}"
           },
           "event": [
             {
@@ -6123,9 +6035,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{orBase}}/endpoint/{{caKeyEndpointUuid}}"
-            }
+            "url": "{{orBase}}/endpoint/{{caKeyEndpointUuid}}"
           },
           "event": [
             {
@@ -6144,9 +6054,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{orBase}}/rule/{{caKeyRuleUuid}}"
-            }
+            "url": "{{orBase}}/rule/{{caKeyRuleUuid}}"
           },
           "event": [
             {
@@ -6165,9 +6073,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{orBase}}/endpoint/{{caJwtEndpointUuid}}"
-            }
+            "url": "{{orBase}}/endpoint/{{caJwtEndpointUuid}}"
           },
           "event": [
             {
@@ -6186,9 +6092,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{orBase}}/rule/{{caJwtRuleUuid}}"
-            }
+            "url": "{{orBase}}/rule/{{caJwtRuleUuid}}"
           },
           "event": [
             {

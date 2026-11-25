@@ -728,7 +728,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "PUT",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
-						"body": { "mode": "raw", "raw": "{\n  \"mode\": \"hmac\",\n  \"hmacSecret\": \"{{dsoHmacSecret}}\"\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"mode\": \"hmac\",\n  \"hmacSecret\": \"{{dsoHmacSecret}}\",\n  \"userId\": \"{{adminUser}}\"\n}" },
 						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/admin/dso-pki-config", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "admin", "dso-pki-config" ] }
 					}
 				},
@@ -755,13 +755,13 @@
 				{
 					"name": "DSO STAM - valid HMAC signature accepted (202)",
 					"event": [
-						{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": [ "const secret = pm.collectionVariables.get('dsoHmacSecret');", "const body = '{\"verzoekId\":\"newman-valid-1\",\"type\":\"aanvraag\"}';", "const hash = CryptoJS.HmacSHA256(body, secret).toString(CryptoJS.enc.Hex);", "pm.collectionVariables.set('dsoSignature', 'sha256=' + hash);" ] } },
+						{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": [ "const secret = pm.collectionVariables.get('dsoHmacSecret');", "const body = '{\"verzoekId\":\"newman-valid-1\",\"type\":\"aanvraag\",\"indieningsdatum\":\"2026-11-25\",\"aanvrager\":{\"naam\":\"Newman Aanvrager\"},\"locatie\":{\"adres\":\"Teststraat 1, Teststad\"},\"activiteiten\":[{\"naam\":\"Bouwen\"}]}';", "const hash = CryptoJS.HmacSHA256(body, secret).toString(CryptoJS.enc.Hex);", "pm.collectionVariables.set('dsoSignature', 'sha256=' + hash);" ] } },
 						{ "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('valid signature accepted 202', () => pm.expect(pm.response.code).to.eql(202));", "const b = pm.response.json();", "pm.expect(b.status).to.eql('ontvangen');" ] } }
 					],
 					"request": {
 						"method": "POST",
 						"header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }, { "key": "X-DSO-Signature", "value": "{{dsoSignature}}" } ],
-						"body": { "mode": "raw", "raw": "{\"verzoekId\":\"newman-valid-1\",\"type\":\"aanvraag\"}" },
+						"body": { "mode": "raw", "raw": "{\"verzoekId\":\"newman-valid-1\",\"type\":\"aanvraag\",\"indieningsdatum\":\"2026-11-25\",\"aanvrager\":{\"naam\":\"Newman Aanvrager\"},\"locatie\":{\"adres\":\"Teststraat 1, Teststad\"},\"activiteiten\":[{\"naam\":\"Bouwen\"}]}" },
 						"url": { "raw": "{{baseUrl}}/index.php/apps/integriq/api/dso/stam/verzoeken", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "integriq", "api", "dso", "stam", "verzoeken" ] }
 					}
 				}
@@ -993,9 +993,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/call_log",
+							"raw": "{{noAuthBase}}/index.php/apps/openregister/api/objects/{{register}}/call_log",
 							"host": [
-								"{{baseUrl}}"
+								"{{noAuthBase}}"
 							],
 							"path": [
 								"index.php",
@@ -1051,9 +1051,9 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/call_log/{{callLogProbeId}}",
+							"raw": "{{noAuthBase}}/index.php/apps/openregister/api/objects/{{register}}/call_log/{{callLogProbeId}}",
 							"host": [
-								"{{baseUrl}}"
+								"{{noAuthBase}}"
 							],
 							"path": [
 								"index.php",
