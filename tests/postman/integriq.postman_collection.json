@@ -3887,7 +3887,7 @@
             "description": "The token's key lives in the credential broker; the token only names the credential.",
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"newman-objecten-read-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objReadKey}}\", \"allowedApps\": [\"openconnector\"]}"
+              "raw": "{\"name\": \"newman-objecten-read-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objReadKey}}\", \"allowedApps\": [\"openconnector\"], \"scope\": \"organisation\"}"
             }
           },
           "event": [
@@ -3924,7 +3924,7 @@
             "description": "The token's key lives in the credential broker; the token only names the credential.",
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"newman-objecten-write-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objWriteKey}}\", \"allowedApps\": [\"openconnector\"]}"
+              "raw": "{\"name\": \"newman-objecten-write-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objWriteKey}}\", \"allowedApps\": [\"openconnector\"], \"scope\": \"organisation\"}"
             }
           },
           "event": [

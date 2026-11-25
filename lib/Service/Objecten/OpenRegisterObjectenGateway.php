@@ -96,7 +96,7 @@ class OpenRegisterObjectenGateway {
 	public function tokens(): ObjectenTokenService {
 		$tokens = new ObjectenTokenService(
 			objecttypes: $this->registry(),
-			credentialRead: fn (string $reference): ?string => $this->access->readCredential(reference: $reference)
+			credentialRead: fn (string $reference, string $principal = ''): ?string => $this->access->readCredential(reference: $reference, principal: $principal)
 		);
 
 		foreach ($tokens->load(declarations: $this->access->declarations(schema: ObjectenOpenRegisterAccess::CREDENTIAL_SCHEMA)) as $reason) {

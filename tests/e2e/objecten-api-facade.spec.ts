@@ -155,13 +155,19 @@ test.describe('objecten-api-facade', () => {
 			name: `e2e-objecten-read-${STAMP}`,
 			provider: 'generic-apikey',
 			secret: READ_KEY,
-			allowedApps: ['integriq'],
+			allowedApps: ['openconnector'],
+			// A counterparty's request has no session: only an organisation
+			// credential, read as the token's principal, can be resolved.
+			scope: 'organisation',
 		})
 		const writeCredential = await create(req, `${OR_API}/credentials`, {
 			name: `e2e-objecten-write-${STAMP}`,
 			provider: 'generic-apikey',
 			secret: WRITE_KEY,
-			allowedApps: ['integriq'],
+			allowedApps: ['openconnector'],
+			// A counterparty's request has no session: only an organisation
+			// credential, read as the token's principal, can be resolved.
+			scope: 'organisation',
 		})
 		const principal = process.env.NC_USER || 'admin'
 		await create(req, `${OR_OBJECTS}/objecten_token`, {
