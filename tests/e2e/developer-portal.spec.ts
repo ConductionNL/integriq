@@ -44,13 +44,13 @@ const OCS = { 'OCS-APIRequest': 'true' }
  * @return Resolves when the account is in the wanted state.
  */
 async function ensureAccount(request: APIRequestContext, userId: string, inGroup: boolean): Promise<void> {
-	await request.post('/index.php/ocs/v2.php/cloud/users?format=json', {
+	await request.post('/ocs/v2.php/cloud/users?format=json', {
 		failOnStatusCode: false,
 		headers: OCS,
 		form: { userid: userId, password: PASSWORD },
 	})
 	if (inGroup === true) {
-		const added = await request.post(`/index.php/ocs/v2.php/cloud/users/${userId}/groups?format=json`, {
+		const added = await request.post(`/ocs/v2.php/cloud/users/${userId}/groups?format=json`, {
 			failOnStatusCode: false,
 			headers: OCS,
 			form: { groupid: DEV_GROUP },
@@ -132,7 +132,7 @@ test.describe('developer portal', () => {
 	test.describe.configure({ mode: 'serial' })
 
 	test.beforeAll(async ({ request }) => {
-		await request.post('/index.php/ocs/v2.php/cloud/groups?format=json', {
+		await request.post('/ocs/v2.php/cloud/groups?format=json', {
 			failOnStatusCode: false,
 			headers: OCS,
 			form: { groupid: DEV_GROUP },
