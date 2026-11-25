@@ -229,7 +229,7 @@ class McpProxyHandlerTest extends TestCase {
 		$this->assertSame(60, $this->relayed[0]['config']['timeout']);
 		$this->assertTrue($this->relayed[0]['withholdBodies'], 'Tool arguments are not stored by default.');
 		$this->assertSame(
-			['status 200', 'header Content-Type: application/json', 'header Mcp-Session-Id: sess-42', 'body {"jsonrpc":"2.0","id":2,"result":{}}'],
+			['status 200', 'header HTTP/1.1 200 OK', 'header Content-Type: application/json', 'header Mcp-Session-Id: sess-42', 'body {"jsonrpc":"2.0","id":2,"result":{}}'],
 			$log
 		);
 	}//end testTheCallCarriesTheSessionAndTheUpstreamSessionComesBack()
@@ -249,7 +249,7 @@ class McpProxyHandlerTest extends TestCase {
 
 		$this->assertSame(15, $this->relayed[0]['config']['timeout']);
 		$this->assertSame(
-			['status 200', 'header Content-Type: text/event-stream', 'header X-Accel-Buffering: no', 'body ' . $events[0], 'body ' . $events[1], 'body ' . $events[2]],
+			['status 200', 'header HTTP/1.1 200 OK', 'header Content-Type: text/event-stream', 'header X-Accel-Buffering: no', 'body ' . $events[0], 'body ' . $events[1], 'body ' . $events[2]],
 			$log
 		);
 	}//end testAnEventStreamIsRelayedAsItArrives()
@@ -338,4 +338,51 @@ class McpProxyHandlerTest extends TestCase {
 		$this->assertSame(60, McpProxyHandler::maxStreamSeconds(endpointData: ['mcpMaxStreamSeconds' => 0]));
 		$this->assertSame(300, McpProxyHandler::maxStreamSeconds(endpointData: ['mcpMaxStreamSeconds' => 300]));
 	}//end testTheMaximumDurationDefaultsToSixtySeconds()
+	/**
+	 * The path joins the source location with exactly one slash, so `mcp/example` on
+	 * `https://tools.example` reaches `https://tools.example/mcp/example`.
+	 *
+	 * @return void
+	 */
+	public function testTheUpstreamPathJoinsTheLocationWithOneSlash(): void {
+		$this->assertSame('/mcp/example', McpProxyHandler::upstreamPathFor(location: 'https://tools.example', path: 'mcp/example'));
+		$this->assertSame('/mcp/example', McpProxyHandler::upstreamPathFor(location: 'https://tools.example', path: '/mcp/example'));
+		$this->assertSame('mcp/example', McpProxyHandler::upstreamPathFor(location: 'https://tools.example/', path: '/mcp/example'));
+		$this->assertSame('', McpProxyHandler::upstreamPathFor(location: 'https://tools.example/mcp', path: ''));
+		$this->assertSame('?session=1', McpProxyHandler::upstreamPathFor(location: 'https://tools.example/mcp', path: '?session=1'));
+	}//end testTheUpstreamPathJoinsTheLocationWithOneSlash()
+
+	/**
+	 * A relative endpoint path reaches the tool server under the location, not glued to its host.
+	 *
+	 * @return void
+	 */
+	public function testARelativeEndpointPathIsSentUnderTheLocation(): void {
+		$handler = $this->handler(chunks: ['{}']);
+		$call    = $this->call(body: '{"jsonrpc":"2.0","id":1,"method":"initialize"}');
+		$log     = [];
+		$handler->handle(call: new McpProxyCall(
+			endpoint: $call->endpoint,
+			request: $call->request,
+			source: $call->source,
+			upstreamPath: 'mcp/example',
+			rawBody: $call->rawBody,
+			consumerKey: $call->consumerKey
+		))->callback($this->recordingOutput(log: $log));
+
+		$this->assertSame('/mcp/example', $this->relayed[0]['endpoint']);
+	}//end testARelativeEndpointPathIsSentUnderTheLocation()
+
+	/**
+	 * The tool server's status also goes out as a status line: Nextcloud already sent this
+	 * response's own 502 as one, and http_response_code() does not replace it.
+	 *
+	 * @return void
+	 */
+	public function testTheUpstreamStatusReplacesTheBadGatewayStatusLine(): void {
+		$log = [];
+		McpProxyHandler::relayHeaders(upstream: new PsrResponse(404, ['Content-Type' => 'application/json']), output: $this->recordingOutput(log: $log));
+
+		$this->assertSame(['status 404', 'header HTTP/1.1 404 Not Found', 'header Content-Type: application/json'], $log);
+	}//end testTheUpstreamStatusReplacesTheBadGatewayStatusLine()
 }//end class

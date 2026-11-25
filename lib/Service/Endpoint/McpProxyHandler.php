@@ -244,6 +244,32 @@ class McpProxyHandler {
 	}//end handle()
 
 	/**
+	 * The path to send to the tool server, joined to the source location with exactly one slash.
+	 *
+	 * The call is sent to the source location followed by this path. An endpoint path is stored
+	 * without a leading slash (`mcp/example`), so a location without a trailing slash
+	 * (`https://tools.example`) would otherwise run into it (`https://tools.examplemcp/example`).
+	 *
+	 * @param string $location The source location.
+	 * @param string $path     The rendered upstream path.
+	 *
+	 * @return string The path, with a leading slash unless the location ends in one or the path is empty or a query.
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 */
+	public static function upstreamPathFor(string $location, string $path): string {
+		if ($path === '' || str_starts_with($path, '?') === true) {
+			return $path;
+		}
+
+		if (str_ends_with($location, '/') === true) {
+			return ltrim($path, '/');
+		}
+
+		return '/' . ltrim($path, '/');
+	}//end upstreamPathFor()
+
+	/**
 	 * Relay the upstream's status and headers to the caller's output.
 	 *
 	 * @param ResponseInterface $upstream The upstream response, headers only.
@@ -255,6 +281,9 @@ class McpProxyHandler {
 	 */
 	public static function relayHeaders(ResponseInterface $upstream, IOutput $output): void {
 		$output->setHttpResponseCode($upstream->getStatusCode());
+		// Nextcloud sent this response's own status (502) as a raw status line, which
+		// http_response_code() alone does not replace; a status line of our own does.
+		$output->setHeader(trim('HTTP/1.1 ' . $upstream->getStatusCode() . ' ' . str_replace(["\r", "\n"], '', $upstream->getReasonPhrase())));
 		foreach (self::RELAYED_HEADERS as $name) {
 			$value = $upstream->getHeaderLine($name);
 			if ($value !== '') {
@@ -301,7 +330,7 @@ class McpProxyHandler {
 		try {
 			$callLog = $this->calls->relay(
 				source: $call->source,
-				endpoint: $call->upstreamPath,
+				endpoint: self::upstreamPathFor(location: (string)($call->source->getObject()['location'] ?? ''), path: $call->upstreamPath),
 				method: $call->request->getMethod(),
 				config: $config,
 				sink: new McpRelayStream(output: $output),

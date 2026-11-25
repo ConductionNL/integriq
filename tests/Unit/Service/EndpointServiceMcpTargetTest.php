@@ -124,7 +124,8 @@ class EndpointServiceMcpTargetTest extends TestCase {
 		});
 		$response->callback($output);
 
-		$this->assertSame([['relay', '/mcp', 'POST']], $this->calls);
+		// The source location ends in a slash, so the path goes without one: https://tools.internal/mcp.
+		$this->assertSame([['relay', 'mcp', 'POST']], $this->calls);
 		$this->assertContains('Mcp-Session-Id: sess-9', $headers);
 	}//end testAnMcpEndpointRelaysToItsToolServer()
 
