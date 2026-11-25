@@ -208,6 +208,12 @@ class EndpointServiceHandleRequestGoldenTest extends TestCase {
 				return $this->createMock(Mapping::class);
 			}
 		);
+		$mappings->method('getRuleMapping')->willReturnCallback(
+			function ($mappingId): Mapping {
+				$this->trace[] = ['mapping' => $mappingId];
+				return $this->createMock(originalClassName: Mapping::class);
+			}
+		);
 		$mappings->method('executeMapping')->willReturnCallback(
 			fn ($mapping, $input) => $input
 		);
