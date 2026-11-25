@@ -62,7 +62,7 @@ nothing when the synchronization has no owner that still exists.
 - GIVEN a synchronization owned by its administrator, and a signed destruction call with no signed-in user
 - WHEN it arrives
 - THEN the object is purged with the owner's rights, and with no owner left the call is answered 403 and nothing is deleted
-- @e2e exclude identity switching; covered by PHPUnit on SourceDestructionService and the controller, and live by `tests/e2e/source-destruction-purge.spec.ts` (an anonymous signed notice purges)
+- e2e: `tests/e2e/source-destruction-purge.spec.ts` (the notice is posted with no signed-in user and purges); the no-owner refusal is covered by PHPUnit on SourceDestructionService and the controller
 
 ### Requirement: Every purge is recorded and a refused purge stays visible (REQ-SDP-003)
 

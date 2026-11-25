@@ -266,6 +266,7 @@ test.describe('synchronisation-source-destruction-purge', () => {
 	})
 
 	// @e2e synchronization-engine::the-dms-destroys-a-document-and-the-publication-follows
+	// @e2e synchronization-engine::a-signed-notice-acts-as-the-synchronizations-owner
 	test('a signed notice purges only the object of that record', async ({
 		page,
 	}) => {
