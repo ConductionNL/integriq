@@ -1257,8 +1257,20 @@
             "type": "data",
             "icon": "DatabaseOutline",
             "title": "Connection",
+            "_note": "sources-outbound-rate-limit-pacing REQ-RLPC-001: the configured pace is an object property, which the data widget leaves out unless a field names it; the dotted overrides show its three numbers. The budget left and the time waited are in src-kpis-pacing.",
             "content": {
-              "columns": 3
+              "columns": 3,
+              "overrides": {
+                "pace.maxCalls": {
+                  "label": "Pace: calls per window"
+                },
+                "pace.perSeconds": {
+                  "label": "Pace: window (seconds)"
+                },
+                "pace.burst": {
+                  "label": "Pace: burst"
+                }
+              }
             }
           },
           {

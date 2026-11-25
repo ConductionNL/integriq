@@ -4647,7 +4647,10 @@
         "Assigned to {case}": "Assigned to {case}",
         "Reply sent": "Reply sent",
         "The reply was not sent.": "The reply was not sent.",
-        "The message could not be assigned.": "The message could not be assigned."
+        "The message could not be assigned.": "The message could not be assigned.",
+        "Pace: calls per window": "Pace: calls per window",
+        "Pace: window (seconds)": "Pace: window (seconds)",
+        "Pace: burst": "Pace: burst"
     },
     "plurals": {}
 }

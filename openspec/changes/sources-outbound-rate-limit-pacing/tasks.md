@@ -34,10 +34,12 @@ Kind: code. Size S to M. Row `integriq:src-ratelimit-out`.
 - **acceptance_criteria**:
   - GIVEN a paced source WHEN the administrator opens it THEN the pace, the remaining budget and the last day's waiting time are shown
 - [x] Implement (SourceDetail widget `src-kpis-pacing`: the announced budget left and the time waited for a paced turn over the last day, from the `pacedMsPerSource` aggregation on `call_log`; the configured pace shows as a source field in the Connection widget. Checked by `tests/vitest/sourcePacingManifest.spec.js`)
-- [ ] Test (Playwright)
+- [x] Test (Playwright)
+  - `tests/e2e/source-pacing.spec.ts`: a source seeded with a pace and an announced budget of 37, and one call log entry that waited 1,234 ms; its page shows the Pacing widget with "37 calls in this window" and "1,234 ms for a paced turn, last day", and the Connection widget shows the pace's three numbers. Live 25 Nov 2026: 1 passed, two runs. The live run found the configured pace was NOT shown: the data widget leaves out object properties, so `src-data` now names `pace.maxCalls`, `pace.perSeconds` and `pace.burst` as dotted field overrides with labels (en and nl in `l10n/*.json`).
 
 ## Verification
 - [x] `openspec validate sources-outbound-rate-limit-pacing --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [x] Existing rate limit and retry tests pass unchanged
   - Checked on development 60f97d46: the merge of this change (#3596) adds tests and edits no existing rate-limit or retry test (`git diff --stat b6a13df83^1 b6a13df83 -- tests`); `phpunit --filter '/(RateLimit|Retry|RetryPolicy|Backoff)/'` passes, 146 tests.
-- [ ] PHPUnit, Newman and Playwright run, exit codes read
+- [x] PHPUnit, Newman and Playwright run, exit codes read
+  - 25 Nov 2026, sandbox Nextcloud 34.0.6 + MariaDB + Redis, OpenRegister main: PHPUnit `--filter '/(SourcePacer|CallServicePacing|EndpointServicePacing|SynchronizationGetAllObjectsFromApi)/'` 22 tests, exit 0; Newman `integriq-source-pacing` 7 requests, 12 assertions, exit 0; Playwright `source-pacing.spec.ts` 1 passed, exit 0.
