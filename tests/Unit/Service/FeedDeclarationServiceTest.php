@@ -251,7 +251,7 @@ class FeedDeclarationServiceTest extends TestCase {
 		$this->assertSame('shillinq data feeds', $product['name']);
 		$this->assertSame('shillinq-data-feeds', $product['productSlug']);
 		$this->assertEqualsCanonicalizing(array_column($endpoints, 'uuid'), $product['endpoints']);
-		$this->assertSame('draft', $product['status']);
+		$this->assertSame(expected: 'draft', actual: $product['status']);
 	}//end testFourDatasetsBecomeFourEndpointsAndOneProduct()
 
 	/**
@@ -268,16 +268,16 @@ class FeedDeclarationServiceTest extends TestCase {
 		$this->service()->sync();
 
 		$uuid = array_key_first($this->store['api_product']);
-		$this->assertSame(FeedDeclarationService::NEW_PRODUCT_STATUS, $this->store['api_product'][$uuid]['status']);
+		$this->assertSame(expected: FeedDeclarationService::NEW_PRODUCT_STATUS, actual: $this->store['api_product'][$uuid]['status']);
 
 		$this->store['api_product'][$uuid]['status'] = 'active';
 		array_pop($declaration['feeds']);
 		file_put_contents($this->tmp . '/lib/Settings/feeds.json', (string)json_encode($declaration));
 		$this->service()->sync();
 
-		$this->assertCount(1, $this->store['api_product']);
-		$this->assertSame('active', $this->store['api_product'][$uuid]['status']);
-		$this->assertCount(3, $this->store['api_product'][$uuid]['endpoints']);
+		$this->assertCount(expectedCount: 1, haystack: $this->store['api_product']);
+		$this->assertSame(expected: 'active', actual: $this->store['api_product'][$uuid]['status']);
+		$this->assertCount(expectedCount: 3, haystack: $this->store['api_product'][$uuid]['endpoints']);
 	}//end testANewProductIsDraftAndAnActivatedProductStaysActive()
 
 	/**
