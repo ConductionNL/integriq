@@ -41,7 +41,7 @@ final class JsonRpcBody {
 	 *
 	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
 	 */
-	public function is(array $data): bool {
+	public function matches(array $data): bool {
 		return ($data['jsonrpc'] ?? null) === '2.0';
-	}//end is()
+	}//end matches()
 }//end class
