@@ -219,11 +219,47 @@ class EndpointCacheService implements EndpointCacheServiceInterface {
 			unset($payload['@self']);
 			// SetObject via positional call to avoid named-arg / __call bug.
 			$entity->setObject($this->withRouting(endpointData: $payload));
+			$this->restoreMetadata(entity: $entity, cached: $matchedEndpoint);
 			return $entity;
 		}
 
 		return null;
 	}//end matchedEntity()
+
+	/**
+	 * Put the metadata of a cached endpoint back on its entity.
+	 *
+	 * The cache holds jsonSerialize() output, whose identity sits under
+	 * `@self`. Without it a cached endpoint has no uuid and no organisation:
+	 * every key built from its uuid (the endpoint rate limit, an MCP tool
+	 * limit) is shared by all endpoints, and the organisation boundary
+	 * between an endpoint and its source passes for any source.
+	 *
+	 * @param ObjectEntity        $entity The reconstructed endpoint.
+	 * @param array<string,mixed> $cached The cached row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+	 */
+	private function restoreMetadata(ObjectEntity $entity, array $cached): void {
+		$self = $cached['@self'] ?? [];
+		if (is_array($self) === false) {
+			$self = [];
+		}
+
+		$uuid = ($self['id'] ?? $self['uuid'] ?? $cached['uuid'] ?? $cached['id'] ?? null);
+		if (is_string($uuid) === true && $uuid !== '') {
+			$entity->setUuid($uuid);
+		}
+
+		foreach (['organisation' => 'setOrganisation', 'register' => 'setRegister', 'schema' => 'setSchema', 'owner' => 'setOwner'] as $field => $setter) {
+			$value = ($self[$field] ?? null);
+			if (is_scalar($value) === true && (string)$value !== '') {
+				$entity->$setter((string)$value);
+			}
+		}
+	}//end restoreMetadata()
 
 	/**
 	 * Get all endpoints from cache or database as ObjectEntity arrays (for performance).

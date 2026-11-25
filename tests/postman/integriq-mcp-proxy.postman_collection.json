@@ -1,0 +1,776 @@
+{
+  "info": {
+    "name": "Integriq — MCP proxy endpoint (gateway-mcp-proxy)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Newman run of openspec/changes/gateway-mcp-proxy (REQ-MCPX-001..003). An endpoint of targetType `mcp` publishes OpenRegister's own MCP server (/apps/openregister/api/mcp) as the tool server, behind an API-key rule, under a public path that differs from the tool server's (`upstreamPath`).\n\nIt checks: a call without the key never reaches the tool server; `initialize` answers 200 with the tool server's Mcp-Session-Id; that session carries `tools/list` and `tools/call`; a tool over its own limit gets 429 with a JSON-RPC error naming it while another tool passes; the call log names the method and tool, filters on the tool and holds no arguments.\n\nThe tool server keeps its MCP sessions in Nextcloud's memcache, so the instance needs one (APCu or Redis), as Nextcloud recommends; without it a session is lost between requests. Setup creates the source, the rule and the endpoint through OpenRegister, teardown deletes them. Run it with tests/postman/integriq.postman_environment.json."
+  },
+  "variable": [
+    {
+      "key": "mcpSourceUuid",
+      "value": ""
+    },
+    {
+      "key": "mcpRuleUuid",
+      "value": ""
+    },
+    {
+      "key": "mcpEndpointUuid",
+      "value": ""
+    },
+    {
+      "key": "mcpPath",
+      "value": ""
+    },
+    {
+      "key": "mcpKey",
+      "value": ""
+    },
+    {
+      "key": "mcpSession",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup",
+      "item": [
+        {
+          "name": "Create the tool server source (OpenRegister's MCP server)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// A fresh path and key per run, so a run never meets what an earlier run left behind.",
+                  "const run = Date.now();",
+                  "pm.collectionVariables.set('mcpPath', 'newman-mcp-' + run);",
+                  "pm.collectionVariables.set('mcpKey', 'newman-mcp-key-' + run);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: source created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('mcpSourceUuid', body.id || (body['@self'] || {}).id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/source",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-mcp-tool-server\",\"type\":\"api\",\"location\":\"{{base_url}}/index.php/apps/openregister/api/\",\"isEnabled\":true,\"auth\":\"basic\",\"username\":\"{{admin_user}}\",\"password\":\"{{admin_password}}\"}"
+            }
+          }
+        },
+        {
+          "name": "Create the API-key rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: rule created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('mcpRuleUuid', body.id || (body['@self'] || {}).id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/rule",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-mcp-key\",\"action\":\"post\",\"timing\":\"before\",\"type\":\"authentication\",\"conditions\":{},\"order\":1,\"isEnabled\":true,\"configuration\":{\"authentication\":{\"type\":\"apikey\",\"keys\":{\"{{mcpKey}}\":\"{{admin_user}}\"}}}}"
+            }
+          }
+        },
+        {
+          "name": "Create the mcp endpoint, its own path, schemas limited to 1 a minute",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: endpoint created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('mcpEndpointUuid', body.id || (body['@self'] || {}).id);",
+                  "pm.test('The endpoint keeps its tool limit', () => pm.expect(body.mcpToolLimits.schemas.limit).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/endpoint",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-mcp-endpoint\",\"endpoint\":\"{{mcpPath}}\",\"upstreamPath\":\"mcp\",\"method\":\"POST\",\"targetType\":\"mcp\",\"targetId\":\"{{mcpSourceUuid}}\",\"isEnabled\":true,\"rules\":[\"{{mcpRuleUuid}}\"],\"mcpToolLimits\":{\"schemas\":{\"limit\":1,\"window\":60}}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Relay through the gateway",
+      "item": [
+        {
+          "name": "A call without the key never reaches the tool server",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Refused before the tool server', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));",
+                  "pm.test('No MCP session is handed out', () => pm.expect(pm.response.headers.get('Mcp-Session-Id')).to.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "2025-06-18"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{mcpPath}}",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"initialize\", \"params\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {}, \"clientInfo\": {\"name\": \"newman\", \"version\": \"1\"}}}"
+            }
+          }
+        },
+        {
+          "name": "initialize answers with the tool server's status and session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, the tool server\\'s own status (not 502)', () => pm.response.to.have.status(200));",
+                  "const sid = pm.response.headers.get('Mcp-Session-Id');",
+                  "pm.test('The tool server\\'s Mcp-Session-Id comes back', () => pm.expect(sid).to.be.a('string').and.not.empty);",
+                  "pm.collectionVariables.set('mcpSession', sid || '');",
+                  "const body = pm.response.json();",
+                  "pm.test('A JSON-RPC initialize result', () => {",
+                  "  pm.expect(body.jsonrpc).to.eql('2.0');",
+                  "  pm.expect(body.id).to.eql(1);",
+                  "  pm.expect(body.result.serverInfo.name).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "2025-06-18"
+              },
+              {
+                "key": "Authorization",
+                "value": "{{mcpKey}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{mcpPath}}",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"initialize\", \"params\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {}, \"clientInfo\": {\"name\": \"newman\", \"version\": \"1\"}}}"
+            }
+          }
+        },
+        {
+          "name": "tools/list passes on that session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('The session was kept upstream: a tool list, not a session error', () => pm.expect(body.result.tools).to.be.an('array').that.is.not.empty);",
+                  "pm.test('The tools used below exist', () => {",
+                  "  const names = body.result.tools.map((tool) => tool.name);",
+                  "  pm.expect(names).to.include('schemas');",
+                  "  pm.expect(names).to.include('registers');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "2025-06-18"
+              },
+              {
+                "key": "Authorization",
+                "value": "{{mcpKey}}"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{mcpSession}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{mcpPath}}",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 2, \"method\": \"tools/list\"}"
+            }
+          }
+        },
+        {
+          "name": "tools/call schemas passes once",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('A JSON-RPC result', () => pm.expect(pm.response.json()).to.have.property('result'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "2025-06-18"
+              },
+              {
+                "key": "Authorization",
+                "value": "{{mcpKey}}"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{mcpSession}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{mcpPath}}",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 3, \"method\": \"tools/call\", \"params\": {\"name\": \"schemas\", \"arguments\": {\"action\": \"list\", \"note\": \"newman-argument-marker\"}}}"
+            }
+          }
+        },
+        {
+          "name": "tools/call schemas again is over its own limit: 429 naming the tool",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('429', () => pm.response.to.have.status(429));",
+                  "const body = pm.response.json();",
+                  "pm.test('A JSON-RPC error that names the tool', () => {",
+                  "  pm.expect(body.jsonrpc).to.eql('2.0');",
+                  "  pm.expect(body.id).to.eql(4);",
+                  "  pm.expect(body.error.code).to.eql(-32000);",
+                  "  pm.expect(body.error.message).to.include('schemas');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "2025-06-18"
+              },
+              {
+                "key": "Authorization",
+                "value": "{{mcpKey}}"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{mcpSession}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{mcpPath}}",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 4, \"method\": \"tools/call\", \"params\": {\"name\": \"schemas\", \"arguments\": {\"action\": \"list\", \"note\": \"newman-argument-marker\"}}}"
+            }
+          }
+        },
+        {
+          "name": "tools/call registers still passes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200: another tool is not limited', () => pm.response.to.have.status(200));",
+                  "pm.test('A JSON-RPC result', () => pm.expect(pm.response.json()).to.have.property('result'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "MCP-Protocol-Version",
+                "value": "2025-06-18"
+              },
+              {
+                "key": "Authorization",
+                "value": "{{mcpKey}}"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{mcpSession}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{mcpPath}}",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 5, \"method\": \"tools/call\", \"params\": {\"name\": \"registers\", \"arguments\": {\"action\": \"list\", \"note\": \"newman-argument-marker\"}}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. The call log",
+      "item": [
+        {
+          "name": "The call log names the method and the tool, and filters on the tool",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const rows = body.results || body;",
+                  "const methods = rows.map((row) => row.mcpMethod);",
+                  "pm.test('Every relayed call is on the log with its method', () => {",
+                  "  pm.expect(methods).to.include('initialize');",
+                  "  pm.expect(methods).to.include('tools/list');",
+                  "  pm.expect(methods.filter((m) => m === 'tools/call').length).to.eql(2);",
+                  "});",
+                  "pm.test('tools/call records name their tool', () => {",
+                  "  const tools = rows.filter((row) => row.mcpMethod === 'tools/call').map((row) => row.mcpTool).sort();",
+                  "  pm.expect(tools).to.eql(['registers', 'schemas']);",
+                  "});",
+                  "pm.test('No record holds the tool arguments', () => pm.expect(JSON.stringify(rows)).to.not.include('newman-argument-marker'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/sources/logs?source={{mcpSourceUuid}}&_limit=50",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filtered on tool schemas, only the schemas call is listed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const rows = pm.response.json().results || pm.response.json();",
+                  "pm.test('One record, for schemas', () => {",
+                  "  pm.expect(rows.length).to.eql(1);",
+                  "  pm.expect(rows[0].mcpTool).to.eql('schemas');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/sources/logs?source={{mcpSourceUuid}}&mcpTool=schemas&_limit=50",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Teardown",
+      "item": [
+        {
+          "name": "Delete the endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: endpoint deleted', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/endpoint/{{mcpEndpointUuid}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete the rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: rule deleted', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/rule/{{mcpRuleUuid}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete the source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: source deleted', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/source/{{mcpSourceUuid}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
