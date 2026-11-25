@@ -529,15 +529,39 @@ class EndpointService implements EndpointServiceInterface {
 				$legacy['error'] = $error;
 			}
 
+			// Keep the answer's headers: a token-protected endpoint's 401 carries the
+			// WWW-Authenticate challenge that names its metadata URL (REQ-TOKV-004),
+			// and the problem document must not drop it.
 			return ProblemResponse::fromLegacy(
 				data: array_merge($resultData, $legacy),
 				status: $result->getStatus(),
-				instance: $request->getId()
+				instance: $request->getId(),
+				headers: self::headersWithoutContentType(response: $result)
 			);
 		}
 
 		return $result;
 	}//end transformError()
+
+	/**
+	 * An answer's headers, without its Content-Type, for the problem document that replaces it.
+	 *
+	 * @param Response $response The answer.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
+	 */
+	private static function headersWithoutContentType(Response $response): array {
+		$headers = (new \ReflectionProperty(Response::class, 'headers'))->getValue($response);
+		if (is_array($headers) === false) {
+			return [];
+		}
+
+		unset($headers['Content-Type']);
+
+		return $headers;
+	}//end headersWithoutContentType()
 
 	/**
 	 * Turn a gateway error answer into a problem document, keeping its headers.
@@ -565,10 +589,12 @@ class EndpointService implements EndpointServiceInterface {
 			$data = ['error' => (string)json_encode($data)];
 		}
 
-		$headers = (new \ReflectionProperty(Response::class, 'headers'))->getValue($response);
-		unset($headers['Content-Type']);
-
-		return ProblemResponse::fromLegacy(data: $data, status: $response->getStatus(), instance: $request->getId(), headers: $headers);
+		return ProblemResponse::fromLegacy(
+			data: $data,
+			status: $response->getStatus(),
+			instance: $request->getId(),
+			headers: self::headersWithoutContentType(response: $response)
+		);
 	}//end asProblem()
 
 	/**

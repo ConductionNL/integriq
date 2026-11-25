@@ -30,6 +30,8 @@ use OCA\Integriq\Service\OAuth\TokenIssuer;
 use OCA\Integriq\Service\OrganisationBridgeService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -114,17 +116,17 @@ final class TokenIssuerTest extends TestCase {
 			}//end __construct()
 
 			/**
-			 * The broker's mint() shape.
+			 * The broker's mintCredential() shape on OpenRegister main.
 			 *
 			 * @return ObjectEntity
 			 */
-			public function mint(string $name, string $provider, string $owner, array $allowedApps = [], ?string $secret = null, string $scope = 'personal', ?string $organisation = null): ObjectEntity {
+			public function mintCredential(CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
 				$uuid = 'cred-' . (count($this->test->vault) + 1);
-				$this->test->vault[$uuid] = [(string) $secret, $allowedApps, (string) $organisation];
+				$this->test->vault[$uuid] = [(string) $options->secret(), $options->allowedApps, (string) $options->organisation];
 				$entity = (new \ReflectionClass(ObjectEntity::class))->newInstanceWithoutConstructor();
 				$entity->setUuid($uuid);
 				return $entity;
-			}//end mint()
+			}//end mintCredential()
 
 			/**
 			 * The broker's resolveInjectable() shape, with its app and organisation guards.
@@ -146,14 +148,21 @@ final class TokenIssuerTest extends TestCase {
 		$this->issuerKey = new IssuerKeyService(appConfig: $appConfig, urlGenerator: $urls, container: $container, organisations: $organisations);
 
 		$this->objects = $this->createMock(ObjectService::class);
-		$this->objects->method('find')->willReturnCallback(function (string|int $id): ?ObjectEntity {
+		$this->objects->method('find')->willReturnCallback(function (string|int $id, mixed $options = null): ?ObjectEntity {
 			if (isset($this->consumers[$id]) === false) {
 				// As OpenRegister does: find() throws for an id no object has.
 				throw new \OCP\AppFramework\Db\DoesNotExistException(msg: 'Object not found');
 			}
 
+			// As OpenRegister does: a rendered read drops the writeOnly clientSecretHash,
+			// whatever the rbac flag; only an unrendered read carries it.
+			$stored = $this->consumers[$id];
+			if (($options->render ?? true) !== false) {
+				unset($stored['clientSecretHash']);
+			}
+
 			$entity = $this->createMock(ObjectEntity::class);
-			$entity->method('getObject')->willReturn($this->consumers[$id]);
+			$entity->method('getObject')->willReturn($stored);
 			$entity->method('getUuid')->willReturn((string) $id);
 			return $entity;
 		});

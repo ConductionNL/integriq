@@ -3540,7 +3540,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"newman-oauth-rule\", \"type\": \"authentication\", \"order\": 1, \"timing\": \"before\", \"isEnabled\": true, \"configuration\": {\"authentication\": {\"type\": \"jwt\", \"requiredScopes\": {\"GET\": [\"zaken:read\"], \"POST\": [\"zaken:write\"]}}}}"
+              "raw": "{\"name\": \"newman-oauth-rule\", \"action\": \"get\", \"type\": \"authentication\", \"order\": 1, \"timing\": \"before\", \"isEnabled\": true, \"configuration\": {\"authentication\": {\"type\": \"jwt\", \"requiredScopes\": {\"GET\": [\"zaken:read\"], \"POST\": [\"zaken:write\"]}}}}"
             }
           },
           "event": [
