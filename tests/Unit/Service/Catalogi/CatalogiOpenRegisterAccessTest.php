@@ -136,7 +136,10 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 					return ['uri' => $uri];
 				}
 				public function conceptsOf(string $uri): array {
-					return ($this->test->schemeUri !== null && $uri !== $this->test->schemeUri) ? [] : (array)$this->test->concepts;
+					if ($this->test->schemeUri !== null && $uri !== $this->test->schemeUri) {
+						return [];
+					}
+					return (array)$this->test->concepts;
 				}
 			},
 		];
@@ -214,14 +217,15 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 	 */
 	public function testWooCategoriesAreReadFromTheSeededScheme(): void {
 		$this->concepts = ['https://identifier.overheid.nl/tooi/def/thes/kern/c_1' => ['prefLabel' => 'besluiten']];
+		$expected = [['uri' => 'https://identifier.overheid.nl/tooi/def/thes/kern/c_1', 'label' => 'besluiten']];
 
 		$this->schemeUri = 'https://identifier.overheid.nl/tooi/def/thes/kern/';
-		self::assertSame([['uri' => 'https://identifier.overheid.nl/tooi/def/thes/kern/c_1', 'label' => 'besluiten']], $this->access()->wooCategories());
+		self::assertSame(expected: $expected, actual: $this->access()->wooCategories());
 
 		$this->schemeUri = CatalogiOpenRegisterAccess::TOOI_SCHEME;
 		$this->schemesAsked = [];
-		self::assertSame([['uri' => 'https://identifier.overheid.nl/tooi/def/thes/kern/c_1', 'label' => 'besluiten']], $this->access()->wooCategories());
-		self::assertSame(CatalogiOpenRegisterAccess::TOOI_SCHEMES, $this->schemesAsked);
+		self::assertSame(expected: $expected, actual: $this->access()->wooCategories());
+		self::assertSame(expected: CatalogiOpenRegisterAccess::TOOI_SCHEMES, actual: $this->schemesAsked);
 	}//end testWooCategoriesAreReadFromTheSeededScheme()
 
 	/**
@@ -241,12 +245,12 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 		];
 
 		self::assertSame(
-			[
+			expected: [
 				['uri' => 'https://x/c_1', 'label' => 'Wetten'],
 				['uri' => 'https://x/c_2', 'label' => 'Covenants'],
 				['uri' => 'https://x/c_3', 'label' => 'Berichte'],
 			],
-			$this->access()->wooCategories()
+			actual: $this->access()->wooCategories()
 		);
 	}//end testALanguageMapLabelReadsDutchFirst()
 
