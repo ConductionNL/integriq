@@ -253,58 +253,8 @@ class MappingService implements MappingServiceInterface {
 	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
 	 */
 	public function findMapping(string $reference, bool $scoped=true): ?ObjectEntity {
-		try {
-			$object = $this->orObjectService->find(
-				id: $reference,
-				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
-				_rbac: $scoped,
-				_multitenancy: $scoped
-			);
-		} catch (DoesNotExistException) {
-			$object = null;
-		}
-
-		if ($object === null) {
-			$object = $this->findMappingByIdentifier(identifier: $reference, scoped: $scoped);
-		}
-
-		return $object;
+		return (new MappingFinder(objects: $this->orObjectService))->find(reference: $reference, scoped: $scoped);
 	}//end findMapping()
-
-	/**
-	 * Find a mapping by imported configuration identifiers.
-	 *
-	 * @param string $identifier The mapping slug/reference to resolve.
-	 * @param bool   $scoped     Whether the caller's read rule and organisation narrow the lookup.
-	 *
-	 * @return ObjectEntity|null The matching mapping object, when found.
-	 */
-	private function findMappingByIdentifier(string $identifier, bool $scoped): ?ObjectEntity {
-		foreach (['slug', 'reference'] as $field) {
-			try {
-				$matches = $this->orObjectService->findAll(
-					config: [
-						'filters' => [
-							'register' => self::REGISTER,
-							'schema' => self::SCHEMA,
-							$field => $identifier,
-						],
-					],
-					_rbac: $scoped,
-					_multitenancy: $scoped
-				);
-			} catch (DoesNotExistException) {
-				continue;
-			}
-
-			$results = ($matches['results'] ?? $matches);
-			if (empty($results) === false) {
-				return $results[0];
-			}
-		}
-
-		return null;
-	}//end findMappingByIdentifier()
 
 	/**
 	 * Maps (transforms) an array (input) to a different array (output).
