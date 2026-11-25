@@ -57,45 +57,22 @@
 			</NcActionButton>
 		</NcActions>
 
-		<NcDialog
-			v-if="dialog !== ''"
-			:name="dialog === 'assign' ? t('integriq', 'Assign to case') : t('integriq', 'Reply')"
-			:noClose="sending"
-			data-testid="intake-message-action-dialog"
-			@closing="closeDialog">
-			<NcTextField
-				v-if="dialog === 'assign'"
-				v-model="caseRef"
-				:label="t('integriq', 'Case reference')"
-				data-testid="intake-message-case-ref" />
-			<NcTextArea
-				v-else
-				v-model="replyText"
-				:label="t('integriq', 'Your reply')"
-				data-testid="intake-message-reply-text" />
-			<template #actions>
-				<NcButton :disabled="sending" @click="closeDialog">
-					{{ t('integriq', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					variant="primary"
-					:disabled="sending || !canSubmit"
-					data-testid="intake-message-action-submit"
-					@click="onSubmit">
-					{{ dialog === 'assign' ? t('integriq', 'Assign') : t('integriq', 'Send') }}
-				</NcButton>
-			</template>
-		</NcDialog>
+		<IntakeMessageActionDialog
+			:kind="dialog"
+			:sending="sending"
+			@submit="onSubmit"
+			@close="closeDialog" />
 	</div>
 </template>
 
 <script>
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { NcActionButton, NcActions, NcButton, NcDialog, NcTextArea, NcTextField } from '@nextcloud/vue'
+import { NcActionButton, NcActions } from '@nextcloud/vue'
 import BriefcaseArrowLeftRightOutlineIcon from 'vue-material-design-icons/BriefcaseArrowLeftRightOutline.vue'
 import ReplyOutlineIcon from 'vue-material-design-icons/ReplyOutline.vue'
 import SignDirectionIcon from 'vue-material-design-icons/SignDirection.vue'
+import IntakeMessageActionDialog from '../../modals/Intake/IntakeMessageActionDialog.vue'
 import { refusalOf, routeAgain } from '../../modals/v2/intakeRuleApi.js'
 import { ruleId } from '../../modals/v2/intakeRuleDraft.js'
 import { refreshLogPage } from '../callLog/refreshLogPage.js'
@@ -113,12 +90,9 @@ export default {
 	name: 'IntakeMessageRowActions',
 	components: {
 		BriefcaseArrowLeftRightOutlineIcon,
+		IntakeMessageActionDialog,
 		NcActionButton,
 		NcActions,
-		NcButton,
-		NcDialog,
-		NcTextArea,
-		NcTextField,
 		ReplyOutlineIcon,
 		SignDirectionIcon,
 	},
@@ -136,8 +110,6 @@ export default {
 			rights: { assign: false, reply: false },
 			replyChannels: new Set(),
 			dialog: '',
-			caseRef: '',
-			replyText: '',
 			sending: false,
 		}
 	},
@@ -173,15 +145,6 @@ export default {
 			return this.rights.reply && isAnswerable(this.row, this.replyChannels) && ruleId(this.row) !== ''
 		},
 
-		/**
-		 * Whether the open dialog has something to send.
-		 *
-		 * @return {boolean}
-		 */
-		canSubmit() {
-			const value = this.dialog === 'assign' ? this.caseRef : this.replyText
-			return value.trim() !== ''
-		},
 	},
 
 	created() {
@@ -204,14 +167,13 @@ export default {
 		},
 
 		/**
-		 * Open the assign or the reply dialog, empty.
+		 * Open the assign or the reply dialog.
 		 *
 		 * @param {string} kind `assign` or `reply`.
 		 * @return {void}
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
 		 */
 		openDialog(kind) {
-			this.caseRef = ''
-			this.replyText = ''
 			this.dialog = kind
 		},
 
@@ -219,6 +181,7 @@ export default {
 		 * Close the dialog, unless something is being sent.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
 		 */
 		closeDialog() {
 			if (!this.sending) {
@@ -252,24 +215,26 @@ export default {
 		},
 
 		/**
-		 * Send what the open dialog holds and say what happened.
+		 * Send what the open dialog collected and say what happened.
 		 *
+		 * @param {string} value The case reference or the reply text.
 		 * @return {Promise<boolean>} Whether it went through.
 		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
 		 */
-		async onSubmit() {
-			if (!this.canSubmit) {
+		async onSubmit(value) {
+			const text = typeof value === 'string' ? value : ''
+			if (text.trim() === '') {
 				return false
 			}
 			this.sending = true
 			let done = false
 			try {
 				if (this.dialog === 'assign') {
-					const result = await assignMessage(ruleId(this.row), this.caseRef.trim())
-					showSuccess(t('integriq', 'Assigned to {case}', { case: result?.targetRef || this.caseRef.trim() }))
+					const result = await assignMessage(ruleId(this.row), text.trim())
+					showSuccess(t('integriq', 'Assigned to {case}', { case: result?.targetRef || text.trim() }))
 					done = true
 				} else {
-					const result = await replyToMessage(ruleId(this.row), this.replyText)
+					const result = await replyToMessage(ruleId(this.row), text)
 					done = result?.status === 'sent'
 					if (done) {
 						showSuccess(t('integriq', 'Reply sent'))

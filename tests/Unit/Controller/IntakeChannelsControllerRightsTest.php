@@ -66,8 +66,8 @@ class IntakeChannelsControllerRightsTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->userSession = $this->createMock(IUserSession::class);
-		$this->actionAuth = $this->createMock(ActionAuthServiceInterface::class);
+		$this->userSession = $this->createMock(originalClassName: IUserSession::class);
+		$this->actionAuth = $this->createMock(originalClassName: ActionAuthServiceInterface::class);
 	}//end setUp()
 
 	/**
@@ -77,7 +77,7 @@ class IntakeChannelsControllerRightsTest extends TestCase {
 	 */
 	public function testTheAnswerIsTheGatesAnswerPerAction(): void {
 		$this->signedIn();
-		$this->actionAuth->expects($this->exactly(2))
+		$this->actionAuth->expects($this->exactly(count: 2))
 			->method('can')
 			->willReturnCallback(
 				static fn (IUser $user, string $action): bool => $action === IntakeChannelsController::ACTION_ASSIGN
@@ -85,8 +85,8 @@ class IntakeChannelsControllerRightsTest extends TestCase {
 
 		$response = $this->controller()->rights();
 
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertSame(['assign' => true, 'reply' => false], $response->getData());
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$this->assertSame(expected: ['assign' => true, 'reply' => false], actual: $response->getData());
 	}//end testTheAnswerIsTheGatesAnswerPerAction()
 
 	/**
@@ -98,7 +98,7 @@ class IntakeChannelsControllerRightsTest extends TestCase {
 		$this->signedIn();
 		$this->actionAuth->method('can')->willReturn(false);
 
-		$this->assertSame(['assign' => false, 'reply' => false], $this->controller()->rights()->getData());
+		$this->assertSame(expected: ['assign' => false, 'reply' => false], actual: $this->controller()->rights()->getData());
 	}//end testAReaderWithoutTheRightsGetsNeither()
 
 	/**
@@ -110,7 +110,7 @@ class IntakeChannelsControllerRightsTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->actionAuth->expects($this->never())->method('can');
 
-		$this->assertSame(Http::STATUS_UNAUTHORIZED, $this->controller()->rights()->getStatus());
+		$this->assertSame(expected: Http::STATUS_UNAUTHORIZED, actual: $this->controller()->rights()->getStatus());
 	}//end testWithoutASessionTheAnswerIsUnauthorized()
 
 	/**
@@ -119,18 +119,18 @@ class IntakeChannelsControllerRightsTest extends TestCase {
 	 * @return IntakeChannelsController
 	 */
 	private function controller(): IntakeChannelsController {
-		$l10n = $this->createMock(IL10N::class);
-		$l10n->method('t')->willReturnArgument(0);
+		$l10n = $this->createMock(originalClassName: IL10N::class);
+		$l10n->method('t')->willReturnArgument(argumentIndex: 0);
 
 		return new IntakeChannelsController(
 			appName: 'integriq',
-			request: $this->createMock(IRequest::class),
+			request: $this->createMock(originalClassName: IRequest::class),
 			userSession: $this->userSession,
 			actionAuth: $this->actionAuth,
-			registry: $this->createMock(IntakeChannelRegistryInterface::class),
-			routingService: $this->createMock(IntakeRoutingServiceInterface::class),
-			replyService: $this->createMock(IntakeReplyServiceInterface::class),
-			gate: $this->createMock(WebhookGateInterface::class),
+			registry: $this->createMock(originalClassName: IntakeChannelRegistryInterface::class),
+			routingService: $this->createMock(originalClassName: IntakeRoutingServiceInterface::class),
+			replyService: $this->createMock(originalClassName: IntakeReplyServiceInterface::class),
+			gate: $this->createMock(originalClassName: WebhookGateInterface::class),
 			orObjectService: ObjectServiceMockBuilder::make($this),
 			l: $l10n,
 		);
@@ -142,7 +142,7 @@ class IntakeChannelsControllerRightsTest extends TestCase {
 	 * @return void
 	 */
 	private function signedIn(): void {
-		$user = $this->createMock(IUser::class);
+		$user = $this->createMock(originalClassName: IUser::class);
 		$user->method('getUID')->willReturn('behandelaar');
 		$this->userSession->method('getUser')->willReturn($user);
 	}//end signedIn()

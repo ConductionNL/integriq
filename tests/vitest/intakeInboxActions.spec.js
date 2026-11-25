@@ -28,6 +28,7 @@ vi.mock('@nextcloud/vue', () => ({
 
 const actions = await import('@/components/intake/inboxActions.js')
 const rowActions = (await import('@/components/intake/IntakeMessageRowActions.vue')).default
+const actionDialog = (await import('@/modals/Intake/IntakeMessageActionDialog.vue')).default
 
 /**
  * A plain context with a component's props, data, computed getters and methods.
@@ -154,9 +155,8 @@ describe('IntakeMessageRowActions: sending', () => {
 		const ctx = context(rowActions, { row: { id: 'm1', status: 'held' } })
 		ctx.$parent = page
 		ctx.openDialog('assign')
-		ctx.caseRef = ' ZAAK-7 '
 
-		expect(await ctx.onSubmit()).toBe(true)
+		expect(await ctx.onSubmit(' ZAAK-7 ')).toBe(true)
 
 		expect(axios.post).toHaveBeenCalledWith('/index.php/apps/integriq/api/intake/messages/m1/assign', { caseRef: 'ZAAK-7' })
 		expect(dialogs.showSuccess).toHaveBeenCalledWith('Assigned to ZAAK-7')
@@ -168,9 +168,8 @@ describe('IntakeMessageRowActions: sending', () => {
 		axios.post.mockResolvedValue({ data: { status: 'failed', channelId: 'whatsapp', detail: 'Window closed' } })
 		const ctx = context(rowActions, { row: { id: 'm1', status: 'routed', channelId: 'whatsapp' } })
 		ctx.openDialog('reply')
-		ctx.replyText = 'We bellen u morgen.'
 
-		expect(await ctx.onSubmit()).toBe(false)
+		expect(await ctx.onSubmit('We bellen u morgen.')).toBe(false)
 
 		expect(axios.post).toHaveBeenCalledWith('/index.php/apps/integriq/api/intake/messages/m1/reply', { text: 'We bellen u morgen.' })
 		expect(dialogs.showError).toHaveBeenCalledWith('Window closed')
@@ -181,9 +180,8 @@ describe('IntakeMessageRowActions: sending', () => {
 		axios.post.mockRejectedValue(Object.assign(new Error('x'), { response: { data: { error: 'Not held or routed' } } }))
 		const ctx = context(rowActions, { row: { id: 'm1', status: 'held' } })
 		ctx.openDialog('assign')
-		ctx.caseRef = 'ZAAK-7'
 
-		expect(await ctx.onSubmit()).toBe(false)
+		expect(await ctx.onSubmit('ZAAK-7')).toBe(false)
 
 		expect(dialogs.showError).toHaveBeenCalledWith('Not held or routed')
 		expect(ctx.sending).toBe(false)
@@ -193,7 +191,31 @@ describe('IntakeMessageRowActions: sending', () => {
 		const ctx = context(rowActions, { row: { id: 'm1', status: 'held' } })
 		ctx.openDialog('assign')
 
-		expect(await ctx.onSubmit()).toBe(false)
+		expect(await ctx.onSubmit('  ')).toBe(false)
 		expect(axios.post).not.toHaveBeenCalled()
+	})
+})
+
+describe('IntakeMessageActionDialog', () => {
+	it('hands a non-empty value on, and nothing while it is being sent', () => {
+		const ctx = context(actionDialog, { kind: 'assign', sending: false })
+		ctx.value = 'ZAAK-7'
+		ctx.onSubmit()
+		expect(ctx.$emit).toHaveBeenCalledWith('submit', 'ZAAK-7')
+
+		const busy = context(actionDialog, { kind: 'assign', sending: true })
+		busy.value = 'ZAAK-7'
+		busy.onSubmit()
+		busy.onClose()
+		expect(busy.$emit).not.toHaveBeenCalled()
+	})
+
+	it('hands nothing on while empty, and closes when asked', () => {
+		const ctx = context(actionDialog, { kind: 'reply', sending: false })
+		ctx.value = '   '
+		ctx.onSubmit()
+		expect(ctx.$emit).not.toHaveBeenCalledWith('submit', expect.anything())
+		ctx.onClose()
+		expect(ctx.$emit).toHaveBeenCalledWith('close')
 	})
 })
