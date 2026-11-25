@@ -3461,7 +3461,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return JSONResponse The 429.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
 	 */
 	private function pacedRefusal(int $retryAfter): JSONResponse {
 		$response = new JSONResponse(

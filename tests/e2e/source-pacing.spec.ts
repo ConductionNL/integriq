@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md
  * (REQ-RLPC-001, task 3: the source page).
  *
  * An administrator opens a paced source and sees the pace, the budget the

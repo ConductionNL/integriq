@@ -26,7 +26,7 @@ namespace OCA\Integriq\Service\Call;
 /**
  * The outcome of {@see SourcePacer::acquire()}.
  *
- * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+ * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
  */
 final class PacingDecision {
 
@@ -51,7 +51,7 @@ final class PacingDecision {
 	 *
 	 * @return int Milliseconds.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
 	 */
 	public function waitMs(): int {
 		return intdiv($this->waitMicros + 999, 1000);
@@ -62,7 +62,7 @@ final class PacingDecision {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
 	 */
 	public function refusalMessage(): string {
 		return sprintf(
