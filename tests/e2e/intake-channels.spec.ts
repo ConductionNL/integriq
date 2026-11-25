@@ -8,6 +8,14 @@
  * landing on two case types, an unroutable message held with its reason, and
  * a mapping onto a field the case type does not have refused at save.
  *
+ * REQ-IC-021, a handler works a message from the shared inbox: on a held
+ * WhatsApp message the administrator (who passes every action right) opens the
+ * row's actions on the Intake inbox page and assigns it to a case, after which
+ * the row shows the case and who assigned it; Reply sends the typed text to the
+ * reply route of the message. A reader without `intake.assign` and
+ * `intake.reply` is told neither is allowed, which is what hides the two
+ * actions from them.
+ *
  * The inbound leg is signed, so the tests sign as a real sender would: an
  * `openconnector` scheme HMAC over `<timestamp>.<body>`. The scenarios marked
  * `@e2e exclude` in the spec are the adapter contract, per-item isolation and
@@ -20,6 +28,7 @@ import { expect, test } from '@playwright/test'
 import { createHmac } from 'node:crypto'
 import { APP_BASE } from './spec-coverage/_helpers.ts'
 import { anonymousRequest } from './support/anonymous.ts'
+import { BASE_URL } from './support/baseUrl.ts'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const API_BASE = '/index.php/apps/integriq/api'
@@ -271,5 +280,112 @@ test.describe('intake channels', () => {
 
 		expect(resp.status()).toBeGreaterThanOrEqual(401)
 		await anonymous.dispose()
+	})
+})
+
+test.describe('intake inbox: assign and reply', () => {
+	const READER = 'e2e-intake-reader'
+	const READER_PASSWORD = process.env.INTEGRIQ_E2E_INTAKE_READER_PASS ?? 'Intake-Reader-e2e-1!'
+	const OCS = { 'OCS-APIRequest': 'true' }
+
+	test.afterAll(async ({ request }) => {
+		await request.delete(`/index.php/ocs/v2.php/cloud/users/${READER}?format=json`, { failOnStatusCode: false, headers: OCS })
+	})
+
+	/**
+	 * Deliver one held WhatsApp message and open its row's actions on the inbox.
+	 *
+	 * @param page The page.
+	 * @param request The request fixture.
+	 * @param text The message text, unique per test.
+	 * @return The message id.
+	 */
+	async function openHeldRow(page: any, request: APIRequestContext, text: string): Promise<string> {
+		await seedChannelConsumer(request, 'messaging')
+		const result = await deliver(request, 'messaging', {
+			messageId: `WA-inbox-${Date.now()}`,
+			from: { phone: '+31612345678' },
+			text,
+		})
+		expect(result.status, 'with no rule for it the message is held').toBe('held')
+
+		await page.goto(`${APP_BASE}/messages/intake`, { waitUntil: 'domcontentloaded' })
+		const row = page.getByRole('row').filter({ hasText: text })
+		await expect(row, 'the held message is in the inbox').toBeVisible({ timeout: 20_000 })
+		await row.getByRole('button', { name: 'Message actions' }).click()
+
+		return String(result.id)
+	}
+
+	// @e2e intake-channels::a-handler-assigns-a-held-message-to-a-case
+	test('a handler assigns a held message to a case', async ({ page, request }) => {
+		const text = `Toewijzen ${Date.now()}`
+		const caseRef = `ZAAK-E2E-${Date.now()}`
+		const id = await openHeldRow(page, request, text)
+
+		await page.getByRole('menuitem', { name: 'Assign to case' }).click()
+		const dialog = page.getByRole('dialog', { name: 'Assign to case' })
+		await expect(dialog).toBeVisible()
+		await dialog.getByLabel('Case reference').fill(caseRef)
+		const assigned = page.waitForResponse((resp) => resp.url().includes(`/api/intake/messages/${id}/assign`))
+		await dialog.getByTestId('intake-message-action-submit').click()
+		expect((await assigned).status(), 'the assign route accepts it').toBe(200)
+
+		const row = page.getByRole('row').filter({ hasText: text })
+		await expect(row, 'the row shows the case').toContainText(caseRef, { timeout: 20_000 })
+		await expect(row, 'and who assigned it').toContainText('admin')
+
+		const stored = await request.get(`${OR_BASE}/intake_message/${id}`)
+		const message = await stored.json()
+		expect(message.status).toBe('assigned')
+		expect(message.targetRef).toBe(caseRef)
+		expect(message.assignedBy).toBe('admin')
+	})
+
+	// @e2e intake-channels::a-handler-answers-from-the-inbox
+	test('a handler answers from the inbox on the channel the message came in on', async ({ page, request }) => {
+		const text = `Beantwoorden ${Date.now()}`
+		const id = await openHeldRow(page, request, text)
+
+		await page.getByRole('menuitem', { name: 'Reply' }).click()
+		const dialog = page.getByRole('dialog', { name: 'Reply' })
+		await expect(dialog).toBeVisible()
+		await dialog.getByLabel('Your reply').fill('We bellen u morgen terug.')
+		const replied = page.waitForResponse((resp) => resp.url().includes(`/api/intake/messages/${id}/reply`))
+		await dialog.getByTestId('intake-message-action-submit').click()
+		const answer = await replied
+		expect(answer.status(), 'the reply route answers for the message').toBe(200)
+		expect(answer.request().postDataJSON()).toEqual({ text: 'We bellen u morgen terug.' })
+		// Whether WhatsApp takes it depends on the instance's outbound set-up;
+		// the reply went to the message's own channel either way.
+		expect((await answer.json()).channelId).toBe('messaging')
+	})
+
+	// @e2e intake-channels::a-reader-without-the-right-sees-no-actions
+	test('a reader without the rights is allowed neither action', async ({ request, playwright }) => {
+		await request.post('/index.php/ocs/v2.php/cloud/users?format=json', {
+			failOnStatusCode: false,
+			headers: OCS,
+			form: { userid: READER, password: READER_PASSWORD },
+		})
+		const reader = await playwright.request.newContext({
+			baseURL: BASE_URL,
+			storageState: { cookies: [], origins: [] },
+			httpCredentials: { username: READER, password: READER_PASSWORD, send: 'always' },
+			extraHTTPHeaders: OCS,
+		})
+		try {
+			const rights = await reader.get(`${API_BASE}/intake/messages/rights`, { failOnStatusCode: false })
+			expect(rights.status()).toBe(200)
+			expect(await rights.json(), 'the row actions stay hidden for this reader').toEqual({ assign: false, reply: false })
+
+			const assign = await reader.post(`${API_BASE}/intake/messages/does-not-matter/assign`, {
+				failOnStatusCode: false,
+				data: { caseRef: 'ZAAK-1' },
+			})
+			expect(assign.status(), 'and the route refuses them too').toBe(403)
+		} finally {
+			await reader.dispose()
+		}
 	})
 })
