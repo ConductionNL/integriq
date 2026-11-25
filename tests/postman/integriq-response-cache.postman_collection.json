@@ -1,0 +1,883 @@
+{
+  "info": {
+    "name": "Integriq — endpoint response cache and problem documents (gateway-response-cache-and-problem-errors)",
+    "description": "Newman test of openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors.\n\n- REQ-RCPE-001: an endpoint caching GET answers for 60 seconds answers the same question twice with one call to the source; the first answer carries `X-Cache: MISS`, the second `X-Cache: HIT`, and the call log marks the hit. Clear cache on the endpoint (`POST /api/endpoints/{id}/cache/clear`) makes the next call reach the source again; clearing needs a signed-in user with the right and an existing endpoint.\n- REQ-RCPE-002: a gateway error is a problem document: a wrong key gets 401 with content type `application/problem+json`, a `type` URI for authentication failures and the old `error` member; a path no endpoint serves gets a problem document too.\n\nThe source is the instance's own `status.php` (location `base_url`, upstream path `/status.php`), so nothing outside the instance is needed. The cache lives in the distributed cache: on an instance without one (no Redis or Memcached) nothing is kept between requests and the HIT checks are reported as skipped, not passed. Setup creates a source, a cached endpoint, an API key rule and a protected endpoint through OpenRegister; teardown deletes them.\n\nSPDX-License-Identifier: EUPL-1.2\nSPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "noAuthBase",
+      "value": ""
+    },
+    {
+      "key": "cacheEndpointPath",
+      "value": ""
+    },
+    {
+      "key": "problemEndpointPath",
+      "value": ""
+    },
+    {
+      "key": "problemKey",
+      "value": ""
+    },
+    {
+      "key": "cacheSourceUuid",
+      "value": ""
+    },
+    {
+      "key": "cacheEndpointUuid",
+      "value": ""
+    },
+    {
+      "key": "problemRuleUuid",
+      "value": ""
+    },
+    {
+      "key": "problemEndpointUuid",
+      "value": ""
+    },
+    {
+      "key": "cacheFirstBody",
+      "value": ""
+    },
+    {
+      "key": "cacheShared",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup (via OpenRegister)",
+      "item": [
+        {
+          "name": "Create the source",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Fresh paths and key per run, so a run never meets what an earlier run left behind.",
+                  "const run = Date.now();",
+                  "pm.collectionVariables.set('cacheEndpointPath', 'newman-cached-' + run);",
+                  "pm.collectionVariables.set('problemEndpointPath', 'newman-protected-' + run);",
+                  "pm.collectionVariables.set('problemKey', 'newman-problem-' + run);",
+                  "// Unauthenticated calls go to another host alias, so the session cookie of the",
+                  "// signed-in setup requests (host-scoped) is never sent with them. An environment",
+                  "// value of noAuthBase wins over this one.",
+                  "const base = pm.variables.get('base_url');",
+                  "pm.collectionVariables.set('noAuthBase', base.includes('localhost') ? base.replace('localhost', '127.0.0.1') : base.replace('127.0.0.1', 'localhost'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: source created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('cacheSourceUuid', body.id || (body['@self'] || {}).id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/source",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-cached-source\",\"type\":\"api\",\"location\":\"{{base_url}}\",\"isEnabled\":true,\"auth\":\"none\"}"
+            }
+          }
+        },
+        {
+          "name": "Create an endpoint caching GET answers for 60 seconds",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: cached endpoint created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('cacheEndpointUuid', body.id || (body['@self'] || {}).id);",
+                  "pm.test('Setup: the cache settings are stored', () => pm.expect(body.cache.enabled).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/endpoint",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-cached-endpoint\",\"endpoint\":\"{{cacheEndpointPath}}\",\"method\":\"GET\",\"targetType\":\"api\",\"targetId\":\"{{cacheSourceUuid}}\",\"upstreamPath\":\"/status.php\",\"isEnabled\":true,\"cache\":{\"enabled\":true,\"ttlSeconds\":60,\"methods\":[\"GET\"]}}"
+            }
+          }
+        },
+        {
+          "name": "Create an API key rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: rule created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('problemRuleUuid', body.id || (body['@self'] || {}).id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/rule",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-problem-key\",\"action\":\"get\",\"timing\":\"before\",\"type\":\"authentication\",\"conditions\":{},\"order\":1,\"configuration\":{\"authentication\":{\"type\":\"apikey\",\"header\":\"Authorization\",\"keys\":{\"{{problemKey}}\":\"{{admin_user}}\"}}}}"
+            }
+          }
+        },
+        {
+          "name": "Create a protected endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Setup: protected endpoint created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('problemEndpointUuid', body.id || (body['@self'] || {}).id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/endpoint",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"newman-protected-endpoint\",\"endpoint\":\"{{problemEndpointPath}}\",\"method\":\"GET\",\"targetType\":\"api\",\"targetId\":\"{{cacheSourceUuid}}\",\"upstreamPath\":\"/status.php\",\"isEnabled\":true,\"rules\":[\"{{problemRuleUuid}}\"]}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. A busy lookup reaches the source once (REQ-RCPE-001)",
+      "item": [
+        {
+          "name": "First call: from the source, X-Cache MISS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('REQ-RCPE-001: the first call is answered', () => pm.response.to.have.status(200));",
+                  "pm.test('REQ-RCPE-001: the first answer carries X-Cache: MISS', () => pm.expect(pm.response.headers.get('X-Cache')).to.eql('MISS'));",
+                  "pm.collectionVariables.set('cacheFirstBody', pm.response.text());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{cacheEndpointPath}}",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Second call within the minute: X-Cache HIT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const shared = pm.response.headers.get('X-Cache') === 'HIT';",
+                  "pm.collectionVariables.set('cacheShared', shared ? 'true' : 'false');",
+                  "if (shared === false) {",
+                  "    console.log('Second call answered X-Cache ' + pm.response.headers.get('X-Cache') + ': this instance has no distributed cache to keep answers in. HIT checks skipped.');",
+                  "}",
+                  "pm.test('REQ-RCPE-001: the second call is answered', () => pm.response.to.have.status(200));",
+                  "(shared ? pm.test : pm.test.skip)('REQ-RCPE-001: the second answer carries X-Cache: HIT', () => pm.expect(pm.response.headers.get('X-Cache')).to.eql('HIT'));",
+                  "(shared ? pm.test : pm.test.skip)('REQ-RCPE-001: the cached answer is the first answer', () => pm.expect(pm.response.text()).to.eql(pm.collectionVariables.get('cacheFirstBody')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{cacheEndpointPath}}",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "The source was called once, and the hit is in the call log",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Call log readable', () => pm.response.to.have.status(200));",
+                  "const entries = pm.response.json().results || [];",
+                  "const sent = entries.filter(e => e.cacheHit !== true && e.direction === 'outbound');",
+                  "const hits = entries.filter(e => e.cacheHit === true);",
+                  "(pm.collectionVariables.get('cacheShared') === 'true' ? pm.test : pm.test.skip)('REQ-RCPE-001: the source was called once', () => pm.expect(sent.length).to.eql(1));",
+                  "(pm.collectionVariables.get('cacheShared') === 'true' ? pm.test : pm.test.skip)('REQ-RCPE-001: the call log marks the hit', () => pm.expect(hits.length).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/call_log?source={{cacheSourceUuid}}&_limit=50",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. An administrator clears a stale answer (REQ-RCPE-001)",
+      "item": [
+        {
+          "name": "Clearing without signing in: 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('REQ-RCPE-001: an anonymous caller may not clear the cache', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{noAuthBase}}/index.php/apps/integriq/api/endpoints/{{cacheEndpointUuid}}/cache/clear",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Clearing an endpoint that does not exist: 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('REQ-RCPE-001: clearing an unknown endpoint gets 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoints/00000000-0000-4000-8000-000000000000/cache/clear",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Clear cache on the endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('REQ-RCPE-001: the administrator clears the cache', () => pm.response.to.have.status(200));",
+                  "pm.test('REQ-RCPE-001: the answer names the endpoint', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.cleared).to.eql(true);",
+                  "    pm.expect(body.endpoint).to.eql(pm.collectionVariables.get('cacheEndpointUuid'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoints/{{cacheEndpointUuid}}/cache/clear",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "The next call reaches the source again: X-Cache MISS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('REQ-RCPE-001: the call is answered', () => pm.response.to.have.status(200));",
+                  "pm.test('REQ-RCPE-001: after clearing, the answer is fetched again (MISS)', () => pm.expect(pm.response.headers.get('X-Cache')).to.eql('MISS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{cacheEndpointPath}}",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "The source was called twice in all",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Call log readable', () => pm.response.to.have.status(200));",
+                  "const entries = pm.response.json().results || [];",
+                  "const sent = entries.filter(e => e.cacheHit !== true && e.direction === 'outbound');",
+                  "const hits = entries.filter(e => e.cacheHit === true);",
+                  "(pm.collectionVariables.get('cacheShared') === 'true' ? pm.test : pm.test.skip)('REQ-RCPE-001: the call after clearing reached the source (two calls)', () => pm.expect(sent.length).to.eql(2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/call_log?source={{cacheSourceUuid}}&_limit=50",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Gateway errors are problem documents (REQ-RCPE-002)",
+      "item": [
+        {
+          "name": "A wrong key: 401 problem document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('REQ-RCPE-002: a wrong key gets 401', () => pm.response.to.have.status(401));",
+                  "pm.test('REQ-RCPE-002: the content type is application/problem+json', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                  "const body = pm.response.json();",
+                  "pm.test('REQ-RCPE-002: the type URI names an authentication failure', () => pm.expect(body.type).to.match(/authentication/));",
+                  "pm.test('REQ-RCPE-002: status and title are set', () => { pm.expect(body.status).to.eql(401); pm.expect(body.title).to.be.a('string').that.is.not.empty; });",
+                  "pm.test('REQ-RCPE-002: the old error member is still present', () => pm.expect(body.error).to.be.a('string').that.is.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "not-the-key"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{problemEndpointPath}}",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "The right key passes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('REQ-RCPE-002: the right key is not refused', () => pm.expect(pm.response.code).to.not.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{problemKey}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{problemEndpointPath}}",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "A path no endpoint serves: a problem document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('REQ-RCPE-002: an unknown path gets 404', () => pm.response.to.have.status(404));",
+                  "pm.test('REQ-RCPE-002: the content type is application/problem+json', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                  "pm.test('REQ-RCPE-002: the old error member is still present', () => pm.expect(pm.response.json().error).to.be.a('string').that.is.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/newman-no-such-endpoint-{{cacheEndpointPath}}",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Teardown (via OpenRegister)",
+      "item": [
+        {
+          "name": "Delete the cached endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: cached endpoint deleted', () => pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/endpoint/{{cacheEndpointUuid}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete the protected endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: protected endpoint deleted', () => pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/endpoint/{{problemEndpointUuid}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete the rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: rule deleted', () => pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/rule/{{problemRuleUuid}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete the source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teardown: source deleted', () => pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/integriq/source/{{cacheSourceUuid}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

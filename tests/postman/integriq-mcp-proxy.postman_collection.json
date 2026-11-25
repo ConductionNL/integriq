@@ -1,13 +1,17 @@
 {
   "info": {
     "name": "Integriq — MCP tool servers behind the gateway (gateway-mcp-proxy)",
-    "description": "Newman test of openspec/changes/gateway-mcp-proxy (REQ-MCPX-001..003): an endpoint of target type `mcp` puts an outside MCP tool server behind the gateway.\n\n- REQ-MCPX-001: a call without the endpoint's key gets 401 and never reaches the tool server; a call with it reaches the tool server under the source location, carries the session headers (never the caller's key) and answers the tool server's own status, headers and body; an event stream comes back as events.\n- REQ-MCPX-002: the call log names the JSON-RPC method and the tool, and holds no tool arguments.\n- REQ-MCPX-003: a tool limited to 2 calls a minute answers its third call with 429 and a JSON-RPC error naming the tool (not a problem document); another tool still passes.\n\nThe tool server is tests/mocks/mcp/server.py (`python3 tests/mocks/mcp/server.py`, port 8091); point `mcpUpstream` at it. Without it the relay checks are reported as skipped, not passed, and only the authentication and limit checks run. The per-tool limit is counted in the distributed cache: on an instance without one (no Redis or Memcached) the third call is not refused and the limit checks are reported as skipped. Setup creates an API key rule, a source and the endpoint through OpenRegister; teardown deletes them.\n\nSPDX-License-Identifier: EUPL-1.2\nSPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>",
+    "description": "Newman test of openspec/changes/archive/2026-11-25-gateway-mcp-proxy (REQ-MCPX-001..003): an endpoint of target type `mcp` puts an outside MCP tool server behind the gateway.\n\n- REQ-MCPX-001: a call without the endpoint's key, or with a wrong one, is refused; a call with it reaches the tool server under the source location, carries the session headers (never the caller's key) and answers the tool server's own status, headers and body; an event stream comes back as events.\n- REQ-MCPX-002: the call log names the JSON-RPC method and the tool, and holds no tool arguments.\n- REQ-MCPX-003: a tool limited to 2 calls a minute answers its third call with 429 and a JSON-RPC error naming the tool (not a problem document); another tool still passes.\n\nThe tool server is tests/mocks/mcp/server.py (`python3 tests/mocks/mcp/server.py`, port 8091); point `mcpUpstream` at it. Without it the relay checks are reported as skipped, not passed, and only the authentication and limit checks run. The per-tool limit is counted in the distributed cache: on an instance without one (no Redis or Memcached) the third call is not refused and the limit checks are reported as skipped. Setup creates an API key rule, a source and the endpoint through OpenRegister; teardown deletes them.\n\nSPDX-License-Identifier: EUPL-1.2\nSPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "mcpUpstream",
       "value": "http://localhost:8091"
+    },
+    {
+      "key": "noAuthBase",
+      "value": ""
     },
     {
       "key": "mcpKey",
@@ -52,7 +56,12 @@
                 "exec": [
                   "// A fresh key and path per run, so a run never meets what an earlier run left behind.",
                   "pm.collectionVariables.set('mcpKey', 'newman-mcp-' + Date.now() + '-' + Math.floor(Math.random() * 1e6));",
-                  "pm.collectionVariables.set('mcpEndpointPath', 'mcp/newman-' + Date.now());"
+                  "pm.collectionVariables.set('mcpEndpointPath', 'mcp/newman-' + Date.now());",
+                  "// Calls without a key go to another host alias, so the session cookie of the",
+                  "// signed-in setup requests (host-scoped) is never sent with them. An environment",
+                  "// value of noAuthBase wins over this one.",
+                  "const base = pm.variables.get('base_url');",
+                  "pm.collectionVariables.set('noAuthBase', base.includes('localhost') ? base.replace('localhost', '127.0.0.1') : base.replace('127.0.0.1', 'localhost'));"
                 ]
               }
             },
@@ -243,7 +252,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{mcpEndpointPath}}",
+            "url": "{{noAuthBase}}/index.php/apps/integriq/api/endpoint/{{mcpEndpointPath}}",
             "auth": {
               "type": "noauth"
             },
@@ -282,7 +291,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/{{mcpEndpointPath}}",
+            "url": "{{noAuthBase}}/index.php/apps/integriq/api/endpoint/{{mcpEndpointPath}}",
             "auth": {
               "type": "noauth"
             },

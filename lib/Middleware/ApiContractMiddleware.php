@@ -304,7 +304,7 @@ class ApiContractMiddleware extends Middleware {
 	 *
 	 * @return bool True for a JSON-RPC message.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
 	 */
 	private function isJsonRpc(array $data): bool {
 		return ($data['jsonrpc'] ?? null) === '2.0';

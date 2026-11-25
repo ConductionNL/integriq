@@ -125,7 +125,7 @@ class EndpointCacheServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
 	 */
 	public function testACachedRowKeepsItsSelfMetadata(): void {
 		$this->stored['integriq_endpoints_cache'] = [

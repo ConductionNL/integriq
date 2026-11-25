@@ -239,7 +239,7 @@ class EndpointCacheService implements EndpointCacheServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
 	 */
 	private function restoreSelf(ObjectEntity $entity, array $self): void {
 		// Positional setter calls, for the same __call reason as setObject above.

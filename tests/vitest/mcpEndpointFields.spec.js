@@ -8,7 +8,7 @@
  * duration and the argument switch write their properties, and the map and
  * the rows convert both ways.
  *
- * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+ * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
  */
 
 import { flushPromises, mount } from '@vue/test-utils'

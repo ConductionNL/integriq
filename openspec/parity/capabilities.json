@@ -2150,9 +2150,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointCacheService.php (the only class with 'Cache' in the name for endpoints) caches the endpoint CONFIG list for path/method matching (getAllEndpoints/refreshCache/findByPathRegex), not response bodies; no Cache-Control/ETag/TTL field exists on the endpoint schema (grep '\"cache' lib/Settings/integriq_register.json returns 0); no Cache-Control handling found in EndpointService.php or EndpointsController.php. Specified in openspec/changes/gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/EndpointCacheService.php (the only class with 'Cache' in the name for endpoints) caches the endpoint CONFIG list for path/method matching (getAllEndpoints/refreshCache/findByPathRegex), not response bodies; no Cache-Control/ETag/TTL field exists on the endpoint schema (grep '\"cache' lib/Settings/integriq_register.json returns 0); no Cache-Control handling found in EndpointService.php or EndpointsController.php. Specified in openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
 				"change": "gateway-response-cache-and-problem-errors",
-				"requirement": "openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: An endpoint can cache its answers (REQ-RCPE-001)"
+				"requirement": "openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: An endpoint can cache its answers (REQ-RCPE-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "EndpointCacheService is a routing-lookup cache, easy to mistake for a response cache from its name alone, it never caches an endpoint's answer.",
@@ -2583,9 +2583,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rn \"problem\\+json|application/problem\" lib/ src/ returns 0 hits; error responses seen in lib/Service/EndpointService.php (e.g. transformError(), the 400/404/429 JSONResponse bodies) use ad-hoc {\"error\": ...} or {\"error\", \"message\", \"reason\"} shapes, never RFC 7807 application/problem+json. Specified in openspec/changes/gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
+				"evidence": "grep -rn \"problem\\+json|application/problem\" lib/ src/ returns 0 hits; error responses seen in lib/Service/EndpointService.php (e.g. transformError(), the 400/404/429 JSONResponse bodies) use ad-hoc {\"error\": ...} or {\"error\", \"message\", \"reason\"} shapes, never RFC 7807 application/problem+json. Specified in openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
 				"change": "gateway-response-cache-and-problem-errors",
-				"requirement": "openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: Every gateway error is a problem document (REQ-RCPE-002)"
+				"requirement": "openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: Every gateway error is a problem document (REQ-RCPE-002)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -11963,9 +11963,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "the gateway proxies HTTP endpoints only (lib/Service/EndpointService.php:2174-2266); lib/Mcp does not exist, and the x-openregister-mcp declarations at lib/Settings/integriq_register.json:673,1390,1499,1828 expose integriq's own objects as read tools through OpenRegister, they do not put an outside MCP server behind keys and limits. Specified in openspec/changes/gateway-mcp-proxy/ (OpenSpec pass 2026-09-27).",
+				"evidence": "the gateway proxies HTTP endpoints only (lib/Service/EndpointService.php:2174-2266); lib/Mcp does not exist, and the x-openregister-mcp declarations at lib/Settings/integriq_register.json:673,1390,1499,1828 expose integriq's own objects as read tools through OpenRegister, they do not put an outside MCP server behind keys and limits. Specified in openspec/changes/archive/2026-11-25-gateway-mcp-proxy/ (OpenSpec pass 2026-09-27).",
 				"change": "gateway-mcp-proxy",
-				"requirement": "openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime :: An outside MCP server is published as a gateway endpoint (REQ-MCPX-001)"
+				"requirement": "openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime :: An outside MCP server is published as a gateway endpoint (REQ-MCPX-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Tyk 5.13.0 (2026-05-19) MCP gateway and 5.15.0 MCP proxies; WSO2 API Manager 4.7.0 MCP governance and analytics. Integriq: Row plt-ai-tools covers integriq's own objects as tools; proxying other MCP servers is absent.",

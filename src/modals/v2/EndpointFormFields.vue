@@ -429,7 +429,7 @@ export default {
 		 * The endpoint's cache block, empty when it has none.
 		 *
 		 * @return {object} The cache settings.
-		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 		 */
 		cacheSettings() {
 			const cache = this.formData.cache
@@ -440,7 +440,7 @@ export default {
 		 * The vary headers as a comma-separated list.
 		 *
 		 * @return {string} The headers.
-		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 		 */
 		cacheVaryText() {
 			const headers = this.cacheSettings.varyHeaders
@@ -451,7 +451,7 @@ export default {
 		 * The id of the endpoint being edited, null for a new one.
 		 *
 		 * @return {string|null} The id.
-		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 		 */
 		endpointId() {
 			return this.formData.id || this.formData['@self']?.id || null
@@ -540,7 +540,7 @@ export default {
 		 * Whether the endpoint relays to an outside MCP tool server.
 		 *
 		 * @return {boolean} True when Target Type is `mcp`.
-		 * @spec openspec/changes/gateway-mcp-proxy/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/tasks.md#task-4
 		 */
 		isMcpTarget() {
 			return this.formData?.targetType === 'mcp'
@@ -880,7 +880,7 @@ export default {
 		 * @param {string} key The key.
 		 * @param {boolean|number|string[]} value The value.
 		 * @return {void}
-		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 		 */
 		setCache(key, value) {
 			this.updateField('cache', { ...this.cacheSettings, [key]: value })
@@ -891,7 +891,7 @@ export default {
 		 *
 		 * @param {string} value The typed value.
 		 * @return {void}
-		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 		 */
 		setCacheTtl(value) {
 			const seconds = Math.round(Number(value))
@@ -906,7 +906,7 @@ export default {
 		 *
 		 * @param {string} value The typed list.
 		 * @return {void}
-		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 		 */
 		setCacheVary(value) {
 			const headers = String(value || '')
@@ -920,7 +920,7 @@ export default {
 		 * Clear the endpoint's cache, so the next call reaches the source.
 		 *
 		 * @return {Promise<boolean>} Whether it was cleared.
-		 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 		 */
 		async clearCache() {
 			if (!this.endpointId) {

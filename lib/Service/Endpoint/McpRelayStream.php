@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use RuntimeException;
 /**
  * Relays the upstream body to the caller's output, flushing each chunk.
  *
- * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
  *
  * PSR-7's StreamInterface fixes the public methods and their parameters; a
  * write-only relay ignores seek offsets and read lengths it cannot honour.
@@ -63,7 +63,7 @@ final class McpRelayStream implements StreamInterface {
 	 * @param IOutput       $output The caller's output.
 	 * @param callable|null $flush Pushes what was written to the client; null flushes PHP's output, a test passes a no-op.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function __construct(
 		private readonly IOutput $output,
@@ -78,7 +78,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return int The number of bytes relayed.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function write(string $string): int {
 		if ($this->closed === true) {
@@ -107,7 +107,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return int The count.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function written(): int {
 		return $this->written;
@@ -118,7 +118,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return string An empty string.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function __toString(): string {
 		return '';
@@ -129,7 +129,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return void
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function close(): void {
 		$this->closed = true;
@@ -140,7 +140,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return null
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function detach() {
 		$this->closed = true;
@@ -152,7 +152,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return int|null Null.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function getSize(): ?int {
 		return null;
@@ -163,7 +163,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return int The position.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function tell(): int {
 		return $this->written;
@@ -174,7 +174,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return bool False.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function eof(): bool {
 		return false;
@@ -185,7 +185,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return bool False.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function isSeekable(): bool {
 		return false;
@@ -201,7 +201,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @throws RuntimeException Always.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function seek(int $offset, int $whence = SEEK_SET): void {
 		throw new RuntimeException('The relay stream cannot seek.');
@@ -212,7 +212,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return void
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function rewind(): void {
 	}//end rewind()
@@ -222,7 +222,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return bool True while open.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function isWritable(): bool {
 		return $this->closed === false;
@@ -233,7 +233,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return bool False.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function isReadable(): bool {
 		return false;
@@ -246,7 +246,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return string An empty string.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function read(int $length): string {
 		return '';
@@ -257,7 +257,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return string An empty string.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function getContents(): string {
 		return '';
@@ -270,7 +270,7 @@ final class McpRelayStream implements StreamInterface {
 	 *
 	 * @return array<string, mixed>|null Null for a key, an empty list otherwise.
 	 *
-	* @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	* @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function getMetadata(?string $key = null) {
 		if ($key === null) {

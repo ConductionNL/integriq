@@ -142,7 +142,7 @@ class ApiContractMiddlewareTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
 	 */
 	public function testJsonRpcErrorsKeepTheirFormat(): void {
 		$body     = ['jsonrpc' => '2.0', 'id' => 6, 'error' => ['code' => -32000, 'message' => 'rate limit reached for tool search']];

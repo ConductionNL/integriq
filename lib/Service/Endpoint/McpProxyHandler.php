@@ -22,7 +22,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md
+ * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
 /**
  * The `mcp` target type of an endpoint.
  *
- * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md
+ * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md
  *
  * It wires the endpoint, the consumer check, the upstream call and the relay
  * together, so it depends on each of them.
@@ -112,7 +112,7 @@ class McpProxyHandler {
 	 *
 	 * @return array{method: string|null, tool: string|null, id: mixed} What the body asks.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
 	public static function rpcOf(string $rawBody): array {
 		$message = json_decode($rawBody, true);
@@ -139,7 +139,7 @@ class McpProxyHandler {
 	 *
 	 * @return array<string, string> The headers.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public static function forwardedHeaders(IRequest $request): array {
 		$headers = [];
@@ -167,7 +167,7 @@ class McpProxyHandler {
 	 *
 	 * @return JSONResponse|null A 429 with a JSON-RPC error naming the tool, or null.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
 	 */
 	public function toolLimitRefusal(array $endpointData, string $endpointId, string $consumerKey, array $rpc): ?JSONResponse {
 		$tool = $rpc['tool'];
@@ -207,7 +207,7 @@ class McpProxyHandler {
 	 *
 	 * @return Response The relaying answer, or the refusal of a tool over its limit.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public function handle(McpProxyCall $call): Response {
 		$endpointData = $call->endpoint->getObject();
@@ -249,7 +249,7 @@ class McpProxyHandler {
 	 *
 	 * @return string The path, with a leading slash unless the location ends in one or the path is empty or a query.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public static function upstreamPathFor(string $location, string $path): string {
 		if ($path === '' || str_starts_with($path, '?') === true) {
@@ -271,7 +271,7 @@ class McpProxyHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public static function relayHeaders(ResponseInterface $upstream, IOutput $output): void {
 		$output->setHttpResponseCode($upstream->getStatusCode());
@@ -298,7 +298,7 @@ class McpProxyHandler {
 	 *
 	 * @return int The seconds.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	public static function maxStreamSeconds(array $endpointData): int {
 		$seconds = (int)($endpointData['mcpMaxStreamSeconds'] ?? 0);
@@ -320,7 +320,7 @@ class McpProxyHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
 	private function relay(McpProxyCall $call, array $config, IOutput $output, bool $storeArguments, array $rpc): void {
 		try {
@@ -351,7 +351,7 @@ class McpProxyHandler {
 	 *
 	 * @return array<string, string> `mcpMethod` and, for a tool call, `mcpTool`; empty for a body that is not JSON-RPC.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
 	public static function logFields(array $rpc): array {
 		if ($rpc['method'] === null) {
