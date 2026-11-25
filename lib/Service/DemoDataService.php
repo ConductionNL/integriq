@@ -215,6 +215,12 @@ class DemoDataService implements DemoDataServiceInterface {
 	 * @return array The importer's reply.
 	 */
 	private function importDescriptor(array $data): array {
+		// The objects only: the descriptor's schemas and register are integriq's
+		// own, already installed. Imported under the demo namespace they become a
+		// second set (application integriq.demo, same slugs), the objects land in
+		// those copies, and integriq's own register never sees them.
+		unset($data['components']['schemas'], $data['components']['registers']);
+
 		return $this->configurationService()->importFromApp(
 			appId: self::CONFIG_APP_ID,
 			data: $data,
