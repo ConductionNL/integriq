@@ -259,6 +259,19 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Truly anonymous: the setup requests signed in as admin, and Newman's cookie jar",
+                  "// would otherwise send that session along, so a feed RBAC hides would still pass.",
+                  "const jar = pm.cookies.jar();",
+                  "const base = pm.variables.replaceIn('{{base_url}}');",
+                  "jar.clear(base, (error) => { if (error) { console.log('cookie jar not cleared', error); } });"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
