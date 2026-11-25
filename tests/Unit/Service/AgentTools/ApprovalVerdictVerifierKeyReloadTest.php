@@ -66,7 +66,11 @@ final class ApprovalVerdictVerifierKeyReloadTest extends TestCase {
 		);
 		$appConfig->method('getValueString')->willReturnCallback(
 			function () use (&$reloaded, $key): string {
-				return $reloaded === true ? base64_encode($key) : '';
+				if ($reloaded === true) {
+					return base64_encode($key);
+				}
+
+				return '';
 			}
 		);
 
