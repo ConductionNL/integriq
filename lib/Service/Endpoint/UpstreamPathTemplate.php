@@ -18,7 +18,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ namespace OCA\Integriq\Service\Endpoint;
 /**
  * Reads the upstream path template of an endpoint.
  *
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
  */
 class UpstreamPathTemplate {
 
@@ -45,7 +45,7 @@ class UpstreamPathTemplate {
 	 *
 	 * @return string The template.
 	 *
-	 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
 	 */
 	public function forEndpoint(array $endpointData): string {
 		$upstream = ($endpointData['upstreamPath'] ?? null);
