@@ -189,7 +189,8 @@ class PortalControllerTest extends TestCase {
 		$controller = $this->controller();
 		$this->params = ['name' => ' My app ', 'description' => 'Reads cases'];
 		$this->objects->expects($this->once())->method('saveObject')
-			->with(['name' => 'My app', 'description' => 'Reads cases', 'userId' => 'developer-a', 'ownerKind' => 'developer'], $this->anything())
+			// RBAC off: the consumer schema is admin-only, the controller's developer gate decides.
+			->with(['name' => 'My app', 'description' => 'Reads cases', 'userId' => 'developer-a', 'ownerKind' => 'developer'], $this->anything(), false)
 			->willReturnCallback(static fn (array $object): ObjectEntity => self::entity(uuid: 'c-new', data: $object));
 		$this->objects->method('findAll')->willReturn(['results' => []]);
 

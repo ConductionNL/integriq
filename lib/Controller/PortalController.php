@@ -188,7 +188,13 @@ class PortalController extends Controller {
 					'userId' => $user->getUID(),
 					'ownerKind' => 'developer',
 				],
-				options: RegisterSave::options(register: self::REGISTER, schema: 'consumer')
+				options: RegisterSave::options(register: self::REGISTER, schema: 'consumer'),
+				// The consumer schema is admin-only (99-consumer-lockdown), so a
+				// developer's own write is refused there. The gate is this
+				// controller: requireDeveloper() above, and the application is
+				// stamped with the developer as its owner, as every portal read
+				// of it (RBAC off, owns()) already assumes.
+				_rbac: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: developer portal could not create an application: ' . $e->getMessage());

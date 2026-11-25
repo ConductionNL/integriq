@@ -21,6 +21,7 @@
  * Newman folder "Developer portal" in tests/postman/integriq.postman_collection.json.
  */
 
+import { seedFirstVisitOverlaysSeen } from '@conduction/nextcloud-vue/testing/playwright'
 import type { APIRequestContext, Browser, BrowserContext } from '@playwright/test'
 
 import { expect, test } from '@playwright/test'
@@ -84,6 +85,9 @@ async function asAccount(playwright: any, userId: string): Promise<APIRequestCon
  */
 async function browserAs(browser: Browser, userId: string): Promise<BrowserContext> {
 	const context = await browser.newContext({ baseURL: BASE_URL, storageState: { cookies: [], origins: [] } })
+	// A fresh account meets the first-visit support dialog, which covers the
+	// portal; global-setup seeds the "seen" flag for the admin only.
+	await seedFirstVisitOverlaysSeen(context, 'integriq')
 	const page = await context.newPage()
 	await page.goto('/index.php/login')
 	await page.locator('input[name="user"]').fill(userId)
