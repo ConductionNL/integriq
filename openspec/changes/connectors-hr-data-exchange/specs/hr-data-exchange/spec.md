@@ -4,7 +4,7 @@
 
 ### Requirement: A ready payroll handoff reaches the bureau and its payslips come back (REQ-HRX-001)
 
-Integriq MUST ship dormant templates for the Loket.nl API, the Nmbrs API and an SFTP file drop, with credentials by broker reference. A humaniq `PayrollHandoff` that reaches `klaargezet` MUST be delivered once to the bureau linked to its administration, in that bureau's format, and on success MUST be moved to `verzonden` with the delivery reference and time. The bureau's payslips MUST be written into humaniq's register as `Payslip` objects carrying the handoff id, keyed on the bureau's payslip id, after which the handoff MUST be moved to `ontvangen`.
+A humaniq `PayrollHandoff` that reaches `klaargezet` MUST be delivered once to the bureau linked to its administration, in that bureau's format, and on success MUST be moved to `verzonden` with the delivery reference and time. The bureau's payslips MUST be written into humaniq's register as `Payslip` objects carrying the handoff id, keyed on the bureau's payslip id, after which the handoff MUST be moved to `ontvangen`.
 
 #### Scenario: September's mutations go to Loket.nl
 - GIVEN HR set the September 2026 handoff of Adviesbureau Kade B.V. to `klaargezet` with three mutations
@@ -17,6 +17,12 @@ Integriq MUST ship dormant templates for the Loket.nl API, the Nmbrs API and an 
 - WHEN the pickup runs
 - THEN two `Payslip` objects with the handoff id exist in humaniq and the handoff reads `ontvangen`
 - @e2e exclude backend synchronization; covered by PHPUnit and a run against the SFTP container
+
+#### Scenario: the bureau templates ship dormant
+- GIVEN a fresh install
+- WHEN the seed configuration is imported
+- THEN templates for the Loket.nl API, the Nmbrs API and an SFTP file drop exist, disabled, each naming its credential by broker reference and holding no secret value
+- @e2e exclude seeded configuration; covered by PHPUnit on the payroll templates
 
 ### Requirement: A learning platform learns who works where, and finished trainings come back (REQ-HRX-002)
 

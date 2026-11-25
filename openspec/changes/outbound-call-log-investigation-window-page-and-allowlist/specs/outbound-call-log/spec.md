@@ -1,10 +1,5 @@
 # outbound-call-log Specification (delta)
 
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- outbound-call-log-investigation-window-page-and-allowlist
-
 ## Purpose
 
 An administrator opens and closes an investigation window from the source
@@ -35,8 +30,7 @@ The source detail page SHALL let an administrator open an investigation window
 (hours and a reason) through the endpoints of REQ-OCD-008, SHALL show
 "Bodies are stored until {time}" while a window is open, and SHALL offer a
 button that closes it early. The call log detail of a record that was not
-captured SHALL say "No body stored: no investigation window was open". The
-dialog SHALL live in its own file under `src/dialogs/`. A user without the
+captured SHALL say "No body stored: no investigation window was open". A user without the
 administrator permission SHALL NOT see the open button.
 
 #### Scenario: an administrator investigates a partner for a day from the page

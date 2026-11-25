@@ -41,5 +41,5 @@ Kind: config. Size M. Halves for humaniq `payroll-external-bureau-handoff` and `
 - [ ] Test (PHPUnit on the catalogue)
 
 ## Verification
-- [ ] `openspec validate connectors-hr-data-exchange --strict` passes
+- [x] `openspec validate connectors-hr-data-exchange --strict` passes
 - [ ] `composer check:strict` once before push; PHPUnit exit code read

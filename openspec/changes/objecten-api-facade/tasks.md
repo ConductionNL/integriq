@@ -175,7 +175,7 @@
 
 ## Verification
 
-- [ ] `openspec validate objecten-api-facade --strict` passes
+- [x] `openspec validate objecten-api-facade --strict` passes
 - [ ] PHPUnit run in the container, exit code read rather than the summary line
 - [ ] The geometry search query plan read against a seeded register, not assumed
 
