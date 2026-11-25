@@ -358,8 +358,7 @@ class EndpointService implements EndpointServiceInterface {
 			$this->upstreamRouter = new UpstreamRouter(
 				objects: $this->orObjectService,
 				calls: $this->callService,
-				selector: new UpstreamSelector(),
-				logger: $this->logger
+				selector: new UpstreamSelector()
 			);
 		}
 
