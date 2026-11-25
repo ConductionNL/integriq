@@ -114,6 +114,28 @@ class SynchronizationContractServiceTest extends TestCase {
 	}//end testFindAllObjectsUnwrapsResultsAndInjectsScopeFilters()
 
 	/**
+	 * findAllObjects() reads with the caller's rights by default, and unscoped only when asked for a system read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+	 */
+	public function testFindAllObjectsIsScopedUnlessASystemReadIsAskedFor(): void {
+		$calls = [];
+		$this->orObjectService->method('findAll')->willReturnCallback(
+			function (array $config, bool $rbac = true, bool $multitenancy = true) use (&$calls): array {
+				$calls[] = [$rbac, $multitenancy];
+				return ['results' => []];
+			}
+		);
+
+		$this->service->findAllObjects(['originId' => 'origin-7']);
+		$this->service->findAllObjects(['originId' => 'origin-7'], systemRead: true);
+
+		$this->assertSame([[true, true], [false, false]], $calls);
+	}//end testFindAllObjectsIsScopedUnlessASystemReadIsAskedFor()
+
+	/**
 	 * find() returns the serialised payload for a single contract.
 	 *
 	 * @return void

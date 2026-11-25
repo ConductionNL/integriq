@@ -6584,7 +6584,9 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$message = 'Purge of object ' . $targetId . ' refused, the object is left as it was: ' . $reason;
 		}
 
-		$this->synchronizationContractLogService->createFromArray(
+		// createFromArray() only builds the entry; insert() stores it (append-only), as
+		// openContractLog() and closeContractLog() do for a run's own entries.
+		$entry = $this->synchronizationContractLogService->createFromArray(
 			object: [
 				'synchronizationId' => (string)(($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? '')),
 				'synchronizationContractId' => ($contract['id'] ?? ($contract['uuid'] ?? null)),
@@ -6599,6 +6601,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				'expires' => $this->calculateExpires(...[$this->successRetention, $this->successRetention]),
 			]
 		);
+		$this->synchronizationContractLogService->insert(log: $entry);
 	}//end writePurgeLog()
 
 	/**

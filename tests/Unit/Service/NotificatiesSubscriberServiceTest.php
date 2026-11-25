@@ -639,9 +639,21 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 			$this->urlGenerator,
 			$logger,
 			null,
-			new SourceDestructionService($objects, $engine, $logger)
+			new SourceDestructionService($objects, $engine, $logger, $this->createMock(\OCP\IUserManager::class), $this->signedInSession())
 		);
 	}//end serviceWithDestruction()
+
+	/**
+	 * A session with a signed-in user, so the destruction path keeps the caller's identity.
+	 *
+	 * @return \OCP\IUserSession
+	 */
+	private function signedInSession(): \OCP\IUserSession {
+		$session = $this->createMock(\OCP\IUserSession::class);
+		$session->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
+
+		return $session;
+	}//end signedInSession()
 
 	/**
 	 * A ZGW notification with actie destroy hands the document to the destruction path of the abonnement's source.

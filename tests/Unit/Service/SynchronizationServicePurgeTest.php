@@ -129,12 +129,15 @@ class SynchronizationServicePurgeTest extends TestCase {
 		);
 
 		$contractLogService = $this->createMock(SynchronizationContractLogService::class);
-		$contractLogService->method('createFromArray')->willReturnCallback(
-			function (array $object): array {
-				$this->contractLogs[] = $object;
-				return $object;
-			}
-		);
+		// createFromArray() only builds an entry; an entry counts as written once it is
+		// stored, so the log is captured at insert()/update(), not at the builder.
+		$contractLogService->method('createFromArray')->willReturnArgument(0);
+		$store = function (array $log): array {
+			$this->contractLogs[] = $log;
+			return $log;
+		};
+		$contractLogService->method('insert')->willReturnCallback($store);
+		$contractLogService->method('update')->willReturnCallback($store);
 
 		// The source answers one complete page that no longer lists anything.
 		$callService = $this->createMock(CallService::class);
