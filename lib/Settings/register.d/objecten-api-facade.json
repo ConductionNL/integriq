@@ -14,7 +14,7 @@
         "slug": "objecttype",
         "title": "Published objecttype",
         "icon": "DatabaseOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Which register and schema a published objecttype stands for",
         "description": "Publishes one schema on the Objecttypen and Objecten APIs under a fixed uuid. The mapping is declared, never inferred from a name, and the uuid stays the same when a register is rebuilt.",
         "authorization": {
@@ -26,8 +26,8 @@
         "required": [
           "publishedUuid",
           "name",
-          "register",
-          "schema"
+          "objectsRegister",
+          "objectsSchema"
         ],
         "type": "object",
         "properties": {
@@ -42,12 +42,12 @@
             "title": "Name",
             "description": "The objecttype's name on the Objecttypen API."
           },
-          "register": {
+          "objectsRegister": {
             "type": "string",
             "title": "Register",
-            "description": "The slug of the register the objects live in."
+            "description": "The slug of the register the objects live in. Named objectsRegister because OpenRegister reserves `register` and `schema` as request keys and drops them from an object body."
           },
-          "schema": {
+          "objectsSchema": {
             "type": "string",
             "title": "Schema",
             "description": "The slug of the schema the objects follow."

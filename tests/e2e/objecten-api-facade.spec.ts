@@ -83,6 +83,21 @@ async function create(
 }
 
 /**
+ * The numeric id of something stored in OpenRegister.
+ *
+ * @param request The admin request context.
+ * @param path    The stored item's path.
+ * @return The numeric id.
+ */
+async function numericId(request: APIRequestContext, path: string): Promise<number> {
+	const res = await request.get(path, { headers: await adminHeaders(request) })
+	expect(res.status(), `read ${path}`).toBe(200)
+	const id = Number((await res.json()).id)
+	expect(Number.isInteger(id), `${path} has a numeric id`).toBe(true)
+	return id
+}
+
+/**
  * A request context that carries only an Objecten token.
  *
  * @param key The token's key, or '' for no Authorization header at all.
@@ -116,33 +131,37 @@ test.describe('objecten-api-facade', () => {
 		await create(req, `${OR_API}/registers`, {
 			title: 'E2E objecten',
 			slug: REGISTER,
-			schemas: [schemaA, schemaB],
+			// A register lists its schemas by numeric id; a uuid there is never resolved.
+			schemas: [
+				await numericId(req, `${OR_API}/schemas/${schemaA}`),
+				await numericId(req, `${OR_API}/schemas/${schemaB}`),
+			],
 		})
 		await create(req, `${OR_OBJECTS}/objecttype`, {
 			publishedUuid: typeA,
 			name: 'e2e-melding',
-			register: REGISTER,
-			schema: SCHEMA_A,
+			objectsRegister: REGISTER,
+			objectsSchema: SCHEMA_A,
 			versions: ['1', '2'],
 		})
 		await create(req, `${OR_OBJECTS}/objecttype`, {
 			publishedUuid: typeB,
 			name: 'e2e-boom',
-			register: REGISTER,
-			schema: SCHEMA_B,
+			objectsRegister: REGISTER,
+			objectsSchema: SCHEMA_B,
 		})
 
 		const readCredential = await create(req, `${OR_API}/credentials`, {
 			name: `e2e-objecten-read-${STAMP}`,
 			provider: 'generic-apikey',
 			secret: READ_KEY,
-			allowedApps: ['openconnector'],
+			allowedApps: ['integriq'],
 		})
 		const writeCredential = await create(req, `${OR_API}/credentials`, {
 			name: `e2e-objecten-write-${STAMP}`,
 			provider: 'generic-apikey',
 			secret: WRITE_KEY,
-			allowedApps: ['openconnector'],
+			allowedApps: ['integriq'],
 		})
 		const principal = process.env.NC_USER || 'admin'
 		await create(req, `${OR_OBJECTS}/objecten_token`, {
