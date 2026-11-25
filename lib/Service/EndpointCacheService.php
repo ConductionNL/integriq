@@ -219,11 +219,38 @@ class EndpointCacheService implements EndpointCacheServiceInterface {
 			unset($payload['@self']);
 			// SetObject via positional call to avoid named-arg / __call bug.
 			$entity->setObject($this->withRouting(endpointData: $payload));
+			$this->restoreSelf(entity: $entity, self: (array)($matchedEndpoint['@self'] ?? []));
 			return $entity;
 		}
 
 		return null;
 	}//end matchedEntity()
+
+	/**
+	 * Put the cached `@self` metadata back on an endpoint rebuilt from the distributed cache.
+	 *
+	 * Without it the rebuilt endpoint has no uuid and no organisation, so everything keyed on
+	 * the endpoint (a tool's own limit, the response cache, the call log, the trace) and the
+	 * organisation check on its source would see an empty endpoint on any instance with
+	 * Redis or Memcached, while an instance without one keeps the entity and works.
+	 *
+	 * @param ObjectEntity         $entity The rebuilt endpoint.
+	 * @param array<string, mixed> $self   The cached `@self` block.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+	 */
+	private function restoreSelf(ObjectEntity $entity, array $self): void {
+		// Positional setter calls, for the same __call reason as setObject above.
+		$setters = ['id' => 'setUuid', 'organisation' => 'setOrganisation', 'owner' => 'setOwner', 'register' => 'setRegister', 'schema' => 'setSchema'];
+		foreach ($setters as $field => $setter) {
+			$value = ($self[$field] ?? null);
+			if (is_scalar($value) === true && (string)$value !== '') {
+				$entity->$setter((string)$value);
+			}
+		}
+	}//end restoreSelf()
 
 	/**
 	 * Get all endpoints from cache or database as ObjectEntity arrays (for performance).
