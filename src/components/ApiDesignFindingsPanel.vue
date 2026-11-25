@@ -11,7 +11,7 @@
   plus the rules a person has to check. An open error can be waived with a
   reason (WaiveDesignFindingDialog); a waived one shows who waived it and why.
 
-  @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+  @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 -->
 <template>
 	<section class="apiDesignFindings" data-testid="api-design-findings">
@@ -132,7 +132,7 @@ export default {
 		 * The findings by severity, errors first.
 		 *
 		 * @return {Array<{severity: string, findings: Array<object>}>}
-		 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 		 */
 		groups() {
 			return groupBySeverity(this.findings)
@@ -143,7 +143,7 @@ export default {
 	 * Load the stored findings of the product.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	mounted() {
 		this.loadFindings()
@@ -156,7 +156,7 @@ export default {
 		 * The stored findings of the product, from its last check.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 		 */
 		async loadFindings() {
 			this.loading = true
@@ -179,7 +179,7 @@ export default {
 		 * Check the product's API description now and show what was found.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 		 */
 		async runCheck() {
 			this.checking = true
@@ -203,7 +203,7 @@ export default {
 		 *
 		 * @param {object} finding The waived finding
 		 * @return {void}
-		 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+		 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 		 */
 		onWaived(finding) {
 			this.findings = replaceFinding(this.findings, finding)
@@ -215,7 +215,7 @@ export default {
 		 *
 		 * @param {object} finding The finding
 		 * @return {boolean}
-		 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+		 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 		 */
 		blocking(finding) {
 			return isBlocking(finding)
@@ -226,7 +226,7 @@ export default {
 		 *
 		 * @param {object} finding The finding
 		 * @return {string}
-		 * @spec openspec/changes/gateway-api-design-rules-check/tasks.md
+		 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/tasks.md
 		 */
 		key(finding) {
 			return findingId(finding) || `${finding.ruleId}:${finding.path}`
@@ -237,7 +237,7 @@ export default {
 		 *
 		 * @param {string} severity The severity
 		 * @return {string}
-		 * @spec openspec/changes/gateway-api-design-rules-check/tasks.md
+		 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/tasks.md
 		 */
 		severityLabel(severity) {
 			return {

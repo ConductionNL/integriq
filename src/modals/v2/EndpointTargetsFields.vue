@@ -7,7 +7,7 @@
   whether a consumer stays on the same target (`sticky`). A target's `when`
   rule is kept as stored; the row says it has one. Shown by EndpointFormFields
   when the target type is `api`.
-  @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+  @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
 -->
 <template>
 	<fieldset class="cn-endpoint-targets-fields" data-testid="endpoint-targets-fields">
@@ -110,7 +110,7 @@ export default {
 		 * Each row's share of its group's calls.
 		 *
 		 * @return {number[]}
-		 * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+		 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
 		 */
 		shares() {
 			return sharesOf(this.rows)
@@ -122,7 +122,7 @@ export default {
 		 * Add a target. The first target starts from the endpoint's own source,
 		 * so turning one source into a split keeps it.
 		 *
-		 * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+		 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
 		 */
 		addRow() {
 			const source = this.rows.length === 0 ? (this.formData.targetId || '') : ''
@@ -134,7 +134,7 @@ export default {
 		 * Remove one target.
 		 *
 		 * @param {number} index The row.
-		 * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+		 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
 		 */
 		removeRow(index) {
 			this.rows = this.rows.filter((row, position) => position !== index)
@@ -147,7 +147,7 @@ export default {
 		 * @param {number} index The row.
 		 * @param {string} key source, weight or group.
 		 * @param {string} value The picked or typed value.
-		 * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+		 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
 		 */
 		setRow(index, key, value) {
 			this.rows = this.rows.map((row, position) => (position === index ? { ...row, [key]: value } : row))
@@ -157,7 +157,7 @@ export default {
 		/**
 		 * Write the rows back as the endpoint's `targets`.
 		 *
-		 * @spec openspec/changes/gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
+		 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/tasks.md#task-4-the-endpoint-editor-and-the-per-target-split
 		 */
 		write() {
 			this.updateField('targets', targetsOf(this.rows))

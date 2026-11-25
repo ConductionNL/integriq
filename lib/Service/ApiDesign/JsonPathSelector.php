@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -39,7 +39,7 @@ use InvalidArgumentException;
  *
  * Each match is `['pointer' => JSON pointer, 'key' => its key, 'value' => the node]`.
  *
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
  */
 class JsonPathSelector {
 
@@ -67,7 +67,7 @@ class JsonPathSelector {
 	 *
 	 * @throws InvalidArgumentException When the expression is outside the supported part.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	public function select(array $document, string $expression): array {
 		$expression = trim($expression);

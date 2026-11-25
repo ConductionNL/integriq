@@ -351,7 +351,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return UpstreamRouter The router.
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
 	 */
 	private function upstreamRouter(): UpstreamRouter {
 		if ($this->upstreamRouter === null) {

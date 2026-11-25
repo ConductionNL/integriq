@@ -19,7 +19,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
 /**
  * The imperative half of upstream routing (design D2 to D4).
  *
- * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
  */
 class UpstreamRouter {
 	use OrganisationBoundary;
@@ -71,7 +71,7 @@ class UpstreamRouter {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
 	 */
 	public function routes(array $endpointData): bool {
 		return $this->selector->targetsOf(endpointData: $endpointData) !== [];
@@ -85,7 +85,7 @@ class UpstreamRouter {
 	 *
 	 * @return ObjectEntity|JSONResponse The call log of the call that answered, or a 503 when no target can take it.
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
 	 */
 	public function call(UpstreamRequest $request, ?ExecutionTraceContext $trace = null): ObjectEntity|JSONResponse {
 		$endpointData = $request->endpoint->getObject();
@@ -231,7 +231,7 @@ class UpstreamRouter {
 	 *
 	 * @return ObjectEntity The call log, stamped when it could be.
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-the-call-log-records-which-target-served-a-call-req-uprt-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-the-call-log-records-which-target-served-a-call-req-uprt-003
 	 */
 	private function stamp(ObjectEntity $callLog, array $target, string $reason): ObjectEntity {
 		$routing = ['routedTarget' => $target['source'], 'routedReason' => $reason];

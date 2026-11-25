@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md
  * (REQ-UPRT-003, the call log records which target served a call; the
  * Playwright half of task 4 in that change's tasks.md).
  *

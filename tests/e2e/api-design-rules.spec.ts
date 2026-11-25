@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md
  * (REQ-ADRC-001, an API description is checked against rule sets; REQ-ADRC-003,
  * a product with an open error is not published).
  *

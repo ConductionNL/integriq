@@ -340,7 +340,7 @@ class OpenApiPublishServiceTest extends TestCase {
 	 * The gateway's route regex keeps the slash, so the description must too; otherwise
 	 * `/core/no-trailing-slash` never sees the path the gateway serves.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
 	 *
 	 * @return void
 	 */

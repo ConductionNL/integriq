@@ -5,7 +5,7 @@
  * The API design findings of a product, as the findings panel shows them
  * (gateway-api-design-rules-check, task 3): grouped by severity, errors first.
  *
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
  */
 
 /** The severities in the order the panel lists them. */
@@ -18,7 +18,7 @@ export const SEVERITIES = ['error', 'warning', 'info']
  *
  * @param {Array<object>} findings The findings
  * @return {Array<{severity: string, findings: Array<object>}>} The groups
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
  */
 export function groupBySeverity(findings) {
 	const groups = Object.fromEntries(SEVERITIES.map((severity) => [severity, []]))
@@ -37,7 +37,7 @@ export function groupBySeverity(findings) {
  *
  * @param {object} finding The finding
  * @return {boolean} Whether it blocks
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
  */
 export function isBlocking(finding) {
 	return finding?.severity === 'error' && (finding?.status ?? 'open') === 'open'
@@ -48,7 +48,7 @@ export function isBlocking(finding) {
  *
  * @param {object} finding The finding
  * @return {string} The id, or '' when it has none
- * @spec openspec/changes/gateway-api-design-rules-check/tasks.md
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/tasks.md
  */
 export function findingId(finding) {
 	return String(finding?.id ?? finding?.uuid ?? finding?.['@self']?.id ?? '')
@@ -61,7 +61,7 @@ export function findingId(finding) {
  * @param {Array<object>} findings The findings shown
  * @param {object} waived The finding the server returned
  * @return {Array<object>} The findings with that one replaced
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
  */
 export function replaceFinding(findings, waived) {
 	const id = findingId(waived)
