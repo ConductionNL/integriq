@@ -62,6 +62,17 @@ class CatalogiOpenRegisterAccess {
 	public const TOOI_SCHEME = 'https://identifier.overheid.nl/tooi/set/scw_woo_informatiecategorieen';
 
 	/**
+	 * The schemes the Woo categories are read from, the first that resolves.
+	 *
+	 * OpenRegister seeds the Woo categories (SeedVocabularyRegister) as the
+	 * scheme `tooi/def/thes/kern/`, with the TOOI set URI only as its source,
+	 * so a lookup by the set URI alone never found them.
+	 *
+	 * @var list<string>
+	 */
+	public const TOOI_SCHEMES = ['https://identifier.overheid.nl/tooi/def/thes/kern/', self::TOOI_SCHEME];
+
+	/**
 	 * OpenRegister's object service.
 	 *
 	 * @var string
@@ -159,11 +170,19 @@ class CatalogiOpenRegisterAccess {
 	public function wooCategories(): ?array {
 		try {
 			$concepts = $this->service(name: self::CONCEPTS);
-			if ($concepts->scheme(self::TOOI_SCHEME) === null) {
+			$scheme = null;
+			foreach (self::TOOI_SCHEMES as $candidate) {
+				if ($concepts->scheme($candidate) !== null) {
+					$scheme = $candidate;
+					break;
+				}
+			}
+
+			if ($scheme === null) {
 				return null;
 			}
 
-			$found = $concepts->conceptsOf(self::TOOI_SCHEME);
+			$found = $concepts->conceptsOf($scheme);
 		} catch (Throwable $exception) {
 			$this->logger->warning('Integriq catalogi: the TOOI scheme could not be read (' . $exception::class . ').');
 			return null;
@@ -175,7 +194,7 @@ class CatalogiOpenRegisterAccess {
 				continue;
 			}
 
-			$label = trim((string)($concept['prefLabel'] ?? ''));
+			$label = self::labelOf(prefLabel: ($concept['prefLabel'] ?? ''));
 			if ($label !== '') {
 				$categories[] = ['uri' => (string)$uri, 'label' => $label];
 			}
@@ -189,6 +208,41 @@ class CatalogiOpenRegisterAccess {
 
 		return $categories;
 	}//end wooCategories()
+
+	/**
+	 * A concept's preferred label, Dutch first.
+	 *
+	 * OpenRegister's concept register holds `prefLabel` as a language map
+	 * (`{"nl": "Wetten en ..."}`); cast to a string it read "Array", so every
+	 * category got the same label and a second run found them all present.
+	 *
+	 * @param mixed $prefLabel A label, or a map of language to label.
+	 *
+	 * @return string The label, or '' when there is none.
+	 */
+	private static function labelOf(mixed $prefLabel): string {
+		if (is_string($prefLabel) === true) {
+			return trim($prefLabel);
+		}
+
+		if (is_array($prefLabel) === false) {
+			return '';
+		}
+
+		foreach (['nl', 'en'] as $language) {
+			if (is_string($prefLabel[$language] ?? null) === true && trim($prefLabel[$language]) !== '') {
+				return trim($prefLabel[$language]);
+			}
+		}
+
+		foreach ($prefLabel as $label) {
+			if (is_string($label) === true && trim($label) !== '') {
+				return trim($label);
+			}
+		}
+
+		return '';
+	}//end labelOf()
 
 	/**
 	 * Whether a schema resolves.
