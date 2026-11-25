@@ -20,7 +20,7 @@ A push synchronization MUST be able to declare fields to set on its source objec
 
 ### Requirement: A filinq delivery becomes a document in the case system (REQ-CSD-002)
 
-For a filinq `caseSystemDelivery` or a redacted `externalDocument` in `ready_for_writeback`, integriq MUST create a new document in the destination case system with the delivery's metadata and file, over the ZGW Documenten API or StUF-ZDS as the destination source declares. Over ZGW it MUST upload the file in parts when the API asks for it and MUST relate the document to the case when `zaakUrl` is set. A redacted copy MUST carry the title suffix "(geanonimiseerd)" and a reference to the original's identificatie. It MUST never update or replace an existing document, and before creating it MUST reuse a document it already created for the same delivery.
+For a filinq `caseSystemDelivery` or a redacted `externalDocument` in `ready_for_writeback`, integriq MUST create a document with the delivery's metadata and file in the destination case system, over the ZGW Documenten API or StUF-ZDS as its source declares. Over ZGW it MUST upload the file in parts when the API asks for it and relate the document to the case when `zaakUrl` is set. A redacted copy MUST carry the title suffix "(geanonimiseerd)" and the original's identificatie.
 
 #### Scenario: an HR letter lands in the case file
 - GIVEN humaniq generated a letter that filinq stored and queued for the Open Zaak source with a `zaakUrl`
@@ -33,3 +33,13 @@ For a filinq `caseSystemDelivery` or a redacted `externalDocument` in `ready_for
 - WHEN the push runs
 - THEN a `voegZaakdocumentToe` message with the title ending in "(geanonimiseerd)" is sent and the returned identificatie is written back
 - @e2e exclude backend push; covered by PHPUnit against a recorded StUF answer
+
+### Requirement: A delivery creates its document once and never updates it (REQ-CSD-003)
+
+A document push MUST never update or replace an existing document in the case system. Before creating one it MUST reuse the document it already created for the same delivery, so a delivery that already holds a document address sends nothing.
+
+#### Scenario: a delivery that already has its document is pushed again
+- GIVEN a delivery whose contract already holds the document URL (ZGW) or identificatie (StUF-ZDS)
+- WHEN the push runs again
+- THEN nothing is sent to the case system and the delivery keeps its document
+- @e2e exclude backend push; covered by PHPUnit (`testADeliveryWithADocumentSendsNothing` for ZGW and StUF-ZDS)

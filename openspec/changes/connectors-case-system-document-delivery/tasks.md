@@ -91,5 +91,5 @@ Kind: code. Size M. Half for filinq `generate-store-in-case-system` and `zgw-doc
       f0fa284c), and the delivery's file field is unnamed (for-ruben note).
 
 ## Verification
-- [ ] `openspec validate connectors-case-system-document-delivery --strict` passes
-- [ ] `composer check:strict` once before push; PHPUnit exit code read
+- [x] `openspec validate connectors-case-system-document-delivery --strict` passes (REQ-CSD-002 split: the create-once rule is REQ-CSD-003)
+- [x] `composer check:strict` once before push; PHPUnit exit code read (25 Nov 2026: exit 1, all inherited from development; this PR touched only openspec markdown. PHPUnit 11030 tests, 2 errors and 3 failures in CallServiceTest, JobsControllerTest and SynchronizationSynchronizeEntryGoldenTest; phpcs and psalm findings in files this change did not touch)
