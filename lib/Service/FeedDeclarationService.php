@@ -76,6 +76,13 @@ class FeedDeclarationService {
 	private const READ_LIMIT = 1000;
 
 	/**
+	 * The status a newly generated feed product starts in: not yet published.
+	 *
+	 * @var string
+	 */
+	public const NEW_PRODUCT_STATUS = 'draft';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FeedDeclarationReader $reader        Reads and checks the apps' declarations.
@@ -337,10 +344,18 @@ class FeedDeclarationService {
 	/**
 	 * Keep the app's API product holding exactly its feed endpoints.
 	 *
+	 * A new product is created as `draft`: its generated description has not
+	 * passed the API design rules yet, and an active product with an open error
+	 * is refused (REQ-ADRC-003). An administrator makes it active from the
+	 * product page once the findings are fixed or waived. An existing product
+	 * keeps the status it has; only its endpoint list follows the declaration.
+	 *
 	 * @param string             $app           The app id.
 	 * @param array<int, string> $endpointUuids The served feed endpoints.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-an-app-declares-its-data-feeds-in-a-file-req-ddf-001
 	 */
 	private function keepProduct(string $app, array $endpointUuids): void {
 		$slug = self::productSlug(app: $app);
@@ -352,7 +367,7 @@ class FeedDeclarationService {
 			'version' => '1',
 			'description' => 'Read-only data feeds declared by ' . $app . ' in ' . self::DECLARATION_FILE . '.',
 			'visibility' => 'private',
-			'status' => 'active',
+			'status' => self::NEW_PRODUCT_STATUS,
 			'endpoints' => $endpointUuids,
 		];
 
