@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Twig;
 
 use OCA\Integriq\Twig\MappingFunctionRegistrationListener;
+use OCA\Integriq\Twig\MappingListRuntime;
 use OCA\Integriq\Twig\MappingRuntime;
 use OCA\OpenRegister\Service\RegisterMappingFunctionsEvent;
 use OCP\EventDispatcher\Event;
@@ -59,7 +60,7 @@ class MappingFunctionRegistrationListenerTest extends TestCase {
 				[MappingRuntime::class, 'getTargetIdByOriginId'],
 				[MappingRuntime::class, 'getOriginIdByTargetId'],
 				[MappingRuntime::class, 'lookup'],
-				[MappingRuntime::class, 'lookupAll'],
+				[MappingListRuntime::class, 'lookupAll'],
 			],
 			actual: $callables
 		);

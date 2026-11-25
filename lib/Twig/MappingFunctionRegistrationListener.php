@@ -84,7 +84,7 @@ class MappingFunctionRegistrationListener implements IEventListener {
 			new TwigFunction(name: 'lookup', callable: [MappingRuntime::class, 'lookup'])
 		);
 		$event->registerFunction(
-			new TwigFunction(name: 'lookupAll', callable: [MappingRuntime::class, 'lookupAll'])
+			new TwigFunction(name: 'lookupAll', callable: [MappingListRuntime::class, 'lookupAll'])
 		);
 
 	}//end handle()

@@ -121,7 +121,7 @@ class MappingLookup implements MappingLookupInterface {
 	 *
 	 * For a question about a set rather than one row: "has this employee any
 	 * assignment that has not ended". An object without the field contributes
-	 * the default, so a missing end date stays visible as "no end". More
+	 * null, so a missing end date stays visible as "no end". More
 	 * matches than the limit refuse the mapping instead of answering from a
 	 * partial list, because a set read short could make an open row look
 	 * absent (staff-timetable-sync REQ-HRS-004: never act on a partial read).
@@ -129,7 +129,6 @@ class MappingLookup implements MappingLookupInterface {
 	 * @param string              $schema  The schema, as `register/schema`.
 	 * @param array<string,mixed> $filters Property filters; values must be scalar.
 	 * @param string              $field   The field to return per object, a dot path.
-	 * @param mixed               $default What an object without the field contributes.
 	 * @param integer             $limit   The most objects answered, at most MAX_ALL.
 	 *
 	 * @return list<mixed>
@@ -138,7 +137,7 @@ class MappingLookup implements MappingLookupInterface {
 	 *
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
-	public function lookupAll(string $schema, array $filters, string $field, mixed $default = null, int $limit = self::MAX_ALL): array {
+	public function lookupAll(string $schema, array $filters, string $field, int $limit = self::MAX_ALL): array {
 		$filters = $this->guard(function: 'lookupAll', schema: $schema, filters: $filters);
 		$limit   = max(1, min($limit, self::MAX_ALL));
 
@@ -149,12 +148,13 @@ class MappingLookup implements MappingLookupInterface {
 
 		$matches = $this->answers[$question];
 		if (count($matches) > $limit) {
+			$asked = (string)json_encode($filters);
 			throw new RuntimeException(
-				message: sprintf('lookupAll() on "%s" found more than %d objects for %s; it does not answer from a partial list.', $schema, $limit, (string)json_encode($filters))
+				message: sprintf('lookupAll() on "%s" found more than %d objects for %s; it does not answer from a partial list.', $schema, $limit, $asked)
 			);
 		}
 
-		return array_map(static fn (array $match): mixed => (new Dot($match))->get($field, $default), $matches);
+		return array_map(static fn (array $match): mixed => (new Dot($match))->get($field), $matches);
 	}//end lookupAll()
 
 	/**

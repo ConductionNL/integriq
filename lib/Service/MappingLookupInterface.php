@@ -51,8 +51,7 @@ interface MappingLookupInterface {
 	 *
 	 * @param string              $schema  The schema, as `register/schema`.
 	 * @param array<string,mixed> $filters Property filters; values must be scalar.
-	 * @param string              $field   The field to return per object, a dot path.
-	 * @param mixed               $default What an object without the field contributes.
+	 * @param string              $field   The field to return per object, a dot path; an object without it contributes null.
 	 * @param integer             $limit   The most objects answered.
 	 *
 	 * @return list<mixed>
@@ -61,5 +60,5 @@ interface MappingLookupInterface {
 	 *
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
-	public function lookupAll(string $schema, array $filters, string $field, mixed $default = null, int $limit = 200): array;
+	public function lookupAll(string $schema, array $filters, string $field, int $limit = 200): array;
 }//end interface

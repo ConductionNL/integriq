@@ -115,32 +115,6 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	}//end lookup()
 
 	/**
-	 * The field of every object in an allowed register schema matching the filters.
-	 *
-	 * `{{ lookupAll('humaniq/OrgAssignment', {'employeeId': id}, 'endDate') }}`.
-	 * Refused without the lookup service, like `lookup()`.
-	 *
-	 * @param string              $schema  The schema, as `register/schema`.
-	 * @param array<string,mixed> $filters Property filters.
-	 * @param string              $field   The field to return per object.
-	 * @param mixed               $default What an object without the field contributes.
-	 * @param integer             $limit   The most objects answered.
-	 *
-	 * @return list<mixed>
-	 *
-	 * @throws \RuntimeException When lookups are not available, or the lookup refuses.
-	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
-	 */
-	public function lookupAll(string $schema, array $filters, string $field, mixed $default = null, int $limit = 200): array {
-		if ($this->lookup === null) {
-			throw new \RuntimeException(message: sprintf('lookupAll() may not read "%s": lookups are not available here.', $schema));
-		}
-
-		return $this->lookup->lookupAll(schema: $schema, filters: $filters, field: $field, default: $default, limit: $limit);
-	}//end lookupAll()
-
-	/**
 	 * Encodes a string to base64.
 	 *
 	 * @param string $input The unencoded input.

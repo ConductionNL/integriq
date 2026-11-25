@@ -90,7 +90,7 @@ class MappingExtension extends AbstractExtension {
 			new TwigFunction(name: 'getOriginIdByTargetId', callable: [MappingRuntime::class, 'getOriginIdByTargetId']),
 			// A register read behind an administered allowlist; no outbound call (mapping-formats-and-lookups D4).
 			new TwigFunction(name: 'lookup', callable: [MappingRuntime::class, 'lookup']),
-			new TwigFunction(name: 'lookupAll', callable: [MappingRuntime::class, 'lookupAll']),
+			new TwigFunction(name: 'lookupAll', callable: [MappingListRuntime::class, 'lookupAll']),
 		];
 
 	}//end getFunctions()

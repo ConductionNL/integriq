@@ -28,6 +28,7 @@ use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\Integriq\Service\LookupAllowlist;
 use OCA\Integriq\Service\MappingLookup;
+use OCA\Integriq\Twig\MappingListRuntime;
 use OCA\Integriq\Twig\MappingRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
@@ -45,6 +46,7 @@ use RuntimeException;
 #[CoversClass(MappingLookup::class)]
 #[CoversClass(LookupAllowlist::class)]
 #[UsesClass(MappingRuntime::class)]
+#[CoversClass(MappingListRuntime::class)]
 class MappingLookupTest extends TestCase {
 
 	/**
@@ -178,23 +180,27 @@ class MappingLookupTest extends TestCase {
 	}//end testTwoMatchesDoNotPickOne()
 
 	/**
-	 * lookupAll() answers the field of every match, the default for a row without it, and asks once.
+	 * lookupAll() answers the field of every match, null for a row without it, and asks once.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testLookupAllAnswersEveryMatch(): void {
-		$lookup = $this->lookup(gemeenten: [['provincie' => 'NH', 'naam' => 'Amsterdam'], ['provincie' => 'ZH', 'naam' => 'Rotterdam'], ['provincie' => 'NH']]);
+		$lookup = $this->lookup(
+			gemeenten: [['provincie' => 'NH', 'naam' => 'Amsterdam'], ['provincie' => 'ZH', 'naam' => 'Rotterdam'], ['provincie' => 'NH']]
+		);
 
-		self::assertSame(['Amsterdam', null], $lookup->lookupAll(schema: 'codelijsten/gemeenten', filters: ['provincie' => 'NH'], field: 'naam'));
-		self::assertSame(['Amsterdam', 'onbekend'], $lookup->lookupAll(schema: 'codelijsten/gemeenten', filters: ['provincie' => 'NH'], field: 'naam', default: 'onbekend'));
-		self::assertSame([], $lookup->lookupAll(schema: 'codelijsten/gemeenten', filters: ['provincie' => 'GR'], field: 'naam'));
+		$noordHolland = $lookup->lookupAll(schema: 'codelijsten/gemeenten', filters: ['provincie' => 'NH'], field: 'naam');
+		self::assertSame(expected: ['Amsterdam', null], actual: $noordHolland);
+		$askedAgain = $lookup->lookupAll(schema: 'codelijsten/gemeenten', filters: ['provincie' => 'NH'], field: 'naam');
+		self::assertSame(expected: $noordHolland, actual: $askedAgain);
+		self::assertSame(expected: [], actual: $lookup->lookupAll(schema: 'codelijsten/gemeenten', filters: ['provincie' => 'GR'], field: 'naam'));
 
-		self::assertCount(2, $this->queries, 'one query per distinct question');
-		self::assertSame(MappingLookup::MAX_ALL + 1, $this->queries[0]['config']['limit']);
-		self::assertFalse($this->queries[0]['rbac']);
-		self::assertSame([], $lookup->warnings());
+		self::assertCount(expectedCount: 2, haystack: $this->queries, message: 'one query per distinct question');
+		self::assertSame(expected: (MappingLookup::MAX_ALL + 1), actual: $this->queries[0]['config']['limit']);
+		self::assertFalse(condition: $this->queries[0]['rbac']);
+		self::assertSame(expected: [], actual: $lookup->warnings());
 	}//end testLookupAllAnswersEveryMatch()
 
 	/**
@@ -205,12 +211,15 @@ class MappingLookupTest extends TestCase {
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function testLookupAllRefusesAPartialList(): void {
-		$lookup = $this->lookup(gemeenten: [['provincie' => 'NH', 'naam' => 'Amsterdam'], ['provincie' => 'NH', 'naam' => 'Haarlem'], ['provincie' => 'NH', 'naam' => 'Zaanstad']]);
+		$lookup = $this->lookup(
+			gemeenten: [['provincie' => 'NH', 'naam' => 'Amsterdam'], ['provincie' => 'NH', 'naam' => 'Haarlem'], ['provincie' => 'NH', 'naam' => 'Zaanstad']]
+		);
 
-		self::assertCount(3, $lookup->lookupAll(schema: 'codelijsten/gemeenten', filters: ['provincie' => 'NH'], field: 'naam', limit: 3));
+		$all = $lookup->lookupAll(schema: 'codelijsten/gemeenten', filters: ['provincie' => 'NH'], field: 'naam', limit: 3);
+		self::assertCount(expectedCount: 3, haystack: $all);
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('found more than 2 objects');
+		$this->expectException(exception: RuntimeException::class);
+		$this->expectExceptionMessage(message: 'found more than 2 objects');
 		$lookup->lookupAll(schema: 'codelijsten/gemeenten', filters: ['provincie' => 'NH'], field: 'naam', limit: 2);
 	}//end testLookupAllRefusesAPartialList()
 
@@ -226,41 +235,36 @@ class MappingLookupTest extends TestCase {
 
 		try {
 			$lookup->lookupAll(schema: 'hr/medewerkers', filters: [], field: 'naam');
-			self::fail('the lookup was not refused');
+			self::fail(message: 'the lookup was not refused');
 		} catch (RuntimeException $e) {
-			self::assertStringContainsString('lookupAll() may not read "hr/medewerkers"', $e->getMessage());
+			self::assertStringContainsString(needle: 'lookupAll() may not read "hr/medewerkers"', haystack: $e->getMessage());
 		}
 
 		try {
 			$lookup->lookupAll(schema: 'codelijsten/gemeenten', filters: ['code' => ['$ne' => '']], field: 'naam');
-			self::fail('the nested filter was not refused');
+			self::fail(message: 'the nested filter was not refused');
 		} catch (RuntimeException $e) {
-			self::assertStringContainsString('the filter "code" must be a single value', $e->getMessage());
+			self::assertStringContainsString(needle: 'the filter "code" must be a single value', haystack: $e->getMessage());
 		}
 
-		self::assertSame([], $this->queries);
+		self::assertSame(expected: [], actual: $this->queries);
 	}//end testLookupAllKeepsTheGuards()
 
 	/**
-	 * The runtime refuses lookupAll() without a lookup service, and passes it through with one.
+	 * The list runtime refuses without a lookup service, and passes the question through with one.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
-	public function testTheRuntimeRefusesLookupAllWithoutTheService(): void {
-		$runtime = new MappingRuntime(
-			mappingService: $this->createMock(MappingServiceInterface::class),
-			callService: $this->createMock(CallServiceInterface::class),
-			fileService: $this->createMock(FileService::class),
-			objectService: $this->createMock(SourceMappingServiceInterface::class),
-			synchronizationContractService: $this->createMock(SynchronizationContractServiceInterface::class),
-		);
+	public function testTheListRuntimeRefusesWithoutTheService(): void {
+		$runtime = new MappingListRuntime(lookup: $this->lookup(gemeenten: [['code' => '0363', 'naam' => 'Amsterdam']]));
+		self::assertSame(expected: ['Amsterdam'], actual: $runtime->lookupAll(schema: 'codelijsten/gemeenten', filters: ['code' => '0363'], field: 'naam'));
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('lookupAll() may not read "codelijsten/gemeenten": lookups are not available here.');
-		$runtime->lookupAll(schema: 'codelijsten/gemeenten', filters: [], field: 'naam');
-	}//end testTheRuntimeRefusesLookupAllWithoutTheService()
+		$this->expectException(exception: RuntimeException::class);
+		$this->expectExceptionMessage(message: 'lookupAll() may not read "codelijsten/gemeenten": lookups are not available here.');
+		(new MappingListRuntime())->lookupAll(schema: 'codelijsten/gemeenten', filters: [], field: 'naam');
+	}//end testTheListRuntimeRefusesWithoutTheService()
 
 	/**
 	 * A filter that is not a single value is refused before anything is read.

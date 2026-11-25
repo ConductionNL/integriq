@@ -107,7 +107,13 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function map(string $slug, string $input, ?string $teacherId = self::UNTIS_TEACHER_ID, array $assignments = [], bool $allowed = true): array {
+	private function map(
+		string $slug,
+		string $input,
+		?string $teacherId = self::UNTIS_TEACHER_ID,
+		array $assignments = [],
+		bool $allowed = true
+	): array {
 		$contracts = $this->createMock(originalClassName: SynchronizationContractService::class);
 		$contracts->method('findTargetIdByOriginId')->willReturnCallback(
 			function (string $originId) use ($teacherId): ?string {
