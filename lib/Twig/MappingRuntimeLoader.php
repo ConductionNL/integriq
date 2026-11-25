@@ -44,6 +44,7 @@ use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\OpenRegister\Service\FileService;
+use Twig\Extension\RuntimeExtensionInterface;
 use Twig\RuntimeLoader\RuntimeLoaderInterface;
 
 /**
@@ -76,9 +77,15 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface {
 	 *
 	 * @param string $class Fully qualified class name to load.
 	 *
-	 * @return MappingRuntime|null
+	 * @return RuntimeExtensionInterface|null
+	 *
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
-	public function load(string $class): ?MappingRuntime {
+	public function load(string $class): ?RuntimeExtensionInterface {
+		if ($class === MappingListRuntime::class) {
+			return new MappingListRuntime(lookup: $this->lookup);
+		}
+
 		if ($class === MappingRuntime::class) {
 			return new MappingRuntime(
 				mappingService:                 $this->mappingService,

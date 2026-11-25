@@ -45,4 +45,20 @@ interface MappingLookupInterface {
 	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
 	 */
 	public function lookup(string $schema, array $filters, string $field, mixed $default = null): mixed;
+
+	/**
+	 * The field of every object in an allowed schema that matches the filters.
+	 *
+	 * @param string              $schema  The schema, as `register/schema`.
+	 * @param array<string,mixed> $filters Property filters; values must be scalar.
+	 * @param string              $field   The field to return per object, a dot path; an object without it contributes null.
+	 * @param integer             $limit   The most objects answered.
+	 *
+	 * @return list<mixed>
+	 *
+	 * @throws RuntimeException When the schema is not allowed, a filter is not scalar, more objects match than the limit, or OpenRegister is missing.
+	 *
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 */
+	public function lookupAll(string $schema, array $filters, string $field, int $limit = 200): array;
 }//end interface

@@ -32,7 +32,7 @@ use Throwable;
  * synchronization failing does not stop the others; its failure is logged
  * and the next one runs.
  *
- * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+ * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
  */
 class OutboundReconciliationJob extends TimedJob {
 
@@ -66,7 +66,7 @@ class OutboundReconciliationJob extends TimedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$argument` is Nextcloud's own
 	 *   `TimedJob::run()` signature; this job takes none.

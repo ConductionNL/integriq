@@ -12861,14 +12861,13 @@
 			"area": "connectors",
 			"name": "Keep staff and approved leave in step between the HR app and Untis.",
 			"source": "open-change-triage-2026-11-12",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"plan": "openspec/changes/connectors-hr-staff-sync",
-				"change": "connectors-hr-staff-sync",
-				"requirement": "openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync :: A new or departing employee reaches Untis without a manual step (REQ-HRS-001)",
-				"evidence": "Not built: specified in openspec/changes/connectors-hr-staff-sync (10/10 tasks open). con-timetable imports a timetable; pushing HR staff and leave to Untis has no row."
+				"evidence": "lib/Settings/configurations/staff-to-untis.json (teachers from humaniq Employee and OrgAssignment, approved leave as absences, nightly reconciliation through lib/Service/Synchronization/OutboundReconciliationService.php); live pass against Untis owed (tests/e2e/staff-to-untis.spec.ts, runs in nightly). Archived as openspec/changes/archive/2026-11-25-connectors-hr-staff-sync.",
+				"spec": "openspec/specs/staff-timetable-sync",
+				"requirement": "openspec/specs/staff-timetable-sync :: A new or departing employee reaches Untis without a manual step (REQ-HRS-001)"
 			},
 			"feature": "staff-timetable-sync",
 			"featureConfidence": "medium",

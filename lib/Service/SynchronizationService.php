@@ -2563,7 +2563,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 *
 	 * @return array|null The contract after the delete, or null when nothing was withdrawn.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
 	 */
 	private function withdrawWhenConditionsStopHolding(
 		array $synchronization,

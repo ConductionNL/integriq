@@ -2,7 +2,7 @@
 
 Row `planninq:tt-hr-sync`, "Keep staff, contracts, deployment and leave in
 step between the HR system and the timetabling system". Change
-`openspec/changes/connectors-hr-staff-sync`, design D2 and D5.
+`openspec/changes/archive/2026-11-25-connectors-hr-staff-sync`, design D2 and D5.
 
 The `staff-to-untis` set pushes humaniq's employees, their school
 assignments and their approved leave into one timetabling system: Untis. This
@@ -13,9 +13,23 @@ imports, from where, and what a school whose HR system is humaniq still lacks.
 
 Status: the set ships as `staff-to-untis.json` beside this file, with its
 endpoints, identifiers and auth pinned against developer.untis.com's OpenAPI
-documents (Teacher Management v2, Teacher Absence Management v1). Still open:
-an ended school assignment (`OrgAssignment`) does not yet make the teacher
-inactive on its own; the employment end date does (task 1 of the change).
+documents (Teacher Management v2, Teacher Absence Management v1).
+
+School assignments (`OrgAssignment`): the teacher push runs again whenever
+one of the employee's assignments is created or changed
+(`sourceConfig.triggerFromRelatedObjects`, related by `employeeId`). The
+teacher mapping reads the end dates of all the employee's assignments with
+`lookupAll()` and nothing else from them. The teacher is active while the
+employment has not ended and at least one assignment is open (no end date, or
+an end date today or later). The exit date is the employment end date, or,
+when every assignment has an end date, the last of them: an employee who
+still teaches under another assignment stays on the timetable. An employee
+with no assignment row follows the employment end date alone. More than 200
+assignments for one employee refuse the push instead of deciding from a
+partial list. Add `humaniq/OrgAssignment` to the mapping lookup allowlist
+before enabling the source; until then every teacher push fails, naming the
+schema. A deleted assignment does not trigger a push (the trigger listens to
+creates and updates only); it takes effect on the employee's next save.
 
 Nightly repair (design D4): `staff-to-untis-teachers` declares
 `targetConfig.reconcile`, so `OutboundReconciliationJob` reads the Untis

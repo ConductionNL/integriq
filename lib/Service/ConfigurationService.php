@@ -1153,7 +1153,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @throws \InvalidArgumentException If required components are missing or invalid.
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md
-	 * @spec openspec/changes/connectors-hr-staff-sync/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-11-25-connectors-hr-staff-sync/tasks.md#task-3
 	 */
 	public function importConfiguration(array $oas): array {
 		$this->resetMappings();
