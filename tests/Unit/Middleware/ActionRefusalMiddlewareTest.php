@@ -21,7 +21,7 @@ use RuntimeException;
 /**
  * An action refusal answers its own status on a plain controller.
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
  */
 final class ActionRefusalMiddlewareTest extends TestCase {
 

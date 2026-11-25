@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
  */
 
 declare(strict_types=1);
@@ -164,9 +164,66 @@ class ObjectRightsServiceTest extends TestCase {
 
 		$this->service($mapper)->apply(['object.mapping.update' => ['authenticated', 'admin']]);
 
-		$this->assertSame(['read' => ['admin', 'x']], $mapper->schemas['mapping']->authorization, 'the verb goes, the verbs it does not govern stay');
-		$this->assertSame(['mapping'], $mapper->updated);
+		// The block still holds `read`, and OpenRegister reads a verb missing from a
+		// block as admin only, so the open verb is written out rather than dropped.
+		$this->assertSame(
+			expected: ['read' => ['admin', 'x'], 'update' => ['admin', 'authenticated']],
+			actual: $mapper->schemas['mapping']->authorization,
+			message: 'the verb is open to every signed-in user again, the verbs it does not govern stay'
+		);
+		$this->assertSame(expected: ['mapping'], actual: $mapper->updated);
 	}//end testReturningARowToItsSeedRestoresTheRegistersPosture()
+
+	/**
+	 * Granting one verb to a team keeps the other open verbs open.
+	 *
+	 * Found live: granting `object.mapping.update` to a group wrote `{update: [admin, group]}`
+	 * alone, and every non-admin lost read access to mappings (404), the team included.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+	 */
+	public function testGrantingOneVerbKeepsTheOtherOpenVerbsOpen(): void {
+		$mapper = $this->mapper(['mapping' => null]);
+		$matrix = [];
+		foreach (ObjectRightsService::VERBS as $verb) {
+			$matrix['object.mapping.' . $verb] = ['admin', 'authenticated'];
+		}
+
+		$matrix['object.mapping.update'] = ['admin', 'integratie-beheer'];
+
+		$this->service($mapper)->apply($matrix);
+
+		$this->assertSame(
+			expected: [
+				'update' => ['admin', 'integratie-beheer'],
+				'create' => ['admin', 'authenticated'],
+				'read' => ['admin', 'authenticated'],
+				'delete' => ['admin', 'authenticated'],
+			],
+			actual: $mapper->schemas['mapping']->authorization
+		);
+	}//end testGrantingOneVerbKeepsTheOtherOpenVerbsOpen()
+
+	/**
+	 * A schema whose every verb is back at its open seed has no block at all.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+	 */
+	public function testAllVerbsBackAtTheirOpenSeedLeaveNoBlock(): void {
+		$mapper = $this->mapper(['mapping' => ['update' => ['admin', 'integratie-beheer']]]);
+		$matrix = [];
+		foreach (ObjectRightsService::VERBS as $verb) {
+			$matrix['object.mapping.' . $verb] = ['admin', 'authenticated'];
+		}
+
+		$this->service($mapper)->apply($matrix);
+
+		$this->assertSame(expected: [], actual: $mapper->schemas['mapping']->authorization);
+	}//end testAllVerbsBackAtTheirOpenSeedLeaveNoBlock()
 
 	public function testNarrowingAnOpenSchemaWritesTheGroups(): void {
 		$mapper = $this->mapper(['job' => null]);

@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md
  *
  * The action authorization screen lists every enforced action under its area,
  * a delegated adapter push lets a member through and refuses a non-member,

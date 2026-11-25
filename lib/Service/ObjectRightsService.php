@@ -27,7 +27,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -45,7 +45,7 @@ use Throwable;
 /**
  * Applies the matrix's `object.<schema>.<verb>` rows to the schemas' authorization blocks.
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
  */
 class ObjectRightsService implements ObjectRightsServiceInterface {
 	/**
@@ -116,7 +116,7 @@ class ObjectRightsService implements ObjectRightsServiceInterface {
 	 *
 	 * @return array<int, string> The slugs of the schemas whose update did not go through.
 	 *
-	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 	 */
 	public function apply(array $matrix): array {
 		$grants = $this->grantsPerSchema(matrix: $matrix);
@@ -154,7 +154,7 @@ class ObjectRightsService implements ObjectRightsServiceInterface {
 	 *
 	 * @return bool False when the schema was not found or its update was refused.
 	 *
-	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 	 */
 	private function applyToSchema(object $mapper, string $slug, array $verbs, array $defaults): bool {
 		try {
@@ -191,6 +191,13 @@ class ObjectRightsService implements ObjectRightsServiceInterface {
 	 * Keys the matrix does not govern (other verbs, declared actions, flags)
 	 * are kept as they are.
 	 *
+	 * A verb still at its "every signed-in user" seed is left out while the
+	 * block holds no verb at all, so the schema keeps the register's own open
+	 * posture. Once any verb is written, OpenRegister reads a verb that is
+	 * missing from the block as admin only, so the untouched open verbs are
+	 * then written out as `authenticated`: granting one verb to a team must not
+	 * take reading away from everyone else.
+	 *
 	 * @param array<string, mixed>               $current  The schema's block as stored.
 	 * @param string                             $slug     The schema slug.
 	 * @param array<string, array<int, string>>  $verbs    Verb to the groups the matrix holds.
@@ -198,10 +205,11 @@ class ObjectRightsService implements ObjectRightsServiceInterface {
 	 *
 	 * @return array<string, mixed> The block to store.
 	 *
-	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 	 */
 	public static function authorizationFor(array $current, string $slug, array $verbs, array $defaults): array {
 		$next = $current;
+		$open = [];
 		foreach ($verbs as $verb => $groups) {
 			$chosen  = self::withAdmin(groups: $groups);
 			$default = self::withAdmin(groups: ($defaults['object.' . $slug . '.' . $verb] ?? ['admin']));
@@ -211,13 +219,20 @@ class ObjectRightsService implements ObjectRightsServiceInterface {
 				continue;
 			}
 
-			// Untouched: the register's own posture.
+			// Untouched: the register's own posture, unless another verb is written.
 			if (in_array(self::EVERY_SIGNED_IN_USER, $default, true) === true) {
 				unset($next[$verb]);
+				$open[$verb] = $default;
 				continue;
 			}
 
 			$next[$verb] = $default;
+		}
+
+		if (array_intersect(self::VERBS, array_keys($next)) !== []) {
+			foreach ($open as $verb => $default) {
+				$next[$verb] = $default;
+			}
 		}
 
 		return $next;
@@ -230,7 +245,7 @@ class ObjectRightsService implements ObjectRightsServiceInterface {
 	 *
 	 * @return array<string, array<string, array<int, string>>>
 	 *
-	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 	 */
 	private function grantsPerSchema(array $matrix): array {
 		$grants = [];

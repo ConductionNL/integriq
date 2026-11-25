@@ -42,7 +42,7 @@ use OCP\AppFramework\OCSController;
  * other exception, or an OCSException whose code is not an HTTP error status,
  * is thrown on unchanged.
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
  */
 class ActionRefusalMiddleware extends Middleware {
 
@@ -57,7 +57,7 @@ class ActionRefusalMiddleware extends Middleware {
 	 *
 	 * @throws Exception The exception, unchanged, when it is not an OCS refusal from a plain controller.
 	 *
-	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
 	 */
 	public function afterException($controller, $methodName, Exception $exception): Response {
 		if (($exception instanceof OCSException) === false || $controller instanceof OCSController) {
