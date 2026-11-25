@@ -78,7 +78,9 @@ async function create(
 		body.uuid ?? body.id ?? body['@self']?.uuid ?? body['@self']?.id ?? '',
 	)
 	expect(id, `created ${path} must carry an id`).not.toEqual('')
-	cleanup.unshift(`${path}/${id}`)
+	// OpenRegister deletes a register or schema by numeric id only.
+	const byNumber = /\/(registers|schemas)$/.test(path) && Number.isInteger(Number(body.id))
+	cleanup.unshift(`${path}/${byNumber ? body.id : id}`)
 	return id
 }
 
