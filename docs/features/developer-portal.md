@@ -61,12 +61,14 @@ ended subscriptions `expired` and, fourteen days before the end, writes one
 
 ## Seed data
 
-A fresh install carries two public products, **Zaken API** (active, two tiers)
-and **Besluiten API** (deprecated, sunset 2027-01-01), the application
-`example-developer-app` owned by the account `developer1` with a subscription
-to Zaken API that ends 2026-12-31, and one deprecation notice for Besluiten
-API. Create the account `developer1` and add it to the developer group to walk
-through the portal.
+A fresh install carries four public products: **Zaken API** (active, two
+tiers), **Besluiten API** (deprecated, sunset 2027-01-01) and **WOO
+Publications API** in a deprecated version 1.0.0 and an active version 2.0.0.
+**KVK Lookup API** is seeded private, so the portal does not list it. The
+application `example-developer-app` is owned by the account `developer1`, with
+a subscription to Zaken API that ends 2026-12-31 and one to Besluiten API, and
+there is one deprecation notice for Besluiten API. Create the account
+`developer1` and add it to the developer group to walk through the portal.
 
 ## API
 
