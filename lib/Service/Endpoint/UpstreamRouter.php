@@ -31,13 +31,9 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -54,13 +50,11 @@ class UpstreamRouter {
 	 * @param ORObjectService  $objects     Loads the target sources and stamps the call log.
 	 * @param CallService      $calls       Makes the upstream call.
 	 * @param UpstreamSelector $selector    The selection rules.
-	 * @param LoggerInterface  $logger      Logs a call log that could not be stamped.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objects,
 		private readonly CallService $calls,
 		private readonly UpstreamSelector $selector,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -111,20 +105,17 @@ class UpstreamRouter {
 			$reason = 'sticky';
 		}
 
-		$callLog = $this->dispatch(request: $request, target: $target, trace: $trace);
+		$callLog = $this->dispatch(request: $request, target: $target, reason: $reason, trace: $trace);
 		$status = (int)($callLog->getObject()['statusCode'] ?? 0);
 		if ($this->selector->mayRetry(method: $request->method, status: $status) === true) {
 			$others = array_values(array_filter($healthy, static fn (array $other): bool => $other['index'] !== $target['index']));
 			$retryTarget = $this->selector->pick(candidates: $others);
 			if ($retryTarget !== null) {
-				$this->stamp(callLog: $callLog, target: $target, reason: $reason);
-				$target = $retryTarget;
-				$reason = 'retry';
-				$callLog = $this->dispatch(request: $request, target: $target, trace: $trace);
+				$callLog = $this->dispatch(request: $request, target: $retryTarget, reason: 'retry', trace: $trace);
 			}
 		}
 
-		return $this->stamp(callLog: $callLog, target: $target, reason: $reason);
+		return $callLog;
 	}//end call()
 
 	/**
@@ -201,79 +192,34 @@ class UpstreamRouter {
 	}//end findSource()
 
 	/**
-	 * Call one target.
+	 * Call one target; its call log is written naming the target and why it was chosen.
 	 *
-	 * @param UpstreamRequest $request The request.
-	 * @param array{entity: ObjectEntity} $target The target, with its source.
-	 * @param ExecutionTraceContext|null $trace The active trace.
+	 * The call log is append-only, so the routing goes on the record when it is written
+	 * (`logFields`), not onto it afterwards.
+	 *
+	 * @param UpstreamRequest                       $request The request.
+	 * @param array{entity: ObjectEntity, source: string} $target  The target, with its source.
+	 * @param string                                $reason  Why the target was chosen: weight, sticky, a rule, retry.
+	 * @param ExecutionTraceContext|null            $trace   The active trace.
 	 *
 	 * @return ObjectEntity The call log.
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-the-call-log-records-which-target-served-a-call-req-uprt-003
 	 */
-	private function dispatch(UpstreamRequest $request, array $target, ?ExecutionTraceContext $trace): ObjectEntity {
+	private function dispatch(UpstreamRequest $request, array $target, string $reason, ?ExecutionTraceContext $trace): ObjectEntity {
 		return $this->calls->call(
 			source: $target['entity'],
 			endpoint: $request->upstreamPath,
 			method: $request->method,
 			// A gateway call is live: it waits only briefly for a paced turn (REQ-RLPC-002).
-			config: ['query' => $request->parameters, 'headers' => $request->headers, 'body' => $request->rawBody, 'pacing' => 'live'],
+			config: [
+				'query' => $request->parameters,
+				'headers' => $request->headers,
+				'body' => $request->rawBody,
+				'pacing' => 'live',
+				'logFields' => ['routedTarget' => $target['source'], 'routedReason' => $reason],
+			],
 			trace: $trace
 		);
 	}//end dispatch()
-
-	/**
-	 * Record on the call log which target served the call and why (REQ-UPRT-003).
-	 *
-	 * A call log that cannot be stamped is logged, never a failed request.
-	 *
-	 * @param ObjectEntity $callLog The call log.
-	 * @param array{source: string} $target The target that served the call.
-	 * @param string $reason `rule:<index>`, `weight`, `sticky` or `retry`.
-	 *
-	 * @return ObjectEntity The call log, stamped when it could be.
-	 *
-	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-the-call-log-records-which-target-served-a-call-req-uprt-003
-	 */
-	private function stamp(ObjectEntity $callLog, array $target, string $reason): ObjectEntity {
-		$routing = ['routedTarget' => $target['source'], 'routedReason' => $reason];
-		$uuid = (string)$callLog->getUuid();
-		if ($uuid === '') {
-			return $callLog;
-		}
-
-		try {
-			// Merge onto the stored row, which CallService redacted before persisting
-			// (http-call-engine REQ-006); the entity in hand may still hold the bodies.
-			// Unscoped: system write stamping the routing decision on the inbound call log.
-			$stored = $this->objects->find(
-				id: $uuid,
-				options: new ObjectFindOptions(register: 'integriq', schema: 'call_log'),
-				_rbac: false,
-				_multitenancy: false
-			);
-			if ($stored instanceof ObjectEntity === false) {
-				$this->logger->warning('[integriq] the call log ' . $uuid . ' was not found to record its routed target');
-				return $callLog;
-			}
-
-			$saved = $this->objects->saveObject(
-				object: array_merge((array)$stored->getObject(), $routing),
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
-					uuid: $uuid,
-					policy: new SavePolicy(silent: true, validation: false)
-				),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning('[integriq] the call log ' . $uuid . ' could not record its routed target', ['exception' => $e->getMessage()]);
-			return $callLog;
-		}
-
-		if ($saved instanceof ObjectEntity === false) {
-			return $callLog;
-		}
-
-		return $saved;
-	}//end stamp()
 }//end class
