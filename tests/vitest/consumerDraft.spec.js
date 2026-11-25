@@ -457,8 +457,8 @@ describe('Consumer form configuration consistency', () => {
 			path.join(REPO_ROOT, 'src/registry.js'),
 			'utf8',
 		)
-		expect(registry).toContain(
-			"import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'",
+		expect(registry).toMatch(
+			/const ConsumerEditorModal = lazyComponent\(\s*\(\) => import\('\.\/modals\/v2\/ConsumerEditorModal\.vue'\),\s*'ConsumerEditorModal',?\s*\)/,
 		)
 		expect(registry).toMatch(/^\tConsumerEditorModal,$/m)
 	})
