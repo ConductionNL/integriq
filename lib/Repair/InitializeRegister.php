@@ -106,6 +106,7 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 		$run->version = $this->appConfig->getValueString('integriq', 'installed_version', '1.0.0');
 
 		$this->mergeFragments(run: $run);
+		$run->descriptor = (new SchemaSeedHoist())->hoist(descriptor: $run->descriptor);
 		$this->tagVersionWithFragments(run: $run);
 		$this->importDescriptor(configurationService: $configurationService, run: $run);
 
