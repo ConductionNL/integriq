@@ -172,10 +172,22 @@ class RemoteFileSessionFactory {
 	 *
 	 * @return string The SHA-256 fingerprint.
 	 *
-	 * @throws RemoteFileException When no key is presented.
+	 * @throws RemoteFileException When the server cannot be reached or presents no key.
 	 */
 	private function fingerprintPresentedBy(object $sftp, RemoteServer $server): string {
-		$hostKey = $sftp->getServerPublicHostKey();
+		// Reading the key opens the connection. phpseclib reports a host that
+		// does not resolve or answer with its own RuntimeException, which the
+		// controller does not know and answered with a 500.
+		try {
+			$hostKey = $sftp->getServerPublicHostKey();
+		} catch (\RuntimeException $exception) {
+			throw new RemoteFileException(
+				'The SFTP server ' . $server->host . ' could not be reached: ' . $exception->getMessage(),
+				0,
+				$exception
+			);
+		}
+
 		if (is_string($hostKey) === false || $hostKey === '') {
 			throw new RemoteFileException('The SFTP server ' . $server->host . ' presented no host key.');
 		}
