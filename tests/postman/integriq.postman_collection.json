@@ -5606,6 +5606,605 @@
       ]
     },
     {
+      "name": "19 — Consumer authentication on OpenRegister (consumer-auth-on-openregister)",
+      "description": "Task 6 of consumer-auth-on-openregister: an endpoint with a jwt rule admits an HS256 token for a seeded consumer and refuses the same token's second use and a two-hour token; an apikey rule admits a consumer key.",
+      "item": [
+        {
+          "name": "CA.1 create the JWT rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/rule"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-ca-jwt-rule\", \"action\": \"get\", \"timing\": \"before\", \"type\": \"authentication\", \"conditions\": {}, \"order\": 1, \"configuration\": {\"authentication\": {\"type\": \"jwt\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006",
+                  "// Task 6 live check, written as a Newman folder: fresh names and an HS256 secret per run.",
+                  "const run = Date.now() + '-' + Math.floor(Math.random() * 1e6);",
+                  "pm.collectionVariables.set('caRun', run);",
+                  "pm.collectionVariables.set('caConsumerName', 'newman-ca-jwt-' + run);",
+                  "// Longer than the 32-byte HS256 minimum the bridge enforces.",
+                  "pm.collectionVariables.set('caConsumerSecret', 'newman-ca-' + run + '-' + CryptoJS.lib.WordArray.random(24).toString());",
+                  "pm.collectionVariables.set('caApiKey', 'newman-ca-key-' + run + '-' + CryptoJS.lib.WordArray.random(16).toString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caJwtRuleUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.2 create the endpoint behind the JWT rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/endpoint"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-ca-jwt-endpoint\", \"endpoint\": \"newman-ca-jwt\", \"method\": \"GET\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"rules\": [\"{{caJwtRuleUuid}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caJwtEndpointUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.3 create the API-key rule with no keys of its own",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/rule"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-ca-apikey-rule\", \"action\": \"get\", \"timing\": \"before\", \"type\": \"authentication\", \"conditions\": {}, \"order\": 1, \"configuration\": {\"authentication\": {\"type\": \"apikey\", \"header\": \"X-Api-Key\", \"keys\": {}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caKeyRuleUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.4 create the endpoint behind the API-key rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/endpoint"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-ca-apikey-endpoint\", \"endpoint\": \"newman-ca-apikey\", \"method\": \"GET\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"rules\": [\"{{caKeyRuleUuid}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caKeyEndpointUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.5 seed the HS256 JWT consumer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/consumer"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"{{caConsumerName}}\", \"description\": \"newman consumer-auth-on-openregister JWT consumer\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{caConsumerSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caJwtConsumerUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.6 seed the API-key consumer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{orBase}}/consumer"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-ca-apikey-{{caRun}}\", \"description\": \"newman consumer-auth-on-openregister API-key consumer\", \"authorizationType\": \"apiKey\", \"authorizationConfiguration\": {\"apiKey\": \"{{caApiKey}}\"}, \"userId\": \"{{admin_user}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caKeyConsumerUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.7 an HS256 token of the seeded consumer is admitted",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/endpoint/newman-ca-jwt"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// A one-hour-or-less token naming the consumer as issuer, with its own jti.",
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const name = pm.collectionVariables.get('caConsumerName');",
+                  "const body = enc({ iss: name, sub: name, iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-ca-' + now + '-' + Math.floor(Math.random() * 1e9) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('caConsumerSecret')));",
+                  "pm.collectionVariables.set('caJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admitted: not refused by the authentication rule', () => pm.expect(pm.response.code).to.not.be.oneOf([401, 403]));",
+                  "pm.test('the endpoint answered without a server error', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.8 the same token presented a second time is refused",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/endpoint/newman-ca-jwt"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// OpenRegister refuses a jti it has seen before (replay).",
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('an error is named', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.9 a two-hour token is refused with the lifetime cap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/endpoint/newman-ca-jwt"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caLongJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// exp = iat + 7200: valid for OpenRegister, over integriq's 3600-second cap.",
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const name = pm.collectionVariables.get('caConsumerName');",
+                  "const body = enc({ iss: name, sub: name, iat: now, nbf: now - 5, exp: now + 7200, jti: 'newman-ca-' + now + '-' + Math.floor(Math.random() * 1e9) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('caConsumerSecret')));",
+                  "pm.collectionVariables.set('caLongJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-keeps-its-token-lifetime-cap-req-007",
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "const b = pm.response.json();",
+                  "pm.test('the cap message', () => pm.expect(b.error).to.eql('The token lifetime exceeds the maximum allowed duration'));",
+                  "pm.test('the cap is 3600 seconds', () => pm.expect(b.details.max_lifetime_seconds).to.eql(3600));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.10 a consumer's API key is admitted by a rule without keys",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{caApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/endpoint/newman-ca-apikey"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admitted: not refused by the authentication rule', () => pm.expect(pm.response.code).to.not.be.oneOf([401, 403]));",
+                  "pm.test('the endpoint answered without a server error', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.11 an unknown API key is refused",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "newman-ca-no-such-key"
+              }
+            ],
+            "url": {
+              "raw": "{{ocBase}}/endpoint/newman-ca-apikey"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('Invalid API key', () => pm.expect(pm.response.json().error).to.eql('Invalid API key'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.12 cleanup — DELETE API-key consumer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{orBase}}/consumer/{{caKeyConsumerUuid}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.13 cleanup — DELETE JWT consumer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{orBase}}/consumer/{{caJwtConsumerUuid}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.14 cleanup — DELETE API-key endpoint",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{orBase}}/endpoint/{{caKeyEndpointUuid}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.15 cleanup — DELETE API-key rule",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{orBase}}/rule/{{caKeyRuleUuid}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.16 cleanup — DELETE JWT endpoint",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{orBase}}/endpoint/{{caJwtEndpointUuid}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.17 cleanup — DELETE JWT rule",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{orBase}}/rule/{{caJwtRuleUuid}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "99 — Teardown (via OR)",
       "description": "Deletes the fixtures created in folder 01.",
       "item": [

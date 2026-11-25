@@ -50,11 +50,11 @@ Kind: code. Size M. Hydra gate 23 rule 6 on `lib/Service/AuthorizationService.ph
 - **spec_ref**: `openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006`
 - **acceptance_criteria**:
   - On an instance with openregister development (#4361) and this branch: an endpoint with a `jwt` rule admits an HS256 token for a seeded consumer and refuses the same token's second use and a two-hour token; an `apikey` rule admits a consumer key
-- [ ] Implement
-- [ ] Test
+- [x] Implement: written as the Newman folder "19 — Consumer authentication on OpenRegister" in `tests/postman/integriq.postman_collection.json` (CA.1-CA.17): a `jwt` rule and an `apikey` rule without keys of their own, each behind an endpoint, an HS256 consumer and an API-key consumer seeded per run; the HS256 token is admitted, its second use refused, a two-hour token refused with the lifetime-cap message and `max_lifetime_seconds` 3600, the consumer's key admitted and an unknown key refused; everything it creates is deleted again.
+- [x] Test (Newman); written, runs in nightly. Not run here: it needs a live instance with openregister development (#4361).
 
 ## Verification
 - [x] PHPUnit unit tests for new/changed business logic (`tests/Unit/`)
-- [ ] Newman/Postman tests for new/changed API endpoints: no endpoint changes shape; the live recipe is Task 6
+- [x] Newman/Postman tests for new/changed API endpoints: no endpoint changes shape; the live recipe is Task 6, written, runs in nightly
 - [ ] Vitest: N/A, no frontend surface
 - [ ] Playwright: N/A, the scenarios carry `@e2e exclude` with the reason
