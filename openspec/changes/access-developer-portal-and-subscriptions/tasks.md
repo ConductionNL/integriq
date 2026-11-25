@@ -63,8 +63,9 @@ Kind: code. Size L. Rows `integriq:acc-devportal`, `acc-self-service-keys`, `acc
 - **files**: `lib/Settings/register.d/api-product-gateway.json` (`x-openregister-seed`), `docs/`
 - **acceptance_criteria**:
   - GIVEN a fresh install WHEN the seeded developer opens the portal THEN the two seeded products and their application are there
-- [ ] Implement (seeds `zaken-api`, `besluiten-api`, `example-developer-app` owned by `developer1`, its subscriptions and one `deprecated` notice; `docs/features/developer-portal.md`)
+- [x] Implement (seeds `zaken-api`, `besluiten-api`, `example-developer-app` owned by `developer1`, its subscriptions and one `deprecated` notice; `docs/features/developer-portal.md`)
   - 2026-11-25 live: unticked, the seeds never reach an install. OpenRegister drops a schema's `x-openregister-seed` key as unknown ("Dropped 1 unknown x-openregister-* key(s) on schema api_product: x-openregister-seed") and seeds only through `components.objects` / `x-openregister.seedData`; the products' `endpoints` also hold `@ref:endpoint:*` placeholders nothing resolves. Only "Besluiten API" exists on a fresh install (from `configurations/zgw-besluiten.json`). Ten other register fragments carry `x-openregister-seed` the same way.
+  - 2026-11-25 fixed in #3987: `SchemaSeedHoist` lists every schema seed as `components.objects` at import, and the fragment ships the consumers and endpoints the `@ref` tokens name. Live on Nextcloud 34.0.6 + MariaDB + OpenRegister main 50949d88: 5 products (endpoint uuids resolved), 4 subscriptions, the notice and `example-developer-app` imported, and they stay unchanged over two re-imports. The `developer1` account itself is not seeded; the docs say to create it (`docs/features/developer-portal.md`). The Test box (walking the docs as `developer1`) stays open.
 - [ ] Test (docs walked once against the seed)
 
 ## Verification
