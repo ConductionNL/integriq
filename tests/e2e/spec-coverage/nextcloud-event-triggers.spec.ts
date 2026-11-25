@@ -6,17 +6,22 @@
  *   (verified by openspec/changes/nextcloud-event-hub-verification, tasks 2 and 3)
  *
  * Task 2, the family grant and self-service subscribe. An administrator grants
- * `event.subscribe` and `event.subscribe-nextcloud-files` to a group in the
- * ADR-023 action matrix. A member of that group then subscribes to a Files
+ * `event.subscribe` and `event.subscribe-nextcloud-files` to a group by
+ * ticking the two cells in the ActionAuthMatrix editor on integriq's admin
+ * settings page and saving. A member of that group then subscribes to a Files
  * event on their own, and is refused (403) for a family nobody granted
- * (Calendar). The matrix is put back as it was afterwards.
+ * (Calendar). The matrix is put back as it was afterwards. The matrix route
+ * is an admin write surface without #[NoCSRFRequired], so every direct call
+ * to it carries the session's request token.
  *
  * Task 3, the action-type picker in the subscription modal. On the Webhooks
  * page the "Add Webhook" modal offers the delivery actions. Picking
  * synchronization, job or flow shows the matching target picker, and webhook
- * shows none. A subscription saved with a flow action carries
- * `action: {kind: "flow", flowId}`; that half is checked through the API, so it
- * holds whether or not the instance has a flow to pick.
+ * shows none. A subscription saved with each action kind carries it:
+ * `{kind: "synchronization", synchronizationId}`, `{kind: "job", jobId}`,
+ * `{kind: "webhook"}` and `{kind: "flow", flowId}`. That half is checked
+ * through the API, so it holds whether or not the instance has a
+ * synchronization, job or flow to pick.
  */
 
 import type { APIRequestContext } from '@playwright/test'
@@ -24,9 +29,11 @@ import type { APIRequestContext } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { BASE_URL } from '../support/baseUrl.ts'
 import { appDialog } from '../support/dialogs.ts'
+import { withRequestToken } from '../support/requestToken.ts'
 import { APP_BASE, navTo } from './_helpers.ts'
 
 const MATRIX = `${APP_BASE}/api/admin/action-matrix`
+const ADMIN_SETTINGS_URL = '/index.php/settings/admin/integriq'
 const SUBSCRIPTIONS = `${APP_BASE}/api/events/subscriptions`
 const OBJECTS = '/index.php/apps/openregister/api/objects/integriq/event_subscription'
 const OCS = { 'OCS-APIRequest': 'true' }
@@ -74,14 +81,14 @@ test.describe('nextcloud-event-triggers: family grant and self-service subscribe
 		await request.post('/index.php/ocs/v2.php/cloud/users?format=json', { failOnStatusCode: false, headers: OCS, form: { userid: MEMBER, password: PASSWORD } })
 		await request.post(`/index.php/ocs/v2.php/cloud/users/${MEMBER}/groups?format=json`, { failOnStatusCode: false, headers: OCS, form: { groupid: GROUP } })
 
-		const current = await request.get(MATRIX, { failOnStatusCode: false })
+		const current = await request.get(MATRIX, { failOnStatusCode: false, headers: await withRequestToken(request) })
 		expect(current.status(), 'an administrator reads the action matrix').toBe(200)
 		savedMatrix = ((await current.json()).matrix ?? {}) as Record<string, unknown>
 	})
 
 	test.afterAll(async ({ request }) => {
 		if (savedMatrix !== null) {
-			await request.put(MATRIX, { failOnStatusCode: false, data: { matrix: savedMatrix } })
+			await request.put(MATRIX, { failOnStatusCode: false, headers: await withRequestToken(request), data: { matrix: savedMatrix } })
 		}
 		for (const id of created) {
 			await request.delete(`${OBJECTS}/${id}`, { failOnStatusCode: false })
@@ -89,14 +96,34 @@ test.describe('nextcloud-event-triggers: family grant and self-service subscribe
 	})
 
 	// @e2e nextcloud-event-triggers::a-non-admin-succeeds-once-their-group-is-granted-the-family-action
-	test('a member of a group granted the Files family subscribes to a Files event', async ({ request, playwright }) => {
-		const matrix: Record<string, unknown> = { ...(savedMatrix ?? {}) }
+	test('a member of a group granted the Files family subscribes to a Files event', async ({ page, request, playwright }) => {
+		test.setTimeout(90_000)
+
+		// The administrator ticks the two cells in the matrix editor and saves.
+		await page.goto(ADMIN_SETTINGS_URL, { waitUntil: 'domcontentloaded' })
+		const section = page.locator('[data-testid=admin-action-auth-section]')
+		await expect(section, 'the Action authorization section renders').toBeVisible({ timeout: 20_000 })
 		for (const action of ['event.subscribe', 'event.subscribe-nextcloud-files']) {
-			const groups = Array.isArray(matrix[action]) ? (matrix[action] as string[]) : ['admin']
-			matrix[action] = Array.from(new Set([...groups, GROUP]))
+			// The aria-label is ActionAuthMatrix.vue's "Allow group {group} to perform {action}".
+			const cell = section.getByRole('checkbox', { name: `Allow group ${GROUP} to perform ${action}`, exact: true })
+			await expect(cell, `the matrix has a ${GROUP} cell for ${action}`).toHaveCount(1, { timeout: 20_000 })
+			if (!(await cell.isChecked())) {
+				// NcCheckboxRadioSwitch hides its input behind a styled label.
+				await cell.check({ force: true })
+			}
+			await expect(cell).toBeChecked()
 		}
-		const granted = await request.put(MATRIX, { failOnStatusCode: false, data: { matrix } })
-		expect(granted.status(), 'the administrator grants the Files family to the group').toBe(200)
+		const saved = page.waitForResponse((resp) => resp.url().includes('/api/admin/action-matrix') && resp.request().method() === 'PUT')
+		await section.getByTestId('admin-action-matrix-save').click()
+		expect((await saved).status(), 'the administrator saves the grant').toBe(200)
+
+		const stored = await request.get(MATRIX, { failOnStatusCode: false, headers: await withRequestToken(request) })
+		expect(stored.status()).toBe(200)
+		const matrix = ((await stored.json()).matrix ?? {}) as Record<string, string[]>
+		for (const action of ['event.subscribe', 'event.subscribe-nextcloud-files']) {
+			expect(matrix[action] ?? [], `${action} is granted to ${GROUP}`).toContain(GROUP)
+		}
+		expect(matrix['event.subscribe-nextcloud-calendar'] ?? [], 'the Calendar family stays ungranted').not.toContain(GROUP)
 
 		const member = await asMember(playwright)
 		try {
@@ -161,18 +188,26 @@ test.describe('nextcloud-event-triggers: the action-type picker', () => {
 	})
 
 	// @e2e nextcloud-event-triggers::choosing-flow-persists-the-target
-	test('a subscription saved with a flow action carries the flow id', async ({ request }) => {
-		const flowId = 'e2e-flow-0000-0000-0000-000000000001'
-		const subscribed = await request.post(SUBSCRIPTIONS, {
-			failOnStatusCode: false,
-			data: { style: 'push', sink: SINK, types: ['com.nextcloud.files.node.created'], action: { kind: 'flow', flowId } },
-		})
-		expect(subscribed.status(), await subscribed.text()).toBe(200)
-		const id = idOf(await subscribed.json())
-		created.push(id)
+	// Task 3's second criterion for every kind: the saved subscription carries the chosen action.
+	const kinds: Array<[string, Record<string, string>]> = [
+		['synchronization', { kind: 'synchronization', synchronizationId: 'e2e-sync-0000-0000-0000-000000000001' }],
+		['job', { kind: 'job', jobId: 'e2e-job-0000-0000-0000-000000000001' }],
+		['webhook', { kind: 'webhook' }],
+		['flow', { kind: 'flow', flowId: 'e2e-flow-0000-0000-0000-000000000001' }],
+	]
+	for (const [name, action] of kinds) {
+		test(`a subscription saved with a ${name} action carries it`, async ({ request }) => {
+			const subscribed = await request.post(SUBSCRIPTIONS, {
+				failOnStatusCode: false,
+				data: { style: 'push', sink: SINK, types: ['com.nextcloud.files.node.created'], action },
+			})
+			expect(subscribed.status(), await subscribed.text()).toBe(200)
+			const id = idOf(await subscribed.json())
+			created.push(id)
 
-		const stored = await request.get(`${OBJECTS}/${id}`, { failOnStatusCode: false })
-		expect(stored.status()).toBe(200)
-		expect((await stored.json()).action).toEqual({ kind: 'flow', flowId })
-	})
+			const stored = await request.get(`${OBJECTS}/${id}`, { failOnStatusCode: false })
+			expect(stored.status()).toBe(200)
+			expect((await stored.json()).action).toEqual(action)
+		})
+	}
 })

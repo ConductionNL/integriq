@@ -19,8 +19,10 @@
 - **acceptance_criteria**:
   - GIVEN an admin grants `event.subscribe-nextcloud-files` to a group via the ActionAuthMatrix editor WHEN a member self-service-subscribes to a file event THEN it succeeds
   - GIVEN an ungranted family WHEN the same user tries THEN the subscription is refused
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+  - `tests/e2e/spec-coverage/nextcloud-event-triggers.spec.ts`, "family grant and self-service subscribe": the administrator ticks `event.subscribe` and `event.subscribe-nextcloud-files` for the group in the ActionAuthMatrix editor on integriq's admin settings page and saves (the PUT answers 200, and the stored matrix grants both and not Calendar). A member then subscribes to a Files event (200), and is refused with 403 for Calendar alone and for Files plus Calendar. The matrix is put back afterwards. Direct calls to the matrix route now carry the session's request token, because the route has no `#[NoCSRFRequired]`.
+- [x] Test (written, runs in nightly)
+  - Written, not run here (it needs a live instance); runs in nightly.
 
 ### Task 3: Action-type picker in the subscription modal
 - **spec_ref**: `openspec/changes/archive/2026-07-15-nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md`
@@ -28,8 +30,10 @@
 - **acceptance_criteria**:
   - GIVEN the subscription modal WHEN synchronization, job or webhook is chosen THEN the matching target picker renders and the saved subscription carries the chosen `action`
   - GIVEN the subscription modal WHEN "Flow" is chosen and a flow is picked THEN the saved subscription carries `action: {kind: "flow", flowId}` (moved here from `nc-events-start-or-flows` task 4 when that change archived on 2026-09-28; the picker itself is covered by `tests/vitest/subscriptionFlowAction.spec.js`)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+  - Same file, "the action-type picker": in the Webhooks page's Add Webhook modal, picking Synchronization, Job or Flow shows the target picker and Webhook shows none. A subscription saved with each kind carries it as stored (`synchronizationId`, `jobId`, `{kind: "webhook"}`, `flowId`); this half goes through the API so it holds without a synchronization, job or flow on the instance.
+- [x] Test (written, runs in nightly)
+  - Written, not run here (it needs a live instance); runs in nightly.
 
 ## 3. Newman
 
