@@ -603,9 +603,9 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 	): array {
 		// 1) MINT — organisation-scoped, allowedApps pinned so Guard 2 admits us.
 		// OpenRegister main mints through mintCredential(CredentialMint, CredentialMintOptions);
-		// older brokers through the positional mint(). VerifiedCredentialMinter picks the shape.
+		// older brokers through the positional mint(). BrokerMintCall picks the shape.
 		try {
-			$credentialId = VerifiedCredentialMinter::mintCredential(
+			$credentialId = (new BrokerMintCall())->mint(
 				broker: $broker,
 				mint: [
 					'label'        => $name . ' — ' . $field,
@@ -794,7 +794,7 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 
 		$broker = $this->resolveBroker();
 
-		if (method_exists($broker, 'mint') === false && VerifiedCredentialMinter::hasValueMint(broker: $broker) === false) {
+		if ((new BrokerMintCall())->canMint(broker: $broker) === false) {
 			throw new RuntimeException(
 				message: 'The installed OpenRegister credential broker cannot mint credentials '
 					. '(neither CredentialBrokerService::mintCredential() nor mint() is present). Upgrade OpenRegister to a version that ships '

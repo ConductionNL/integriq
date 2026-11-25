@@ -767,15 +767,18 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 
 		$result = $this->executor->migrateAll();
 
-		$this->assertSame(1, $result['migrated']);
-		$this->assertSame(0, $result['failed']);
-		$this->assertCount(1, $broker->mintCalls);
-		$this->assertSame('organisation', $broker->mintCalls[0]['scope']);
-		$this->assertSame(self::ORG, $broker->mintCalls[0]['organisation']);
-		$this->assertSame(['openconnector'], $broker->mintCalls[0]['allowedApps']);
-		$this->assertSame(self::OWNER, $broker->mintCalls[0]['owner']);
-		$this->assertNull($this->rawField('src-1', 'apikey'));
-		$this->assertSame(['credentialRef' => ['credentialId' => 'vcred-1']], $this->rawRef('src-1', 'apikey'));
+		$this->assertSame(expected: 1, actual: $result['migrated']);
+		$this->assertSame(expected: 0, actual: $result['failed']);
+		$this->assertCount(expectedCount: 1, haystack: $broker->mintCalls);
+		$this->assertSame(expected: 'organisation', actual: $broker->mintCalls[0]['scope']);
+		$this->assertSame(expected: self::ORG, actual: $broker->mintCalls[0]['organisation']);
+		$this->assertSame(expected: ['openconnector'], actual: $broker->mintCalls[0]['allowedApps']);
+		$this->assertSame(expected: self::OWNER, actual: $broker->mintCalls[0]['owner']);
+		$this->assertNull(actual: $this->rawField(uuid: 'src-1', field: 'apikey'));
+		$this->assertSame(
+			expected: ['credentialRef' => ['credentialId' => 'vcred-1']],
+			actual: $this->rawRef(uuid: 'src-1', field: 'apikey')
+		);
 	}//end testMintsThroughTheValueObjectApiOnOpenRegisterMain()
 
 	/**
