@@ -135,7 +135,7 @@ class MappingLookup implements MappingLookupInterface {
 	 *
 	 * @throws RuntimeException When the schema is not allowed, a filter is not scalar, more objects match than the limit, or OpenRegister is missing.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function lookupAll(string $schema, array $filters, string $field, int $limit = self::MAX_ALL): array {
 		$filters = $this->guard(function: 'lookupAll', schema: $schema, filters: $filters);

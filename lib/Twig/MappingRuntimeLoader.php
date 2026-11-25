@@ -79,7 +79,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface {
 	 *
 	 * @return RuntimeExtensionInterface|null
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function load(string $class): ?RuntimeExtensionInterface {
 		if ($class === MappingListRuntime::class) {

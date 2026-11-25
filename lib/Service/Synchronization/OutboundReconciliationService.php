@@ -48,7 +48,7 @@ use Throwable;
  * the run log and left alone. Objects that fail the synchronization's
  * conditions are not pushed.
  *
- * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+ * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
  */
 class OutboundReconciliationService {
 
@@ -83,7 +83,7 @@ class OutboundReconciliationService {
 	 *
 	 * @return bool True for a register-to-api synchronization with a `targetConfig.reconcile.endpoint`.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function isReconcilable(array $synchronization): bool {
 		$endpoint = ($synchronization['targetConfig']['reconcile']['endpoint'] ?? null);
@@ -100,7 +100,7 @@ class OutboundReconciliationService {
 	 *
 	 * @return array<int, array> The reconcilable synchronizations, as arrays.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function findReconcilable(): array {
 		$found = [];
@@ -123,7 +123,7 @@ class OutboundReconciliationService {
 	 * @return array The report: `complete`, `created` (origin ids), `adopted` (origin id to target id),
 	 *               `unmatched` (target ids), `failed` (origin id to reason) and `message`.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function reconcile(array $synchronization): array {
 		$run = new ReconciliationRun(
@@ -169,7 +169,7 @@ class OutboundReconciliationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	private function repair(ReconciliationRun $run, string $uuid, array $object, ?array $contract): void {
 		$conditions = ($run->synchronization['conditions'] ?? []);
@@ -250,7 +250,7 @@ class OutboundReconciliationService {
 	 *
 	 * @return string|null Null on success, otherwise why it failed.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	private function push(ReconciliationRun $run, array $contract, array $object): ?string {
 		try {
@@ -288,7 +288,7 @@ class OutboundReconciliationService {
 	 *
 	 * @return array<string, array> The contracts.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	private function contractsByOrigin(array $synchronization): array {
 		$byOrigin = [];
@@ -310,7 +310,7 @@ class OutboundReconciliationService {
 	 *
 	 * @return array<string, array> The serialized objects, each with its `id`.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	private function sourceObjects(array $synchronization): array {
 		[$register, $schema] = explode(separator: '/', string: (string)$synchronization['sourceId']);
@@ -334,7 +334,7 @@ class OutboundReconciliationService {
 	 *
 	 * @return iterable The objects.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	private function findAll(array $filters): iterable {
 		$result = $this->objects->findAll(config: ['filters' => $filters], _rbac: false, _multitenancy: false);
@@ -351,7 +351,7 @@ class OutboundReconciliationService {
 	 *
 	 * @return array The report.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	private function finish(ReconciliationRun $run): array {
 		$run->log->setMessage(message: $run->report['message']);
@@ -372,7 +372,7 @@ class OutboundReconciliationService {
 	 *
 	 * @return array The array.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	private function toArray(mixed $entity): array {
 		if (is_array($entity) === true) {

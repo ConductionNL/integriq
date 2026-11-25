@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
+ * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Twig\Loader\ArrayLoader;
 /**
  * Covers lib/Settings/configurations/staff-to-untis.json.
  *
- * @spec openspec/changes/connectors-hr-staff-sync/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-11-25-connectors-hr-staff-sync/tasks.md#task-3
  */
 final class StaffToUntisSetTest extends TestCase {
 
@@ -219,7 +219,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testANewEmployeeBecomesTheRecordedTeacherCreate(): void {
 		$sent = $this->map(slug: 'staff-to-untis-teacher', input: 'employee-new-teacher.json');
@@ -232,7 +232,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testALeaverIsMadeInactiveNotDeleted(): void {
 		$sent = $this->map(slug: 'staff-to-untis-teacher', input: 'employee-leaver.json');
@@ -248,7 +248,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testAnOpenAssignmentKeepsTheTeacherActive(): void {
 		$sent = $this->map(
@@ -266,7 +266,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testTheLastAssignmentEndIsTheExitDate(): void {
 		$sent = $this->map(
@@ -284,7 +284,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testEveryAssignmentEndedMakesTheTeacherInactive(): void {
 		$sent = $this->map(
@@ -302,7 +302,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testAnEndedEmploymentWinsOverAnOpenAssignment(): void {
 		$open = $this->assignment(endDate: null);
@@ -318,7 +318,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testOnlyTheEmployeesOwnAssignmentsCount(): void {
 		$other = $this->assignment(endDate: '2020-12-31');
@@ -334,7 +334,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testTheAssignmentReadNeedsTheAllowlist(): void {
 		try {
@@ -350,7 +350,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testAnAssignmentChangeRunsTheTeacherPush(): void {
 		$syncs = $this->set()['components']['synchronizations'];
@@ -369,7 +369,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
 	 */
 	public function testABsnAndAnIbanNeverLeaveHumaniq(): void {
 		$sent = json_encode([
@@ -387,7 +387,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
 	 */
 	public function testTheSetIsPersonalDataWithAllowListMappingsOnly(): void {
 		$set = $this->set();
@@ -406,7 +406,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
 	 */
 	public function testAPassThroughMappingInTheSetRefusesTheInstall(): void {
 		$set = $this->set();
@@ -423,7 +423,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
 	 */
 	public function testApprovedLeaveBecomesTheRecordedAbsence(): void {
 		$leave = $this->fixture(file: 'leave-request-approved.json');
@@ -438,7 +438,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
 	 */
 	public function testTheNeutralReasonIsTheAdministratorsChoice(): void {
 		$set = $this->set();
@@ -451,7 +451,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
 	 */
 	public function testLeaveOfAnUnknownTeacherSendsNoTeacherId(): void {
 		$sent = $this->map(slug: 'staff-to-untis-absence', input: 'leave-request-approved.json', teacherId: null);
@@ -464,7 +464,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
 	 */
 	public function testOnlyApprovedLeaveIsSentAndAWithdrawalDeletes(): void {
 		$leave = $this->fixture(file: 'leave-request-approved.json');
@@ -482,7 +482,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testTheSynchronizationsWriteToTheDocumentedUntisPaths(): void {
 		$set = $this->set();
@@ -513,7 +513,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function testTheTeachersAreReconciledNightlyOnTheMappedKeys(): void {
 		$set = $this->set();
@@ -537,7 +537,7 @@ final class StaffToUntisSetTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testTheUntisSourceIsDormantAndBrokered(): void {
 		$set = $this->set();

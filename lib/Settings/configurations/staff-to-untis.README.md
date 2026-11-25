@@ -2,7 +2,7 @@
 
 Row `planninq:tt-hr-sync`, "Keep staff, contracts, deployment and leave in
 step between the HR system and the timetabling system". Change
-`openspec/changes/connectors-hr-staff-sync`, design D2 and D5.
+`openspec/changes/archive/2026-11-25-connectors-hr-staff-sync`, design D2 and D5.
 
 The `staff-to-untis` set pushes humaniq's employees, their school
 assignments and their approved leave into one timetabling system: Untis. This

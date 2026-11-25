@@ -184,7 +184,7 @@ class MappingLookupTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testLookupAllAnswersEveryMatch(): void {
 		$lookup = $this->lookup(
@@ -208,7 +208,7 @@ class MappingLookupTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function testLookupAllRefusesAPartialList(): void {
 		$lookup = $this->lookup(
@@ -255,7 +255,7 @@ class MappingLookupTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function testTheListRuntimeRefusesWithoutTheService(): void {
 		$runtime = new MappingListRuntime(lookup: $this->lookup(gemeenten: [['code' => '0363', 'naam' => 'Amsterdam']]));

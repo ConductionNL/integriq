@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/connectors-hr-staff-sync/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-11-25-connectors-hr-staff-sync/tasks.md#task-3
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -34,7 +34,7 @@ namespace OCA\Integriq\Service;
  * allow-list: `passThrough` absent or false. A set without the mark is not
  * checked, so every existing set imports as before.
  *
- * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
+ * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
  */
 final class PersonalDataSetGuard {
 
@@ -45,7 +45,7 @@ final class PersonalDataSetGuard {
 	 *
 	 * @return bool True when `personalData` or `info.x-personalData` is true.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-11-25-connectors-hr-staff-sync/tasks.md#task-3
 	 */
 	public static function carriesPersonalData(array $document): bool {
 		return ($document['personalData'] ?? false) === true || ($document['info']['x-personalData'] ?? false) === true;
@@ -58,7 +58,7 @@ final class PersonalDataSetGuard {
 	 *
 	 * @return array<int,string> One sentence per pass-through mapping, naming it.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
 	 */
 	public static function refusals(array $document): array {
 		if (self::carriesPersonalData(document: $document) === false) {

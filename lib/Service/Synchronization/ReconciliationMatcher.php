@@ -26,7 +26,7 @@ use JWadhams\JsonLogic;
 /**
  * Pure helpers of a reconciliation run: index, match and conditions.
  *
- * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+ * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
  *
  * @SuppressWarnings(PHPMD.StaticAccess) JsonLogic::apply() is the library's only entry point,
  *   the same one the engine evaluates a synchronization's conditions with.
@@ -41,7 +41,7 @@ class ReconciliationMatcher {
 	 *
 	 * @return array<string, array> The items by id.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function indexById(iterable $items, string $idPosition): array {
 		$byId = [];
@@ -65,7 +65,7 @@ class ReconciliationMatcher {
 	 *
 	 * @return string|null The matching id, or null.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function findMatch(array $pairs, array $object, array $items, array $claimed): ?string {
 		$source = new Dot($object);
@@ -94,7 +94,7 @@ class ReconciliationMatcher {
 	 *
 	 * @return bool True when there are no conditions or every one holds.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function conditionsHold(mixed $conditions, array $data): bool {
 		if ($conditions === [] || $conditions === null) {
@@ -123,7 +123,7 @@ class ReconciliationMatcher {
 	 *
 	 * @return string|null The id, or null.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	private function findByValue(array $items, string $path, string $value): ?string {
 		foreach ($items as $id => $item) {

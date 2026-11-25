@@ -22,7 +22,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+ * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ class MappingListRuntime implements RuntimeExtensionInterface {
 	 *
 	 * @param MappingLookupInterface|null $lookup The allowlisted register lookup; null refuses every lookup.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function __construct(
 		private readonly ?MappingLookupInterface $lookup = null,
@@ -68,7 +68,7 @@ class MappingListRuntime implements RuntimeExtensionInterface {
 	 *
 	 * @throws RuntimeException When lookups are not available here, or the lookup refuses.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
 	 */
 	public function lookupAll(string $schema, array $filters, string $field, int $limit = 200): array {
 		if ($this->lookup === null) {
