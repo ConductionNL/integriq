@@ -81,7 +81,9 @@ async function openImportDialog(page: Page, mailbox: string) {
 	const dialog = page.getByTestId('import-mail-file-modal')
 	await expect(dialog).toBeVisible({ timeout: 10_000 })
 	await dialog.getByLabel('Mailbox').click()
-	await page.getByRole('option', { name: mailbox }).click()
+	// NcSelect splits a long label into two spans, so the option's accessible
+	// name gains a space; match the visible text instead.
+	await page.getByRole('option').filter({ hasText: mailbox }).click()
 	return dialog
 }
 
@@ -143,7 +145,9 @@ test.describe('mail-intake-import', () => {
 		const context = await browser.newContext({
 			baseURL,
 			storageState: { cookies: [], origins: [] },
-			httpCredentials: { username: PLAIN_USER, password: PLAIN_PASSWORD },
+			// Nextcloud answers 401 without a WWW-Authenticate challenge, so the
+			// credentials must be sent up front.
+			httpCredentials: { username: PLAIN_USER, password: PLAIN_PASSWORD, send: 'always' },
 		})
 		try {
 			const options = await context.request.get(`${API_BASE}/mail-intake/import/options`, {
@@ -152,7 +156,13 @@ test.describe('mail-intake-import', () => {
 			expect(options.status()).toBe(200)
 			expect(await options.json()).toEqual({ allowed: false, mailboxes: [] })
 
+			// Page routes do not accept basic auth; sign in through the form.
 			const page = await context.newPage()
+			await page.goto('/index.php/login')
+			await page.locator('input[name="user"]').fill(PLAIN_USER)
+			await page.locator('input[name="password"]').fill(PLAIN_PASSWORD)
+			await page.locator('button[type="submit"], input[type="submit"]').first().click()
+			await page.waitForURL((url) => !/\/login/.test(url.pathname), { timeout: 30_000 })
 			await page.goto(`${APP_BASE}/messages/mail`, { waitUntil: 'domcontentloaded' })
 			await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 			await expect(page.getByTestId('mail-import-file')).toHaveCount(0)
