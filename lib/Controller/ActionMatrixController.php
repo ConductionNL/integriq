@@ -77,7 +77,7 @@ class ActionMatrixController extends Controller {
 	 * @return JSONResponse The matrix, action keys, group IDs, labels and areas.
 	 *
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
-	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getMatrix(): JSONResponse {
@@ -124,7 +124,7 @@ class ActionMatrixController extends Controller {
 	 * @return JSONResponse The normalized matrix after the write, and the schemas not applied.
 	 *
 	 * @spec openspec/specs/action-authorization/spec.md#requirement-the-matrix-is-editable-by-an-administrator-and-only-by-one
-	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setMatrix(): JSONResponse {
@@ -184,7 +184,7 @@ class ActionMatrixController extends Controller {
 	 *
 	 * @return array<string, string>
 	 *
-	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
 	 */
 	private function seedTexts(array $seed, string $member): array {
 		$texts = ($seed[$member] ?? null);

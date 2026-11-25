@@ -53,12 +53,15 @@ The matrix MUST hold `object.<schema>.<verb>` actions for `source`, `mapping`,
 `update` and `delete`. Saving MUST write the chosen groups, always with
 `admin`, into that schema's OpenRegister `authorization` block. The seeded
 value of each object action MUST equal the schema's authorization in force
-before this change.
+before this change. Granting one verb MUST NOT narrow the verbs left at their
+seed: once a schema's block names any verb, a verb still open to every
+signed-in user MUST be written out as `authenticated`, because OpenRegister
+reads a verb missing from a block as admin only.
 
 #### Scenario: a team edits mappings but not sources
 - GIVEN an administrator who grants `object.mapping.update` to `integratie-beheer` and leaves `object.source.update` at admin
 - WHEN a member of `integratie-beheer` edits a mapping and then a source through the OpenRegister object API
-- THEN the mapping edit is saved and the source edit is refused
+- THEN the mapping edit is saved and the source edit is refused, and a non-member can still read the mapping but not edit it
 - e2e: tests/e2e/action-rights-coverage.spec.ts
 
 #### Scenario: applying the seed changes nothing

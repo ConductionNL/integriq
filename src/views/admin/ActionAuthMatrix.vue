@@ -139,7 +139,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002 */
+		/** @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002 */
 		sections() {
 			return actionSections(this.actions, { areas: this.areas, labels: this.labels })
 		},
@@ -160,7 +160,7 @@ export default {
 		 *
 		 * @param {{actions: Array<{name: string}>}} section The section.
 		 *
-		 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+		 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 		 */
 		columnsOf(section) {
 			return sectionColumns(section, this.groups)
@@ -171,7 +171,7 @@ export default {
 		 *
 		 * @param {string} group The group id.
 		 *
-		 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+		 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 		 */
 		columnTitle(group) {
 			return group === EVERY_SIGNED_IN_USER ? this.t('integriq', 'Every signed-in user') : group

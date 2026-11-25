@@ -6,7 +6,7 @@
  * label and its name (src/views/admin/actionMatrix.js actionSections and
  * ActionAuthMatrix.vue).
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
  */
 import { describe, expect, it, vi } from 'vitest'
 import { actionSections } from '@/views/admin/actionMatrix.js'
