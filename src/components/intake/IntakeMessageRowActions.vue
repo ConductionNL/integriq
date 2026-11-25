@@ -229,24 +229,7 @@ export default {
 			this.sending = true
 			let done = false
 			try {
-				if (this.dialog === 'assign') {
-					const result = await assignMessage(ruleId(this.row), text.trim())
-					showSuccess(t('integriq', 'Assigned to {case}', { case: result?.targetRef || text.trim() }))
-					done = true
-				} else {
-					const result = await replyToMessage(ruleId(this.row), text)
-					done = result?.status === 'sent'
-					if (done) {
-						showSuccess(t('integriq', 'Reply sent'))
-					} else {
-						showError(result?.detail || t('integriq', 'The reply was not sent.'))
-					}
-				}
-			} catch (error) {
-				const fallback = this.dialog === 'assign'
-					? t('integriq', 'The message could not be assigned.')
-					: t('integriq', 'The reply was not sent.')
-				showError(refusalOf(error, fallback))
+				done = this.dialog === 'assign' ? await this.sendAssign(text.trim()) : await this.sendReply(text)
 			} finally {
 				this.sending = false
 			}
@@ -255,6 +238,45 @@ export default {
 				refreshLogPage(this)
 			}
 			return done
+		},
+
+		/**
+		 * Assign the message to the named case and say what happened.
+		 *
+		 * @param {string} caseRef The case reference.
+		 * @return {Promise<boolean>} Whether it was assigned.
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
+		async sendAssign(caseRef) {
+			try {
+				const result = await assignMessage(ruleId(this.row), caseRef)
+				showSuccess(t('integriq', 'Assigned to {case}', { case: result?.targetRef || caseRef }))
+				return true
+			} catch (error) {
+				showError(refusalOf(error, t('integriq', 'The message could not be assigned.')))
+				return false
+			}
+		},
+
+		/**
+		 * Send the reply on the message's channel and say what happened.
+		 *
+		 * @param {string} text The reply.
+		 * @return {Promise<boolean>} Whether it was sent.
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
+		async sendReply(text) {
+			try {
+				const result = await replyToMessage(ruleId(this.row), text)
+				if (result?.status === 'sent') {
+					showSuccess(t('integriq', 'Reply sent'))
+					return true
+				}
+				showError(result?.detail || t('integriq', 'The reply was not sent.'))
+			} catch (error) {
+				showError(refusalOf(error, t('integriq', 'The reply was not sent.')))
+			}
+			return false
 		},
 	},
 }

@@ -86,6 +86,12 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Start empty whenever the dialog opens for another action.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+		 */
 		kind() {
 			this.value = ''
 		},
