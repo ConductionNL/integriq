@@ -46,6 +46,6 @@ Kind: code. Size M. Row `integriq:src-database`.
   - `DatabaseSourceDeclarationTest` (2), `CatalogRegistryServiceTest::testTheDatabaseAdapterIsListedUnderDataInfrastructure`. REQ-DIC-002's manifest entry is not checked, see above.
 
 ## Verification
-- [ ] `openspec validate sources-database-adapter --type change --strict` passes
+- [x] `openspec validate sources-database-adapter --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [x] No TimedJob class added (REQ-DIC-005)
 - [ ] PHPUnit and Playwright run, exit codes read

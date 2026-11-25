@@ -1,10 +1,3 @@
-# http-call-engine Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- sources-outbound-rate-limit-pacing
-
 ## Purpose
 
 Calls to a source are spaced to stay under its rate limit instead of being refused when the budget runs out. Row `integriq:src-ratelimit-out`.

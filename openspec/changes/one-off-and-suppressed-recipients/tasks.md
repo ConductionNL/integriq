@@ -46,7 +46,7 @@
 
 ## Verification
 
-- [ ] `openspec validate one-off-and-suppressed-recipients --strict` passes
+- [x] `openspec validate one-off-and-suppressed-recipients --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [ ] PHPUnit run in the container, exit code read rather than the summary line
 - [ ] A send with one addition and one suppression, read back from the record with the reason intact
 

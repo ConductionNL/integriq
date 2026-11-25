@@ -75,6 +75,6 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
     unticked until a Newman run reads green.
 
 ## Verification
-- [ ] `openspec validate access-consumer-credentials --type change --strict` passes
+- [x] `openspec validate access-consumer-credentials --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [ ] PHPUnit and Newman run, exit codes read
 - [ ] A read of every consumer over the OpenRegister object API shows no key and no hash

@@ -68,6 +68,6 @@ Kind: code. Size M. Row `integriq:src-sftp`.
   endpoints are admin-only.
 
 ## Verification
-- [ ] `openspec validate sources-sftp-adapter --type change --strict` passes
+- [x] `openspec validate sources-sftp-adapter --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [ ] No TimedJob class added (REQ-DIC-005)
 - [ ] PHPUnit and Playwright run, exit codes read

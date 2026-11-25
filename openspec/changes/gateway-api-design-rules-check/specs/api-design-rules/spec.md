@@ -1,10 +1,3 @@
-# api-design-rules Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- gateway-api-design-rules-check
-
 ## Purpose
 
 An API product's description is checked against the Dutch API design rules and the organisation's own rules before it is published. Rows `integriq:acc-governance` and `integriq:nl-api-design-rules`.
