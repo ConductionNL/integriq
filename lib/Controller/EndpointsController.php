@@ -41,6 +41,7 @@ use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
+use OCA\Integriq\Http\ProblemResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IL10N;
@@ -212,33 +213,43 @@ class EndpointsController extends Controller {
 	/**
 	 * The 404 for a path and method no endpoint is registered for.
 	 *
+	 * A problem document with its `instance`, as every other gateway error
+	 * (REQ-RCPE-002); the old `error` member stays for one release.
+	 *
 	 * @param string $path The requested path.
 	 *
 	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function noEndpointFor(string $path): JSONResponse {
-		return new JSONResponse(
-			data: [
-				'error' => $this->l->t(
-					'No matching endpoint found for path and method: %1$s %2$s',
-					[$path, $this->request->getMethod()]
-				),
-			],
-			statusCode: 404
+		$message = $this->l->t('No matching endpoint found for path and method: %1$s %2$s', [$path, $this->request->getMethod()]);
+
+		return new ProblemResponse(
+			slug: 'not-found',
+			status: 404,
+			detail: $message,
+			instance: $this->request->getId(),
+			extensions: ['error' => $message]
 		);
 	}//end noEndpointFor()
 
 	/**
-	 * The 409 for a path more than one endpoint matches.
+	 * The 409 for a path more than one endpoint matches, as a problem document (REQ-RCPE-002).
 	 *
 	 * @param \Exception $exception The cache service's refusal.
 	 *
 	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function ambiguousEndpoint(\Exception $exception): JSONResponse {
-		return new JSONResponse(
-			data: ['error' => $exception->getMessage()],
-			statusCode: 409
+		return new ProblemResponse(
+			slug: ProblemResponse::GENERIC,
+			status: 409,
+			detail: $exception->getMessage(),
+			instance: $this->request->getId(),
+			extensions: ['error' => $exception->getMessage()]
 		);
 	}//end ambiguousEndpoint()
 
