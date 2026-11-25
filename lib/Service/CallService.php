@@ -1893,6 +1893,7 @@ class CallService implements CallServiceInterface {
 	 * @param boolean $persistLog When false, return a transient (unsaved) CallLog and mutate nothing.
 	 * @param boolean $withholdBodies When true, the record is written without any body and names the user.
 	 * @param integer $pacedMs The milliseconds the call waited for its paced turn.
+	 * @param array<string, scalar> $logFields Extra fields the record is written with; a field the engine sets wins.
 	 *
 	 * The record is filed under the source's organisation, so that organisation's scoped log views list it.
 	 *
@@ -1915,6 +1916,7 @@ class CallService implements CallServiceInterface {
 		bool $persistLog = true,
 		bool $withholdBodies = false,
 		int $pacedMs = 0,
+		array $logFields = [],
 	): ObjectEntity {
 		// Interactive "Test connection" path (persistLog=false): return the response
 		// WITHOUT the expensive CallLog write. Persisting a CallLog runs a full
@@ -1953,6 +1955,11 @@ class CallService implements CallServiceInterface {
 		// The time the call waited for its paced turn (REQ-RLPC-001). Left out
 		// for a call that did not wait, so unpaced sources log as before.
 		$callLogData += array_filter(['pacedMs' => $pacedMs]);
+
+		// Fields the caller names the call by, such as the MCP method and tool
+		// (gateway-mcp-proxy REQ-MCPX-002). Written with the record, because
+		// call_log is append-only; a field the engine sets is never replaced.
+		$callLogData += $logFields;
 
 		// Bodies are stored only inside the source's investigation window, or
 		// for a caller that passed logBody; a failure keeps its request for a
@@ -3308,6 +3315,7 @@ class CallService implements CallServiceInterface {
 			persistLog: $prepared['request']->persistLog,
 			withholdBodies: $prepared['request']->withholdBodies,
 			pacedMs: (int)($prepared['pacedMs'] ?? 0),
+			logFields: $prepared['request']->logFields,
 		);
 	}//end persistCallLog()
 
@@ -3547,10 +3555,12 @@ class CallService implements CallServiceInterface {
 	 * @param callable                   $onHeaders      Called with the PSR-7 response once its headers arrived.
 	 * @param bool                       $withholdBodies When true, the call log keeps no request body either.
 	 * @param ExecutionTraceContext|null $trace          The active execution trace context, when any.
+	 * @param array<string, scalar>      $logFields      Extra fields the call log record is written with, such as the MCP method and tool.
 	 *
 	 * @return ObjectEntity The call log.
 	 *
 	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
 	public function relay(
 		ObjectEntity $source,
@@ -3561,6 +3571,7 @@ class CallService implements CallServiceInterface {
 		callable $onHeaders,
 		bool $withholdBodies = true,
 		?ExecutionTraceContext $trace = null,
+		array $logFields = [],
 	): ObjectEntity {
 		$prepared = $this->prepareCall(
 			source: $source,
@@ -3572,6 +3583,7 @@ class CallService implements CallServiceInterface {
 				trace: $trace,
 				onHeaders: $onHeaders,
 				withholdBodies: $withholdBodies,
+				logFields: $logFields,
 			)
 		);
 		if ($prepared['shortCircuit'] !== null) {

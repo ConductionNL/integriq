@@ -29,8 +29,6 @@ use OCA\Integriq\Service\Endpoint\McpRelayStream;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\RateLimit\RateLimitDecision;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\IOutput;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -63,8 +61,6 @@ class McpProxyHandlerTest extends TestCase {
 	 *
 	 * @var array<int, array{0: array<string, mixed>, 1: string|null}>
 	 */
-	private array $saved = [];
-
 	/**
 	 * The limiter keys counted.
 	 *
@@ -85,8 +81,8 @@ class McpProxyHandlerTest extends TestCase {
 	private function handler(int $status = 200, array $headers = [], array $chunks = [], int $allowed = PHP_INT_MAX): McpProxyHandler {
 		$calls = $this->createMock(CallService::class);
 		$calls->method('relay')->willReturnCallback(
-			function ($source, string $endpoint, string $method, array $config, $sink, callable $onHeaders, bool $withholdBodies = true) use ($status, $headers, $chunks) {
-				$this->relayed[] = compact('source', 'endpoint', 'method', 'config', 'withholdBodies');
+			function ($source, string $endpoint, string $method, array $config, $sink, callable $onHeaders, bool $withholdBodies = true, $trace = null, array $logFields = []) use ($status, $headers, $chunks) {
+				$this->relayed[] = compact('source', 'endpoint', 'method', 'config', 'withholdBodies', 'logFields');
 				$onHeaders(new PsrResponse($status, $headers));
 				foreach ($chunks as $chunk) {
 					$sink->write($chunk);
@@ -105,15 +101,7 @@ class McpProxyHandlerTest extends TestCase {
 			}
 		);
 
-		$objects = $this->createMock(ORObjectService::class);
-		$objects->method('saveObject')->willReturnCallback(
-			function (array $object, ObjectSaveOptions $options) {
-				$this->saved[] = [$object, $options->uuid];
-				return ObjectServiceMockBuilder::objectEntity($this, $object, $options->uuid);
-			}
-		);
-
-		return new McpProxyHandler($calls, $limits, $objects, $this->createMock(LoggerInterface::class));
+		return new McpProxyHandler($calls, $limits, $this->createMock(LoggerInterface::class));
 	}//end handler()
 
 	/**
@@ -229,7 +217,7 @@ class McpProxyHandlerTest extends TestCase {
 		$this->assertSame(60, $this->relayed[0]['config']['timeout']);
 		$this->assertTrue($this->relayed[0]['withholdBodies'], 'Tool arguments are not stored by default.');
 		$this->assertSame(
-			['status 200', 'header Content-Type: application/json', 'header Mcp-Session-Id: sess-42', 'body {"jsonrpc":"2.0","id":2,"result":{}}'],
+			['status 200', 'header HTTP/1.1 200 OK', 'header Content-Type: application/json', 'header Mcp-Session-Id: sess-42', 'body {"jsonrpc":"2.0","id":2,"result":{}}'],
 			$log
 		);
 	}//end testTheCallCarriesTheSessionAndTheUpstreamSessionComesBack()
@@ -249,13 +237,16 @@ class McpProxyHandlerTest extends TestCase {
 
 		$this->assertSame(15, $this->relayed[0]['config']['timeout']);
 		$this->assertSame(
-			['status 200', 'header Content-Type: text/event-stream', 'header X-Accel-Buffering: no', 'body ' . $events[0], 'body ' . $events[1], 'body ' . $events[2]],
+			['status 200', 'header HTTP/1.1 200 OK', 'header Content-Type: text/event-stream', 'header X-Accel-Buffering: no', 'body ' . $events[0], 'body ' . $events[1], 'body ' . $events[2]],
 			$log
 		);
 	}//end testAnEventStreamIsRelayedAsItArrives()
 
 	/**
-	 * The call log names the method and, for tools/call, the tool; without its arguments.
+	 * The call log is written naming the method and, for tools/call, the tool; without its arguments.
+	 *
+	 * The names go with the call, so the record is written with them: call_log
+	 * is append-only and a saved record cannot be stamped afterwards.
 	 *
 	 * @return void
 	 */
@@ -265,12 +256,32 @@ class McpProxyHandlerTest extends TestCase {
 		$handler->handle(call: $this->call(body: '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"fetch","arguments":{"bsn":"999999990"}}}'))
 			->callback($this->recordingOutput(log: $log));
 
-		$this->assertCount(1, $this->saved);
-		$this->assertSame('log-1', $this->saved[0][1]);
-		$this->assertSame('tools/call', $this->saved[0][0]['mcpMethod']);
-		$this->assertSame('fetch', $this->saved[0][0]['mcpTool']);
-		$this->assertStringNotContainsString('999999990', (string)json_encode($this->saved[0][0]));
+		$this->assertCount(1, $this->relayed);
+		$this->assertSame(['mcpMethod' => 'tools/call', 'mcpTool' => 'fetch'], $this->relayed[0]['logFields']);
+		$this->assertStringNotContainsString('999999990', (string)json_encode($this->relayed[0]['logFields']));
+		$this->assertTrue($this->relayed[0]['withholdBodies'], 'The arguments are not stored.');
+
+		$this->assertSame(['mcpMethod' => 'initialize'], McpProxyHandler::logFields(rpc: McpProxyHandler::rpcOf(rawBody: '{"jsonrpc":"2.0","id":1,"method":"initialize"}')));
 	}//end testTheCallLogNamesTheMethodAndTheTool()
+
+	/**
+	 * The upstream status replaces the 502 Nextcloud sent before the relay ran.
+	 *
+	 * Nextcloud sends a response's status as a raw status line, which PHP keeps
+	 * over a later http_response_code(); the relay sends a status line of its own.
+	 *
+	 * @return void
+	 */
+	public function testTheUpstreamStatusIsSentAsAStatusLine(): void {
+		$this->assertSame('HTTP/1.1 200 OK', McpProxyHandler::statusLine(upstream: new PsrResponse(200)));
+		$this->assertSame('HTTP/1.1 202 Accepted', McpProxyHandler::statusLine(upstream: new PsrResponse(202)));
+		$this->assertSame('HTTP/1.1 404 Not Found', McpProxyHandler::statusLine(upstream: new PsrResponse(404)));
+
+		$log = [];
+		$this->handler(status: 401, chunks: ['{}'])->handle(call: $this->call(body: '{"jsonrpc":"2.0","id":5,"method":"tools/list"}'))
+			->callback($this->recordingOutput(log: $log));
+		$this->assertSame(['status 401', 'header HTTP/1.1 401 Unauthorized'], array_slice($log, 0, 2));
+	}//end testTheUpstreamStatusIsSentAsAStatusLine()
 
 	/**
 	 * An endpoint that stores arguments says so to the call; a body that is not JSON-RPC is not stamped.
@@ -282,7 +293,7 @@ class McpProxyHandlerTest extends TestCase {
 		$this->handler(chunks: ['{}'])->handle(call: $this->call(body: 'plain', endpointExtra: ['mcpStoreArguments' => true]))->callback($this->recordingOutput(log: $log));
 
 		$this->assertFalse($this->relayed[0]['withholdBodies']);
-		$this->assertSame([], $this->saved);
+		$this->assertSame([], $this->relayed[0]['logFields'], 'A body that is not JSON-RPC names nothing.');
 	}//end testStoringArgumentsIsTheEndpointsChoice()
 
 	/**

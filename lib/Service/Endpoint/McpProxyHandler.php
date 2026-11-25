@@ -31,10 +31,6 @@ namespace OCA\Integriq\Service\Endpoint;
 
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\IOutput;
 use OCP\AppFramework\Http\JSONResponse;
@@ -98,13 +94,11 @@ class McpProxyHandler {
 	 *
 	 * @param CallService             $calls      The outbound path, relaying the answer.
 	 * @param InboundRateLimitService $limits     The limiter the consumer rate limit uses.
-	 * @param ORObjectService         $objects    Stamps the call log with the method and tool.
 	 * @param LoggerInterface         $logger     The logger.
 	 */
 	public function __construct(
 		private readonly CallService $calls,
 		private readonly InboundRateLimitService $limits,
-		private readonly ORObjectService $objects,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -255,6 +249,10 @@ class McpProxyHandler {
 	 */
 	public static function relayHeaders(ResponseInterface $upstream, IOutput $output): void {
 		$output->setHttpResponseCode($upstream->getStatusCode());
+		// Nextcloud sent this response's own status (502) as a raw status line
+		// before the callback ran, and PHP keeps a raw status line over a later
+		// http_response_code(); only a new status line replaces it.
+		$output->setHeader(self::statusLine(upstream: $upstream));
 		foreach (self::RELAYED_HEADERS as $name) {
 			$value = $upstream->getHeaderLine($name);
 			if ($value !== '') {
@@ -287,7 +285,7 @@ class McpProxyHandler {
 	}//end maxStreamSeconds()
 
 	/**
-	 * Make the call through CallService, relaying into the output, then name the method and tool on its log.
+	 * Make the call through CallService, relaying into the output; the call log names the method and tool.
 	 *
 	 * @param McpProxyCall                                             $call           The call.
 	 * @param array<string, mixed>                                     $config         The request configuration.
@@ -299,7 +297,7 @@ class McpProxyHandler {
 	 */
 	private function relay(McpProxyCall $call, array $config, IOutput $output, bool $storeArguments, array $rpc): void {
 		try {
-			$callLog = $this->calls->relay(
+			$this->calls->relay(
 				source: $call->source,
 				endpoint: $call->upstreamPath,
 				method: $call->request->getMethod(),
@@ -308,29 +306,29 @@ class McpProxyHandler {
 				onHeaders: static function (ResponseInterface $upstream) use ($output): void {
 					self::relayHeaders(upstream: $upstream, output: $output);
 				},
-				withholdBodies: ($storeArguments === false)
+				withholdBodies: ($storeArguments === false),
+				logFields: self::logFields(rpc: $rpc)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: the MCP relay failed: ' . $e->getMessage());
-			return;
 		}
-
-		$this->stamp(callLog: $callLog, rpc: $rpc);
 	}//end relay()
 
 	/**
-	 * Name the JSON-RPC method and the tool on the call log, so the log filters on them.
+	 * The JSON-RPC method and the tool a call log names, so the log filters on them.
 	 *
-	 * @param ObjectEntity                                             $callLog The call log.
-	 * @param array{method: string|null, tool: string|null, id: mixed} $rpc     What the body asked.
+	 * They are written with the record itself: `call_log` is append-only, so a
+	 * record cannot be stamped after it was saved.
 	 *
-	 * @return void
+	 * @param array{method: string|null, tool: string|null, id: mixed} $rpc What the body asked.
+	 *
+	 * @return array<string, string> `mcpMethod` and, for `tools/call`, `mcpTool`; nothing for a body that is not JSON-RPC.
 	 *
 	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
-	public function stamp(ObjectEntity $callLog, array $rpc): void {
-		if ($rpc['method'] === null || (string)$callLog->getUuid() === '') {
-			return;
+	public static function logFields(array $rpc): array {
+		if ($rpc['method'] === null) {
+			return [];
 		}
 
 		$fields = ['mcpMethod' => $rpc['method']];
@@ -338,18 +336,26 @@ class McpProxyHandler {
 			$fields['mcpTool'] = $rpc['tool'];
 		}
 
-		try {
-			// System write, unscoped: the call_log schema is admin-only and the caller is a consumer.
-			$this->objects->saveObject(
-				object: array_merge($callLog->getObject(), $fields),
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'), uuid: (string)$callLog->getUuid()),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning('integriq: the MCP method could not be written on call log ' . $callLog->getUuid() . ': ' . $e->getMessage());
+		return $fields;
+	}//end logFields()
+
+	/**
+	 * The HTTP status line of the upstream answer, in the caller's protocol.
+	 *
+	 * @param ResponseInterface $upstream The upstream response.
+	 *
+	 * @return string The status line, such as `HTTP/1.1 200 OK`.
+	 *
+	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 */
+	public static function statusLine(ResponseInterface $upstream): string {
+		$protocol = 'HTTP/1.1';
+		if (preg_match('#^HTTP/\d(\.\d)?$#', (string)($_SERVER['SERVER_PROTOCOL'] ?? '')) === 1) {
+			$protocol = (string)$_SERVER['SERVER_PROTOCOL'];
 		}
-	}//end stamp()
+
+		return trim($protocol . ' ' . $upstream->getStatusCode() . ' ' . str_replace(["\r", "\n"], '', $upstream->getReasonPhrase()));
+	}//end statusLine()
 
 	/**
 	 * A header name in its usual spelling.

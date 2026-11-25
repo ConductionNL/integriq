@@ -129,6 +129,18 @@ class EndpointServiceMcpTargetTest extends TestCase {
 	}//end testAnMcpEndpointRelaysToItsToolServer()
 
 	/**
+	 * An mcp endpoint published under its own path reaches the tool server's `upstreamPath`, as an api endpoint does.
+	 *
+	 * @return void
+	 */
+	public function testAnMcpEndpointReachesItsUpstreamPath(): void {
+		$response = $this->dispatch(targetType: 'mcp', ruleResult: [], endpointExtra: ['endpoint' => 'tools/documents', 'upstreamPath' => 'mcp']);
+		$response->callback($this->createMock(IOutput::class));
+
+		$this->assertSame([['relay', 'mcp', 'POST']], $this->calls);
+	}//end testAnMcpEndpointReachesItsUpstreamPath()
+
+	/**
 	 * An api endpoint still takes the buffered path.
 	 *
 	 * @return void
@@ -157,13 +169,14 @@ class EndpointServiceMcpTargetTest extends TestCase {
 	 *
 	 * @param string             $targetType The endpoint's target type.
 	 * @param array|JSONResponse $ruleResult What the before rules answered.
+	 * @param array              $endpointExtra More endpoint fields.
 	 *
 	 * @return Response The answer.
 	 */
-	private function dispatch(string $targetType, array|JSONResponse $ruleResult): Response {
+	private function dispatch(string $targetType, array|JSONResponse $ruleResult, array $endpointExtra = []): Response {
 		$endpoint = ObjectServiceMockBuilder::objectEntity(
 			$this,
-			['targetType' => $targetType, 'targetId' => 'src-tools', 'endpoint' => '/mcp'],
+			['targetType' => $targetType, 'targetId' => 'src-tools', 'endpoint' => '/mcp'] + $endpointExtra,
 			'endpoint-mcp'
 		);
 		$request = $this->createMock(IRequest::class);
