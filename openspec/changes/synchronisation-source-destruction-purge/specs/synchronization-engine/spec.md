@@ -42,7 +42,9 @@ when the synchronization's `onSourceDestroyed` is `purge`, purge that object
 at once. Otherwise it MUST apply the synchronization's disappearance policy
 to that object. It MUST NOT run a full synchronization and MUST NOT touch an
 object without a contract. An unsigned or wrongly signed call MUST be refused
-before its body is read.
+before its body is read. A notice that arrives without a signed-in user MUST
+act as the synchronization's owner, with that owner's rights, and MUST act on
+nothing when the synchronization has no owner that still exists.
 
 #### Scenario: the DMS destroys a document and the publication follows
 - GIVEN a publication synchronization with `onSourceDestroyed` `purge` and a ZGW abonnement on the source
@@ -55,6 +57,12 @@ before its body is read.
 - WHEN it arrives
 - THEN it is refused before the body is read, and nothing is deleted
 - @e2e exclude a refused public request; covered by PHPUnit on the controller
+
+#### Scenario: a signed notice acts as the synchronization's owner
+- GIVEN a synchronization owned by its administrator, and a signed destruction call with no signed-in user
+- WHEN it arrives
+- THEN the object is purged with the owner's rights, and with no owner left the call is answered 403 and nothing is deleted
+- @e2e exclude identity switching; covered by PHPUnit on SourceDestructionService and the controller, and live by `tests/e2e/source-destruction-purge.spec.ts` (an anonymous signed notice purges)
 
 ### Requirement: Every purge is recorded and a refused purge stays visible (REQ-SDP-003)
 
