@@ -173,9 +173,13 @@ class VerifiedCredentialMinter {
 	 *
 	 * @return string
 	 *
+	 * Public so the inline-secret migration mints through the same broker shape detection
+	 * (OpenRegister main dropped the positional mint()).
+	 *
 	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
-	private static function mintCredential(object $broker, array $mint): string {
+	public static function mintCredential(object $broker, array $mint): string {
 		if (self::hasValueMint(broker: $broker) === true) {
 			// OpenRegister main: the mint takes the credential and its options as value objects.
 			$credential = $broker->mintCredential(
@@ -214,8 +218,9 @@ class VerifiedCredentialMinter {
 	 * @return bool
 	 *
 	 * @spec openspec/changes/archive/2026-11-21-brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
-	private static function hasValueMint(object $broker): bool {
+	public static function hasValueMint(object $broker): bool {
 		return method_exists($broker, 'mintCredential') === true
 			&& class_exists(CredentialMint::class) === true
 			&& class_exists(CredentialMintOptions::class) === true;

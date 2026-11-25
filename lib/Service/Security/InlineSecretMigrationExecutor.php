@@ -602,26 +602,22 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 		array &$working,
 	): array {
 		// 1) MINT — organisation-scoped, allowedApps pinned so Guard 2 admits us.
+		// OpenRegister main mints through mintCredential(CredentialMint, CredentialMintOptions);
+		// older brokers through the positional mint(). VerifiedCredentialMinter picks the shape.
 		try {
-			// Positional args: $broker is only known to expose mint() — its parameter
-			// names cannot be verified statically (duck-typed cross-app class).
-			$credential = $broker->mint(
-				$name . ' — ' . $field,
-				$provider,
-				$owner,
-				[self::APP_ID],
-				$secret,
-				self::SCOPE_ORGANISATION,
-				$organisation
+			$credentialId = VerifiedCredentialMinter::mintCredential(
+				broker: $broker,
+				mint: [
+					'label'        => $name . ' — ' . $field,
+					'provider'     => $provider,
+					'owner'        => $owner,
+					'secret'       => $secret,
+					'organisation' => $organisation,
+				]
 			);
 		} catch (Throwable $e) {
 			$this->logFailure(step: 'mint', uuid: $uuid, field: $field, provider: $provider, e: $e);
 			return $this->fieldRecord(field: $field, provider: $provider, outcome: 'failed', reason: 'mint-failed', bucket: 'failed');
-		}
-
-		$credentialId = '';
-		if ($credential instanceof ObjectEntity === true) {
-			$credentialId = (string)$credential->getUuid();
 		}
 
 		if ($credentialId === '') {
@@ -798,10 +794,10 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 
 		$broker = $this->resolveBroker();
 
-		if (method_exists($broker, 'mint') === false) {
+		if (method_exists($broker, 'mint') === false && VerifiedCredentialMinter::hasValueMint(broker: $broker) === false) {
 			throw new RuntimeException(
 				message: 'The installed OpenRegister credential broker cannot mint credentials '
-					. '(CredentialBrokerService::mint() is missing). Upgrade OpenRegister to a version that ships '
+					. '(neither CredentialBrokerService::mintCredential() nor mint() is present). Upgrade OpenRegister to a version that ships '
 					. 'sessionless minting (openregister#440) before migrating. Nothing was rewritten.'
 			);
 		}
