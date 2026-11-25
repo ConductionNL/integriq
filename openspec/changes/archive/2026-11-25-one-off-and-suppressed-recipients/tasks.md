@@ -47,10 +47,13 @@
 ## Verification
 
 - [x] `openspec validate one-off-and-suppressed-recipients --strict` passes (openspec 2.2.0, 25 Nov 2026)
-- [ ] PHPUnit run in the container, exit code read rather than the summary line
-- [ ] A send with one addition and one suppression, read back from the record with the reason intact
+- [x] PHPUnit run in the container, exit code read rather than the summary line
+  > 2026-11-25: `--filter 'RecipientResolver|RecipientSelection|OutboundRecipientsController|MessageRecorder|DeliveryRequestedListener'` 74 tests, exit code 0.
+- [x] A send with one addition and one suppression, read back from the record with the reason intact
+  > 2026-11-25, live (sandbox Nextcloud 34.0.6 + MariaDB, OpenRegister main 292aa09d): a `DeliveryRequestedEvent` dispatched as dossiq dispatches it, inside a signed-in request, with two standing recipients (the applicant required by "Awb 3:41"), one addition (the applicant's lawyer) and the authorised representative suppressed with the reason "Machtiging ingetrokken op 20 november". It was handled with no refusal. Read back over the OpenRegister objects API: the `outbound_message` record and the `event` record both carry `recipientSelection` with standing, added and suppressed as separate parts, and the suppressed entry has its reason, user and time intact. The payload handed on carries the resolved list (applicant and lawyer). Playwright `message-recipient-selection.spec.ts` 2/2. Sandbox: the row's own status is `failed` / "No event subscription matched this delivery" because no transport subscription exists here. A dispatch with no signed-in user (CLI) writes no `outbound_message` row ("User 'Anonymous' does not have permission to 'create'"); the send itself is not affected.
 
 ## Handover
 
-- [ ] Hand dossiq its half: the send screen where a handler adds or suppresses a recipient and types the reason, the standing recipients with the statutory ones marked required on the delivery request, and the resolved list rendered on the case timeline entry
-- [ ] Record the row 6.23 closure in `openspec/changes/archive/2026-11-12-competitor-parity-2026-09/proposal.md` when this change is archived
+- [x] Hand dossiq its half: the send screen where a handler adds or suppresses a recipient and types the reason, the standing recipients with the statutory ones marked required on the delivery request, and the resolved list rendered on the case timeline entry
+  > 2026-11-25: handed over in the lanes' handoff log (builders-idle.md, "FOR b-dossiq"), including the decision shape `DeliveryRequestedEvent::$recipientDecision` takes, and the refusal codes to show.
+- [x] Record the row 6.23 closure in `openspec/changes/archive/2026-11-12-competitor-parity-2026-09/proposal.md` when this change is archived

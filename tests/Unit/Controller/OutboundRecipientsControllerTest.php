@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
+ * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\Integriq\Outbound\RecipientResolver
  * @uses   \OCA\Integriq\Outbound\RecipientSelectionRefusedException
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
+ * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
  */
 class OutboundRecipientsControllerTest extends TestCase {
 
