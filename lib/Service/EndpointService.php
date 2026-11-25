@@ -4862,45 +4862,12 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	private function processMappingRule(ObjectEntity $rule, array $data): array {
 		$config = $rule->getObject()['configuration'] ?? [];
-		$mapping = $this->ruleMapping(rule: $rule, mappingId: (string)($config['mapping'] ?? ''));
+		$mapping = $this->mappingService->getRuleMapping(mappingId: (string)($config['mapping'] ?? ''), rule: $rule);
 
 		$data = $this->processMapping(rule: $rule, mapping: $mapping, data: $data);
 
 		return $data;
 	}//end processMappingRule()
-
-	/**
-	 * The mapping a rule names, read as the gateway's own configuration.
-	 *
-	 * A public endpoint's caller is anonymous, and OpenRegister's tenancy shows
-	 * an anonymous request no integriq object, so reading the mapping in the
-	 * caller's scope failed every anonymous call with a 500. The mapping is
-	 * read unscoped, as the endpoint's source is, and bounded by the rule's
-	 * organisation: a mapping of another organisation is not found.
-	 *
-	 * @param ObjectEntity $rule      The rule that names the mapping.
-	 * @param string       $mappingId The mapping's id or uuid.
-	 *
-	 * @return Mapping The hydrated mapping.
-	 *
-	 * @throws DoesNotExistException When the mapping does not exist or belongs to another organisation.
-	 *
-	 * @spec openspec/changes/ori-public-serving/specs/ori-public-serving/spec.md
-	 */
-	private function ruleMapping(ObjectEntity $rule, string $mappingId): Mapping {
-		$object = $this->orObjectService->find(
-			id: $mappingId,
-			options: new ObjectFindOptions(register: 'integriq', schema: 'mapping'),
-			_rbac: false,
-			_multitenancy: false
-		);
-		$ruleOrganisation = $this->organisationOf(object: $rule);
-		if ($object === null || $this->sameOrganisation(first: $ruleOrganisation, second: $this->organisationOf(object: $object)) === false) {
-			throw new DoesNotExistException(sprintf('Mapping "%s" does not exist.', $mappingId));
-		}
-
-		return (new Mapping())->hydrate($object->getObject());
-	}//end ruleMapping()
 
 	/**
 	 * Extends input for performing business logic
