@@ -23,7 +23,7 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
   - GIVEN an enabled rule WHEN the administrator disables it THEN `firstMatchingRule()` no longer returns it
 - [x] Implement
   - Move up, Move down, Enable and Disable row actions (`src/handlers/intakeRuleHandlers.js`) write through `saveRule()`; delete is the built-in action, copy is off.
-- [ ] Test (Vitest on the handlers done in `tests/vitest/intakeRoutingEditor.spec.js`; e2e written (not run here: it needs a live instance). `tests/e2e/intake-routing-rules.spec.ts`)
+- [x] Test (Vitest on the handlers done in `tests/vitest/intakeRoutingEditor.spec.js`; e2e added and run live 25 Nov 2026 on NC 34 + MariaDB: Move up swaps two rules of a channel and Disable then Enable flips one, read back from the stored rules. `tests/e2e/intake-routing-rules.spec.ts`)
 
 ### Task 3: Test a draft rule
 - **spec_ref**: openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-draft-rule-is-tested-against-a-sample-message-without-side-effects-req-ire-002
