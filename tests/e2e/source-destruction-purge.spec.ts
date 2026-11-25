@@ -134,18 +134,22 @@ async function notify(
 /**
  * Open a synchronization's edit modal from the Synchronizations page.
  *
+ * The index pages 20 rows at a time, and on an instance with example data the
+ * rows this spec creates are not on the first page; the address narrows the
+ * list to the one name (the index merges its query into the fetch).
+ *
  * @param page The page.
  * @param name The synchronization's name.
  * @return Nothing.
  */
 async function openEditor(page: Page, name: string): Promise<void> {
-	await page.goto(`${APP_BASE}/synchronizations`, {
+	await page.goto(`${APP_BASE}/synchronizations?name=${encodeURIComponent(name)}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	const row = page.getByRole('row', { name: new RegExp(name) })
 	await expect(row).toBeVisible({ timeout: 20_000 })
 	await row.getByRole('button', { name: /actions/i }).click()
-	await page.getByRole('menuitem', { name: 'Edit' }).click()
+	await page.getByRole('menuitem', { name: 'Edit', exact: true }).click()
 	await expect(page.getByTestId('sync-editor-disappearance-policy')).toBeVisible({
 		timeout: 15_000,
 	})
@@ -352,10 +356,9 @@ test.describe('synchronisation-source-destruction-purge', () => {
 		await openEditor(page, PLAIN_SYNC)
 		await expect(page.getByTestId('sync-editor-purge-warning')).toHaveCount(0)
 		await page.getByTestId('sync-editor-disappearance-policy').click()
+		// The open dropdown lists its choices as plain items (no `option` role).
 		await page
-			.getByRole('option', {
-				name: 'Delete the record and its files permanently',
-			})
+			.getByText('Delete the record and its files permanently', { exact: true })
 			.click()
 		await expect(page.getByTestId('sync-editor-purge-warning')).toBeVisible()
 		await page.keyboard.press('Escape')
