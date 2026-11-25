@@ -36,6 +36,9 @@ const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 /** One run's marker, so reruns never meet each other's objects. */
 const RUN = `e2e-lti-${Date.now().toString(36)}`
 
+// Basic-auth API calls without this header fail Nextcloud's CSRF check (412).
+test.use({ extraHTTPHeaders: { 'OCS-APIRequest': 'true' } })
+
 /**
  * The id of a created object, whatever envelope OpenRegister answers with.
  *
@@ -99,7 +102,9 @@ test.describe('connectors-lti-platform-launch', () => {
 
 		await page.goto(`${APP_BASE}/lti-tools/${toolId}`, { waitUntil: 'domcontentloaded' })
 
-		const panel = page.getByTestId('lti-platform-details')
+		// CnBodySections sets its own data-testid on the section's root element,
+		// which replaces the component's `lti-platform-details`.
+		const panel = page.getByTestId('cn-body-section-component-lti-tool-platform-details')
 		await expect(panel).toBeVisible({ timeout: 15_000 })
 		const rows = panel.getByTestId('lti-platform-detail')
 		await expect(rows).toHaveCount(6)

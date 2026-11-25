@@ -4864,7 +4864,7 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	private function processMappingRule(ObjectEntity $rule, array $data): array {
 		$config = $rule->getObject()['configuration'] ?? [];
-		$mapping = $this->mappingService->getMapping($config['mapping']);
+		$mapping = $this->mappingService->getRuleMapping(mappingId: (string)($config['mapping'] ?? ''), rule: $rule);
 
 		$data = $this->processMapping(rule: $rule, mapping: $mapping, data: $data);
 

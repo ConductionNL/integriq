@@ -491,4 +491,67 @@ class MappingServiceTest extends TestCase {
 		$this->assertSame($data, $result);
 	}//end testExpandRelationsIgnoresAbsentKey()
 
+	/**
+	 * A rule reads its mapping unscoped, so a public endpoint's anonymous
+	 * caller is served: in the caller's scope OpenRegister's tenancy hides
+	 * every integriq object from an anonymous request and the call was a 500.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/ori-public-serving/spec.md
+	 */
+	public function testARuleReadsItsMappingUnscopedSoAnAnonymousCallerIsServed(): void {
+		$mappingEntity = new ObjectEntity();
+		$mappingEntity->setUuid('mapping-uuid');
+		$mappingEntity->setObject(['name' => 'ORI item fields', 'mapping' => ['id' => 'uuid']]);
+		$mappingEntity->setOrganisation('org-a');
+		$this->orObjectService->expects($this->once())
+			->method('find')
+			->with('mapping-uuid', $this->anything(), false, false)
+			->willReturn($mappingEntity);
+
+		$rule = new ObjectEntity();
+		$rule->setObject(['configuration' => ['mapping' => 'mapping-uuid']]);
+		$rule->setOrganisation('org-a');
+
+		$mapping = $this->service->getRuleMapping(mappingId: 'mapping-uuid', rule: $rule);
+
+		$this->assertSame(expected: 'ORI item fields', actual: $mapping->getName());
+	}//end testARuleReadsItsMappingUnscopedSoAnAnonymousCallerIsServed()
+
+	/**
+	 * Unscoped is bounded by the rule's organisation: a mapping of another
+	 * organisation is not found, as if it did not exist.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/ori-public-serving/spec.md
+	 */
+	public function testAMappingOfAnotherOrganisationIsNotFoundForTheRule(): void {
+		$mappingEntity = new ObjectEntity();
+		$mappingEntity->setObject(['name' => 'Other tenant mapping']);
+		$mappingEntity->setOrganisation('org-b');
+		$this->orObjectService->method('find')->willReturn($mappingEntity);
+
+		$rule = new ObjectEntity();
+		$rule->setOrganisation('org-a');
+
+		$this->expectException(exception: DoesNotExistException::class);
+		$this->service->getRuleMapping(mappingId: 'mapping-uuid', rule: $rule);
+	}//end testAMappingOfAnotherOrganisationIsNotFoundForTheRule()
+
+	/**
+	 * A missing mapping is not found for the rule either.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/ori-public-serving/spec.md
+	 */
+	public function testAMissingMappingIsNotFoundForTheRule(): void {
+		$this->orObjectService->method('find')->willReturn(null);
+
+		$this->expectException(exception: DoesNotExistException::class);
+		$this->service->getRuleMapping(mappingId: 'gone', rule: new ObjectEntity());
+	}//end testAMissingMappingIsNotFoundForTheRule()
+
 }//end class

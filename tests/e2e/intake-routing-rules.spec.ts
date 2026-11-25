@@ -36,6 +36,9 @@ const SECRET = 'e2e-intake-routing-secret'
 const CHANNEL = 'public-space-report'
 
 const seededRules: string[] = []
+
+// Basic-auth API calls without this header fail Nextcloud's CSRF check (412).
+test.use({ extraHTTPHeaders: { 'OCS-APIRequest': 'true' } })
 let caseTypeSlug = ''
 let caseTypeId = ''
 
