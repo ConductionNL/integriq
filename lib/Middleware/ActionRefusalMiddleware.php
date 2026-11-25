@@ -57,6 +57,8 @@ class ActionRefusalMiddleware extends Middleware {
 	 *
 	 * @throws Exception The exception, unchanged, when it is not an OCS refusal from a plain controller.
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The Middleware contract fixes this signature.
+	 *
 	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
 	 */
 	public function afterException($controller, $methodName, Exception $exception): Response {

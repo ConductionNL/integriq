@@ -185,7 +185,7 @@ class ObjectRightsServiceTest extends TestCase {
 	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 	 */
 	public function testGrantingOneVerbKeepsTheOtherOpenVerbsOpen(): void {
-		$mapper = $this->mapper(['mapping' => null]);
+		$mapper = $this->mapper(blocks: ['mapping' => null]);
 		$matrix = [];
 		foreach (ObjectRightsService::VERBS as $verb) {
 			$matrix['object.mapping.' . $verb] = ['admin', 'authenticated'];
@@ -193,7 +193,7 @@ class ObjectRightsServiceTest extends TestCase {
 
 		$matrix['object.mapping.update'] = ['admin', 'integratie-beheer'];
 
-		$this->service($mapper)->apply($matrix);
+		$this->service(mapper: $mapper)->apply($matrix);
 
 		$this->assertSame(
 			expected: [
@@ -214,13 +214,13 @@ class ObjectRightsServiceTest extends TestCase {
 	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 	 */
 	public function testAllVerbsBackAtTheirOpenSeedLeaveNoBlock(): void {
-		$mapper = $this->mapper(['mapping' => ['update' => ['admin', 'integratie-beheer']]]);
+		$mapper = $this->mapper(blocks: ['mapping' => ['update' => ['admin', 'integratie-beheer']]]);
 		$matrix = [];
 		foreach (ObjectRightsService::VERBS as $verb) {
 			$matrix['object.mapping.' . $verb] = ['admin', 'authenticated'];
 		}
 
-		$this->service($mapper)->apply($matrix);
+		$this->service(mapper: $mapper)->apply($matrix);
 
 		$this->assertSame(expected: [], actual: $mapper->schemas['mapping']->authorization);
 	}//end testAllVerbsBackAtTheirOpenSeedLeaveNoBlock()
