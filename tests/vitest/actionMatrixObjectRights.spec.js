@@ -7,7 +7,7 @@
  * and consumers, and the notice naming schemas whose rights were not applied
  * (src/views/admin/actionMatrix.js and ActionAuthMatrix.vue).
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isObjectRight, savePayload, sectionColumns, warnsOnGrant } from '@/views/admin/actionMatrix.js'
