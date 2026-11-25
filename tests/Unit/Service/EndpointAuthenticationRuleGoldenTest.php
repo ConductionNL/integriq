@@ -66,7 +66,11 @@ final class EndpointAuthenticationRuleGoldenTest extends TestCase {
 	 *
 	 * @return array|JSONResponse
 	 */
-	private function runRule(OpenRegisterCredentialBridge $bridge, array $authentication, array $headers=['AUTHORIZATION' => 'Bearer k']): array|JSONResponse {
+	private function runRule(
+		OpenRegisterCredentialBridge $bridge,
+		array $authentication,
+		array $headers=['AUTHORIZATION' => 'Bearer k']
+	): array|JSONResponse {
 		$reflection = new ReflectionClass(EndpointService::class);
 		$service = $reflection->newInstanceWithoutConstructor();
 		$reflection->getProperty('authorizationService')->setValue($service, $bridge);
@@ -166,7 +170,7 @@ final class EndpointAuthenticationRuleGoldenTest extends TestCase {
 	 * @spec openspec/specs/rule-pipeline/spec.md
 	 */
 	public function testAKeyInACustomDashedHeaderIsFound(): void {
-		$bridge = $this->createMock(OpenRegisterCredentialBridge::class);
+		$bridge = $this->createMock(originalClassName: OpenRegisterCredentialBridge::class);
 		$bridge->expects($this->once())->method('authorizeApiKey')->with('secret-key', ['secret-key']);
 
 		$result = $this->runRule(
