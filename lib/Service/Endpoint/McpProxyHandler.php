@@ -232,8 +232,8 @@ class McpProxyHandler {
 		}
 
 		return new McpProxyResponse(
-			relay: function (IOutput $output) use ($call, $config, $rpc, $endpointData): void {
-				$this->relay(call: $call, config: $config, output: $output, storeArguments: (($endpointData['mcpStoreArguments'] ?? false) === true), rpc: $rpc);
+			relay: function (IOutput $output) use ($call, $config, $endpointData): void {
+				$this->relay(call: $call, config: $config, output: $output, storeArguments: (($endpointData['mcpStoreArguments'] ?? false) === true));
 			}
 		);
 	}//end handle()
@@ -313,17 +313,16 @@ class McpProxyHandler {
 	/**
 	 * Make the call through CallService, relaying into the output; its log names the method and tool.
 	 *
-	 * @param McpProxyCall                                             $call           The call.
-	 * @param array<string, mixed>                                     $config         The request configuration.
-	 * @param IOutput                                                  $output         The caller's output.
-	 * @param bool                                                     $storeArguments Whether the request body is logged.
-	 * @param array{method: string|null, tool: string|null, id: mixed} $rpc            What the body asks.
+	 * @param McpProxyCall         $call           The call.
+	 * @param array<string, mixed> $config         The request configuration, its `logFields` naming the method and tool.
+	 * @param IOutput              $output         The caller's output.
+	 * @param bool                 $storeArguments Whether the request body is logged.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-the-call-log-names-the-mcp-tool-req-mcpx-002
 	 */
-	private function relay(McpProxyCall $call, array $config, IOutput $output, bool $storeArguments, array $rpc): void {
+	private function relay(McpProxyCall $call, array $config, IOutput $output, bool $storeArguments): void {
 		try {
 			$this->calls->relay(
 				source: $call->source,
