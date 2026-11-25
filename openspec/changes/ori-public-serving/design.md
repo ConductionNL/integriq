@@ -409,3 +409,51 @@ objects; no files/notes/tasks/contacts attach to them).
   RBAC) is architecturally preferable long-term but is decidesk/OR schema
   work outside this change's boundary, and is recorded as a recommendation
   rather than silently adopted.
+
+## Carried over from the delta specs
+
+These sections stood in the delta specs, where `openspec archive` would not carry them into the main spec.
+
+### Non-functional requirements
+
+- **Performance:** dispatch reuses integriq's existing endpoint
+  resolution cache (`endpoint-runtime` REQ-EP-004) — no new per-request
+  OpenRegister query beyond what the default Endpoint dispatch already does.
+- **Internationalization:** ORI field names and the JSON-LD vocabulary are
+  fixed by the ORI/Popolo standard, not localised (matches
+  `OriController`/`OriSerializer` today — no `t()`/`IL10N` wrapping of
+  output field names).
+
+### Acceptance criteria
+
+- Every scenario in the delta spec passes against the parity test plan
+      (`test-plan.md`) run against both `OriController` and the new
+      integriq Endpoints, with zero response diffs.
+- REQ-ORIPUB-004 (Gap 2) is closed before the companion decidesk
+      retirement change cuts the public `/api/ori/v1/*` mount over —
+      documented, not silently deferred.
+
+### Notes
+
+- Gap 1 (envelope-reshaping composition — REQ-ORIPUB-003's envelope
+  scenario) is expected to be achievable through existing `mapping`-type
+  after-rule composition (see design.md); if implementation proves it is
+  not expressible in one or two chained rules, that is a blocking finding
+  for this change, not a silent scope reduction.
+- `motions`/`amendments` sharing the `decision` schema, and the
+  RBAC-vs-application-logic split for the `publications` publish-window gate,
+  are detailed in `contract.md`'s per-resource filter/type reference.
+
+### Notes on the id-fetch guard (REQ-EP-010)
+
+- This is additive and opt-in per Endpoint (a new, optional "fixed filter
+  set" config surface, reusing the same recipe shape `inputMapping` already
+  uses for collection requests) — no existing Endpoint's id-fetch behaviour
+  changes unless it opts in.
+- Not a substitute for OpenRegister-level `x-openregister-authorization` RBAC
+  (which already gates reads unconditionally, at the storage layer,
+  regardless of caller) — this guard covers the case where the gating field
+  is *not* an OR-RBAC-declared property (e.g. `lifecycle`, `decisionType` on
+  decidesk's schemas today), matching the distinction drawn in
+  `ori-public-serving`'s design.md between Gap 2's RBAC-covered and
+  application-logic-covered sub-cases.
