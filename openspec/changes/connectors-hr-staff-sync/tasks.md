@@ -57,7 +57,8 @@ Kind: code. Size M. Row `planninq:tt-hr-sync`.
 - **acceptance_criteria**:
   - GIVEN Zermelo, Xedule and TimeEdit WHEN the README is read THEN each has its documented HR import, its source URL, and what a humaniq school lacks
 - [x] Implement (`lib/Settings/configurations/staff-to-untis.README.md`)
-- [ ] Test (review)
+- [x] Test (review)
+  > 2026-11-25, reviewed against the criterion: Zermelo (the AFAS link, support.zermelo.nl), Xedule (the HR2day and AFAS integrations, xedule.nl/integraties) and TimeEdit (timeedit.com/integrations, no named HR connector) each name their documented HR import, its source URL, and what a humaniq school lacks. The status paragraph now describes the assignment handling of task 1 instead of calling it open.
 
 ## Verification
 
