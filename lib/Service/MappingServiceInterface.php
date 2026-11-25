@@ -129,6 +129,23 @@ interface MappingServiceInterface {
 	public function getMapping(string $mappingId): OrMapping;
 
 	/**
+	 * The mapping a rule names, read as the gateway's own configuration.
+	 *
+	 * Read unscoped, so a public endpoint's anonymous caller is served, and
+	 * bounded by the rule's organisation.
+	 *
+	 * @param string       $mappingId The mapping's id or uuid.
+	 * @param ObjectEntity $rule      The rule that names the mapping.
+	 *
+	 * @return OrMapping The hydrated mapping value object.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the mapping does not exist or belongs to another organisation.
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/ori-public-serving/spec.md
+	 */
+	public function getRuleMapping(string $mappingId, ObjectEntity $rule): OrMapping;
+
+	/**
 	 * Retrieves all available mappings.
 	 *
 	 * Routes directly through OpenRegister's ObjectService.
