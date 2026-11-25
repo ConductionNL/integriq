@@ -4602,7 +4602,9 @@ class EndpointService implements EndpointServiceInterface {
 		if (isset($authentication['header']) === true) {
 			// Convert configured header name to lowercase + underscore variant
 			// for a single normalised lookup against $normalisedHeaders.
-			$lookupKey = strtolower((string)$authentication['header']);
+			// The request headers come from $_SERVER (HTTP_X_API_KEY), so a dash
+			// in the configured name is an underscore there.
+			$lookupKey = str_replace(search: '-', replace: '_', subject: strtolower((string)$authentication['header']));
 			$header = ($normalisedHeaders[$lookupKey] ?? null);
 		}
 

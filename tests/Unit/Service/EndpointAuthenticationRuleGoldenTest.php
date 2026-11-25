@@ -62,10 +62,11 @@ final class EndpointAuthenticationRuleGoldenTest extends TestCase {
 	 *
 	 * @param OpenRegisterCredentialBridge $bridge         The credential checks.
 	 * @param array<string, mixed>         $authentication The rule's authentication block, or [] for none.
+	 * @param array<string, string>        $headers        The request headers as getHeaders() keys them.
 	 *
 	 * @return array|JSONResponse
 	 */
-	private function runRule(OpenRegisterCredentialBridge $bridge, array $authentication): array|JSONResponse {
+	private function runRule(OpenRegisterCredentialBridge $bridge, array $authentication, array $headers=['AUTHORIZATION' => 'Bearer k']): array|JSONResponse {
 		$reflection = new ReflectionClass(EndpointService::class);
 		$service = $reflection->newInstanceWithoutConstructor();
 		$reflection->getProperty('authorizationService')->setValue($service, $bridge);
@@ -78,7 +79,7 @@ final class EndpointAuthenticationRuleGoldenTest extends TestCase {
 		$rule = new ObjectEntity();
 		$rule->setObject(['configuration' => $configuration]);
 
-		return $reflection->getMethod('processAuthenticationRule')->invoke($service, $rule, ['headers' => ['AUTHORIZATION' => 'Bearer k'], 'body' => 'b']);
+		return $reflection->getMethod('processAuthenticationRule')->invoke($service, $rule, ['headers' => $headers, 'body' => 'b']);
 
 	}//end runRule()
 
@@ -155,4 +156,26 @@ final class EndpointAuthenticationRuleGoldenTest extends TestCase {
 		$this->assertSame([501, ['error' => 'The authentication method is not supported']], [$unknown->getStatus(), $unknown->getData()]);
 
 	}//end testTheEdges()
+	/**
+	 * A key in a custom header with a dash is found: the request headers are
+	 * keyed as $_SERVER names them (HTTP_X_API_KEY becomes x_api_key), so
+	 * `X-Api-Key` was never matched and every such call answered 403.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	public function testAKeyInACustomDashedHeaderIsFound(): void {
+		$bridge = $this->createMock(OpenRegisterCredentialBridge::class);
+		$bridge->expects($this->once())->method('authorizeApiKey')->with('secret-key', ['secret-key']);
+
+		$result = $this->runRule(
+			bridge: $bridge,
+			authentication: ['type' => 'apikey', 'header' => 'X-Api-Key', 'keys' => ['secret-key']],
+			headers: ['x_api_key' => 'secret-key']
+		);
+
+		$this->assertSame(expected: ['headers' => ['x_api_key' => 'secret-key'], 'body' => 'b'], actual: $result);
+
+	}//end testAKeyInACustomDashedHeaderIsFound()
 }//end class
