@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\EndpointsController;
 use OCA\Integriq\Controller\XMLResponse;
+use OCA\Integriq\Http\ProblemResponse;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EndpointCacheService;
 use OCA\Integriq\Service\EndpointCorsPolicy;
@@ -60,6 +61,7 @@ class EndpointsControllerHandlePathTest extends TestCase {
 	private function controller(mixed $found, string $accept, Response $served): EndpointsController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getMethod')->willReturn('PATCH');
+		$request->method('getId')->willReturn('req-7');
 		$request->method('getHeader')->willReturnCallback(static fn (string $name): string => ($name === 'Accept' ? $accept : ''));
 		$cache = $this->createMock(EndpointCacheService::class);
 		$cache->method('findByPathRegex')->willReturnCallback(
@@ -129,16 +131,23 @@ class EndpointsControllerHandlePathTest extends TestCase {
 	}//end endpoint()
 
 	/**
-	 * No match answers 404 naming path and method; a cache failure 409.
+	 * No match answers 404 naming path and method; a cache failure 409; both as problem documents with their instance.
 	 *
 	 * @return void
 	 */
 	public function testNoMatchAndAnAmbiguousMatchAreRefused(): void {
 		$missing = $this->controller(null, '', new JSONResponse())->handlePath('a/b');
-		$this->assertSame([404, ['error' => 'No matching endpoint found for path and method: a/b PATCH']], [$missing->getStatus(), $missing->getData()]);
+		$this->assertInstanceOf(expected: ProblemResponse::class, actual: $missing);
+		$this->assertSame(expected: 404, actual: $missing->getStatus());
+		$this->assertSame(expected: 'No matching endpoint found for path and method: a/b PATCH', actual: $missing->getData()['error']);
+		$this->assertSame(expected: 'No matching endpoint found for path and method: a/b PATCH', actual: $missing->getData()['detail']);
+		$this->assertSame(expected: 'req-7', actual: $missing->getData()['instance']);
+		$this->assertStringEndsWith(suffix: '/not-found', string: $missing->getData()['type']);
 
 		$ambiguous = $this->controller(new RuntimeException('two endpoints match'), '', new JSONResponse())->handlePath('a/b');
-		$this->assertSame([409, ['error' => 'two endpoints match']], [$ambiguous->getStatus(), $ambiguous->getData()]);
+		$this->assertSame(expected: 409, actual: $ambiguous->getStatus());
+		$this->assertSame(expected: 'two endpoints match', actual: $ambiguous->getData()['error']);
+		$this->assertSame(expected: 'req-7', actual: $ambiguous->getData()['instance']);
 		$this->assertSame(['find a/b PATCH', 'find a/b PATCH'], $this->calls);
 
 	}//end testNoMatchAndAnAmbiguousMatchAreRefused()
