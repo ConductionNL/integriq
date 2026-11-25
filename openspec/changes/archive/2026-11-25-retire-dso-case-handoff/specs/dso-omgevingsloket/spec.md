@@ -2,13 +2,13 @@
 
 ### Requirement: Automatic Zaak Creation (REQ-DSO-020)
 
-Each received DSO-verzoek that integriq has mapped MUST become exactly one zaak, created automatically by the case system from the mapped `dso_verzoek`. Integriq prepares the verzoek (parsed data, `mappedCaseTypes`, attachments) and MUST NOT create the zaak itself. The zaak includes all parsed data: aanvrager mapped to the zaak (BSN/KVK-nummer, naam, adres, contactgegevens), locatie (BAG-adres, kadastrale aanduiding, GML-geometrie), startdatum set to DSO-verzoek indieningsdatum, linked bijlagen, and the original DSO-verzoek reference (verzoekId, bronorganisatie).
+Each received DSO-verzoek that integriq has mapped MUST become exactly one zaak, created automatically by the case system from the mapped `dso_verzoek`. Integriq prepares the verzoek (parsed data, `mappedCaseTypes`, attachments) and MUST NOT create the zaak itself. The zaak MUST carry the parsed data and the original DSO-verzoek reference, as the first scenario lists.
 
 @e2e exclude backend DSO/Omgevingsloket STAM integration, covered by PHPUnit, not browser UI
 
 #### Scenario: Parsed vergunningaanvraag creates fully populated zaak
 - **WHEN** a valid vergunningaanvraag is received, parsed and mapped, and the case system reads the mapped verzoek
-- **THEN** the zaak has: zaaktype from the activiteiten-mapping, aanvrager from the verzoek, locatie with BAG-adres and geometrie, startdatum equal to indieningsdatum, all bijlagen linked, and verzoekId stored as external reference
+- **THEN** the zaak has: zaaktype from the activiteiten-mapping, aanvrager from the verzoek (BSN/KVK-nummer, naam, adres, contactgegevens), locatie (BAG-adres, kadastrale aanduiding, GML-geometrie), startdatum equal to indieningsdatum, all bijlagen linked, and verzoekId and bronorganisatie stored as external reference
 
 #### Scenario: KVK-registered bedrijf mapped to bedrijf fields
 - **WHEN** the verzoek aanvrager is a KVK-registered bedrijf and the zaak is created
