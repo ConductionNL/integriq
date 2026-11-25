@@ -248,30 +248,68 @@ class MappingService implements MappingServiceInterface {
 	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
 	 */
 	public function findMapping(string $reference): ?ObjectEntity {
+		return $this->lookupMapping(reference: $reference, scoped: true);
+	}//end findMapping()
+
+	/**
+	 * Resolve a mapping for a sibling app's MappingExecutionRequestedEvent, whoever
+	 * the caller of the request is.
+	 *
+	 * The mapping is configuration and its `callableBy` list decides which app may
+	 * run it, so the lookup does not narrow to the caller's read rule or
+	 * organisation. The caller can be anonymous: the Woo-index harvester reads
+	 * opencatalogi's sitemap without a session, and a scoped lookup found no mapping
+	 * for it, so the sitemap fell back to the built-in fields. Only the lookup is
+	 * unscoped; the mapping runs over the input the app hands it.
+	 *
+	 * @param string $reference The uuid, id, slug or reference.
+	 *
+	 * @return ObjectEntity|null The mapping object, or null when nothing matches.
+	 *
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+	 */
+	public function findMappingForApp(string $reference): ?ObjectEntity {
+		return $this->lookupMapping(reference: $reference, scoped: false);
+	}//end findMappingForApp()
+
+	/**
+	 * Resolve a mapping by uuid, id or slug, then by imported identifiers.
+	 *
+	 * @param string $reference The uuid, id, slug or reference.
+	 * @param bool   $scoped    Whether the caller's read rule and organisation narrow the lookup.
+	 *
+	 * @return ObjectEntity|null The mapping object, or null when nothing matches.
+	 *
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+	 */
+	private function lookupMapping(string $reference, bool $scoped): ?ObjectEntity {
 		try {
 			$object = $this->orObjectService->find(
 				id: $reference,
-				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA)
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
+				_rbac: $scoped,
+				_multitenancy: $scoped
 			);
 		} catch (DoesNotExistException) {
 			$object = null;
 		}
 
 		if ($object === null) {
-			$object = $this->findMappingByIdentifier(identifier: $reference);
+			$object = $this->findMappingByIdentifier(identifier: $reference, scoped: $scoped);
 		}
 
 		return $object;
-	}//end findMapping()
+	}//end lookupMapping()
 
 	/**
 	 * Find a mapping by imported configuration identifiers.
 	 *
 	 * @param string $identifier The mapping slug/reference to resolve.
+	 * @param bool   $scoped     Whether the caller's read rule and organisation narrow the lookup.
 	 *
 	 * @return ObjectEntity|null The matching mapping object, when found.
 	 */
-	private function findMappingByIdentifier(string $identifier): ?ObjectEntity {
+	private function findMappingByIdentifier(string $identifier, bool $scoped): ?ObjectEntity {
 		foreach (['slug', 'reference'] as $field) {
 			try {
 				$matches = $this->orObjectService->findAll(
@@ -281,7 +319,9 @@ class MappingService implements MappingServiceInterface {
 							'schema' => self::SCHEMA,
 							$field => $identifier,
 						],
-					]
+					],
+					_rbac: $scoped,
+					_multitenancy: $scoped
 				);
 			} catch (DoesNotExistException) {
 				continue;

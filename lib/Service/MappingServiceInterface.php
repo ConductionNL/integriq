@@ -80,6 +80,23 @@ interface MappingServiceInterface {
 	public function findMapping(string $reference): ?ObjectEntity;
 
 	/**
+	 * Resolve a mapping for a sibling app's MappingExecutionRequestedEvent: the
+	 * lookup is not narrowed to the caller's read rule or organisation, because
+	 * the mapping's `callableBy` decides which app may run it.
+	 *
+	 * @param string $reference The uuid, id, slug or reference.
+	 *
+	 * @return ObjectEntity|null The mapping object, or null when nothing matches.
+	 *
+	 * @contract-shift internal-only — MappingService in this app is the only implementer
+	 *                  of OCA\Integriq\Service\MappingServiceInterface; OpenRegister's
+	 *                  interface of the same name is a different contract.
+	 *
+	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
+	 */
+	public function findMappingForApp(string $reference): ?ObjectEntity;
+
+	/**
 	 * Maps (transforms) an array (input) to a different array (output).
 	 *
 	 * @param OrMapping|ObjectEntity|array|string|int $mapping The mapping recipe (polymorphic).
