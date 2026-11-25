@@ -4638,7 +4638,16 @@
             "{count} accounts are in this group."
         ],
         "{share}% of its group": "{share}% of its group",
-        "{tier} (needs approval)": "{tier} (needs approval)"
+        "{tier} (needs approval)": "{tier} (needs approval)",
+        "Assign to case": "Assign to case",
+        "Reply": "Reply",
+        "Case reference": "Case reference",
+        "Your reply": "Your reply",
+        "Assign": "Assign",
+        "Assigned to {case}": "Assigned to {case}",
+        "Reply sent": "Reply sent",
+        "The reply was not sent.": "The reply was not sent.",
+        "The message could not be assigned.": "The message could not be assigned."
     },
     "plurals": {}
 }
