@@ -1,0 +1,64 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-hr-data-exchange, Task 1, design D1). The dormant Loket.nl payroll bureau: the source and the mapping that renders a humaniq PayrollHandoff's mutations as Loket.nl mutation calls. No code: the synchronization engine does the work.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "loket-payroll"
+        },
+        "name": "Loket.nl payroll",
+        "description": "A payroll bureau on Loket.nl (Loket.nl REST API v2). A humaniq payroll handoff is delivered as one mutation call per changed employee fact, under the employer that runs the administration; Loket.nl answers each call with its own id, which comes back as the handoff's delivery reference. Auth: OAuth 2.0 client credentials, the client secret held by the credential broker. Set the employer id and the client id, check the paths against your Loket.nl API documentation, then enable.",
+        "type": "api",
+        "location": "https://api.loket.nl/v2",
+        "auth": "oauth",
+        "documentation": "https://developer.loket.nl",
+        "configuration": {
+          "employerId": "",
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{ oauthToken(source) }}"
+          },
+          "authentication": {
+            "grant_type": "client_credentials",
+            "authentication": "body",
+            "tokenUrl": "https://oauth.loket.nl/token",
+            "scope": "all",
+            "client_id": "",
+            "client_secret": {
+              "credentialRef": {
+                "credentialName": "loket-payroll-client-secret"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "payroll-handoff-to-loket-mutations"
+        },
+        "name": "humaniq payroll handoff to Loket.nl mutations",
+        "description": "One humaniq PayrollHandoff (payroll-external-bureau-handoff D3), read with its PayrollHandoffMutation objects as `mutations`, as Loket.nl mutation calls: one call per mutation, with the humaniq employee id as the external employee id, the mutation kind in Loket.nl's words, the start date (the mutation's effective date, else the first day of the period) and only the new values; the mutation id travels as the external reference so a repeated delivery is recognisable. Off until the bureau source is set up; the push that delivers it is payroll-handoff-push (connectors-hr-data-exchange D1).",
+        "mapping": {
+          "administration": "{{ administrationId }}",
+          "period": "{{ period }}",
+          "handoffId": "{{ id }}",
+          "mutations": "{% set kinds = {'start': 'indiensttreding', 'leave': 'uitdiensttreding', 'contract': 'dienstverband', 'salary': 'salaris', 'hours': 'arbeidsduur', 'claim': 'declaratie', 'allowance': 'looncomponent', 'leave-transaction': 'verlof', 'sickness': 'verzuim', 'garnishment': 'loonbeslag', 'bank-account': 'bankrekening', 'tax-settings': 'loonheffing'} %}{% set calls = [] %}{% for m in mutations|default([]) %}{% set values = {} %}{% for field, change in m.fields|default({}) %}{% set values = values|merge({(field): change.new}) %}{% endfor %}{% set calls = calls|merge([{'externalEmployeeId': m.employeeId, 'mutationType': kinds[m.kind]|default(m.kind), 'startDate': m.effectiveDate|default(period ~ '-01'), 'values': values, 'externalReference': m.id}]) %}{% endfor %}{{ calls|json_encode }}"
+        },
+        "unset": [],
+        "cast": {
+          "mutations": "jsonToArray"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

@@ -9,8 +9,10 @@ Kind: config. Size M. Halves for humaniq `payroll-external-bureau-handoff` and `
 - **files**: `lib/Settings/register.d/loket-payroll-source.json`, `nmbrs-payroll-source.json`, `payroll-sftp-drop-source.json`, mappings in `lib/Settings/integriq_seed_data.json`
 - **acceptance_criteria**:
   - GIVEN a handoff with three mutations WHEN it is mapped for each bureau THEN the output matches the recorded example of that bureau
-- [ ] Implement
-- [ ] Test (PHPUnit per mapping against its recorded example)
+- [x] Implement
+  - Three ADR-037 fragments instead of entries in `integriq_seed_data.json`, like the Studytube set: `loket-payroll-source.json` (dormant `loket-payroll`, OAuth client credentials with the secret `loket-payroll-client-secret` by broker reference, and the mapping `payroll-handoff-to-loket-mutations`: one mutation per handoff mutation, the kind in Loket.nl's words, only the new values, the mutation id as external reference), `nmbrs-payroll-source.json` (dormant `nmbrs-payroll`, secret `nmbrs-payroll-client-secret`, mapping `payroll-handoff-to-nmbrs-changes`: one change per changed field with old and new value) and `payroll-sftp-drop-source.json` (dormant SFTP source `payroll-sftp-drop`, mapping `payroll-handoff-to-csv-rows`: file name `<loonheffingennummer>-<period>.csv`, one row per changed field). The mappings read the handoff with its `mutations` and `administration`; supplying those is Task 2's push. The bureaus' API paths and field names are marked in each source's description to check against the bureau's documentation before enabling.
+- [x] Test (PHPUnit per mapping against its recorded example)
+  - `tests/Unit/Settings/PayrollBureauSetsTest.php` maps `tests/fixtures/hr-data-exchange/payroll/handoff-2026-09.json` (Adviesbureau Kade B.V., September 2026, three mutations) with the real MappingService and compares it with `loket-mutations.json`, `nmbrs-changes.json` and `sftp-drop-file.json`. These examples are written to each bureau's format, not captured from a live bureau (no bureau account in the sandbox); also covered: each mutation delivered once, the period's first day for an undated mutation, a starter's empty old value, an empty handoff, dormant sources with brokered secrets.
 
 ### Task 2: Handoff push and payslip pull
 - **spec_ref**: `openspec/changes/connectors-hr-data-exchange/specs/hr-data-exchange/spec.md#requirement-a-ready-payroll-handoff-reaches-the-bureau-and-its-payslips-come-back-req-hrx-001`
@@ -36,9 +38,11 @@ Kind: config. Size M. Halves for humaniq `payroll-external-bureau-handoff` and `
 - **files**: `lib/Service/CatalogRegistryService.php`, `docs/features/`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN an upgrade WHEN the catalogue is materialised THEN the payroll templates show under `Payroll` and Studytube under `Education data`
-- [ ] Implement
-  - Studytube half done: `studytube-lms` and `humaniq-learning-people` under `Education data` (`CatalogRegistryService::SLUG_CATEGORY_OVERRIDES`, `CatalogRegistryServiceTest::testTheLearningPlatformTemplatesAreEducationData`), `docs/features/hr-data-exchange.md`. Open: the payroll templates under `Payroll`, with Task 1.
-- [ ] Test (PHPUnit on the catalogue)
+- [x] Implement
+  - Studytube half done: `studytube-lms` and `humaniq-learning-people` under `Education data` (`CatalogRegistryService::SLUG_CATEGORY_OVERRIDES`, `CatalogRegistryServiceTest::testTheLearningPlatformTemplatesAreEducationData`), `docs/features/hr-data-exchange.md`.
+  - Payroll half done: `loket-payroll`, `nmbrs-payroll` and `payroll-sftp-drop` under `Payroll` (same override list), the payroll section of `docs/features/hr-data-exchange.md`. No new strings: the catalogue category names are not translated for the Studytube half either.
+- [x] Test (PHPUnit on the catalogue)
+  - `CatalogRegistryServiceTest::testThePayrollBureauTemplatesArePayroll`; the catalogue golden digests in `CatalogRegistrySeedGoldenTest` moved by the three new templates.
 
 ## Verification
 - [x] `openspec validate connectors-hr-data-exchange --strict` passes
