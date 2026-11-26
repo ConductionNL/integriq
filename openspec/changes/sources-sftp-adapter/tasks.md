@@ -28,7 +28,11 @@ Kind: code. Size M. Row `integriq:src-sftp`.
   - GIVEN three new CSV files WHEN the pickup runs THEN three files are in the Nextcloud folder and moved to the remote archive, and a second run fetches nothing
   - GIVEN a failed local write WHEN the pickup runs THEN the remote file stays where it was
 - [x] Implement
-- [ ] Test (PHPUnit; one run against the SFTP container)
+- [x] Test (PHPUnit; one run against the SFTP container)
+  > 2026-11-26, live against a real SFTP server (OpenSSH `internal-sftp` on loopback, password sign-in through an inject-only, organisation-scope broker credential, host key pinned as `SHA256:...`, loopback allowed through `egress_allowed_hosts`). Sandbox: Nextcloud 34.0.6 + MariaDB, OpenRegister main 292aa09d.
+  > - A pickup synchronization (`outbox`, `*.csv`, `target: files`, `after: move`, `archivePath: archive`) test run lists the three new CSV files and changes nothing.
+  > - The first run stores all three in `Partner/inbox` and moves each to the remote `archive` (`after: moved`). The second run picks up nothing. The stored files are byte-identical to the archived ones.
+  > - Found and fixed by the run: Nextcloud's `Folder::newFile()` closes the stream it is given, and `FilePickup` closed it again in `finally`. On PHP 8 that throws a TypeError after the write, so the run answered 500 with the file stored but not archived or remembered, and every run stored it again (`export-1 (2).csv`, `export-1 (3).csv`). Fixed by closing only a stream still open. Tested by `FilePickupTest::testAStoreThatClosesTheStreamStillArchivesTheFile`, which errors without the fix. `RemoteFiles` PHPUnit 60/60.
 - **note on what is built**: `FilePickup` (the pickup itself) and
   `FilePickupSynchronization`, which `SynchronizationService` runs for a
   synchronization whose `sourceType` is `sftp` or `ftps`, instead of fetching
