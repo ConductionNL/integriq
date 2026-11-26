@@ -154,7 +154,7 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider implem
 	 *
 	 * @return array<string,string>|null The map, or null when this binding has none for that schema.
 	 *
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
 	public function fieldMapFor(string $targetSchema): ?array {
 		return (self::FIELD_MAPS[$targetSchema] ?? null);

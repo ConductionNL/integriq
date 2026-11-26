@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Registry;
 
 use OCA\Integriq\Service\Registry\LogSubscriptionProvider;
 use OCA\Integriq\Service\Registry\RegistryUpdateClient;
+use OCA\Integriq\Service\Registry\SubscriptionProviderInterface;
 use OCA\Integriq\Service\Registry\SubscriptionRegistry;
 use OCA\Integriq\Service\Registry\SubscriptionRequestHandler;
 use OCA\Integriq\Service\Registry\SubscriptionRoster;
@@ -151,6 +152,48 @@ class SubscriptionRequestHandlerTest extends TestCase {
 
 		$this->assertNull($handler->handle(['registry' => 'log']));
 	}//end testARequestWithoutAnIdentityIsRefused()
+
+	/**
+	 * A masked identity (a rendered BSN such as `*****3653`) is not subscribed:
+	 * the provider is never asked, the roster stays empty, and the requesting
+	 * app is told the subscription failed and why.
+	 *
+	 * @return void
+	 */
+	public function testAMaskedIdentityIsRefusedNotSubscribed(): void {
+		$updateClient = $this->updateClient();
+		$updateClient->expects($this->once())
+			->method('postUpdate')
+			->with(
+				'log',
+				$this->callback(
+					callback: static function (array $payload): bool {
+						return $payload['identity'] === '*****3653'
+							&& $payload['subscriptionState'] === 'failed'
+							&& str_contains((string)$payload['error'], 'masked') === true;
+					}
+				)
+			)
+			->willReturn(200);
+
+		$provider = $this->createMock(originalClassName: SubscriptionProviderInterface::class);
+		$provider->method('registryId')->willReturn('log');
+		$provider->expects($this->never())->method('subscribe');
+
+		$roster = $this->roster();
+		$handler = new SubscriptionRequestHandler(
+			registry: new SubscriptionRegistry(providers: [$provider]),
+			roster: $roster,
+			updateClient: $updateClient,
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
+		);
+
+		$result = $handler->handle(['registry' => 'log', 'identity' => '*****3653', 'schema' => '12']);
+
+		$this->assertNotNull(actual: $result);
+		$this->assertFalse(condition: $result->isActive());
+		$this->assertSame(expected: [], actual: $roster->identities(registryId: 'log'));
+	}//end testAMaskedIdentityIsRefusedNotSubscribed()
 
 	/**
 	 * A roster holds identities and references, and nothing about the person.

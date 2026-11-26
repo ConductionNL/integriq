@@ -116,7 +116,7 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 * @return int How many updates were posted.
 	 *
 	 * @spec openspec/specs/registry-subscription-connector/spec.md
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
 	public function postChanges(string $registryId, iterable $changes, ?SubscriptionProviderInterface $provider = null): int {
 		$posted = 0;
@@ -143,7 +143,7 @@ class RegistrySubscriptionPollJob extends TimedJob {
 	 *
 	 * @return array<int,SubscriptionChangeInterface> The changes to post.
 	 *
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
 	private function perTarget(string $registryId, SubscriptionChangeInterface $change, ?SubscriptionProviderInterface $provider): array {
 		if (($provider instanceof MapsSourceFieldsInterface) === false) {

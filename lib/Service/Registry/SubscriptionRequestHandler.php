@@ -77,7 +77,7 @@ class SubscriptionRequestHandler implements SubscriptionRequestHandlerInterface 
 			return null;
 		}
 
-		$result = $provider->subscribe($subscription->identity);
+		$result = $this->maskedRefusal(subscription: $subscription) ?? $provider->subscribe($subscription->identity);
 		if ($result->isActive() === true) {
 			$this->remember(subscription: $subscription, result: $result);
 		}
@@ -86,6 +86,34 @@ class SubscriptionRequestHandler implements SubscriptionRequestHandlerInterface 
 
 		return $result;
 	}//end handle()
+
+	/**
+	 * A failed result when the identity is a masked display value, else null.
+	 *
+	 * A rendered read shows a BSN that needs a reveal as `*****3653`. Subscribed
+	 * at the BRP, such a value follows nobody, and the roster would poll it for
+	 * good; the requesting app gets the failure back instead.
+	 *
+	 * @param SubscriptionRequest $subscription The request.
+	 *
+	 * @return SubscriptionResult|null
+	 *
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SubscriptionResult is built through its named constructors only
+	 */
+	private function maskedRefusal(SubscriptionRequest $subscription): ?SubscriptionResult {
+		if (str_contains($subscription->identity, '*') === false) {
+			return null;
+		}
+
+		$this->logger->warning('registry-subscription.request.masked-identity', ['registry' => $subscription->registryId]);
+
+		return SubscriptionResult::failed(
+			identity: $subscription->identity,
+			error: 'The identity is a masked display value; the requesting app must pass the stored value.'
+		);
+	}//end maskedRefusal()
 
 	/**
 	 * The request's registry, identity and schema, or null (logged) when one of the first two is missing.
@@ -167,7 +195,7 @@ class SubscriptionRequestHandler implements SubscriptionRequestHandlerInterface 
 	 *
 	 * @return string The slug, or the value as given.
 	 *
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
 	private function schemaSlug(string $schema): string {
 		if ($this->schemaMapper === null) {
