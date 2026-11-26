@@ -51,8 +51,11 @@ and adds a field to this record when it lands.
 
 ### Task 8: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, this change's row in `competitor-parity-2026-09`
-- [ ] Hand dossiq the case-surface half: the send history on the case, and the `lastTold` field projected from the last-contact query, which the lane marks `dossiq-only 6.20`
-- [ ] Hand dossiq C-communication-40, draft replies, with the reason: a draft is composed on the case surface and is not a send
-- [ ] Tell the cluster 14 lane that an external address is a recipient here and a participant there
+- [x] Hand dossiq the case-surface half: the send history on the case, and the `lastTold` field projected from the last-contact query, which the lane marks `dossiq-only 6.20`
+  > 2026-11-26: handed over in the lanes' handoff log (builders-idle.md, live-integriq-1, "FOR b-dossiq"), naming the outbound_message list filtered on subjectRef and GET /api/outbound/last-contact?subjectRef=&recipient= for the projected lastTold field.
+- [x] Hand dossiq C-communication-40, draft replies, with the reason: a draft is composed on the case surface and is not a send
+  > 2026-11-26: handed over in the lanes' handoff log (builders-idle.md, live-integriq-1, "FOR b-dossiq"), with the reason: a draft is composed on the case surface and is not a send.
+- [x] Tell the cluster 14 lane that an external address is a recipient here and a participant there
+  > 2026-11-26: handed over in the lanes' handoff log (builders-idle.md, live-integriq-1, "FOR cluster 14 lane"), matching on the address rather than an account.
 - [x] Record that cluster 60 adds sender identity as a field on this record once it is re-read under D12
 - [x] Test (`tests/e2e/outbound-message-log.spec.ts`, `openspec validate outbound-communication-log --type change --strict`)

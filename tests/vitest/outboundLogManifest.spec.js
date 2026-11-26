@@ -6,7 +6,7 @@
  * screen. If the page never merges, or the body leaks into a column, or a
  * status has no colour, the log is back in a container log nobody reaches.
  *
- * Spec coverage: openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md
+ * Spec coverage: openspec/specs/outbound-message-log/spec.md
  */
 
 import { buildManifest } from '@conduction/nextcloud-vue/src/utils/buildManifest.js'

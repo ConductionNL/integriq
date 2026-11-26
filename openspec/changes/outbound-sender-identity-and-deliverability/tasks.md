@@ -64,7 +64,8 @@
 
 ## 10. Handover
 
-- [ ] 10.1 Give the dossiq lane its half: the sender identity declared per team on the case type, replacing the single `EmailSettings` address.
+- [x] 10.1 Give the dossiq lane its half: the sender identity declared per team on the case type, replacing the single `EmailSettings` address.
+  > 2026-11-26: handed over in the lanes' handoff log (builders-idle.md, live-integriq-1, "FOR b-dossiq"), naming GET /api/outbound/identities and the alignment check.
 - [x] 10.2 Confirm with the Nextcloud Mail boundary that an identity only references an account, per decision D12.
       Confirmed from the code on development: `sender_identity.mailAccount`
       is a string reference, the identity has no password, token, OAuth or
