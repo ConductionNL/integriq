@@ -61,6 +61,8 @@ class WatchedFileIngestJob extends QueuedJob {
 	 * @return void
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors/spec.md#requirement-a-folder-in-nextcloud-files-is-a-watched-source-req-sftp-003
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemWrite is integriq's static elevation guard; there is no instance API.
 	 */
 	protected function run($argument): void {
 		$fileId            = null;
