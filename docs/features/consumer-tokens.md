@@ -23,11 +23,12 @@ A partner system can also get its tokens from integriq itself.
 
    ```
    POST /index.php/apps/integriq/api/oauth/token
-   Authorization: Basic base64(client_id:client_secret)
    Content-Type: application/x-www-form-urlencoded
 
-   grant_type=client_credentials&scope=zaken:read
+   grant_type=client_credentials&scope=zaken:read&client_id=<client id>&client_secret=<client secret>
    ```
+
+   Send the client id and secret as form fields (`client_secret_post`), not in an `Authorization: Basic` header. Nextcloud reads a Basic header as a Nextcloud login before integriq sees the request. The client id is not a Nextcloud account, so that login fails and the request is answered `401` with an empty message.
 
    The answer is a bearer token valid for five minutes. It carries the consumer as `sub` and the granted scopes as `scope`. A partner may ask for fewer scopes than it holds, never for more.
 

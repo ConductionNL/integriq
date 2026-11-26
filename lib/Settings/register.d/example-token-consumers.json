@@ -1,0 +1,36 @@
+{
+  "$comment": "ADR-037 register fragment (access-oauth-and-token-validation task 6). The two example token consumers on a fresh install: one whose tokens come from an outside OpenID Connect provider (an example issuer, so no token validates until an administrator enters the real realm) and one that gets tokens from integriq's client-credentials endpoint (no secret set, so it cannot get a token until an administrator sets one). Listed here because OpenRegister imports only integriq_register.json and register.d; integriq_seed_data.json, where these were first written, is imported by nothing.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "consumer",
+          "slug": "example-oidc-consumer"
+        },
+        "name": "Example OpenID Connect consumer",
+        "description": "Example of a consumer whose tokens come from an outside OpenID Connect provider (access-oauth-and-token-validation). The issuer below is an example address, so no token validates until an administrator enters the real realm.",
+        "authorizationType": "jwt",
+        "authorizationConfiguration": {
+          "keySource": "oidc",
+          "issuerUrl": "https://login.example.nl/realms/gemeente",
+          "audience": "integriq"
+        },
+        "scopes": []
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "consumer",
+          "slug": "example-client-credentials"
+        },
+        "name": "Example client credentials consumer",
+        "description": "Example of a partner system that gets its tokens from integriq at /api/oauth/token (access-oauth-and-token-validation). No client secret is set, so it cannot get a token until an administrator sets one.",
+        "authorizationType": "client_credentials",
+        "scopes": [
+          "zaken:read"
+        ]
+      }
+    ]
+  }
+}

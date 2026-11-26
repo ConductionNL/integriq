@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\OAuth;
 
+use OCA\Integriq\Service\SystemWrite;
+
 use OCA\Integriq\Service\OrganisationBridgeService;
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -221,6 +223,8 @@ class IssuerKeyService implements IssuerKeyServiceInterface {
 	 *
 	 * @throws RuntimeException When there is no key or the broker does not hand it over.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemWrite runs OpenRegister's static system context; there is no instance API.
+	 *
 	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
 	 */
 	public function sign(array $claims): string {
@@ -230,11 +234,18 @@ class IssuerKeyService implements IssuerKeyServiceInterface {
 		}
 
 		try {
-			$privatePem = $this->broker()->resolveInjectable(
-				$this->value(key: self::CONFIG_CREDENTIAL_REF),
-				InlineSecretMigrationExecutor::APP_ID,
-				null,
-				$this->value(key: self::CONFIG_ORGANISATION)
+			// The token endpoint is public: no session holds the organisation the key
+			// belongs to, and OpenRegister's lookup does not find it without one. The read
+			// is integriq's own key, named by its app config, and the broker's allowed-app
+			// guard still applies.
+			$privatePem = SystemWrite::run(
+				what: 'reading integriq\'s own token issuer key',
+				operation: fn () => $this->broker()->resolveInjectable(
+					$this->value(key: self::CONFIG_CREDENTIAL_REF),
+					InlineSecretMigrationExecutor::APP_ID,
+					null,
+					$this->value(key: self::CONFIG_ORGANISATION)
+				)
 			);
 		} catch (Throwable $e) {
 			throw new RuntimeException('The issuer key could not be read from the credential broker.');

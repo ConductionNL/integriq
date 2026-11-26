@@ -64,6 +64,13 @@ final class IssuerKeyServiceTest extends TestCase {
 	public array $resolved = [];
 
 	/**
+	 * Per broker read, whether it ran inside OpenRegister's system context.
+	 *
+	 * @var list<bool>
+	 */
+	public array $inSystemContext = [];
+
+	/**
 	 * The secret the broker holds.
 	 *
 	 * @var string|null
@@ -140,6 +147,7 @@ final class IssuerKeyServiceTest extends TestCase {
 			 */
 			public function resolveInjectable(string $credentialId, string $appId, ?string $actingUserId = null, ?string $actingOrganisationId = null): ?string {
 				$this->test->resolved[] = [$credentialId, $appId, $actingUserId, $actingOrganisationId];
+				$this->test->inSystemContext[] = \OCA\OpenRegister\Service\SystemOperationContext::isActive();
 				if ($this->test->refuse === true) {
 					throw new RuntimeException('denied');
 				}
@@ -271,6 +279,22 @@ final class IssuerKeyServiceTest extends TestCase {
 		$this->assertSame(1, openssl_verify($header . '.' . $payload, $decode($signature), $this->service->publicPem(), OPENSSL_ALGO_SHA256));
 		$this->assertSame([['cred-1', 'openconnector', null, 'org-1']], $this->resolved);
 	}//end testSignProducesATokenVerifiableWithThePublishedKey()
+
+	/**
+	 * The token endpoint is anonymous: no session holds the organisation the key belongs to, so
+	 * OpenRegister's lookup would not find it. The key is read in the system context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-integriq-issues-client-credentials-tokens-to-consumers-req-tokv-003
+	 */
+	public function testSignReadsTheKeyInTheSystemContext(): void {
+		$this->service->create(owner: 'admin');
+
+		$this->service->sign(claims: ['sub' => 'c-partner']);
+
+		$this->assertSame([true], $this->inSystemContext);
+	}//end testSignReadsTheKeyInTheSystemContext()
 
 	/**
 	 * A broker that refuses to hand out the key makes signing fail without leaking its reason.
