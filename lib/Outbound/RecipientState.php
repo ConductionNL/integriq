@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md
+ * @spec openspec/specs/outbound-message-log/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\Integriq\Outbound;
 /**
  * The delivery and read states a recipient row can carry.
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-delivery-and-read-status-are-recorded-where-the-transport-reports-them-and-absent-where-it-does-not-req-ocl-005
+ * @spec openspec/specs/outbound-message-log/spec.md#requirement-delivery-and-read-status-are-recorded-where-the-transport-reports-them-and-absent-where-it-does-not-req-ocl-005
  */
 final class RecipientState {
 

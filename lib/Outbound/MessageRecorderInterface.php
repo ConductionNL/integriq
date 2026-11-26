@@ -41,7 +41,7 @@ interface MessageRecorderInterface {
 	 *
 	 * @return ObjectEntity The updated record.
 	 *
-	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-every-outbound-message-is-recorded-per-recipient-and-per-step-req-ocl-001
+	 * @spec openspec/specs/outbound-message-log/spec.md#requirement-every-outbound-message-is-recorded-per-recipient-and-per-step-req-ocl-001
 	 */
 	public function recipientFailed(string $uuid, string $address, string $step, string $reason): ObjectEntity;
 
@@ -54,7 +54,7 @@ interface MessageRecorderInterface {
 	 *
 	 * @return ObjectEntity The updated record.
 	 *
-	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-every-outbound-message-is-recorded-per-recipient-and-per-step-req-ocl-001
+	 * @spec openspec/specs/outbound-message-log/spec.md#requirement-every-outbound-message-is-recorded-per-recipient-and-per-step-req-ocl-001
 	 */
 	public function deliveryReported(string $uuid, string $address, string $detail = ''): ObjectEntity;
 
@@ -67,7 +67,7 @@ interface MessageRecorderInterface {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no outbound message has that uuid.
 	 *
-	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-every-outbound-message-is-recorded-per-recipient-and-per-step-req-ocl-001
+	 * @spec openspec/specs/outbound-message-log/spec.md#requirement-every-outbound-message-is-recorded-per-recipient-and-per-step-req-ocl-001
 	 */
 	public function read(string $uuid): array;
 }//end interface

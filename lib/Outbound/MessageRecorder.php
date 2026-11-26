@@ -24,7 +24,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md
+ * @spec openspec/specs/outbound-message-log/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use RuntimeException;
  * send, which is the vocabulary the spec names; folding them into one setter would move the
  * lifecycle into the callers.
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-every-outbound-message-is-recorded-per-recipient-and-per-step-req-ocl-001
+ * @spec openspec/specs/outbound-message-log/spec.md#requirement-every-outbound-message-is-recorded-per-recipient-and-per-step-req-ocl-001
  */
 class MessageRecorder implements MessageRecorderInterface {
 

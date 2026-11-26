@@ -1,10 +1,3 @@
-# outbound-message-log Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- outbound-communication-log
-
 ## Purpose
 
 Integriq records every message the product sends to a person: its recipients,

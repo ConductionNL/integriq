@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md
+ * @spec openspec/specs/outbound-message-log/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use InvalidArgumentException;
 /**
  * Forwards a recorded message onward as a new, linked record.
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-a-message-is-forwarded-onward-and-the-forwarding-is-a-record-req-ocl-004
+ * @spec openspec/specs/outbound-message-log/spec.md#requirement-a-message-is-forwarded-onward-and-the-forwarding-is-a-record-req-ocl-004
  */
 class ForwardService implements ForwardServiceInterface {
 
@@ -67,7 +67,7 @@ class ForwardService implements ForwardServiceInterface {
 	 * @throws InvalidArgumentException When no recipient is named, which would forward to nobody
 	 *                                  while recording that a forward happened.
 	 *
-	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-a-message-is-forwarded-onward-and-the-forwarding-is-a-record-req-ocl-004
+	 * @spec openspec/specs/outbound-message-log/spec.md#requirement-a-message-is-forwarded-onward-and-the-forwarding-is-a-record-req-ocl-004
 	 */
 	public function forward(
 		string $uuid,
