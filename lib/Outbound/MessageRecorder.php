@@ -197,7 +197,7 @@ class MessageRecorder implements MessageRecorderInterface {
 	 *
 	 * @return array The record.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
 	 */
 	private function withSelection(array $record, mixed $selection): array {
 		if (is_array($selection) === false) {

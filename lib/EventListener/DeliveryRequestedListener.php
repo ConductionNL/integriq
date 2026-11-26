@@ -119,7 +119,7 @@ class DeliveryRequestedListener implements IEventListener {
 	 *
 	 * @return bool True when the ingest may proceed.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
 	 */
 	private function resolveRecipients(DeliveryRequestedEvent $event): bool {
 		$decision = $event->getRecipientDecision();

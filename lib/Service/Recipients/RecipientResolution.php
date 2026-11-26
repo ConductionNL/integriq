@@ -20,7 +20,7 @@
  *
  * @link https://Integriq.app
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+ * @spec openspec/specs/message-recipient-selection/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use DateTimeImmutable;
 /**
  * Who resolves a recipient list, when, and what is kept off it.
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+ * @spec openspec/specs/message-recipient-selection/spec.md
  */
 final class RecipientResolution {
 
@@ -56,7 +56,7 @@ final class RecipientResolution {
 	 *
 	 * @return string The ATOM timestamp.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+	 * @spec openspec/specs/message-recipient-selection/spec.md
 	 */
 	public function at(): string {
 		return $this->moment->format(DATE_ATOM);

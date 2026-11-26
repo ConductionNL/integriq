@@ -348,7 +348,7 @@ class DeliveryRequestedEvent extends Event {
 	 *
 	 * @return array<string,mixed> The decision, or [] when the caller made none.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
 	 */
 	public function getRecipientDecision(): array {
 		return $this->recipientDecision;
@@ -361,7 +361,7 @@ class DeliveryRequestedEvent extends Event {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
 	 */
 	public function setRecipientSelection(array $selection): void {
 		$this->recipientSelection = $selection;
@@ -372,7 +372,7 @@ class DeliveryRequestedEvent extends Event {
 	 *
 	 * @return array<string,mixed>|null
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
 	 */
 	public function getRecipientSelection(): ?array {
 		return $this->recipientSelection;
