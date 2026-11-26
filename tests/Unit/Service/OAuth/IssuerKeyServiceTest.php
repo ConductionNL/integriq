@@ -293,7 +293,7 @@ final class IssuerKeyServiceTest extends TestCase {
 
 		$this->service->sign(claims: ['sub' => 'c-partner']);
 
-		$this->assertSame([true], $this->inSystemContext);
+		$this->assertSame(expected: [true], actual: $this->inSystemContext);
 	}//end testSignReadsTheKeyInTheSystemContext()
 
 	/**
