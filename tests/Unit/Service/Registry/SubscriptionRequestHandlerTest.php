@@ -167,7 +167,7 @@ class SubscriptionRequestHandlerTest extends TestCase {
 			->with(
 				'log',
 				$this->callback(
-					static function (array $payload): bool {
+					callback: static function (array $payload): bool {
 						return $payload['identity'] === '*****3653'
 							&& $payload['subscriptionState'] === 'failed'
 							&& str_contains((string)$payload['error'], 'masked') === true;
@@ -176,23 +176,23 @@ class SubscriptionRequestHandlerTest extends TestCase {
 			)
 			->willReturn(200);
 
-		$provider = $this->createMock(SubscriptionProviderInterface::class);
+		$provider = $this->createMock(originalClassName: SubscriptionProviderInterface::class);
 		$provider->method('registryId')->willReturn('log');
 		$provider->expects($this->never())->method('subscribe');
 
 		$roster = $this->roster();
 		$handler = new SubscriptionRequestHandler(
-			new SubscriptionRegistry([$provider]),
-			$roster,
-			$updateClient,
-			$this->createMock(LoggerInterface::class)
+			registry: new SubscriptionRegistry(providers: [$provider]),
+			roster: $roster,
+			updateClient: $updateClient,
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 		$result = $handler->handle(['registry' => 'log', 'identity' => '*****3653', 'schema' => '12']);
 
-		$this->assertNotNull($result);
-		$this->assertFalse($result->isActive());
-		$this->assertSame([], $roster->identities('log'));
+		$this->assertNotNull(actual: $result);
+		$this->assertFalse(condition: $result->isActive());
+		$this->assertSame(expected: [], actual: $roster->identities(registryId: 'log'));
 	}//end testAMaskedIdentityIsRefusedNotSubscribed()
 
 	/**

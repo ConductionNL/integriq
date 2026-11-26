@@ -99,6 +99,8 @@ class SubscriptionRequestHandler implements SubscriptionRequestHandlerInterface 
 	 * @return SubscriptionResult|null
 	 *
 	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SubscriptionResult is built through its named constructors only
 	 */
 	private function maskedRefusal(SubscriptionRequest $subscription): ?SubscriptionResult {
 		if (str_contains($subscription->identity, '*') === false) {
@@ -108,8 +110,8 @@ class SubscriptionRequestHandler implements SubscriptionRequestHandlerInterface 
 		$this->logger->warning('registry-subscription.request.masked-identity', ['registry' => $subscription->registryId]);
 
 		return SubscriptionResult::failed(
-			$subscription->identity,
-			'The identity is a masked display value; the requesting app must pass the stored value.'
+			identity: $subscription->identity,
+			error: 'The identity is a masked display value; the requesting app must pass the stored value.'
 		);
 	}//end maskedRefusal()
 
