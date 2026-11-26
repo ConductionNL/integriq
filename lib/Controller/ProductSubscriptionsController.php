@@ -110,7 +110,7 @@ class ProductSubscriptionsController extends Controller {
 	 *
 	 * @return ProductSubscriptionService The service.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
 	 */
 	private function subscriptions(): ProductSubscriptionService {
 		if ($this->subscriptionService === null) {

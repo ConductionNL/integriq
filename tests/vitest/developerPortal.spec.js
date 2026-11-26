@@ -6,7 +6,7 @@
  * an access request, subscription status labels, and the change-notice list
  * on the product page.
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md
+ * @spec openspec/specs/api-product-gateway/spec.md
  */
 import { describe, expect, it, vi } from 'vitest'
 

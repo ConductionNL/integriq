@@ -3201,11 +3201,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/features.overlay.json lists slug developer-portal with status 'soon' and no docsUrl; grep -rniF 'developer portal|devportal' across lib/ and src/ returns zero hits. The /store page (catalog_item schema) is an internal admin catalogue for installing connectors, not a public page for outside developers to discover APIs or request access. Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
+				"evidence": "openspec/features.overlay.json lists slug developer-portal with status 'soon' and no docsUrl; grep -rniF 'developer portal|devportal' across lib/ and src/ returns zero hits. The /store page (catalog_item schema) is an internal admin catalogue for installing connectors, not a public page for outside developers to discover APIs or request access. Specified in openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
 				"change": "access-developer-portal-and-subscriptions",
 				"requirement": [
-					"openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A developer finds the published API products (REQ-DEVP-001)",
-					"openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A developer requests access for their own application (REQ-DEVP-002)"
+					"openspec/specs/api-product-gateway :: A developer finds the published API products (REQ-DEVP-001)",
+					"openspec/specs/api-product-gateway :: A developer requests access for their own application (REQ-DEVP-002)"
 				]
 			},
 			"reachedOn": "nothing reaches it",
@@ -3241,9 +3241,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rniF 'self-service' across lib/ and src/ returns zero hits; every consumer credential is admin-typed via ConsumerEditorModal.vue on the admin-only /consumers page. The only key generate/rotate routes in appinfo/routes.php (lti#generateKey/#rotateKey lines 259-260, eudiIssuerKeyAdmin#generateKey/#rotateKey lines 287-288) are admin-gated, tenant-wide key management, not a per-developer self-service flow. Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
+				"evidence": "grep -rniF 'self-service' across lib/ and src/ returns zero hits; every consumer credential is admin-typed via ConsumerEditorModal.vue on the admin-only /consumers page. The only key generate/rotate routes in appinfo/routes.php (lti#generateKey/#rotateKey lines 259-260, eudiIssuerKeyAdmin#generateKey/#rotateKey lines 287-288) are admin-gated, tenant-wide key management, not a per-developer self-service flow. Specified in openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
 				"change": "access-developer-portal-and-subscriptions",
-				"requirement": "openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A developer manages the keys of their own application (REQ-DEVP-003)"
+				"requirement": "openspec/specs/api-product-gateway :: A developer manages the keys of their own application (REQ-DEVP-003)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -11613,9 +11613,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Settings/register.d/api-product-gateway.json:250-256 subscription status pending_approval, active, rejected, revoked and :282 revokedAt; no end-date property on the subscription schema (properties listed at :223-294). Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Settings/register.d/api-product-gateway.json:250-256 subscription status pending_approval, active, rejected, revoked and :282 revokedAt; no end-date property on the subscription schema (properties listed at :223-294). Specified in openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
 				"change": "access-developer-portal-and-subscriptions",
-				"requirement": "openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A subscription can end on a date (REQ-DEVP-005)"
+				"requirement": "openspec/specs/api-product-gateway :: A subscription can end on a date (REQ-DEVP-005)"
 			},
 			"reachedOn": "/products/:id detail page, subscriptions section",
 			"note": "Open WSO2 API Manager request, Type/NewFeature. Integriq: A subscription can be revoked by hand; it cannot be given an end date.",
@@ -11653,9 +11653,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:1282-1332 buildDeprecationHeaders() emits RFC 8594 Deprecation and Sunset headers on calls to a deprecated product version (row gw-versioning); no message is sent to subscribed consumers. Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/EndpointService.php:1282-1332 buildDeprecationHeaders() emits RFC 8594 Deprecation and Sunset headers on calls to a deprecated product version (row gw-versioning); no message is sent to subscribed consumers. Specified in openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
 				"change": "access-developer-portal-and-subscriptions",
-				"requirement": "openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: Subscribers are told when a product they use changes (REQ-DEVP-004)"
+				"requirement": "openspec/specs/api-product-gateway :: Subscribers are told when a product they use changes (REQ-DEVP-004)"
 			},
 			"reachedOn": "machine route: headers on every call to a deprecated version",
 			"note": "Open WSO2 API Manager request, API consumer notifications. Integriq: Callers learn of retirement from response headers only, not from a notice.",

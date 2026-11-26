@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d5-the-change-notice-is-an-object-with-a-declared-notification
+ * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d5-the-change-notice-is-an-object-with-a-declared-notification
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
  */
 class ProductChangeNoticeListener implements IEventListener {
 
@@ -56,7 +56,7 @@ class ProductChangeNoticeListener implements IEventListener {
 	 * @param SchemaMapper               $schemaMapper   Resolves the saved object's schema slug.
 	 * @param LoggerInterface            $logger         The logger.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	public function __construct(
 		private readonly ProductChangeNoticeService $notices,
@@ -76,7 +76,7 @@ class ProductChangeNoticeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectUpdatedEvent) {

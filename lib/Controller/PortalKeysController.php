@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\IRequest;
 /**
  * The keys of a developer's own application.
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
  */
 class PortalKeysController extends Controller {
 
@@ -61,7 +61,7 @@ class PortalKeysController extends Controller {
 	 * @param ConsumerCredentials   $credentials  The credentials list rules.
 	 * @param IL10N                 $l            Translates the refusals.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	public function __construct(
 		IRequest $request,
@@ -79,7 +79,7 @@ class PortalKeysController extends Controller {
 	 *
 	 * @return JSONResponse `{results: list}`, or 401, 403, 404 or 503.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	#[NoAdminRequired]
 	public function index(string $consumerId): JSONResponse {
@@ -100,7 +100,7 @@ class PortalKeysController extends Controller {
 	 *
 	 * @return JSONResponse 201 with `{key, credential}`, or 400, 401, 403, 404, 500 or 503.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	#[NoAdminRequired]
 	public function create(string $consumerId): JSONResponse {
@@ -133,7 +133,7 @@ class PortalKeysController extends Controller {
 	 *
 	 * @return JSONResponse `{revoked}`, or 401, 403, 404, 500 or 503.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	#[NoAdminRequired]
 	public function destroy(string $consumerId, string $credentialId): JSONResponse {

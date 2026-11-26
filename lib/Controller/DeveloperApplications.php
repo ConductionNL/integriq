@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
  * The signed-in developer's own applications and their credentials. It sits
  * beside the portal controllers because only they use it.
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
  */
 class DeveloperApplications {
 
@@ -68,7 +68,7 @@ class DeveloperApplications {
 	 *
 	 * @return ObjectEntity|int The application, or the HTTP status of the refusal.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
 	 */
 	public function owned(string $consumerId): ObjectEntity|int {
 		$user = $this->userSession->getUser();
@@ -109,7 +109,7 @@ class DeveloperApplications {
 	 * @phpstan-assert-if-true ObjectEntity $consumer
 	 * @psalm-assert-if-true ObjectEntity $consumer
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
 	 */
 	private function owns(IUser $user, ?ObjectEntity $consumer): bool {
 		$data = ($consumer?->getObject() ?? []);
@@ -124,7 +124,7 @@ class DeveloperApplications {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	public function credentials(ObjectEntity $application): array {
 		return $this->consumers->entries(data: $application->getObject());
@@ -138,7 +138,7 @@ class DeveloperApplications {
 	 *
 	 * @return bool Whether the save landed.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	public function addCredential(ObjectEntity $application, array $entry): bool {
 		return $this->consumers->add(consumer: $application, entry: $entry);
@@ -156,7 +156,7 @@ class DeveloperApplications {
 	 *
 	 * @return bool|null True when revoked, false when the save failed, null when the application holds no such key.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
 	 */
 	public function revokeKey(ObjectEntity $application, string $credentialId, string $apiKeyType): ?bool {
 		$isKey = false;
