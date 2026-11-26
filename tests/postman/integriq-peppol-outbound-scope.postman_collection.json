@@ -1,0 +1,505 @@
+{
+	"info": {
+		"name": "Integriq — Peppol outbound consumer scoped to integriq's event schema (peppol-readable-payloads-and-scoped-consumer)",
+		"description": "Newman test of task 1 of openspec/changes/peppol-readable-payloads-and-scoped-consumer (REQ-007, integriq#1222's Peppol finding). A `nl.conduction.peppol.outbound.requested` CloudEvent created in register `integriq`, schema `event` queues a `peppol_transmission`; the same CloudEvent created in another register whose schema is also called `event` queues nothing. OpenRegister hands the listener numeric register and schema ids, so this is the case the resolved-id scoping exists for.\n\nSetup creates the other register and its schema through OpenRegister; teardown deletes them, both events and the transmission. Run it with tests/postman/integriq.postman_environment.json.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "apiBase",
+			"value": "{{base_url}}/index.php/apps/openregister/api"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "otherSchemaId",
+			"value": ""
+		},
+		{
+			"key": "otherRegisterId",
+			"value": ""
+		},
+		{
+			"key": "ownEventUuid",
+			"value": ""
+		},
+		{
+			"key": "otherEventUuid",
+			"value": ""
+		},
+		{
+			"key": "transmissionUuid",
+			"value": ""
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Nextcloud's CSRF check refuses a basic-auth call that also carries the session cookie Newman keeps.",
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' })"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "0. Setup: another register with its own event schema",
+			"item": [
+				{
+					"name": "PO.1 a schema with the slug event, outside integriq",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{apiBase}}/schemas",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"schemas"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"Event (newman other register)\", \"slug\": \"event\", \"properties\": {\"type\": {\"type\": \"string\"}, \"source\": {\"type\": \"string\"}, \"specversion\": {\"type\": \"string\"}, \"data\": {\"type\": \"object\"}}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.collectionVariables.set('run', 'newman-po-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"pm.collectionVariables.set('otherSchemaId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PO.2 the register holding it",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{apiBase}}/registers",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"registers"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"Newman other register {{run}}\", \"slug\": \"{{run}}\", \"schemas\": [\"{{otherSchemaId}}\"]}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"pm.collectionVariables.set('otherRegisterId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "1. The consumer reacts to integriq's own event schema only",
+			"item": [
+				{
+					"name": "PO.3 an outbound request in register integriq, schema event",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{apiBase}}/objects/integriq/event",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"objects",
+								"integriq",
+								"event"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"type\": \"nl.conduction.peppol.outbound.requested\", \"source\": \"/apps/shillinq\", \"specversion\": \"1.0\", \"data\": {\"objectUri\": \"/apps/shillinq/invoices/{{run}}-own\", \"recipientPeppolId\": \"0106:87654321\", \"documentType\": \"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\", \"sourceApp\": \"shillinq\"}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"const b = pm.response.json(); const id = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+									"pm.collectionVariables.set('ownEventUuid', id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PO.4 it queued one transmission",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{apiBase}}/objects/integriq/peppol_transmission?_limit=500",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"objects",
+								"integriq",
+								"peppol_transmission?_limit=500"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));",
+									"const mine = (pm.response.json().results || []).filter(t => t.objectUri === '/apps/shillinq/invoices/' + pm.collectionVariables.get('run') + '-own');",
+									"pm.test('one transmission for the request', () => pm.expect(mine.length).to.eql(1));",
+									"pm.collectionVariables.set('transmissionUuid', (mine[0] || {}).id || '');",
+									"pm.test('it starts as a queued transmission (status may have moved on after the submission attempt)', () => pm.expect(['queued', 'submitted', 'failed']).to.include(mine[0].status));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PO.5 the same request in the other register",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{apiBase}}/objects/{{run}}/event",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"objects",
+								"{{run}}",
+								"event"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"type\": \"nl.conduction.peppol.outbound.requested\", \"source\": \"/apps/shillinq\", \"specversion\": \"1.0\", \"data\": {\"objectUri\": \"/apps/shillinq/invoices/{{run}}-other\", \"recipientPeppolId\": \"0106:87654321\", \"documentType\": \"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2\", \"sourceApp\": \"shillinq\"}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"const b = pm.response.json(); const id = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+									"pm.collectionVariables.set('otherEventUuid', id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PO.6 it queued nothing",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{apiBase}}/objects/integriq/peppol_transmission?_limit=500",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"objects",
+								"integriq",
+								"peppol_transmission?_limit=500"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));",
+									"const mine = (pm.response.json().results || []).filter(t => t.objectUri === '/apps/shillinq/invoices/' + pm.collectionVariables.get('run') + '-other');",
+									"pm.test('no transmission for the request in the other register', () => pm.expect(mine.length).to.eql(0));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "9. Teardown",
+			"item": [
+				{
+					"name": "PO.7 cleanup — DELETE the transmission",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{apiBase}}/objects/integriq/peppol_transmission/{{transmissionUuid}}",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"objects",
+								"integriq",
+								"peppol_transmission",
+								"{{transmissionUuid}}"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PO.8 cleanup — DELETE integriq's event",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{apiBase}}/objects/integriq/event/{{ownEventUuid}}",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"objects",
+								"integriq",
+								"event",
+								"{{ownEventUuid}}"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PO.9 cleanup — DELETE the other register's event",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{apiBase}}/objects/{{run}}/event/{{otherEventUuid}}",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"objects",
+								"{{run}}",
+								"event",
+								"{{otherEventUuid}}"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PO.10 cleanup — DELETE the other register",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{apiBase}}/registers/{{otherRegisterId}}",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"registers",
+								"{{otherRegisterId}}"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PO.11 cleanup — DELETE its schema",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{apiBase}}/schemas/{{otherSchemaId}}",
+							"host": [
+								"{{apiBase}}"
+							],
+							"path": [
+								"schemas",
+								"{{otherSchemaId}}"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
