@@ -20,6 +20,7 @@ Kind: code. Size M. Row `integriq:src-sftp`.
   - GIVEN a path with .. WHEN any operation is called THEN it is refused
 - [x] Implement
 - [ ] Test (PHPUnit against an SFTP container and an FTPS container in the dev compose)
+  > 2026-11-26, live FTPS attempt (vsftpd 3.0.5 with explicit TLS on loopback, certificate from a CA in the system trust, password through an inject-only broker credential): the TLS login succeeds, but every test run and run fails with 'The FTPS server 127.0.0.1 refused the request for "/exchange/outbox/": RETR response: 500'. `FtpsSession::listFiles()` lists with `MLSD` (RFC 3659), which vsftpd does not implement, so a pickup against a vsftpd partner cannot list anything. A fallback to `LIST` (or `NLST` with `MDTM`/`SIZE`) when `MLSD` answers 500 is still to be built; the SFTP half passed live (task 3).
 
 ### Task 3: The pickup synchronization
 - **spec_ref**: `openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002`
