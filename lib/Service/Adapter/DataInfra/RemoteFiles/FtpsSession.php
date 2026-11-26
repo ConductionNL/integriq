@@ -63,12 +63,7 @@ final class FtpsSession implements RemoteFileSession {
 	 */
 	public static function parseMlsd(string $answer): array {
 		$entries = [];
-		$lines = preg_split('/\r?\n/', $answer);
-		if ($lines === false) {
-			return [];
-		}
-
-		foreach ($lines as $line) {
+		foreach (self::linesOf(answer: $answer) as $line) {
 			$space = strpos($line, ' ');
 			if ($space === false) {
 				continue;
@@ -92,6 +87,22 @@ final class FtpsSession implements RemoteFileSession {
 
 		return $entries;
 	}//end parseMlsd()
+
+	/**
+	 * The lines of a listing answer.
+	 *
+	 * @param string $answer The raw answer.
+	 *
+	 * @return list<string>
+	 */
+	private static function linesOf(string $answer): array {
+		$lines = preg_split('/\r?\n/', $answer);
+		if ($lines === false) {
+			return [];
+		}
+
+		return $lines;
+	}//end linesOf()
 
 	/**
 	 * The facts of an MLSD line's fact field, keys lower-cased.
@@ -192,12 +203,7 @@ final class FtpsSession implements RemoteFileSession {
 	 */
 	public static function parseList(string $answer, int $now): array {
 		$entries = [];
-		$lines = preg_split('/\r?\n/', $answer);
-		if ($lines === false) {
-			return [];
-		}
-
-		foreach ($lines as $line) {
+		foreach (self::linesOf(answer: $answer) as $line) {
 			$entry = self::unixListEntry(line: $line, now: $now) ?? self::dosListEntry(line: $line);
 			if ($entry === null || $entry['name'] === '.' || $entry['name'] === '..') {
 				continue;
@@ -244,11 +250,12 @@ final class FtpsSession implements RemoteFileSession {
 	 * @return int|null
 	 */
 	private static function unixListTime(string $month, int $day, string $yearOrTime, int $now): ?int {
-		$months = ['jan' => 1, 'feb' => 2, 'mar' => 3, 'apr' => 4, 'may' => 5, 'jun' => 6, 'jul' => 7, 'aug' => 8, 'sep' => 9, 'oct' => 10, 'nov' => 11, 'dec' => 12];
-		$number = $months[strtolower($month)] ?? null;
-		if ($number === null) {
+		$index = array_search(strtolower($month), ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'], true);
+		if ($index === false) {
 			return null;
 		}
+
+		$number = $index + 1;
 
 		if (str_contains($yearOrTime, ':') === false) {
 			return gmmktime(0, 0, 0, $number, $day, (int)$yearOrTime);
@@ -289,10 +296,14 @@ final class FtpsSession implements RemoteFileSession {
 		}
 
 		$isDirectory = strtoupper($match[7]) === '<DIR>';
+		$size        = null;
+		if ($isDirectory === false) {
+			$size = (int)$match[7];
+		}
 
 		return [
 			'name'        => $match[8],
-			'size'        => $isDirectory === true ? null : (int)$match[7],
+			'size'        => $size,
 			'modifiedAt'  => gmmktime($hour, (int)$match[5], 0, (int)$match[1], (int)$match[2], $year),
 			'isDirectory' => $isDirectory,
 		];

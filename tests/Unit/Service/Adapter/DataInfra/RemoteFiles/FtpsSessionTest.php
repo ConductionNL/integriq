@@ -43,11 +43,11 @@ final class FtpsSessionTest extends TestCase {
 			. "garbage-without-space\r\n";
 
 		$this->assertSame(
-			[
+			expected: [
 				['name' => 'besluiten 2026-11-14.csv', 'size' => 1204, 'modifiedAt' => gmmktime(7, 25, 0, 11, 14, 2026), 'isDirectory' => false],
 				['name' => 'processed', 'size' => null, 'modifiedAt' => gmmktime(0, 0, 0, 11, 1, 2026), 'isDirectory' => true],
 			],
-			FtpsSession::parseMlsd(answer: $answer)
+			actual: FtpsSession::parseMlsd(answer: $answer)
 		);
 	}//end testAnMlsdAnswerIsReadIntoEntries()
 
@@ -70,13 +70,13 @@ final class FtpsSessionTest extends TestCase {
 			. "total 12\r\n";
 
 		$this->assertSame(
-			[
+			expected: [
 				['name' => 'besluiten 2026-11-14.csv', 'size' => 1204, 'modifiedAt' => gmmktime(7, 25, 0, 11, 14, 2026), 'isDirectory' => false],
 				['name' => 'last-year.csv', 'size' => 88, 'modifiedAt' => gmmktime(23, 59, 0, 12, 30, 2025), 'isDirectory' => false],
 				['name' => 'old.csv', 'size' => 12, 'modifiedAt' => gmmktime(0, 0, 0, 3, 3, 2024), 'isDirectory' => false],
 				['name' => 'processed', 'size' => 4096, 'modifiedAt' => gmmktime(0, 0, 0, 11, 1, 2026), 'isDirectory' => true],
 			],
-			FtpsSession::parseList(answer: $answer, now: $now)
+			actual: FtpsSession::parseList(answer: $answer, now: $now)
 		);
 	}//end testAUnixListAnswerIsReadIntoEntries()
 
@@ -93,12 +93,12 @@ final class FtpsSessionTest extends TestCase {
 			. "11-14-2026  16:40                   7 late.csv\r\n";
 
 		$this->assertSame(
-			[
+			expected: [
 				['name' => 'besluiten.csv', 'size' => 1204, 'modifiedAt' => gmmktime(19, 25, 0, 11, 14, 2026), 'isDirectory' => false],
 				['name' => 'processed', 'size' => null, 'modifiedAt' => gmmktime(0, 5, 0, 11, 14, 2026), 'isDirectory' => true],
 				['name' => 'late.csv', 'size' => 7, 'modifiedAt' => gmmktime(16, 40, 0, 11, 14, 2026), 'isDirectory' => false],
 			],
-			FtpsSession::parseList(answer: $answer, now: gmmktime(1, 0, 0, 11, 26, 2026))
+			actual: FtpsSession::parseList(answer: $answer, now: gmmktime(1, 0, 0, 11, 26, 2026))
 		);
 	}//end testADosListAnswerIsReadIntoEntries()
 }//end class
