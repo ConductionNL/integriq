@@ -1,0 +1,43 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-hr-data-exchange, Task 1, design D1). The dormant SFTP drop of a payroll bureau without an API: the source and the mapping that renders a humaniq PayrollHandoff's mutations as the rows of one CSV file per period. No code: the synchronization engine and the SFTP adapter do the work.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "payroll-sftp-drop"
+        },
+        "name": "Payroll bureau SFTP drop",
+        "description": "A payroll bureau that takes its mutations as a file: one CSV per administration and period, named <loonheffingennummer>-<period>.csv, delivered into the bureau's incoming folder; the bureau's return file with the payslips is picked up from its outgoing folder. Set the location, the root path, a brokered credential and the server's host key fingerprint (the first test shows it), agree the folders and the delimiter with the bureau, then enable.",
+        "type": "sftp",
+        "location": "",
+        "configuration": {
+          "rootPath": "/"
+        },
+        "isEnabled": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "payroll-handoff-to-csv-rows"
+        },
+        "name": "humaniq payroll handoff to a bureau CSV file",
+        "description": "One humaniq PayrollHandoff, read with its PayrollHandoffMutation objects as `mutations` and its administration as `administration`, as one CSV file for the bureau: the file name <loonheffingennummer>-<period>.csv, and one row per changed field with the loonheffingennummer, the period, the humaniq employee id, the mutation kind, the effective date, the field, the old and the new value. A value that is itself a list or an object is written as JSON in its cell. Off until the bureau source is set up; the push that delivers it is payroll-handoff-push (connectors-hr-data-exchange D1).",
+        "mapping": {
+          "fileName": "{{ administration.loonheffingennummer|default(administrationId) }}-{{ period }}.csv",
+          "handoffId": "{{ id }}",
+          "rows": "{% set rows = [] %}{% for m in mutations|default([]) %}{% for field, change in m.fields|default({}) %}{% set rows = rows|merge([{'loonheffingennummer': administration.loonheffingennummer|default(''), 'periode': period, 'medewerker': m.employeeId, 'soort': m.kind, 'ingangsdatum': m.effectiveDate|default(''), 'veld': field, 'oud': change.old is iterable ? change.old|json_encode : change.old ?? '', 'nieuw': change.new is iterable ? change.new|json_encode : change.new ?? ''}]) %}{% endfor %}{% endfor %}{{ rows|json_encode }}"
+        },
+        "unset": [],
+        "cast": {
+          "rows": "jsonToArray"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

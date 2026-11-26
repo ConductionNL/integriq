@@ -159,6 +159,10 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		// A learning platform that learns who works where and returns finished trainings (connectors-hr-data-exchange D4).
 		'studytube-lms' => 'Education data',
 		'humaniq-learning-people' => 'Education data',
+		// A payroll bureau that takes humaniq's payroll handoffs and returns the payslips (connectors-hr-data-exchange D4).
+		'loket-payroll' => 'Payroll',
+		'nmbrs-payroll' => 'Payroll',
+		'payroll-sftp-drop' => 'Payroll',
 	];
 
 	/**

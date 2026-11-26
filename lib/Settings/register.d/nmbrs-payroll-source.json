@@ -1,0 +1,64 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-hr-data-exchange, Task 1, design D1). The dormant Nmbrs payroll bureau: the source and the mapping that renders a humaniq PayrollHandoff's mutations as Nmbrs changes. No code: the synchronization engine does the work.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "nmbrs-payroll"
+        },
+        "name": "Nmbrs payroll",
+        "description": "A payroll bureau on Nmbrs (Nmbrs REST API). A humaniq payroll handoff is delivered as one change per changed field, each with the value Nmbrs had and the new one, under the company that runs the administration. Auth: OAuth 2.0 client credentials, the client secret held by the credential broker. Set the company id and the client id, check the paths against your Nmbrs API documentation, then enable.",
+        "type": "api",
+        "location": "https://api.nmbrsapp.com/api",
+        "auth": "oauth",
+        "documentation": "https://developer.nmbrs.com",
+        "configuration": {
+          "companyId": "",
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{ oauthToken(source) }}"
+          },
+          "authentication": {
+            "grant_type": "client_credentials",
+            "authentication": "body",
+            "tokenUrl": "https://identityservice.nmbrs.com/connect/token",
+            "scope": "",
+            "client_id": "",
+            "client_secret": {
+              "credentialRef": {
+                "credentialName": "nmbrs-payroll-client-secret"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "payroll-handoff-to-nmbrs-changes"
+        },
+        "name": "humaniq payroll handoff to Nmbrs changes",
+        "description": "One humaniq PayrollHandoff, read with its PayrollHandoffMutation objects as `mutations`, as Nmbrs changes: one change per changed field, naming the humaniq employee id as the employee reference, the mutation kind as the category, the value the bureau had, the new value and the date it applies from (the mutation's effective date, else the first day of the period). Off until the bureau source is set up; the push that delivers it is payroll-handoff-push (connectors-hr-data-exchange D1).",
+        "mapping": {
+          "administration": "{{ administrationId }}",
+          "period": "{{ period }}",
+          "handoffId": "{{ id }}",
+          "changes": "{% set changes = [] %}{% for m in mutations|default([]) %}{% for field, change in m.fields|default({}) %}{% set changes = changes|merge([{'employeeReference': m.employeeId, 'category': m.kind, 'field': field, 'previousValue': change.old, 'value': change.new, 'validFrom': m.effectiveDate|default(period ~ '-01')}]) %}{% endfor %}{% endfor %}{{ changes|json_encode }}"
+        },
+        "unset": [],
+        "cast": {
+          "changes": "jsonToArray"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
