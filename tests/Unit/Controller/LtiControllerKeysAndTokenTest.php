@@ -237,6 +237,11 @@ class LtiControllerKeysAndTokenTest extends TestCase {
 
 	}//end testAScoreIsReceivedWithTheTokenAndThePayload()
 
+	/**
+	 * The route name and path parameters the router adds to the request never reach the score.
+	 *
+	 * @return void
+	 */
 	public function testTheRouterParametersAreNotPartOfTheScore(): void {
 		$this->authorization = 'Bearer tok-1';
 		$this->params        = ['_route' => 'integriq.lti.agsscore', 'deployment' => 'dep-1', 'lineItemId' => 'li-1', 'userId' => 'u1', 'scoreGiven' => 8];
