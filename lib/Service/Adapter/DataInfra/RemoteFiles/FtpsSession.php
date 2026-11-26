@@ -63,7 +63,7 @@ final class FtpsSession implements RemoteFileSession {
 	 */
 	public static function parseMlsd(string $answer): array {
 		$entries = [];
-		foreach (self::linesOf(answer: $answer) as $line) {
+		foreach (explode("\n", str_replace("\r\n", "\n", $answer)) as $line) {
 			$space = strpos($line, ' ');
 			if ($space === false) {
 				continue;
@@ -87,22 +87,6 @@ final class FtpsSession implements RemoteFileSession {
 
 		return $entries;
 	}//end parseMlsd()
-
-	/**
-	 * The lines of a listing answer.
-	 *
-	 * @param string $answer The raw answer.
-	 *
-	 * @return list<string>
-	 */
-	private static function linesOf(string $answer): array {
-		$lines = preg_split('/\r?\n/', $answer);
-		if ($lines === false) {
-			return [];
-		}
-
-		return $lines;
-	}//end linesOf()
 
 	/**
 	 * The facts of an MLSD line's fact field, keys lower-cased.
@@ -176,7 +160,7 @@ final class FtpsSession implements RemoteFileSession {
 			// MLSD is optional (RFC 3659); vsftpd, for one, answers 500. LIST is in every server.
 		}
 
-		$entries = self::parseList(
+		$entries = (new FtpListing())->parse(
 			answer: (string)$this->request(path: $folder, options: [CURLOPT_RETURNTRANSFER => true]),
 			now: time()
 		);
@@ -188,126 +172,6 @@ final class FtpsSession implements RemoteFileSession {
 
 		return $entries;
 	}//end listDirectory()
-
-	/**
-	 * Parse a LIST answer into entries: the Unix `ls -l` layout most servers send, and the
-	 * MS-DOS layout of IIS. LIST times have minutes at best, so listDirectory() asks MDTM for
-	 * the exact time of each file.
-	 *
-	 * @param string $answer The raw LIST lines.
-	 * @param int    $now    The current Unix time; a Unix line without a year is in the last twelve months.
-	 *
-	 * @return list<array{name: string, size: int|null, modifiedAt: int|null, isDirectory: bool}>
-	 *
-	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
-	 */
-	public static function parseList(string $answer, int $now): array {
-		$entries = [];
-		foreach (self::linesOf(answer: $answer) as $line) {
-			$entry = self::unixListEntry(line: $line, now: $now) ?? self::dosListEntry(line: $line);
-			if ($entry === null || $entry['name'] === '.' || $entry['name'] === '..') {
-				continue;
-			}
-
-			$entries[] = $entry;
-		}
-
-		return $entries;
-	}//end parseList()
-
-	/**
-	 * One Unix-layout LIST line (`-rw-r--r-- 1 owner group 1204 Nov 14 07:25 name`), or null.
-	 * Symbolic links and other special entries are left out: a pickup reads plain files.
-	 *
-	 * @param string $line The line.
-	 * @param int    $now  The current Unix time.
-	 *
-	 * @return array{name: string, size: int|null, modifiedAt: int|null, isDirectory: bool}|null
-	 */
-	private static function unixListEntry(string $line, int $now): ?array {
-		$pattern = '/^([d-])[rwxsStT-]{9}\S*\s+\d+\s+\S+\s+\S+\s+(\d+)\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{1,2}:\d{2}|\d{4})\s(.+)$/';
-		if (preg_match($pattern, $line, $match) !== 1) {
-			return null;
-		}
-
-		return [
-			'name'        => $match[6],
-			'size'        => (int)$match[2],
-			'modifiedAt'  => self::unixListTime(month: $match[3], day: (int)$match[4], yearOrTime: $match[5], now: $now),
-			'isDirectory' => $match[1] === 'd',
-		];
-	}//end unixListEntry()
-
-	/**
-	 * The time of a Unix LIST line, in UTC. `HH:MM` means within the last twelve months, so a
-	 * date later than tomorrow belongs to last year.
-	 *
-	 * @param string $month      The month abbreviation.
-	 * @param int    $day        The day of the month.
-	 * @param string $yearOrTime `HH:MM` or a four-digit year.
-	 * @param int    $now        The current Unix time.
-	 *
-	 * @return int|null
-	 */
-	private static function unixListTime(string $month, int $day, string $yearOrTime, int $now): ?int {
-		$index = array_search(strtolower($month), ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'], true);
-		if ($index === false) {
-			return null;
-		}
-
-		$number = $index + 1;
-
-		if (str_contains($yearOrTime, ':') === false) {
-			return gmmktime(0, 0, 0, $number, $day, (int)$yearOrTime);
-		}
-
-		[$hour, $minute] = array_map('intval', explode(':', $yearOrTime));
-		$year = (int)gmdate('Y', $now);
-		$time = gmmktime($hour, $minute, 0, $number, $day, $year);
-		if ($time > $now + 86400) {
-			$time = gmmktime($hour, $minute, 0, $number, $day, $year - 1);
-		}
-
-		return $time;
-	}//end unixListTime()
-
-	/**
-	 * One MS-DOS-layout LIST line (`11-14-26  07:25AM  1204 name` or `<DIR>`), or null.
-	 *
-	 * @param string $line The line.
-	 *
-	 * @return array{name: string, size: int|null, modifiedAt: int|null, isDirectory: bool}|null
-	 */
-	private static function dosListEntry(string $line): ?array {
-		$pattern = '/^(\d{2})-(\d{2})-(\d{2,4})\s+(\d{1,2}):(\d{2})(AM|PM)?\s+(<DIR>|\d+)\s+(.+)$/i';
-		if (preg_match($pattern, $line, $match) !== 1) {
-			return null;
-		}
-
-		$year = (int)$match[3];
-		if ($year < 100) {
-			$year += 2000;
-		}
-
-		$hour     = (int)$match[4];
-		$meridiem = strtoupper($match[6]);
-		if ($meridiem !== '') {
-			$hour = ($hour % 12) + (int)($meridiem === 'PM') * 12;
-		}
-
-		$isDirectory = strtoupper($match[7]) === '<DIR>';
-		$size        = null;
-		if ($isDirectory === false) {
-			$size = (int)$match[7];
-		}
-
-		return [
-			'name'        => $match[8],
-			'size'        => $size,
-			'modifiedAt'  => gmmktime($hour, (int)$match[5], 0, (int)$match[1], (int)$match[2], $year),
-			'isDirectory' => $isDirectory,
-		];
-	}//end dosListEntry()
 
 	/**
 	 * The exact modification time of a file (MDTM), or null when the server does not answer it.
