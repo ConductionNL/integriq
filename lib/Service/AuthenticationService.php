@@ -238,7 +238,7 @@ class AuthenticationService implements AuthenticationServiceInterface {
 	 *
 	 * @param array $configuration Configuration array for authentication.
 	 *
-	 * @return array|array[] The call options for OAuth with Client Credentials.
+	 * @return array{form_params: array<string, mixed>, auth?: array{0: string, 1: string}} The call options for OAuth with Client Credentials.
 	 *
 	 * @spec openspec/specs/authentication-twig/spec.md
 	 */
@@ -251,8 +251,8 @@ class AuthenticationService implements AuthenticationServiceInterface {
 		} elseif ($configuration['authentication'] === 'basic_auth') {
 			// Guzzle reads the auth option positionally: [username, password].
 			$callConfig['auth'] = [
-				$configuration['client_id'],
-				$configuration['client_secret'],
+				(string)$configuration['client_id'],
+				(string)$configuration['client_secret'],
 			];
 		}
 
@@ -306,7 +306,7 @@ class AuthenticationService implements AuthenticationServiceInterface {
 	 *
 	 * @param array $configuration Configuration array for authentication.
 	 *
-	 * @return array|array[] The call options for OAuth with Password Credentials
+	 * @return array{form_params: array<string, mixed>, auth?: array{0: string, 1: string}} The call options for OAuth with Password Credentials
 	 *
 	 * @spec openspec/specs/authentication-twig/spec.md
 	 */
@@ -319,8 +319,8 @@ class AuthenticationService implements AuthenticationServiceInterface {
 		} elseif ($configuration['authentication'] === 'basic_auth') {
 			// Guzzle reads the auth option positionally: [username, password].
 			$callConfig['auth'] = [
-				$configuration['username'],
-				$configuration['password'],
+				(string)$configuration['username'],
+				(string)$configuration['password'],
 			];
 		}
 

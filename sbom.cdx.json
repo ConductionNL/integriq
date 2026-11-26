@@ -430,10 +430,10 @@
       ]
     },
     {
-      "bom-ref": "guzzlehttp/guzzle-7.15.2.0",
+      "bom-ref": "guzzlehttp/guzzle-8.5.5.0",
       "type": "library",
       "name": "guzzle",
-      "version": "7.15.2",
+      "version": "8.5.5",
       "group": "guzzlehttp",
       "description": "Guzzle is a PHP HTTP client library",
       "author": "Graham Campbell, Michael Dowling, Jeremy Lindblom, George Mponos, Tobias Nyholm, Márk Sági-Kazár, Tobias Schultze",
@@ -444,17 +444,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/guzzlehttp/guzzle@7.15.2",
+      "purl": "pkg:composer/guzzlehttp/guzzle@8.5.5",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/guzzle/guzzle/zipball/744101956d78b7c1384d0cbf379db13e859167bf",
-          "comment": "dist reference: 744101956d78b7c1384d0cbf379db13e859167bf"
+          "url": "https://api.github.com/repos/guzzle/guzzle/zipball/d1a26e6ce24268e740af501de8748d1c945e6f4b",
+          "comment": "dist reference: d1a26e6ce24268e740af501de8748d1c945e6f4b"
         },
         {
           "type": "vcs",
           "url": "https://github.com/guzzle/guzzle.git",
-          "comment": "source reference: 744101956d78b7c1384d0cbf379db13e859167bf"
+          "comment": "source reference: d1a26e6ce24268e740af501de8748d1c945e6f4b"
         },
         {
           "type": "issue-tracker",
@@ -463,18 +463,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/guzzle/guzzle/tree/7.15.2",
+          "url": "https://github.com/guzzle/guzzle/tree/8.5.5",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "744101956d78b7c1384d0cbf379db13e859167bf"
+          "value": "d1a26e6ce24268e740af501de8748d1c945e6f4b"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "744101956d78b7c1384d0cbf379db13e859167bf"
+          "value": "d1a26e6ce24268e740af501de8748d1c945e6f4b"
         },
         {
           "name": "cdx:composer:package:type",
@@ -483,10 +483,10 @@
       ]
     },
     {
-      "bom-ref": "guzzlehttp/promises-2.5.1.0",
+      "bom-ref": "guzzlehttp/promises-3.2.0.0",
       "type": "library",
       "name": "promises",
-      "version": "2.5.1",
+      "version": "3.2.0",
       "group": "guzzlehttp",
       "description": "Guzzle promises library",
       "author": "Graham Campbell, Michael Dowling, Tobias Nyholm, Tobias Schultze",
@@ -497,17 +497,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/guzzlehttp/promises@2.5.1",
+      "purl": "pkg:composer/guzzlehttp/promises@3.2.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/guzzle/promises/zipball/9ad1e4fc607446a055b95870c7f668e93b5cff29",
-          "comment": "dist reference: 9ad1e4fc607446a055b95870c7f668e93b5cff29"
+          "url": "https://api.github.com/repos/guzzle/promises/zipball/a201cc78db93065f891278f86eaeaa1c97c5a158",
+          "comment": "dist reference: a201cc78db93065f891278f86eaeaa1c97c5a158"
         },
         {
           "type": "vcs",
           "url": "https://github.com/guzzle/promises.git",
-          "comment": "source reference: 9ad1e4fc607446a055b95870c7f668e93b5cff29"
+          "comment": "source reference: a201cc78db93065f891278f86eaeaa1c97c5a158"
         },
         {
           "type": "issue-tracker",
@@ -516,18 +516,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/guzzle/promises/tree/2.5.1",
+          "url": "https://github.com/guzzle/promises/tree/3.2.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "9ad1e4fc607446a055b95870c7f668e93b5cff29"
+          "value": "a201cc78db93065f891278f86eaeaa1c97c5a158"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "9ad1e4fc607446a055b95870c7f668e93b5cff29"
+          "value": "a201cc78db93065f891278f86eaeaa1c97c5a158"
         },
         {
           "name": "cdx:composer:package:type",
@@ -536,10 +536,10 @@
       ]
     },
     {
-      "bom-ref": "guzzlehttp/psr7-2.13.0.0",
+      "bom-ref": "guzzlehttp/psr7-3.6.0.0",
       "type": "library",
       "name": "psr7",
-      "version": "2.13.0",
+      "version": "3.6.0",
       "group": "guzzlehttp",
       "description": "PSR-7 message implementation that also provides common utility methods",
       "author": "Graham Campbell, Michael Dowling, George Mponos, Tobias Nyholm, Márk Sági-Kazár, Tobias Schultze, Márk Sági-Kazár",
@@ -550,17 +550,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/guzzlehttp/psr7@2.13.0",
+      "purl": "pkg:composer/guzzlehttp/psr7@3.6.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/guzzle/psr7/zipball/dad89620b7a6edb60c15858442eb2e408b45d8f4",
-          "comment": "dist reference: dad89620b7a6edb60c15858442eb2e408b45d8f4"
+          "url": "https://api.github.com/repos/guzzle/psr7/zipball/1fa0f8319c046b7dec80030460254283d851388e",
+          "comment": "dist reference: 1fa0f8319c046b7dec80030460254283d851388e"
         },
         {
           "type": "vcs",
           "url": "https://github.com/guzzle/psr7.git",
-          "comment": "source reference: dad89620b7a6edb60c15858442eb2e408b45d8f4"
+          "comment": "source reference: 1fa0f8319c046b7dec80030460254283d851388e"
         },
         {
           "type": "issue-tracker",
@@ -569,18 +569,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/guzzle/psr7/tree/2.13.0",
+          "url": "https://github.com/guzzle/psr7/tree/3.6.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "dad89620b7a6edb60c15858442eb2e408b45d8f4"
+          "value": "1fa0f8319c046b7dec80030460254283d851388e"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "dad89620b7a6edb60c15858442eb2e408b45d8f4"
+          "value": "1fa0f8319c046b7dec80030460254283d851388e"
         },
         {
           "name": "cdx:composer:package:type",
@@ -2245,59 +2245,6 @@
       ]
     },
     {
-      "bom-ref": "ralouphie/getallheaders-3.0.3.0",
-      "type": "library",
-      "name": "getallheaders",
-      "version": "3.0.3",
-      "group": "ralouphie",
-      "description": "A polyfill for getallheaders.",
-      "author": "Ralph Khattar",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:composer/ralouphie/getallheaders@3.0.3",
-      "externalReferences": [
-        {
-          "type": "distribution",
-          "url": "https://api.github.com/repos/ralouphie/getallheaders/zipball/120b605dfeb996808c31b6477290a714d356e822",
-          "comment": "dist reference: 120b605dfeb996808c31b6477290a714d356e822"
-        },
-        {
-          "type": "vcs",
-          "url": "https://github.com/ralouphie/getallheaders.git",
-          "comment": "source reference: 120b605dfeb996808c31b6477290a714d356e822"
-        },
-        {
-          "type": "issue-tracker",
-          "url": "https://github.com/ralouphie/getallheaders/issues",
-          "comment": "as detected from Composer manifest 'support.issues'"
-        },
-        {
-          "type": "vcs",
-          "url": "https://github.com/ralouphie/getallheaders/tree/develop",
-          "comment": "as detected from Composer manifest 'support.source'"
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:composer:package:distReference",
-          "value": "120b605dfeb996808c31b6477290a714d356e822"
-        },
-        {
-          "name": "cdx:composer:package:sourceReference",
-          "value": "120b605dfeb996808c31b6477290a714d356e822"
-        },
-        {
-          "name": "cdx:composer:package:type",
-          "value": "library"
-        }
-      ]
-    },
-    {
       "bom-ref": "react/async-4.3.0.0",
       "type": "library",
       "name": "async",
@@ -3579,10 +3526,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/polyfill-php82-1.38.1.0",
+      "bom-ref": "symfony/polyfill-php82-1.43.0.0",
       "type": "library",
       "name": "polyfill-php82",
-      "version": "v1.38.1",
+      "version": "v1.43.0",
       "group": "symfony",
       "description": "Symfony polyfill backporting some PHP 8.2+ features to lower PHP versions",
       "author": "Nicolas Grekas, Symfony Community",
@@ -3593,17 +3540,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/polyfill-php82@v1.38.1",
+      "purl": "pkg:composer/symfony/polyfill-php82@v1.43.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/polyfill-php82/zipball/002dc0cfe5fd4ed6033d48f27d4f19a486c4b04b",
-          "comment": "dist reference: 002dc0cfe5fd4ed6033d48f27d4f19a486c4b04b"
+          "url": "https://api.github.com/repos/symfony/polyfill-php82/zipball/843bbe8b2a7934307b749751eede0f111f5d1cfc",
+          "comment": "dist reference: 843bbe8b2a7934307b749751eede0f111f5d1cfc"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/polyfill-php82.git",
-          "comment": "source reference: 002dc0cfe5fd4ed6033d48f27d4f19a486c4b04b"
+          "comment": "source reference: 843bbe8b2a7934307b749751eede0f111f5d1cfc"
         },
         {
           "type": "website",
@@ -3612,18 +3559,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/polyfill-php82/tree/v1.38.1",
+          "url": "https://github.com/symfony/polyfill-php82/tree/v1.43.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "002dc0cfe5fd4ed6033d48f27d4f19a486c4b04b"
+          "value": "843bbe8b2a7934307b749751eede0f111f5d1cfc"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "002dc0cfe5fd4ed6033d48f27d4f19a486c4b04b"
+          "value": "843bbe8b2a7934307b749751eede0f111f5d1cfc"
         },
         {
           "name": "cdx:composer:package:type",
@@ -5036,8 +4983,8 @@
       "type": "library",
       "name": "nextcloud-vue",
       "group": "@conduction",
-      "version": "2.203.0",
-      "bom-ref": "integriq@1.0.0|@conduction/nextcloud-vue@2.203.0",
+      "version": "2.232.2",
+      "bom-ref": "integriq@1.0.0|@conduction/nextcloud-vue@2.232.2",
       "licenses": [
         {
           "license": {
@@ -5045,15 +4992,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.203.0",
+      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.232.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.203.0.tgz",
+          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.232.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "b5e3f0e39ab553281a32e5e0ad40505c8d99e92fa5452897eb44caea62ac1b57e97de44bd5382723b84429504c894a9d480eae59a3229fcf35b20a4452224364"
+              "content": "a79219f086de52c4eec7fd7b174d09abaa74413fffca94c7ef8485a4da7fdd870c8ce8a607b3c964e9084f854f2f6a06d46772e200a86aa1d4b994e7db25c040"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -28721,29 +28668,31 @@
       ]
     },
     {
-      "ref": "guzzlehttp/guzzle-7.15.2.0",
+      "ref": "guzzlehttp/guzzle-8.5.5.0",
       "dependsOn": [
-        "guzzlehttp/promises-2.5.1.0",
-        "guzzlehttp/psr7-2.13.0.0",
+        "guzzlehttp/promises-3.2.0.0",
+        "guzzlehttp/psr7-3.6.0.0",
         "psr/http-client-1.0.3.0",
+        "psr/http-factory-1.1.0.0",
         "symfony/deprecation-contracts-3.8.1.0",
-        "symfony/polyfill-php80-1.43.0.0"
+        "symfony/polyfill-php80-1.43.0.0",
+        "symfony/polyfill-php82-1.43.0.0"
       ]
     },
     {
-      "ref": "guzzlehttp/promises-2.5.1.0",
+      "ref": "guzzlehttp/promises-3.2.0.0",
       "dependsOn": [
         "symfony/deprecation-contracts-3.8.1.0"
       ]
     },
     {
-      "ref": "guzzlehttp/psr7-2.13.0.0",
+      "ref": "guzzlehttp/psr7-3.6.0.0",
       "dependsOn": [
         "psr/http-factory-1.1.0.0",
         "psr/http-message-2.0.0.0",
-        "ralouphie/getallheaders-3.0.3.0",
         "symfony/deprecation-contracts-3.8.1.0",
-        "symfony/polyfill-php80-1.43.0.0"
+        "symfony/polyfill-php80-1.43.0.0",
+        "symfony/polyfill-php82-1.43.0.0"
       ]
     },
     {
@@ -28789,13 +28738,13 @@
       "dependsOn": [
         "open-telemetry/context-1.5.0.0",
         "psr/log-3.0.2.0",
-        "symfony/polyfill-php82-1.38.1.0"
+        "symfony/polyfill-php82-1.43.0.0"
       ]
     },
     {
       "ref": "open-telemetry/context-1.5.0.0",
       "dependsOn": [
-        "symfony/polyfill-php82-1.38.1.0"
+        "symfony/polyfill-php82-1.43.0.0"
       ]
     },
     {
@@ -28914,9 +28863,6 @@
     },
     {
       "ref": "psr/log-3.0.2.0"
-    },
-    {
-      "ref": "ralouphie/getallheaders-3.0.3.0"
     },
     {
       "ref": "react/async-4.3.0.0",
@@ -29055,7 +29001,7 @@
       "ref": "symfony/polyfill-php80-1.43.0.0"
     },
     {
-      "ref": "symfony/polyfill-php82-1.38.1.0"
+      "ref": "symfony/polyfill-php82-1.43.0.0"
     },
     {
       "ref": "symfony/polyfill-php85-1.44.0.0"
@@ -29138,7 +29084,7 @@
       "dependsOn": [
         "adbario/php-dot-notation-3.6.0.0",
         "elasticsearch/elasticsearch-9.5.0.0",
-        "guzzlehttp/guzzle-7.15.2.0",
+        "guzzlehttp/guzzle-8.5.5.0",
         "jwadhams/json-logic-php-1.5.1.0",
         "onelogin/php-saml-4.6.0.0",
         "php-soap/ext-soap-engine-1.9.0.0",
