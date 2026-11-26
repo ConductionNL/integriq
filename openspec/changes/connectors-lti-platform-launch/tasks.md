@@ -24,9 +24,13 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
 - [x] Implement
   - Built by #2243: `LtiPlatformController::authorize()` on GET and POST `/api/lti/platform/authorize`, `LtiPlatformLoginService` (user, hint, client id, redirect URI, nonce and state checks), `templates/lti-autopost.php` and `templates/lti-error.php`, the optional nonce on `initiatePlatformLaunch()`.
   - The launch page and error page strings are in `l10n/en.json` / `l10n/nl.json`, and `l10n/en.js` / `l10n/nl.js` are rebuilt from them.
-- [ ] Test (PHPUnit per check; `tests/e2e/lti-platform-launch.spec.ts` against a reference tool fixture)
+- [x] Test (PHPUnit per check; `tests/e2e/lti-platform-launch.spec.ts` against a reference tool fixture)
   - PHPUnit half done: `testAuthorizePostsIdTokenWithToolNonceAndState`, `testAuthorizeRefusesAnotherUsersHint`, `testAuthorizeRefusesUnregisteredRedirectUri`, `testAuthorizeRefusesMissingNonce`, `testAuthorizeRefusesAnotherClientId` in `LtiPlatformLaunchTest`. Open: the e2e spec and the reference tool fixture do not exist yet.
   - 2026-11-21, written, not run (no live instance): `tests/e2e/lti-platform-launch.spec.ts`. A request without a login hint gets the error page naming the `hint` check and posts nothing. The two hint scenarios (the id_token reaching the tool, another user's hint) are `test.fixme`, because a hint is only issued when learniq raises `LtiLaunchRequestedEvent`, and no route of this app raises it. The reference tool fixture is still open, so the box stays unticked.
+  - 2026-11-26, live with the reference tool fixture, which now exists: `tests/integration/lti-reference-tool/` (`tool.php`, a PHP LTI 1.3 tool on integriq's own `web-token` library, and `run-live.sh`, which registers it, raises `LtiLaunchRequestedEvent` for a learner the way learniq does, and follows the browser's hops). Sandbox: Nextcloud 34.0.6 + MariaDB, OpenRegister main 292aa09d.
+    - The tool's OIDC login receives the six fields and redirects to `/api/lti/platform/authorize`.
+    - Signed in as the learner, the endpoint answers the auto-post form with `id_token` and `state` to the registered redirect URI. The tool verifies the id_token against the platform's key set (RS256), with its own state and nonce, `aud` = its client id, the deployment id, `LtiResourceLinkRequest` and the Learner role.
+    - The same hint opened by another signed-in user answers 403 with the error page "Failed check: user", and no form is posted. These are the two scenarios the e2e spec keeps as `fixme`, because no route of this app raises the launch event; the fixture raises it in-process.
 
 ### Task 3: The launch claims and the grade service claim
 - **spec_ref**: openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-launched-tool-can-send-a-grade-back-to-the-placement-req-ltil-003
@@ -36,7 +40,9 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
   - GIVEN a score posted to that line item WHEN it is received THEN the CloudEvent names the placement as `lineItemId`
 - [x] Implement
   - 2026-09-29: `LtiPlatformLoginService::agsEndpointClaim()` adds `https://purl.imsglobal.org/spec/lti-ags/claim/endpoint` with `lineitem` = this deployment's `lti#agsLineItem` URL for the placement id and `scope` = `lineitem.readonly` + `score` (`lineitems` is left out: no line item container route). `lti#token` now serves a conformant request without the former `deployment_id` parameter, scoping the token to the tool's only deployment (a tool with several still names one), and grants `lineitem.readonly`; `lti#agsLineItem` accepts it.
-- [ ] Test (integration test launching the reference tool fixture and posting a score)
+- [x] Test (integration test launching the reference tool fixture and posting a score)
+  - 2026-11-26, live: `tests/integration/lti-reference-tool/run-live.sh` exits 0. After the launch above, the tool takes a token at `/api/lti/token` (`client_credentials` with a signed client assertion, checked against the tool's `jwksUri`): 200, Bearer, scope `.../scope/score`. It then posts a score (8.5/10, Completed, FullyGraded) to the `lineitem` the AGS claim named: 200. integriq stores `nl.conduction.lti.ags.score.received` with `lineItemId` = the placement id (`placement-course-1-module-3`) and the deployment.
+  - Found and fixed in this PR: the stored score carried Nextcloud's route parameters (`_route`, `deployment`, `lineItemId`) next to the tool's fields. `LtiController::scorePayload()` drops them; tested by `LtiControllerKeysAndTokenTest::testTheRouterParametersAreNotPartOfTheScore`. PHPUnit `--filter Lti` 257/257.
   - Not yet: the live run against a reference tool is pending. PHPUnit pins the pieces: `LtiPlatformLaunchTest::testAuthorizePostsIdTokenWithToolNonceAndState` (claim, URL resolved from routes.php, every scope grantable), `LtiAgsServiceTest::testConformantTokenRequestIsScopedToTheToolsOnlyDeployment` and `testAToolWithSeveralDeploymentsMustNameOne`, `LtiControllerInboundTest::testAConformantTokenRequestWithoutDeploymentIdIsServed`.
 
 ### Task 4: Redirect URIs and the platform details view
