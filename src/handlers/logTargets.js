@@ -32,6 +32,7 @@
  * | view-job-logs              | job_log             | jobId             |
  * | view-synchronization-logs  | synchronization_log | synchronizationId |
  * | view-cloud-event-logs      | call_log            | —                 |
+ * | view-flow-runs             | flow_run            | flowId            |
  *
  * Two of these filter nothing *yet*, for reasons that are not this table's:
  * no inbound `call_log` rows exist (`EndpointsController::logs()` is still

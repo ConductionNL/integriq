@@ -497,8 +497,10 @@ function jobLogsLink(item) {
  * `completed` is the only outright success; `suspended` is a mid-flight wait
  * on an `approval` step's resolution, not a failure (flow-orchestration
  * REQ-005) and must not be reported as one. Everything else (`failed`,
- * `stopped`, `dead_letter`, or an unrecognised status) reports as an error,
- * `payload.error` winning when the engine set one.
+ * `stopped`, `dead_letter`, or an unrecognised status) reports as a generic
+ * error — `FlowRunnerService::appendLog()` only ever stamps an `error` on a
+ * `flow_run_log` entry, never on the flow_run itself, so there is nothing to
+ * read off `payload` here. "View full log" is how the user gets the detail.
  *
  * @param {object|null} payload The returned flow_run.
  * @return {{type: string, text: string}} Banner type and text.
@@ -532,7 +534,7 @@ function flowStatus(payload) {
 
 	return {
 		type: 'error',
-		text: payload.error || t('integriq', 'The flow did not complete.'),
+		text: t('integriq', 'The flow did not complete.'),
 	}
 }
 
@@ -543,6 +545,10 @@ function flowStatus(payload) {
  * lives on `flow_run_log`/`flow_run_steps`, not on this row — rendering it
  * here would mean re-deriving CnRunDetailSidebar's own query. "View full log"
  * takes the user to that detail instead of this modal re-describing it thinly.
+ *
+ * `triggerSource`/`startedAt`/`finishedAt` are the flow_run's real fields
+ * (`FlowRunnerService::run()`/`finalizeFlowRun()`) — there is no `trigger` or
+ * `triggeredBy` field on this row.
  *
  * @param {object|null} payload The returned flow_run.
  * @return {Array<object>} Render sections.
@@ -560,12 +566,16 @@ function flowSections(payload) {
 			value: [
 				{ label: t('integriq', 'Status'), value: payload.status || '—' },
 				{
-					label: t('integriq', 'Trigger'),
-					value: payload.trigger || t('integriq', 'Manual'),
+					label: t('integriq', 'Trigger source'),
+					value: payload.triggerSource || '—',
 				},
 				{
-					label: t('integriq', 'Triggered by'),
-					value: payload.triggeredBy || '—',
+					label: t('integriq', 'Started'),
+					value: payload.startedAt || '—',
+				},
+				{
+					label: t('integriq', 'Finished'),
+					value: payload.finishedAt || '—',
 				},
 			],
 		},
@@ -583,15 +593,38 @@ function flowLogsLink(item) {
 }
 
 /**
+ * Recover a flow_run payload from a failed request.
+ *
+ * `FlowsController::run()` maps a `failed`/`stopped`/`dead_letter` flow_run to
+ * HTTP 500, but the response body is still the full flow_run — not an
+ * `{ error, message }` shape. Without this, `RunActionModal` would fall
+ * through to `extractError()` and show a bare string instead of the real
+ * status()/sections() the modal already knows how to render.
+ *
+ * @param {object} err The Axios error.
+ * @return {object|null} The flow_run payload, or null when the body isn't one.
+ */
+function flowPayloadFromError(err) {
+	const data = err?.response?.data
+
+	if (data && typeof data === 'object' && typeof data.status === 'string') {
+		return data
+	}
+
+	return null
+}
+
+/**
  * How a flow run's result is read.
  *
- * @return {object} The status, sections and logsLink fields of a descriptor.
+ * @return {object} The status, sections, logsLink and payloadFromError fields of a descriptor.
  */
 function flowResult() {
 	return {
 		status: flowStatus,
 		sections: flowSections,
 		logsLink: flowLogsLink,
+		payloadFromError: flowPayloadFromError,
 	}
 }
 
