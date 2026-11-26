@@ -54,11 +54,13 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 	 * @param OrObjectService        $objectService OpenRegister's object service, for synchronizations and sources.
 	 * @param SynchronizationService $engine        The engine that resolves the contract and acts on the object.
 	 * @param LoggerInterface        $logger        Logger.
+	 * @param ActingUser             $actingUser    Who the notice acts as.
 	 */
 	public function __construct(
 		private readonly OrObjectService $objectService,
 		private readonly SynchronizationService $engine,
 		private readonly LoggerInterface $logger,
+		private readonly ActingUser $actingUser,
 	) {
 	}//end __construct()
 
@@ -89,10 +91,13 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 
 		$outcomes = [];
 		foreach ($this->synchronizationsOfSource(sourceId: $sourceId) as $synchronization) {
-			$outcome = $this->engine->applySourceDestruction(
+			$outcome = $this->asActingUser(
 				synchronization: $synchronization,
-				originIds: $originIds,
-				reference: $resourceUrl
+				work: fn (): array => $this->engine->applySourceDestruction(
+					synchronization: $synchronization,
+					originIds: $originIds,
+					reference: $resourceUrl
+				)
 			);
 			if ($outcome['outcome'] !== SynchronizationService::DESTRUCTION_NO_CONTRACT) {
 				$outcomes[] = $outcome;
@@ -119,12 +124,51 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 			return ['outcome' => self::OUTCOME_NO_SYNCHRONIZATION, 'synchronizationId' => $synchronizationId];
 		}
 
-		return $this->engine->applySourceDestruction(
+		return $this->asActingUser(
 			synchronization: $synchronization,
-			originIds: [$originId],
-			reference: ($reference ?? $originId)
+			work: fn (): array => $this->engine->applySourceDestruction(
+				synchronization: $synchronization,
+				originIds: [$originId],
+				reference: ($reference ?? $originId)
+			)
 		);
 	}//end handleDestroyed()
+
+	/**
+	 * Apply a notice as the user it acts for.
+	 *
+	 * A notice that arrives with a user (an authenticated call) runs as that
+	 * user. A notice without one, such as a signed call on the public route,
+	 * runs as the synchronization's owner: OpenRegister refuses a sessionless
+	 * delete (anonymous is default-deny), and the owner is the person who set
+	 * the synchronization up, so the notice never acts with more rights than
+	 * theirs. Without an owner that still exists nothing is acted on.
+	 * ActingUser::runAs() restores the prior identity afterwards.
+	 *
+	 * @param ObjectEntity $synchronization The synchronization the notice is for.
+	 * @param \Closure     $work            The engine call; returns the outcome.
+	 *
+	 * @return array<string,mixed> The outcome.
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+	 */
+	private function asActingUser(ObjectEntity $synchronization, \Closure $work): array {
+		if ($this->actingUser->current() !== null) {
+			return $work();
+		}
+
+		$ownerId = (string)$synchronization->getOwner();
+		$owner = $this->actingUser->find(userId: $ownerId);
+		if ($owner === null) {
+			$this->logger->warning(
+				'[integriq] destruction notice: the synchronization has no owner to act as; nothing was purged',
+				['synchronizationId' => (string)$synchronization->getUuid(), 'owner' => $ownerId]
+			);
+			return ['outcome' => self::OUTCOME_NO_OWNER, 'synchronizationId' => (string)$synchronization->getUuid()];
+		}
+
+		return $this->actingUser->runAs(user: $owner, work: $work);
+	}//end asActingUser()
 
 	/**
 	 * The webhook signature configuration of a synchronization's source.
@@ -172,8 +216,12 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 	 */
 	private function synchronizationsOfSource(string $sourceId): array {
 		try {
+			// Unscoped, like findObject(): a notice arrives with no user session, and the
+			// source filter is checked again on every row below.
 			$matches = $this->objectService->findAll(
-				config: ['filters' => ['register' => 'integriq', 'schema' => 'synchronization', 'sourceId' => $sourceId]]
+				config: ['filters' => ['register' => 'integriq', 'schema' => 'synchronization', 'sourceId' => $sourceId]],
+				_rbac: false,
+				_multitenancy: false
 			);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
