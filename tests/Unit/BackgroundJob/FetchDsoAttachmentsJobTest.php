@@ -260,7 +260,7 @@ class FetchDsoAttachmentsJobTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
 	 */
 	public function testMalformedArgumentIsDropped(): void {
 		$logger = $this->levelLogger();

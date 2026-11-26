@@ -2,7 +2,7 @@
 
 ### Requirement: Bijlagen Download and Storage (REQ-DSO-005)
 
-The adapter MUST download every bijlage (documenten, tekeningen, rapporten, berekeningen) a DSO-verzoek references from DSO-LV, and MUST attach each one as a file to the request's `dso_verzoek` object through OpenRegister, so that it is stored in Nextcloud Files under the object's access rights. The download MUST run in a background job after intake, so the STAM endpoint still answers without waiting for it. The adapter MUST record each bijlage's outcome on the request, and MUST NOT write a bijlage anywhere outside Nextcloud Files.
+The adapter MUST download every bijlage a DSO-verzoek references from DSO-LV in a background job after intake, and MUST attach each one as a file to the request's `dso_verzoek` object through OpenRegister, stored in Nextcloud Files under the object's access rights. It MUST record each bijlage's outcome on the request, and MUST NOT write a bijlage anywhere outside Nextcloud Files.
 
 @e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
+ * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Pins the bijlage download: its authentication, transport routing, refusals and size cap.
  *
- * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
+ * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
  */
 class DsoClientDownloadTest extends TestCase {
 

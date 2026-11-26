@@ -70,8 +70,8 @@ The adapter MUST support receiving meldingen (notifications of activities not re
 - **THEN** it creates a melding-zaak for the meldingsplichtige activiteit and flags the vergunningplichtige activiteit for separate aanvraag handling
 
 #### Scenario: Melding bijlagen stored in Files
-- **WHEN** a melding contains bijlagen (asbestinventarisatierapport) and the adapter processes the melding
-- **THEN** bijlagen are downloaded from DSO-LV and stored in a dedicated Nextcloud Files folder linked to the melding-zaak
+- **WHEN** a melding contains bijlagen (asbestinventarisatierapport) and the background job runs
+- **THEN** the bijlagen are downloaded from DSO-LV and attached as files to the melding's `dso_verzoek` object, as REQ-DSO-005 describes
 
 ### Requirement: Informatieverzoek and Vooroverleg Support (REQ-DSO-003)
 
@@ -119,21 +119,37 @@ The adapter MUST parse the DSO-verzoek XML/JSON payload into structured data inc
 
 ### Requirement: Bijlagen Download and Storage (REQ-DSO-005)
 
-The adapter MUST download bijlagen (documenten, tekeningen, rapporten, berekeningen) referenced in the DSO-verzoek from DSO-LV and store them in Nextcloud Files. Each bijlage is stored in a zaak-specific folder structure following the pattern `/DSO-verzoeken/{year}/{verzoekId}/bijlagen/`.
+The adapter MUST download every bijlage a DSO-verzoek references from DSO-LV in a background job after intake, and MUST attach each one as a file to the request's `dso_verzoek` object through OpenRegister, stored in Nextcloud Files under the object's access rights. It MUST record each bijlage's outcome on the request, and MUST NOT write a bijlage anywhere outside Nextcloud Files.
 
 @e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Multiple bijlagen downloaded and linked
-- **WHEN** a verzoek references 5 bijlagen including PDFs, DWG drawings, and a structural calculation and the adapter processes the verzoek
-- **THEN** each bijlage is downloaded via the DSO-LV document API using mTLS, stored in the zaak folder, and linked to the zaak via Docudesk
+- **WHEN** a verzoek references 5 bijlagen including PDFs, DWG drawings, and a structural calculation and the background job runs
+- **THEN** each bijlage is downloaded via the DSO-LV document API with the source's authentication (mTLS in production)
+- **AND** each is attached to the request object as a file tagged `dso-bijlage`
+- **AND** each entry in the request's `attachments` has status `stored` and the stored file's id
+
+#### Scenario: The endpoint does not wait for the bijlagen
+- **WHEN** DSO-LV pushes a verzoek with bijlagen to the STAM endpoint
+- **THEN** the endpoint answers 202 once the request is saved
+- **AND** every entry in the request's `attachments` has status `pending` until the job has run
 
 #### Scenario: Bijlage download retried and flagged on failure
-- **WHEN** a bijlage download fails due to a network timeout and the adapter retries (up to 3 attempts with exponential backoff)
-- **THEN** on persistent failure the zaak is created with a "bijlage ontbreekt" warning and a notification is sent to the behandelaar
+- **WHEN** a bijlage download fails due to a network timeout and the job retries (up to 3 attempts with exponential backoff)
+- **THEN** on persistent failure its entry has status `failed` with the last error, and the request is flagged "bijlage ontbreekt" for the behandelaar
 
 #### Scenario: Oversized bijlage rejected
 - **WHEN** a bijlage exceeds the configured maximum file size (default: 100MB) and the download is attempted
-- **THEN** the adapter rejects the file, stores a placeholder reference, and flags the zaak for manual bijlage handling
+- **THEN** no file is stored, its entry has status `too-large`, and the request is flagged for manual bijlage handling
+
+#### Scenario: Nothing is written outside Nextcloud Files
+- **WHEN** any verzoek with bijlagen is processed
+- **THEN** no file is created on the server's filesystem outside Nextcloud's data, and no path such as `/DSO-verzoeken` exists afterwards
+
+#### Scenario: A rerun finishes what a crash left
+- **GIVEN** the job stopped after storing 2 of 5 bijlagen
+- **WHEN** the job runs again
+- **THEN** it downloads only the 3 entries that are not `stored`, and stores no duplicate of the first 2
 
 ### Requirement: Verzoek Schema Validation (REQ-DSO-006)
 

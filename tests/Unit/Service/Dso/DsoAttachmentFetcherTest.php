@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/dso-attachments-on-the-request/tasks.md#task-2.1
+ * @spec openspec/changes/archive/2026-11-26-dso-attachments-on-the-request/tasks.md#task-2.1
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * The DsoClient is the real class over a Guzzle MockHandler, so the token
  * header, the GET and the streamed body are what production sends.
  *
- * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
+ * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
  */
 class DsoAttachmentFetcherTest extends TestCase {
 
@@ -247,7 +247,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 	 * addFile() on the request object, tagged dso-bijlage, and its entry ends
 	 * `stored` with the file id. The register accepts what is written.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
 	 *
 	 * @return void
 	 */
@@ -288,7 +288,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 	/**
 	 * A source in mTLS mode downloads through the mTLS transport, without a token.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
 	 *
 	 * @return void
 	 */
@@ -322,7 +322,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 	 * A download that keeps failing is tried three times with exponential
 	 * backoff, then ends `failed` with the last error.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
 	 *
 	 * @return void
 	 */
@@ -356,7 +356,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 	/**
 	 * A failure followed by a success ends `stored`, with the error cleared.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
 	 *
 	 * @return void
 	 */
@@ -377,7 +377,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 	 * A bijlage above the source's maxFileSize is not stored and not retried,
 	 * whether the size is declared up front or only seen while streaming.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-oversized-bijlage-rejected
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-oversized-bijlage-rejected
 	 *
 	 * @return void
 	 */
@@ -404,7 +404,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 	/**
 	 * The default cap is 100 MB when the source sets none.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-oversized-bijlage-rejected
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-oversized-bijlage-rejected
 	 *
 	 * @return void
 	 */
@@ -423,7 +423,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 	 * A URL that is missing or not https is refused without a request, and
 	 * without attempts left.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-nothing-is-written-outside-nextcloud-files
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-nothing-is-written-outside-nextcloud-files
 	 *
 	 * @return void
 	 */
@@ -532,7 +532,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 	 * The death is an Error thrown by the third addFile(): the fetcher retries
 	 * exceptions, not Errors, so it ends the run the way a killed worker does.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
 	 *
 	 * @return void
 	 */
@@ -570,7 +570,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 	/**
 	 * The flag clears once a rerun stores the bijlage that had failed.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
 	 *
 	 * @return void
 	 */

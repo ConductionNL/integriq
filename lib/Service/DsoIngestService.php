@@ -316,7 +316,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 *
 	 * @return ObjectEntity The same request.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
 	 * @spec openspec/changes/archive/2026-11-23-dso-intake-through-an-integriq-connection/tasks.md#task-3
 	 */
 	private function enqueueAttachmentFetch(ObjectEntity $request, string $actingUserId): ObjectEntity {
@@ -348,7 +348,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 *
 	 * @return array<int, array{name: string, url: string, status: string, attempts: int}> The entries.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/tasks.md#task-1.2
+	 * @spec openspec/changes/archive/2026-11-26-dso-attachments-on-the-request/tasks.md#task-1.2
 	 */
 	private function pendingAttachments(mixed $references): array {
 		if (is_array($references) === false) {

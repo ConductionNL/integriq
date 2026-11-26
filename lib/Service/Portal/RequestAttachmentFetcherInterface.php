@@ -38,7 +38,7 @@ interface RequestAttachmentFetcherInterface {
 	 * @return array<int, array<string, mixed>>|null The request's attachments afterwards,
 	 *                                               or null when the request does not exist.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
 	 */
 	public function fetchPending(string $requestUuid): ?array;
 
@@ -53,7 +53,7 @@ interface RequestAttachmentFetcherInterface {
 	 *
 	 * @return array<string, mixed> The entry with its new status, attempts, fileId or error.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
 	 */
 	public function fetchOne(
 		ObjectEntity $request,
@@ -69,7 +69,7 @@ interface RequestAttachmentFetcherInterface {
 	 *
 	 * @return boolean True when the entry should be fetched.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
 	 */
 	public function needsDownload(mixed $entry): bool;
 
@@ -81,7 +81,7 @@ interface RequestAttachmentFetcherInterface {
 	 *
 	 * @return boolean True when a bijlage is missing.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
 	 */
 	public function isAttachmentMissing(array $attachments): bool;
 }
